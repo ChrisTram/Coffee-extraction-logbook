@@ -106,10 +106,29 @@ check(
 const bye = await call("/logout", { headers: { Cookie: cookie } });
 check("logout efface le cookie", (bye.headers.get("Set-Cookie") || "").includes("Max-Age=0"));
 
-// 11. Secrets manquants : fermeture par defaut
+// 11. Secrets manquants : fermeture par defaut, et on dit lesquels
 const naked = await worker.fetch(new Request("https://site.test/"), { ASSETS: env.ASSETS });
+const nakedBody = await naked.text();
 check("sans secrets, 503", naked.status === 503, `status ${naked.status}`);
-check("sans secrets, rien n'est servi", !(await naked.text()).includes("LE SITE"));
+check("sans secrets, rien n'est servi", !nakedBody.includes("LE SITE"));
+check(
+  "sans secrets, les trois noms sont listes",
+  ["AUTH_USERNAME", "AUTH_PASSWORD", "AUTH_SECRET"].every((n) => nakedBody.includes(n))
+);
+
+const partial = await worker.fetch(new Request("https://site.test/"), {
+  ...env,
+  AUTH_SECRET: undefined,
+});
+const partialBody = await partial.text();
+check("un seul secret manquant, 503", partial.status === 503, `status ${partial.status}`);
+check("le secret manquant est nomme", partialBody.includes("Manquant ou vide : AUTH_SECRET"));
+check("les secrets presents ne sont pas nommes comme manquants", !partialBody.includes("AUTH_USERNAME,"));
+check("aucune valeur de secret n'est divulguee", !partialBody.includes("correct-horse"));
+
+// Un secret vide ou reduit a des espaces compte comme absent
+const blank = await worker.fetch(new Request("https://site.test/"), { ...env, AUTH_PASSWORD: "   " });
+check("secret vide traite comme absent", blank.status === 503, `status ${blank.status}`);
 
 // 12. Session expiree (on force une expiration dans le passe)
 const realNow = Date.now;

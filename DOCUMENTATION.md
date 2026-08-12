@@ -274,7 +274,7 @@ print('PROPRE' if not pb else pb)"
 Régénérer la démo après tout changement de schéma :
 `python3 tools/gen_demo.py` (écrit demo/*.csv et js/demo-data.js).
 
-Porte d'entrée : `node worker/index.test.mjs` (26 assertions, aucune
+Porte d'entrée : `node worker/index.test.mjs` (32 assertions, aucune
 dépendance, node 18 ou plus suffit, il fournit fetch, Request, Response et
 crypto.subtle comme le runtime Workers). Couvre la redirection de l'anonyme,
 la préservation de la destination, le refus des mauvais identifiants, les
@@ -337,8 +337,10 @@ réinitialisation de mot de passe, pas de base d'utilisateurs.
   directement `/index.html`. Ne pas le retirer.
 - Trois secrets Cloudflare, définis dans le dashboard, JAMAIS dans le repo :
   `AUTH_USERNAME`, `AUTH_PASSWORD`, `AUTH_SECRET` (clé de signature des
-  cookies). Si l'un des trois manque, le Worker répond 503 et ne sert rien :
-  fermeture par défaut, volontaire.
+  cookies). Si l'un des trois manque, ou est vide, ou n'est que des espaces,
+  le Worker répond 503 et ne sert rien : fermeture par défaut, volontaire. Le
+  503 NOMME les secrets absents (les noms sont déjà publics dans le dépôt, les
+  valeurs ne sont jamais rendues), sinon le diagnostic se fait à l'aveugle.
 - Session : cookie `cel_session`, HttpOnly, Secure, SameSite=Lax, 30 jours.
   Son contenu est `identifiant\nhorodatage d'expiration` signé en HMAC
   SHA-256 avec `AUTH_SECRET`. Rien n'est stocké côté serveur, il n'y a pas de

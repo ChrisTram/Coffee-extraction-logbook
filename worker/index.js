@@ -29,9 +29,10 @@ const decoder = new TextDecoder();
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const config = readConfig(env);
+    const missing = missingSecrets(env);
+    if (missing.length > 0) return misconfigured(missing);
 
-    if (!config) return misconfigured();
+    const config = readConfig(env);
 
     if (url.pathname === LOGOUT_PATH) return logout(url);
 
@@ -54,21 +55,49 @@ export default {
 
 /* ---------- Configuration ---------- */
 
-function readConfig(env) {
-  const username = env.AUTH_USERNAME;
-  const password = env.AUTH_PASSWORD;
-  const secret = env.AUTH_SECRET;
-  if (!username || !password || !secret) return null;
-  return { username, password, secret };
+const REQUIRED_SECRETS = ["AUTH_USERNAME", "AUTH_PASSWORD", "AUTH_SECRET"];
+
+/* Nomme les secrets absents. Les NOMS ne sont pas sensibles, ils sont dans le
+   depot public; les valeurs ne sont evidemment jamais rendues. Sans ca, un
+   503 ne dit pas laquelle des trois manque et le diagnostic se fait a
+   l'aveugle. */
+function missingSecrets(env) {
+  return REQUIRED_SECRETS.filter((name) => {
+    const value = env[name];
+    return typeof value !== "string" || value.trim() === "";
+  });
 }
 
-function misconfigured() {
+function readConfig(env) {
+  return {
+    username: env.AUTH_USERNAME,
+    password: env.AUTH_PASSWORD,
+    secret: env.AUTH_SECRET,
+  };
+}
+
+function misconfigured(missing) {
+  const list = missing.join(", ");
   return new Response(
-    "Authentification non configuree. Definir les secrets AUTH_USERNAME, " +
-      "AUTH_PASSWORD et AUTH_SECRET sur le projet Cloudflare.\n\n" +
-      "Authentication is not configured. Set the AUTH_USERNAME, AUTH_PASSWORD " +
-      "and AUTH_SECRET secrets on the Cloudflare project.",
-    { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" } }
+    "Authentification non configuree.\n\n" +
+      `Manquant ou vide : ${list}\n\n` +
+      "A definir dans le dashboard Cloudflare, sur le Worker, onglet Settings, " +
+      "section Variables and Secrets, type Secret. Les noms sont sensibles a la " +
+      "casse et ne doivent pas comporter d'espace.\n\n" +
+      "---\n\n" +
+      "Authentication is not configured.\n\n" +
+      `Missing or empty: ${list}\n\n` +
+      "Set these in the Cloudflare dashboard, on the Worker, Settings tab, " +
+      "Variables and Secrets section, as type Secret. Names are case sensitive " +
+      "and must not contain spaces.",
+    {
+      status: 503,
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Robots-Tag": "noindex, nofollow",
+      },
+    }
   );
 }
 
