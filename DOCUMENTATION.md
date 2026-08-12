@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.7,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.8,
 2026-08-12.
 
 ## 1. Vue d'ensemble
@@ -301,6 +301,36 @@ autre clé, l'expiration à 30 jours, la redirection ouverte, le logout et la
 fermeture par défaut quand les secrets manquent. À relancer à CHAQUE
 modification de `worker/index.js`.
 
+## 9 bis. PWA, hors ligne et verrou d'écran
+
+Actif uniquement sur le site déployé (https). En `file://` le service worker ne
+s'enregistre pas et l'API Wake Lock n'existe pas : tout échoue en silence, le
+double clic sur `index.html` marche exactement comme avant.
+
+- `manifest.json` : nom, thème sombre, `display: standalone`, icônes. Chemins
+  RELATIFS (`./`, `icons/...`) pour rester valides quelle que soit l'origine.
+- `icons/` : quatre PNG générés par `node tools/gen_icons.mjs`, déterministe et
+  sans dépendance (encodage PNG à la main via zlib, échantillonnage 4x4 pour
+  l'antialiasing). Le dessin est en coordonnées relatives dans `sample()`. La
+  version `maskable` réduit le dessin à 72 pour cent et va au bord, l'OS
+  découpe la forme qu'il veut. Régénérer si le dessin change, pas autrement.
+- `sw.js`, stratégie RÉSEAU D'ABORD, cache en secours. Le choix inverse (cache
+  d'abord) obligerait à incrémenter `CACHE_NAME` à chaque déploiement, et un
+  oubli figerait une vieille version sur le téléphone pour toujours. Le site
+  est petit et servi par Cloudflare : l'aller retour réseau ne coûte rien
+  devant ce risque.
+- DEUX PIÈGES traités dans `sw.js`, ne pas les défaire :
+  1. Une réponse issue d'une REDIRECTION n'entre jamais dans le cache
+     (`response.redirected`). Sans ce test, la porte d'entrée redirigeant vers
+     `/login` à l'expiration de session ferait mettre en cache la PAGE DE
+     CONNEXION à la place de l'application.
+  2. `/login` et `/logout` ne passent jamais par le service worker, sinon la
+     connexion et la déconnexion cessent de fonctionner.
+- Verrou d'écran : `syncWakeLock()` dans app.js est appelé depuis
+  `majBoutonsChrono()`, qui tourne à CHAQUE transition du chrono. Un seul point
+  de vérité, donc pas de branche oubliée. Le système relâche le verrou dès que
+  l'onglet passe en arrière plan, d'où la reprise sur `visibilitychange`.
+
 ## 10. Git et déploiement Cloudflare
 
 Le site est 100 pour cent statique, aucun build, aucune dépendance réseau.
@@ -502,3 +532,8 @@ Les fichiers sont en UTF-8 (accents et vietnamien) : rien à configurer.
   préremplie à 15 g quand aucune recette ne la fixe (constante
   `DEFAULT_DOSE_G`, appliquée au formulaire complet et à la saisie rapide) ;
   une recette qui porte une dose gagne toujours.
+- v7.8 : PWA installable (manifest, icônes générées, service worker réseau
+  d'abord) et API Wake Lock pendant le chrono, pour que l'écran du téléphone ne
+  se verrouille plus au milieu d'une extraction. Suggestion 1 du backlog,
+  débloquée par le passage en https. Aucun effet en `file://`. Détail et
+  pièges en section 9 bis.

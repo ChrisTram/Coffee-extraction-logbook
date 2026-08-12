@@ -85,6 +85,8 @@ jamais à la main dans les CSV.
 | `tools/gen_demo.py` | Générateur de la démo |
 | `worker/index.js` | Porte d'entrée Cloudflare (login), n'existe qu'en ligne |
 | `wrangler.jsonc` | Config du déploiement Workers, aucun secret dedans |
+| `sw.js` | Service worker, hors ligne. Inactif en `file://` |
+| `manifest.json`, `icons/` | PWA installable. Icônes via `tools/gen_icons.mjs` |
 
 Le dossier parent contient aussi le prompt d'origine
 (`../Prompt-Fable-Tracker-Cafe.md`), le guide d'achat source

@@ -633,6 +633,36 @@
   const chrono = { etat: "arrete", accumule: 0, departTs: null, interval: null, passes: new Set() };
   let audioCtx = null;
 
+  // Verrou d'écran pendant le chrono : l'écran du téléphone ne doit pas se
+  // verrouiller au milieu d'une extraction, les mains sont mouillées.
+  // L'API n'existe qu'en contexte sécurisé (https), donc PAS en file:// : on
+  // échoue en silence, ce n'est pas une fonction critique. Le système relâche
+  // le verrou dès que l'onglet passe en arrière plan, d'où la reprise sur
+  // visibilitychange.
+  let screenWakeLock = null;
+
+  async function acquireWakeLock() {
+    if (screenWakeLock || !("wakeLock" in navigator)) return;
+    try {
+      const lock = await navigator.wakeLock.request("screen");
+      lock.addEventListener("release", () => { if (screenWakeLock === lock) screenWakeLock = null; });
+      screenWakeLock = lock;
+    } catch (e) { /* refusé, ou onglet caché : tant pis */ }
+  }
+
+  function releaseWakeLock() {
+    if (!screenWakeLock) return;
+    const lock = screenWakeLock;
+    screenWakeLock = null;
+    lock.release().catch(() => { /* déjà relâché */ });
+  }
+
+  // Un seul point de vérité : le verrou suit l'état du chrono.
+  function syncWakeLock() {
+    if (chrono.etat === "encours") acquireWakeLock();
+    else releaseWakeLock();
+  }
+
   function chronoEcoule() {
     return (chrono.accumule + (chrono.etat === "encours" ? Date.now() - chrono.departTs : 0)) / 1000;
   }
@@ -707,6 +737,9 @@
     $("#btn-chrono-stop").hidden = chrono.etat === "arrete";
     $("#btn-chrono-raz").hidden = chrono.etat === "arrete" && chronoEcoule() === 0;
     $(".chrono").classList.toggle("en-cours", chrono.etat === "encours");
+    // Appelée à chaque transition du chrono, c'est le bon endroit pour aligner
+    // le verrou d'écran sans risque d'oubli dans une branche.
+    syncWakeLock();
   }
 
   function chronoPrincipal() {
@@ -1814,6 +1847,18 @@
 
     const h = location.hash.slice(1);
     activerEcran(["tableau", "saisie", "historique", "reference", "guide"].includes(h) ? h : "tableau");
+
+    // Le système relâche le verrou d'écran quand l'onglet part en arrière plan.
+    // Au retour, si le chrono tourne toujours, on le reprend.
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") syncWakeLock();
+    });
+
+    // Service worker : uniquement en http(s). En file:// l'enregistrement lève
+    // une exception, et c'est très bien : le double clic n'a pas besoin de lui.
+    if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+      navigator.serviceWorker.register("sw.js").catch(() => { /* pas critique */ });
+    }
 
     if (!aDesDonnees) {
       if (!DATA.state.fsDisponible) {
