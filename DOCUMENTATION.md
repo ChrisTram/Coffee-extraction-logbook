@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.8,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.9,
 2026-08-12.
 
 ## 1. Vue d'ensemble
@@ -301,6 +301,42 @@ autre clé, l'expiration à 30 jours, la redirection ouverte, le logout et la
 fermeture par défaut quand les secrets manquent. À relancer à CHAQUE
 modification de `worker/index.js`.
 
+## 6 bis. Insights automatiques du tableau de bord
+
+Carte "Ce que tes données disent", juste sous les KPI. Des phrases calculées,
+pas des graphiques en plus. Tout vit dans app.js, section "Insights
+automatiques", et sort par `rendreInsights()` appelé depuis `rendreTableau()`.
+
+Deux garde fous, ce sont eux qui font la valeur de la fonction :
+
+- `MIN_SAMPLE = 3` extractions notées dans CHACUN des groupes comparés.
+- `MIN_GAP = 0.4` point d'écart minimum. En dessous, on se tait.
+
+Sans ça, avec une poignée d'extractions, n'importe quelle corrélation est du
+bruit et une phrase affirmative serait un mensonge.
+
+`bestOfGroups()` oppose le meilleur groupe au RESTE MIS EN COMMUN, pas au
+deuxième. C'est délibéré : la mouture se découpe en beaucoup de groupes fins
+(13 réglages de molette sur le Switch dans la démo), donc l'écart entre premier
+et deuxième est toujours minuscule même quand l'écart entre le meilleur et tout
+le reste dépasse le point. Tester premier contre deuxième reviendrait à ne
+jamais rien dire. Le regroupement donne en plus un effectif de comparaison bien
+plus grand.
+
+Les quatre règles : fenêtre de fraîcheur (trois tranches d'âge), meilleur
+réglage de mouture par machine, duel de recettes d'une même famille, effet du
+préchauffage de l'eau en Brikka. La règle recettes ne parle QUE des familles où
+exactement deux recettes ont assez d'extractions : à trois ou plus, nommer une
+"perdante" serait faux puisqu'elle n'est peut être que deuxième.
+
+Quand rien ne se déclenche, on explique POURQUOI (seuil non atteint, et le cas
+échéant "renseigne tes dates de torréfaction") au lieu de laisser un cadre
+vide. C'est la différence entre "pas assez de données" et "le site est cassé".
+
+`#insights` est dans ZONES_JS : son contenu est généré, le TreeWalker ne doit
+pas y toucher. Les phrases sont des gabarits T, avec les nombres déjà formatés
+via `fmtDecimal` pour éviter tout problème de pluriel ou de séparateur décimal.
+
 ## 9 bis. PWA, hors ligne et verrou d'écran
 
 Actif uniquement sur le site déployé (https). En `file://` le service worker ne
@@ -537,3 +573,8 @@ Les fichiers sont en UTF-8 (accents et vietnamien) : rien à configurer.
   se verrouille plus au milieu d'une extraction. Suggestion 1 du backlog,
   débloquée par le passage en https. Aucun effet en `file://`. Détail et
   pièges en section 9 bis.
+- v7.9 : insights automatiques du tableau de bord (suggestion 6 du backlog),
+  carte "Ce que tes données disent" sous les KPI. Quatre règles avec seuils
+  d'échantillon et d'écart, comparaison du meilleur groupe au reste mis en
+  commun, et message explicatif quand il n'y a pas assez de matière. Détail en
+  section 6 bis.

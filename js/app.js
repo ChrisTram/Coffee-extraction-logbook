@@ -125,6 +125,149 @@
     return DATA.state.extractions.map(e => ({ ...e, _c: DATA.calculs(e) }));
   }
 
+  // ---------- Insights automatiques ----------
+  // Des phrases calculées, pas des graphiques en plus. Les règles sont
+  // volontairement simples ET prudentes : il faut au moins MIN_SAMPLE
+  // extractions notées dans CHACUN des groupes comparés, et au moins MIN_GAP
+  // point d'écart, sinon on se tait. Avec une poignée d'extractions, n'importe
+  // quelle corrélation est du bruit, et une phrase affirmative serait un
+  // mensonge. Chaque règle retourne une chaîne déjà traduite, ou null.
+
+  const MIN_SAMPLE = 3;
+  const MIN_GAP = 0.4;
+  const note1 = n => fmtDecimal(n, 1);
+
+  // Compare des groupes nommés {cle: [notes]} et oppose le MEILLEUR au RESTE MIS
+  // EN COMMUN, pas au deuxième.
+  //
+  // Pourquoi : la mouille se découpe en beaucoup de groupes fins (13 réglages de
+  // molette sur le Switch dans la démo). Entre le premier et le deuxième l'écart
+  // est alors toujours minuscule, même quand l'écart entre le meilleur et tout
+  // le reste dépasse le point. Tester premier contre deuxième reviendrait à ne
+  // jamais rien dire. Mettre le reste en commun donne en plus un effectif de
+  // comparaison bien plus grand, donc une moyenne moins bruitée.
+  //
+  // Retourne null si moins de deux groupes atteignent MIN_SAMPLE, ou si l'écart
+  // reste sous MIN_GAP.
+  function bestOfGroups(groups) {
+    const classes = Object.entries(groups)
+      .filter(([, notes]) => notes.length >= MIN_SAMPLE)
+      .map(([cle, notes]) => ({ cle, notes, moy: moyenne(notes) }))
+      .sort((a, b) => b.moy - a.moy);
+    if (classes.length < 2) return null;
+
+    const gagnant = classes[0];
+    const reste = classes.slice(1).flatMap(c => c.notes);
+    const moyReste = moyenne(reste);
+    if (gagnant.moy - moyReste < MIN_GAP) return null;
+    return { gagnant, moyReste, nReste: reste.length };
+  }
+
+  function insightFraicheur(notees) {
+    const groupes = { ins_frais_tot: [], ins_frais_median: [], ins_frais_tard: [] };
+    notees.forEach(e => {
+      const j = e._c.age_jours;
+      if (j === "" || j < 0) return;
+      if (j <= 7) groupes.ins_frais_tot.push(e.note_sur_10);
+      else if (j <= 21) groupes.ins_frais_median.push(e.note_sur_10);
+      else groupes.ins_frais_tard.push(e.note_sur_10);
+    });
+    const res = bestOfGroups(groupes);
+    if (!res) return null;
+    return I18N.t("ins_fraicheur", {
+      quand: I18N.t(res.gagnant.cle),
+      haut: note1(res.gagnant.moy),
+      bas: note1(res.moyReste),
+    });
+  }
+
+  function insightMouture(notees, methode) {
+    const groupes = {};
+    notees
+      .filter(e => e.methode === methode && e.mouture_dial)
+      .forEach(e => (groupes[e.mouture_dial] = groupes[e.mouture_dial] || []).push(e.note_sur_10));
+    const res = bestOfGroups(groupes);
+    if (!res) return null;
+    return I18N.t("ins_mouture", {
+      machine: methode,
+      dial: res.gagnant.cle,
+      haut: note1(res.gagnant.moy),
+      bas: note1(res.moyReste),
+    });
+  }
+
+  // Duel entre recettes d'une même famille : c'est la comparaison qui a du sens
+  // (même méthode, même intention), contrairement à un classement global.
+  function insightRecettes(notees) {
+    const parFamille = {};
+    notees.forEach(e => {
+      const r = trouverRecette(e.recette);
+      if (!r || !r.famille) return;
+      const f = (parFamille[r.famille] = parFamille[r.famille] || {});
+      (f[r.nom] = f[r.nom] || []).push(e.note_sur_10);
+    });
+    // Vrai duel, donc on ne parle QUE des familles où exactement deux recettes
+    // ont assez d'extractions notées. À trois recettes ou plus, nommer une
+    // perdante serait faux (elle n'est peut-être que deuxième).
+    for (const famille of Object.keys(parFamille)) {
+      const classes = Object.entries(parFamille[famille])
+        .filter(([, notes]) => notes.length >= MIN_SAMPLE)
+        .map(([nom, notes]) => ({ nom, moy: moyenne(notes) }))
+        .sort((a, b) => b.moy - a.moy);
+      if (classes.length !== 2) continue;
+      if (classes[0].moy - classes[1].moy < MIN_GAP) continue;
+      return I18N.t("ins_recettes", {
+        gagnante: I18N.tr(classes[0].nom),
+        perdante: I18N.tr(classes[1].nom),
+        haut: note1(classes[0].moy),
+        bas: note1(classes[1].moy),
+      });
+    }
+    return null;
+  }
+
+  function insightPrechauffage(notees) {
+    const avec = [], sans = [];
+    notees
+      .filter(e => e.methode === "Brikka")
+      .forEach(e => (Number(e.eau_prechauffee) === 1 ? avec : sans).push(e.note_sur_10));
+    if (avec.length < MIN_SAMPLE || sans.length < MIN_SAMPLE) return null;
+    const mAvec = moyenne(avec), mSans = moyenne(sans);
+    if (Math.abs(mAvec - mSans) < MIN_GAP) return null;
+    const pour = mAvec > mSans;
+    return I18N.t(pour ? "ins_prechauffe_pour" : "ins_prechauffe_contre", {
+      haut: note1(pour ? mAvec : mSans),
+      bas: note1(pour ? mSans : mAvec),
+    });
+  }
+
+  function computeInsights(exts) {
+    const notees = exts.filter(e => e.note_sur_10 !== "");
+    const phrases = [
+      insightFraicheur(notees),
+      insightMouture(notees, "Brikka"),
+      insightMouture(notees, "Switch"),
+      insightRecettes(notees),
+      insightPrechauffage(notees),
+    ].filter(Boolean);
+
+    if (phrases.length) return phrases;
+
+    // Rien à dire : on explique POURQUOI plutôt que de laisser un cadre vide.
+    // C'est la différence entre "pas assez de données" et "le site est cassé".
+    const messages = [I18N.t("ins_vide", { n: MIN_SAMPLE })];
+    if (!notees.some(e => e._c.age_jours !== "" && e._c.age_jours >= 0)) {
+      messages.push(I18N.t("ins_vide_age"));
+    }
+    return messages;
+  }
+
+  function rendreInsights(exts) {
+    $("#insights").innerHTML = computeInsights(exts)
+      .map(p => "<li>" + p + "</li>")
+      .join("");
+  }
+
   function rendreTableau() {
     const exts = extAvecCalculs();
     const vide = exts.length === 0;
@@ -164,6 +307,8 @@
       '</div><div class="kpi-label">' + k.label + "</div></div>"
     ).join("");
     $$("#kpis .kpi-nombre").forEach((el, i) => animerCompteur(el, kpis[i].valeur, kpis[i].dec));
+
+    rendreInsights(exts);
 
     // 30 derniers jours : barres, note, grammes, caféine dans le tooltip
     const labels = [], comptes = [], moyennes = [], grammes = [], details = [];

@@ -16,6 +16,7 @@ const I18N = (() => {
 
   const UI = {
     "Carnet d'extraction": "Brew journal",
+    "Ce que tes données disent": "What your data says",
     "Brikka, Switch et Timemore C5 ESP": "Brikka, Switch and Timemore C5 ESP",
     "Tableau de bord": "Dashboard",
     "Saisie": "New brew",
@@ -490,6 +491,50 @@ const I18N = (() => {
     unite_jours: { fr: "jours", en: "days" },
     tip_cafeine: { fr: "Caféine : environ {mg} mg", en: "Caffeine: about {mg} mg" },
     b_extractions: { fr: "{n} extractions", en: "{n} brews" },
+
+    // Insights automatiques du tableau de bord. Phrases construites en JS, donc
+    // gabarits T et pas entrées UI. Éviter les pluriels variables dans les
+    // formulations : les nombres arrivent déjà formatés.
+    ins_frais_tot: {
+      fr: "dans la première semaine après torréfaction",
+      en: "within the first week after roasting",
+    },
+    ins_frais_median: {
+      fr: "entre 8 et 21 jours après torréfaction",
+      en: "between 8 and 21 days after roasting",
+    },
+    ins_frais_tard: {
+      fr: "plus de trois semaines après torréfaction",
+      en: "more than three weeks after roasting",
+    },
+    ins_fraicheur: {
+      fr: "Tes meilleures tasses sortent {quand} : {haut} de moyenne contre {bas} le reste du temps.",
+      en: "Your best cups land {quand}: {haut} average against {bas} the rest of the time.",
+    },
+    ins_mouture: {
+      fr: "Sur la {machine}, {dial} est ton meilleur réglage : {haut} de moyenne contre {bas} pour tes autres réglages.",
+      en: "On the {machine}, {dial} is your best setting: {haut} average against {bas} for your other settings.",
+    },
+    ins_recettes: {
+      fr: "{gagnante} passe devant {perdante} : {haut} de moyenne contre {bas}.",
+      en: "{gagnante} beats {perdante}: {haut} average against {bas}.",
+    },
+    ins_prechauffe_pour: {
+      fr: "En Brikka, préchauffer l'eau paie : {haut} de moyenne contre {bas} sans.",
+      en: "On the Brikka, preheating the water pays off: {haut} average against {bas} without.",
+    },
+    ins_prechauffe_contre: {
+      fr: "En Brikka, tes tasses sans préchauffage sortent mieux : {haut} de moyenne contre {bas}.",
+      en: "On the Brikka, your cups without preheating come out better: {haut} average against {bas}.",
+    },
+    ins_vide: {
+      fr: "Pas encore assez de matière. Une tendance ne veut dire quelque chose qu'à partir de {n} extractions notées dans chacun des groupes comparés.",
+      en: "Not enough to go on yet. A trend only means something from {n} scored brews in each of the compared groups.",
+    },
+    ins_vide_age: {
+      fr: "Renseigne la date de torréfaction de tes cafés pour débloquer la fenêtre de fraîcheur.",
+      en: "Fill in the roast date of your coffees to unlock the freshness window.",
+    },
     d_ext_brikka: { fr: "extractions Brikka", en: "Brikka brews" },
     d_ext_switch: { fr: "extractions Switch", en: "Switch brews" },
     d_note: { fr: "note moyenne", en: "average score" },
@@ -777,7 +822,8 @@ const I18N = (() => {
   const ZONES_JS = "#grille-recettes,#h-corps,#kpis,#dernieres-liste,#recettes-liste,#cafes-liste," +
     "#conv-resultat,#table-plages,#avertissements,#aside-recette,#aside-cafe,#duel-machines," +
     "#tetsu-bloc,#pap-etapes,#g-heatmap,#reglette,#f-diagnostic,#f-descripteurs,#f-recette,#f-cafe," +
-    "#h-cafe,#h-diagnostic,#q-cafe,#q-recette,#c-recette,#donnees-statut,#toast,#pap-params";
+    "#h-cafe,#h-diagnostic,#q-cafe,#q-recette,#c-recette,#donnees-statut,#toast,#pap-params," +
+    "#insights";
 
   function scanner() {
     const marche = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {

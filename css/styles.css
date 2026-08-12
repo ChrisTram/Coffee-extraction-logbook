@@ -141,6 +141,24 @@ button { font-family: inherit; }
   flex-wrap: wrap;
 }
 
+/* Insights du tableau de bord : des phrases, pas des graphiques. */
+.insights { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.insights li {
+  position: relative;
+  padding: 10px 14px 10px 34px;
+  background: var(--panneau-2);
+  border: 1px solid var(--lignes);
+  border-radius: var(--rayon-petit);
+  line-height: 1.45;
+}
+.insights li::before {
+  content: "\2022";
+  position: absolute;
+  left: 14px;
+  color: var(--accent);
+  font-weight: 700;
+}
+
 .marque { display: flex; align-items: center; gap: 12px; }
 /* L'ensemble icone plus titre ramene au tableau de bord. Un vrai lien, donc
    focusable au clavier et ouvrable dans un onglet, mais app.js intercepte le
