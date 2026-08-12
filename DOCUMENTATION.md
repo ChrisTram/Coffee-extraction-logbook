@@ -292,6 +292,19 @@ print('PROPRE' if not pb else pb)"
 Régénérer la démo après tout changement de schéma :
 `python3 tools/gen_demo.py` (écrit demo/*.csv et js/demo-data.js).
 
+Trois suites sans navigateur, toutes sans dépendance, à lancer depuis `tracker/` :
+
+```
+node worker/index.test.mjs   porte d'entrée, 32 assertions
+node worker/sync.test.mjs    fusion entre appareils, 23 assertions
+node tools/data.test.mjs     couche de données, 17 assertions
+```
+
+`tools/data.test.mjs` charge les vrais scripts du site dans un seul scope, comme
+le navigateur avec des scripts classiques, sans IndexedDB ni DOM. Il garde
+l'invariant qui peut corrompre les données sans se voir : `maj_le` ne doit
+JAMAIS entrer dans un CSV, et les en-têtes doivent rester au caractère près.
+
 Porte d'entrée : `node worker/index.test.mjs` (32 assertions, aucune
 dépendance, node 18 ou plus suffit, il fournit fetch, Request, Response et
 crypto.subtle comme le runtime Workers). Couvre la redirection de l'anonyme,
