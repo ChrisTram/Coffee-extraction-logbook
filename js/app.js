@@ -1657,6 +1657,33 @@
     else s = I18N.t("statut_nav");
     $("#donnees-statut").textContent = s +
       I18N.t("statut_compte", { c: DATA.state.cafes.length, e: DATA.state.extractions.length });
+    majStatutSync();
+  }
+
+  // Une ligne d'état pour la synchro entre appareils. Le bouton manuel n'apparaît
+  // que là où la synchro a un sens, donc pas en file:// ni en démo.
+  const LIBELLES_SYNC = {
+    local: "sync_local",
+    demo: "sync_demo",
+    encours: "sync_encours",
+    "hors-ligne": "sync_horsligne",
+    "session-expiree": "sync_session",
+    "non-configuree": "sync_nonconf",
+    erreur: "sync_erreur",
+  };
+
+  function majStatutSync() {
+    const etat = DATA.state.syncEtat;
+    let texte;
+    if (etat === "ok") {
+      texte = I18N.t("sync_ok", {
+        h: new Date(DATA.state.syncLe).toLocaleTimeString(I18N.locale(), { hour: "2-digit", minute: "2-digit" }),
+      });
+    } else {
+      texte = I18N.t(LIBELLES_SYNC[etat] || "sync_jamais");
+    }
+    $("#sync-statut").textContent = texte;
+    $("#don-sync").hidden = !DATA.syncPossible();
   }
 
   async function actionLier(creer) {
@@ -1917,8 +1944,14 @@
     $("#form-cafe").addEventListener("submit", enregistrerCafe);
 
     // Les changements de données rafraîchissent l'interface.
+    $("#don-sync").addEventListener("click", async () => {
+      const etat = await DATA.synchroniser(true);
+      toast(I18N.t(etat === "ok" ? "t_sync_ok" : "t_sync_ko"));
+    });
+
     DATA.abonner(() => {
       majBadges();
+      majStatutSync();
       remplirSelectCafes();
       remplirFiltres();
       remplirSelectRecettes();

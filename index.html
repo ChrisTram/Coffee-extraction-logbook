@@ -847,6 +847,8 @@ Cảm ơn shop.</pre>
 <dialog id="modale-donnees" class="modale">
   <h2>Données</h2>
   <p id="donnees-statut"></p>
+  <p class="sync-ligne"><span id="sync-statut"></span>
+    <button class="btn btn-petit" id="don-sync" hidden>Synchroniser maintenant</button></p>
   <p class="modale-note" id="don-note-fs" hidden>Ton navigateur ne propose pas la liaison directe de fichiers (API File System Access). Elle existe dans Chrome et Edge. Dans Brave, elle s'active dans brave://flags (chercher File System Access API). En attendant, tes données restent dans le navigateur : pense à Exporter en CSV pour les sauvegarder.</p>
   <div class="donnees-actions">
     <button class="btn" id="don-lier">Créer un dossier de données</button>
@@ -1004,6 +1006,8 @@ Cảm ơn shop.</pre>
 <script src="js/grind.js"></script>
 <script src="js/recettes.js"></script>
 <script src="js/demo-data.js"></script>
+<!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
+<script src="js/sync.js"></script>
 <script src="js/data.js"></script>
 <script src="js/charts.js"></script>
 <script src="js/app.js"></script>

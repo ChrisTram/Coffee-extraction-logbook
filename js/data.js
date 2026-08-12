@@ -25,7 +25,29 @@ const DATA = (() => {
     dirHandle: null,
     fsDisponible: typeof window !== "undefined" && "showDirectoryPicker" in window,
     demoActive: false,
+
+    // Synchronisation entre appareils. `tombes` retient les suppressions
+    // ({table: {id: horodatage}}) : sans elles, une ligne supprimée sur le
+    // téléphone reviendrait au prochain échange avec le bureau, qui l'a encore.
+    // Hors des CSV, c'est de la mécanique de synchro, pas de la donnée café.
+    tombes: typeof SYNC === "undefined" ? {} : SYNC.tombesVides(),
+    syncEtat: "inconnu",
+    syncLe: null,
   };
+
+  /* Estampille une ligne qu'on vient d'écrire, pour que la fusion sache qui est
+     le plus récent. À appeler dans les MUTATIONS uniquement. */
+  function estampiller(row) {
+    row.maj_le = Date.now();
+    return row;
+  }
+
+  /* Pose une pierre tombale. La date sert à trancher contre une éventuelle
+     réécriture de la même ligne sur l'autre appareil. */
+  function marquerSupprime(table, id) {
+    if (!state.tombes[table]) state.tombes[table] = {};
+    state.tombes[table][id] = Date.now();
+  }
 
   const abonnes = [];
   function abonner(fn) { abonnes.push(fn); }
@@ -78,6 +100,12 @@ const DATA = (() => {
   function normaliserCafe(r) {
     return {
       id: String(r.id || "").trim(),
+      // Horodatage de synchronisation. PRÉSERVÉ tel quel ici : normaliser est
+      // appelé au chargement comme à l'écriture, et restamper au chargement
+      // ferait croire à chaque appareil qu'il est le plus récent. Ce sont les
+      // mutations qui estampillent, explicitement. Jamais dans les CSV : les
+      // colonnes exportées sont listées à la main (voir csvSerialiser).
+      maj_le: Number(r.maj_le) || 0,
       nom: r.nom || "", torrefacteur: r.torrefacteur || "", origine: r.origine || "",
       espece: r.espece || "", procede: r.procede || "", torrefaction: r.torrefaction || "",
       deja_moulu: Number(r.deja_moulu) === 1 ? 1 : 0,
@@ -105,6 +133,12 @@ const DATA = (() => {
   function normaliserExtraction(r) {
     return {
       id: String(r.id || "").trim(),
+      // Horodatage de synchronisation. PRÉSERVÉ tel quel ici : normaliser est
+      // appelé au chargement comme à l'écriture, et restamper au chargement
+      // ferait croire à chaque appareil qu'il est le plus récent. Ce sont les
+      // mutations qui estampillent, explicitement. Jamais dans les CSV : les
+      // colonnes exportées sont listées à la main (voir csvSerialiser).
+      maj_le: Number(r.maj_le) || 0,
       date_heure: r.date_heure || "",
       cafe_id: r.cafe_id || "",
       methode: r.methode || "",
@@ -138,6 +172,12 @@ const DATA = (() => {
   function normaliserRecette(r) {
     return {
       id: String(r.id || "").trim(),
+      // Horodatage de synchronisation. PRÉSERVÉ tel quel ici : normaliser est
+      // appelé au chargement comme à l'écriture, et restamper au chargement
+      // ferait croire à chaque appareil qu'il est le plus récent. Ce sont les
+      // mutations qui estampillent, explicitement. Jamais dans les CSV : les
+      // colonnes exportées sont listées à la main (voir csvSerialiser).
+      maj_le: Number(r.maj_le) || 0,
       nom: r.nom || "",
       numero: r.numero || "",
       methode: r.methode === "Switch" ? "Switch" : "Brikka",
@@ -199,6 +239,12 @@ const DATA = (() => {
   function normaliserTasse(r) {
     return {
       id: String(r.id || "").trim(),
+      // Horodatage de synchronisation. PRÉSERVÉ tel quel ici : normaliser est
+      // appelé au chargement comme à l'écriture, et restamper au chargement
+      // ferait croire à chaque appareil qu'il est le plus récent. Ce sont les
+      // mutations qui estampillent, explicitement. Jamais dans les CSV : les
+      // colonnes exportées sont listées à la main (voir csvSerialiser).
+      maj_le: Number(r.maj_le) || 0,
       nom: r.nom || "",
       contenance_ml: Number(r.contenance_ml) || 0,
     };
@@ -363,6 +409,7 @@ const DATA = (() => {
     await kvSet("recettes", state.recettes);
     await kvSet("tasses", state.tasses);
     await kvSet("demoActive", state.demoActive);
+    await kvSet("tombes", state.tombes);
   }
 
   // ---------- File System Access ----------
@@ -472,10 +519,14 @@ const DATA = (() => {
     const rows = csvParse(texte);
     const table = detecterTable(rows);
     if (!table) throw new Error("Colonnes non reconnues : ni une table cafés, ni extractions, ni recettes.");
-    if (table === "cafes") state.cafes = rows.map(normaliserCafe);
-    else if (table === "recettes") state.recettes = rows.map(normaliserRecette);
-    else if (table === "tasses") state.tasses = rows.map(normaliserTasse);
-    else state.extractions = rows.map(normaliserExtraction);
+    // Un import est un geste DÉLIBÉRÉ : les lignes sont estampillées maintenant
+    // pour qu'elles gagnent la fusion contre la version du serveur. Sans ça, un
+    // import serait annulé par la synchro suivante.
+    const importees = normaliser => rows.map(r => estampiller(normaliser(r)));
+    if (table === "cafes") state.cafes = importees(normaliserCafe);
+    else if (table === "recettes") state.recettes = importees(normaliserRecette);
+    else if (table === "tasses") state.tasses = importees(normaliserTasse);
+    else state.extractions = importees(normaliserExtraction);
     migrerDonnees();
     state.demoActive = false;
     await persister();
@@ -530,14 +581,85 @@ const DATA = (() => {
     return prefixe + n;
   }
 
+  // ---------- Synchronisation entre appareils ----------
+
+  // Une rafale de modifications (édition d'une recette, saisie enchaînée) ne
+  // doit pas produire une rafale de requêtes.
+  const SYNC_DEBOUNCE_MS = 1500;
+  let syncMinuteur = null;
+  let syncEnCours = false;
+
+  function chargeUtileLocale() {
+    return {
+      tables: {
+        cafes: state.cafes,
+        extractions: state.extractions,
+        recettes: state.recettes,
+        tasses: state.tasses,
+      },
+      tombes: state.tombes,
+    };
+  }
+
+  function syncPossible() {
+    // JAMAIS en démo : sans ce garde fou, charger la démonstration sur un
+    // appareil enverrait 62 fausses extractions dans les vraies données.
+    return typeof SYNC !== "undefined" && SYNC.disponible() && !state.demoActive;
+  }
+
+  /* Échange avec le serveur et ADOPTE le résultat fusionné. Ne passe pas par
+     persister() : cela relancerait une synchro en boucle. */
+  async function synchroniser(manuelle) {
+    if (!syncPossible()) {
+      state.syncEtat = typeof SYNC === "undefined" || !SYNC.disponible() ? "local" : "demo";
+      if (manuelle) notifier();
+      return state.syncEtat;
+    }
+    if (syncEnCours) return state.syncEtat;
+    syncEnCours = true;
+    state.syncEtat = "encours";
+    notifier();
+
+    try {
+      const fusion = await SYNC.echanger(chargeUtileLocale());
+      state.cafes = (fusion.tables.cafes || []).map(normaliserCafe);
+      state.extractions = (fusion.tables.extractions || []).map(normaliserExtraction);
+      state.recettes = (fusion.tables.recettes || []).map(normaliserRecette);
+      state.tasses = (fusion.tables.tasses || []).map(normaliserTasse);
+      state.tombes = fusion.tombes || SYNC.tombesVides();
+      if (!state.recettes.length) state.recettes = recettesDefaut();
+      if (!state.tasses.length) state.tasses = tassesDefaut();
+      migrerDonnees();
+      await sauverLocal();
+      sauverFichiers();
+      state.syncEtat = "ok";
+      state.syncLe = Date.now();
+    } catch (error) {
+      // On garde les données locales telles quelles : une synchro ratée ne doit
+      // jamais faire perdre une saisie. Le prochain échange rattrapera.
+      state.syncEtat = error && error.code ? error.code : "erreur";
+    } finally {
+      syncEnCours = false;
+      notifier();
+    }
+    return state.syncEtat;
+  }
+
+  function planifierSync() {
+    if (!syncPossible()) return;
+    clearTimeout(syncMinuteur);
+    syncMinuteur = setTimeout(() => { synchroniser(false); }, SYNC_DEBOUNCE_MS);
+  }
+
   async function persister() {
     await sauverLocal();
     sauverFichiers();
     notifier();
+    planifierSync();
   }
 
   async function ajouterExtraction(ext) {
-    const e = normaliserExtraction(ext);
+    const e = estampiller(normaliserExtraction(ext));
     e.id = nouvelId("e", state.extractions);
     state.extractions.push(e);
     await persister();
@@ -547,7 +669,7 @@ const DATA = (() => {
   async function modifierExtraction(id, ext) {
     const idx = state.extractions.findIndex(x => x.id === id);
     if (idx < 0) return null;
-    const e = normaliserExtraction(ext);
+    const e = estampiller(normaliserExtraction(ext));
     e.id = id;
     state.extractions[idx] = e;
     await persister();
@@ -555,12 +677,13 @@ const DATA = (() => {
   }
 
   async function supprimerExtraction(id) {
+    marquerSupprime("extractions", id);
     state.extractions = state.extractions.filter(x => x.id !== id);
     await persister();
   }
 
   async function ajouterCafe(cafe) {
-    const c = normaliserCafe(cafe);
+    const c = estampiller(normaliserCafe(cafe));
     c.id = nouvelId("c", state.cafes);
     if (!c.date_ajout) c.date_ajout = dateLocaleAujourdhui();
     state.cafes.push(c);
@@ -571,7 +694,7 @@ const DATA = (() => {
   async function modifierCafe(id, cafe) {
     const idx = state.cafes.findIndex(x => x.id === id);
     if (idx < 0) return null;
-    const c = normaliserCafe(cafe);
+    const c = estampiller(normaliserCafe(cafe));
     c.id = id;
     // La date d'ajout ne s'édite pas : on conserve celle en place.
     if (!c.date_ajout) c.date_ajout = state.cafes[idx].date_ajout || "";
@@ -587,7 +710,7 @@ const DATA = (() => {
   }
 
   async function ajouterRecette(recette) {
-    const r = normaliserRecette(recette);
+    const r = estampiller(normaliserRecette(recette));
     let n = 1;
     let id = "r" + n;
     while (state.recettes.some(x => x.id === id)) { n++; id = "r" + n; }
@@ -601,7 +724,7 @@ const DATA = (() => {
     const idx = state.recettes.findIndex(x => x.id === id);
     if (idx < 0) return null;
     const ancienNom = state.recettes[idx].nom;
-    const r = normaliserRecette(recette);
+    const r = estampiller(normaliserRecette(recette));
     r.id = id;
     // Une recette d'origine garde ses marqueurs structurels (variantes du 4:6).
     if (estRecetteDorigine(id)) {
@@ -627,6 +750,7 @@ const DATA = (() => {
       etapes: origine.etapes.map(e => ({ ...e })),
       cafesAssocies: [...origine.cafesAssocies],
     });
+    estampiller(r);
     if (idx < 0) state.recettes.push(r);
     else {
       const ancienNom = state.recettes[idx].nom;
@@ -642,6 +766,7 @@ const DATA = (() => {
 
   async function supprimerRecette(id) {
     if (estRecetteDorigine(id)) return false;
+    marquerSupprime("recettes", id);
     state.recettes = state.recettes.filter(x => x.id !== id);
     await persister();
     return true;
@@ -652,11 +777,12 @@ const DATA = (() => {
   async function ajouterTasse(nom, contenance) {
     let n = 1, id = "tp" + n;
     while (state.tasses.some(x => x.id === id)) { n++; id = "tp" + n; }
-    state.tasses.push(normaliserTasse({ id, nom, contenance_ml: contenance }));
+    state.tasses.push(estampiller(normaliserTasse({ id, nom, contenance_ml: contenance })));
     await persister();
   }
 
   async function supprimerTasse(id) {
+    marquerSupprime("tasses", id);
     state.tasses = state.tasses.filter(x => x.id !== id);
     if (!state.tasses.length) state.tasses = tassesDefaut();
     await persister();
@@ -696,13 +822,24 @@ const DATA = (() => {
         }
       } catch (e) { console.warn("Relecture du dossier lié impossible", e); }
     }
+    const tombes = await kvGet("tombes");
+    if (tombes && typeof tombes === "object") state.tombes = tombes;
+
     migrerDonnees();
     await sauverLocal();
+
+    // Synchro AVANT de conclure qu'il n'y a pas de données : sur un appareil
+    // neuf (le téléphone), tout est encore vide en local et c'est le serveur qui
+    // détient les données. Sans cet ordre, la modale d'accueil s'ouvrirait et
+    // proposerait la démo alors que les vraies données arrivent juste après.
+    if (syncPossible()) await synchroniser(false);
+
     return state.cafes.length > 0 || state.extractions.length > 0;
   }
 
   return {
     state, abonner, notifier, init,
+    synchroniser, syncPossible,
     csvParse, csvSerialiser, CAFE_COLS, EXT_COLS, RECETTE_COLS,
     calculs, cafeDe,
     lierDossier, delierDossier, sauverFichiers,

@@ -16,11 +16,14 @@
  * ce fichier n'existe que sur Cloudflare.
  */
 
+import { handleSync } from "./sync.js";
+
 const SESSION_COOKIE = "cel_session";
 const SESSION_DAYS = 30;
 const SESSION_MAX_AGE = SESSION_DAYS * 24 * 60 * 60;
 const LOGIN_PATH = "/login";
 const LOGOUT_PATH = "/logout";
+const SYNC_PATH = "/api/sync";
 const FAILED_ATTEMPT_DELAY_MS = 700;
 
 const encoder = new TextEncoder();
@@ -42,6 +45,20 @@ export default {
       if (request.method === "POST") return submitLogin(request, config, url);
       if (signedIn) return redirectTo("/", url);
       return loginResponse(safeTarget(url.searchParams.get("next")), null, 200);
+    }
+
+    // L'API de synchronisation est DERRIÈRE la même session que le reste. Un
+    // appel non authentifié reçoit un 401 en JSON, pas une redirection : le
+    // client sait alors qu'il doit renvoyer l'utilisateur sur /login au lieu de
+    // parser une page HTML comme si c'était des données.
+    if (url.pathname === SYNC_PATH) {
+      if (!signedIn) {
+        return new Response(JSON.stringify({ erreur: "session-expiree" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" },
+        });
+      }
+      return handleSync(request, env);
     }
 
     if (!signedIn) {

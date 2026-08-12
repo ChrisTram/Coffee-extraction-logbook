@@ -17,6 +17,7 @@ const I18N = (() => {
   const UI = {
     "Carnet d'extraction": "Brew journal",
     "Ce que tes données disent": "What your data says",
+    "Synchroniser maintenant": "Sync now",
     "Brikka, Switch et Timemore C5 ESP": "Brikka, Switch and Timemore C5 ESP",
     "Tableau de bord": "Dashboard",
     "Saisie": "New brew",
@@ -531,6 +532,28 @@ const I18N = (() => {
       fr: "Pas encore assez de matière. Une tendance ne veut dire quelque chose qu'à partir de {n} extractions notées dans chacun des groupes comparés.",
       en: "Not enough to go on yet. A trend only means something from {n} scored brews in each of the compared groups.",
     },
+    // États de la synchronisation entre appareils.
+    sync_local: {
+      fr: "Synchronisation indisponible en local : tes données restent sur cet appareil.",
+      en: "Sync unavailable locally: your data stays on this device.",
+    },
+    sync_demo: { fr: "Démonstration : rien n'est synchronisé.", en: "Demo data: nothing is synced." },
+    sync_encours: { fr: "Synchronisation en cours...", en: "Syncing..." },
+    sync_ok: { fr: "Synchronisé à {h}.", en: "Synced at {h}." },
+    sync_horsligne: {
+      fr: "Hors ligne. Tes saisies sont gardées ici et partiront à la prochaine synchro.",
+      en: "Offline. Your entries are kept here and will go up on the next sync.",
+    },
+    sync_session: { fr: "Session expirée, reconnecte toi pour synchroniser.", en: "Session expired, sign in again to sync." },
+    sync_nonconf: {
+      fr: "Synchronisation pas encore configurée sur le serveur (base D1 à lier).",
+      en: "Sync is not configured on the server yet (D1 database to bind).",
+    },
+    sync_erreur: { fr: "Synchronisation en échec. Tes données locales sont intactes.", en: "Sync failed. Your local data is intact." },
+    sync_jamais: { fr: "Pas encore synchronisé.", en: "Not synced yet." },
+    t_sync_ok: { fr: "Synchronisé", en: "Synced" },
+    t_sync_ko: { fr: "Synchronisation impossible", en: "Sync failed" },
+
     ins_vide_age: {
       fr: "Renseigne la date de torréfaction de tes cafés pour débloquer la fenêtre de fraîcheur.",
       en: "Fill in the roast date of your coffees to unlock the freshness window.",
@@ -823,7 +846,7 @@ const I18N = (() => {
     "#conv-resultat,#table-plages,#avertissements,#aside-recette,#aside-cafe,#duel-machines," +
     "#tetsu-bloc,#pap-etapes,#g-heatmap,#reglette,#f-diagnostic,#f-descripteurs,#f-recette,#f-cafe," +
     "#h-cafe,#h-diagnostic,#q-cafe,#q-recette,#c-recette,#donnees-statut,#toast,#pap-params," +
-    "#insights";
+    "#insights,#sync-statut";
 
   function scanner() {
     const marche = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {

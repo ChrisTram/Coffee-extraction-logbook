@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.9,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.10,
 2026-08-12.
 
 ## 1. Vue d'ensemble
@@ -337,6 +337,71 @@ vide. C'est la différence entre "pas assez de données" et "le site est cassé"
 pas y toucher. Les phrases sont des gabarits T, avec les nombres déjà formatés
 via `fmtDecimal` pour éviter tout problème de pluriel ou de séparateur décimal.
 
+## 8 bis. Synchronisation entre appareils
+
+Suggestion 1 du backlog. Le site étant en ligne, il est utilisé depuis le
+téléphone en cuisine ET depuis le bureau, or IndexedDB est par appareil : sans
+synchro, les deux jeux de données divergent et le suivi perd son sens.
+
+Actif UNIQUEMENT sur le site déployé, et seulement si une base D1 est liée.
+En `file://`, ou sans base, `SYNC.disponible()` est faux et tout se comporte
+comme avant. La démo n'est JAMAIS synchronisée (`syncPossible()` teste
+`demoActive`) : sans ce garde fou, charger la démonstration enverrait 62 fausses
+extractions dans les vraies données.
+
+### Choix techniques et pourquoi
+
+- **D1 et pas KV.** KV est à cohérence éventuelle : une lecture juste après une
+  écriture peut renvoyer l'état précédent pendant une minute. Or le geste type
+  est exactement celui là, saisir sur le téléphone puis regarder sur le bureau.
+- **Un document JSON et pas des tables SQL.** Le schéma des données vit dans le
+  client (`normaliserX`, `migrerDonnees`) et bouge souvent. Le dupliquer en SQL
+  imposerait une migration D1 à chaque colonne. Le serveur ne connaît que deux
+  choses : chaque ligne a un `id` et un `maj_le`.
+- **Fusion ligne par ligne, le plus récent gagne**, plus des PIERRES TOMBALES
+  (`state.tombes`, `{table: {id: horodatage}}`). Sans elles, une extraction
+  supprimée sur un appareil ressusciterait au premier échange avec l'autre, qui
+  l'a encore. Elles sont purgées après 90 jours.
+- L'ordre des lignes dans un tableau n'est PAS significatif (l'interface trie ce
+  qu'elle affiche). La fusion est commutative sur le CONTENU. En production le
+  document serveur est toujours le premier opérande, donc l'ordre converge aussi.
+
+### maj_le, le piège à ne pas défaire
+
+`maj_le` est ajouté par les `normaliserX` mais **préservé tel quel**, pas
+restampé. `normaliserX` est appelé au CHARGEMENT comme à l'écriture : restamper
+au chargement ferait croire à chaque appareil qu'il est le plus récent et la
+fusion ne voudrait plus rien dire. Ce sont les MUTATIONS qui estampillent, via
+`estampiller()`, explicitement.
+
+`maj_le` n'est JAMAIS dans les CSV : les colonnes exportées sont listées à la
+main (`CAFE_COLS` et compagnie), donc les fichiers restent identiques à avant et
+lisibles au tableur.
+
+Conséquence assumée : une ligne relue d'un CSV vaut `maj_le = 0`, donc la
+version du serveur gagne. Un IMPORT explicite, lui, estampille à maintenant,
+sinon l'import serait annulé par la synchro suivante. Pour qu'une édition faite
+à la main dans un CSV gagne, passer par Données, Ouvrir un dossier existant, ce
+que le README indique déjà.
+
+### Mécanique
+
+`persister()` planifie une synchro débouncée à 1,5 s : une rafale d'édition ne
+produit qu'une requête. `synchroniser()` envoie l'état local, le serveur
+fusionne et renvoie le résultat, adopté des deux côtés en UN aller retour.
+Elle ne rappelle PAS `persister()`, ce qui bouclerait. En cas d'échec les
+données locales sont laissées intactes : une synchro ratée ne doit jamais faire
+perdre une saisie.
+
+`init()` synchronise AVANT de conclure qu'il n'y a pas de données : sur un
+téléphone neuf tout est vide en local et c'est le serveur qui détient tout.
+Sans cet ordre, la modale d'accueil proposerait la démo.
+
+`/api/sync` répond 401 en JSON, jamais une redirection, pour que le client ne
+parse pas la page de connexion comme des données. Tests :
+`node worker/sync.test.mjs`, 23 assertions sur la fusion (union, résolution de
+conflit, non résurrection, purge, formes invalides).
+
 ## 9 bis. PWA, hors ligne et verrou d'écran
 
 Actif uniquement sur le site déployé (https). En `file://` le service worker ne
@@ -472,6 +537,29 @@ autres). Chaque exécution publie un déploiement.
 
 Les fichiers sont en UTF-8 (accents et vietnamien) : rien à configurer.
 
+### Activer la synchronisation entre appareils
+
+Tant que ce n'est pas fait, `/api/sync` répond 503 et le site marche comme
+avant, chaque appareil avec ses propres données. Rien ne casse.
+
+1. Créer la base : `npx wrangler d1 create coffee-extraction-logbook`
+2. Décommenter le bloc `d1_databases` de `wrangler.jsonc` et y coller le
+   `database_id` renvoyé. Il est livré EN COMMENTAIRE volontairement : un
+   `database_id` invalide ferait échouer `wrangler deploy`, donc le dépôt reste
+   déployable en l'état.
+3. Committer, pousser, laisser le déploiement passer.
+
+Aucune migration SQL à lancer : la table `documents` est créée à la demande par
+le Worker, une fois par isolat.
+
+Le premier appareil qui synchronise pousse ses données (fusion avec un serveur
+vide = le local). C'est donc lui la source de vérité initiale : synchroniser
+d'abord depuis l'appareil qui a les bonnes données.
+
+Limite à connaître : tout l'état tient dans une seule ligne D1, en JSON. À
+l'échelle d'un carnet personnel c'est confortable pour des années, mais ce n'est
+pas un design qui monterait à des centaines de milliers d'extractions.
+
 ### Points d'attention APRÈS le passage en https
 
 - CHANGEMENT D'ORIGINE : IndexedDB est par origine. Les données saisies sur
@@ -578,3 +666,9 @@ Les fichiers sont en UTF-8 (accents et vietnamien) : rien à configurer.
   d'échantillon et d'écart, comparaison du meilleur groupe au reste mis en
   commun, et message explicatif quand il n'y a pas assez de matière. Détail en
   section 6 bis.
+- v7.10 : synchronisation entre appareils (suggestion 1 du backlog), la plus
+  grosse pièce. Stockage Cloudflare D1 derrière la session existante, fusion
+  ligne par ligne avec pierres tombales, colonne interne `maj_le` hors CSV,
+  synchro débouncée à l'écriture et au chargement, ligne d'état et bouton manuel
+  dans le panneau Données. Inactive en `file://`, en démo, et tant que la base
+  D1 n'est pas liée. Détail et pièges en section 8 bis, activation en section 10.
