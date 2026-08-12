@@ -36,6 +36,10 @@ const I18N = (() => {
     "Calendrier d'activité": "Activity calendar",
     "Moins": "Less",
     "Plus": "More",
+    // Légende du calendrier : depuis que l'échelle de couleur est ABSOLUE, elle
+    // annonce des nombres réels au lieu d'un vague "moins vers plus".
+    "Aucune": "None",
+    "4 et plus": "4 or more",
     "Note moyenne par café": "Average score by coffee",
     "Brikka contre Switch": "Brikka versus Switch",
     "Notes moyennes sur les cafés passés dans les deux machines.": "Average scores for coffees brewed on both machines.",
@@ -568,6 +572,14 @@ const I18N = (() => {
     hm_n: { fr: "{n} extraction", en: "{n} brew" },
     hm_ns: { fr: "{n} extractions", en: "{n} brews" },
     hm_note: { fr: "note moyenne {x}", en: "average score {x}" },
+    hm_resume: {
+      fr: "{t} tasses sur {j} jours actifs, ces {s} dernières semaines. Plus longue série : {serie} jours d'affilée.",
+      en: "{t} cups across {j} active days over the last {s} weeks. Longest run: {serie} days in a row.",
+    },
+    hm_resume_vide: {
+      fr: "Aucune extraction sur les {s} dernières semaines.",
+      en: "No brews over the last {s} weeks.",
+    },
     jours: { fr: "Lun|Mar|Mer|Jeu|Ven|Sam|Dim", en: "Mon|Tue|Wed|Thu|Fri|Sat|Sun" },
     mois: { fr: "janv.|févr.|mars|avr.|mai|juin|juil.|août|sept.|oct.|nov.|déc.", en: "Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec" },
 
@@ -846,7 +858,7 @@ const I18N = (() => {
     "#conv-resultat,#table-plages,#avertissements,#aside-recette,#aside-cafe,#duel-machines," +
     "#tetsu-bloc,#pap-etapes,#g-heatmap,#reglette,#f-diagnostic,#f-descripteurs,#f-recette,#f-cafe," +
     "#h-cafe,#h-diagnostic,#q-cafe,#q-recette,#c-recette,#donnees-statut,#toast,#pap-params," +
-    "#insights,#sync-statut";
+    "#insights,#sync-statut,#heatmap-resume";
 
   function scanner() {
     const marche = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {

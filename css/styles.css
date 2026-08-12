@@ -327,9 +327,18 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
 /* Heatmap */
 .heatmap-conteneur { overflow-x: auto; }
 .heatmap-svg { width: 100%; min-width: 620px; max-width: 820px; height: auto; display: block; margin: 0 auto; }
-.hm-label { font-size: 9px; fill: var(--attenue); font-family: var(--sans); }
-.hm-cell { cursor: pointer; transition: opacity 150ms; }
-.hm-cell:hover { opacity: 0.75; stroke: var(--accent); stroke-width: 1.5; }
+.hm-label { font-size: 10.5px; fill: var(--attenue); font-family: var(--sans); }
+/* Un filet sur chaque case : sans lui les jours sans extraction se fondent dans
+   le fond et la grille ne se lit plus comme un calendrier. */
+.hm-cell {
+  cursor: pointer;
+  transition: opacity 150ms;
+  stroke: var(--lignes);
+  stroke-width: 0.5;
+}
+.hm-cell:hover, .hm-cell:focus-visible { opacity: 0.75; stroke: var(--accent); stroke-width: 1.5; outline: none; }
+/* Repère du jour courant. */
+.hm-aujourdhui { stroke: var(--encre); stroke-width: 1.6; }
 .hm-n0 { fill: var(--hm0); }
 .hm-n1 { fill: var(--hm1); }
 .hm-n2 { fill: var(--hm2); }

@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.10,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.11,
 2026-08-12.
 
 ## 1. Vue d'ensemble
@@ -313,6 +313,38 @@ attributs du cookie, le rejet d'une signature falsifiée ou signée avec une
 autre clé, l'expiration à 30 jours, la redirection ouverte, le logout et la
 fermeture par défaut quand les secrets manquent. À relancer à CHAQUE
 modification de `worker/index.js`.
+
+## 6 ter. Calendrier d'activité, échelle ABSOLUE
+
+Ordre du tableau de bord, voulu : KPI, graphe 30 jours, "Ce que tes données
+disent", "Les 5 dernières extractions", puis le calendrier et le reste.
+
+L'échelle de couleur est ABSOLUE : 1, 2, 3, 4 et plus, via `niveauDe()` dans
+charts.js. Elle était relative au maximum (`ceil(v / maxV * 4)`), ce qui était le
+vrai défaut de lisibilité : avec une tasse par jour au plus, `maxV` valait 1 donc
+CHAQUE jour actif était peint dans la teinte la plus foncée, le dégradé ne
+transmettait rien, et la même journée changeait de couleur dès qu'un autre jour
+faisait monter le maximum. Ne pas revenir à une échelle relative : la légende
+annonce maintenant des nombres réels, elle deviendrait fausse.
+
+Autres points, chacun pour une raison :
+
+- 18 semaines et non 26 (`SEMAINES_HEATMAP` dans app.js). À une ou deux tasses
+  par jour, six mois de grille sont surtout six mois de cases vides, ce qui donne
+  l'impression que le calendrier est cassé.
+- Filet `stroke` sur chaque case : sans lui les jours sans extraction se fondent
+  dans le fond du panneau et la grille ne se lit plus comme un calendrier.
+- Le jour courant est cerclé (`.hm-aujourdhui`). Sans repère, s'orienter dans
+  126 cases demande de compter les colonnes.
+- Étiquette de mois sur la colonne qui contient le 1er (`d.getDate() <= 7`), et
+  non sur le lundi du changement de mois, qui pouvait sauter un mois.
+- `tabindex="0"` sur les cases : les bulles étaient au survol seulement, donc
+  inaccessibles au doigt, ce qui compte depuis que le site tourne en PWA sur le
+  téléphone.
+- Résumé chiffré sous la grille (`resumeHeatmap` dans app.js, `#heatmap-resume`,
+  dans ZONES_JS) : tasses, jours actifs, et la plus longue série de jours
+  consécutifs. La série est la seule chose vraiment motivante dans un calendrier
+  d'habitude, et c'est ce qui donne une raison de le regarder.
 
 ## 6 bis. Insights automatiques du tableau de bord
 
@@ -697,3 +729,9 @@ pas un design qui monterait à des centaines de milliers d'extractions.
   synchro débouncée à l'écriture et au chargement, ligne d'état et bouton manuel
   dans le panneau Données. Inactive en `file://`, en démo, et tant que la base
   D1 n'est pas liée. Détail et pièges en section 8 bis, activation en section 10.
+- v7.11 : tableau de bord réordonné (30 jours, insights, 5 dernières, puis le
+  reste) et calendrier d'activité rendu lisible : échelle de couleur ABSOLUE au
+  lieu de relative au maximum (le défaut de fond), légende chiffrée, jour courant
+  cerclé, cases plus grandes et cerclées, étiquettes de mois fiabilisées, cases
+  atteignables au doigt, et résumé chiffré avec la plus longue série de jours
+  consécutifs. Détail et raisons en section 6 ter.

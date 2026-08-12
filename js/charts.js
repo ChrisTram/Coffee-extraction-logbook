@@ -207,7 +207,7 @@ const CHARTS = (() => {
     const el = typeof conteneur === "string" ? document.getElementById(conteneur) : conteneur;
     if (!el) return;
     const semaines = nbSemaines || 16;
-    const cell = 14, gap = 3, gauche = 30, haut = 18;
+    const cell = 17, gap = 4, gauche = 34, haut = 22;
     const largeur = gauche + semaines * (cell + gap);
     const hauteur = haut + 7 * (cell + gap);
 
@@ -220,10 +220,18 @@ const CHARTS = (() => {
 
     const JOURS = I18N.jours();
     const MOIS = I18N.mois();
-    const maxV = Math.max(1, ...Object.values(parJour));
+    const cleAujourdhui = cleLocale(aujourdhui);
+
+    // ÉCHELLE ABSOLUE, et pas relative au maximum. Avec une échelle relative,
+    // un jour à une extraction se peignait dans la teinte la plus foncée dès
+    // que le maximum valait 1, et la même couleur changeait de sens dès que le
+    // maximum bougeait. Ici une couleur veut toujours dire la même chose, ce qui
+    // rend la légende utile : 1, 2, 3, 4 et plus.
+    const niveauDe = v => (v <= 0 ? 0 : Math.min(4, v));
+
     let svg = '<svg viewBox="0 0 ' + largeur + " " + hauteur + '" class="heatmap-svg" role="img" aria-label="' + I18N.t("hm_aria") + '">';
     [0, 2, 4, 6].forEach(j => {
-      svg += '<text x="0" y="' + (haut + j * (cell + gap) + cell - 3) + '" class="hm-label">' + JOURS[j] + "</text>";
+      svg += '<text x="0" y="' + (haut + j * (cell + gap) + cell - 4) + '" class="hm-label">' + JOURS[j] + "</text>";
     });
 
     let dernierMois = -1;
@@ -233,19 +241,24 @@ const CHARTS = (() => {
         if (d > aujourdhui) break;
         const cle = cleLocale(d);
         const v = parJour[cle] || 0;
-        let niveau = 0;
-        if (v > 0) niveau = Math.min(4, Math.ceil(v / maxV * 4));
+        const niveau = niveauDe(v);
         const x = gauche + s * (cell + gap);
         const y = haut + j * (cell + gap);
-        if (j === 0 && d.getMonth() !== dernierMois) {
+        // Étiquette de mois sur la colonne qui contient le 1er : plus fiable que
+        // de tester le lundi, qui pouvait sauter un mois.
+        if (d.getDate() <= 7 && d.getMonth() !== dernierMois) {
           dernierMois = d.getMonth();
-          svg += '<text x="' + x + '" y="10" class="hm-label">' + MOIS[dernierMois] + "</text>";
+          svg += '<text x="' + x + '" y="12" class="hm-label">' + MOIS[dernierMois] + "</text>";
         }
         const info = infoParJour[cle] || "";
         const dateLoc = d.toLocaleDateString(I18N.locale(), { weekday: "long", day: "numeric", month: "long" });
         const compte = v === 0 ? I18N.t("hm_aucune") : I18N.t(v > 1 ? "hm_ns" : "hm_n", { n: v });
+        // Le jour courant est cerclé : sans repère, s'orienter dans une grille de
+        // plus de cent cases demande de compter les colonnes.
+        const estAujourdhui = cle === cleAujourdhui;
         svg += '<rect x="' + x + '" y="' + y + '" width="' + cell + '" height="' + cell +
-          '" rx="3" class="hm-cell hm-n' + niveau + '" data-tip="' +
+          '" rx="3" class="hm-cell hm-n' + niveau + (estAujourdhui ? " hm-aujourdhui" : "") +
+          '" tabindex="0" data-tip="' +
           dateLoc + " : " + compte + (info ? ", " + info : "") + '"></rect>';
         d.setDate(d.getDate() + 1);
       }

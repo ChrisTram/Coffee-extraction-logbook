@@ -268,6 +268,46 @@
       .join("");
   }
 
+  // ---------- Calendrier d'activité ----------
+  // 18 semaines et pas 26 : à raison d'une ou deux tasses par jour, six mois de
+  // grille sont surtout six mois de cases vides, ce qui donne l'impression que
+  // le calendrier ne marche pas.
+  const SEMAINES_HEATMAP = 18;
+
+  /* Résume la période affichée, sinon la grille ne dit rien de chiffré : nombre
+     de tasses, jours actifs, et la plus longue série de jours consécutifs, qui
+     est la seule chose vraiment motivante dans un calendrier d'habitude. */
+  function resumeHeatmap(parJour) {
+    const debut = new Date();
+    debut.setHours(0, 0, 0, 0);
+    debut.setDate(debut.getDate() - (SEMAINES_HEATMAP * 7 - 1));
+
+    let tasses = 0, joursActifs = 0, serie = 0, meilleureSerie = 0;
+    const jour = new Date(debut);
+    const fin = new Date();
+    fin.setHours(0, 0, 0, 0);
+    while (jour <= fin) {
+      const n = parJour[cleLocale(jour)] || 0;
+      if (n > 0) {
+        tasses += n;
+        joursActifs += 1;
+        serie += 1;
+        if (serie > meilleureSerie) meilleureSerie = serie;
+      } else {
+        serie = 0;
+      }
+      jour.setDate(jour.getDate() + 1);
+    }
+
+    if (!tasses) return I18N.t("hm_resume_vide", { s: SEMAINES_HEATMAP });
+    return I18N.t("hm_resume", {
+      t: tasses,
+      j: joursActifs,
+      s: SEMAINES_HEATMAP,
+      serie: meilleureSerie,
+    });
+  }
+
   function rendreTableau() {
     const exts = extAvecCalculs();
     const vide = exts.length === 0;
@@ -339,7 +379,8 @@
       const nJour = exts.filter(e => e.date_heure.slice(0, 10) === cle && e.note_sur_10 !== "").map(e => e.note_sur_10);
       if (nJour.length) infoParJour[cle] = "note moyenne " + moyenne(nJour).toFixed(1);
     });
-    CHARTS.heatmap("g-heatmap", parJour, infoParJour, 26);
+    CHARTS.heatmap("g-heatmap", parJour, infoParJour, SEMAINES_HEATMAP);
+    $("#heatmap-resume").textContent = resumeHeatmap(parJour);
 
     // Note moyenne par café
     const parCafe = {};
