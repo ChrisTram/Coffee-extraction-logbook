@@ -75,8 +75,8 @@ check("retention calculee", calc.retention_ml === 35, String(calc.retention_ml))
 check("etat initial de synchro", DATA.state.syncEtat === "inconnu", DATA.state.syncEtat);
 check("syncPossible faux en file://", DATA.syncPossible() === false);
 check(
-  "tombes initialisees pour les 4 tables",
-  Object.keys(DATA.state.tombes).sort().join() === "cafes,extractions,recettes,tasses",
+  "tombes initialisees pour les 5 tables",
+  Object.keys(DATA.state.tombes).sort().join() === "achats,cafes,extractions,recettes,tasses",
   Object.keys(DATA.state.tombes).join()
 );
 
@@ -88,6 +88,39 @@ check(
   "donnees locales intactes apres echec",
   DATA.state.cafes.length === 1 && DATA.state.cafes[0].nom === "garde moi"
 );
+
+// 6. Stock par sachet. Le comportement CENTRAL : un rachat repart du format
+// plein. Sans ca la table achats n'apporterait rien sur un cafe rachete, ce qui
+// est precisement le cas d'usage qui la justifie.
+const ACHAT_ENTETE = "id,cafe_id,date_achat,format_grammes,prix_vnd,date_torrefaction";
+const achatCsv = DATA.csvSerialiser([{ id: "a1", cafe_id: "c1", format_grammes: 250, maj_le: 999 }], DATA.ACHAT_COLS);
+const premiereLigneAchats = achatCsv.split("\n")[0];
+check("entete achats.csv", premiereLigneAchats === ACHAT_ENTETE, premiereLigneAchats);
+check("maj_le absent du CSV achats", !achatCsv.includes("999"));
+
+DATA.state.cafes = [{ id: "c1", nom: "Test", format_grammes: 250, date_torrefaction: "2026-07-01", date_ajout: "2026-07-05", actif: 1 }];
+DATA.state.achats = [{ id: "a1", cafe_id: "c1", date_achat: "2026-07-05", format_grammes: 250, date_torrefaction: "2026-07-01", maj_le: 1 }];
+DATA.state.extractions = [
+  { id: "e1", cafe_id: "c1", date_heure: "2026-07-06T08:00", dose_g: 15 },
+  { id: "e2", cafe_id: "c1", date_heure: "2026-07-07T08:00", dose_g: 15 },
+  { id: "e3", cafe_id: "c1", date_heure: "2026-07-08T08:00", dose_g: "" },
+];
+let stock = DATA.stockSachet("c1", 15);
+check("dose oubliee comptee comme la dose par defaut", stock.consomme === 45, String(stock.consomme));
+check("restant du premier sachet", stock.restant === 205, String(stock.restant));
+
+DATA.state.achats.push({ id: "a2", cafe_id: "c1", date_achat: "2026-07-10", format_grammes: 340, date_torrefaction: "2026-08-05", maj_le: 2 });
+stock = DATA.stockSachet("c1", 15);
+check("un rachat repart du format plein", stock.restant === 340, String(stock.restant));
+check("la fraicheur suit le nouveau sachet", stock.dateTorrefaction === "2026-08-05", stock.dateTorrefaction);
+check("sachet courant = le dernier achete", DATA.sachetCourant("c1").id === "a2");
+check("deux sachets comptes", stock.sachets === 2, String(stock.sachets));
+
+DATA.state.cafes.push({ id: "c9", nom: "Sans format", format_grammes: "", actif: 1 });
+check("pas de format, aucun badge de stock", DATA.stockSachet("c9", 15) === null);
+
+DATA.state.extractions.push({ id: "e9", cafe_id: "c1", date_heure: "2026-07-11T08:00", dose_g: 400 });
+check("depassement montre en negatif, pas masque", DATA.stockSachet("c1", 15).restant < 0);
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

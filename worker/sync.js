@@ -19,7 +19,7 @@
  * grossiraient sans fin.
  */
 
-export const TABLES = ["cafes", "extractions", "recettes", "tasses"];
+export const TABLES = ["cafes", "extractions", "recettes", "tasses", "achats"];
 
 // Trois mois : bien plus que le delai realiste entre deux synchros d'un meme
 // appareil, ce qui est la seule chose que les pierres tombales doivent couvrir.

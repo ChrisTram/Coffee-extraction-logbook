@@ -17,6 +17,10 @@ const I18N = (() => {
   const UI = {
     "Carnet d'extraction": "Brew journal",
     "Ce que tes données disent": "What your data says",
+    "Nouveau sachet": "New bag",
+    "Enregistre un rachat : le stock repart du format plein et la fraîcheur suit la nouvelle date de torréfaction.": "Record a repurchase: stock restarts from the full bag size and freshness follows the new roast date.",
+    "Date d'achat": "Purchase date",
+    "Enregistrer le sachet": "Save bag",
     "Synchroniser maintenant": "Sync now",
     "Brikka, Switch et Timemore C5 ESP": "Brikka, Switch and Timemore C5 ESP",
     "Tableau de bord": "Dashboard",
@@ -610,6 +614,14 @@ const I18N = (() => {
       fr: "Aucun café n'est encore passé dans les deux machines avec une note.",
       en: "No coffee has been through both machines with a score yet.",
     },
+
+    // Stock du sachet en cours.
+    stock_reste: { fr: "{g} g, {n} tasses", en: "{g} g, {n} cups" },
+    stock_vide: { fr: "sachet fini", en: "bag empty" },
+    stock_titre: { fr: "Sachet de {f} g, {c} g consommes", en: "{f} g bag, {c} g used" },
+    btn_sachet: { fr: "Nouveau sachet", en: "New bag" },
+    sachet_titre: { fr: "Nouveau sachet : {n}", en: "New bag: {n}" },
+    t_sachet: { fr: "Sachet enregistre", en: "Bag recorded" },
 
     hm_st_tasses: { fr: "tasses", en: "cups" },
     hm_st_jours: { fr: "jours actifs", en: "active days" },

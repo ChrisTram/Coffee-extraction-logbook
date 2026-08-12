@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.12,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.13,
 2026-08-12.
 
 ## 1. Vue d'ensemble
@@ -19,7 +19,7 @@ droite (café + recette + note, le reste prérempli).
 
 ## 2. Modèle de données
 
-Quatre tables, quatre CSV, éditables au tableur. La vérité vit dans un dossier
+Cinq tables, cinq CSV, éditables au tableur. La vérité vit dans un dossier
 lié via l'API File System Access (Chrome, Edge), avec copie miroir permanente
 dans IndexedDB (base `cafe-tracker`, store `kv`). Sans dossier lié, IndexedDB
 seul + import/export manuels.
@@ -125,6 +125,34 @@ Classic Mug en Switch (non écrasés si l'utilisateur a choisi autre chose).
 Avertissement non bloquant si volume attendu (café + eau ajoutée + lait)
 dépasse la contenance.
 
+### achats.csv
+
+`id, cafe_id, date_achat, format_grammes, prix_vnd, date_torrefaction`
+
+Un achat = UN SACHET. Cette table existe pour deux raisons, la seconde étant la
+plus importante :
+
+1. Le stock restant devient calculable (format du sachet moins les doses
+   consommées DEPUIS sa date d'achat).
+2. Un café racheté gardait auparavant UNE seule date de torréfaction, celle du
+   tout premier paquet. La fraîcheur affichée était donc fausse pour toujours dès
+   le deuxième sachet. Chaque sachet porte maintenant la sienne.
+
+- `DATA.sachetCourant(cafeId)` : le dernier acheté, par `date_achat`.
+- `DATA.stockSachet(cafeId, doseDefaut)` : `{format, consomme, restant, depuis,
+  dateTorrefaction, sachets}`, ou `null` si aucun format n'est connu (on
+  préfère ne rien afficher qu'un badge faux). Ne comptent QUE les extractions
+  postérieures à `date_achat` : c'est tout l'intérêt de la table. Une extraction
+  sans dose compte pour la dose par défaut, sinon un oubli de saisie ferait croire
+  à un sachet intact. Un dépassement s'affiche en NÉGATIF, on ne le masque pas.
+- `DATA.ajouterAchat()` recopie format, prix et date de torréfaction sur la fiche
+  café, pour que tout ce qui lit encore la fiche reste cohérent avec le sachet en
+  cours.
+- Badge dans la liste "Mes cafés" : vert, orange sous 3 tasses restantes, rouge
+  et nom barré quand le sachet est fini.
+- Détection à l'import : `date_achat` est testé AVANT `cafe_id`, que les deux
+  tables possèdent.
+
 ## 3. Migrations
 
 `DATA.migrerDonnees()` (data.js) est IDEMPOTENTE et tourne à chaque
@@ -148,6 +176,11 @@ chargement (init, ouverture de dossier, import, chargement de la démo) :
 5. Remplit `date_ajout` des cafés qui n'en ont pas avec la date de leur
    première extraction (les cafés jamais extraits restent sans date, rien
    n'est affiché).
+
+6. Achats : un sachet implicite pour chaque café qui a un `format_grammes` mais
+   aucun achat. IDEMPOTENTE grâce au test "aucun achat pour ce café", donc elle ne
+   recrée rien à chaque chargement et n'écrase aucun achat saisi. Sans elle, le
+   stock serait incalculable sur tout l'existant.
 
 Pour tout futur renommage ou changement de schéma : ajouter l'entrée dans
 RENOMMAGES_RECETTES ou un fallback dans normaliserX, jamais de rupture.
@@ -417,6 +450,16 @@ extractions dans les vraies données.
 - L'ordre des lignes dans un tableau n'est PAS significatif (l'interface trie ce
   qu'elle affiche). La fusion est commutative sur le CONTENU. En production le
   document serveur est toujours le premier opérande, donc l'ordre converge aussi.
+
+### Ajouter une table : le piège qui ne fait aucun bruit
+
+La liste des tables synchronisées est écrite DEUX FOIS, dans `worker/sync.js`
+(`TABLES`) et dans `js/sync.js` (`TABLES`). Oublier l'une des deux fait que la
+table ne se synchronise pas, EN SILENCE, sans erreur ni message. Il faut aussi
+l'ajouter à `chargeUtileLocale()`, à l'adoption dans `synchroniser()`, à
+`sauverLocal()` et à `init()` dans data.js. Les suites de tests comptent les
+tables présentes, donc elles échouent si un oubli traîne : ne pas se contenter de
+mettre le compte à jour sans vérifier la cause.
 
 ### maj_le, le piège à ne pas défaire
 
@@ -779,3 +822,11 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   Les trois cartes qui peuvent rester vides avec des données valides expliquent
   désormais leur cause réelle et l'action qui les débloque (sections 6 quater).
   Nouvel insight moment de la journée, gratuit puisque l'heure est déjà stockée.
+- v7.13 : suivi du stock par sachet (suggestion 4 du backlog). Cinquième table
+  `achats`, migration idempotente qui fabrique un sachet implicite pour
+  l'existant, badge de stock dans la liste des cafés (orange sous 3 tasses, rouge
+  et nom barré quand c'est fini), bouton Nouveau sachet. L'effet le plus utile
+  n'est pas le stock mais la fraîcheur : chaque sachet porte enfin sa propre date
+  de torréfaction, alors qu'un café racheté gardait celle du premier paquet et
+  affichait donc une fraîcheur fausse pour toujours. `achats` est ajouté aux deux
+  listes de tables de synchronisation.

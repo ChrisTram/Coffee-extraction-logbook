@@ -904,6 +904,20 @@ Cảm ơn shop.</pre>
       <button type="button" class="btn btn-discret" id="cafe-annuler">Annuler</button>
     </div>
   </form>
+  <form id="form-sachet" class="form-cafe" hidden>
+    <h3 id="form-sachet-titre">Nouveau sachet</h3>
+    <p class="modale-note">Enregistre un rachat : le stock repart du format plein et la fraîcheur suit la nouvelle date de torréfaction.</p>
+    <div class="grille-nombres">
+      <div class="champ"><label for="s-date">Date d'achat</label><input type="date" id="s-date" required></div>
+      <div class="champ"><label for="s-format">Format (g)</label><input type="number" id="s-format" min="1" step="1" required></div>
+      <div class="champ"><label for="s-prix">Prix (VND)</label><input type="number" id="s-prix" min="0" step="1"></div>
+      <div class="champ"><label for="s-torref">Date de torréfaction</label><input type="date" id="s-torref"></div>
+    </div>
+    <div class="saisie-actions">
+      <button type="submit" class="btn btn-primaire">Enregistrer le sachet</button>
+      <button type="button" class="btn btn-discret" id="sachet-annuler">Annuler</button>
+    </div>
+  </form>
   <datalist id="liste-especes">
     <option value="Arabica"></option><option value="Robusta"></option><option value="Fine Robusta"></option>
     <option value="Liberica"></option><option value="Excelsa"></option><option value="Blend arabica et robusta"></option>

@@ -96,7 +96,11 @@ check("lignes sans id jetees", ids(sale).join() === "ok", ids(sale).join());
 check("maj_le converti en nombre", sale.tables.extractions[0].maj_le === 123);
 check("tombe sans id jetee", JSON.stringify(sale.tombes.extractions) === '{"bon":50}');
 check("charge utile absurde toleree", JSON.stringify(sanitisePayload(null)) === JSON.stringify(emptyPayload()));
-check("toutes les tables presentes", Object.keys(emptyPayload().tables).sort().join() === "cafes,extractions,recettes,tasses");
+check(
+  "toutes les tables presentes",
+  Object.keys(emptyPayload().tables).sort().join() === "achats,cafes,extractions,recettes,tasses",
+  Object.keys(emptyPayload().tables).join()
+);
 
 // 10. maj_le absent (donnees d'avant la synchro) : traite comme le plus ancien
 const sansStamp = payload([{ id: "e1", note_sur_10: 5 }]);

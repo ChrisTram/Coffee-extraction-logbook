@@ -16,12 +16,17 @@ const DATA = (() => {
     "temperature_c", "temp_texte", "mouture_dial", "ratio_texte", "total_texte", "lait",
     "etapes", "pour_qui", "cafes_associes", "note", "par_defaut", "avancee", "variantes", "actif"];
   const TASSE_COLS = ["id", "nom", "contenance_ml"];
+  const ACHAT_COLS = ["id", "cafe_id", "date_achat", "format_grammes", "prix_vnd", "date_torrefaction"];
 
   const state = {
     cafes: [],
     extractions: [],
     recettes: [],
     tasses: [],
+    // Un achat = un sachet. Sans cette table, un café racheté gardait UNE seule
+    // date de torréfaction, donc la fraîcheur mentait dès le deuxième sachet, et
+    // le stock restant n'était pas calculable.
+    achats: [],
     dirHandle: null,
     fsDisponible: typeof window !== "undefined" && "showDirectoryPicker" in window,
     demoActive: false,
@@ -236,6 +241,79 @@ const DATA = (() => {
     }));
   }
 
+  function normaliserAchat(r) {
+    return {
+      id: String(r.id || "").trim(),
+      maj_le: Number(r.maj_le) || 0,
+      cafe_id: r.cafe_id || "",
+      date_achat: r.date_achat || "",
+      format_grammes: r.format_grammes === "" || r.format_grammes === undefined ? "" : Number(r.format_grammes),
+      prix_vnd: r.prix_vnd === "" || r.prix_vnd === undefined ? "" : Number(r.prix_vnd),
+      date_torrefaction: r.date_torrefaction || "",
+    };
+  }
+
+  /* Sachet en cours d'un café : le dernier acheté. Retourne null si le café n'a
+     aucun achat, auquel cas l'appelant retombe sur les champs de la fiche café,
+     qui restent la source pour un café à sachet unique. */
+  function sachetCourant(cafeId) {
+    return state.achats
+      .filter(a => a.cafe_id === cafeId)
+      .sort((a, b) => String(b.date_achat).localeCompare(String(a.date_achat)))[0] || null;
+  }
+
+  /* Stock restant du sachet en cours, en grammes.
+     Ne comptent que les extractions POSTÉRIEURES à la date d'achat : c'est tout
+     l'intérêt de la table, un sachet racheté repart de son format plein sans que
+     l'historique du sachet précédent ne vienne le vider. Une extraction sans dose
+     compte pour DEFAULT_DOSE_G, sinon un oubli de saisie ferait croire à un stock
+     intact. */
+  function stockSachet(cafeId, doseDefaut) {
+    const sachet = sachetCourant(cafeId);
+    const cafe = state.cafes.find(c => c.id === cafeId);
+    const format = sachet ? sachet.format_grammes : (cafe ? cafe.format_grammes : "");
+    if (format === "" || !(Number(format) > 0)) return null;
+
+    const depuis = sachet ? sachet.date_achat : (cafe ? cafe.date_ajout : "");
+    const consomme = state.extractions
+      .filter(e => e.cafe_id === cafeId)
+      .filter(e => !depuis || String(e.date_heure).slice(0, 10) >= depuis)
+      .reduce((total, e) => total + (Number(e.dose_g) || doseDefaut || 0), 0);
+
+    const restant = Number(format) - consomme;
+    return {
+      format: Number(format),
+      consomme: Math.round(consomme * 10) / 10,
+      restant: Math.round(restant * 10) / 10,
+      depuis,
+      dateTorrefaction: sachet ? sachet.date_torrefaction : (cafe ? cafe.date_torrefaction : ""),
+      sachets: state.achats.filter(a => a.cafe_id === cafeId).length,
+    };
+  }
+
+  async function ajouterAchat(achat) {
+    const a = estampiller(normaliserAchat(achat));
+    a.id = nouvelId("a", state.achats);
+    state.achats.push(a);
+    // La fiche café suit le dernier sachet : format, prix et date de
+    // torréfaction affichés ailleurs doivent rester cohérents avec lui.
+    const cafe = state.cafes.find(c => c.id === a.cafe_id);
+    if (cafe) {
+      if (a.format_grammes !== "") cafe.format_grammes = a.format_grammes;
+      if (a.prix_vnd !== "") cafe.prix_vnd = a.prix_vnd;
+      cafe.date_torrefaction = a.date_torrefaction;
+      estampiller(cafe);
+    }
+    await persister();
+    return a;
+  }
+
+  async function supprimerAchat(id) {
+    marquerSupprime("achats", id);
+    state.achats = state.achats.filter(x => x.id !== id);
+    await persister();
+  }
+
   function normaliserTasse(r) {
     return {
       id: String(r.id || "").trim(),
@@ -324,6 +402,26 @@ const DATA = (() => {
         .map(e => e.date_heure).sort();
       if (dates.length) c.date_ajout = dates[0].slice(0, 10);
     });
+    // 6. Achats : un sachet implicite pour chaque café qui a un format mais aucun
+    //    achat. IDEMPOTENTE grâce au test "aucun achat pour ce café", donc elle ne
+    //    recrée rien à chaque chargement et n'écrase aucun achat saisi à la main.
+    //    Sans elle, le stock serait incalculable sur tout l'existant.
+    state.cafes.forEach(c => {
+      if (!(Number(c.format_grammes) > 0)) return;
+      if (state.achats.some(a => a.cafe_id === c.id)) return;
+      const dates = state.extractions
+        .filter(e => e.cafe_id === c.id && e.date_heure)
+        .map(e => e.date_heure).sort();
+      const date = c.date_ajout || (dates.length ? dates[0].slice(0, 10) : dateLocaleAujourdhui());
+      state.achats.push(normaliserAchat({
+        id: nouvelId("a", state.achats),
+        cafe_id: c.id,
+        date_achat: date,
+        format_grammes: c.format_grammes,
+        prix_vnd: c.prix_vnd,
+        date_torrefaction: c.date_torrefaction,
+      }));
+    });
   }
 
   // ---------- Champs calculés, jamais stockés ----------
@@ -409,6 +507,7 @@ const DATA = (() => {
     await kvSet("recettes", state.recettes);
     await kvSet("tasses", state.tasses);
     await kvSet("demoActive", state.demoActive);
+    await kvSet("achats", state.achats);
     await kvSet("tombes", state.tombes);
   }
 
@@ -452,6 +551,7 @@ const DATA = (() => {
           await ecrireFichier("extractions.csv", csvSerialiser(state.extractions, EXT_COLS));
           await ecrireFichier("recettes.csv", csvRecettes());
           await ecrireFichier("tasses.csv", csvSerialiser(state.tasses, TASSE_COLS));
+          await ecrireFichier("achats.csv", csvSerialiser(state.achats, ACHAT_COLS));
           resolve(true);
         } catch (e) {
           console.error("Écriture fichier impossible", e);
@@ -474,11 +574,13 @@ const DATA = (() => {
       await ecrireFichier("extractions.csv", csvSerialiser(state.extractions, EXT_COLS));
       await ecrireFichier("recettes.csv", csvRecettes());
       await ecrireFichier("tasses.csv", csvSerialiser(state.tasses, TASSE_COLS));
+      await ecrireFichier("achats.csv", csvSerialiser(state.achats, ACHAT_COLS));
     } else {
       const tc = await lireFichier("cafes.csv");
       const te = await lireFichier("extractions.csv");
       const tr = await lireFichier("recettes.csv");
       const tt = await lireFichier("tasses.csv");
+      const ta = await lireFichier("achats.csv");
       if (tc === null && te === null) {
         throw new Error("Ce dossier ne contient ni cafes.csv ni extractions.csv.");
       }
@@ -487,6 +589,7 @@ const DATA = (() => {
       if (tr !== null) state.recettes = csvParse(tr).map(normaliserRecette);
       else if (!state.recettes.length) state.recettes = recettesDefaut();
       if (tt !== null) state.tasses = csvParse(tt).map(normaliserTasse);
+      if (ta !== null) state.achats = csvParse(ta).map(normaliserAchat);
       migrerDonnees();
       await ecrireFichier("recettes.csv", csvRecettes());
       state.demoActive = false;
@@ -508,6 +611,7 @@ const DATA = (() => {
   function detecterTable(rows) {
     if (!rows.length) return null;
     const cles = Object.keys(rows[0]);
+    if (cles.includes("date_achat")) return "achats";
     if (cles.includes("contenance_ml")) return "tasses";
     if (cles.includes("pour_qui") || cles.includes("sous_titre")) return "recettes";
     if (cles.includes("cafe_id") || cles.includes("diagnostic")) return "extractions";
@@ -558,6 +662,9 @@ const DATA = (() => {
     state.extractions = csvParse(DEMO_EXTRACTIONS_CSV).map(normaliserExtraction);
     state.recettes = recettesDefaut();
     state.tasses = tassesDefaut();
+    // La demo n'a pas de fichier d'achats : la migration en fabrique un sachet
+    // implicite par cafe, ce qui suffit a faire vivre le stock en demonstration.
+    state.achats = [];
     migrerDonnees();
     state.demoActive = true;
     await sauverLocal();
@@ -569,6 +676,7 @@ const DATA = (() => {
     state.cafes = CAFES_DEPART.map(normaliserCafe);
     state.recettes = recettesDefaut();
     state.tasses = tassesDefaut();
+    state.achats = [];
     state.demoActive = false;
     await persister();
   }
@@ -596,6 +704,7 @@ const DATA = (() => {
         extractions: state.extractions,
         recettes: state.recettes,
         tasses: state.tasses,
+        achats: state.achats,
       },
       tombes: state.tombes,
     };
@@ -626,6 +735,7 @@ const DATA = (() => {
       state.extractions = (fusion.tables.extractions || []).map(normaliserExtraction);
       state.recettes = (fusion.tables.recettes || []).map(normaliserRecette);
       state.tasses = (fusion.tables.tasses || []).map(normaliserTasse);
+      state.achats = (fusion.tables.achats || []).map(normaliserAchat);
       state.tombes = fusion.tombes || SYNC.tombesVides();
       if (!state.recettes.length) state.recettes = recettesDefaut();
       if (!state.tasses.length) state.tasses = tassesDefaut();
@@ -796,6 +906,7 @@ const DATA = (() => {
     const extractions = await kvGet("extractions");
     const recettes = await kvGet("recettes");
     const tasses = await kvGet("tasses");
+    const achats = await kvGet("achats");
     const demoActive = await kvGet("demoActive");
     if (Array.isArray(cafes)) state.cafes = cafes.map(normaliserCafe);
     if (Array.isArray(extractions)) state.extractions = extractions.map(normaliserExtraction);
@@ -803,6 +914,7 @@ const DATA = (() => {
     else state.recettes = recettesDefaut();
     if (Array.isArray(tasses) && tasses.length) state.tasses = tasses;
     else state.tasses = tassesDefaut();
+    if (Array.isArray(achats)) state.achats = achats.map(normaliserAchat);
     state.demoActive = !!demoActive;
     const handle = await kvGet("dirHandle");
     if (handle) {
@@ -815,10 +927,12 @@ const DATA = (() => {
           const te = await lireFichier("extractions.csv");
           const tr = await lireFichier("recettes.csv");
           const tt = await lireFichier("tasses.csv");
+          const ta = await lireFichier("achats.csv");
           if (tc !== null) state.cafes = csvParse(tc).map(normaliserCafe);
           if (te !== null) state.extractions = csvParse(te).map(normaliserExtraction);
           if (tr !== null) state.recettes = csvParse(tr).map(normaliserRecette);
           if (tt !== null) state.tasses = csvParse(tt).map(normaliserTasse);
+          if (ta !== null) state.achats = csvParse(ta).map(normaliserAchat);
         }
       } catch (e) { console.warn("Relecture du dossier lié impossible", e); }
     }
@@ -840,7 +954,8 @@ const DATA = (() => {
   return {
     state, abonner, notifier, init,
     synchroniser, syncPossible,
-    csvParse, csvSerialiser, CAFE_COLS, EXT_COLS, RECETTE_COLS,
+    csvParse, csvSerialiser, CAFE_COLS, EXT_COLS, RECETTE_COLS, ACHAT_COLS,
+    sachetCourant, stockSachet, ajouterAchat, supprimerAchat,
     calculs, cafeDe,
     lierDossier, delierDossier, sauverFichiers,
     importerTexteCSV, exporterCafes, exporterExtractions, exporterRecettes,

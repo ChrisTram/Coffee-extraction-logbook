@@ -575,7 +575,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.12";
+  const VERSION = "7.13";
 
   // Dose prise quand rien ne la preremplit (recette sans dose, formulaire
   // vierge). 15 g est la dose de toutes les recettes Switch d'origine.
@@ -1535,6 +1535,7 @@
   function ouvrirModaleCafes() {
     rendreListeCafes();
     $("#form-cafe").hidden = true;
+    $("#form-sachet").hidden = true;
     const m = $("#modale-cafes");
     if (!m.open) m.showModal();
   }
@@ -1552,8 +1553,22 @@
         ? ' <span class="badge-note" title="' + I18N.t("b_extractions", { n: notes.length }) + '">★ ' +
           fmtDecimal(moyenne(notes), 1) + "</span>"
         : "";
-      return '<div class="cafe-ligne' + (c.actif === 0 ? " inactif" : "") + '">' +
-      "<div><b>" + c.nom + "</b>" + badgeNote +
+      // Stock du sachet en cours. Une dose manquante compte pour la dose par
+      // défaut, sinon un oubli de saisie ferait croire à un sachet intact.
+      const stock = DATA.stockSachet(c.id, DEFAULT_DOSE_G);
+      let badgeStock = "";
+      if (stock) {
+        const tasses = Math.floor(stock.restant / DEFAULT_DOSE_G);
+        const classe = stock.restant <= 0 ? "vide" : tasses <= 3 ? "bas" : "ok";
+        const libelle = stock.restant <= 0
+          ? I18N.t("stock_vide")
+          : I18N.t("stock_reste", { g: fmtDecimal(stock.restant, 0), n: tasses });
+        badgeStock = ' <span class="badge-stock badge-stock-' + classe + '" title="' +
+          I18N.t("stock_titre", { f: stock.format, c: fmtDecimal(stock.consomme, 0) }) + '">' + libelle + "</span>";
+      }
+      return '<div class="cafe-ligne' + (c.actif === 0 ? " inactif" : "") +
+      (stock && stock.restant <= 0 ? " epuise" : "") + '">' +
+      "<div><b>" + c.nom + "</b>" + badgeNote + badgeStock +
       (Number(c.pourcentage_cafe_reel) < 100 ? ' <span class="badge-nonpur">' + c.pourcentage_cafe_reel + " % " + I18N.t("pct_cafe") + "</span>" : "") +
       ((c.tag || "").includes("référence") ? ' <span class="badge-reference">' + I18N.t("badge_etalon") + "</span>" : "") +
       "<div class=\"cafe-meta\">" +
@@ -1563,9 +1578,47 @@
         c.date_ajout ? I18N.t("li_ajoute", { d: fmtDateCourte(c.date_ajout) }) : ""].filter(Boolean).join(" · ") +
       "</div></div>" +
       '<span class="cafe-meta">' + (c.actif === 0 ? I18N.t("li_inactif") : "") + "</span>" +
+      '<button class="btn btn-petit" data-cafe-sachet="' + c.id + '">' + I18N.t("btn_sachet") + "</button>" +
       '<button class="btn btn-petit" data-cafe-edit="' + c.id + '">' + I18N.t("btn_modifier") + "</button></div>";
     }).join("");
     $$("[data-cafe-edit]").forEach(b => b.addEventListener("click", () => ouvrirFormCafe(b.dataset.cafeEdit)));
+    $$("[data-cafe-sachet]").forEach(b => b.addEventListener("click", () => ouvrirFormSachet(b.dataset.cafeSachet)));
+  }
+
+  // ---------- Nouveau sachet ----------
+  // Enregistrer un rachat remet le compteur de stock à zéro ET donne au café une
+  // date de torréfaction à jour. C'est ce second effet qui corrige un vrai
+  // mensonge de l'ancien modèle : un café racheté gardait la date du tout premier
+  // paquet, donc la fraîcheur affichée était fausse pour toujours.
+  let sachetCafeId = null;
+
+  function ouvrirFormSachet(cafeId) {
+    const c = DATA.state.cafes.find(x => x.id === cafeId);
+    if (!c) return;
+    sachetCafeId = cafeId;
+    $("#form-sachet-titre").textContent = I18N.t("sachet_titre", { n: c.nom });
+    $("#s-date").value = maintenantLocal().slice(0, 10);
+    $("#s-format").value = c.format_grammes || "";
+    $("#s-prix").value = c.prix_vnd || "";
+    $("#s-torref").value = "";
+    $("#form-sachet").hidden = false;
+    $("#s-date").focus();
+  }
+
+  async function enregistrerSachet(ev) {
+    ev.preventDefault();
+    if (!sachetCafeId) return;
+    await DATA.ajouterAchat({
+      cafe_id: sachetCafeId,
+      date_achat: $("#s-date").value || maintenantLocal().slice(0, 10),
+      format_grammes: $("#s-format").value,
+      prix_vnd: $("#s-prix").value,
+      date_torrefaction: $("#s-torref").value,
+    });
+    $("#form-sachet").hidden = true;
+    sachetCafeId = null;
+    rendreListeCafes();
+    toast(I18N.t("t_sachet"));
   }
 
   function ouvrirFormCafe(id) {
@@ -2093,6 +2146,9 @@
     $("#form-cafe").addEventListener("submit", enregistrerCafe);
 
     // Les changements de données rafraîchissent l'interface.
+    $("#form-sachet").addEventListener("submit", enregistrerSachet);
+    $("#sachet-annuler").addEventListener("click", () => { $("#form-sachet").hidden = true; sachetCafeId = null; });
+
     $("#don-sync").addEventListener("click", async () => {
       const etat = await DATA.synchroniser(true);
       toast(I18N.t(etat === "ok" ? "t_sync_ok" : "t_sync_ko"));
