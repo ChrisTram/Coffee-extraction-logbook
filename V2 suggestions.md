@@ -1,114 +1,232 @@
-# V2 suggestions : audit et pistes d'amélioration
+# Backlog : audit et pistes d'amélioration
 
-Backlog proposé après audit du site en l'état (v7). Rien ici n'est commencé.
-Classé par rapport valeur sur effort, du point de vue d'un usage quotidien en
-cuisine, au Vietnam, sur téléphone et desktop.
+Backlog classé par priorité, revu le 12 août 2026 après la mise en ligne.
+Rien ici n'est commencé.
 
-## Priorité haute : gros gain, effort raisonnable
+## Comment lire les estimations
 
-### 1. PWA installable et hors ligne garanti
-Un manifest et un service worker transformeraient le site en application
-installable sur le téléphone (icône sur l'écran d'accueil, plein écran, plus
-d'onglet Chrome à retrouver en cuisine). Le site est déjà 100 pour cent local
-donc le service worker est trivial. Bonus important : l'API Wake Lock pour
-que l'écran ne s'éteigne pas pendant le chrono. Limite à connaître : en PWA
-servie par service worker, l'API File System Access continue de marcher, mais
-il faudra vérifier le comportement en file:// pur (les service workers ne s'y
-enregistrent pas, il faudrait un mini serveur local ou un hébergement statique
-type GitHub Pages, ce qui collerait bien avec le nouveau repo git).
+La colonne coût est une estimation en tokens du budget de conversation
+nécessaire pour livrer la chose proprement, doc et tests compris. C'est un
+ordre de grandeur, pas un devis : compter large si la première approche se
+révèle fausse.
 
-### 2. Suivi du stock par sachet
-Le site connaît le format du sachet et la dose de chaque extraction : il peut
-donc afficher les grammes restants par café, une alerte "plus que 3 tasses",
-et griser les cafés épuisés. Nécessite une notion d'achat (date d'achat ou de
-réouverture de sachet) pour remettre le compteur à zéro, ce qui réglerait
-aussi une limite actuelle : un café racheté garde une seule date de
-torréfaction. Table `achats` (cafe_id, date, format, prix, date_torrefaction)
-et la fraîcheur deviendrait celle du sachet en cours.
+| Repère | Tokens | À quoi ça ressemble |
+|---|---|---|
+| XS | 10k à 30k | Un fichier touché, une poignée de lignes |
+| S | 30k à 80k | Deux ou trois fichiers, quelques clés i18n |
+| M | 80k à 180k | Un écran ou un mécanisme entier |
+| L | 180k à 350k | Nouveau modèle de données ou nouveau backend |
+| XL | 350k et plus | Refonte structurelle, à découper avant de lancer |
 
-### 3. Mode préparation guidé (balance en main)
-Quand la balance arrivera : un mode plein écran pendant l'extraction qui
-fusionne le chrono à paliers et les poids cibles, avec le poids à atteindre
-affiché en très gros au moment de chaque versement ("verse jusqu'à 112 g"),
-le prochain palier, et les bips existants. C'est le prolongement naturel du
-chrono actuel, et ça remplacerait avantageusement le mode pas à pas de la
-page Référence pour l'exécution réelle.
+Trois choses gonflent le coût sur ce projet précis, indépendamment de la
+difficulté technique : la double langue (toute chaîne visible existe en FR et
+en EN, et le mécanisme du TreeWalker impose des clés au fragment près), la
+compatibilité CSV (tout changement de schéma demande une migration idempotente
+et une régénération de la démo), et la doc qui se met à jour à chaque livraison.
+Une feature qui coûterait S ailleurs coûte souvent M ici.
 
-### 4. Comparateur d'extractions (test croisé)
+## Ce qui est déjà fait
+
+- Déploiement Cloudflare Workers, site privé derrière identifiant et mot de
+  passe, session de 30 jours. Le repo est public, les secrets sont chez
+  Cloudflare.
+- Le site est en https, ce qui débloque les points 2 et 3 ci-dessous.
+
+## Priorité 1 : la synchronisation entre appareils
+
+**Coût : L (200k à 300k)**
+
+C'est le problème que la mise en ligne vient de créer et il n'est pas dans
+l'ancien backlog. Le site est maintenant accessible depuis le téléphone en
+cuisine ET depuis le desktop. Mais les données vivent dans IndexedDB, qui est
+par appareil : une extraction saisie sur le téléphone n'existera jamais sur le
+desktop, et inversement. Tant que le site était en `file://` sur une seule
+machine, la question ne se posait pas.
+
+En pratique ça veut dire saisir sur le téléphone pendant l'extraction, puis
+tout ressaisir sur le desktop pour avoir des graphiques complets. Personne ne
+le fera, donc les données vont diverger et le suivi perdra son intérêt.
+
+La bonne réponse est maintenant accessible : il y a déjà un Worker et une
+authentification, donc un stockage côté serveur devient possible sans exposer
+quoi que ce soit. Cloudflare D1 (SQLite, gratuit à cette échelle) ou KV pour
+un simple document JSON par table. Le Worker ne sert les données qu'à une
+session authentifiée, donc à toi.
+
+Le vrai travail n'est pas le stockage, c'est la réconciliation : que se
+passe-t-il si le téléphone était hors ligne et que le desktop a bougé entre
+temps. Le moins coûteux et le plus honnête est un horodatage par ligne avec
+"le plus récent gagne", plus un export CSV qui reste la sauvegarde de secours.
+Le dossier lié par File System Access reste utilisable sur desktop, il devient
+un miroir local plutôt que la source de vérité.
+
+À noter : c'est la seule feature de ce backlog qui change l'architecture. À
+faire avant les autres, sinon chaque feature suivante devra être migrée.
+
+## Priorité 2 : PWA installable et Wake Lock
+
+**Coût : S (40k à 70k)**
+
+Débloqué par le passage en https, ça ne marchait pas en `file://` (les service
+workers ne s'y enregistrent pas). Un manifest et un service worker suffisent
+pour une icône sur l'écran d'accueil, un lancement plein écran et un
+fonctionnement hors ligne garanti. Le site n'a aucune dépendance réseau, donc
+le service worker est trivial : mettre en cache les huit fichiers et l'affaire
+est réglée.
+
+Le vrai gain est ailleurs : l'API Wake Lock, pour que l'écran du téléphone ne
+s'éteigne pas pendant le chrono. Aujourd'hui l'écran se verrouille au milieu
+d'une extraction et il faut le rallumer avec les mains mouillées. C'est le
+défaut d'usage le plus concret du site.
+
+Attention à une chose : un service worker qui met en cache la page de
+connexion la servirait à la place de la redirection. Exclure `/login` et
+`/logout` du cache.
+
+## Priorité 3 : bouton de déconnexion et version affichée
+
+**Coût : XS (15k à 25k)**
+
+Deux détails que la mise en ligne rend nécessaires. La déconnexion n'existe
+que comme URL `/logout` à taper à la main, ce qui est ridicule sur téléphone.
+Et il n'y a aucun moyen de savoir quelle version tourne sur un appareil, ce
+qui va devenir pénible dès le deuxième déploiement ("est-ce que le téléphone a
+la correction ou pas"). Un numéro dans le pied de page, aligné sur le
+changelog, règle la question.
+
+Les deux tiennent dans la même passe : trois clés i18n et deux lignes de HTML.
+
+## Priorité 4 : suivi du stock par sachet
+
+**Coût : M (120k à 180k)**
+
+Le site connaît le format du sachet et la dose de chaque extraction, il peut
+donc afficher les grammes restants par café, alerter à "plus que 3 tasses" et
+griser les cafés épuisés.
+
+Ça règle aussi une vraie limite actuelle : un café racheté garde une seule
+date de torréfaction, donc l'indicateur de fraîcheur ment dès le deuxième
+sachet. Une table `achats` (cafe_id, date, format, prix, date_torrefaction)
+remet le compteur à zéro et la fraîcheur devient celle du sachet en cours.
+
+Coût gonflé par la migration : cinquième CSV, cinquième table, régénération de
+la démo, et il faut décider quoi faire de l'historique existant (probablement
+créer un achat implicite par café à sa date d'ajout).
+
+## Priorité 5 : comparateur d'extractions
+
+**Coût : S (60k à 90k)**
+
 Sélectionner deux extractions dans l'historique et les afficher côte à côte,
 champ par champ, différences surlignées. C'est exactement l'outil du test
-croisé recommandé par le guide (même café dans les deux machines le même
-jour) et il n'existe pas encore.
+croisé recommandé par le guide (même café dans les deux machines le même jour)
+et il n'existe pas.
 
-## Priorité moyenne : de la valeur, un peu plus de travail
+Bon rapport valeur sur effort : aucune donnée nouvelle, aucune migration, tout
+est déjà en mémoire. C'est de l'affichage pur.
 
-### 5. Insights automatiques sur le tableau de bord
-Des phrases calculées, pas des graphes en plus : "ta fenêtre de fraîcheur
+## Priorité 6 : insights automatiques sur le tableau de bord
+
+**Coût : M (90k à 140k)**
+
+Des phrases calculées, pas des graphiques en plus : "ta fenêtre de fraîcheur
 optimale est 8 à 21 jours (note moyenne 8,1 contre 6,4 après)", "1.2.0 bat
 1.1.0 de 1,3 point sur la Brikka", "le Chronicler's Sweet sort 0,8 point au
-dessus du Classique sur les honey". Trois ou quatre règles simples avec seuil
-minimal d'échantillons suffisent, l'affichage en petites cartes.
+dessus du Classique sur les honey".
 
-### 6. Radar des descripteurs par café
-Sur la fiche café (ou au survol dans le tableau de bord), un petit radar ou
-des barres des descripteurs les plus cochés pour ce café. Répond à "ce café
-me donne quoi, en vrai, selon mes propres notes" et confronte les
-notes_annoncees du vendeur à ton palais.
+Trois ou quatre règles avec un seuil minimal d'échantillons suffisent.
+Attention au piège : avec 7 extractions en base, toute corrélation est du
+bruit. Ne rien afficher sous un seuil, et dire pourquoi plutôt que de laisser
+une carte vide.
 
-### 7. Recherche et filtres enrichis dans l'historique
-Recherche plein texte (commentaires compris), filtre par descripteur, par
-tasse, par plage de notes. Le commentaire est aujourd'hui invisible dans le
-tableau : une ligne dépliable par extraction le montrerait.
+Coût surtout en rédaction bilingue : chaque insight est un gabarit à écrire en
+FR et EN avec ses variables.
 
-### 8. Corbeille et annulation
+## Priorité 7 : recherche et filtres enrichis dans l'historique
+
+**Coût : S (50k à 80k)**
+
+Recherche plein texte commentaires compris, filtre par descripteur, par tasse,
+par plage de notes. Le commentaire est aujourd'hui invisible dans le tableau,
+une ligne dépliable le montrerait.
+
+Devient nettement plus utile quand l'historique dépasse la centaine de lignes,
+ce qui n'est pas encore le cas.
+
+## Priorité 8 : corbeille et annulation
+
+**Coût : S (40k à 60k)**
+
 Une suppression d'extraction est définitive. Un toast "Supprimée, annuler"
 pendant cinq secondes coûte peu et évite le drame du doigt qui glisse sur
-téléphone.
+téléphone, risque qui augmente maintenant que le site est sur mobile.
 
-### 9. Rapport hebdomadaire partageable
-Une vue imprimable (ou un PNG généré via canvas) résumant la semaine :
-nombre de tasses, meilleure tasse, réglage gagnant, caféine moyenne. Utile
-aussi pour poster sur un groupe café.
+À grouper avec le remplacement des cinq `confirm()` et `alert()` natifs de
+`app.js` : sur mobile ce sont des boîtes système moches qui cassent
+l'impression d'application, et elles ne sont pas traduites par le mécanisme
+i18n puisqu'elles sortent du DOM.
 
-## Priorité basse ou à discuter
+## Priorité 9 : radar des descripteurs par café
 
-### 10. Profils d'eau
-Table des eaux en bouteille utilisées (marque, TDS) et champ eau sur
-l'extraction. Le guide insiste beaucoup sur l'eau au Vietnam, mais c'est une
-variable de plus à saisir : à ne faire que si tu changes réellement d'eau.
+**Coût : S (50k à 80k)**
 
-### 11. Moments de la journée
-Tag matin/après-midi déductible de l'heure, croisé avec les notes : est-ce
-que la première tasse du matin est systématiquement mieux notée ? Presque
-gratuit à calculer, intérêt à valider.
+Sur la fiche café, un petit radar ou des barres des descripteurs les plus
+cochés pour ce café. Répond à "ce café me donne quoi, en vrai, selon mes
+propres notes" et confronte les `notes_annoncees` du vendeur à ton palais.
 
-### 12. Photos d'étiquettes
-Joindre une photo (étiquette thành phần, sachet) à un café. En stockage
-local pur ça alourdit vite IndexedDB et ça ne tient pas dans un CSV : à
-réserver à une éventuelle version avec dossier de données (fichiers images à
-côté des CSV, c'est faisable avec l'API actuelle).
+Chart.js fait le radar nativement, l'essentiel du travail est l'agrégation.
+Comme les insights, ça demande un volume de données qui n'existe pas encore.
 
-### 13. Import direct du récap Shopee
-Coller une URL ou un texte de commande Shopee pour préremplir un café. Séduisant
-mais fragile (le site ne peut pas fetch en file://), à faire plutôt comme un
-petit parseur de texte collé.
+## Priorité 10 : mode préparation guidé, balance en main
 
-## Dette technique et qualité
+**Coût : L (200k à 300k)**
 
-- Découper app.js (environ 1500 lignes) en modules par écran (saisie.js,
-  tableau.js, historique.js, reference.js), toujours en scripts classiques
-  concaténables. Améliore la maintenabilité sans changer l'architecture.
-- Suite de tests Playwright versionnée dans le repo (les tests actuels
-  vivaient hors du dossier livré) avec un `npm test` documenté.
-- Un `manifest.json` d'icônes même sans PWA complète, pour un favicon propre
-  et un nom d'application correct.
-- Accessibilité : les pilules et tags sont des boutons, c'est bien, mais un
-  passage ARIA (aria-pressed sur les toggles, focus visible renforcé) serait
-  peu coûteux.
-- Le champ `variantes` (bloc Tetsu) est un cas spécial codé en dur : si un
-  jour une autre recette veut des versements pilotables, généraliser le
-  mécanisme (définir les variantes dans la donnée recette plutôt que dans
-  TETSU).
-- Envisager un numéro de version affiché dans le pied de page, alimenté par
-  le changelog de DOCUMENTATION.md, pour savoir en un coup d'oeil quelle
-  version tourne sur le téléphone.
+Quand la balance arrivera : un mode plein écran pendant l'extraction qui
+fusionne le chrono à paliers et les poids cibles, le poids à atteindre affiché
+en très gros au moment de chaque versement ("verse jusqu'à 112 g"), le
+prochain palier, les bips existants.
+
+C'est le prolongement naturel du chrono et ça remplacerait avantageusement le
+pas à pas de la page Référence pour l'exécution réelle. Placé bas parce que
+sans balance, ça ne sert à rien : à remonter en priorité 2 le jour où elle
+arrive.
+
+## Priorité 11 : rapport hebdomadaire partageable
+
+**Coût : M (80k à 120k)**
+
+Une vue imprimable ou un PNG généré au canvas résumant la semaine : nombre de
+tasses, meilleure tasse, réglage gagnant, caféine moyenne. Utile aussi pour
+poster sur un groupe café. Confort pur, aucune urgence.
+
+## À discuter, valeur non démontrée
+
+| Sujet | Coût | Pourquoi ça attend |
+|---|---|---|
+| Profils d'eau (marque, TDS) | S | Le guide insiste sur l'eau au Vietnam, mais c'est une variable de plus à saisir à chaque extraction. À ne faire que si tu changes réellement d'eau. |
+| Moments de la journée (matin, après-midi) | XS | Presque gratuit à calculer depuis l'heure. Intérêt à valider : est-ce que la première tasse du matin est vraiment mieux notée, ou juste bue avec plus d'enthousiasme. |
+| Photos d'étiquettes | M | Alourdit vite IndexedDB et ne tient pas dans un CSV. Faisable en écrivant les images à côté des CSV dans le dossier lié, mais ça casse la portabilité mobile. |
+| Import du récap Shopee | S | Séduisant mais fragile. Le site ne peut pas fetch une URL Shopee. À faire plutôt comme un parseur de texte collé, ce qui est beaucoup moins magique. |
+
+## Dette technique
+
+| Sujet | Coût | Note |
+|---|---|---|
+| Découper `app.js` (1813 lignes, environ 90 fonctions dans une seule IIFE) en modules par écran | M | Toujours en scripts classiques, sans bundler. Améliore la maintenabilité sans toucher à l'architecture. À faire AVANT la synchronisation serveur, pas après : ce sera plus facile sur du code déjà rangé. |
+| Accessibilité | S | 60 boutons dans `index.html` pour seulement 12 attributs `aria-` ou `role`. Les pilules et tags sont bien de vrais boutons, mais il manque `aria-pressed` sur les bascules et un focus visible renforcé. Peu coûteux, bénéfice réel au clavier. |
+| Tests versionnés | S | `worker/index.test.mjs` existe et couvre la porte d'entrée. Rien n'existe pour l'application elle même, alors que le patron Playwright est documenté. Un `npm test` documenté et trois scénarios (saisie, bascule EN, persistance après reload) suffiraient à sécuriser les livraisons. |
+| Généraliser le bloc variantes | S | Le bloc Tetsu (versements pilotables) est codé en dur dans `TETSU`. Si une autre recette en veut un jour, définir les variantes dans la donnée recette plutôt que dans le code. Aucune urgence tant que le Tetsu est seul. |
+| Icônes et manifest | XS | Un vrai jeu d'icônes plutôt que le favicon emoji en data URI. À faire en même temps que la PWA, priorité 2, sinon c'est du travail en double. |
+
+## Recommandation d'ordre
+
+Si l'objectif est que le site soit réellement utilisé au quotidien sur les
+deux appareils, l'ordre qui rapporte le plus vite est : priorité 3 (XS, une
+demi passe), puis priorité 2 (la PWA, qui rend l'usage en cuisine viable),
+puis le découpage d'`app.js` (dette), et seulement ensuite la priorité 1 (la
+synchronisation, qui est le gros morceau mais qui sera plus propre sur du code
+rangé).
+
+Tout le reste est du confort et peut attendre d'avoir assez de données pour
+être intéressant. Avec 7 extractions en base, les insights et les radars
+n'auront rien à dire.
