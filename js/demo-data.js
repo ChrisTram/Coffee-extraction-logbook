@@ -1,0 +1,74 @@
+// Jeu de démonstration embarqué. Identique aux fichiers du dossier demo.
+// Généré une fois, ne pas éditer à la main : passer par les CSV.
+"use strict";
+const DEMO_CAFES_CSV = `id,nom,torrefacteur,origine,espece,procede,torrefaction,deja_moulu,pourcentage_cafe_reel,tag,notes_annoncees,format_grammes,prix_vnd,date_torrefaction,machine_recommandee,recette_recommandee,date_ajout,actif
+c1,Trung Nguyên Sáng Tạo 4,Trung Nguyên,"Buôn Ma Thuột, Vietnam","Blend Arabica, Robusta, Excelsa, Catimor",Torréfaction traditionnelle avec additifs,Foncée,1,82,café aromatisé,"Corps rond, sucré, faible acidité, arôme persistant. Étiquette : café 82 pour cent, soja torréfié, sirop de sucre brun, substitut de beurre, arômes de synthèse, beurre.",340,148800,2026-05-20,Brikka,Brikka classique,,1
+c2,Bana Cofe G4,Bana Cofe,Vietnam,Robusta,Rang bơ,Foncée,1,100,,"Beurre, caramel, sucre roux, déjà moulu",250,87000,2026-06-15,Brikka,Brikka classique,,1
+c3,Cà Phê Mít Liberica,Fine Coffee Agency,Vietnam,Liberica,Natural,Medium,0,100,,"Jacquier mûr, cacao, amande",200,280000,2026-06-20,Les deux,The Coffee Chronicler's Recipe,,1
+c4,Là Việt Balanced,Là Việt,"Đà Lạt, Vietnam",Arabica,Lavé,Medium,0,100,café de référence,"100 pour cent arabica, medium, Đà Lạt, rien d'ajouté",250,125000,2026-06-22,Les deux,The Coffee Chronicler's Recipe,,1
+c5,Là Việt Strong,Là Việt,"Đà Lạt, Vietnam",Blend arabica et robusta,Classique,Foncée,0,100,,"Corps fort, amertume marquée",250,125000,2026-06-10,Brikka,Brikka classique,,0
+`;
+const DEMO_EXTRACTIONS_CSV = `id,date_heure,cafe_id,methode,recette,dose_g,eau_g,mouture_dial,temperature_c,temps_total_s,temps_ecoulement_s,volume_extrait_ml,eau_ajoutee_ml,lait_ml,agitation_nb,tasse,eau_prechauffee,note_sur_10,diagnostic,descripteurs,commentaire
+e1,2026-06-29T13:21,c1,Brikka,Brikka classique,14,100,,80,241,34,90,,,,Loveramics Flat White Egg,1,4.0,Sur-extrait (amer),sucre roux|chocolat noir|brûlé,
+e2,2026-06-30T14:18,c3,Brikka,Brikka classique,14,100,0.9.3,90,238,23,90,,,,Loveramics Flat White Egg,1,4.5,Acide ET amer (extraction inégale),amande|cacao,
+e3,2026-07-01T08:22,c5,Brikka,Brikka classique,14,100,0.9.4,90,317,42,90,,,,Loveramics Flat White Egg,1,4.0,Brûlé (défaut du sachet),tabac|terreux|brûlé,"Goût de cendre, aucun réglage n'y changera rien, sachet abandonné."
+e4,2026-07-01T09:59,c3,Switch,The Coffee Chronicler's Recipe,15,225,1.2.4,92,200,57,191,,,,Classic Mug,,3.5,Acide ET amer (extraction inégale),cacao|fruits mûrs|banane,
+e5,2026-07-02T08:16,c5,Brikka,Brikka classique,14,100,0.9.4,90,304,35,90,,,,Loveramics Espresso Egg,1,3.0,Brûlé (défaut du sachet),brûlé|tabac,
+e6,2026-07-02T13:09,c4,Switch,The Coffee Chronicler's Recipe,15,225,1.2.4,92,199,53,189,,,,Classic Mug,,4.0,Sur-extrait (amer),chocolat noir|fruits rouges|noisette|brûlé,"Sorti brûlant, je pense que j'ai laissé trop longtemps sur le feu."
+e7,2026-07-02T15:29,c5,Brikka,Brikka classique,14,100,0.9.4,90,252,38,90,,,,Loveramics Flat White Egg,1,4.0,Brûlé (défaut du sachet),terreux|brûlé|tabac,
+e8,2026-07-03T14:58,c5,Brikka,Brikka classique,14,100,0.9.4,85,232,25,90,,,,Loveramics Espresso Egg,1,3.0,Brûlé (défaut du sachet),terreux|réglisse|brûlé,
+e9,2026-07-03T16:05,c4,Brikka,Brikka classique,14,100,0.9.4,80,314,37,90,,,,Loveramics Flat White Egg,1,5.0,Sur-extrait (amer),fruits rouges|caramel|brûlé,
+e10,2026-07-06T15:41,c4,Switch,The Coffee Chronicler's Recipe,15,225,1.4.0,92,218,67,188,,,,Classic Mug,,5.0,Sur-extrait (amer),noisette|caramel|fruits rouges|brûlé,
+e11,2026-07-07T07:17,c1,Brikka,Brikka classique,14,100,,90,303,40,90,,,,Loveramics Espresso Egg,1,5.0,Sur-extrait (amer),chocolat noir|sucre roux|brûlé,
+e12,2026-07-07T08:26,c4,Switch,The Coffee Chronicler's Recipe,15,225,1.3.1,92,198,65,196,,,,Classic Mug,,4.5,Sur-extrait (amer),caramel|chocolat noir|brûlé,
+e13,2026-07-07T14:55,c3,Brikka,Brikka classique,14,100,0.9.1,80,313,39,90,,,,Loveramics Flat White Egg,,5.0,Astringent,amande|banane|brûlé,
+e14,2026-07-08T07:00,c4,Switch,The Coffee Chronicler's Recipe,15,225,1.5.0,92,196,47,189,,,,Classic Mug,,5.0,Équilibré,fruits rouges|noisette,
+e15,2026-07-08T08:03,c1,Brikka,Brikka classique,14,100,,90,297,27,90,,,,Loveramics Flat White Egg,,5.0,Équilibré,chocolat noir|rond|sucre roux,"Acide au début puis amer, lit mal aplani je pense."
+e16,2026-07-08T13:15,c3,Switch,The Coffee Chronicler's Recipe,15,225,1.3.1,92,203,69,189,,,,Classic Mug,,4.5,Astringent,cacao|amande|brûlé,"Pas terrible, mais je note tout pour comparer."
+e17,2026-07-09T09:59,c4,Switch,The Coffee Chronicler's Recipe (Sweet),15,225,1.5.0,92,199,51,196,,,,Classic Mug,,5.5,Équilibré,noisette|caramel,
+e18,2026-07-11T16:34,c4,Switch,Le Costaud (Bloom),15,225,1.1.2,96,219,61,187,,,3,Classic Mug,,5.0,Acide ET amer (extraction inégale),fruits rouges|caramel|miel,"Sorti brûlant, je pense que j'ai laissé trop longtemps sur le feu."
+e19,2026-07-12T08:40,c4,Switch,The Coffee Chronicler's Recipe,15,225,1.4.2,92,210,70,187,,,,Classic Mug,,5.0,Sur-extrait (amer),chocolat noir|caramel|brûlé,
+e20,2026-07-12T15:35,c4,Switch,The Coffee Chronicler's Recipe,15,225,1.3.3,92,185,76,189,,,,Classic Mug,,5.5,Sur-extrait (amer),noisette|chocolat noir|brûlé,
+e21,2026-07-13T07:13,c4,Switch,Le Costaud (Immersion),15,225,1.3.2,94,183,63,195,,,3,Classic Mug,,6.5,Astringent,noisette|caramel|brûlé,
+e22,2026-07-13T09:21,c4,Switch,The Coffee Chronicler's Recipe,15,225,1.4.2,92,185,83,191,,,,Classic Mug,,5.5,Astringent,chocolat noir|fruits rouges|brûlé,
+e23,2026-07-13T16:55,c2,Brikka,Brikka classique,12,85,,90,254,34,78,,,,Loveramics Espresso Egg,1,5.0,Astringent,sirupeux|chocolat noir|brûlé,
+e24,2026-07-14T07:07,c4,Switch,The Coffee Chronicler's Recipe,15,225,1.4.2,92,203,80,192,,,,Classic Mug,,6.0,Sur-extrait (amer),fruits rouges|caramel|brûlé,"Le jacquier commence à sortir, très plaisant."
+e25,2026-07-14T09:00,c3,Brikka,Brikka classique,14,100,1.0.2,85,285,24,90,,,,Loveramics Espresso Egg,1,6.0,Sur-extrait (amer),banane|cacao|brûlé,
+e26,2026-07-15T15:18,c3,Switch,Le Costaud (Bloom),15,225,1.3.2,94,214,63,188,,,3,Classic Mug,,6.5,Équilibré,fruits mûrs|amande,
+e27,2026-07-19T09:28,c3,Switch,Le Costaud (Immersion),15,225,1.4.2,92,155,56,187,,,3,Classic Mug,,6.5,Sur-extrait (amer),jacquier|fruits mûrs|brûlé,
+e28,2026-07-19T13:14,c4,Switch,The Coffee Chronicler's Recipe,15,225,1.4.0,92,212,79,196,,,,Classic Mug,,6.5,Astringent,miel|fruits rouges|caramel|brûlé,"Mieux qu'hier, l'amertume recule."
+e29,2026-07-20T07:14,c1,Brikka,Brikka classique,14,100,,80,301,29,90,,,,Loveramics Flat White Egg,1,7.0,Équilibré,malt|caramel|rond,
+e30,2026-07-20T13:46,c4,Switch,Le Costaud (Immersion),15,225,1.4.3,93,166,53,190,,,3,Classic Mug,,7.0,Équilibré,fruits rouges|miel,
+e31,2026-07-20T16:17,c3,Brikka,Brikka classique,14,100,1.0.4,85,272,32,90,,,,Loveramics Flat White Egg,1,7.0,Équilibré,fruits mûrs|jacquier|banane,
+e32,2026-07-21T07:13,c4,Switch,Le Costaud (Immersion),15,225,1.3.1,93,168,75,190,,,3,Classic Mug,,6.0,Sur-extrait (amer),fruits rouges|caramel|brûlé,
+e33,2026-07-21T13:17,c3,Switch,Le Costaud (Bloom),15,225,1.2.4,95,224,46,195,,,3,Classic Mug,,7.0,Équilibré,jacquier|amande|cacao,
+e34,2026-07-23T15:27,c1,Brikka,Brikka classique,14,100,,80,236,30,90,,,,Loveramics Espresso Egg,1,7.0,Équilibré,caramel|sucre roux,"Mieux qu'hier, l'amertume recule."
+e35,2026-07-24T14:03,c4,Switch,Le Costaud (Immersion),15,225,1.3.2,92,183,65,197,,,3,Classic Mug,,7.0,Astringent,caramel|miel|brûlé,
+e36,2026-07-24T15:36,c4,Switch,Le Costaud (Immersion),15,225,1.4.0,94,157,48,188,,,3,Classic Mug,,7.5,Équilibré,fruits rouges|noisette,
+e37,2026-07-25T13:45,c1,Brikka,Brikka classique,14,100,,80,319,31,90,,,,Loveramics Flat White Egg,1,6.5,Sur-extrait (amer),caramel|chocolat noir|malt|brûlé,
+e38,2026-07-25T16:00,c4,Brikka,Brikka classique,14,100,1.0.3,85,276,42,90,,,,Loveramics Espresso Egg,1,7.0,Acide ET amer (extraction inégale),fruits rouges|miel,
+e39,2026-07-26T09:20,c4,Brikka,Brikka classique,14,100,1.0.3,85,287,29,90,,,,Loveramics Espresso Egg,1,7.0,Sur-extrait (amer),caramel|miel|brûlé,"Bon équilibre mais un peu creux, je tenterai plus chaud."
+e40,2026-07-26T14:21,c2,Brikka,Brikka classique,12,85,,90,231,38,78,,,,Loveramics Flat White Egg,1,7.0,Équilibré,chocolat noir|sirupeux,
+e41,2026-07-27T09:14,c3,Switch,The Coffee Chronicler's Recipe,15,225,1.5.1,92,200,59,191,,,,Classic Mug,,7.0,Équilibré,cacao|banane,"Mieux qu'hier, l'amertume recule."
+e42,2026-07-29T07:47,c3,Brikka,Brikka classique,14,100,1.1.2,80,257,45,90,,,,Loveramics Espresso Egg,1,8.0,Équilibré,cacao|jacquier|amande|rond,
+e43,2026-07-29T09:19,c1,Brikka,Brikka classique,14,100,,85,235,23,90,15,,,Loveramics Espresso Egg,1,7.0,Équilibré,malt|caramel,
+e44,2026-07-30T08:03,c2,Brikka,Brikka classique,12,85,,80,238,34,78,,,,Loveramics Espresso Egg,1,7.5,Équilibré,sirupeux|noisette,"Le réglage 1.2.0 est le bon pour la Brikka, je ne touche plus."
+e45,2026-07-31T16:26,c3,Brikka,Brikka classique,14,100,1.1.2,90,278,36,90,,,,Loveramics Espresso Egg,1,7.5,Équilibré,banane|jacquier|cacao,
+e46,2026-08-01T16:13,c3,Switch,The Coffee Chronicler's Recipe,15,225,1.5.0,92,175,38,196,,,,Classic Mug,,7.5,Équilibré,banane|amande|fruits mûrs,"Superbe, notes de jacquier bien mûres, zéro amertume."
+e47,2026-08-02T13:04,c4,Brikka,Brikka classique,14,100,1.1.3,85,244,39,90,,,,Loveramics Flat White Egg,1,8.5,Équilibré,noisette|caramel,
+e48,2026-08-02T15:52,c3,Switch,The Coffee Chronicler's Recipe,15,225,1.5.0,92,182,70,191,,,,Classic Mug,,8.0,Équilibré,jacquier|banane,
+e49,2026-08-03T07:14,c4,Brikka,Brikka classique,14,100,1.1.1,90,264,40,90,20,,,Loveramics Flat White Egg,1,8.0,Équilibré,caramel|miel,
+e50,2026-08-03T16:05,c3,Switch,Le Costaud (Bloom),15,225,1.3.3,94,226,56,191,,,3,Classic Mug,,8.5,Équilibré,banane|jacquier,
+e51,2026-08-04T16:25,c4,Brikka,Brikka classique,14,100,1.1.1,90,299,36,90,,,,Loveramics Espresso Egg,1,8.5,Équilibré,miel|noisette|rond,
+e52,2026-08-05T13:07,c1,Brikka,Brikka classique,14,100,,90,250,31,90,10,,,Loveramics Flat White Egg,1,8.5,Équilibré,rond|sucre roux,
+e53,2026-08-05T15:18,c3,Switch,The Tetsu Devil,15,225,2.0.1,92,199,62,189,,,,Classic Mug,,8.0,Équilibré,banane|fruits mûrs|jacquier|rond,
+e54,2026-08-05T16:26,c2,Brikka,Brikka classique,12,85,,80,266,45,78,,,,Loveramics Espresso Egg,1,8.5,Équilibré,chocolat noir|sirupeux|rond,
+e55,2026-08-06T09:55,c1,Brikka,Brikka classique,14,100,,90,279,29,90,,,,Loveramics Espresso Egg,1,9.0,Équilibré,sucre roux|rond,
+e56,2026-08-06T13:02,c1,Brikka,Brikka classique,14,100,,80,286,25,90,20,,,Loveramics Espresso Egg,1,9.0,Équilibré,sucre roux|caramel|rond,
+e57,2026-08-07T09:54,c3,Switch,The Coffee Chronicler's Recipe (Sweet),15,225,1.5.4,92,204,42,197,,,,Classic Mug,,8.5,Équilibré,cacao|fruits mûrs|banane|rond,
+e58,2026-08-07T16:48,c3,Brikka,Brikka classique,14,100,1.2.2,80,318,31,90,,,,Loveramics Flat White Egg,1,8.5,Équilibré,amande|fruits mûrs|rond,
+e59,2026-08-08T08:11,c1,Brikka,Brikka classique,14,100,,90,317,29,90,15,,,Loveramics Espresso Egg,,9.0,Équilibré,caramel|chocolat noir,
+e60,2026-08-08T16:18,c3,Switch,La Sherrycipe,15,225,2.0.2,92,122,54,187,,,,Classic Mug,,8.5,Équilibré,fruits mûrs|amande,"Très propre, sucrosité longue, je garde cette recette."
+e61,2026-08-09T09:44,c2,Brikka,Brikka classique,12,85,,85,231,40,78,,,,Loveramics Flat White Egg,,9.0,Équilibré,sucre roux|noisette|rond,"Superbe, notes de jacquier bien mûres, zéro amertume."
+e62,2026-08-09T14:43,c4,Brikka,Brikka classique,14,100,1.2.0,90,242,42,90,,,,Loveramics Flat White Egg,1,9.0,Équilibré,caramel|noisette|fruits rouges|rond,
+`;

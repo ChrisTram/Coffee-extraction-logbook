@@ -1,0 +1,19 @@
+# Donnees personnelles : les CSV de Chris vivent dans un dossier lie via
+# l'API File System Access, hors du repo. Filet de securite si ce dossier
+# se retrouve un jour dans l'arborescence. Le dossier demo/ reste versionne.
+donnees/
+data/
+Data/
+*.csv
+!demo/*.csv
+
+# Systeme et editeurs
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
+
+# Outils
+__pycache__/
+node_modules/

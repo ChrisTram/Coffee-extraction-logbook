@@ -1,0 +1,4 @@
+# Normalisation des fins de ligne : LF dans le depot, quelle que soit la
+# machine. Evite que Windows reinjecte des CRLF dans les CSV de demo et dans
+# les fichiers servis par Cloudflare Pages.
+* text=auto eol=lf

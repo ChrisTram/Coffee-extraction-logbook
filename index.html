@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="sombre">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Carnet d'extraction : Brikka et Switch</title>
+<link rel="stylesheet" href="css/styles.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%98%95%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+
+<header class="entete">
+  <div class="entete-inner">
+    <div class="marque">
+      <span class="marque-icone" aria-hidden="true">☕</span>
+      <div>
+        <h1>Carnet d'extraction</h1>
+        <p class="marque-sous">Brikka, Switch et Timemore C5 ESP</p>
+      </div>
+    </div>
+    <nav class="nav" aria-label="Navigation principale">
+      <button class="nav-btn actif" data-ecran="tableau">Tableau de bord</button>
+      <button class="nav-btn" data-ecran="saisie">Saisie</button>
+      <button class="nav-btn" data-ecran="historique">Historique</button>
+      <button class="nav-btn" data-ecran="reference">Référence</button>
+      <button class="nav-btn" data-ecran="guide">Guide</button>
+    </nav>
+    <div class="entete-actions">
+      <span id="badge-demo" class="badge badge-demo" hidden>Démo</span>
+      <span id="badge-fichier" class="badge badge-fichier" hidden title="Dossier de données lié">📁 <span id="badge-fichier-nom"></span></span>
+      <button id="btn-cafes-entete" class="btn-icone" title="Gérer mes cafés">☕<span class="btn-icone-texte">Cafés</span></button>
+      <button id="btn-recettes-entete" class="btn-icone" title="Gérer mes recettes">📖<span class="btn-icone-texte">Recettes</span></button>
+      <button id="btn-donnees" class="btn-icone" title="Gérer les données">⛁<span class="btn-icone-texte">Données</span></button>
+      <button id="btn-lang" class="btn-icone" title="Switch to English">EN</button>
+      <button id="btn-theme" class="btn-icone" title="Basculer clair ou sombre">◐</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- ================= ECRAN 1 : TABLEAU DE BORD ================= -->
+<section id="ecran-tableau" class="ecran actif">
+  <div id="tableau-vide" class="etat-vide" hidden>
+    <p class="etat-vide-icone">☕</p>
+    <h2>Aucune extraction pour le moment</h2>
+    <p>Enregistre ta première tasse depuis l'écran Saisie, ou charge le jeu de démonstration pour voir le tableau de bord en action.</p>
+    <div class="etat-vide-actions">
+      <button class="btn btn-primaire" data-va="saisie">Saisir une extraction</button>
+      <button class="btn" id="btn-demo-vide">Charger la démonstration</button>
+    </div>
+  </div>
+
+  <div id="tableau-contenu">
+    <div class="kpis" id="kpis"></div>
+
+    <div class="grille-graphes">
+      <article class="carte carte-large">
+        <h3>Extractions et note moyenne, 30 derniers jours</h3>
+        <div class="canvas-h240"><canvas id="g-30jours"></canvas></div>
+      </article>
+
+      <article class="carte carte-large">
+        <h3>Calendrier d'activité</h3>
+        <div id="g-heatmap" class="heatmap-conteneur"></div>
+        <p class="legende-heatmap"><span>Moins</span><i class="hm-i hm-n0"></i><i class="hm-i hm-n1"></i><i class="hm-i hm-n2"></i><i class="hm-i hm-n3"></i><i class="hm-i hm-n4"></i><span>Plus</span></p>
+      </article>
+
+      <article class="carte">
+        <h3>Note moyenne par café</h3>
+        <div class="canvas-h240"><canvas id="g-cafes"></canvas></div>
+      </article>
+
+      <article class="carte">
+        <h3>Brikka contre Switch</h3>
+        <div class="duel" id="duel-machines"></div>
+        <div class="canvas-h200"><canvas id="g-duel"></canvas></div>
+        <p class="carte-note">Notes moyennes sur les cafés passés dans les deux machines.</p>
+      </article>
+
+      <article class="carte">
+        <h3>Note contre mouture</h3>
+        <div class="canvas-h240"><canvas id="g-mouture"></canvas></div>
+        <p class="carte-note">Le nuage qui montre ton réglage optimal, en microns.</p>
+      </article>
+
+      <article class="carte">
+        <h3>Note contre âge du café</h3>
+        <div class="canvas-h240"><canvas id="g-age"></canvas></div>
+        <p class="carte-note">Jours depuis la torréfaction : ta fenêtre de fraîcheur.</p>
+      </article>
+
+      <article class="carte">
+        <h3>Diagnostics</h3>
+        <div class="canvas-h240"><canvas id="g-diagnostics"></canvas></div>
+      </article>
+
+      <article class="carte">
+        <h3>Note moyenne par recette</h3>
+        <div class="canvas-h240"><canvas id="g-recettes"></canvas></div>
+      </article>
+
+      <article class="carte carte-large">
+        <h3>Les 5 dernières extractions</h3>
+        <ul class="dernieres" id="dernieres-liste"></ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ECRAN 2 : SAISIE ================= -->
+<section id="ecran-saisie" class="ecran">
+  <div class="saisie-layout">
+  <form id="form-saisie" autocomplete="off">
+    <div class="saisie-entete">
+      <h2 id="saisie-titre">Nouvelle extraction</h2>
+      <div class="champ champ-datetime">
+        <label for="f-date">Date et heure</label>
+        <input type="datetime-local" id="f-date">
+      </div>
+    </div>
+    <p class="champ-hint legende-requis"><span class="requis">*</span> <span>= obligatoire, tout le reste est optionnel.</span></p>
+
+    <div class="champ">
+      <label for="f-cafe">Café</label>
+      <div class="ligne-cafe">
+        <select id="f-cafe"></select>
+        <button type="button" class="btn btn-petit" id="btn-gerer-cafes">Gérer les cafés</button>
+      </div>
+    </div>
+
+    <div class="champ">
+      <span class="label">Méthode</span>
+      <div class="choix-methode" role="radiogroup" aria-label="Méthode">
+        <button type="button" class="btn-methode brikka" data-methode="Brikka">Brikka</button>
+        <button type="button" class="btn-methode switch" data-methode="Switch">Switch</button>
+      </div>
+    </div>
+
+    <div class="champ">
+      <label for="f-recette">Recette</label>
+      <select id="f-recette"></select>
+    </div>
+
+    <div id="avertissements" class="avertissements" aria-live="polite"></div>
+
+    <div class="grille-nombres">
+      <div class="champ">
+        <label for="f-dose">Dose (g)<span class="requis" title="Obligatoire">*</span></label>
+        <input type="number" id="f-dose" step="0.1" min="1" max="60" inputmode="decimal" required>
+      </div>
+      <div class="champ">
+        <label for="f-eau">Eau (g)</label>
+        <input type="number" id="f-eau" step="1" min="10" max="1000" inputmode="decimal">
+      </div>
+      <div class="champ">
+        <label for="f-temp">Température (°C)</label>
+        <input type="number" id="f-temp" step="1" min="60" max="100" inputmode="decimal" placeholder="95">
+        <span class="champ-hint">Sans thermomètre : eau bouillie qui a fini de buller, environ 95.</span>
+      </div>
+      <div class="champ">
+        <label for="f-mouture">Mouture (molette)</label>
+        <input type="text" id="f-mouture" placeholder="1.5.0" pattern="[0-3][.,][0-9][.,][0-4]" inputmode="decimal">
+        <span class="champ-hint" id="mouture-detail"></span>
+      </div>
+      <div class="champ">
+        <label for="f-volume">Volume extrait (ml)</label>
+        <input type="number" id="f-volume" step="1" min="0" max="1000" inputmode="decimal">
+        <button type="button" class="champ-hint champ-hint-btn" id="volume-estime" hidden></button>
+      </div>
+    </div>
+
+    <div class="grille-nombres">
+      <div class="champ champ-double">
+        <label for="f-tasse">Tasse utilisée</label>
+        <div class="ligne-cafe">
+          <select id="f-tasse"></select>
+          <button type="button" class="btn btn-petit" id="btn-tasses" title="Gérer mes tasses">✚</button>
+        </div>
+        <span class="champ-hint" id="tasse-avert"></span>
+      </div>
+      <div class="champ" id="champ-prechauffe" hidden>
+        <label class="label-inline"><input type="checkbox" id="f-prechauffe"> Eau préchauffée</label>
+        <span class="champ-hint">Versée chaude dans la chaudière, comme la recette le demande.</span>
+      </div>
+      <div class="champ" id="champ-ajout-eau" hidden>
+        <label class="label-inline"><input type="checkbox" id="f-ajout-eau-oui"> Ajout d'eau après extraction</label>
+        <input type="number" id="f-eau-ajoutee" step="1" min="0" max="500" inputmode="decimal" placeholder="ml" hidden>
+        <span class="champ-hint">Pour allonger la boisson. N'entre pas dans le ratio.</span>
+      </div>
+      <div class="champ" id="champ-agitation" hidden>
+        <label class="label-inline"><input type="checkbox" id="f-agitation-oui"> Agitation</label>
+        <input type="number" id="f-agitation" step="1" min="1" max="20" inputmode="numeric" value="1" hidden>
+        <span class="champ-hint">Nombre de remuages, 1 par défaut.</span>
+      </div>
+      <div class="champ" id="champ-lait" hidden>
+        <label for="f-lait">Lait ajouté (ml)</label>
+        <input type="number" id="f-lait" step="1" min="0" max="500" inputmode="decimal">
+        <span class="champ-hint" id="lait-hint"></span>
+      </div>
+    </div>
+
+    <div id="tasses-editeur" class="carte tasses-editeur" hidden>
+      <div id="tasses-liste"></div>
+      <div class="tasses-ajout">
+        <input type="text" id="tasse-nom" placeholder="Nom de la tasse">
+        <input type="number" id="tasse-ml" min="10" max="1000" step="5" placeholder="ml">
+        <button type="button" class="btn btn-petit" id="tasse-ajouter">Ajouter</button>
+      </div>
+    </div>
+
+    <div class="bandeau-live" id="bandeau-live">
+      <span id="live-ratio">Ratio : <b>…</b></span>
+      <span id="live-mouture">Mouture : <b>…</b></span>
+      <span id="live-boisson" hidden>Boisson : <b>…</b></span>
+      <span id="live-cout">Coût : <b>…</b></span>
+    </div>
+
+    <div class="chrono carte">
+      <div class="chrono-entete-ligne">
+        <span class="chrono-valeur chrono-grand" id="chrono-total">0:00</span>
+        <label class="label-inline chrono-bip-label" title="Bip discret à chaque palier de la recette">
+          <input type="checkbox" id="chrono-bip" checked> Bips aux paliers
+        </label>
+      </div>
+      <div class="chrono-etapes" id="chrono-etapes" hidden>
+        <p class="chrono-etape-courante" id="chrono-courante"></p>
+        <p class="chrono-etape-suivante" id="chrono-suivante"></p>
+      </div>
+      <div class="chrono-boutons">
+        <button type="button" class="btn btn-primaire" id="btn-chrono">Démarrer</button>
+        <button type="button" class="btn" id="btn-chrono-stop" hidden>Arrêter et reporter</button>
+        <button type="button" class="btn btn-discret" id="btn-chrono-raz" hidden>Remettre à zéro</button>
+      </div>
+      <div class="grille-nombres chrono-manuels">
+        <div class="champ">
+          <label for="f-total">Temps total (s)</label>
+          <input type="number" id="f-total" step="1" min="0" inputmode="numeric">
+        </div>
+        <div class="champ">
+          <label for="f-ecoulement">Écoulement (s)</label>
+          <input type="number" id="f-ecoulement" step="1" min="0" inputmode="numeric">
+          <span class="champ-hint">Déduit tout seul : du palier "ouvrir" à l'arrêt du chrono.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="champ">
+      <label for="f-note">Note : <b id="note-affichee">7</b> / 10</label>
+      <input type="range" id="f-note" min="0" max="10" step="0.5" value="7" class="curseur-note">
+    </div>
+
+    <div class="champ">
+      <span class="label">Diagnostic</span>
+      <div class="choix-diagnostic" id="f-diagnostic"></div>
+      <span class="champ-hint" id="diagnostic-correction"></span>
+    </div>
+
+    <div class="champ">
+      <span class="label">Descripteurs</span>
+      <div class="tags" id="f-descripteurs"></div>
+    </div>
+
+    <div class="champ">
+      <label for="f-commentaire">Commentaire</label>
+      <textarea id="f-commentaire" rows="2" placeholder="Libre, par exemple : superbe tasse, ronde et sucrée"></textarea>
+    </div>
+
+    <div class="saisie-actions">
+      <button type="submit" class="btn btn-primaire btn-grand" id="btn-enregistrer">Enregistrer l'extraction</button>
+      <button type="button" class="btn" id="btn-annuler-edition" hidden>Annuler la modification</button>
+    </div>
+  </form>
+
+  <aside class="saisie-aside" aria-label="Recette et café sélectionnés">
+    <div class="carte aside-carte" id="aside-recette"></div>
+    <div class="carte aside-carte" id="aside-cafe"></div>
+  </aside>
+  </div>
+</section>
+
+<!-- ================= ECRAN 3 : HISTORIQUE ================= -->
+<section id="ecran-historique" class="ecran">
+  <div class="historique-filtres carte">
+    <div class="champ">
+      <label for="h-cafe">Café</label>
+      <select id="h-cafe"><option value="">Tous</option></select>
+    </div>
+    <div class="champ">
+      <label for="h-methode">Méthode</label>
+      <select id="h-methode">
+        <option value="">Toutes</option>
+        <option value="Brikka">Brikka</option>
+        <option value="Switch">Switch</option>
+      </select>
+    </div>
+    <div class="champ">
+      <label for="h-diagnostic">Diagnostic</label>
+      <select id="h-diagnostic"><option value="">Tous</option></select>
+    </div>
+    <div class="champ">
+      <label for="h-note-min">Note minimum</label>
+      <input type="number" id="h-note-min" min="0" max="10" step="0.5" placeholder="0">
+    </div>
+    <div class="champ">
+      <label for="h-du">Du</label>
+      <input type="date" id="h-du">
+    </div>
+    <div class="champ">
+      <label for="h-au">Au</label>
+      <input type="date" id="h-au">
+    </div>
+    <div class="historique-filtres-actions">
+      <button class="btn btn-discret" id="h-reinitialiser">Réinitialiser</button>
+      <button class="btn" id="h-exporter">Exporter le filtre en CSV</button>
+    </div>
+  </div>
+
+  <p class="historique-compte" id="h-compte"></p>
+  <div class="table-conteneur carte">
+    <table class="table-historique" id="h-table">
+      <thead>
+        <tr>
+          <th data-tri="date_heure">Date <span class="tri"></span></th>
+          <th data-tri="cafe_nom">Café <span class="tri"></span></th>
+          <th data-tri="methode">Méthode <span class="tri"></span></th>
+          <th data-tri="recette">Recette <span class="tri"></span></th>
+          <th data-tri="mouture">Mouture <span class="tri"></span></th>
+          <th data-tri="ratio">Ratio <span class="tri"></span></th>
+          <th data-tri="note_sur_10">Note <span class="tri"></span></th>
+          <th data-tri="diagnostic">Diagnostic <span class="tri"></span></th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="h-corps"></tbody>
+    </table>
+    <div class="etat-vide etat-vide-mini" id="h-vide" hidden>
+      <p>Aucune extraction ne correspond à ces filtres.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ECRAN 4 : REFERENCE ================= -->
+<section id="ecran-reference" class="ecran">
+  <nav class="sommaire" aria-label="Sommaire de la référence">
+    <a href="#ref-recettes">Recettes</a>
+    <a href="#ref-moulin">Moulin</a>
+    <a href="#ref-diagnostic">Diagnostic du goût</a>
+    <a href="#ref-regles">Règles</a>
+    <a href="#ref-vocabulaire">Vocabulaire</a>
+  </nav>
+
+  <div class="ref-titre-ligne">
+    <h2 id="ref-recettes" class="ref-titre">Recettes</h2>
+    <button class="btn btn-petit" id="btn-gerer-recettes">Gérer les recettes</button>
+  </div>
+  <p class="ref-intro">Deux recettes Brikka, cinq recettes Switch : trois pour le quotidien, deux avancées qui imposent de recompter la mouture. Le principe qui les gouverne toutes : le Switch ne doit pas refaire ce que la Brikka fait mieux. Chaque recette est éditable, et les recettes d'origine restent restaurables à tout moment.</p>
+  <div class="grille-recettes" id="grille-recettes"></div>
+
+  <div class="carte ref-bloc encadre-costaud">
+    <h4>Choisir son Costaud : le test</h4>
+    <p>Y a-t-il du sucré et du corps <b>derrière</b> l'acidité ?</p>
+    <p><b>Non</b>, c'est acide et creux, ça s'arrête court : sous-extraction, prends <b>Bloom</b>.</p>
+    <p><b>Oui</b>, mais c'est trop vif pour moi : extraction correcte, prends <b>Immersion</b>.</p>
+  </div>
+
+  <div class="carte ref-bloc">
+    <h4>Récapitulatif mouture des recettes Switch</h4>
+    <div class="table-conteneur">
+      <table class="table-ref">
+        <thead><tr><th>Recette</th><th>Molette</th><th>Crans</th><th>Microns</th></tr></thead>
+        <tbody>
+          <tr><td>1. The Coffee Chronicler's Recipe</td><td><code>1.6.0</code></td><td>80</td><td>environ 666</td></tr>
+          <tr><td>2. The Coffee Chronicler's Recipe (Sweet)</td><td><code>1.6.0</code></td><td>80</td><td>environ 666</td></tr>
+          <tr><td>3. Le Costaud (Bloom)</td><td><code>1.4.0</code></td><td>70</td><td>environ 582</td></tr>
+          <tr><td>4. Le Costaud (Immersion)</td><td><code>1.5.0</code></td><td>75</td><td>environ 624</td></tr>
+          <tr><td>5. The Tetsu Devil</td><td><code>2.0.0</code></td><td>100</td><td>environ 832</td></tr>
+          <tr><td>6. La Sherrycipe</td><td><code>2.0.0</code></td><td>100</td><td>environ 832</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="carte-note">Les quatre premières restent dans la zone commune avec la Brikka à 1.2.0. Les deux dernières demandent d'ouvrir de deux numéros de plus.</p>
+  </div>
+
+  <!-- Bloc Tetsu variantes, rempli par JS dans la carte de la recette 5 -->
+
+  <h2 id="ref-moulin" class="ref-titre">Le moulin : réglage et conversions</h2>
+  <div class="carte ref-bloc">
+    <p>Le C5 ESP se lit en trois parties : <b>rotation.numéro.cran</b>. Exemple : <code>1.3.2</code> se lit "1 rotation depuis le zéro, 3e numéro, 2e cran".</p>
+    <ul class="liste-simple">
+      <li>5 crans par numéro, 10 numéros par rotation, donc 50 crans par rotation</li>
+      <li>8,32 microns par cran, environ 416 microns par rotation</li>
+      <li>butée à 3 rotations, soit 150 crans, soit 1248 microns</li>
+    </ul>
+    <p class="formule"><code>crans = rotation × 50 + numéro × 5 + cran</code> puis <code>microns = crans × 8,32</code></p>
+
+    <div class="convertisseur">
+      <div class="champ">
+        <label for="conv-dial">Convertisseur : tape un réglage de molette</label>
+        <input type="text" id="conv-dial" placeholder="1.5.0" value="1.5.0" inputmode="decimal">
+      </div>
+      <div class="convertisseur-resultat" id="conv-resultat" aria-live="polite"></div>
+    </div>
+
+    <div id="reglette" class="diagramme-conteneur"></div>
+    <p class="carte-note">Le diagramme officiel du C5 ESP : rotations en haut, microns en bas, une boîte par méthode, tes quatre réglages marqués en couleur, la zone hachurée est hors de portée du moulin. Survole ou touche une boîte pour le détail. Le réglage saisi dans le convertisseur met en évidence les méthodes compatibles.</p>
+
+    <h4>Plages par méthode, en crans depuis le point de contact des meules</h4>
+    <div class="table-conteneur">
+      <table class="table-ref">
+        <thead><tr><th>Méthode</th><th>Microns</th><th>Crans</th><th>Molette</th></tr></thead>
+        <tbody id="table-plages"></tbody>
+      </table>
+    </div>
+
+    <h4>Réglages de référence</h4>
+    <div class="table-conteneur">
+      <table class="table-ref">
+        <thead><tr><th>Usage</th><th>Molette</th><th>Crans</th><th>Microns</th></tr></thead>
+        <tbody>
+          <tr><td>Brikka</td><td><code>1.2.0</code></td><td>60</td><td>environ 500</td></tr>
+          <tr><td>Réglage commun aux deux machines</td><td><code>1.5.0</code></td><td>75</td><td>environ 624</td></tr>
+          <tr><td>Switch recettes 1 et 2</td><td><code>1.6.0</code></td><td>80</td><td>environ 666</td></tr>
+          <tr><td>Switch recettes 5 et 6</td><td><code>2.0.0</code></td><td>100</td><td>environ 832</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p><b>Bandes de granulométrie :</b> extra fine moins de 200, fine 200 à 400, medium fine 400 à 600, medium 600 à 800, medium coarse 800 à 1000, coarse 1000 à 1200, extra coarse plus de 1200.</p>
+    <p class="encadre">Pas de correction utile : <b>un numéro entier</b>, soit 5 crans, soit environ 41 microns. Un seul cran ne se sent pas en tasse.</p>
+  </div>
+
+  <h2 id="ref-diagnostic" class="ref-titre">Diagnostic du goût</h2>
+  <div class="grille-diagnostic">
+    <article class="carte diag-carte">
+      <h4>Acidité</h4>
+      <p>Arrive tout de suite, sur les côtés et l'avant de la langue, fait saliver, pincement sous les oreilles, disparaît vite.</p>
+      <p class="diag-action">Signifie sous-extraction. Moudre plus fin, plus chaud, plus longtemps.</p>
+    </article>
+    <article class="carte diag-carte">
+      <h4>Amertume</h4>
+      <p>Arrive après avoir avalé, au fond de la langue et dans la gorge, assèche, la langue devient râpeuse, elle reste.</p>
+      <p class="diag-action">Signifie sur-extraction. Moudre plus grossier, moins chaud, moins longtemps.</p>
+    </article>
+    <article class="carte diag-carte">
+      <h4>Astringence</h4>
+      <p>Sensation tactile et non gustative, bouche qui se resserre, comme un kaki pas mûr.</p>
+      <p class="diag-action">Signal de sur-extraction le plus fiable de tous.</p>
+    </article>
+    <article class="carte diag-carte">
+      <h4>Acide ET amer dans la même gorgée</h4>
+      <p>Extraction inégale. Ce n'est ni la mouture ni le temps, c'est la distribution.</p>
+      <p class="diag-action">Aplanir le lit, remuer, verser en spirale.</p>
+    </article>
+    <article class="carte diag-carte">
+      <h4>Goût de brûlé, cendre, fumée</h4>
+      <p>Ce n'est pas la méthode, c'est le sachet. Torréfaction trop foncée.</p>
+      <p class="diag-action">Aucun réglage ne l'enlèvera.</p>
+    </article>
+    <article class="carte diag-carte diag-calibration">
+      <h4>Calibration maison</h4>
+      <p>Trois verres d'eau : un avec du jus de citron (acidité pure), un avec un sachet de thé noir infusé 10 minutes (amertume et astringence), un avec une pincée de sel (la sensation creuse de la sous-extraction).</p>
+    </article>
+  </div>
+
+  <h2 id="ref-regles" class="ref-titre">Règles d'exécution</h2>
+  <div class="carte ref-bloc">
+    <h4>Valables partout</h4>
+    <p>Pour une ouverture partielle, regarder le <b>niveau d'eau</b> et non le chronomètre. Le débit dépend de la mouture, de la dose et du café. Un chrono n'est pas reproductible, un niveau l'est.</p>
+    <p>Remuer pendant la première infusion seulement, jamais pendant la seconde. Sur un lit déjà tassé, remuer déplace les fines vers le bas et bouche l'écoulement.</p>
+
+    <h4>Ce qui ne va jamais dans le Switch</h4>
+    <p>Bana Cofe G4 (rang bơ, le papier retiendrait le beurre qui fait tout l'intérêt), Fine Robusta Honey (Every Half), Midnight Chocolate (Every Half), Proud of Việt Nam (Every Half), Robusta Honey (The Married Beans), Signature Blend (Ritachi), et tout café en wet hulled ou en torréfaction foncée. Le site t'avertit si tu tentes la combinaison.</p>
+
+    <h4>La question de la double infusion, tranchée</h4>
+    <p>Fractionner l'infusion augmente l'extraction et l'intensité, <b>pas le corps</b>. Le corps vient des huiles et des fines, et le papier les retient quel que soit le nombre de cycles. Ce que les recettes 4 et 5 apportent, c'est de la clarté avec de la puissance. Dans le Switch, les trois vrais leviers de corps sont, dans l'ordre : resserrer le ratio vers 1:14, moudre plus fin, remuer davantage.</p>
+  </div>
+
+  <h2 id="ref-vocabulaire" class="ref-titre">Vocabulaire et culture</h2>
+  <div class="fiches" id="fiches-vocabulaire">
+
+    <details class="fiche carte">
+      <summary>Les trois espèces</summary>
+      <div class="fiche-corps">
+        <p><b>Arabica</b> : environ 1,2 pour cent de caféine, sucres et acides organiques élevés, plante fragile qui exige de l'altitude, 60 à 70 pour cent de la production mondiale.</p>
+        <p><b>Robusta</b> : environ 2,4 pour cent de caféine, deux fois plus, plus de corps, moins de sucre, résistant, pousse en plaine. Le Vietnam en est le premier producteur mondial.</p>
+        <p><b>Liberica et Excelsa</b> : moins de 2 pour cent de la production mondiale, gros grain asymétrique, arôme porté par l'espèce elle même, jacquier, fruit mûr, bois.</p>
+        <p><b>Fine Robusta</b> : du robusta trié, récolté mûr, traité avec le soin d'un arabica de spécialité. Seuil de qualité à 80 points CQI.</p>
+      </div>
+    </details>
+
+    <details class="fiche carte">
+      <summary>Les procédés, du plus propre au plus fermenté</summary>
+      <div class="fiche-corps">
+        <p><b>Lavé</b> : toute la pulpe retirée avant séchage. Grain nu, acidité nette, tasse propre, terroir visible. Territoire du filtre.</p>
+        <p><b>Honey</b> : peau retirée mais mucilage laissé sur le grain pendant le séchage. Sucrosité et corps, acidité amortie. Excellent compromis.</p>
+        <p><b>Natural</b> : cerise entière séchée au soleil, 15 à 30 jours. Fruit mûr, corps, sucre.</p>
+        <p><b>Anaerobic natural</b> : fermentation en cuve scellée sans oxygène, 24 à 120 heures, puis séchage natural. Produit des esters, donc banane et fruits exotiques.</p>
+        <p><b>Carbonic maceration</b> : cuve saturée en CO2, technique empruntée au beaujolais.</p>
+        <p><b>Mosto</b> : fermentation dans le jus de sa propre pulpe. Sucré et délicat.</p>
+        <p><b>Wet hulled (giling basah)</b> : parche retirée humide, séchage écourté, spécialité de Sumatra. Corps très épais, terreux, acidité écrasée.</p>
+        <p><b>Rang bơ ou tẩm bơ</b> : beurre, souvent avec sucre et sel, incorporés à la torréfaction. Tradition vietnamienne. Jamais en filtre papier, jamais au moulin.</p>
+        <p><b>Rang mộc</b> : torréfaction nue, rien d'ajouté. C'est un gage de pureté, pas un niveau de torréfaction.</p>
+      </div>
+    </details>
+
+    <details class="fiche carte">
+      <summary>La torréfaction</summary>
+      <div class="fiche-corps">
+        <p>Séchage, puis réaction de Maillard entre 140 et 165 degrés (noisette, pain, cacao), puis caramélisation à partir de 170 degrés (sucre brun, caramel), premier crack vers 196 degrés, deuxième crack vers 224 degrés.</p>
+        <p>Le temps passé après le premier crack s'appelle le development time : plus il est long, plus le café est rond et sucré, moins il garde de fruit.</p>
+        <p>Un café foncé n'est pas un café fort, il contient même un peu moins de caféine, il est juste plus amer.</p>
+      </div>
+    </details>
+
+    <details class="fiche carte">
+      <summary>L'extraction</summary>
+      <div class="fiche-corps">
+        <p><b>Rendement d'extraction</b> : pourcentage de la masse de café sec dissous dans la tasse. Cible SCA 18 à 22 pour cent. En dessous c'est sous-extrait, au dessus sur-extrait.</p>
+        <p><b>Concentration ou TDS</b> : pourcentage de matière dissoute dans le liquide. Cible filtre 1,15 à 1,35 pour cent. Se règle avec le ratio, pas avec la mouture.</p>
+        <p>Une Brikka sort volontairement au dessus de cette fenêtre, elle travaille à 1:7.</p>
+      </div>
+    </details>
+
+    <details class="fiche carte">
+      <summary>L'eau</summary>
+      <div class="fiche-corps">
+        <p><b>Standard SCA</b> : matières dissoutes totales 150 mg/L (fourchette 75 à 250), dureté calcique 68 mg/L (50 à 175), alcalinité totale 40 mg/L (40 à 70), pH 7 (6,5 à 7,5), sodium 10 mg/L, chlore zéro absolu.</p>
+        <p><b>Au Vietnam</b> : jamais d'eau du robinet, elle est chlorée. Jamais d'eau osmosée pure en bonbonne, elle est trop pauvre en minéraux et donne une tasse creuse et acide. Eau minérale en bouteille autour de 100 à 200 mg/L de résidu sec.</p>
+      </div>
+    </details>
+
+    <details class="fiche carte">
+      <summary>La fraîcheur</summary>
+      <div class="fiche-corps">
+        <p>Attendre 3 à 7 jours après torréfaction. Fenêtre utile de 1 à 6 semaines après la date de torréfaction, pas après l'achat. Chercher la mention "ngày rang" sur le sachet.</p>
+        <p>Conserver en grains, à l'abri de l'air, de la lumière et de la chaleur, jamais au réfrigérateur. Le café moulu perd l'essentiel de son arôme en 15 à 30 minutes.</p>
+      </div>
+    </details>
+
+    <details class="fiche carte">
+      <summary>Lire une étiquette vietnamienne</summary>
+      <div class="fiche-corps">
+        <dl class="lexique">
+          <dt>thành phần</dt><dd>liste des ingrédients, obligatoire, classée par poids décroissant. Le seul texte fiable de l'emballage, le reste est du marketing. Le premier endroit où regarder avant d'acheter.</dd>
+          <dt>cà phê (82%)</dt><dd>le pourcentage réel de café. Un café pur n'affiche pas de pourcentage, il écrit 100% cà phê ou liste ses variétés. Un pourcentage affiché est déjà un aveu.</dd>
+          <dt>đậu nành</dt><dd>soja torréfié. Très répandu dans le café vietnamien de grande distribution. Épaissit le corps, adoucit l'amertume, coûte une fraction du prix du café. Explique une rondeur qui ne vient pas de l'extraction.</dd>
+          <dt>dầu bơ thay thế</dt><dd>substitut de beurre à base d'huile végétale, souvent accompagné de bơ (có chứa sữa), du vrai beurre contenant du lait. Le filtre papier le retire entièrement, donc ces cafés ne vont jamais dans le Switch, et il encrasse les meules du moulin.</dd>
+          <dt>dung dịch đường nâu</dt><dd>sirop de sucre brun ajouté à la torréfaction. Donne la sucrosité. Colle aux meules et caramélise en chauffant.</dd>
+          <dt>hương liệu tổng hợp</dt><dd>arômes de synthèse alimentaires. Ma ligne rouge. À ne pas confondre avec lên men, la fermentation, qui est légitime.</dd>
+        </dl>
+      </div>
+    </details>
+
+    <details class="fiche carte">
+      <summary>Mots vietnamiens utiles</summary>
+      <div class="fiche-corps">
+        <dl class="lexique">
+          <dt>nguyên hạt</dt><dd>grains entiers, ce que je veux par défaut</dd>
+          <dt>xay bột</dt><dd>moulu</dd>
+          <dt>pha thủ công</dt><dd>méthodes manuelles, la mention qui signifie Switch</dd>
+          <dt>pha phin</dt><dd>pour le filtre vietnamien, mouture medium coarse</dd>
+          <dt>pha máy</dt><dd>pour machine, mouture fine</dd>
+          <dt>lên men yếm khí</dt><dd>fermentation anaerobic, légitime et recherchée</dd>
+          <dt>tẩm hương, hương liệu</dt><dd>aromatisé artificiellement, à fuir</dd>
+          <dt>rang mộc</dt><dd>torréfaction nue, sans additif</dd>
+          <dt>ngày rang</dt><dd>date de torréfaction</dd>
+          <dt>chua thanh</dt><dd>acidité vive et propre</dd>
+          <dt>đắng</dt><dd>amer</dd>
+        </dl>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- ================= ECRAN 5 : GUIDE ================= -->
+<section id="ecran-guide" class="ecran">
+  <nav class="sommaire" aria-label="Sommaire du guide">
+    <a href="#gd-boutiques">Boutiques</a>
+    <a href="#gd-acheter">Quoi acheter</a>
+    <a href="#gd-regles">Règles d'achat</a>
+    <a href="#gd-materiel">Matériel et entretien</a>
+    <a href="#gd-messages">Messages prêts à copier</a>
+  </nav>
+
+  <h2 id="gd-boutiques" class="ref-titre">Les boutiques, et quoi y prendre</h2>
+  <p class="ref-intro">Tiré de mon guide Brikka et Switch. Sept de ces boutiques vendent principalement sur leur propre site plutôt que sur Shopee, et c'est presque toujours moins cher en direct.</p>
+
+  <div class="grille-boutiques">
+    <article class="carte boutique">
+      <h4>Là Việt <a href="https://shopee.vn/product/254908605/18380543598" target="_blank" rel="noopener">laviet.coffee ↗</a></h4>
+      <p class="boutique-meta">Đà Lạt · gamme lisible : Balanced, Rich, Strong</p>
+      <p>Le meilleur rapport qualité prix de toute la liste, deux à deux fois et demie moins cher que le reste, chez le torréfacteur dont j'aime déjà le Balanced. Premier choix : Serie 2 Datanla, honey light medium, nougat et chocolat noir, 165 000 ₫ les 250 g, recette imprimée sur la fiche.</p>
+    </article>
+    <article class="carte boutique">
+      <h4>Soul Specialty Coffee <a href="https://beans.voicaphe.com/product/anaerobic-fine-robusta-soul-coffee-250g-/145" target="_blank" rel="noopener">fiche ↗</a></h4>
+      <p class="boutique-meta">Buôn Ma Thuột · deux soeurs Q-Grader CQI et SCA</p>
+      <p>Spécialiste du fine robusta à double fermentation. La gamme Ngọt Brewing est explicitement calibrée pour le filtre. Leur Anaerobic Fine Robusta medium (cannelle, raisin sec, zeste d'orange) est une perle rare qui va vers le sucré, pas vers l'acide.</p>
+    </article>
+    <article class="carte boutique">
+      <h4>The Married Beans <a href="https://www.themarriedbeans.com/en/collections/ca-phe-dac-san-specialty-coffee" target="_blank" rel="noopener">themarriedbeans.com ↗</a></h4>
+      <p class="boutique-meta">Đà Lạt · travail direct avec les fermes de Cầu Đất</p>
+      <p>Prix affichés en clair, de 150 000 à 275 000 ₫ les 250 g, grains avec mouture à la demande. Leur Cầu Đất lavé à 200 000 ₫ est mon étalon : c'est lui qui dit ce que la fermentation ajoute aux autres. Le Robusta Honey à 150 000 ₫ est le meilleur corps sur prix du guide.</p>
+    </article>
+    <article class="carte boutique">
+      <h4>Bosgaurus <a href="https://beans.voicaphe.com/product/proud-bosgaurus-coffee-roasters-250g-/171" target="_blank" rel="noopener">fiche Proud ↗</a></h4>
+      <p class="boutique-meta">Hô Chi Minh · sourcing à Xuân Thọ, 1350 m</p>
+      <p>Le seul du relevé à publier ses recettes complètes : méthode, température, TDS de l'eau, temps. Leur Proud (50 % lavé, 50 % natural) a gagné le championnat national barista 2022 : acidité douce, corps soyeux, finale chocolat, la seule fiche du guide qui annonce les trois ensemble.</p>
+    </article>
+    <article class="carte boutique">
+      <h4>Every Half <a href="https://shopee.vn/everyhalf" target="_blank" rel="noopener">Shopee Mall ↗</a></h4>
+      <p class="boutique-meta">Hô Chi Minh · gamme entièrement en 200 g</p>
+      <p>Attention : leurs prix Shopee sont 36 à 70 pour cent au dessus de leur propre site everyhalf.vn, même en promo. Une promo Shopee n'est intéressante que si elle passe sous leur prix site. Le Fine Robusta Cư M'Gar (goyave rose, chocolat au lait) est leur meilleur café pour moi.</p>
+    </article>
+    <article class="carte boutique">
+      <h4>Ritachi <a href="https://ritachi.com/ca-phe-rang-xay/" target="_blank" rel="noopener">ritachi.com ↗</a></h4>
+      <p class="boutique-meta">Bảo Lộc · exportateur, vitrine secondaire</p>
+      <p>Port gratuit à partir de 500 000 ₫, aucune option de mouture affichée : écrire avant toute commande pour sécuriser le nguyên hạt. Anaerobic plus Cầu Đất fait 370 000 ₫ : ajouter le Signature Blend met à 520 000 ₫ et rend le port gratuit.</p>
+    </article>
+    <article class="carte boutique">
+      <h4>Bana Cafe <a href="https://shopee.vn/banacafegl" target="_blank" rel="noopener">Shopee Mall ↗</a></h4>
+      <p class="boutique-meta">Gia Lai · créneau traditionnel, gamme G1 à G12</p>
+      <p>Un seul rang bơ dans la gamme, le G4 que je bois déjà. Tous les autres sont en rang mộc et disponibles en grains.</p>
+    </article>
+    <article class="carte boutique">
+      <h4>Greenfields <a href="https://shopee.vn/caphedongxanh" target="_blank" rel="noopener">Shopee ↗</a></h4>
+      <p class="boutique-meta">Huế · micro-lots importés en 100 g</p>
+      <p>Cà phê Đồng Xanh. Petits formats parfaits pour tester sans risque, dont le Guji Uraga lavé d'Éthiopie, l'archétype de ce que la Brikka détruit et que le Switch révèle. Prix Shopee 25 à 45 pour cent au dessus de leur site.</p>
+    </article>
+    <article class="carte boutique">
+      <h4>Blagu <a href="https://shopee.vn/sieuthicafe.vn" target="_blank" rel="noopener">sieuthicafe.vn ↗</a></h4>
+      <p class="boutique-meta">Hô Chi Minh · importateur torréfacteur, 508 produits</p>
+      <p>Littéralement supermarché du café. Huit ans, 4,9 sur 6 100 avis. Seul vendeur du relevé à proposer une mouture nommée moka pot, et pièces génériques Brikka à port mutualisé avec le café.</p>
+    </article>
+    <article class="carte boutique">
+      <h4>Home Roast Coffee VN</h4>
+      <p class="boutique-meta">Torréfaction à la commande, profil piloté sous Artisan</p>
+      <p>Le plus rigoureux techniquement du relevé : tri des défauts avant et après torréfaction, 100 pour cent de taux de réponse, 21 produits seulement. Leur Fine Robusta Whisky est mon entrée fermentation côté Brikka.</p>
+    </article>
+    <article class="carte boutique">
+      <h4>Father Coffee</h4>
+      <p class="boutique-meta">Quảng Trị · le meilleur pedigree du relevé</p>
+      <p>Seul torréfacteur du relevé à afficher un score CQI vérifié, 85,21, pour son Mít Liberica Khe Sanh : jacquier, fumé, acidité fraise vive. Jamais en Brikka, l'acidité fraise deviendrait pointue.</p>
+    </article>
+    <article class="carte boutique">
+      <h4>43 Factory <a href="https://43factory.coffee/en/" target="_blank" rel="noopener">43factory.coffee ↗</a></h4>
+      <p class="boutique-meta">Đà Nẵng · le sommet vietnamien, pour situer l'échelle</p>
+      <p>Geisha et pink bourbon importés, 1 000 000 à 1 500 000 ₫ le sachet, environ 4 000 ₫ le gramme. Hors budget et registre floral qui n'est pas le mien. Cité pour savoir où s'arrête l'échelle.</p>
+    </article>
+  </div>
+
+  <h2 id="gd-acheter" class="ref-titre">Quoi acheter</h2>
+  <div class="carte ref-bloc">
+    <h4>Si je ne devais retenir que trois lignes</h4>
+    <p><b>Là Việt Serie 2 Datanla, 165 000 ₫</b> : honey, light medium, nougat et chocolat noir, chez le torréfacteur que j'aime déjà, recette imprimée sur la fiche. Le meilleur rapport plaisir sur risque sur prix.</p>
+    <p><b>Soul Anaerobic Fine Robusta</b> : anaerobic en medium, cannelle et raisin sec. La combinaison la plus rare du Vietnam, et elle va vers le sucré.</p>
+    <p><b>Married Beans Cầu Đất, 200 000 ₫</b> : l'étalon lavé. Pas pour le plaisir, pour la mesure.</p>
+
+    <h4>Le matériel, stocks tendus, à faire en premier</h4>
+    <div class="table-conteneur">
+      <table class="table-ref table-achats">
+        <thead><tr><th>Pour quoi</th><th>Article</th><th>Prix</th><th>Lien</th></tr></thead>
+        <tbody>
+          <tr class="ligne-perso"><td><b>Le vrai manque</b>, rien n'est reproductible sans</td><td>Balance 0,1 g, plateau assez large pour le Switch</td><td>150 à 400 k ₫</td><td>n'importe quel vendeur</td></tr>
+          <tr><td>Remplacer joint et plaque filtre</td><td>Joint Bialetti Brikka, Procaffe, variante Ron Brikka 2 cup, à changer tous les six mois</td><td>175 000 ₫</td><td><a href="https://shopee.vn/product/85940655/5640768494" target="_blank" rel="noopener">Produit ↗</a></td></tr>
+          <tr><td>Ne plus mettre du café partout</td><td>Bague de dosage Ventozi, Size nhỏ : Moka 3/4c. Égalise seulement, ne tasse jamais</td><td>99 000 ₫</td><td><a href="https://shopee.vn/product/889284108/21795381726" target="_blank" rel="noopener">Produit ↗</a></td></tr>
+          <tr><td>Le consommable</td><td>Papiers V60 format 02, blanc de préférence, rincer dans tous les cas. Sur Shopee, taper <code>giấy lọc V60 02</code> ou <code>Hario VCF-02</code></td><td>quelques dizaines de k ₫</td><td><a href="https://shopee.vn/search?keyword=gi%E1%BA%A5y%20l%E1%BB%8Dc%20v60%2002" target="_blank" rel="noopener">Recherche ↗</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4>Les cafés Brikka</h4>
+    <div class="table-conteneur">
+      <table class="table-ref table-achats">
+        <thead><tr><th>Pour quoi</th><th>Café</th><th>Prix</th><th>Lien</th></tr></thead>
+        <tbody>
+          <tr><td>La fermentation, et le meilleur test croisé</td><td>Fine Robusta Whisky, Home Roast, 250 g</td><td>190 000 ₫</td><td><a href="https://shopee.vn/product/1041830370/28002003796" target="_blank" rel="noopener">Produit ↗</a></td></tr>
+          <tr><td>Le honey le moins cher qui coche tout</td><td>Fine Robusta Honey, Every Half, 200 g</td><td>191 250 ₫</td><td><a href="https://shopee.vn/product/1259293184/26882883164" target="_blank" rel="noopener">Produit ↗</a></td></tr>
+          <tr><td>Chocolat noir et caramel épais</td><td>Midnight Chocolate, Every Half, 200 g</td><td>231 200 ₫</td><td><a href="https://shopee.vn/product/1259293184/41476905727" target="_blank" rel="noopener">Produit ↗</a></td></tr>
+          <tr><td>Le corps dense pas cher</td><td>Robusta Honey, The Married Beans, 250 g, grains et mouture à la demande</td><td>150 000 ₫</td><td><a href="https://www.themarriedbeans.com/products/ca-phe-robusta-honey" target="_blank" rel="noopener">Site ↗</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4>Les cafés Switch</h4>
+    <div class="table-conteneur">
+      <table class="table-ref table-achats">
+        <thead><tr><th>Pour quoi</th><th>Café</th><th>Prix</th><th>Lien</th></tr></thead>
+        <tbody>
+          <tr><td>Ma première tasse filtre, format découverte</td><td>Ethiopia Banko Anaerobic, Amigo Cafe, 100 g</td><td>105 000 ₫</td><td><a href="https://shopee.vn/product/46832152/42801777001" target="_blank" rel="noopener">Produit ↗</a></td></tr>
+          <tr><td>L'anaerobic medium, la perle rare</td><td>Anaerobic Fine Robusta, Soul Coffee, 250 g</td><td>à demander</td><td><a href="https://beans.voicaphe.com/product/anaerobic-fine-robusta-soul-coffee-250g-/145" target="_blank" rel="noopener">Fiche ↗</a></td></tr>
+          <tr><td>Acidité douce, corps soyeux, finale chocolat</td><td>Proud, Bosgaurus, 250 g</td><td>à demander</td><td><a href="https://beans.voicaphe.com/product/proud-bosgaurus-coffee-roasters-250g-/171" target="_blank" rel="noopener">Fiche ↗</a></td></tr>
+          <tr><td>Le liberica au bon prix</td><td>Gaia Áo Lụa Hà Đông, 200 g, không xay</td><td>103 000 ₫</td><td><a href="https://shopee.vn/product/863854030/27753477299" target="_blank" rel="noopener">Produit ↗</a></td></tr>
+          <tr><td>Le floral pur, en petit format</td><td>Guji Uraga lavé, Greenfields, 100 g</td><td>125 000 ₫</td><td><a href="https://shopee.vn/product/193614071/23835224148" target="_blank" rel="noopener">Produit ↗</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4>Chez Ritachi, en direct, si j'y vais</h4>
+    <div class="table-conteneur">
+      <table class="table-ref table-achats">
+        <thead><tr><th>Pour quoi</th><th>Café</th><th>Prix</th><th>Lien</th></tr></thead>
+        <tbody>
+          <tr><td>La banane par fermentation</td><td>Fine Robusta Anaerobic, 250 g. Écrire avant, deux variantes sous le même SKU</td><td>170 000 ₫</td><td><a href="https://ritachi.com/ca-phe-len-men-yem-khi-fine-robusta-anaerobic-natural-ritachi-at-home/" target="_blank" rel="noopener">Site ↗</a></td></tr>
+          <tr><td>Leur meilleur choix filtre</td><td>Specialty Arabica Cầu Đất, 250 g</td><td>200 000 ₫</td><td><a href="https://ritachi.com/ca-phe-arabica-cau-dat-da-lat-ritachi-at-home/" target="_blank" rel="noopener">Site ↗</a></td></tr>
+          <tr><td>Le Sáng Tạo 4 haut de gamme, et le port gratuit</td><td>Signature Blend, 250 g</td><td>150 000 ₫</td><td><a href="https://ritachi.com/ca-phe-pha-phin-ngon-tai-nha-signature-blend-ritachi-at-home/" target="_blank" rel="noopener">Site ↗</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <h2 id="gd-regles" class="ref-titre">Règles d'achat</h2>
+  <div class="grille-diagnostic">
+    <article class="carte diag-carte">
+      <h4>Un seul light roast à la fois</h4>
+      <p>C'est un registre entièrement neuf, et il y a une vraie chance de ne pas accrocher du tout. Petit format quand il existe.</p>
+    </article>
+    <article class="carte diag-carte">
+      <h4>Le site officiel avant Shopee</h4>
+      <p>L'écart mesuré chez Every Half est de 36 pour cent, même pendant les promos. Là Việt, Soul, The Married Beans et Ritachi ne vendent quasiment que sur leur propre site.</p>
+    </article>
+    <article class="carte diag-carte">
+      <h4>La hiérarchie réelle</h4>
+      <p>Le procédé décide, la torréfaction arbitre, le pays d'origine arrive loin derrière. Un anaerobic medium du Đắk Lắk me plaira plus qu'un lavé light d'Éthiopie.</p>
+    </article>
+    <article class="carte diag-carte">
+      <h4>Commander hors Shopee</h4>
+      <p>On perd l'escrow (préférer le paiement à la livraison, COD), les vouchers et la messagerie de l'app. On gagne des prix 25 à 36 pour cent plus bas, le choix de la mouture et la date de torréfaction. Le canal de contact réel au Vietnam est Zalo.</p>
+    </article>
+    <article class="carte diag-carte">
+      <h4>Regrouper par boutique</h4>
+      <p>Shopee facture le port par boutique. Regrouper quand deux cafés sont chez le même vendeur, et cliquer tous les vouchers de la boutique avant de valider.</p>
+    </article>
+    <article class="carte diag-carte">
+      <h4>L'ordre à suivre</h4>
+      <p>Maintenant : la balance, le seul achat qui améliore toutes les tasses. Ensuite le test croisé, un même café dans les deux machines le même jour. Ensuite seulement, un café Brikka et un café Switch selon ce que le test a appris.</p>
+    </article>
+  </div>
+
+  <h2 id="gd-materiel" class="ref-titre">Matériel et entretien</h2>
+  <div class="carte ref-bloc">
+    <h4>Le joint Brikka, confirmé</h4>
+    <p>La Brikka 2 tasses partage le joint du Moka Express 3 et 4 tasses : <b>50 mm intérieur, 65 mm extérieur</b>. Chez Procaffe, prendre la variante « Ron Brikka 2 cup ». C'est du caoutchouc, pas du silicone, malgré la mention sur la boîte. À changer tous les six mois.</p>
+    <h4>Entretien</h4>
+    <p><b>Brikka</b> : rinçage à l'eau très chaude après chaque usage, brosse souple sur la plaque filtre. Jamais de lave-vaisselle, les détergents alcalins attaquent l'aluminium. Ne jamais laisser refroidir avec le marc dedans.</p>
+    <p><b>Switch</b> : le papier et le marc à la poubelle, rinçage du cône. Démonter la valve en silicone une fois par semaine et rincer la bille, c'est là que ça s'encrasse.</p>
+    <p><b>C5 ESP</b> : brossage à sec des meules toutes les deux ou trois semaines. Jamais d'eau.</p>
+    <h4>Les filtres du Switch</h4>
+    <p>Le Switch SSD-200-B prend les papiers coniques <b>V60 taille 02</b>, Hario ou compatibles (CAFEC, Timemore). C'est le format le plus répandu du Vietnam. Sur Shopee, taper <code>giấy lọc V60 02</code>, ou <code>Hario VCF-02</code> pour la boîte officielle de 100 (VCF-02-100W en blanc). Le blanc est plus neutre au goût que le brun, mais rincer le papier dans les deux cas. <a href="https://shopee.vn/search?keyword=gi%E1%BA%A5y%20l%E1%BB%8Dc%20v60%2002" target="_blank" rel="noopener">Lancer la recherche sur Shopee ↗</a></p>
+    <h4>Bouilloire</h4>
+    <p>Si le modèle a un thermostat variable, cibler 92 à 94 °C pour les medium. Sinon, faire bouillir puis attendre 45 secondes à 1 minute couvercle ouvert : l'eau retombe vers 94 à 95, ce qui est la valeur par défaut du champ température en saisie.</p>
+  </div>
+
+  <h2 id="gd-messages" class="ref-titre">Messages prêts à copier</h2>
+  <p class="ref-intro">À envoyer avant toute commande. La qualité de la réponse dit déjà tout sur le sérieux du vendeur.</p>
+  <div class="messages-vn">
+    <article class="carte message-carte">
+      <div class="message-entete"><h4>Question universelle avant tout achat</h4><button class="btn btn-petit" data-copier="msg-universel">Copier</button></div>
+      <pre class="message-vn-texte" id="msg-universel">Chào shop, cho mình hỏi:
+1. Ngày rang của lô hàng hiện tại là ngày nào ạ?
+2. Có bán loại nguyên hạt không ạ?
+3. Mức rang là light, medium hay dark ạ?
+Mình pha moka pot và pour over. Cảm ơn shop.</pre>
+      <p class="carte-note">Les trois questions qui comptent : date de torréfaction, grains entiers, niveau de torréfaction.</p>
+    </article>
+    <article class="carte message-carte">
+      <div class="message-entete"><h4>Fine Coffee Agency, sécuriser les grains entiers</h4><button class="btn btn-petit" data-copier="msg-fca">Copier</button></div>
+      <pre class="message-vn-texte" id="msg-fca">Chào shop, mình đặt loại 200g Nguyên Hạt nhé, mình tự xay ở nhà bằng máy xay tay. Nhờ shop đừng xay giúp. Cảm ơn shop.</pre>
+    </article>
+    <article class="carte message-carte">
+      <div class="message-entete"><h4>Bana Cafe, recevoir le G4 bien moulu</h4><button class="btn btn-petit" data-copier="msg-bana">Copier</button></div>
+      <pre class="message-vn-texte" id="msg-bana">Chào shop, mình đặt Bana Cofe G4 loại 250Gr. Mình cần loại XAY BỘT (pha phin), không phải nguyên hạt, shop lưu ý giúp mình nhé. Cảm ơn shop.</pre>
+      <p class="carte-note">Le rang bơ ne passe jamais au moulin : il faut le recevoir déjà moulu.</p>
+    </article>
+    <article class="carte message-carte">
+      <div class="message-entete"><h4>Ritachi, deux questions en une</h4><button class="btn btn-petit" data-copier="msg-ritachi">Copier</button></div>
+      <pre class="message-vn-texte" id="msg-ritachi">Chào shop,
+Mình muốn đặt |250G| FINE ROBUSTA (SKU RTCFR4250). Cho mình hỏi 2 điều ạ:
+1. Lô hàng hiện tại là Anaerobic Natural hay Red Honey ạ? Trên bao bì mình thấy có 2 ô đánh dấu, mình muốn loại lên men yếm khí.
+2. Sản phẩm là nguyên hạt hay bột ạ? Nếu là bột thì shop xay ở mức nào? Mình pha Brikka (moka pot), cần mức medium-coarse tương đương pha phin, không cần mịn như espresso.
+Cảm ơn shop.</pre>
+    </article>
+    <article class="carte message-carte">
+      <div class="message-entete"><h4>Procaffe, confirmer la référence du joint</h4><button class="btn btn-petit" data-copier="msg-procaffe">Copier</button></div>
+      <pre class="message-vn-texte" id="msg-procaffe">Chào shop, ấm của mình là Bialetti Brikka 2 cup mẫu mới (bản thiết kế lại từ 2020, có van đối trọng). Mình lấy variant « Ron Brikka 2 cup » là đúng phải không ạ? Trong hộp có kèm phin lọc (piastrina) luôn không ạ? Cảm ơn shop.</pre>
+    </article>
+    <article class="carte message-carte">
+      <div class="message-entete"><h4>Demander le niveau de torréfaction</h4><button class="btn btn-petit" data-copier="msg-torrefaction">Copier</button></div>
+      <pre class="message-vn-texte" id="msg-torrefaction">Chào shop, cho mình hỏi cà phê này rang ở mức nào ạ (light, medium hay dark)? Mình pha bằng moka pot và pour over nên muốn biết trước. Cảm ơn shop.</pre>
+    </article>
+  </div>
+
+  <h2 class="ref-titre">Sources et lectures</h2>
+  <div class="carte ref-bloc">
+    <ul class="liste-simple">
+      <li><a href="https://pullandpourcoffee.com/timemore-chestnut-c5-c5esp-manual-coffee-grinder-review/" target="_blank" rel="noopener">Pull and Pour : test du Timemore C5 ESP, crans et microns ↗</a></li>
+      <li><a href="https://beeancoffee.com/timemore-c5-esp-pro-grind-settings/" target="_blank" rel="noopener">Beean Coffee : plages de mouture par méthode ↗</a></li>
+      <li><a href="https://www.hario.co.uk/products/hario-v60-immersion-dripper" target="_blank" rel="noopener">Hario : fiche technique du Switch SSD-200-B ↗</a></li>
+      <li><a href="https://littlecupexperts.com/water-quality-sca-golden-cup-standard/" target="_blank" rel="noopener">Standard eau SCA et cibles Golden Cup ↗</a></li>
+      <li><a href="https://www.vietnamspecialtycoffee.org/roasters" target="_blank" rel="noopener">Vietnam Specialty Coffee : annuaire des torréfacteurs ↗</a></li>
+      <li><a href="https://dripped.coffee/moka-pot-aluminum-vs-stainless-steel/" target="_blank" rel="noopener">Dripped Coffee : aluminium et corrosion des moka pots ↗</a></li>
+      <li><a href="https://www.cuppers.ca/blog/complete-guide-to-moka-pot-gasket-sizes/" target="_blank" rel="noopener">Cupper's : tailles de joints moka ↗</a></li>
+    </ul>
+  </div>
+</section>
+
+</main>
+
+<!-- ================= MODALE PREMIER LANCEMENT ================= -->
+<dialog id="modale-accueil" class="modale">
+  <h2>Bienvenue dans ton carnet d'extraction</h2>
+  <p>Où veux tu garder tes données ? Elles vivent dans deux fichiers CSV que tu peux ouvrir dans un tableur. Une copie de travail reste toujours dans le navigateur.</p>
+  <div class="accueil-choix">
+    <button class="carte carte-choix" id="acc-creer">
+      <span class="choix-icone">🗂️</span>
+      <b>Créer un dossier de données</b>
+      <span>Choisis un dossier sur ton disque, le site y crée cafes.csv et extractions.csv avec tes 5 cafés de départ.</span>
+    </button>
+    <button class="carte carte-choix" id="acc-ouvrir">
+      <span class="choix-icone">📂</span>
+      <b>Ouvrir un dossier existant</b>
+      <span>Reprends un dossier qui contient déjà cafes.csv et extractions.csv.</span>
+    </button>
+    <button class="carte carte-choix" id="acc-demo">
+      <span class="choix-icone">✨</span>
+      <b>Charger la démonstration</b>
+      <span>65 extractions sur 6 semaines pour explorer le site. Remplaçable par tes vraies données à tout moment.</span>
+    </button>
+  </div>
+  <p class="modale-note" id="acc-note-fs" hidden>Ton navigateur ne propose pas la liaison directe de fichiers (API File System Access). Elle existe dans Chrome et Edge. Dans Brave, elle s'active dans brave://flags (chercher File System Access API). En attendant, tes données restent dans le navigateur : pense à Exporter en CSV pour les sauvegarder.</p>
+  <button class="btn btn-discret modale-fermer" id="acc-plus-tard">Plus tard</button>
+</dialog>
+
+<!-- ================= MODALE GESTION DES DONNEES ================= -->
+<dialog id="modale-donnees" class="modale">
+  <h2>Données</h2>
+  <p id="donnees-statut"></p>
+  <p class="modale-note" id="don-note-fs" hidden>Ton navigateur ne propose pas la liaison directe de fichiers (API File System Access). Elle existe dans Chrome et Edge. Dans Brave, elle s'active dans brave://flags (chercher File System Access API). En attendant, tes données restent dans le navigateur : pense à Exporter en CSV pour les sauvegarder.</p>
+  <div class="donnees-actions">
+    <button class="btn" id="don-lier">Créer un dossier de données</button>
+    <button class="btn" id="don-ouvrir">Ouvrir un dossier existant</button>
+    <button class="btn" id="don-importer">Importer un CSV</button>
+    <button class="btn" id="don-exporter">Exporter en CSV</button>
+    <button class="btn" id="don-demo">Charger la démonstration</button>
+    <button class="btn btn-danger" id="don-vider">Repartir de zéro</button>
+  </div>
+  <p class="modale-note">Importer un CSV : le site reconnaît tout seul s'il s'agit d'une table de cafés ou d'extractions, et remplace la table correspondante. Exporter : télécharge cafes.csv et extractions.csv.</p>
+  <input type="file" id="don-fichier" accept=".csv,text/csv" hidden>
+  <button class="btn btn-discret modale-fermer" data-ferme="modale-donnees">Fermer</button>
+</dialog>
+
+<!-- ================= MODALE CAFES ================= -->
+<dialog id="modale-cafes" class="modale modale-large">
+  <h2>Mes cafés</h2>
+  <div class="cafes-liste" id="cafes-liste"></div>
+  <button class="btn btn-primaire" id="cafe-nouveau">Ajouter un café</button>
+  <form id="form-cafe" class="form-cafe" hidden>
+    <h3 id="form-cafe-titre">Nouveau café</h3>
+    <div class="grille-nombres">
+      <div class="champ champ-double"><label for="c-nom">Nom</label><input type="text" id="c-nom" required></div>
+      <div class="champ"><label for="c-torrefacteur">Torréfacteur</label><input type="text" id="c-torrefacteur"></div>
+      <div class="champ"><label for="c-origine">Origine</label><input type="text" id="c-origine"></div>
+      <div class="champ"><label for="c-espece">Espèce</label><input type="text" id="c-espece" list="liste-especes"></div>
+      <div class="champ"><label for="c-procede">Procédé</label><input type="text" id="c-procede" list="liste-procedes"></div>
+      <div class="champ"><label for="c-torrefaction">Torréfaction</label>
+        <select id="c-torrefaction"><option value="">Choisir</option><option value="Claire">Claire</option><option value="Medium">Medium</option><option value="Foncée">Foncée</option></select>
+      </div>
+      <div class="champ"><label for="c-format">Format (g)</label><input type="number" id="c-format" min="0" step="1"></div>
+      <div class="champ"><label for="c-prix">Prix (VND)</label><input type="number" id="c-prix" min="0" step="1000"></div>
+      <div class="champ"><label for="c-date-torref">Date de torréfaction</label><input type="date" id="c-date-torref"></div>
+      <div class="champ"><label for="c-machine">Machine recommandée</label>
+        <select id="c-machine"><option value="">Choisir</option><option value="Brikka">Brikka</option><option value="Switch">Switch</option><option value="Les deux">Les deux</option></select>
+      </div>
+      <div class="champ"><label for="c-recette">Recette recommandée</label><select id="c-recette"><option value=""></option></select></div>
+      <div class="champ champ-double"><label for="c-notes">Notes annoncées</label><input type="text" id="c-notes"></div>
+      <div class="champ">
+        <label for="c-pct">Pourcentage de café réel</label>
+        <input type="number" id="c-pct" min="1" max="100" step="1" value="100">
+        <span class="champ-hint">Vérifie la ligne thành phần au dos du paquet.</span>
+      </div>
+      <div class="champ champ-double"><label class="label-inline"><input type="checkbox" id="c-moulu"> Déjà moulu (mouture par défaut du paquet)</label></div>
+      <div class="champ"><label class="label-inline"><input type="checkbox" id="c-actif" checked> Actif</label></div>
+    </div>
+    <div class="saisie-actions">
+      <button type="submit" class="btn btn-primaire">Enregistrer le café</button>
+      <button type="button" class="btn btn-discret" id="cafe-annuler">Annuler</button>
+    </div>
+  </form>
+  <datalist id="liste-especes">
+    <option value="Arabica"></option><option value="Robusta"></option><option value="Fine Robusta"></option>
+    <option value="Liberica"></option><option value="Excelsa"></option><option value="Blend arabica et robusta"></option>
+  </datalist>
+  <datalist id="liste-procedes">
+    <option value="Lavé"></option><option value="Honey"></option><option value="Natural"></option>
+    <option value="Anaerobic natural"></option><option value="Carbonic maceration"></option><option value="Mosto"></option>
+    <option value="Wet hulled"></option><option value="Rang bơ"></option><option value="Rang mộc"></option><option value="Classique"></option>
+  </datalist>
+  <button class="btn btn-discret modale-fermer" data-ferme="modale-cafes">Fermer</button>
+</dialog>
+
+<!-- ================= MODALE RECETTES ================= -->
+<dialog id="modale-recettes" class="modale modale-large">
+  <h2>Mes recettes</h2>
+  <p class="modale-note">Tout est éditable : les valeurs préremplies en saisie viennent d'ici. Les 7 recettes d'origine peuvent toujours être rétablies à leur version vérifiée.</p>
+  <div class="cafes-liste" id="recettes-liste"></div>
+  <button class="btn btn-primaire" id="recette-nouvelle">Ajouter une recette</button>
+  <form id="form-recette" class="form-cafe" hidden>
+    <h3 id="form-recette-titre">Nouvelle recette</h3>
+    <div class="grille-nombres">
+      <div class="champ champ-double"><label for="r-nom">Nom</label><input type="text" id="r-nom" required></div>
+      <div class="champ"><label for="r-methode">Méthode</label>
+        <select id="r-methode"><option>Brikka</option><option>Switch</option></select>
+      </div>
+      <div class="champ"><label for="r-numero">Numéro ou étiquette</label><input type="text" id="r-numero" placeholder="Recette 6"></div>
+      <div class="champ champ-double"><label for="r-sous-titre">Sous-titre</label><input type="text" id="r-sous-titre" placeholder="Percolation puis immersion"></div>
+      <div class="champ"><label for="r-dose">Dose (g)</label><input type="number" id="r-dose" step="0.5" min="1"></div>
+      <div class="champ"><label for="r-eau">Eau (g)</label><input type="number" id="r-eau" step="1" min="10"></div>
+      <div class="champ"><label for="r-temp">Température (°C)</label><input type="number" id="r-temp" step="1" min="60" max="100"></div>
+      <div class="champ"><label for="r-temp-texte">Température affichée</label><input type="text" id="r-temp-texte" placeholder="92 à 94 °C"></div>
+      <div class="champ"><label for="r-dial">Mouture (molette)</label><input type="text" id="r-dial" placeholder="1.5.0"></div>
+      <div class="champ"><label for="r-ratio-texte">Ratio affiché</label><input type="text" id="r-ratio-texte" placeholder="ratio 1:15"></div>
+      <div class="champ"><label for="r-total-texte">Durée affichée</label><input type="text" id="r-total-texte" placeholder="total environ 2:45"></div>
+    </div>
+    <div class="champ">
+      <label for="r-etapes">Étapes, une par ligne : "0:45 texte" pour une étape minutée, "- texte" sinon</label>
+      <textarea id="r-etapes" rows="5" placeholder="0:00 Verser 120 g, vanne OUVERTE&#10;0:45 Verser 120 g, vanne FERMÉE&#10;2:00 Ouvrir, laisser s'écouler"></textarea>
+    </div>
+    <div class="champ"><label for="r-pourqui">Pour quels cafés</label><textarea id="r-pourqui" rows="2"></textarea></div>
+    <div class="champ"><label for="r-cafes">Cafés associés, un par ligne</label><textarea id="r-cafes" rows="3"></textarea></div>
+    <div class="champ"><label for="r-note">Note ou remarque</label><input type="text" id="r-note"></div>
+    <div class="grille-nombres">
+      <div class="champ"><label class="label-inline"><input type="checkbox" id="r-defaut"> Recette par défaut</label></div>
+      <div class="champ"><label class="label-inline"><input type="checkbox" id="r-avancee"> Avancée</label></div>
+      <div class="champ"><label class="label-inline"><input type="checkbox" id="r-actif" checked> Visible</label></div>
+    </div>
+    <div class="saisie-actions">
+      <button type="submit" class="btn btn-primaire">Enregistrer la recette</button>
+      <button type="button" class="btn" id="recette-retablir" hidden>Rétablir la version d'origine</button>
+      <button type="button" class="btn btn-danger" id="recette-supprimer" hidden>Supprimer</button>
+      <button type="button" class="btn btn-discret" id="recette-annuler">Annuler</button>
+    </div>
+  </form>
+  <button class="btn btn-discret modale-fermer" data-ferme="modale-recettes">Fermer</button>
+</dialog>
+
+<!-- ================= SAISIE RAPIDE FLOTTANTE ================= -->
+<button id="fab-rapide" class="fab" title="Saisie rapide" aria-label="Saisie rapide">☕</button>
+<div id="panneau-rapide" class="panneau-rapide" role="dialog" aria-label="Saisie rapide">
+  <div class="rapide-entete">
+    <h3>Saisie rapide</h3>
+    <button class="btn-icone" id="q-fermer" aria-label="Fermer">✕</button>
+  </div>
+  <div class="champ">
+    <label for="q-cafe">Café</label>
+    <select id="q-cafe"></select>
+  </div>
+  <div class="champ">
+    <label for="q-recette">Recette</label>
+    <select id="q-recette"></select>
+  </div>
+  <div class="champ">
+    <label for="q-note">Note : <b id="q-note-affichee">7</b> / 10</label>
+    <input type="range" id="q-note" min="0" max="10" step="0.5" value="7" class="curseur-note">
+  </div>
+  <p class="rapide-avert" id="q-avert" aria-live="polite"></p>
+  <div class="rapide-actions">
+    <button class="btn btn-primaire" id="q-enregistrer">Enregistrer</button>
+    <button class="btn btn-discret" id="q-complet">Saisie complète</button>
+  </div>
+  <p class="carte-note">Date : maintenant. Dose, eau, température et mouture reprennent la recette.</p>
+</div>
+
+<!-- ================= MODE PAS A PAS ================= -->
+<dialog id="modale-pas-a-pas" class="modale modale-pasapas">
+  <div class="pap-entete">
+    <h2 id="pap-titre">Recette</h2>
+    <span class="pap-chrono" id="pap-chrono">0:00</span>
+  </div>
+  <p class="pap-params" id="pap-params"></p>
+  <ol class="pap-etapes" id="pap-etapes"></ol>
+  <div class="pap-actions">
+    <button class="btn btn-primaire" id="pap-demarrer">Démarrer</button>
+    <button class="btn" id="pap-suivant" disabled>Étape suivante</button>
+    <button class="btn btn-discret modale-fermer" data-ferme="modale-pas-a-pas">Fermer</button>
+  </div>
+</dialog>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="js/vendor/chart.umd.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/grind.js"></script>
+<script src="js/recettes.js"></script>
+<script src="js/demo-data.js"></script>
+<script src="js/data.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
