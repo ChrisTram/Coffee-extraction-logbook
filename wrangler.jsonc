@@ -1,0 +1,23 @@
+{
+  // Deploiement Cloudflare Workers avec fichiers statiques.
+  // AUCUN build : les fichiers du depot sont servis tels quels.
+  //
+  // Le Worker (worker/index.js) est la porte d'entree : run_worker_first le
+  // fait tourner AVANT le service des fichiers statiques, sinon la porte
+  // serait contournable en demandant directement /index.html.
+  //
+  // Aucun secret ici, ce fichier est public. Les identifiants sont des
+  // secrets Cloudflare (AUTH_USERNAME, AUTH_PASSWORD, AUTH_SECRET).
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "coffee-extraction-logbook",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-08-12",
+  "assets": {
+    "directory": ".",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "observability": {
+    "enabled": true
+  }
+}

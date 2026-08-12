@@ -2,6 +2,10 @@
 
 Site local, sans installation, sans serveur. Ouvre `index.html` dans Chrome et c'est tout.
 
+Il existe aussi en ligne, sur une adresse privée protégée par un identifiant et un mot de passe. La connexion tient 30 jours, donc en pratique tu ne la retapes presque jamais. En local, en `file://`, il n'y a évidemment aucun login : le double clic sur `index.html` ouvre le site directement, comme avant. Pour te déconnecter d'un appareil, va sur `/logout`. Si tu perds un téléphone, change le secret `AUTH_SECRET` dans Cloudflare, toutes les sessions ouvertes tombent d'un coup.
+
+Tes données ne partent jamais en ligne : elles restent dans les CSV de ton disque et dans le stockage local de ton navigateur. Le serveur ne fait que vérifier ton mot de passe et servir les fichiers du site.
+
 Cinq écrans : Tableau de bord, Saisie, Historique, Référence (recettes, moulin, diagnostic, vocabulaire) et Guide (boutiques, quoi acheter, entretien, messages vietnamiens prêts à copier).
 
 ## Français ou anglais

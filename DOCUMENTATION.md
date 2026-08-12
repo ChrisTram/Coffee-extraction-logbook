@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.4,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.5,
 2026-08-12.
 
 ## 1. Vue d'ensemble
@@ -274,10 +274,22 @@ print('PROPRE' if not pb else pb)"
 Régénérer la démo après tout changement de schéma :
 `python3 tools/gen_demo.py` (écrit demo/*.csv et js/demo-data.js).
 
-## 10. Git et déploiement Cloudflare Pages
+Porte d'entrée : `node worker/index.test.mjs` (26 assertions, aucune
+dépendance, node 18 ou plus suffit, il fournit fetch, Request, Response et
+crypto.subtle comme le runtime Workers). Couvre la redirection de l'anonyme,
+la préservation de la destination, le refus des mauvais identifiants, les
+attributs du cookie, le rejet d'une signature falsifiée ou signée avec une
+autre clé, l'expiration à 30 jours, la redirection ouverte, le logout et la
+fermeture par défaut quand les secrets manquent. À relancer à CHAQUE
+modification de `worker/index.js`.
 
-Le site est 100 pour cent statique, aucun build, aucune dépendance réseau :
-c'est le cas idéal pour Cloudflare Pages.
+## 10. Git et déploiement Cloudflare
+
+Le site est 100 pour cent statique, aucun build, aucune dépendance réseau.
+Il est déployé sur Cloudflare WORKERS avec fichiers statiques, pas sur Pages :
+Cloudflare a fusionné les deux produits et ne crée plus de nouveaux projets
+Pages. Workers a de toute façon la propriété qu'il nous faut ici, le code
+tourne AVANT le service des fichiers, ce qui permet une porte d'entrée.
 
 ### Repo git
 
@@ -289,7 +301,12 @@ c'est le cas idéal pour Cloudflare Pages.
   dans un dossier de données lié via l'API File System Access, hors du
   repo. Si un jour ce dossier se retrouve dans l'arborescence, l'ajouter au
   `.gitignore`. Les CSV de `demo/` sont eux des livrables (démo générée).
-- Commits en français, un sujet par commit. Branche de production : `main`.
+- Commits en ANGLAIS, un sujet par commit. Branche de production : `main`.
+  Les noms de variables et de fonctions du code nouveau sont en anglais eux
+  aussi. Le code applicatif existant reste nommé en français, on ne renomme
+  pas en masse. Doc, commentaires et interface restent en français.
+- Le dépôt est PUBLIC. Aucun identifiant, aucun mot de passe, aucun token
+  dedans, jamais. Les secrets vivent dans Cloudflare (voir plus bas).
 - Remote : `https://github.com/ChrisTram/Coffee-extraction-logbook.git`.
 - `.gitignore` : ignore `donnees/`, `data/`, `Data/` et tous les `*.csv`,
   avec l'exception `!demo/*.csv` (la démo est un livrable). Si tu ajoutes un
@@ -309,31 +326,77 @@ aucune dépendance npm (Chart.js est vendorisé), pas de JSX ni de TypeScript.
 Le seul découpage utile est celui déjà listé en dette technique dans
 `V2 suggestions.md` : scinder `app.js` par écran, en scripts classiques.
 
-### Créer le projet Pages
+### La porte d'entrée (worker/index.js)
 
-Deux options équivalentes :
+Le site déployé est privé : un seul compte, pas d'inscription, pas de
+réinitialisation de mot de passe, pas de base d'utilisateurs.
 
-1. Intégration git (recommandé, déploiement automatique à chaque push) :
-   dashboard Cloudflare, Workers et Pages, "Create", onglet Pages,
-   connecter le repo. Réglages : framework preset "None", build command
-   VIDE (aucun build), build output directory `/` (la racine du repo est le
-   site). Production branch `main`.
-2. CLI sans intégration git : `npx wrangler pages deploy . --project-name
-   carnet-extraction` depuis la racine (demande un login Cloudflare la
-   première fois). Chaque exécution publie un déploiement.
+- `worker/index.js` s'exécute devant tout, grâce à `run_worker_first: true`
+  dans `wrangler.jsonc`. SANS ce réglage, les fichiers statiques seraient
+  servis avant le Worker et la porte serait contournable en demandant
+  directement `/index.html`. Ne pas le retirer.
+- Trois secrets Cloudflare, définis dans le dashboard, JAMAIS dans le repo :
+  `AUTH_USERNAME`, `AUTH_PASSWORD`, `AUTH_SECRET` (clé de signature des
+  cookies). Si l'un des trois manque, le Worker répond 503 et ne sert rien :
+  fermeture par défaut, volontaire.
+- Session : cookie `cel_session`, HttpOnly, Secure, SameSite=Lax, 30 jours.
+  Son contenu est `identifiant\nhorodatage d'expiration` signé en HMAC
+  SHA-256 avec `AUTH_SECRET`. Rien n'est stocké côté serveur, il n'y a pas de
+  base de sessions. Conséquences : changer `AUTH_SECRET` invalide toutes les
+  sessions en cours (c'est le bouton de secours si un appareil est perdu), et
+  changer `AUTH_USERNAME` aussi.
+- La comparaison du mot de passe passe par un HMAC des deux valeurs plutôt
+  qu'une comparaison de chaînes, pour ne pas fuiter d'information par le
+  temps de réponse. Un échec attend 700 ms avant de répondre.
+- `/logout` efface le cookie. Il n'y a pas de bouton dans l'interface, c'est
+  une URL à taper. En ajouter un demanderait des clés i18n, voir plus bas.
+- La page de connexion est générée par le Worker, elle n'est pas un fichier
+  statique. Elle est bilingue (attributs `data-fr` et `data-en`) et lit la
+  même clé `localStorage` `langue` que l'application.
+- Les réponses servies portent `Cache-Control: private, no-cache` et
+  `X-Robots-Tag: noindex` : jamais de cache partagé, jamais d'indexation.
+- Le contournement d'une redirection ouverte est traité (`safeTarget`) : le
+  paramètre `?next=` n'accepte qu'un chemin interne.
+- EN LOCAL, RIEN DE TOUT ÇA NE S'APPLIQUE. Le Worker n'existe que sur
+  Cloudflare, le double clic sur `index.html` en `file://` ouvre le site
+  directement, sans login. C'est voulu.
 
-Aucune variable d'environnement, aucun secret, aucune fonction serveur.
-Les fichiers sont en UTF-8 (accents et vietnamien) : rien à configurer,
-Pages les sert correctement.
+### Créer le projet Cloudflare
+
+Dashboard Cloudflare, Compute (Workers), "Create", "Import a repository",
+choisir `ChrisTram/Coffee-extraction-logbook`. Réglages :
+
+| Champ | Valeur |
+|---|---|
+| Project name | `coffee-extraction-logbook` |
+| Build command | VIDE |
+| Deploy command | `npx wrangler deploy` |
+
+Tout le reste (nom du Worker, dossier des assets, `run_worker_first`) est lu
+dans `wrangler.jsonc`, il n'y a rien à régler dans l'interface.
+
+APRÈS le premier déploiement, aller dans Settings, Variables and Secrets, et
+ajouter les trois secrets (type Secret, pas Text) : `AUTH_USERNAME`,
+`AUTH_PASSWORD`, `AUTH_SECRET`. Tant qu'ils ne sont pas là, le site répond
+503. Un redéploiement est nécessaire après l'ajout.
+
+Alternative en ligne de commande, sans intégration git : `npx wrangler deploy`
+depuis la racine, puis `npx wrangler secret put AUTH_PASSWORD` (et les deux
+autres). Chaque exécution publie un déploiement.
+
+Les fichiers sont en UTF-8 (accents et vietnamien) : rien à configurer.
 
 ### Points d'attention APRÈS le passage en https
 
 - CHANGEMENT D'ORIGINE : IndexedDB est par origine. Les données saisies sur
-  la version `file://` ne suivront PAS automatiquement sur l'URL Pages.
-  Chemin de migration pour Chris : sur la version file://, Exporter les CSV
-  (ou simplement retrouver son dossier de données lié), puis sur l'URL
-  déployée, relier le même dossier de données (ou réimporter les CSV). À
-  faire UNE fois.
+  la version `file://` ne suivront PAS automatiquement sur l'URL déployée.
+  Chemin de migration pour Chris, à faire UNE fois, sur Chrome desktop :
+  ouvrir l'URL déployée, se connecter, puis Données, "Ouvrir un dossier
+  existant" et pointer son vrai dossier de données. Les CSV ne transitent
+  jamais par le repo ni par Cloudflare, ils restent sur son disque et le
+  navigateur en garde le miroir IndexedDB. Sur téléphone (pas de File System
+  Access), passer par Données, Importer un CSV, les quatre fichiers un par
+  un.
 - L'API File System Access marche en https (contexte sécurisé), Chrome et
   Edge desktop seulement. Sur téléphone (Chrome Android), showDirectoryPicker
   n'existe pas : le site retombe proprement sur IndexedDB + export manuel,
@@ -341,10 +404,11 @@ Pages les sert correctement.
 - Le https débloque la suggestion 1 de `V2 suggestions.md` : service worker,
   manifest PWA (installable sur le téléphone) et API Wake Lock pendant le
   chrono. C'est le prolongement naturel de ce déploiement.
-- Le site déployé est PUBLIC par défaut (les données restent locales au
-  navigateur de chaque visiteur, rien n'est partagé). Si Chris veut le
-  garder privé : Cloudflare Access (Zero Trust) devant le domaine Pages,
-  gratuit pour un usage perso.
+- Le site déployé est PRIVÉ depuis la v7.5 (voir "La porte d'entrée"). Une
+  alternative existe si un jour la gestion du mot de passe devient pénible :
+  Cloudflare Access (Zero Trust), gratuit en usage perso, qui remplace le
+  mot de passe par un code envoyé par email. C'est plus robuste mais ce
+  n'est pas ce qui a été demandé (identifiant plus mot de passe).
 - `#acc-demo` et toute l'app marchent à l'identique en https : les tests
   Playwright peuvent pointer l'URL déployée aussi bien que le file:// local.
 
@@ -398,3 +462,11 @@ Pages les sert correctement.
   `.gitignore` et `.gitattributes`. Aucun changement de code applicatif :
   l'arbitrage sur le build (pas de Vite, pas de bundler) est consigné en
   section 10.
+- v7.5 : porte d'entrée sur le site déployé. Un compte unique, identifiant et
+  mot de passe, session de 30 jours par cookie signé HMAC, dans un Cloudflare
+  Worker (`worker/index.js`) qui s'exécute devant les fichiers statiques.
+  Ajout de `wrangler.jsonc` et `.assetsignore`. Les secrets vivent dans
+  Cloudflare, le dépôt est public et n'en contient aucun. Le déploiement
+  passe de Pages à Workers. AUCUN changement dans l'application elle même :
+  l'ouverture en `file://` par double clic est intacte et sans login. Passage
+  des messages de commit et du code nouveau à l'anglais.

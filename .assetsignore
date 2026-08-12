@@ -1,0 +1,11 @@
+# Fichiers du depot qui ne sont pas des fichiers du site : ils ne sont pas
+# televerses comme assets statiques. Le code du Worker en particulier n'a
+# rien a faire dans l'arborescence servie.
+.git
+.gitignore
+.gitattributes
+.assetsignore
+wrangler.jsonc
+worker
+tools
+*.md

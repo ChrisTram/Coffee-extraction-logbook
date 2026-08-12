@@ -57,11 +57,14 @@ jamais à la main dans les CSV.
   vérifie la bascule EN si tu as ajouté du texte.
 - Si tu changes le modèle de données de la démo, régénère la avec
   `python3 tools/gen_demo.py` (seed fixe, sortie déterministe).
-- Commits en français, clairs, un sujet par commit. Pousse sur le remote
-  configuré par Chris.
-- Le site se déploie sur Cloudflare Pages (statique pur, AUCUN build) :
-  procédure complète et pièges (changement d'origine IndexedDB, https) dans
-  DOCUMENTATION.md, section "Git et déploiement Cloudflare Pages".
+- Commits en ANGLAIS, clairs, un sujet par commit. Idem pour les noms de
+  variables et de fonctions du code NOUVEAU (`worker/index.js` par exemple).
+  Le code applicatif existant est nommé en français, on ne le renomme pas en
+  masse. La doc, les commentaires et l'interface restent en français.
+- Le site se déploie sur Cloudflare Workers (fichiers statiques, AUCUN
+  build), derrière une porte d'entrée à mot de passe unique. Procédure
+  complète, secrets à définir et pièges (changement d'origine IndexedDB,
+  https) dans DOCUMENTATION.md, section "Git et déploiement Cloudflare".
 
 ## Où est quoi
 
@@ -80,6 +83,8 @@ jamais à la main dans les CSV.
 | `js/demo-data.js` | Démo embarquée (générée, ne pas éditer à la main) |
 | `demo/` | La même démo en CSV |
 | `tools/gen_demo.py` | Générateur de la démo |
+| `worker/index.js` | Porte d'entrée Cloudflare (login), n'existe qu'en ligne |
+| `wrangler.jsonc` | Config du déploiement Workers, aucun secret dedans |
 
 Le dossier parent contient aussi le prompt d'origine
 (`../Prompt-Fable-Tracker-Cafe.md`), le guide d'achat source
