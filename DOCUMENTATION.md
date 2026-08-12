@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.3,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.4,
 2026-08-12.
 
 ## 1. Vue d'ensemble
@@ -290,6 +290,24 @@ c'est le cas idéal pour Cloudflare Pages.
   repo. Si un jour ce dossier se retrouve dans l'arborescence, l'ajouter au
   `.gitignore`. Les CSV de `demo/` sont eux des livrables (démo générée).
 - Commits en français, un sujet par commit. Branche de production : `main`.
+- Remote : `https://github.com/ChrisTram/Coffee-extraction-logbook.git`.
+- `.gitignore` : ignore `donnees/`, `data/`, `Data/` et tous les `*.csv`,
+  avec l'exception `!demo/*.csv` (la démo est un livrable). Si tu ajoutes un
+  jour un CSV livrable ailleurs que dans `demo/`, il faudra une exception de
+  plus, sinon il sera silencieusement ignoré.
+- `.gitattributes` : `* text=auto eol=lf`. Les fins de ligne sont normalisées
+  en LF dans le dépôt même si Windows travaille en CRLF localement. Sans ça
+  les CSV de démo partiraient en CRLF.
+
+### Pas de build, et pourquoi ça reste comme ça
+
+La question d'un passage à Vite (ou tout autre bundler) a été tranchée : NON.
+Vite émet du `<script type="module">`, or les modules ES sont bloqués par
+CORS en `file://` (origine `null`) : le double clic sur `index.html`, qui est
+l'usage principal, cesserait de marcher. Et il n'y a rien à gagner en face,
+aucune dépendance npm (Chart.js est vendorisé), pas de JSX ni de TypeScript.
+Le seul découpage utile est celui déjà listé en dette technique dans
+`V2 suggestions.md` : scinder `app.js` par écran, en scripts classiques.
 
 ### Créer le projet Pages
 
@@ -375,3 +393,8 @@ Pages les sert correctement.
   café de la liste; nouvelle colonne `date_ajout` (posée à la création,
   migration étape 5 pour l'existant, démo migrée au chargement); section
   déploiement git + Cloudflare Pages dans la doc.
+- v7.4 : mise sous git, dépôt initialisé à la racine de `tracker/` et poussé
+  sur GitHub (ChrisTram/Coffee-extraction-logbook, branche `main`). Ajout de
+  `.gitignore` et `.gitattributes`. Aucun changement de code applicatif :
+  l'arbitrage sur le build (pas de Vite, pas de bundler) est consigné en
+  section 10.
