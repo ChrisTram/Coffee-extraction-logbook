@@ -550,20 +550,32 @@ autres). Chaque exécution publie un déploiement.
 
 Les fichiers sont en UTF-8 (accents et vietnamien) : rien à configurer.
 
-### Activer la synchronisation entre appareils
+### Synchronisation entre appareils : FAITE le 12 août 2026
 
-Tant que ce n'est pas fait, `/api/sync` répond 503 et le site marche comme
-avant, chaque appareil avec ses propres données. Rien ne casse.
+Base D1 `coffee-extraction-logbook`, région APAC (servie depuis Singapour, la
+bonne latence depuis le Vietnam), id `af7ee1b7-0e23-47bb-987a-310741425b57`,
+bindée dans `wrangler.jsonc` sous le nom `DB`.
 
-1. Créer la base : `npx wrangler d1 create coffee-extraction-logbook`
-2. Décommenter le bloc `d1_databases` de `wrangler.jsonc` et y coller le
-   `database_id` renvoyé. Il est livré EN COMMENTAIRE volontairement : un
-   `database_id` invalide ferait échouer `wrangler deploy`, donc le dépôt reste
-   déployable en l'état.
-3. Committer, pousser, laisser le déploiement passer.
+ATTENTION si tu recrées la base un jour : `wrangler d1 create` suggère un nom de
+binding dérivé du nom de la base (`coffee_extraction_logbook`). NE PAS le
+suivre. Le Worker lit `env.DB`; avec un autre nom de binding, `env.DB` serait
+`undefined` et `/api/sync` répondrait 503 en ayant l'air configuré, ce qui est le
+pire des deux mondes.
 
-Aucune migration SQL à lancer : la table `documents` est créée à la demande par
-le Worker, une fois par isolat.
+La table `documents` est créée à la demande par le Worker, donc il n'y a aucune
+migration SQL à lancer. Elle a en plus été créée d'avance à la main, ce qui
+retire un point de défaillance au premier chargement :
+
+```
+npx wrangler d1 execute coffee-extraction-logbook --remote --command \
+  "CREATE TABLE IF NOT EXISTS documents (name TEXT PRIMARY KEY, payload TEXT NOT NULL, updated_at INTEGER NOT NULL)"
+```
+
+Vérifier l'état réel du déploiement (secrets ET bindings) :
+`npx wrangler versions view <id de version>`.
+
+Si la base est un jour supprimée ou le binding retiré, `/api/sync` répond 503 et
+le site retombe proprement en mode local, chaque appareil avec ses données.
 
 Le premier appareil qui synchronise pousse ses données (fusion avec un serveur
 vide = le local). C'est donc lui la source de vérité initiale : synchroniser
