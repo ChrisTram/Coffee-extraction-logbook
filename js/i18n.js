@@ -17,6 +17,7 @@ const I18N = (() => {
   const UI = {
     "Carnet d'extraction": "Brew journal",
     "Ce que tes données disent": "What your data says",
+    "Quels goûts font tes bonnes tasses": "Which flavours make your good cups",
     "Nouveau sachet": "New bag",
     "Enregistre un rachat : le stock repart du format plein et la fraîcheur suit la nouvelle date de torréfaction.": "Record a repurchase: stock restarts from the full bag size and freshness follows the new roast date.",
     "Date d'achat": "Purchase date",
@@ -570,10 +571,6 @@ const I18N = (() => {
     t_sync_ok: { fr: "Synchronisé", en: "Synced" },
     t_sync_ko: { fr: "Synchronisation impossible", en: "Sync failed" },
 
-    ins_vide_age: {
-      fr: "Renseigne la date de torréfaction de tes cafés pour débloquer la fenêtre de fraîcheur.",
-      en: "Fill in the roast date of your coffees to unlock the freshness window.",
-    },
     d_ext_brikka: { fr: "extractions Brikka", en: "Brikka brews" },
     d_ext_switch: { fr: "extractions Switch", en: "Switch brews" },
     d_note: { fr: "note moyenne", en: "average score" },
@@ -598,13 +595,17 @@ const I18N = (() => {
       fr: "Aucun réglage de molette enregistré sur tes extractions notées.",
       en: "No dial setting recorded on your scored brews.",
     },
-    vide_age_dates: {
-      fr: "Aucun de tes cafés n'a de date de torréfaction. Renseigne la dans Gérer les cafés et ta fenêtre de fraîcheur apparaîtra.",
-      en: "None of your coffees has a roast date. Fill it in under Manage coffees and your freshness window will appear.",
+    vide_gouts_aucun: {
+      fr: "Tu n'as pas encore coché de descripteurs. Coche ce que tu sens en saisie, et ce graphique te dira quels goûts annoncent tes bonnes tasses.",
+      en: "You have not ticked any descriptors yet. Tick what you taste when logging a brew, and this chart will tell you which flavours mark your good cups.",
     },
-    vide_age: {
-      fr: "Pas encore d'extraction notée sur un café qui a une date de torréfaction.",
-      en: "No scored brew yet on a coffee that has a roast date.",
+    vide_gouts_seuil: {
+      fr: "Aucun descripteur n'atteint encore 3 tasses. Continue à cocher les mêmes mots et le classement apparaîtra.",
+      en: "No descriptor reaches three cups yet. Keep ticking the same words and the ranking will appear.",
+    },
+    gouts_note: {
+      fr: "Note moyenne des tasses où tu as coché le descripteur, à partir de {n} tasses. Vert au dessus de ta moyenne ({m}), rouge en dessous.",
+      en: "Average score of the cups where you ticked the descriptor, from {n} cups up. Green above your average ({m}), red below.",
     },
     vide_duel_une_machine: {
       fr: "Tu n'as encore utilisé qu'une seule machine. Passe un même café en Brikka et au Switch pour les comparer.",
@@ -911,7 +912,7 @@ const I18N = (() => {
     "#tetsu-bloc,#pap-etapes,#g-heatmap,#reglette,#f-diagnostic,#f-descripteurs,#f-recette,#f-cafe," +
     "#h-cafe,#h-diagnostic,#q-cafe,#q-recette,#c-recette,#donnees-statut,#toast,#pap-params," +
     "#insights,#sync-statut,#heatmap-stats,#version-site," +
-    "#vide-mouture,#vide-age,#vide-duel";
+    "#vide-mouture,#vide-gouts,#vide-duel,#note-gouts";
 
   function scanner() {
     const marche = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {

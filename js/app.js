@@ -277,11 +277,9 @@
 
     // Rien à dire : on explique POURQUOI plutôt que de laisser un cadre vide.
     // C'est la différence entre "pas assez de données" et "le site est cassé".
-    const messages = [I18N.t("ins_vide", { n: MIN_SAMPLE })];
-    if (!notees.some(e => e._c.age_jours !== "" && e._c.age_jours >= 0)) {
-      messages.push(I18N.t("ins_vide_age"));
-    }
-    return messages;
+    // On ne réclame PAS les dates de torréfaction ici : les paquets vietnamiens
+    // ne les portent presque jamais, le rappel serait un reproche permanent.
+    return [I18N.t("ins_vide", { n: MIN_SAMPLE })];
   }
 
   function rendreInsights(exts) {
@@ -387,13 +385,69 @@
     return toutesMoulues ? "vide_mouture_moulu" : "vide_mouture";
   }
 
-  function causeAgeVide(notees) {
+  function causeGoutsVide(notees) {
     if (!notees.length) return "vide_rien";
-    const aucuneDate = notees.every(e => {
-      const c = DATA.cafeDe(e);
-      return !c || !c.date_torrefaction;
+    const avecTags = notees.filter(e => (e.descripteurs || "").trim() !== "").length;
+    // Distinguer "tu ne coches jamais de descripteurs" de "pas encore assez de
+    // fois le même", parce que l'action à faire n'est pas la même.
+    return avecTags === 0 ? "vide_gouts_aucun" : "vide_gouts_seuil";
+  }
+
+  /* Note moyenne par descripteur. C'est le seul graphique du tableau de bord qui
+     parle de GOÛT plutôt que de réglage, alors que c'est le sujet du carnet.
+     Il remplace un nuage note contre âge du café, qui dépendait d'une date de
+     torréfaction que les paquets vietnamiens ne portent presque jamais : il était
+     donc structurellement vide.
+
+     Ici la donnée est toujours là, puisque les descripteurs se cochent à chaque
+     tasse. On garde les 10 meilleurs et les 5 pires : sur 59 tags, tout afficher
+     serait illisible, et ce sont les extrêmes qui portent l'information. */
+  const MIN_TASSES_GOUT = 3;
+  const TOP_GOUTS = 10;
+  const PIRES_GOUTS = 5;
+
+  function rendreGouts(notees) {
+    const parTag = {};
+    notees.forEach(e => {
+      (e.descripteurs || "").split("|").filter(Boolean).forEach(tag => {
+        (parTag[tag] = parTag[tag] || []).push(e.note_sur_10);
+      });
     });
-    return aucuneDate ? "vide_age_dates" : "vide_age";
+
+    const classes = Object.entries(parTag)
+      .filter(([, notes]) => notes.length >= MIN_TASSES_GOUT)
+      .map(([tag, notes]) => ({ tag, moy: moyenne(notes), n: notes.length }))
+      .sort((a, b) => b.moy - a.moy);
+
+    if (!classes.length) {
+      $("#note-gouts").textContent = "";
+      return [];
+    }
+
+    // Les extrêmes, sans doublon si la liste est courte.
+    const retenus = classes.length > TOP_GOUTS + PIRES_GOUTS
+      ? [...classes.slice(0, TOP_GOUTS), ...classes.slice(-PIRES_GOUTS)]
+      : classes;
+
+    const moyenneGlobale = moyenne(notees.map(e => e.note_sur_10));
+    const items = retenus.map(c => ({
+      label: I18N.tag(c.tag),
+      value: +c.moy.toFixed(1),
+      extra: I18N.t("b_extractions", { n: c.n }),
+    }));
+    // Vert au dessus de ta moyenne, rouge en dessous : sans repère, "7,9" ne dit
+    // pas si c'est bon pour TOI.
+    const couleurs = retenus.map(c =>
+      c.moy >= moyenneGlobale
+        ? getComputedStyle(document.documentElement).getPropertyValue("--ok").trim()
+        : getComputedStyle(document.documentElement).getPropertyValue("--danger").trim());
+
+    CHARTS.barresHorizontales("g-gouts", items, couleurs, I18N.t("axe_note_moy"), 10);
+    $("#note-gouts").textContent = I18N.t("gouts_note", {
+      m: fmtDecimal(moyenneGlobale, 1),
+      n: MIN_TASSES_GOUT,
+    });
+    return items;
   }
 
   function causeDuelVide(notees) {
@@ -522,15 +576,12 @@
       .map(e => ({ x: e._c.microns, y: e.note_sur_10, nom: e._c.cafe_nom + ", " + e.mouture_dial }));
     CHARTS.nuage("g-mouture", pts("Brikka"), pts("Switch"), I18N.t("axe_mouture"), "µm");
 
-    const ptsAge = m => exts
-      .filter(e => e.methode === m && e.note_sur_10 !== "" && e._c.age_jours !== "" && e._c.age_jours >= 0)
-      .map(e => ({ x: e._c.age_jours, y: e.note_sur_10, nom: e._c.cafe_nom }));
-    CHARTS.nuage("g-age", ptsAge("Brikka"), ptsAge("Switch"), I18N.t("axe_age"), I18N.t("unite_jours"));
+    const notees = exts.filter(e => e.note_sur_10 !== "");
+    const gouts = rendreGouts(notees);
 
     // Les trois cartes qui peuvent rester vides avec des données valides.
-    const notees = exts.filter(e => e.note_sur_10 !== "");
     majCarteVide("mouture", pts("Brikka").length + pts("Switch").length, causeMoutureVide(notees));
-    majCarteVide("age", ptsAge("Brikka").length + ptsAge("Switch").length, causeAgeVide(notees));
+    majCarteVide("gouts", gouts.length, causeGoutsVide(notees));
     majCarteVide("duel", cafesDeux.length, causeDuelVide(notees));
 
     // Diagnostics
@@ -575,7 +626,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.14";
+  const VERSION = "7.15";
 
   // Dose prise quand rien ne la preremplit (recette sans dose, formulaire
   // vierge). 15 g est la dose de toutes les recettes Switch d'origine.

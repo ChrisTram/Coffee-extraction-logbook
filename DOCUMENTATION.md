@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.14,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.15,
 2026-08-12.
 
 ## 1. Vue d'ensemble
@@ -506,6 +506,33 @@ parse pas la page de connexion comme des données. Tests :
 `node worker/sync.test.mjs`, 23 assertions sur la fusion (union, résolution de
 conflit, non résurrection, purge, formes invalides).
 
+## 6 sexies. Quels goûts font tes bonnes tasses
+
+Barres horizontales, un descripteur par ligne, note moyenne des tasses où il a été
+coché. `rendreGouts()` dans app.js, canvas `g-gouts`.
+
+REMPLACE le nuage "Note contre âge du café", supprimé. Celui là dépendait de
+`date_torrefaction`, que les paquets vietnamiens ne portent presque jamais : il
+était structurellement vide et le restera. Les descripteurs, eux, se cochent à
+chaque tasse, donc la donnée est toujours là.
+
+C'est aussi le SEUL graphique du tableau de bord qui parle de GOÛT plutôt que de
+réglage, alors que c'est le sujet du carnet. L'anneau des diagnostics compte des
+problèmes, pas des saveurs.
+
+- `MIN_TASSES_GOUT = 3` : sous ce seuil un descripteur est du bruit.
+- 10 meilleurs plus 5 pires. Sur 59 tags, tout afficher serait illisible, et
+  l'information est dans les extrêmes. En dessous de 15 éligibles, on montre tout.
+- Vert au dessus de la moyenne globale, rouge en dessous, et la moyenne est
+  rappelée sous le graphique : sans repère, "7,9" ne dit pas si c'est bon pour lui.
+- Les libellés passent par `I18N.tag()`, donc les valeurs stockées restent
+  françaises.
+
+Note liée : l'insight de fraîcheur (`insightFraicheur`) EXISTE TOUJOURS et se
+déclenchera si des dates de torréfaction apparaissent un jour. Mais le message qui
+réclamait ces dates a été retiré : Chris a dit qu'il ne les aurait quasi jamais, le
+rappel serait un reproche permanent.
+
 ## 9 bis. PWA, hors ligne et verrou d'écran
 
 Actif uniquement sur le site déployé (https). En `file://` le service worker ne
@@ -812,8 +839,8 @@ Les causes distinguées, parce qu'un "pas de données" générique n'aide person
 |---|---|---|
 | mouture | tous les cafés extraits sont `deja_moulu` | ce n'est pas un bug, la mouture n'est volontairement pas stockée |
 | mouture | autre | aucun réglage enregistré |
-| âge | aucun café n'a de `date_torrefaction` | où la renseigner |
-| âge | autre | pas encore d'extraction notée sur un café daté |
+| goûts | aucun descripteur jamais coché | cocher ce qu'on sent en saisie |
+| goûts | aucun descripteur n'atteint 3 tasses | continuer à cocher les mêmes mots |
 | duel | une seule méthode utilisée | passer un même café dans les deux machines |
 | duel | autre | aucun café dans les deux machines avec une note |
 
@@ -845,3 +872,9 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   serveur. `reporterHorodatage()` conserve l'horodatage connu quand le contenu
   est identique et n'estampille que sur changement réel. Trouvé en inspectant D1
   après la première synchro réelle, pas par un test.
+- v7.15 : "Note contre âge du café" remplacé par "Quels goûts font tes bonnes
+  tasses", note moyenne par descripteur. L'ancien dépendait d'une date de
+  torréfaction que les paquets vietnamiens ne portent presque jamais, il était donc
+  structurellement vide; le nouveau utilise une donnée cochée à chaque tasse et
+  parle enfin de goût plutôt que de réglage. Le rappel qui réclamait les dates de
+  torréfaction est retiré des insights. Détail en section 6 sexies.
