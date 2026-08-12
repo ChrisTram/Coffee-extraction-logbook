@@ -8,7 +8,6 @@
   //
   // Aucun secret ici, ce fichier est public. Les identifiants sont des
   // secrets Cloudflare (AUTH_USERNAME, AUTH_PASSWORD, AUTH_SECRET).
-  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "coffee-extraction-logbook",
   "main": "worker/index.js",
   "compatibility_date": "2026-08-12",
