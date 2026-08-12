@@ -16,21 +16,18 @@
     "binding": "ASSETS",
     "run_worker_first": true
   },
-  // SYNCHRONISATION ENTRE APPAREILS : decommenter le bloc ci dessous APRES
-  // avoir cree la base, en collant l'identifiant renvoye par
-  //   npx wrangler d1 create coffee-extraction-logbook
-  // Il reste en commentaire pour que le depot soit toujours deployable en
-  // l'etat : un database_id invalide ferait echouer wrangler deploy. Sans ce
-  // binding, /api/sync repond 503 et le site marche comme avant, chaque
-  // appareil avec ses propres donnees.
-  //
-  // "d1_databases": [
-  //   {
-  //     "binding": "DB",
-  //     "database_name": "coffee-extraction-logbook",
-  //     "database_id": "coller ici l'id renvoye par wrangler d1 create"
-  //   }
-  // ],
+  // SYNCHRONISATION ENTRE APPAREILS. Base creee le 12 aout 2026, region APAC.
+  // Le nom du binding DOIT rester "DB" : c'est ce que le Worker lit (env.DB).
+  // wrangler propose coffee_extraction_logbook, ne pas le suivre.
+  // L'identifiant n'est pas un secret, c'est une reference de ressource, et il
+  // ne donne acces a rien sans les cles du compte.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "coffee-extraction-logbook",
+      "database_id": "af7ee1b7-0e23-47bb-987a-310741425b57"
+    }
+  ],
 
   "observability": {
     "enabled": true
