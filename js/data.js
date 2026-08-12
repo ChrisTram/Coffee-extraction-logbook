@@ -47,6 +47,31 @@ const DATA = (() => {
     return row;
   }
 
+  /* Reporte les horodatages connus sur des lignes qui viennent d'un CSV.
+     INDISPENSABLE : les CSV ne transportent pas `maj_le`, donc relire le dossier
+     lié remettrait tout à zéro. Conséquence si on ne le fait pas, et c'était un
+     vrai bug : modifier une extraction hors ligne puis RECHARGER la page avant
+     que la synchro passe faisait perdre la modification, écrasée par la version
+     du serveur qui, elle, était estampillée.
+
+     Si le CONTENU a changé par rapport à ce qu'on avait en mémoire, on estampille
+     à maintenant : une édition au tableur est un geste délibéré, elle doit gagner
+     la fusion. Une ligne inconnue est nouvelle, donc estampillée aussi. */
+  function reporterHorodatage(lues, connues, cols) {
+    const parId = new Map((connues || []).map(r => [r.id, r]));
+    const champs = cols.filter(c => c !== "id");
+    return lues.map(ligne => {
+      const avant = parId.get(ligne.id);
+      if (!avant) return estampiller(ligne);
+      const identique = champs.every(c => {
+        const a = avant[c], b = ligne[c];
+        return String(a === undefined || a === null ? "" : a) === String(b === undefined || b === null ? "" : b);
+      });
+      ligne.maj_le = identique ? (Number(avant.maj_le) || 0) : Date.now();
+      return ligne;
+    });
+  }
+
   /* Pose une pierre tombale. La date sert à trancher contre une éventuelle
      réécriture de la même ligne sur l'autre appareil. */
   function marquerSupprime(table, id) {
@@ -584,12 +609,12 @@ const DATA = (() => {
       if (tc === null && te === null) {
         throw new Error("Ce dossier ne contient ni cafes.csv ni extractions.csv.");
       }
-      if (tc !== null) state.cafes = csvParse(tc).map(normaliserCafe);
-      if (te !== null) state.extractions = csvParse(te).map(normaliserExtraction);
-      if (tr !== null) state.recettes = csvParse(tr).map(normaliserRecette);
+      if (tc !== null) state.cafes = reporterHorodatage(csvParse(tc).map(normaliserCafe), state.cafes, CAFE_COLS);
+      if (te !== null) state.extractions = reporterHorodatage(csvParse(te).map(normaliserExtraction), state.extractions, EXT_COLS);
+      if (tr !== null) state.recettes = reporterHorodatage(csvParse(tr).map(normaliserRecette), state.recettes, RECETTE_COLS);
       else if (!state.recettes.length) state.recettes = recettesDefaut();
-      if (tt !== null) state.tasses = csvParse(tt).map(normaliserTasse);
-      if (ta !== null) state.achats = csvParse(ta).map(normaliserAchat);
+      if (tt !== null) state.tasses = reporterHorodatage(csvParse(tt).map(normaliserTasse), state.tasses, TASSE_COLS);
+      if (ta !== null) state.achats = reporterHorodatage(csvParse(ta).map(normaliserAchat), state.achats, ACHAT_COLS);
       migrerDonnees();
       await ecrireFichier("recettes.csv", csvRecettes());
       state.demoActive = false;
@@ -928,11 +953,11 @@ const DATA = (() => {
           const tr = await lireFichier("recettes.csv");
           const tt = await lireFichier("tasses.csv");
           const ta = await lireFichier("achats.csv");
-          if (tc !== null) state.cafes = csvParse(tc).map(normaliserCafe);
-          if (te !== null) state.extractions = csvParse(te).map(normaliserExtraction);
-          if (tr !== null) state.recettes = csvParse(tr).map(normaliserRecette);
-          if (tt !== null) state.tasses = csvParse(tt).map(normaliserTasse);
-          if (ta !== null) state.achats = csvParse(ta).map(normaliserAchat);
+          if (tc !== null) state.cafes = reporterHorodatage(csvParse(tc).map(normaliserCafe), state.cafes, CAFE_COLS);
+          if (te !== null) state.extractions = reporterHorodatage(csvParse(te).map(normaliserExtraction), state.extractions, EXT_COLS);
+          if (tr !== null) state.recettes = reporterHorodatage(csvParse(tr).map(normaliserRecette), state.recettes, RECETTE_COLS);
+          if (tt !== null) state.tasses = reporterHorodatage(csvParse(tt).map(normaliserTasse), state.tasses, TASSE_COLS);
+          if (ta !== null) state.achats = reporterHorodatage(csvParse(ta).map(normaliserAchat), state.achats, ACHAT_COLS);
         }
       } catch (e) { console.warn("Relecture du dossier lié impossible", e); }
     }
@@ -953,7 +978,7 @@ const DATA = (() => {
 
   return {
     state, abonner, notifier, init,
-    synchroniser, syncPossible,
+    synchroniser, syncPossible, reporterHorodatage,
     csvParse, csvSerialiser, CAFE_COLS, EXT_COLS, RECETTE_COLS, ACHAT_COLS,
     sachetCourant, stockSachet, ajouterAchat, supprimerAchat,
     calculs, cafeDe,

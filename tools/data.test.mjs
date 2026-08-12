@@ -122,5 +122,26 @@ check("pas de format, aucun badge de stock", DATA.stockSachet("c9", 15) === null
 DATA.state.extractions.push({ id: "e9", cafe_id: "c1", date_heure: "2026-07-11T08:00", dose_g: 400 });
 check("depassement montre en negatif, pas masque", DATA.stockSachet("c1", 15).restant < 0);
 
+// 7. Report des horodatages a la relecture d'un CSV. C'etait un vrai bug :
+// modifier une extraction hors ligne puis RECHARGER la page avant que la synchro
+// passe faisait perdre la modification, ecrasee par la version du serveur qui
+// elle etait estampillee. Les CSV ne transportent pas maj_le, d'ou le report.
+const T1 = 1700000000000;
+const reporte = DATA.reporterHorodatage;
+check("reporterHorodatage est expose", typeof reporte === "function");
+
+const connues = [{ id: "e1", note_sur_10: 9, dose_g: 15, maj_le: T1 }];
+const identique = reporte([{ id: "e1", note_sur_10: 9, dose_g: 15, maj_le: 0 }], connues, DATA.EXT_COLS);
+check("contenu identique : horodatage conserve", identique[0].maj_le === T1, String(identique[0].maj_le));
+
+const change = reporte([{ id: "e1", note_sur_10: 6, dose_g: 15, maj_le: 0 }], connues, DATA.EXT_COLS);
+check("edition au tableur : estampillee maintenant, elle doit gagner", change[0].maj_le > T1);
+
+const nouvelle = reporte([{ id: "e2", note_sur_10: 8, maj_le: 0 }], connues, DATA.EXT_COLS);
+check("ligne inconnue du CSV : estampillee", nouvelle[0].maj_le > 0);
+
+const sansConnues = reporte([{ id: "e3", maj_le: 0 }], undefined, DATA.EXT_COLS);
+check("aucune ligne connue : ne jette pas", sansConnues.length === 1 && sansConnues[0].maj_le > 0);
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

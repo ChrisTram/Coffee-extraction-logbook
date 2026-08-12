@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.13,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.14,
 2026-08-12.
 
 ## 1. Vue d'ensemble
@@ -473,11 +473,20 @@ fusion ne voudrait plus rien dire. Ce sont les MUTATIONS qui estampillent, via
 main (`CAFE_COLS` et compagnie), donc les fichiers restent identiques à avant et
 lisibles au tableur.
 
-Conséquence assumée : une ligne relue d'un CSV vaut `maj_le = 0`, donc la
-version du serveur gagne. Un IMPORT explicite, lui, estampille à maintenant,
-sinon l'import serait annulé par la synchro suivante. Pour qu'une édition faite
-à la main dans un CSV gagne, passer par Données, Ouvrir un dossier existant, ce
-que le README indique déjà.
+Comme les CSV ne transportent pas `maj_le`, relire le dossier lié remettrait
+tous les horodatages à zéro. `reporterHorodatage()` l'empêche : il reporte
+l'horodatage déjà connu en mémoire sur la ligne relue, et n'estampille à
+maintenant que si le CONTENU a changé (édition au tableur : geste délibéré, elle
+doit gagner) ou si la ligne est nouvelle.
+
+CE N'EST PAS UNE OPTIMISATION, c'était un vrai bug de perte de données, trouvé en
+inspectant D1 après la première synchro réelle (32 lignes sur 32 à `maj_le = 0`).
+Séquence : modifier une extraction hors ligne, RECHARGER la page avant que la
+synchro passe, et la version du serveur, elle estampillée, écrasait la
+modification. Le test 7 de `tools/data.test.mjs` verrouille les trois cas.
+
+Un IMPORT explicite, lui, estampille tout à maintenant, sinon l'import serait
+annulé par la synchro suivante.
 
 ### Mécanique
 
@@ -830,3 +839,9 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   de torréfaction, alors qu'un café racheté gardait celle du premier paquet et
   affichait donc une fraîcheur fausse pour toujours. `achats` est ajouté aux deux
   listes de tables de synchronisation.
+- v7.14 : correction d'une PERTE DE DONNÉES sur la synchro. Les CSV ne portant
+  pas `maj_le`, relire le dossier lié remettait les horodatages à zéro : une
+  modification faite hors ligne puis rechargée avant synchro était écrasée par le
+  serveur. `reporterHorodatage()` conserve l'horodatage connu quand le contenu
+  est identique et n'estampille que sur changement réel. Trouvé en inspectant D1
+  après la première synchro réelle, pas par un test.

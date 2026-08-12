@@ -575,7 +575,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.13";
+  const VERSION = "7.14";
 
   // Dose prise quand rien ne la preremplit (recette sans dose, formulaire
   // vierge). 15 g est la dose de toutes les recettes Switch d'origine.
