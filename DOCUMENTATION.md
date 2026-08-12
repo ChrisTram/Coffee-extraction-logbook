@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.6,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.7,
 2026-08-12.
 
 ## 1. Vue d'ensemble
@@ -495,3 +495,10 @@ Les fichiers sont en UTF-8 (accents et vietnamien) : rien à configurer.
   tout) et contenance des tasses (était 5). Aucun changement de données ni de
   calcul. Documentation du piège `step` et du comportement des cafés inactifs
   dans le tableau de bord (ils y restent, c'est voulu).
+- v7.7 : entête cliquable (icône plus titre, `.marque-lien`) qui ramène au
+  tableau de bord depuis n'importe quel écran. C'est un vrai lien `#tableau`,
+  donc focusable au clavier et ouvrable dans un onglet, mais app.js intercepte
+  le clic simple pour basculer d'écran sans repasser par le hash. Dose
+  préremplie à 15 g quand aucune recette ne la fixe (constante
+  `DEFAULT_DOSE_G`, appliquée au formulaire complet et à la saisie rapide) ;
+  une recette qui porte une dose gagne toujours.

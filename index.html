@@ -12,11 +12,13 @@
 <header class="entete">
   <div class="entete-inner">
     <div class="marque">
-      <span class="marque-icone" aria-hidden="true">☕</span>
-      <div>
-        <h1>Carnet d'extraction</h1>
-        <p class="marque-sous">Brikka, Switch et Timemore C5 ESP</p>
-      </div>
+      <a class="marque-lien" href="#tableau">
+        <span class="marque-icone" aria-hidden="true">☕</span>
+        <div>
+          <h1>Carnet d'extraction</h1>
+          <p class="marque-sous">Brikka, Switch et Timemore C5 ESP</p>
+        </div>
+      </a>
     </div>
     <nav class="nav" aria-label="Navigation principale">
       <button class="nav-btn actif" data-ecran="tableau">Tableau de bord</button>
@@ -147,7 +149,7 @@
     <div class="grille-nombres">
       <div class="champ">
         <label for="f-dose">Dose (g)<span class="requis" title="Obligatoire">*</span></label>
-        <input type="number" id="f-dose" step="0.1" min="1" max="60" inputmode="decimal" required>
+        <input type="number" id="f-dose" step="0.1" min="1" max="60" inputmode="decimal" value="15" required>
       </div>
       <div class="champ">
         <label for="f-eau">Eau (g)</label>

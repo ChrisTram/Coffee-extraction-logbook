@@ -283,6 +283,10 @@
 
   // ---------- Saisie ----------
 
+  // Dose prise quand rien ne la preremplit (recette sans dose, formulaire
+  // vierge). 15 g est la dose de toutes les recettes Switch d'origine.
+  const DEFAULT_DOSE_G = 15;
+
   const saisie = {
     methode: "Brikka",
     descripteurs: new Set(),
@@ -420,7 +424,7 @@
   function prefillDepuisRecette(nomRecette) {
     const r = trouverRecette(nomRecette);
     if (!r) return;
-    $("#f-dose").value = r.dose;
+    $("#f-dose").value = r.dose || DEFAULT_DOSE_G;
     // L'eau reste vide (pas de balance pour la peser) et la température part
     // sur 95, l'eau bouillie qui a fini de buller. Les cibles de la recette
     // restent visibles dans le panneau latéral.
@@ -795,6 +799,7 @@
     $("#btn-enregistrer").textContent = I18N.t("s_enregistrer");
     $("#btn-annuler-edition").hidden = true;
     $("#f-date").value = maintenantLocal();
+    $("#f-dose").value = DEFAULT_DOSE_G;
     if (!garderCafe) $("#f-cafe").value = "";
     $("#f-commentaire").value = "";
     $("#f-note").value = 7;
@@ -1441,7 +1446,7 @@
       cafe_id: cafeId,
       methode: r.methode,
       recette: r.nom,
-      dose_g: r.dose,
+      dose_g: r.dose || DEFAULT_DOSE_G,
       eau_g: r.eau,
       mouture_dial: cafeQ && Number(cafeQ.deja_moulu) === 1 ? "" : r.dial,
       temperature_c: r.temp,
@@ -1498,6 +1503,17 @@
   function cabler() {
     // Navigation
     $$(".nav-btn").forEach(b => b.addEventListener("click", () => activerEcran(b.dataset.ecran)));
+
+    // L'entete ramene au tableau de bord. On garde le href pour le clavier et
+    // l'ouverture dans un onglet, mais un clic simple bascule d'ecran.
+    const lienMarque = $(".marque-lien");
+    if (lienMarque) {
+      lienMarque.addEventListener("click", ev => {
+        if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button !== 0) return;
+        ev.preventDefault();
+        activerEcran("tableau");
+      });
+    }
     $$("[data-va]").forEach(b => b.addEventListener("click", () => activerEcran(b.dataset.va)));
     window.addEventListener("hashchange", () => {
       const h = location.hash.slice(1);
