@@ -81,7 +81,7 @@
         <h3>Calendrier d'activité</h3>
         <div id="g-heatmap" class="heatmap-conteneur"></div>
         <p class="legende-heatmap"><span>Aucune</span><i class="hm-i hm-n0"></i><i class="hm-i hm-n1"></i><i class="hm-i hm-n2"></i><i class="hm-i hm-n3"></i><i class="hm-i hm-n4"></i><span>4 et plus</span></p>
-        <p class="carte-note" id="heatmap-resume"></p>
+        <div class="mini-stats" id="heatmap-stats"></div>
       </article>
 
       <article class="carte">
@@ -92,19 +92,22 @@
       <article class="carte">
         <h3>Brikka contre Switch</h3>
         <div class="duel" id="duel-machines"></div>
-        <div class="canvas-h200"><canvas id="g-duel"></canvas></div>
+        <div class="canvas-h200" id="boite-duel"><canvas id="g-duel"></canvas></div>
+        <p class="carte-vide" id="vide-duel" hidden></p>
         <p class="carte-note">Notes moyennes sur les cafés passés dans les deux machines.</p>
       </article>
 
       <article class="carte">
         <h3>Note contre mouture</h3>
-        <div class="canvas-h240"><canvas id="g-mouture"></canvas></div>
+        <div class="canvas-h240" id="boite-mouture"><canvas id="g-mouture"></canvas></div>
+        <p class="carte-vide" id="vide-mouture" hidden></p>
         <p class="carte-note">Le nuage qui montre ton réglage optimal, en microns.</p>
       </article>
 
       <article class="carte">
         <h3>Note contre âge du café</h3>
-        <div class="canvas-h240"><canvas id="g-age"></canvas></div>
+        <div class="canvas-h240" id="boite-age"><canvas id="g-age"></canvas></div>
+        <p class="carte-vide" id="vide-age" hidden></p>
         <p class="carte-note">Jours depuis la torréfaction : ta fenêtre de fraîcheur.</p>
       </article>
 
@@ -1001,6 +1004,10 @@ Cảm ơn shop.</pre>
 </dialog>
 
 <div id="toast" class="toast" hidden></div>
+
+<footer class="pied-site">
+  <span id="version-site"></span>
+</footer>
 
 <script src="js/vendor/chart.umd.js"></script>
 <script src="js/i18n.js"></script>

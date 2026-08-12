@@ -241,6 +241,27 @@
     });
   }
 
+  // Moment de la journée : l'heure est déjà dans date_heure, donc cette règle ne
+  // coûte aucune saisie supplémentaire. Répond à "est-ce que ma première tasse
+  // est vraiment meilleure, ou juste bue avec plus d'enthousiasme".
+  function insightMoment(notees) {
+    const groupes = { ins_moment_matin: [], ins_moment_aprem: [], ins_moment_soir: [] };
+    notees.forEach(e => {
+      const heure = Number(String(e.date_heure).slice(11, 13));
+      if (!Number.isFinite(heure)) return;
+      if (heure < 12) groupes.ins_moment_matin.push(e.note_sur_10);
+      else if (heure < 18) groupes.ins_moment_aprem.push(e.note_sur_10);
+      else groupes.ins_moment_soir.push(e.note_sur_10);
+    });
+    const res = bestOfGroups(groupes);
+    if (!res) return null;
+    return I18N.t("ins_moment", {
+      quand: I18N.t(res.gagnant.cle),
+      haut: note1(res.gagnant.moy),
+      bas: note1(res.moyReste),
+    });
+  }
+
   function computeInsights(exts) {
     const notees = exts.filter(e => e.note_sur_10 !== "");
     const phrases = [
@@ -249,6 +270,7 @@
       insightMouture(notees, "Switch"),
       insightRecettes(notees),
       insightPrechauffage(notees),
+      insightMoment(notees),
     ].filter(Boolean);
 
     if (phrases.length) return phrases;
@@ -274,20 +296,28 @@
   // le calendrier ne marche pas.
   const SEMAINES_HEATMAP = 18;
 
-  /* Résume la période affichée, sinon la grille ne dit rien de chiffré : nombre
-     de tasses, jours actifs, et la plus longue série de jours consécutifs, qui
-     est la seule chose vraiment motivante dans un calendrier d'habitude. */
-  function resumeHeatmap(parJour) {
-    const debut = new Date();
-    debut.setHours(0, 0, 0, 0);
-    debut.setDate(debut.getDate() - (SEMAINES_HEATMAP * 7 - 1));
+  /* Chiffre la période affichée. Une grille de cases ne dit rien de mesurable
+     toute seule; ces cinq nombres sont ce qu'on vient y chercher.
 
-    let tasses = 0, joursActifs = 0, serie = 0, meilleureSerie = 0;
-    const jour = new Date(debut);
+     La SÉRIE EN COURS est comptée depuis le dernier jour actif, et n'est
+     annoncée que si ce jour est aujourd'hui ou hier. Sinon, à huit heures du
+     matin avant le premier café, elle retomberait à zéro tous les jours et ne
+     voudrait plus rien dire. */
+  function statsHeatmap(parJour) {
     const fin = new Date();
     fin.setHours(0, 0, 0, 0);
+    const debut = new Date(fin);
+    debut.setDate(debut.getDate() - (SEMAINES_HEATMAP * 7 - 1));
+
+    const jours = [];
+    const jour = new Date(debut);
     while (jour <= fin) {
-      const n = parJour[cleLocale(jour)] || 0;
+      jours.push(parJour[cleLocale(jour)] || 0);
+      jour.setDate(jour.getDate() + 1);
+    }
+
+    let tasses = 0, joursActifs = 0, serie = 0, meilleureSerie = 0;
+    jours.forEach(n => {
       if (n > 0) {
         tasses += n;
         joursActifs += 1;
@@ -296,16 +326,81 @@
       } else {
         serie = 0;
       }
-      jour.setDate(jour.getDate() + 1);
-    }
-
-    if (!tasses) return I18N.t("hm_resume_vide", { s: SEMAINES_HEATMAP });
-    return I18N.t("hm_resume", {
-      t: tasses,
-      j: joursActifs,
-      s: SEMAINES_HEATMAP,
-      serie: meilleureSerie,
     });
+
+    // Série en cours : on remonte depuis la fin, en tolérant qu'aujourd'hui soit
+    // encore vide (index dernier = aujourd'hui).
+    let serieEnCours = 0;
+    let i = jours.length - 1;
+    if (jours[i] === 0) i -= 1; // aujourd'hui pas encore entamé, on part d'hier
+    while (i >= 0 && jours[i] > 0) { serieEnCours += 1; i -= 1; }
+
+    // Moyenne par semaine rapportée au temps RÉELLEMENT couvert : diviser par
+    // 18 semaines alors que le premier café date de 15 jours donnerait un chiffre
+    // faux et décourageant.
+    const premierActif = jours.findIndex(n => n > 0);
+    const joursCouverts = premierActif === -1 ? 0 : jours.length - premierActif;
+    const parSemaine = joursCouverts > 0 ? tasses / (joursCouverts / 7) : 0;
+
+    return { tasses, joursActifs, serieEnCours, meilleureSerie, parSemaine };
+  }
+
+  function rendreStatsHeatmap(parJour) {
+    const s = statsHeatmap(parJour);
+    if (!s.tasses) {
+      $("#heatmap-stats").innerHTML =
+        '<p class="carte-vide">' + I18N.t("hm_resume_vide", { s: SEMAINES_HEATMAP }) + "</p>";
+      return;
+    }
+    const cases = [
+      { v: s.tasses, l: I18N.t("hm_st_tasses") },
+      { v: s.joursActifs, l: I18N.t("hm_st_jours") },
+      { v: s.serieEnCours, l: I18N.t("hm_st_serie_now") },
+      { v: s.meilleureSerie, l: I18N.t("hm_st_serie_max") },
+      { v: fmtDecimal(s.parSemaine, 1), l: I18N.t("hm_st_semaine") },
+    ];
+    $("#heatmap-stats").innerHTML = cases
+      .map(c => '<div class="mini-stat"><b>' + c.v + "</b><span>" + c.l + "</span></div>")
+      .join("");
+  }
+
+  /* Un graphe vide ne dit pas POURQUOI il est vide, et ça se lit comme un site
+     cassé. Ces trois cartes sont les seules qui peuvent rester vides longtemps
+     avec des données parfaitement valides, donc chacune annonce sa vraie cause
+     plutôt qu'un "pas de données" générique qui n'aide personne. */
+  function majCarteVide(id, nbPoints, cle) {
+    const vide = nbPoints === 0;
+    $("#boite-" + id).hidden = vide;
+    const msg = $("#vide-" + id);
+    msg.hidden = !vide;
+    if (vide) msg.textContent = I18N.t(cle);
+  }
+
+  function causeMoutureVide(notees) {
+    if (!notees.length) return "vide_rien";
+    // Cas le plus courant chez un buveur de café déjà moulu : la mouture n'est
+    // volontairement pas stockée, donc le nuage ne peut rien montrer.
+    const toutesMoulues = notees.every(e => {
+      const c = DATA.cafeDe(e);
+      return c && Number(c.deja_moulu) === 1;
+    });
+    return toutesMoulues ? "vide_mouture_moulu" : "vide_mouture";
+  }
+
+  function causeAgeVide(notees) {
+    if (!notees.length) return "vide_rien";
+    const aucuneDate = notees.every(e => {
+      const c = DATA.cafeDe(e);
+      return !c || !c.date_torrefaction;
+    });
+    return aucuneDate ? "vide_age_dates" : "vide_age";
+  }
+
+  function causeDuelVide(notees) {
+    if (!notees.length) return "vide_rien";
+    const machines = new Set(notees.map(e => e.methode).filter(Boolean));
+    // Une seule machine utilisée : il n'y a rien à comparer, ce n'est pas un bug.
+    return machines.size < 2 ? "vide_duel_une_machine" : "vide_duel";
   }
 
   function rendreTableau() {
@@ -380,7 +475,7 @@
       if (nJour.length) infoParJour[cle] = "note moyenne " + moyenne(nJour).toFixed(1);
     });
     CHARTS.heatmap("g-heatmap", parJour, infoParJour, SEMAINES_HEATMAP);
-    $("#heatmap-resume").textContent = resumeHeatmap(parJour);
+    rendreStatsHeatmap(parJour);
 
     // Note moyenne par café
     const parCafe = {};
@@ -432,6 +527,12 @@
       .map(e => ({ x: e._c.age_jours, y: e.note_sur_10, nom: e._c.cafe_nom }));
     CHARTS.nuage("g-age", ptsAge("Brikka"), ptsAge("Switch"), I18N.t("axe_age"), I18N.t("unite_jours"));
 
+    // Les trois cartes qui peuvent rester vides avec des données valides.
+    const notees = exts.filter(e => e.note_sur_10 !== "");
+    majCarteVide("mouture", pts("Brikka").length + pts("Switch").length, causeMoutureVide(notees));
+    majCarteVide("age", ptsAge("Brikka").length + ptsAge("Switch").length, causeAgeVide(notees));
+    majCarteVide("duel", cafesDeux.length, causeDuelVide(notees));
+
     // Diagnostics
     const parDiag = {};
     exts.forEach(e => (e.diagnostic || "").split("|").filter(Boolean).forEach(d => {
@@ -468,6 +569,13 @@
   }
 
   // ---------- Saisie ----------
+
+  // Version affichée dans le pied de page. À INCRÉMENTER en même temps que le
+  // changelog de DOCUMENTATION.md. Sert à savoir d'un coup d'oeil quelle version
+  // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
+  // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
+  // l'ancienne version" n'est pas diagnosticable.
+  const VERSION = "7.12";
 
   // Dose prise quand rien ne la preremplit (recette sans dose, formulaire
   // vierge). 15 g est la dose de toutes les recettes Switch d'origine.
@@ -2044,6 +2152,7 @@
 
   async function demarrer() {
     I18N.appliquerStatique();
+    $("#version-site").textContent = "v" + VERSION;
     $("#btn-lang").textContent = I18N.lang() === "fr" ? "EN" : "FR";
     $("#btn-lang").title = I18N.lang() === "fr" ? "Switch to English" : "Passer en français";
     CHARTS.appliquerDefauts();

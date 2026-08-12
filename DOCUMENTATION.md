@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.11,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.12,
 2026-08-12.
 
 ## 1. Vue d'ensemble
@@ -341,10 +341,17 @@ Autres points, chacun pour une raison :
 - `tabindex="0"` sur les cases : les bulles étaient au survol seulement, donc
   inaccessibles au doigt, ce qui compte depuis que le site tourne en PWA sur le
   téléphone.
-- Résumé chiffré sous la grille (`resumeHeatmap` dans app.js, `#heatmap-resume`,
-  dans ZONES_JS) : tasses, jours actifs, et la plus longue série de jours
-  consécutifs. La série est la seule chose vraiment motivante dans un calendrier
-  d'habitude, et c'est ce qui donne une raison de le regarder.
+- Cinq mini statistiques sous la grille (`statsHeatmap` et
+  `rendreStatsHeatmap` dans app.js, `#heatmap-stats`, dans ZONES_JS) : tasses,
+  jours actifs, série en cours, meilleure série, tasses par semaine.
+  Deux subtilités à ne pas simplifier :
+  1. La SÉRIE EN COURS tolère qu'aujourd'hui soit encore vide et repart d'hier.
+     Sinon elle retomberait à zéro chaque matin avant le premier café et ne
+     voudrait plus rien dire.
+  2. Les TASSES PAR SEMAINE sont rapportées au temps réellement couvert (depuis
+     la première extraction de la fenêtre), pas aux 18 semaines. Diviser par 18
+     alors que le carnet a deux semaines donnerait un chiffre faux et
+     décourageant.
 
 ## 6 bis. Insights automatiques du tableau de bord
 
@@ -735,3 +742,40 @@ pas un design qui monterait à des centaines de milliers d'extractions.
   cerclé, cases plus grandes et cerclées, étiquettes de mois fiabilisées, cases
   atteignables au doigt, et résumé chiffré avec la plus longue série de jours
   consécutifs. Détail et raisons en section 6 ter.
+
+## 6 quater. Cartes légitimement vides
+
+Trois cartes peuvent rester vides très longtemps avec des données parfaitement
+valides : "Note contre mouture", "Note contre âge du café", "Brikka contre
+Switch". Un cadre vide se lit comme un site cassé, et c'est exactement la
+confusion qui a été rapportée.
+
+Chacune annonce donc sa cause RÉELLE et l'action qui la débloque, via
+`majCarteVide()` plus une fonction `causeXVide()` par carte (app.js). Le
+canvas est masqué et remplacé par le message, classe `.carte-vide`.
+
+Les causes distinguées, parce qu'un "pas de données" générique n'aide personne :
+
+| Carte | Cause détectée | Ce qu'on dit |
+|---|---|---|
+| mouture | tous les cafés extraits sont `deja_moulu` | ce n'est pas un bug, la mouture n'est volontairement pas stockée |
+| mouture | autre | aucun réglage enregistré |
+| âge | aucun café n'a de `date_torrefaction` | où la renseigner |
+| âge | autre | pas encore d'extraction notée sur un café daté |
+| duel | une seule méthode utilisée | passer un même café dans les deux machines |
+| duel | autre | aucun café dans les deux machines avec une note |
+
+Toutes ces cartes retombent sur `vide_rien` s'il n'y a aucune extraction notée.
+
+## 6 quinquies. Numéro de version
+
+`VERSION` dans app.js, affiché dans le pied de page (`#version-site`).
+À INCRÉMENTER en même temps que le changelog. Indispensable depuis qu'un service
+worker met des fichiers en cache : sans lui, "mon téléphone affiche l'ancienne
+version" n'est pas diagnosticable, ni par Chris ni par un agent.
+- v7.12 : numéro de version dans le pied de page (bouton de déconnexion écarté,
+  un seul compte). Calendrier d'activité : cinq mini statistiques dont la série
+  en cours et les tasses par semaine rapportées au temps réellement couvert.
+  Les trois cartes qui peuvent rester vides avec des données valides expliquent
+  désormais leur cause réelle et l'action qui les débloque (sections 6 quater).
+  Nouvel insight moment de la journée, gratuit puisque l'heure est déjà stockée.

@@ -532,6 +532,14 @@ const I18N = (() => {
       fr: "En Brikka, tes tasses sans préchauffage sortent mieux : {haut} de moyenne contre {bas}.",
       en: "On the Brikka, your cups without preheating come out better: {haut} average against {bas}.",
     },
+    ins_moment_matin: { fr: "le matin", en: "in the morning" },
+    ins_moment_aprem: { fr: "l'après midi", en: "in the afternoon" },
+    ins_moment_soir: { fr: "le soir", en: "in the evening" },
+    ins_moment: {
+      fr: "Tes tasses {quand} sortent mieux : {haut} de moyenne contre {bas} au reste de la journée.",
+      en: "Your cups {quand} come out better: {haut} average against {bas} for the rest of the day.",
+    },
+
     ins_vide: {
       fr: "Pas encore assez de matière. Une tendance ne veut dire quelque chose qu'à partir de {n} extractions notées dans chacun des groupes comparés.",
       en: "Not enough to go on yet. A trend only means something from {n} scored brews in each of the compared groups.",
@@ -572,10 +580,42 @@ const I18N = (() => {
     hm_n: { fr: "{n} extraction", en: "{n} brew" },
     hm_ns: { fr: "{n} extractions", en: "{n} brews" },
     hm_note: { fr: "note moyenne {x}", en: "average score {x}" },
-    hm_resume: {
-      fr: "{t} tasses sur {j} jours actifs, ces {s} dernières semaines. Plus longue série : {serie} jours d'affilée.",
-      en: "{t} cups across {j} active days over the last {s} weeks. Longest run: {serie} days in a row.",
+    // Cartes qui peuvent rester vides avec des données parfaitement valides.
+    // Chaque message donne la cause RÉELLE et l'action qui la débloque.
+    vide_rien: {
+      fr: "Aucune extraction notée pour l'instant. Note tes tasses et ce graphique se remplira.",
+      en: "No scored brews yet. Score your cups and this chart will fill up.",
     },
+    vide_mouture_moulu: {
+      fr: "Tous tes cafés extraits sont marqués déjà moulus, donc aucun réglage de molette n'est enregistré : ce n'est pas un bug. Une extraction avec un café en grains et le nuage démarre.",
+      en: "Every coffee you have brewed is marked pre ground, so no dial setting is stored: this is not a bug. One brew with whole beans and the cloud starts.",
+    },
+    vide_mouture: {
+      fr: "Aucun réglage de molette enregistré sur tes extractions notées.",
+      en: "No dial setting recorded on your scored brews.",
+    },
+    vide_age_dates: {
+      fr: "Aucun de tes cafés n'a de date de torréfaction. Renseigne la dans Gérer les cafés et ta fenêtre de fraîcheur apparaîtra.",
+      en: "None of your coffees has a roast date. Fill it in under Manage coffees and your freshness window will appear.",
+    },
+    vide_age: {
+      fr: "Pas encore d'extraction notée sur un café qui a une date de torréfaction.",
+      en: "No scored brew yet on a coffee that has a roast date.",
+    },
+    vide_duel_une_machine: {
+      fr: "Tu n'as encore utilisé qu'une seule machine. Passe un même café en Brikka et au Switch pour les comparer.",
+      en: "You have only used one machine so far. Brew the same coffee on the Brikka and the Switch to compare them.",
+    },
+    vide_duel: {
+      fr: "Aucun café n'est encore passé dans les deux machines avec une note.",
+      en: "No coffee has been through both machines with a score yet.",
+    },
+
+    hm_st_tasses: { fr: "tasses", en: "cups" },
+    hm_st_jours: { fr: "jours actifs", en: "active days" },
+    hm_st_serie_now: { fr: "série en cours", en: "current run" },
+    hm_st_serie_max: { fr: "meilleure série", en: "best run" },
+    hm_st_semaine: { fr: "tasses par semaine", en: "cups per week" },
     hm_resume_vide: {
       fr: "Aucune extraction sur les {s} dernières semaines.",
       en: "No brews over the last {s} weeks.",
@@ -858,7 +898,8 @@ const I18N = (() => {
     "#conv-resultat,#table-plages,#avertissements,#aside-recette,#aside-cafe,#duel-machines," +
     "#tetsu-bloc,#pap-etapes,#g-heatmap,#reglette,#f-diagnostic,#f-descripteurs,#f-recette,#f-cafe," +
     "#h-cafe,#h-diagnostic,#q-cafe,#q-recette,#c-recette,#donnees-statut,#toast,#pap-params," +
-    "#insights,#sync-statut,#heatmap-resume";
+    "#insights,#sync-statut,#heatmap-stats,#version-site," +
+    "#vide-mouture,#vide-age,#vide-duel";
 
   function scanner() {
     const marche = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
