@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.5,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.6,
 2026-08-12.
 
 ## 1. Vue d'ensemble
@@ -244,6 +244,24 @@ re-créés.
   à Bangkok.
 - FILE SYSTEM ACCESS : absent de Firefox, désactivé par défaut dans Brave.
   Le site le détecte et bascule en mode navigateur avec messages.
+- ATTRIBUT STEP SUR LES CHAMPS NUMBER : un `step` sert de contrainte de
+  VALIDATION, pas seulement de pas pour les flèches. Une valeur qui n'est pas
+  un multiple exact du step rend le formulaire invalide, et `requestSubmit` ou
+  le clic sur Enregistrer ne fait alors RIEN de visible (bulle native du
+  navigateur, facile à manquer dans une modale qui défile). Le prix des cafés
+  était en `step="1000"` alors que le Sáng Tạo 4 coûte 148 800 ₫ : sa fiche
+  était impossible à enregistrer, donc impossible à désactiver depuis
+  l'interface. Corrigé en `step="1"`, idem pour la contenance des tasses qui
+  était en `step="5"`. Ne JAMAIS mettre un step arbitraire sur un champ qui
+  reçoit une valeur du monde réel (prix, volume, poids). Restent en step non
+  unitaire, volontairement et sans risque connu : `f-dose` (0,1 g),
+  `r-dose` (0,5 g), `h-note-min` (0,5 point).
+- Les cafés INACTIFS restent comptés dans TOUT le tableau de bord (KPI,
+  graphes, nuages, heatmap, dernières extractions). C'est voulu : l'historique
+  ne se réécrit pas parce qu'un sachet est fini. `actif` ne filtre QUE le
+  select de saisie et la saisie rapide, et trie les désactivés en fin de la
+  liste "Mes cafés". Vérifié de bout en bout : désactiver un café ne modifie
+  aucune section du tableau de bord.
 - Les selects dont les valeurs sont des DONNÉES (machine, torréfaction,
   diagnostics du filtre historique) portent des value explicites pour que la
   traduction du libellé ne corrompe pas la valeur.
@@ -472,3 +490,8 @@ Les fichiers sont en UTF-8 (accents et vietnamien) : rien à configurer.
   passe de Pages à Workers. AUCUN changement dans l'application elle même :
   l'ouverture en `file://` par double clic est intacte et sans login. Passage
   des messages de commit et du code nouveau à l'anglais.
+- v7.6 : correction du `step` des champs prix du café (était 1000, or le
+  Sáng Tạo 4 est à 148 800 ₫, sa fiche ne pouvait pas être enregistrée du
+  tout) et contenance des tasses (était 5). Aucun changement de données ni de
+  calcul. Documentation du piège `step` et du comportement des cafés inactifs
+  dans le tableau de bord (ils y restent, c'est voulu).
