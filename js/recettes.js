@@ -16,6 +16,7 @@ const RECETTES_DEPART = [
     variante: "Standard",
     sousTitre: "La base quotidienne de la Brikka",
     dose: 14, eau: 100, temp: 85, tempTexte: "80 à 90 °C",
+    puissance_feu: 3,
     dial: "1.2.0",
     ratioTexte: "environ 1:7, environ 90 ml en tasse",
     totalTexte: "retrait du feu aux premiers gargouillis",
@@ -45,6 +46,9 @@ const RECETTES_DEPART = [
     variante: "Eau préchauffée",
     sousTitre: "Eau bouillante, flamme forte au départ, mouture plus grossière",
     dose: 14, eau: 100, temp: 100, tempTexte: "eau bouillante, versée aussitôt",
+    // Laissée à 3 comme demandé. Les étapes de cette recette prescrivent une
+    // flamme plus forte : à monter quand le bon chiffre sera connu.
+    puissance_feu: 3,
     dial: "1.3.0",
     ratioTexte: "environ 1:7, environ 90 ml en tasse",
     totalTexte: "montée en pression sous 2 minutes, écoulement de 20 à 45 secondes",
@@ -71,6 +75,7 @@ const RECETTES_DEPART = [
     variante: "Flat white",
     sousTitre: "Extraction classique, complétée au lait jusqu'à la tasse",
     dose: 14, eau: 100, temp: 85, tempTexte: "80 à 90 °C",
+    puissance_feu: 3,
     dial: "1.2.0",
     ratioTexte: "environ 90 ml de café, plus le lait",
     totalTexte: "extraction identique à la classique",
@@ -94,6 +99,7 @@ const RECETTES_DEPART = [
     variante: "Cappuccino",
     sousTitre: "Extraction classique, lait moussé, un tiers de mousse",
     dose: 14, eau: 100, temp: 85, tempTexte: "80 à 90 °C",
+    puissance_feu: 3,
     dial: "1.2.0",
     ratioTexte: "environ 90 ml de café, plus le lait moussé",
     totalTexte: "extraction identique à la classique",

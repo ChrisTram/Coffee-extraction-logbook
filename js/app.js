@@ -262,6 +262,23 @@
     });
   }
 
+  // Puissance de feu, Brikka seulement. C'est la variable que Chris cherche
+  // justement à régler : tant qu'elle vaut 3 partout, la règle se tait, et elle
+  // parlera dès qu'il aura essayé autre chose.
+  function insightPuissance(notees) {
+    const groupes = {};
+    notees
+      .filter(e => e.methode === "Brikka" && e.puissance_feu !== "" && e.puissance_feu !== undefined)
+      .forEach(e => (groupes[e.puissance_feu] = groupes[e.puissance_feu] || []).push(e.note_sur_10));
+    const res = bestOfGroups(groupes);
+    if (!res) return null;
+    return I18N.t("ins_puissance", {
+      feu: res.gagnant.cle,
+      haut: note1(res.gagnant.moy),
+      bas: note1(res.moyReste),
+    });
+  }
+
   function computeInsights(exts) {
     const notees = exts.filter(e => e.note_sur_10 !== "");
     const phrases = [
@@ -271,6 +288,7 @@
       insightRecettes(notees),
       insightPrechauffage(notees),
       insightMoment(notees),
+      insightPuissance(notees),
     ].filter(Boolean);
 
     if (phrases.length) return phrases;
@@ -626,7 +644,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.17";
+  const VERSION = "7.18";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -643,6 +661,7 @@
     "f-date", "f-cafe", "f-recette", "f-dose", "f-eau", "f-mouture", "f-temp",
     "f-volume", "f-eau-ajoutee", "f-lait", "f-agitation", "f-tasse", "f-note",
     "f-commentaire", "f-total-min", "f-total-sec", "f-ecoulement-min", "f-ecoulement-sec",
+    "f-puissance",
   ];
   const CASES_BROUILLON = ["f-prechauffe", "f-ajout-eau-oui"];
   let brouillonMinuteur = null;
@@ -743,6 +762,13 @@
   // vierge). 15 g est la dose de toutes les recettes Switch d'origine.
   const DEFAULT_DOSE_G = 15;
 
+  // Température de départ préremplie. 93 remplace 95 : demande de Chris, les
+  // extractions déjà enregistrées ne sont PAS modifiées.
+  const DEFAULT_TEMP_C = 93;
+
+  // Puissance de feu par défaut, échelle personnelle de 1 à 10, Brikka seulement.
+  const DEFAULT_PUISSANCE_FEU = 3;
+
   const saisie = {
     methode: "Brikka",
     descripteurs: new Set(),
@@ -795,6 +821,7 @@
     // Champs propres à chaque méthode.
     $("#champ-ajout-eau").hidden = m !== "Brikka";
     $("#champ-prechauffe").hidden = m !== "Brikka";
+    $("#champ-puissance").hidden = m !== "Brikka";
     $("#champ-agitation").hidden = m !== "Switch";
     // Tasse par défaut : Flat White Egg en Brikka, Classic Mug en Switch.
     const defauts = { "Brikka": "Loveramics Flat White Egg", "Switch": "Classic Mug" };
@@ -882,11 +909,12 @@
     if (!r) return;
     $("#f-dose").value = r.dose || DEFAULT_DOSE_G;
     // L'eau reste vide (pas de balance pour la peser) et la température part
-    // sur 95, l'eau bouillie qui a fini de buller. Les cibles de la recette
+    // sur DEFAULT_TEMP_C, l'eau bouillie qui a fini de buller. Les cibles de la recette
     // restent visibles dans le panneau latéral.
     $("#f-eau").value = "";
-    $("#f-temp").value = 95;
+    $("#f-temp").value = DEFAULT_TEMP_C;
     $("#f-mouture").value = cafeCourantMoulu() ? "" : r.dial;
+    if (r.methode === "Brikka") $("#f-puissance").value = r.puissance_feu || DEFAULT_PUISSANCE_FEU;
     majAgitationDepuisRecette();
     majLait();
     majLive();
@@ -1298,7 +1326,8 @@
     ecrireDuree("f-ecoulement", "");
     $("#f-volume").value = "";
     $("#f-eau").value = "";
-    $("#f-temp").value = 95;
+    $("#f-temp").value = DEFAULT_TEMP_C;
+    $("#f-puissance").value = DEFAULT_PUISSANCE_FEU;
     $("#f-prechauffe").checked = false;
     $("#f-ajout-eau-oui").checked = false;
     $("#f-eau-ajoutee").hidden = true;
@@ -1331,6 +1360,7 @@
     $("#f-eau-ajoutee").hidden = !$("#f-ajout-eau-oui").checked;
     $("#f-eau-ajoutee").value = ext.eau_ajoutee_ml !== undefined ? ext.eau_ajoutee_ml : "";
     $("#f-prechauffe").checked = Number(ext.eau_prechauffee) === 1;
+    $("#f-puissance").value = ext.puissance_feu || "";
     $("#f-agitation-oui").checked = ext.agitation_nb !== "" && ext.agitation_nb !== undefined;
     $("#f-agitation").hidden = !$("#f-agitation-oui").checked;
     $("#f-agitation").value = ext.agitation_nb !== undefined && ext.agitation_nb !== "" ? ext.agitation_nb : 1;
@@ -1376,6 +1406,7 @@
       agitation_nb: saisie.methode === "Switch" && $("#f-agitation-oui").checked ? ($("#f-agitation").value || 1) : "",
       tasse: $("#f-tasse").value,
       eau_prechauffee: saisie.methode === "Brikka" && $("#f-prechauffe").checked ? 1 : "",
+      puissance_feu: saisie.methode === "Brikka" ? $("#f-puissance").value : "",
       note_sur_10: $("#f-note").value,
       diagnostic: DIAGNOSTICS.filter(d => saisie.diagnostics.has(d)).join("|"),
       descripteurs: Array.from(saisie.descripteurs).join("|"),

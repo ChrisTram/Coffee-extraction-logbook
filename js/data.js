@@ -11,11 +11,15 @@ const DATA = (() => {
   const EXT_COLS = ["id", "date_heure", "cafe_id", "methode", "recette", "dose_g", "eau_g",
     "mouture_dial", "temperature_c", "temps_total_s", "temps_ecoulement_s",
     "volume_extrait_ml", "eau_ajoutee_ml", "lait_ml", "agitation_nb", "tasse", "eau_prechauffee",
-    "note_sur_10", "diagnostic", "descripteurs", "commentaire"];
+    "note_sur_10", "diagnostic", "descripteurs", "commentaire", "puissance_feu"];
   const RECETTE_COLS = ["id", "nom", "numero", "methode", "famille", "variante", "sous_titre", "dose_g", "eau_g",
     "temperature_c", "temp_texte", "mouture_dial", "ratio_texte", "total_texte", "lait",
-    "etapes", "pour_qui", "cafes_associes", "note", "par_defaut", "avancee", "variantes", "actif"];
+    "etapes", "pour_qui", "cafes_associes", "note", "par_defaut", "avancee", "variantes", "actif",
+    "puissance_feu"];
   const TASSE_COLS = ["id", "nom", "contenance_ml"];
+  // Puissance de feu par défaut, échelle personnelle de 1 à 10.
+  const PUISSANCE_FEU_DEFAUT = 3;
+
   const ACHAT_COLS = ["id", "cafe_id", "date_achat", "format_grammes", "prix_vnd", "date_torrefaction"];
 
   const state = {
@@ -189,6 +193,10 @@ const DATA = (() => {
       agitation_nb: r.agitation_nb === "" || r.agitation_nb === undefined ? "" : Number(r.agitation_nb),
       tasse: r.tasse || "",
       eau_prechauffee: Number(r.eau_prechauffee) === 1 ? 1 : "",
+      // Puissance de feu, echelle personnelle de 1 a 10. Bornee et arrondie :
+      // une valeur hors plage editee au tableur est ramenee dedans, pas jetee.
+      puissance_feu: r.puissance_feu === "" || r.puissance_feu === undefined || r.puissance_feu === null
+        ? "" : Math.max(1, Math.min(10, Math.round(Number(r.puissance_feu)) || 1)),
       note_sur_10: r.note_sur_10 === "" ? "" : Number(r.note_sur_10),
       diagnostic: r.diagnostic || "",
       descripteurs: r.descripteurs || "",
@@ -218,6 +226,10 @@ const DATA = (() => {
       dose: Number(r.dose_g !== undefined ? r.dose_g : r.dose) || 0,
       eau: Number(r.eau_g !== undefined ? r.eau_g : r.eau) || 0,
       temp: Number(r.temperature_c !== undefined ? r.temperature_c : r.temp) || 0,
+      // Puissance de feu visee par la recette, Brikka seulement. Preremplit la
+      // saisie comme le font la dose et la molette.
+      puissance_feu: r.puissance_feu === "" || r.puissance_feu === undefined || r.puissance_feu === null
+        ? "" : Math.max(1, Math.min(10, Math.round(Number(r.puissance_feu)) || 1)),
       tempTexte: r.temp_texte !== undefined ? r.temp_texte : (r.tempTexte || ""),
       dial: r.mouture_dial !== undefined ? r.mouture_dial : (r.dial || ""),
       ratioTexte: r.ratio_texte !== undefined ? r.ratio_texte : (r.ratioTexte || ""),
@@ -427,6 +439,18 @@ const DATA = (() => {
         .map(e => e.date_heure).sort();
       if (dates.length) c.date_ajout = dates[0].slice(0, 10);
     });
+    // 6 ter. Puissance de feu : 3 sur toutes les extractions Brikka qui n'en ont
+    //    pas. Sans valeur de départ, le champ resterait vide sur tout l'historique
+    //    et aucune comparaison ne serait possible avant des semaines.
+    //    IDEMPOTENTE : ne touche que les lignes dont le champ est vide, donc une
+    //    valeur saisie ou corrigée à la main n'est jamais écrasée.
+    state.extractions.forEach(e => {
+      if (e.methode === "Brikka" && (e.puissance_feu === "" || e.puissance_feu === undefined)) {
+        e.puissance_feu = PUISSANCE_FEU_DEFAUT;
+        estampiller(e);
+      }
+    });
+
     // 6 bis. Les extractions faites à l'eau préchauffée quittent "Brikka
     //    classique" pour la variante dédiée. Le préchauffage n'est pas un détail
     //    de service : il change la montée en pression, la durée et le

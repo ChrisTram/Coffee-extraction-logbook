@@ -185,5 +185,49 @@ check(
   String(DATA.state.extractions.filter(e => e.recette === NOUVELLE).length)
 );
 
+// 9. Puissance de feu, Brikka seulement. Echelle personnelle de 1 a 10, portee
+// par les recettes (cible qui preremplit) ET par les extractions (ce qui a
+// vraiment ete fait). C'est la variable que Chris cherche a regler apres un
+// ecoulement de 5 secondes.
+check("puissance_feu dans EXT_COLS", DATA.EXT_COLS.includes("puissance_feu"));
+check("puissance_feu dans RECETTE_COLS", DATA.RECETTE_COLS.includes("puissance_feu"));
+const BRIKKAS = RECETTES_DEPART.filter(r => r.methode === "Brikka");
+check("les 4 recettes Brikka portent une cible a 3", BRIKKAS.length === 4 && BRIKKAS.every(r => r.puissance_feu === 3),
+  BRIKKAS.map(r => r.nom + "=" + r.puissance_feu).join(" | "));
+check("aucune recette Switch n'en porte", RECETTES_DEPART.filter(r => r.methode === "Switch").every(r => r.puissance_feu === undefined));
+
+const feuLignes = [];
+for (let n = 1; n <= 11; n += 1) {
+  feuLignes.push({
+    id: "f" + n, date_heure: "2026-08-" + String(n + 2).padStart(2, "0") + "T10:00",
+    cafe_id: "c1", methode: "Brikka", recette: "Brikka classique", dose_g: 14,
+    temperature_c: 95, note_sur_10: 7, puissance_feu: "",
+  });
+}
+feuLignes.push({ id: "f12", date_heure: "2026-08-14T10:00", cafe_id: "c1", methode: "Switch", dose_g: 15, note_sur_10: 7, puissance_feu: "" });
+feuLignes.push({ id: "f13", date_heure: "2026-08-15T10:00", cafe_id: "c1", methode: "Brikka", dose_g: 14, note_sur_10: 7, puissance_feu: 8 });
+DATA.importerTexteCSV(DATA.csvSerialiser(feuLignes, DATA.EXT_COLS)).catch(() => {});
+await new Promise(r => setTimeout(r, 80));
+
+const apresFeu = DATA.state.extractions;
+const brikkasMigrees = apresFeu.filter(e => e.methode === "Brikka" && e.id !== "f13");
+check("les Brikka passees passent a 3", brikkasMigrees.every(e => e.puissance_feu === 3),
+  [...new Set(brikkasMigrees.map(e => e.puissance_feu))].join());
+check("une extraction Switch reste vide", apresFeu.find(e => e.id === "f12").puissance_feu === "");
+check("une valeur deja saisie n'est jamais ecrasee", apresFeu.find(e => e.id === "f13").puissance_feu === 8);
+check("la temperature des anciennes n'est PAS touchee", apresFeu.find(e => e.id === "f1").temperature_c === 95,
+  String(apresFeu.find(e => e.id === "f1").temperature_c));
+
+DATA.importerTexteCSV(DATA.csvSerialiser([
+  { id: "b1", methode: "Brikka", puissance_feu: 0 },
+  { id: "b2", methode: "Brikka", puissance_feu: 12 },
+  { id: "b3", methode: "Brikka", puissance_feu: "7.6" },
+], DATA.EXT_COLS)).catch(() => {});
+await new Promise(r => setTimeout(r, 80));
+const feuDe = id => DATA.state.extractions.find(e => e.id === id).puissance_feu;
+check("0 est ramene a 1", feuDe("b1") === 1, String(feuDe("b1")));
+check("12 est ramene a 10", feuDe("b2") === 10, String(feuDe("b2")));
+check("7,6 est arrondi a 8", feuDe("b3") === 8, String(feuDe("b3")));
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

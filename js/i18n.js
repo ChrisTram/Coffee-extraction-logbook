@@ -17,6 +17,8 @@ const I18N = (() => {
   const UI = {
     "Carnet d'extraction": "Brew journal",
     "Ce que tes données disent": "What your data says",
+    "Puissance de feu": "Flame power",
+    "Ton échelle, de 1 à 10. C'est avant l'écoulement que la mouture cuit.": "Your own scale, 1 to 10. The grounds cook before the flow starts, not during.",
     "Standard": "Standard",
     "Eau préchauffée": "Preheated water",
     "Eau bouillante, flamme forte au départ, mouture plus grossière": "Boiling water, strong flame to start, coarser grind",
@@ -546,6 +548,11 @@ const I18N = (() => {
     ins_moment: {
       fr: "Tes tasses {quand} sortent mieux : {haut} de moyenne contre {bas} au reste de la journée.",
       en: "Your cups {quand} come out better: {haut} average against {bas} for the rest of the day.",
+    },
+
+    ins_puissance: {
+      fr: "Sur la Brikka, une puissance de feu de {feu} te réussit mieux : {haut} de moyenne contre {bas} aux autres réglages.",
+      en: "On the Brikka, a flame power of {feu} works better for you: {haut} average against {bas} at other settings.",
     },
 
     ins_vide: {

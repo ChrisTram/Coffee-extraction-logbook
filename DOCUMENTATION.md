@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.17,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.18,
 2026-08-12.
 
 ## 1. Vue d'ensemble
@@ -68,6 +68,14 @@ diagnostic, descripteurs, commentaire`
   `volume_boisson_ml` = extrait + eau ajoutée + lait.
 - `agitation_nb` : Switch, vide si pas d'agitation, défaut 1 quand coché.
 - `eau_prechauffee` : Brikka, 1 ou vide. Décoché par défaut.
+- `puissance_feu` : Brikka SEULEMENT, entier de 1 à 10, échelle personnelle de
+  Chris sur sa plaque. Vide pour le Switch, qui n'a pas de flamme. Borné et
+  arrondi à la normalisation : une valeur hors plage éditée au tableur est ramenée
+  dedans plutôt que jetée. Les recettes Brikka portent la même colonne, comme
+  cible qui préremplit la saisie (au même titre que dose, eau et molette).
+  Pourquoi ce champ : après une extraction à 4 minutes de cuisson suivie d'un
+  écoulement de 5 secondes, la conduite de la flamme est devenue LA variable à
+  régler, et elle n'était mesurée nulle part.
 - `descripteurs` : tags séparés par `|`, valeurs françaises (la traduction EN
   est purement d'affichage). La liste vit dans DESCRIPTEURS_GROUPES
   (recettes.js), 59 tags en 9 familles SCA. Chaque tag a une définition
@@ -189,6 +197,12 @@ chargement (init, ouverture de dossier, import, chargement de la démo) :
    comparaisons. IDEMPOTENTE par construction, après le déplacement `recette` ne
    vaut plus l'ancien nom. Ne touche que les lignes portant exactement
    "Brikka classique", une extraction rangée à la main est laissée en place.
+
+6 ter. Puissance de feu : 3 sur toutes les extractions Brikka qui n'en ont pas.
+   Sans valeur de départ, le champ resterait vide sur tout l'historique et aucune
+   comparaison ne serait possible avant des semaines. IDEMPOTENTE : ne touche que
+   les lignes dont le champ est VIDE, donc une valeur saisie ou corrigée à la main
+   n'est jamais écrasée. Les extractions Switch ne sont pas touchées.
 
 Pour tout futur renommage ou changement de schéma : ajouter l'entrée dans
 RENOMMAGES_RECETTES ou un fallback dans normaliserX, jamais de rupture.
@@ -924,3 +938,8 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   préchauffée". Critère retenu pour trancher ce genre de question : la recette
   décrit l'EXTRACTION. Préchauffer en fait partie, allonger après coup non, ce
   dernier reste donc un champ.
+- v7.18 : champ `puissance_feu` (entier 1 à 10, Brikka seulement) sur les
+  extractions ET sur les recettes Brikka, migration à 3 de tout l'historique
+  Brikka, insight "quelle puissance de feu te réussit". Température préremplie à
+  93 au lieu de 95 (`DEFAULT_TEMP_C`), sans toucher aux extractions déjà
+  enregistrées.
