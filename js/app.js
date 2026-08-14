@@ -58,17 +58,30 @@
     return Number(n.toFixed(dec)).toLocaleString(I18N.locale(), { maximumFractionDigits: dec });
   }
 
-  function animerCompteur(el, cible, decimales, suffixe) {
+  function animerCompteur(el, cible, decimales, suffixe, prefixe) {
     const duree = 750, depart = performance.now();
     const dec = decimales || 0;
     function pas(t) {
       const p = Math.min(1, (t - depart) / duree);
       const eased = 1 - Math.pow(1 - p, 3);
       const v = cible * eased;
-      el.textContent = v.toLocaleString(I18N.locale(), { minimumFractionDigits: dec, maximumFractionDigits: dec }) + (suffixe || "");
+      el.textContent = (prefixe || "") +
+        v.toLocaleString(I18N.locale(), { minimumFractionDigits: dec, maximumFractionDigits: dec }) + (suffixe || "");
       if (p < 1) requestAnimationFrame(pas);
     }
     requestAnimationFrame(pas);
+  }
+
+  /* Régularité : ÉCART MOYEN à la moyenne, pas écart type.
+     L'écart type est la mesure canonique mais elle ne se lit pas : personne ne
+     sait ce que vaut un sigma de 1,2. L'écart moyen se dit en français exact,
+     "tes tasses s'écartent en moyenne de 1,2 point de ta moyenne", et sur une
+     poignée de notes les deux donnent de toute façon des chiffres très proches.
+     Clarté avant orthodoxie statistique. */
+  function ecartMoyen(liste) {
+    if (liste.length < 2) return null;
+    const m = liste.reduce((a, b) => a + b, 0) / liste.length;
+    return liste.reduce((a, n) => a + Math.abs(n - m), 0) / liste.length;
   }
 
   function moyenne(liste) {
@@ -491,13 +504,15 @@
       { valeur: moyenne(notes) || 0, label: I18N.t("kpi_note"), dec: 1, sur10: true },
       { valeur: moyenne(notes7j) || 0, label: I18N.t("kpi_note7"), dec: 1, sur10: true },
       { valeur: Math.round(cafeine7j / 7), label: I18N.t("kpi_cafeine"), dec: 0, mg: true },
+      { valeur: ecartMoyen(notes) || 0, label: I18N.t("kpi_regularite"), dec: 1, plusMoins: true },
     ];
     $("#kpis").innerHTML = kpis.map(k =>
       '<div class="kpi"><div class="kpi-valeur"><span class="kpi-nombre"></span>' +
-      (k.sur10 ? "<small> / 10</small>" : k.mg ? "<small> mg</small>" : "") +
+      (k.sur10 ? "<small> / 10</small>" : k.mg ? "<small> mg</small>" : k.plusMoins ? "<small> pt</small>" : "") +
       '</div><div class="kpi-label">' + k.label + "</div></div>"
     ).join("");
-    $$("#kpis .kpi-nombre").forEach((el, i) => animerCompteur(el, kpis[i].valeur, kpis[i].dec));
+    $("#kpis .kpi-nombre").forEach((el, i) =>
+      animerCompteur(el, kpis[i].valeur, kpis[i].dec, "", kpis[i].plusMoins ? "± " : ""));
 
     rendreInsights(exts);
 
@@ -628,7 +643,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.22";
+  const VERSION = "7.23";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -1492,9 +1507,57 @@
     const th = $('#h-table th[data-tri="' + tri.colonne + '"] .tri');
     if (th) th.textContent = tri.sens > 0 ? "▲" : "▼";
 
-    $("#h-corps").innerHTML = liste.map(e =>
-      "<tr data-id=\"" + e.id + "\">" +
-      "<td>" + fmtDateHeure(e.date_heure) + "</td>" +
+    $("#h-corps").innerHTML = liste.map(e => ligneHistorique(e)).join("");
+    majBarreComparaison();
+  }
+
+  /* Détail dépliable : le carnet stocke 22 champs par extraction et le tableau
+     n'en montre que 8. Tout le reste (commentaire, descripteurs, temps, tasse,
+     puissance de feu, volume) disparaissait à l'enregistrement. Le détail se
+     rend dans une ligne en colspan, donc sans toucher aux largeurs de colonnes
+     qui viennent d'être figées. */
+  const detailsOuverts = new Set();
+  const comparaison = new Set();
+
+  function ligneDetail(e) {
+    const item = (cle, valeur) => valeur === "" || valeur === undefined || valeur === null
+      ? "" : '<div class="detail-item"><span>' + I18N.t(cle) + "</span><b>" + valeur + "</b></div>";
+    const cases = [
+      item("d_dose", e.dose_g !== "" ? e.dose_g + " g" : ""),
+      item("d_eau", e.eau_g !== "" ? e.eau_g + " g" : ""),
+      item("d_temp", e.temperature_c !== "" ? e.temperature_c + " °C" : ""),
+      item("d_puissance", e.puissance_feu !== "" ? e.puissance_feu + " / 10" : ""),
+      item("d_total", e.temps_total_s !== "" ? fmtTemps(e.temps_total_s) : ""),
+      item("d_ecoulement", e.temps_ecoulement_s !== "" ? fmtTemps(e.temps_ecoulement_s) : ""),
+      item("d_volume", e.volume_extrait_ml !== "" ? e.volume_extrait_ml + " ml" : ""),
+      item("d_eau_ajoutee", e.eau_ajoutee_ml !== "" ? e.eau_ajoutee_ml + " ml" : ""),
+      item("d_lait", e.lait_ml !== "" ? e.lait_ml + " ml" : ""),
+      item("d_agitation", e.agitation_nb !== "" ? e.agitation_nb : ""),
+      item("d_tasse", e.tasse),
+      item("d_prechauffee", Number(e.eau_prechauffee) === 1 ? I18N.t("oui") : ""),
+      item("d_boisson", e._c.volume_boisson_ml !== "" ? e._c.volume_boisson_ml + " ml" : ""),
+      item("d_cout", e._c.cout_tasse_vnd !== "" ? fmtVND(e._c.cout_tasse_vnd) : ""),
+    ].filter(Boolean).join("");
+
+    const tags = (e.descripteurs || "").split("|").filter(Boolean)
+      .map(t => '<span class="detail-tag">' + I18N.tag(t) + "</span>").join("");
+
+    return '<tr class="ligne-detail" data-detail="' + e.id + '"><td colspan="9">' +
+      (cases ? '<div class="detail-grille">' + cases + "</div>" : "") +
+      (tags ? '<div class="detail-tags">' + tags + "</div>" : "") +
+      (e.commentaire ? '<p class="detail-commentaire">' + e.commentaire + "</p>" : "") +
+      (cases || tags || e.commentaire ? "" : '<p class="detail-vide">' + I18N.t("d_rien") + "</p>") +
+      "</td></tr>";
+  }
+
+  function ligneHistorique(e) {
+    const ouvert = detailsOuverts.has(e.id);
+    const compare = comparaison.has(e.id);
+    return '<tr data-id="' + e.id + '" class="ligne-histo' + (ouvert ? " ouverte" : "") +
+      (compare ? " comparee" : "") + '">' +
+      '<td><button type="button" class="btn-deplier" data-action="deplier" aria-expanded="' + ouvert +
+      '" title="' + attrTitre(I18N.t("h_detail")) + '">' + (ouvert ? "▾" : "▸") + "</button> " +
+      fmtDateHeure(e.date_heure) + "</td>" +
       '<td title="' + attrTitre(I18N.tr(e._c.cafe_nom)) + '">' + I18N.tr(e._c.cafe_nom) + "</td>" +
       '<td><span class="chip-methode ' + e.methode.toLowerCase() + '">' + e.methode + "</span></td>" +
       '<td title="' + attrTitre(e.recette) + '">' + (e.recette || "") + "</td>" +
@@ -1504,11 +1567,90 @@
       '<td class="chip-diagnostic" title="' + attrTitre(e.diagnostic ? diagsAffiches(e.diagnostic) : "") + '">' +
       (e.diagnostic ? diagsAffiches(e.diagnostic) : "") + "</td>" +
       '<td><div class="actions-ligne">' +
+      '<button class="btn-ligne' + (compare ? " actif" : "") + '" data-action="comparer" title="' +
+      attrTitre(I18N.t("h_comparer")) + '">⇄</button>' +
       '<button class="btn-ligne" data-action="dupliquer" title="Dupliquer pour refaire la même">⧉</button>' +
       '<button class="btn-ligne" data-action="modifier" title="Modifier">✎</button>' +
       '<button class="btn-ligne danger" data-action="supprimer" title="Supprimer">🗑</button>' +
-      "</div></td></tr>"
-    ).join("");
+      "</div></td></tr>" + (ouvert ? ligneDetail(e) : "");
+  }
+
+  /* Comparateur : deux extractions côte à côte, différences surlignées. C'est le
+     test croisé en version manuelle, celui que le guide recommande (même café
+     dans les deux machines le même jour) et qui n'existait pas.
+
+     La sélection passe par un bouton de la colonne Actions et PAS par une colonne
+     de cases à cocher : le tableau vient d'être figé à neuf colonnes, en ajouter
+     une casserait les largeurs. */
+  function basculerComparaison(id) {
+    if (comparaison.has(id)) comparaison.delete(id);
+    else {
+      // Au delà de deux, la plus ancienne sélection cède sa place : plus simple
+      // que de refuser le clic, et ça permet d'enchaîner les comparaisons.
+      if (comparaison.size >= 2) comparaison.delete([...comparaison][0]);
+      comparaison.add(id);
+    }
+    rendreHistorique();
+    if (comparaison.size === 2) ouvrirComparaison();
+  }
+
+  function majBarreComparaison() {
+    const barre = $("#barre-comparaison");
+    if (!barre) return;
+    barre.hidden = comparaison.size === 0;
+    $("#comparaison-compte").textContent = I18N.t(
+      comparaison.size === 1 ? "cmp_une" : "cmp_deux", { n: comparaison.size });
+    $("#comparaison-ouvrir").disabled = comparaison.size !== 2;
+  }
+
+  // Lignes du tableau de comparaison. Chaque entrée sait lire sa valeur affichable.
+  function champsComparaison() {
+    return [
+      { cle: "d_cafe", lire: e => I18N.tr(e._c.cafe_nom) },
+      { cle: "d_methode", lire: e => e.methode },
+      { cle: "d_recette", lire: e => e.recette },
+      { cle: "d_dose", lire: e => e.dose_g !== "" ? e.dose_g + " g" : "" },
+      { cle: "d_eau", lire: e => e.eau_g !== "" ? e.eau_g + " g" : "" },
+      { cle: "d_ratio", lire: e => e._c.ratioTexte },
+      { cle: "d_mouture", lire: e => e.mouture_dial || (e._c.moulu ? I18N.t("paquet") : "") },
+      { cle: "d_temp", lire: e => e.temperature_c !== "" ? e.temperature_c + " °C" : "" },
+      { cle: "d_puissance", lire: e => e.puissance_feu !== "" ? e.puissance_feu + " / 10" : "" },
+      { cle: "d_prechauffee", lire: e => Number(e.eau_prechauffee) === 1 ? I18N.t("oui") : I18N.t("non") },
+      { cle: "d_total", lire: e => e.temps_total_s !== "" ? fmtTemps(e.temps_total_s) : "" },
+      { cle: "d_ecoulement", lire: e => e.temps_ecoulement_s !== "" ? fmtTemps(e.temps_ecoulement_s) : "" },
+      { cle: "d_volume", lire: e => e.volume_extrait_ml !== "" ? e.volume_extrait_ml + " ml" : "" },
+      { cle: "d_tasse", lire: e => e.tasse },
+      { cle: "d_note", lire: e => e.note_sur_10 !== "" ? e.note_sur_10 + " / 10" : "" },
+      { cle: "d_diagnostic", lire: e => e.diagnostic ? diagsAffiches(e.diagnostic) : "" },
+      { cle: "d_descripteurs", lire: e => (e.descripteurs || "").split("|").filter(Boolean).map(t => I18N.tag(t)).join(", ") },
+      { cle: "d_commentaire", lire: e => e.commentaire },
+    ];
+  }
+
+  function ouvrirComparaison() {
+    const ids = [...comparaison];
+    const exts = extAvecCalculs().filter(e => ids.includes(e.id))
+      .sort((x, y) => String(x.date_heure).localeCompare(String(y.date_heure)));
+    if (exts.length !== 2) return;
+    const [a, b] = exts;
+
+    $("#comparaison-titres").innerHTML = "<th></th><th>" + fmtDateHeure(a.date_heure) +
+      "</th><th>" + fmtDateHeure(b.date_heure) + "</th>";
+    $("#comparaison-corps").innerHTML = champsComparaison().map(c => {
+      const va = String(c.lire(a) || ""), vb = String(c.lire(b) || "");
+      if (!va && !vb) return "";
+      // Surligner UNIQUEMENT ce qui diffère : c'est là que se trouve l'explication
+      // de l'écart de note, le reste est du bruit visuel.
+      const differe = va !== vb;
+      return '<tr' + (differe ? ' class="differe"' : "") + "><th>" + I18N.t(c.cle) + "</th>" +
+        "<td>" + va + "</td><td>" + vb + "</td></tr>";
+    }).join("");
+
+    const ecart = a.note_sur_10 !== "" && b.note_sur_10 !== ""
+      ? I18N.t("cmp_ecart", { x: fmtDecimal(Math.abs(a.note_sur_10 - b.note_sur_10), 1) })
+      : I18N.t("cmp_sans_note");
+    $("#comparaison-resume").textContent = ecart;
+    $("#modale-comparaison").showModal();
   }
 
   function remplirFiltres() {
@@ -2250,8 +2392,17 @@
       } else if (btn.dataset.action === "dupliquer") {
         chargerExtractionDansSaisie(ext, true);
         toast(I18N.t("t_dupliquee"));
+      } else if (btn.dataset.action === "deplier") {
+        if (detailsOuverts.has(id)) detailsOuverts.delete(id);
+        else detailsOuverts.add(id);
+        rendreHistorique();
+      } else if (btn.dataset.action === "comparer") {
+        basculerComparaison(id);
       }
     });
+
+    $("#comparaison-ouvrir").addEventListener("click", ouvrirComparaison);
+    $("#comparaison-vider").addEventListener("click", () => { comparaison.clear(); rendreHistorique(); });
 
     // Référence
     $("#conv-dial").addEventListener("input", rendreConvertisseur);

@@ -17,6 +17,9 @@ const I18N = (() => {
   const UI = {
     "Carnet d'extraction": "Brew journal",
     "Ce que tes données disent": "What your data says",
+    "Comparer deux extractions": "Compare two brews",
+    "Comparer": "Compare",
+    "Annuler": "Cancel",
     // Quand cocher chaque diagnostic. Passent par I18N.tr, donc par UI.
     "Rien ne dépasse, tu la referais à l'identique.": "Nothing sticks out, you would brew it again exactly the same.",
     "Ça pique légèrement en attaque, sans être franchement citronné.": "A slight sharpness up front, without being outright lemony.",
@@ -649,6 +652,42 @@ const I18N = (() => {
     t_sachet: { fr: "Sachet enregistre", en: "Bag recorded" },
     t_brouillon: { fr: "Brouillon repris", en: "Draft restored" },
 
+    // Détail dépliable et comparateur de l historique.
+    d_cafe: { fr: "Café", en: "Coffee" },
+    d_methode: { fr: "Méthode", en: "Method" },
+    d_recette: { fr: "Recette", en: "Recipe" },
+    d_dose: { fr: "Dose", en: "Dose" },
+    d_eau: { fr: "Eau", en: "Water" },
+    d_ratio: { fr: "Ratio", en: "Ratio" },
+    d_mouture: { fr: "Mouture", en: "Grind" },
+    d_temp: { fr: "Température", en: "Temperature" },
+    d_puissance: { fr: "Puissance de feu", en: "Flame power" },
+    d_prechauffee: { fr: "Eau préchauffée", en: "Preheated water" },
+    d_total: { fr: "Temps total", en: "Total time" },
+    d_ecoulement: { fr: "Écoulement", en: "Drawdown" },
+    d_volume: { fr: "Volume extrait", en: "Volume out" },
+    d_eau_ajoutee: { fr: "Eau ajoutée", en: "Water added" },
+    d_lait: { fr: "Lait", en: "Milk" },
+    d_agitation: { fr: "Agitation", en: "Stirring" },
+    d_tasse: { fr: "Tasse", en: "Cup" },
+    d_boisson: { fr: "Volume boisson", en: "Drink volume" },
+    d_cout: { fr: "Coût", en: "Cost" },
+    d_note: { fr: "Note", en: "Score" },
+    d_diagnostic: { fr: "Diagnostic", en: "Diagnosis" },
+    d_descripteurs: { fr: "Descripteurs", en: "Descriptors" },
+    d_commentaire: { fr: "Commentaire", en: "Comment" },
+    d_rien: { fr: "Rien de plus à montrer sur cette extraction.", en: "Nothing more to show for this brew." },
+    h_detail: { fr: "Voir le détail", en: "Show details" },
+    h_comparer: { fr: "Comparer avec une autre", en: "Compare with another" },
+    cmp_une: { fr: "1 extraction sélectionnée, choisis en une seconde.", en: "1 brew selected, pick a second one." },
+    cmp_deux: { fr: "2 extractions sélectionnées.", en: "2 brews selected." },
+    cmp_ecart: { fr: "{x} point d écart entre les deux. Les lignes surlignées sont les seules différences.", en: "{x} point apart. The highlighted rows are the only differences." },
+    cmp_sans_note: { fr: "Une des deux tasses n a pas de note. Les lignes surlignées sont les différences.", en: "One of the two cups has no score. The highlighted rows are the differences." },
+    oui: { fr: "oui", en: "yes" },
+    non: { fr: "non", en: "no" },
+
+    kpi_regularite: { fr: "régularité, écart moyen à ta moyenne", en: "consistency, average gap from your mean" },
+
     hm_st_tasses: { fr: "tasses", en: "cups" },
     hm_st_jours: { fr: "jours actifs", en: "active days" },
     hm_st_serie_now: { fr: "série en cours", en: "current run" },
@@ -944,7 +983,8 @@ const I18N = (() => {
     "#conv-resultat,#table-plages,#avertissements,#aside-recette,#aside-cafe,#duel-machines," +
     "#tetsu-bloc,#pap-etapes,#g-heatmap,#reglette,#f-diagnostic,#f-descripteurs,#f-recette,#f-cafe," +
     "#h-cafe,#h-diagnostic,#q-cafe,#q-recette,#c-recette,#donnees-statut,#toast,#pap-params," +
-    "#insights,#sync-statut,#heatmap-stats,#version-site," +
+    "#insights,#sync-statut,#heatmap-stats,#version-site,#comparaison-compte," +
+    "#comparaison-resume,#comparaison-titres,#comparaison-corps," +
     "#vide-mouture,#vide-gouts,#vide-duel,#note-gouts";
 
   function scanner() {

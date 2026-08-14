@@ -349,6 +349,11 @@
   </div>
 
   <p class="historique-compte" id="h-compte"></p>
+  <div class="barre-comparaison" id="barre-comparaison" hidden>
+    <span id="comparaison-compte"></span>
+    <button type="button" class="btn btn-petit" id="comparaison-ouvrir">Comparer</button>
+    <button type="button" class="btn btn-discret btn-petit" id="comparaison-vider">Annuler</button>
+  </div>
   <div class="table-conteneur carte">
     <table class="table-historique" id="h-table">
       <thead>
@@ -1019,6 +1024,20 @@ Cảm ơn shop.</pre>
 </div>
 
 <!-- ================= MODE PAS A PAS ================= -->
+<dialog id="modale-comparaison" class="modale modale-large">
+  <h2>Comparer deux extractions</h2>
+  <p class="modale-note" id="comparaison-resume"></p>
+  <div class="table-conteneur">
+    <table class="table-comparaison">
+      <thead><tr id="comparaison-titres"></tr></thead>
+      <tbody id="comparaison-corps"></tbody>
+    </table>
+  </div>
+  <div class="saisie-actions">
+    <button type="button" class="btn btn-discret modale-fermer">Fermer</button>
+  </div>
+</dialog>
+
 <dialog id="modale-pas-a-pas" class="modale modale-pasapas">
   <div class="pap-entete">
     <h2 id="pap-titre">Recette</h2>

@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.22,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.23,
 2026-08-12.
 
 ## 1. Vue d'ensemble
@@ -423,6 +423,16 @@ Autres points, chacun pour une raison :
      alors que le carnet a deux semaines donnerait un chiffre faux et
      décourageant.
 
+## 6 septies. Régularité, et pourquoi pas l'écart type
+
+Le KPI de régularité utilise l'ÉCART MOYEN à la moyenne, pas l'écart type.
+L'écart type est la mesure canonique mais elle ne se lit pas : personne ne sait
+ce que vaut un sigma de 1,2. L'écart moyen se dit en français exact, "tes tasses
+s'écartent en moyenne de 0,8 point de ta moyenne". Sur une poignée de notes les
+deux donnent des chiffres très proches (0,8 contre 1,0 sur les 11 premières
+extractions), donc la clarté ne coûte rien à la justesse. `ecartMoyen()` renvoie
+null sous deux notes : une seule note n'a pas de régularité.
+
 ## 6 bis. Insights automatiques du tableau de bord
 
 Carte "Ce que tes données disent", juste sous les KPI. Des phrases calculées,
@@ -602,6 +612,27 @@ l'application. `ecrireBrouillon()` sauvegarde le formulaire dans localStorage.
 - Écrit sur `visibilitychange` vers `hidden` sans attendre le debounce : c'est
   le dernier événement fiable avant qu'un navigateur mobile décharge la page.
 - Effacé à l'enregistrement, jamais avant.
+
+## 8 quater. Détail dépliable et comparateur
+
+**Détail dépliable.** Le carnet stocke 22 champs par extraction, le tableau en
+montre 8. Un clic sur le chevron de la colonne date déplie une ligne
+supplémentaire en `colspan="9"`, donc SANS toucher aux largeurs de colonnes qui
+sont figées. Elle montre le reste : doses, températures, temps, puissance de feu,
+tasse, volumes, coût, descripteurs et commentaire. C'est ce qui rend le
+commentaire utile, il n'était jamais relu.
+
+L'état d'ouverture vit dans un `Set` en mémoire (`detailsOuverts`), pas dans les
+données : quelles lignes sont dépliées n'a aucune raison d'être synchronisé.
+
+**Comparateur.** Sélection par un bouton de la colonne Actions, PAS par une
+colonne de cases à cocher : le tableau vient d'être figé à neuf colonnes, en
+ajouter une casserait les largeurs. Au delà de deux sélections, la plus ancienne
+cède sa place, ce qui permet d'enchaîner les comparaisons sans vider à la main.
+
+La modale n'affiche en surbrillance QUE les lignes qui diffèrent. C'est là que se
+trouve l'explication de l'écart de note; surligner le reste serait du bruit. Une
+ligne vide des deux côtés n'est pas affichée du tout.
 
 ## 8 ter. Tableau de l'historique, largeurs figées
 
@@ -1039,3 +1070,7 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   cocher regroupées à part, quatre colonnes, plus aucun champ à cheval sur deux
   colonnes) et case "eau préchauffée" masquée sur la famille brikka-classique où
   elle fait doublon avec le choix de recette. Détail en section 7 ter.
+- v7.23 : détail dépliable dans l'historique (les 22 champs stockés, pas
+  seulement les 8 colonnes), comparateur de deux extractions avec surbrillance des
+  seules différences, et KPI de régularité en écart moyen. Priorités 4, 5 et 8 du
+  backlog.

@@ -141,6 +141,57 @@ button { font-family: inherit; }
   flex-wrap: wrap;
 }
 
+/* Barre de selection du comparateur. */
+.barre-comparaison {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin: 0 0 10px; padding: 8px 12px;
+  background: var(--accent-fond); border: 1px solid var(--avert-bord);
+  border-radius: var(--rayon-petit); font-size: 0.85rem;
+}
+
+/* Bouton de dépliage, dans la colonne date. */
+.btn-deplier {
+  border: none; background: transparent; color: var(--attenue);
+  cursor: pointer; padding: 0 4px 0 0; font-size: 0.8rem;
+}
+.btn-deplier:hover { color: var(--accent); }
+.ligne-histo.comparee { background: var(--accent-fond); }
+.btn-ligne.actif { color: var(--accent-fort); background: var(--accent-fond); }
+
+/* Détail dépliable : rendu en colspan, donc sans toucher aux largeurs figées. */
+.ligne-detail > td { background: var(--panneau-2); padding: 14px 16px; white-space: normal; }
+.detail-grille {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px 14px;
+}
+.detail-item { display: flex; flex-direction: column; }
+.detail-item span { font-size: 0.7rem; color: var(--attenue); text-transform: uppercase; letter-spacing: 0.04em; }
+.detail-item b { font-size: 0.9rem; color: var(--encre); }
+.detail-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.detail-tag {
+  font-size: 0.75rem; padding: 2px 9px; border-radius: 999px;
+  background: var(--panneau); border: 1px solid var(--lignes); color: var(--texte);
+}
+.detail-commentaire {
+  margin: 12px 0 0; padding-left: 12px; font-style: italic;
+  border-left: 2px solid var(--accent); color: var(--texte);
+}
+.detail-vide { margin: 0; color: var(--attenue); font-size: 0.85rem; }
+
+/* Tableau de comparaison : seules les lignes qui DIFFÈRENT sont surlignées,
+   c'est là que se trouve l'explication de l'écart de note. */
+.table-comparaison { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.table-comparaison th, .table-comparaison td {
+  padding: 8px 12px; border-bottom: 1px solid var(--lignes);
+  text-align: left; vertical-align: top;
+}
+.table-comparaison thead th { color: var(--attenue); font-size: 0.78rem; }
+.table-comparaison tbody th {
+  color: var(--attenue); font-weight: 600; font-size: 0.78rem;
+  text-transform: uppercase; letter-spacing: 0.04em; width: 30%;
+}
+.table-comparaison tr.differe td { background: var(--accent-fond); color: var(--encre); font-weight: 600; }
+
 /* Duree en minutes et secondes : deux champs etroits sur une ligne. */
 .duree { display: flex; align-items: center; gap: 6px; }
 .duree input { width: 4.2rem; min-width: 0; }
