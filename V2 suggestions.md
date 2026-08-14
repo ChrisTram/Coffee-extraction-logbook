@@ -1,14 +1,13 @@
 # Backlog : audit et pistes d'amélioration
 
-Backlog classé par priorité, revu le 12 août 2026 après la mise en ligne.
-Rien ici n'est commencé.
+Audit refait le 14 août 2026, après la mise en ligne, la synchronisation et une
+première semaine d'usage réel. Rien ici n'est commencé.
 
 ## Comment lire les estimations
 
-La colonne coût est une estimation en tokens du budget de conversation
-nécessaire pour livrer la chose proprement, doc et tests compris. C'est un
-ordre de grandeur, pas un devis : compter large si la première approche se
-révèle fausse.
+La colonne coût est une estimation en tokens du budget de conversation nécessaire
+pour livrer la chose proprement, doc et tests compris. Ordre de grandeur, pas
+devis.
 
 | Repère | Tokens | À quoi ça ressemble |
 |---|---|---|
@@ -18,215 +17,187 @@ révèle fausse.
 | L | 180k à 350k | Nouveau modèle de données ou nouveau backend |
 | XL | 350k et plus | Refonte structurelle, à découper avant de lancer |
 
-Trois choses gonflent le coût sur ce projet précis, indépendamment de la
-difficulté technique : la double langue (toute chaîne visible existe en FR et
-en EN, et le mécanisme du TreeWalker impose des clés au fragment près), la
-compatibilité CSV (tout changement de schéma demande une migration idempotente
-et une régénération de la démo), et la doc qui se met à jour à chaque livraison.
-Une feature qui coûterait S ailleurs coûte souvent M ici.
+Trois choses gonflent le coût ici, indépendamment de la difficulté technique : la
+double langue (toute chaîne visible en FR et EN, au fragment près), la
+compatibilité CSV (tout changement de schéma demande une migration idempotente),
+et la doc à jour à chaque livraison.
 
-## Ce qui est déjà fait
+## Déjà fait, ne pas reproposer
 
-- Déploiement Cloudflare Workers, site privé derrière identifiant et mot de
-  passe, session de 30 jours. Le repo est public, les secrets sont chez
-  Cloudflare.
-- Le site est en https, ce qui débloque les points 2 et 3 ci-dessous.
+Déploiement privé (Workers, mot de passe, session 30 jours), synchronisation
+entre appareils (D1), PWA installable et Wake Lock, insights automatiques,
+stock par sachet, calendrier lisible avec statistiques, classement des goûts par
+descripteur, numéro de version, brouillon de saisie, durées en minutes et
+secondes, puissance de feu, diagnostics groupés avec aide au survol, recette
+d'eau préchauffée séparée.
 
-## Priorité 1 : la synchronisation entre appareils
+## Le constat qui oriente ce backlog
 
-**Coût : L (200k à 300k)**
+**Tu enregistres 22 champs par extraction et le site t'en montre 8.** L'historique
+a huit colonnes, le tableau de bord six graphiques. Tout ce qui a été ajouté
+récemment, puissance de feu, temps d'écoulement, sachet, n'est visible nulle part
+après la saisie.
 
-C'est le problème que la mise en ligne vient de créer et il n'est pas dans
-l'ancien backlog. Le site est maintenant accessible depuis le téléphone en
-cuisine ET depuis le desktop. Mais les données vivent dans IndexedDB, qui est
-par appareil : une extraction saisie sur le téléphone n'existera jamais sur le
-desktop, et inversement. Tant que le site était en `file://` sur une seule
-machine, la question ne se posait pas.
+Et surtout : **tu fais des tests croisés à la main.** Préchauffé contre standard,
+1.2.0 contre 1.3.0, et je te répète à chaque fois de ne changer qu'une variable.
+Le site ne t'aide pas du tout là-dessus, alors que c'est devenu ton usage
+principal. Les priorités 1 et 2 partent de là.
 
-En pratique ça veut dire saisir sur le téléphone pendant l'extraction, puis
-tout ressaisir sur le desktop pour avoir des graphiques complets. Personne ne
-le fera, donc les données vont diverger et le suivi perdra son intérêt.
+## Priorité 1 : mode test croisé guidé
 
-La bonne réponse est maintenant accessible : il y a déjà un Worker et une
-authentification, donc un stockage côté serveur devient possible sans exposer
-quoi que ce soit. Cloudflare D1 (SQLite, gratuit à cette échelle) ou KV pour
-un simple document JSON par table. Le Worker ne sert les données qu'à une
-session authentifiée, donc à toi.
+**Coût : M (100k à 150k)**
 
-Le vrai travail n'est pas le stockage, c'est la réconciliation : que se
-passe-t-il si le téléphone était hors ligne et que le desktop a bougé entre
-temps. Le moins coûteux et le plus honnête est un horodatage par ligne avec
-"le plus récent gagne", plus un export CSV qui reste la sauvegarde de secours.
-Le dossier lié par File System Access reste utilisable sur desktop, il devient
-un miroir local plutôt que la source de vérité.
+Tu déclares ce que tu testes (la mouture, la puissance de feu, le préchauffage),
+le site FIGE tout le reste pour les prochaines tasses : même café, même dose,
+même recette, préremplis et signalés si tu y touches. Il compte les tasses de
+chaque côté et annonce le verdict quand il y en a assez, avec les mêmes garde-fous
+que les insights (3 tasses minimum par côté, 0,4 point d'écart).
 
-À noter : c'est la seule feature de ce backlog qui change l'architecture. À
-faire avant les autres, sinon chaque feature suivante devra être migrée.
+C'est la formalisation de ce que tu fais déjà en te fiant à ta mémoire. Trois
+bénéfices concrets : plus d'expérience gâchée parce que deux variables ont bougé,
+plus besoin de te souvenir de ce que tu testais il y a quatre jours, et un verdict
+chiffré au lieu d'une impression.
 
-## Priorité 2 : PWA installable et Wake Lock
+Aucun nouveau champ de données : un test est un objet léger en localStorage
+(variable testée, valeurs figées, date de début), il n'a même pas besoin d'être
+synchronisé.
 
-**Coût : S (40k à 70k)**
+## Priorité 2 : le temps de cuisson
 
-Débloqué par le passage en https, ça ne marchait pas en `file://` (les service
-workers ne s'y enregistrent pas). Un manifest et un service worker suffisent
-pour une icône sur l'écran d'accueil, un lancement plein écran et un
-fonctionnement hors ligne garanti. Le site n'a aucune dépendance réseau, donc
-le service worker est trivial : mettre en cache les huit fichiers et l'affaire
-est réglée.
+**Coût : S (40k à 60k)**
 
-Le vrai gain est ailleurs : l'API Wake Lock, pour que l'écran du téléphone ne
-s'éteigne pas pendant le chrono. Aujourd'hui l'écran se verrouille au milieu
-d'une extraction et il faut le rallumer avec les mains mouillées. C'est le
-défaut d'usage le plus concret du site.
+Le calcul le plus utile de ta Brikka n'existe pas : **temps total moins temps
+d'écoulement**, c'est-à-dire la durée pendant laquelle la mouture chauffe sans
+que rien ne la traverse. C'est ce chiffre qui explique un goût brûlé, pas le temps
+total.
 
-Attention à une chose : un service worker qui met en cache la page de
-connexion la servirait à la place de la redirection. Exclure `/login` et
-`/logout` du cache.
+Ajouter `temps_cuisson_s` en champ CALCULÉ (jamais stocké, comme le ratio), le
+montrer en saisie sous le chrono, dans l'historique, et en faire un nuage note
+contre temps de cuisson. Plus une règle d'insight : "au dessus de 3 minutes de
+cuisson, tes notes chutent de X points".
 
-## Priorité 3 : bouton de déconnexion et version affichée
+À faire en même temps : un avertissement si l'écoulement dépasse le temps total,
+qui est impossible et signale une faute de frappe.
 
-**Coût : XS (15k à 25k)**
+Petit prérequis honnête : tes 11 extractions ont un temps d'écoulement vide. Le
+graphique sera vide jusqu'à ce que tu remplisses les deux champs, ce que le
+message de carte vide dira.
 
-Deux détails que la mise en ligne rend nécessaires. La déconnexion n'existe
-que comme URL `/logout` à taper à la main, ce qui est ridicule sur téléphone.
-Et il n'y a aucun moyen de savoir quelle version tourne sur un appareil, ce
-qui va devenir pénible dès le deuxième déploiement ("est-ce que le téléphone a
-la correction ou pas"). Un numéro dans le pied de page, aligné sur le
-changelog, règle la question.
-
-Les deux tiennent dans la même passe : trois clés i18n et deux lignes de HTML.
-
-## Priorité 4 : suivi du stock par sachet
-
-**Coût : M (120k à 180k)**
-
-Le site connaît le format du sachet et la dose de chaque extraction, il peut
-donc afficher les grammes restants par café, alerter à "plus que 3 tasses" et
-griser les cafés épuisés.
-
-Ça règle aussi une vraie limite actuelle : un café racheté garde une seule
-date de torréfaction, donc l'indicateur de fraîcheur ment dès le deuxième
-sachet. Une table `achats` (cafe_id, date, format, prix, date_torrefaction)
-remet le compteur à zéro et la fraîcheur devient celle du sachet en cours.
-
-Coût gonflé par la migration : cinquième CSV, cinquième table, régénération de
-la démo, et il faut décider quoi faire de l'historique existant (probablement
-créer un achat implicite par café à sa date d'ajout).
-
-## Priorité 5 : comparateur d'extractions
-
-**Coût : S (60k à 90k)**
-
-Sélectionner deux extractions dans l'historique et les afficher côte à côte,
-champ par champ, différences surlignées. C'est exactement l'outil du test
-croisé recommandé par le guide (même café dans les deux machines le même jour)
-et il n'existe pas.
-
-Bon rapport valeur sur effort : aucune donnée nouvelle, aucune migration, tout
-est déjà en mémoire. C'est de l'affichage pur.
-
-## Priorité 6 : insights automatiques sur le tableau de bord
-
-**Coût : M (90k à 140k)**
-
-Des phrases calculées, pas des graphiques en plus : "ta fenêtre de fraîcheur
-optimale est 8 à 21 jours (note moyenne 8,1 contre 6,4 après)", "1.2.0 bat
-1.1.0 de 1,3 point sur la Brikka", "le Chronicler's Sweet sort 0,8 point au
-dessus du Classique sur les honey".
-
-Trois ou quatre règles avec un seuil minimal d'échantillons suffisent.
-Attention au piège : avec 7 extractions en base, toute corrélation est du
-bruit. Ne rien afficher sous un seuil, et dire pourquoi plutôt que de laisser
-une carte vide.
-
-Coût surtout en rédaction bilingue : chaque insight est un gabarit à écrire en
-FR et EN avec ses variables.
-
-## Priorité 7 : recherche et filtres enrichis dans l'historique
-
-**Coût : S (50k à 80k)**
-
-Recherche plein texte commentaires compris, filtre par descripteur, par tasse,
-par plage de notes. Le commentaire est aujourd'hui invisible dans le tableau,
-une ligne dépliable le montrerait.
-
-Devient nettement plus utile quand l'historique dépasse la centaine de lignes,
-ce qui n'est pas encore le cas.
-
-## Priorité 8 : corbeille et annulation
+## Priorité 3 : corbeille et annulation
 
 **Coût : S (40k à 60k)**
 
 Une suppression d'extraction est définitive. Un toast "Supprimée, annuler"
-pendant cinq secondes coûte peu et évite le drame du doigt qui glisse sur
-téléphone, risque qui augmente maintenant que le site est sur mobile.
+pendant cinq secondes coûte peu et le risque a augmenté depuis que le site tourne
+en PWA sur téléphone, en cuisine.
 
 À grouper avec le remplacement des cinq `confirm()` et `alert()` natifs de
-`app.js` : sur mobile ce sont des boîtes système moches qui cassent
-l'impression d'application, et elles ne sont pas traduites par le mécanisme
-i18n puisqu'elles sortent du DOM.
+`app.js` : sur mobile ce sont des boîtes système qui cassent l'impression
+d'application, et elles ne passent pas par la couche i18n donc elles restent en
+français en mode anglais.
+
+## Priorité 4 : ligne dépliable dans l'historique
+
+**Coût : S (50k à 80k)**
+
+Huit colonnes sur vingt-deux champs. Le commentaire, les descripteurs, la
+puissance de feu, les temps, la tasse, le volume, tout ça est invisible une fois
+la tasse enregistrée. Une ligne qui se déplie au clic montre le reste sans élargir
+le tableau, qui vient tout juste d'être remis d'aplomb.
+
+C'est aussi ce qui rend le commentaire utile : aujourd'hui tu l'écris et tu ne le
+relis jamais.
+
+## Priorité 5 : comparateur de deux extractions
+
+**Coût : S (60k à 90k)**
+
+Cocher deux lignes de l'historique et les voir côte à côte, champ par champ,
+différences surlignées. C'est l'outil du test croisé en version manuelle, et il
+reste utile même avec la priorité 1 : celle-ci pilote un test à venir, le
+comparateur regarde deux tasses passées.
+
+Aucune donnée nouvelle, tout est déjà en mémoire. C'est de l'affichage pur.
+
+## Priorité 6 : ta meilleure combinaison
+
+**Coût : S (50k à 80k)**
+
+Une carte qui répond à "qu'est-ce que je refais quand je veux une bonne tasse" :
+la combinaison café plus recette plus mouture plus puissance de feu qui a la
+meilleure moyenne, avec le nombre de tasses qui l'appuient, et un bouton qui
+préremplit une saisie avec exactement ces réglages.
+
+C'est le vrai aboutissement d'un carnet d'extraction. Les insights donnent des
+tendances par variable ; ça, c'est la recette gagnante complète.
+
+Même prudence que les insights : rien tant qu'une combinaison n'a pas trois
+tasses.
+
+## Priorité 7 : ce que ça te coûte
+
+**Coût : S (50k à 80k)**
+
+Le coût par tasse est calculé mais affiché nulle part depuis que la caféine a
+pris sa place dans les KPI. Avec la table des achats, on peut maintenant faire
+mieux : dépense du mois, coût moyen par tasse, et le coût réel par tasse des cafés
+non purs, qui est nettement plus élevé qu'il n'y paraît.
+
+Utile au Vietnam où tu compares des sachets à des prix très différents.
+
+## Priorité 8 : régularité
+
+**Coût : XS (20k à 30k)**
+
+Un seul chiffre de plus dans les KPI : l'écart type de tes notes sur 30 jours,
+présenté en clair ("tes tasses varient de plus ou moins 1,2 point"). Progresser,
+ce n'est pas seulement monter la moyenne, c'est réduire la dispersion. Aucun champ
+nouveau, trois lignes de calcul.
 
 ## Priorité 9 : radar des descripteurs par café
 
 **Coût : S (50k à 80k)**
 
-Sur la fiche café, un petit radar ou des barres des descripteurs les plus
-cochés pour ce café. Répond à "ce café me donne quoi, en vrai, selon mes
-propres notes" et confronte les `notes_annoncees` du vendeur à ton palais.
+Le classement des goûts est global. Par café, il répondrait à "ce sachet me donne
+quoi, selon mes propres notes" et confronterait les `notes_annoncees` du vendeur
+à ton palais. À faire quand un café aura une quinzaine de tasses.
 
-Chart.js fait le radar nativement, l'essentiel du travail est l'agrégation.
-Comme les insights, ça demande un volume de données qui n'existe pas encore.
-
-## Priorité 10 : mode préparation guidé, balance en main
-
-**Coût : L (200k à 300k)**
-
-Quand la balance arrivera : un mode plein écran pendant l'extraction qui
-fusionne le chrono à paliers et les poids cibles, le poids à atteindre affiché
-en très gros au moment de chaque versement ("verse jusqu'à 112 g"), le
-prochain palier, les bips existants.
-
-C'est le prolongement naturel du chrono et ça remplacerait avantageusement le
-pas à pas de la page Référence pour l'exécution réelle. Placé bas parce que
-sans balance, ça ne sert à rien : à remonter en priorité 2 le jour où elle
-arrive.
-
-## Priorité 11 : rapport hebdomadaire partageable
+## Priorité 10 : rapport hebdomadaire partageable
 
 **Coût : M (80k à 120k)**
 
-Une vue imprimable ou un PNG généré au canvas résumant la semaine : nombre de
-tasses, meilleure tasse, réglage gagnant, caféine moyenne. Utile aussi pour
-poster sur un groupe café. Confort pur, aucune urgence.
+Vue imprimable ou PNG résumant la semaine. Confort pur, aucune urgence.
 
 ## À discuter, valeur non démontrée
 
 | Sujet | Coût | Pourquoi ça attend |
 |---|---|---|
-| Profils d'eau (marque, TDS) | S | Le guide insiste sur l'eau au Vietnam, mais c'est une variable de plus à saisir à chaque extraction. À ne faire que si tu changes réellement d'eau. |
-| Moments de la journée (matin, après-midi) | XS | Presque gratuit à calculer depuis l'heure. Intérêt à valider : est-ce que la première tasse du matin est vraiment mieux notée, ou juste bue avec plus d'enthousiasme. |
-| Photos d'étiquettes | M | Alourdit vite IndexedDB et ne tient pas dans un CSV. Faisable en écrivant les images à côté des CSV dans le dossier lié, mais ça casse la portabilité mobile. |
-| Import du récap Shopee | S | Séduisant mais fragile. Le site ne peut pas fetch une URL Shopee. À faire plutôt comme un parseur de texte collé, ce qui est beaucoup moins magique. |
+| Profils d'eau (marque, TDS) | S | Une variable de plus à saisir à chaque tasse. À ne faire que si tu changes réellement d'eau. |
+| Photos d'étiquettes | M | Alourdit IndexedDB, ne tient pas dans un CSV, et il faudrait décider si ça passe par la synchro. |
+| Import du récap Shopee | S | Le site ne peut pas fetch Shopee. Faisable en parseur de texte collé, beaucoup moins magique. |
+| Rappel de rinçage après un café gras | XS | La recette le dit déjà. Un rappel à chaque enregistrement deviendrait vite un reproche. |
+| Suggestion automatique du diagnostic | M | Deviner le diagnostic à partir des temps et du ratio serait souvent faux, et un diagnostic faux entraîne une correction fausse. Ton palais tranche mieux. |
 
 ## Dette technique
 
 | Sujet | Coût | Note |
 |---|---|---|
-| Découper `app.js` (1813 lignes, environ 90 fonctions dans une seule IIFE) en modules par écran | M | Toujours en scripts classiques, sans bundler. Améliore la maintenabilité sans toucher à l'architecture. À faire AVANT la synchronisation serveur, pas après : ce sera plus facile sur du code déjà rangé. |
-| Accessibilité | S | 60 boutons dans `index.html` pour seulement 12 attributs `aria-` ou `role`. Les pilules et tags sont bien de vrais boutons, mais il manque `aria-pressed` sur les bascules et un focus visible renforcé. Peu coûteux, bénéfice réel au clavier. |
-| Tests versionnés | S | `worker/index.test.mjs` existe et couvre la porte d'entrée. Rien n'existe pour l'application elle même, alors que le patron Playwright est documenté. Un `npm test` documenté et trois scénarios (saisie, bascule EN, persistance après reload) suffiraient à sécuriser les livraisons. |
-| Généraliser le bloc variantes | S | Le bloc Tetsu (versements pilotables) est codé en dur dans `TETSU`. Si une autre recette en veut un jour, définir les variantes dans la donnée recette plutôt que dans le code. Aucune urgence tant que le Tetsu est seul. |
-| Icônes et manifest | XS | Un vrai jeu d'icônes plutôt que le favicon emoji en data URI. À faire en même temps que la PWA, priorité 2, sinon c'est du travail en double. |
+| Découper `app.js` (2482 lignes, une seule IIFE) | M | En modules par écran, toujours en scripts classiques concaténables. C'est devenu le vrai frein : chaque ajout se cherche une place dans un fichier qui a doublé. À faire AVANT la priorité 1. |
+| Accessibilité | S | 63 boutons pour 14 attributs `aria` ou `role`. Il manque `aria-pressed` sur les bascules (pilules, tags, méthode) et un focus visible renforcé. Peu coûteux, bénéfice réel au clavier. |
+| Tests d'interface | M | Contrainte découverte le 14 août : le panneau navigateur de l'agent sert les fichiers en `data:`, donc la feuille de style n'est jamais chargée ET IndexedDB n'existe pas. Aucun test d'interface fiable n'est possible par ce chemin, il faut un vrai serveur local ou un Playwright installé. `tools/data.test.mjs` couvre déjà la couche de données sans navigateur. |
+| Généraliser le bloc variantes | S | Le bloc Tetsu est codé en dur dans `TETSU`. À généraliser si une autre recette veut des versements pilotables. |
+| `styles.css` à 1460 lignes | S | Commence à mériter un découpage par écran, ou au moins des sections mieux marquées. |
 
 ## Recommandation d'ordre
 
-Si l'objectif est que le site soit réellement utilisé au quotidien sur les
-deux appareils, l'ordre qui rapporte le plus vite est : priorité 3 (XS, une
-demi passe), puis priorité 2 (la PWA, qui rend l'usage en cuisine viable),
-puis le découpage d'`app.js` (dette), et seulement ensuite la priorité 1 (la
-synchronisation, qui est le gros morceau mais qui sera plus propre sur du code
-rangé).
+Découper `app.js` d'abord, c'est ce qui rend tout le reste moins cher. Puis la
+priorité 2, qui est courte et répond à la question que tu te poses en ce moment
+sur ta Brikka. Puis la priorité 1, qui est la grosse pièce et la plus utile à
+terme.
 
-Tout le reste est du confort et peut attendre d'avoir assez de données pour
-être intéressant. Avec 7 extractions en base, les insights et les radars
-n'auront rien à dire.
+Les priorités 3 et 4 peuvent s'intercaler à tout moment, elles ne dépendent de
+rien.
+
+Tout ce qui concerne les moyennes par café ou par descripteur (6, 9) gagne à
+attendre : avec 11 extractions, ces cartes se tairont plus souvent qu'elles ne
+parleront.
