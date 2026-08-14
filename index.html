@@ -250,12 +250,18 @@
       </div>
       <div class="grille-nombres chrono-manuels">
         <div class="champ">
-          <label for="f-total">Temps total (s)</label>
-          <input type="number" id="f-total" step="1" min="0" inputmode="numeric">
+          <label for="f-total-min">Temps total</label>
+          <div class="duree">
+            <input type="number" id="f-total-min" step="1" min="0" max="59" inputmode="numeric" placeholder="0"><span>min</span>
+            <input type="number" id="f-total-sec" step="1" min="0" max="59" inputmode="numeric" placeholder="00"><span>s</span>
+          </div>
         </div>
         <div class="champ">
-          <label for="f-ecoulement">Écoulement (s)</label>
-          <input type="number" id="f-ecoulement" step="1" min="0" inputmode="numeric">
+          <label for="f-ecoulement-min">Écoulement</label>
+          <div class="duree">
+            <input type="number" id="f-ecoulement-min" step="1" min="0" max="59" inputmode="numeric" placeholder="0"><span>min</span>
+            <input type="number" id="f-ecoulement-sec" step="1" min="0" max="59" inputmode="numeric" placeholder="00"><span>s</span>
+          </div>
           <span class="champ-hint">Déduit tout seul : du palier "ouvrir" à l'arrêt du chrono.</span>
         </div>
       </div>

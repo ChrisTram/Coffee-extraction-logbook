@@ -626,7 +626,118 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.15";
+  const VERSION = "7.16";
+
+  /* ---------- Brouillon de saisie ----------
+     Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
+     navigateur décharge la page pour récupérer de la mémoire. Sans brouillon,
+     tout ce qui était tapé disparaît, et c'est justement pendant l'extraction
+     qu'on sort de l'appli.
+
+     Volontairement en localStorage et PAS dans les données synchronisées : un
+     brouillon est propre à un appareil, l'envoyer sur le serveur ferait
+     apparaître une saisie fantôme sur l'autre. */
+  const CLE_BROUILLON = "brouillon-saisie";
+  const BROUILLON_MAX_MS = 24 * 60 * 60 * 1000;
+  const CHAMPS_BROUILLON = [
+    "f-date", "f-cafe", "f-recette", "f-dose", "f-eau", "f-mouture", "f-temp",
+    "f-volume", "f-eau-ajoutee", "f-lait", "f-agitation", "f-tasse", "f-note",
+    "f-commentaire", "f-total-min", "f-total-sec", "f-ecoulement-min", "f-ecoulement-sec",
+  ];
+  const CASES_BROUILLON = ["f-prechauffe", "f-ajout-eau-oui"];
+  let brouillonMinuteur = null;
+
+  function ecrireBrouillon() {
+    // On ne sauvegarde JAMAIS pendant l'édition d'une extraction existante :
+    // le brouillon écraserait le formulaire au prochain démarrage avec des
+    // valeurs qui appartiennent à une ligne déjà enregistrée.
+    if (saisie.editId) return;
+    const valeurs = {};
+    CHAMPS_BROUILLON.forEach(id => { const el = $("#" + id); if (el) valeurs[id] = el.value; });
+    CASES_BROUILLON.forEach(id => { const el = $("#" + id); if (el) valeurs[id] = el.checked; });
+    try {
+      localStorage.setItem(CLE_BROUILLON, JSON.stringify({
+        le: Date.now(),
+        methode: saisie.methode,
+        diagnostics: [...saisie.diagnostics],
+        descripteurs: [...saisie.descripteurs],
+        valeurs,
+      }));
+    } catch (e) { /* stockage plein ou refusé, tant pis */ }
+  }
+
+  function planifierBrouillon() {
+    clearTimeout(brouillonMinuteur);
+    brouillonMinuteur = setTimeout(ecrireBrouillon, 400);
+  }
+
+  function effacerBrouillon() {
+    clearTimeout(brouillonMinuteur);
+    try { localStorage.removeItem(CLE_BROUILLON); } catch (e) { /* tant pis */ }
+  }
+
+  /* Ne restaure que si le brouillon dit quelque chose : sans ce test, le
+     formulaire vierge sauvegardé au premier chargement déclencherait un message
+     "brouillon repris" à chaque ouverture, ce qui serait absurde. */
+  function brouillonUtile(b) {
+    const v = b.valeurs || {};
+    return Boolean(v["f-cafe"] || (v["f-commentaire"] || "").trim() ||
+      b.diagnostics.length || b.descripteurs.length ||
+      v["f-total-min"] || v["f-total-sec"] || v["f-volume"] || v["f-eau"]);
+  }
+
+  function restaurerBrouillon() {
+    let b;
+    try { b = JSON.parse(localStorage.getItem(CLE_BROUILLON) || "null"); } catch (e) { return false; }
+    if (!b || !b.valeurs) return false;
+    if (Date.now() - (b.le || 0) > BROUILLON_MAX_MS) { effacerBrouillon(); return false; }
+    if (!brouillonUtile(b)) return false;
+
+    if (b.methode) choisirMethode(b.methode, true);
+    Object.entries(b.valeurs).forEach(([id, valeur]) => {
+      const el = $("#" + id);
+      if (el && valeur !== undefined && valeur !== null) el.value = valeur;
+    });
+    CASES_BROUILLON.forEach(id => { const el = $("#" + id); if (el) el.checked = !!b.valeurs[id]; });
+
+    saisie.diagnostics = new Set(b.diagnostics || []);
+    saisie.descripteurs = new Set(b.descripteurs || []);
+    $$("#f-diagnostic .pilule").forEach(x => x.classList.toggle("actif", saisie.diagnostics.has(x.dataset.diag)));
+    $$("#f-descripteurs .tag").forEach(x => x.classList.toggle("actif", saisie.descripteurs.has(x.dataset.tag)));
+
+    $("#note-affichee").textContent = $("#f-note").value;
+    $("#f-eau-ajoutee").hidden = !$("#f-ajout-eau-oui").checked;
+    majCorrectionDiagnostic();
+    majAvertissements();
+    majLive();
+    majAsideSaisie();
+    return true;
+  }
+
+  /* Durées saisies en minutes ET secondes, stockées en secondes.
+     Taper "4 min 18" est plus rapide et moins risqué que convertir 258 de tête,
+     surtout sur téléphone. Le stockage ne change pas : les CSV gardent des
+     secondes, donc l'historique reste lisible et rien à migrer. */
+  function lireDuree(prefixe) {
+    const min = parseInt($("#" + prefixe + "-min").value, 10);
+    const sec = parseInt($("#" + prefixe + "-sec").value, 10);
+    const m = Number.isFinite(min) ? min : 0;
+    const s = Number.isFinite(sec) ? sec : 0;
+    // Les deux champs vides veulent dire "pas de temps", pas "zéro seconde".
+    if (!Number.isFinite(min) && !Number.isFinite(sec)) return "";
+    return m * 60 + s;
+  }
+
+  function ecrireDuree(prefixe, secondes) {
+    const total = Number(secondes);
+    if (secondes === "" || secondes === null || secondes === undefined || !Number.isFinite(total)) {
+      $("#" + prefixe + "-min").value = "";
+      $("#" + prefixe + "-sec").value = "";
+      return;
+    }
+    $("#" + prefixe + "-min").value = Math.floor(total / 60);
+    $("#" + prefixe + "-sec").value = total % 60;
+  }
 
   // Dose prise quand rien ne la preremplit (recette sans dose, formulaire
   // vierge). 15 g est la dose de toutes les recettes Switch d'origine.
@@ -1112,9 +1223,9 @@
     clearInterval(chrono.interval);
     const total = Math.round(chrono.accumule / 1000);
     chrono.etat = "arrete";
-    $("#f-total").value = total;
+    ecrireDuree("f-total", total);
     const tOuv = tOuverture();
-    if (tOuv !== null && total > tOuv) $("#f-ecoulement").value = total - tOuv;
+    if (tOuv !== null && total > tOuv) ecrireDuree("f-ecoulement", total - tOuv);
     majBoutonsChrono();
     toast(I18N.t("t_temps"));
   }
@@ -1150,6 +1261,7 @@
       if (saisie.diagnostics.has(d)) saisie.diagnostics.delete(d);
       else saisie.diagnostics.add(d);
       b.classList.toggle("actif", saisie.diagnostics.has(d));
+      planifierBrouillon();
       majCorrectionDiagnostic();
     }));
 
@@ -1182,8 +1294,8 @@
     $("#f-commentaire").value = "";
     $("#f-note").value = 7;
     $("#note-affichee").textContent = "7";
-    $("#f-total").value = "";
-    $("#f-ecoulement").value = "";
+    ecrireDuree("f-total", "");
+    ecrireDuree("f-ecoulement", "");
     $("#f-volume").value = "";
     $("#f-eau").value = "";
     $("#f-temp").value = 95;
@@ -1225,8 +1337,8 @@
     $("#f-tasse").value = ext.tasse || "";
     $("#f-lait").value = ext.lait_ml !== undefined ? ext.lait_ml : "";
     $("#champ-lait").hidden = !(trouverRecette(ext.recette) || {}).lait;
-    $("#f-total").value = ext.temps_total_s;
-    $("#f-ecoulement").value = ext.temps_ecoulement_s;
+    ecrireDuree("f-total", ext.temps_total_s);
+    ecrireDuree("f-ecoulement", ext.temps_ecoulement_s);
     $("#f-note").value = ext.note_sur_10 === "" ? 7 : ext.note_sur_10;
     $("#note-affichee").textContent = $("#f-note").value;
     $("#f-commentaire").value = ext.commentaire;
@@ -1256,8 +1368,8 @@
       eau_g: $("#f-eau").value,
       mouture_dial: $("#f-mouture").value.trim().replace(/,/g, "."),
       temperature_c: $("#f-temp").value,
-      temps_total_s: $("#f-total").value,
-      temps_ecoulement_s: $("#f-ecoulement").value,
+      temps_total_s: lireDuree("f-total"),
+      temps_ecoulement_s: lireDuree("f-ecoulement"),
       volume_extrait_ml: $("#f-volume").value,
       eau_ajoutee_ml: saisie.methode === "Brikka" && $("#f-ajout-eau-oui").checked ? $("#f-eau-ajoutee").value : "",
       lait_ml: !$("#champ-lait").hidden ? $("#f-lait").value : "",
@@ -1271,11 +1383,13 @@
     };
     if (saisie.editId) {
       await DATA.modifierExtraction(saisie.editId, ext);
+      effacerBrouillon();
       toast(I18N.t("t_modifiee"));
       reinitialiserSaisie();
       activerEcran("historique");
     } else {
       await DATA.ajouterExtraction(ext);
+      effacerBrouillon();
       toast(I18N.t("t_enregistree"));
       reinitialiserSaisie(true);
       activerEcran("tableau");
@@ -2005,6 +2119,13 @@
       try { localStorage.setItem("bips", $("#chrono-bip").checked ? "1" : "0"); } catch (e) { /* tant pis */ }
     });
     $("#form-saisie").addEventListener("submit", enregistrerSaisie);
+    $("#form-saisie").addEventListener("input", planifierBrouillon);
+    $("#form-saisie").addEventListener("change", planifierBrouillon);
+    // visibilitychange est le dernier evenement fiable avant qu'un navigateur
+    // mobile decharge la page : on ecrit tout de suite, sans attendre le debounce.
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") ecrireBrouillon();
+    });
     $("#btn-annuler-edition").addEventListener("click", () => { reinitialiserSaisie(); activerEcran("historique"); });
     $("#btn-gerer-cafes").addEventListener("click", ouvrirModaleCafes);
     $("#btn-cafes-entete").addEventListener("click", ouvrirModaleCafes);
@@ -2279,6 +2400,7 @@
     try { $("#chrono-bip").checked = localStorage.getItem("bips") !== "0"; } catch (e) { /* tant pis */ }
     choisirMethode("Brikka");
     reinitialiserSaisie();
+    if (restaurerBrouillon()) toast(I18N.t("t_brouillon"));
 
     const h = location.hash.slice(1);
     activerEcran(["tableau", "saisie", "historique", "reference", "guide"].includes(h) ? h : "tableau");

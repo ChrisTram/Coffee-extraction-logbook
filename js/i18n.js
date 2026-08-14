@@ -623,6 +623,7 @@ const I18N = (() => {
     btn_sachet: { fr: "Nouveau sachet", en: "New bag" },
     sachet_titre: { fr: "Nouveau sachet : {n}", en: "New bag: {n}" },
     t_sachet: { fr: "Sachet enregistre", en: "Bag recorded" },
+    t_brouillon: { fr: "Brouillon repris", en: "Draft restored" },
 
     hm_st_tasses: { fr: "tasses", en: "cups" },
     hm_st_jours: { fr: "jours actifs", en: "active days" },

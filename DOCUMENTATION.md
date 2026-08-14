@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.15,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.16,
 2026-08-12.
 
 ## 1. Vue d'ensemble
@@ -533,6 +533,33 @@ déclenchera si des dates de torréfaction apparaissent un jour. Mais le message
 réclamait ces dates a été retiré : Chris a dit qu'il ne les aurait quasi jamais, le
 rappel serait un reproche permanent.
 
+## 7 bis. Durées en minutes et secondes, et brouillon de saisie
+
+**Durées.** `temps_total_s` et `temps_ecoulement_s` restent stockés EN SECONDES,
+donc les CSV et l'historique ne bougent pas et il n'y a rien à migrer. Seule la
+saisie change : deux champs `-min` et `-sec`, lus par `lireDuree()` et remplis
+par `ecrireDuree()`. Piège traité : les deux champs vides rendent `""` et non
+`0`, sinon toute extraction sans chrono se retrouverait à zéro seconde au lieu
+de "non renseigné".
+
+**Brouillon.** Sur téléphone, quitter l'onglet pendant une extraction suffit à ce
+que le navigateur décharge la page, et c'est précisément à ce moment qu'on sort de
+l'application. `ecrireBrouillon()` sauvegarde le formulaire dans localStorage.
+
+- Volontairement HORS des données synchronisées. Un brouillon est propre à un
+  appareil; le pousser sur le serveur ferait apparaître une saisie fantôme sur
+  l'autre.
+- Jamais sauvegardé pendant l'ÉDITION d'une extraction existante
+  (`saisie.editId`), sinon le brouillon écraserait le formulaire au démarrage
+  suivant avec des valeurs appartenant à une ligne déjà enregistrée.
+- Restauré seulement si `brouillonUtile()` : sans ce test, le formulaire vierge
+  sauvegardé au premier chargement déclencherait un message "brouillon repris" à
+  chaque ouverture.
+- Périmé après 24 h.
+- Écrit sur `visibilitychange` vers `hidden` sans attendre le debounce : c'est
+  le dernier événement fiable avant qu'un navigateur mobile décharge la page.
+- Effacé à l'enregistrement, jamais avant.
+
 ## 9 bis. PWA, hors ligne et verrou d'écran
 
 Actif uniquement sur le site déployé (https). En `file://` le service worker ne
@@ -878,3 +905,6 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   structurellement vide; le nouveau utilise une donnée cochée à chaque tasse et
   parle enfin de goût plutôt que de réglage. Le rappel qui réclamait les dates de
   torréfaction est retiré des insights. Détail en section 6 sexies.
+- v7.16 : durées de chrono saisies en minutes ET secondes (stockage inchangé,
+  toujours en secondes), et brouillon de la saisie conservé dans localStorage quand
+  on quitte l'onglet. Détail et pièges en section 7 bis.

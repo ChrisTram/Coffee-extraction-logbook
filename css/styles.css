@@ -141,6 +141,11 @@ button { font-family: inherit; }
   flex-wrap: wrap;
 }
 
+/* Duree en minutes et secondes : deux champs etroits sur une ligne. */
+.duree { display: flex; align-items: center; gap: 6px; }
+.duree input { width: 4.2rem; min-width: 0; }
+.duree span { font-size: 0.8rem; color: var(--attenue); }
+
 /* Stock du sachet en cours, dans la liste des cafes. */
 .badge-stock {
   font-size: 0.7rem;
