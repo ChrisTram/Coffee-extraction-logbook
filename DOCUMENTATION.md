@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.19,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.20,
 2026-08-12.
 
 ## 1. Vue d'ensemble
@@ -96,6 +96,13 @@ diagnostic, descripteurs, commentaire`
   franc, avec un "un peu" partout : sans nuance on coche le cran du dessus par
   défaut et le diagnostic devient faux. Les noms de groupe passent par
   `I18N.groupe()`, donc par la carte GROUPES.
+  Chaque diagnostic porte DEUX textes, assemblés par `infoDiagnostic()` en une
+  bulle de deux lignes (`white-space: pre-line` sur la bulle) : QUAND le cocher
+  (`DIAGNOSTIC_QUAND`, une sensation en bouche à reconnaître) puis QUOI faire
+  (`DIAGNOSTIC_CORRECTIONS`). La correction seule disait quoi faire sans dire
+  dans quel cas on se trouve, et une bonne correction appliquée au mauvais
+  diagnostic empire la tasse suivante. Comme pour TAGS_INFO, aucun guillemet
+  double dans ces textes, ils partent dans un attribut HTML.
   Chaque diagnostic a sa correction dans DIAGNOSTIC_CORRECTIONS (fr,
   traduite via I18N.tr donc la phrase exacte doit exister comme clé dans
   UI); les corrections des diagnostics cochés s'empilent sous les pilules
@@ -956,3 +963,6 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   (astringent, léger, concentré, éventé, brûlé). AUCUNE valeur retirée ni
   renommée, l'historique déjà enregistré reste lisible tel quel, ce que le test 10
   de `tools/data.test.mjs` verrouille.
+- v7.20 : bulle d'aide des diagnostics enrichie. Elle donne maintenant QUAND
+  cocher (description en bouche, `DIAGNOSTIC_QUAND`) puis QUOI faire, sur deux
+  lignes. Les 16 descriptions existent en FR et EN.

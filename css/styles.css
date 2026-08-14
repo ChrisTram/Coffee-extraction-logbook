@@ -820,8 +820,8 @@ input:focus, select:focus, textarea:focus {
   left: 50%;
   transform: translateX(-50%);
   width: max-content;
-  max-width: 250px;
-  padding: 7px 11px;
+  max-width: 300px;
+  padding: 8px 11px;
   border-radius: 9px;
   border: 1px solid var(--lignes);
   background: var(--tooltip-fond);
@@ -830,7 +830,9 @@ input:focus, select:focus, textarea:focus {
   font-weight: 400;
   line-height: 1.4;
   text-align: left;
-  white-space: normal;
+  /* pre-line : la bulle des diagnostics tient sur deux lignes, quand cocher
+     puis quoi faire. */
+  white-space: pre-line;
   box-shadow: 0 5px 16px rgba(30, 18, 8, 0.25);
   z-index: 60;
   pointer-events: none;

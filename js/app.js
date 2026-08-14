@@ -644,7 +644,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.19";
+  const VERSION = "7.20";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -1277,6 +1277,16 @@
       .filter(Boolean).join("<br>");
   }
 
+  /* Bulle d'un diagnostic : QUAND le cocher, puis QUOI faire. Deux lignes, la
+     CSS de la bulle est en white-space pre-line. La correction seule laissait
+     deviner dans quel cas on se trouve, et une bonne correction appliquée au
+     mauvais diagnostic empire la tasse suivante. */
+  function infoDiagnostic(d) {
+    const quand = I18N.tr(DIAGNOSTIC_QUAND[d] || "");
+    const corr = I18N.tr(DIAGNOSTIC_CORRECTIONS[d] || "");
+    return [quand, corr].filter(Boolean).join("\n");
+  }
+
   function construirePilules() {
     // Diagnostics à choix MULTIPLE (une tasse peut être un peu amère ET
     // astringente). Chaque pilule porte sa correction en infobulle (data-info,
@@ -1287,7 +1297,7 @@
       '<div class="tags-groupe"><span class="tags-groupe-nom">' + I18N.groupe(g.nom) + "</span>" +
       '<div class="tags">' + g.diags.map(d =>
         '<button type="button" class="pilule" data-diag="' + d + '" data-info="' +
-        I18N.tr(DIAGNOSTIC_CORRECTIONS[d] || "") + '">' + I18N.diag(d) + "</button>").join("") +
+        infoDiagnostic(d) + '">' + I18N.diag(d) + "</button>").join("") +
       "</div></div>").join("");
     $$("#f-diagnostic .pilule").forEach(b => b.addEventListener("click", () => {
       const d = b.dataset.diag;

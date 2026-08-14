@@ -25,9 +25,9 @@ const charger = new Function(
   "location",
   "indexedDB",
   "console",
-  source + "\nreturn { DATA, SYNC, GRIND, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS };"
+  source + "\nreturn { DATA, SYNC, GRIND, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND };"
 );
-const { DATA, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS } =
+const { DATA, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND } =
   charger(undefined, { protocol: "file:" }, undefined, console);
 
 let failures = 0;
@@ -262,6 +262,22 @@ check("chaque nuance douce precede sa version franche",
 const multi = "Trop léger (aqueux)|Acide ET amer (extraction inégale)";
 check("un diagnostic multiple historique reste reconnu",
   multi.split("|").every(d => DIAGNOSTICS.includes(d)));
+
+// 11. Bulle d'aide des diagnostics : QUAND cocher, puis QUOI faire. La
+// correction seule disait quoi faire sans dire dans quel cas on est, et une
+// bonne correction appliquee au mauvais diagnostic empire la tasse suivante.
+// Motif construit par code de caractere : ecrire ces tirets en clair ferait
+// echouer le scan anti tirets du projet sur ce fichier meme.
+const TIRETS_INTERDITS = new RegExp("[" + [0x2012, 0x2013, 0x2014, 0x2015].map(c => String.fromCharCode(c)).join("") + "]");
+check("chaque diagnostic a une description du QUAND",
+  DIAGNOSTICS.every(d => DIAGNOSTIC_QUAND[d]),
+  DIAGNOSTICS.filter(d => !DIAGNOSTIC_QUAND[d]).join(", "));
+check("aucun guillemet double : ces textes partent dans un attribut HTML",
+  Object.values(DIAGNOSTIC_QUAND).every(v => !v.includes('"')));
+check("aucun tiret cadratin dans les descriptions",
+  Object.values(DIAGNOSTIC_QUAND).every(v => !TIRETS_INTERDITS.test(v)));
+check("la bulle tient sur deux lignes pour chaque diagnostic",
+  DIAGNOSTICS.every(d => [DIAGNOSTIC_QUAND[d], DIAGNOSTIC_CORRECTIONS[d]].filter(Boolean).length === 2));
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

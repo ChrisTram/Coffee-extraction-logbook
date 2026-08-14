@@ -388,6 +388,31 @@ const DIAGNOSTICS_GROUPES = [
 // stockage, le filtre de l'historique et l'anneau du tableau de bord.
 const DIAGNOSTICS = DIAGNOSTICS_GROUPES.flatMap(g => g.diags);
 
+/* Quand cocher chaque diagnostic. La correction seule ne suffisait pas : elle
+   dit quoi faire, pas dans quel cas on est. Sans ce repere on coche au jugé, et
+   une correction juste appliquee au mauvais diagnostic empire la tasse suivante.
+
+   Descriptions en BOUCHE, pas en jargon : ce sont des sensations a reconnaitre.
+   Aucun guillemet double, ces textes partent dans un attribut HTML. */
+const DIAGNOSTIC_QUAND = {
+  "Équilibré": "Rien ne dépasse, tu la referais à l'identique.",
+  "Un peu acide": "Ça pique légèrement en attaque, sans être franchement citronné.",
+  "Sous-extrait (acide)": "Acidité vive, et du creux derrière : la tasse semble inachevée.",
+  "Un peu amer": "Une amertume discrète s'installe en fin de bouche.",
+  "Sur-extrait (amer)": "Amertume franche et sécheresse, la tasse gratte.",
+  "Un peu astringent": "La langue râpe un peu, comme après un thé trop infusé.",
+  "Astringent": "Bouche sèche et rugueuse, qui persiste après la gorgée.",
+  "Acide ET amer (extraction inégale)": "Les deux défauts dans la même gorgée : l'eau n'a pas traversé partout.",
+  "Un peu léger": "Bonne tasse, mais un peu diluée : le goût manque de tenue.",
+  "Trop léger (aqueux)": "De l'eau colorée, aucun corps.",
+  "Un peu concentré": "Un peu dense, tu allongerais volontiers d'un fond d'eau.",
+  "Trop fort (concentré)": "Épais et écrasant, difficile à boire tel quel.",
+  "Un peu éventé": "Les arômes sont là mais en retrait, moins nets qu'au début du sachet.",
+  "Creux, plat (café éventé)": "Presque aucun arôme, une tasse sans relief.",
+  "Un peu brûlé": "Une note de grillé un peu poussée, sans être cendrée.",
+  "Brûlé (défaut du sachet)": "Goût de cendre ou de caoutchouc, dès la première gorgée.",
+};
+
 const DIAGNOSTIC_CORRECTIONS = {
   "Équilibré": "Rien à changer, note le réglage.",
   "Un peu acide": "Presque bon : un ou deux crans plus fin, ou 2 à 3 degrés plus chaud.",
