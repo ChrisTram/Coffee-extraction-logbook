@@ -5,9 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Carnet d'extraction : Brikka et Switch</title>
 <link rel="stylesheet" href="css/styles.css">
-<link rel="manifest" href="manifest.json">
+<!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
+     SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
+     parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
+     n'est pas installable du tout. Invisible en local, où il n'y a pas de porte. -->
+<link rel="manifest" href="manifest.json" crossorigin="use-credentials">
 <meta name="theme-color" content="#171009">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon-180.png">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Carnet">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%98%95%3C/text%3E%3C/svg%3E">

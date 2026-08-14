@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.24,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.25,
 2026-08-12.
 
 ## 1. Vue d'ensemble
@@ -316,6 +316,976 @@ re-créés.
   à Bangkok.
 - FILE SYSTEM ACCESS : absent de Firefox, désactivé par défaut dans Brave.
   Le site le détecte et bascule en mode navigateur avec messages.
+- `# DOCUMENTATION technique : Carnet d'extraction
+
+Doc de référence du projet, maintenue à chaque modification. Commencer par
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.25,
+2026-08-12.
+
+## 1. Vue d'ensemble
+
+Site mono-dossier, ouvert en `file://` dans Chrome. Aucune dépendance réseau :
+Chart.js 4.4.4 est embarqué dans `js/vendor/chart.umd.js`. Les scripts sont
+des scripts classiques (pas de modules ES, ils ne marchent pas en file://),
+chargés dans cet ordre : chart.umd, i18n, grind, recettes, demo-data, data,
+charts, app. Chaque fichier expose un objet global (I18N, GRIND, DATA, CHARTS)
+ou des constantes globales (RECETTES_DEPART, etc.). app.js est une IIFE.
+
+SIX écrans dans une page unique, bascule par nav et hash. La liste fait foi
+dans `ECRANS` (app.js) : tableau, saisie, historique, reglages, reference, guide.
+Elle était codée en dur en deux endroits, ce qui obligeait à penser aux deux à
+chaque ajout. Bouton flottant de saisie rapide en bas à
+droite (café + recette + note, le reste prérempli).
+
+## 2. Modèle de données
+
+Cinq tables, cinq CSV, éditables au tableur. La vérité vit dans un dossier
+lié via l'API File System Access (Chrome, Edge), avec copie miroir permanente
+dans IndexedDB (base `cafe-tracker`, store `kv`). Sans dossier lié, IndexedDB
+seul + import/export manuels.
+
+### cafes.csv
+`id, nom, torrefacteur, origine, espece, procede, torrefaction, deja_moulu,
+pourcentage_cafe_reel, tag, notes_annoncees, format_grammes, prix_vnd,
+date_torrefaction, machine_recommandee, recette_recommandee, date_ajout,
+actif`
+
+- `deja_moulu` 0/1 : si 1, le champ mouture est désactivé en saisie, affiché
+  "défaut paquet", rien n'est stocké, exclu du nuage note contre mouture.
+- `pourcentage_cafe_reel` (défaut 100) : sous 100, pastille rouge "X % café",
+  INTERDICTION du Switch (enregistrement refusé, saisie rapide comprise),
+  coût par gramme de café réel affiché en plus, caféine pondérée.
+- `tag` : "café aromatisé" (auto si pct < 100), "café de référence" (étalon,
+  barre verte dans le graphe par café). Champ libre.
+- `machine_recommandee` : Brikka | Switch | Les deux (valeurs françaises
+  fixes, les option des selects portent des attributs value explicites).
+- `date_ajout` (AAAA-MM-JJ, local, jamais toISOString) : posée à la création
+  d'un café (DATA.ajouterCafe), conservée à la modification (non éditable
+  dans le formulaire). Pour l'existant, la migration (étape 5) la déduit de
+  la première extraction du café; un café jamais extrait reste sans date.
+- `actif` 0/1 : un café désactivé n'apparaît PLUS DU TOUT dans le select de
+  saisie ni dans la saisie rapide. Exception : à l'édition d'une ancienne
+  extraction, remplirSelectCafes(garderId) réinjecte l'option "(inactif)"
+  pour que la valeur reste affichable. Dans la liste "Mes cafés", les
+  désactivés sont toujours triés en fin de liste (tri stable, ordre
+  d'origine conservé au sein de chaque groupe).
+- Liste "Mes cafés" : chaque ligne porte un badge de note moyenne
+  (.badge-note, "★ 7,4", moyenne des extractions notées du café, nombre
+  d'extractions en title) et la date d'ajout dans la ligne méta
+  ("ajouté le 12 août 2026", clé T li_ajoute, format via fmtDateCourte).
+
+### extractions.csv
+`id, date_heure, cafe_id, methode, recette, dose_g, eau_g, mouture_dial,
+temperature_c, temps_total_s, temps_ecoulement_s, volume_extrait_ml,
+eau_ajoutee_ml, lait_ml, agitation_nb, tasse, eau_prechauffee, note_sur_10,
+diagnostic, descripteurs, commentaire`
+
+- Seule la dose est obligatoire en saisie (étoile rouge). Date auto si vide.
+- `volume_extrait_ml` : ancien nom `volume_tasse_ml`, accepté en lecture
+  (normaliserExtraction fait le fallback).
+- `eau_ajoutee_ml` : Brikka seulement, eau d'allongement APRÈS extraction,
+  n'entre jamais dans le ratio. `lait_ml` : recettes au lait. Le calculé
+  `volume_boisson_ml` = extrait + eau ajoutée + lait.
+- `agitation_nb` : Switch, vide si pas d'agitation, défaut 1 quand coché.
+- `eau_prechauffee` : Brikka, 1 ou vide. Décoché par défaut.
+- `puissance_feu` : Brikka SEULEMENT, entier de 1 à 10, échelle personnelle de
+  Chris sur sa plaque. Vide pour le Switch, qui n'a pas de flamme. Borné et
+  arrondi à la normalisation : une valeur hors plage éditée au tableur est ramenée
+  dedans plutôt que jetée. Les recettes Brikka portent la même colonne, comme
+  cible qui préremplit la saisie (au même titre que dose, eau et molette).
+  Pourquoi ce champ : après une extraction à 4 minutes de cuisson suivie d'un
+  écoulement de 5 secondes, la conduite de la flamme est devenue LA variable à
+  régler, et elle n'était mesurée nulle part.
+- `descripteurs` : tags séparés par `|`, valeurs françaises (la traduction EN
+  est purement d'affichage). La liste vit dans DESCRIPTEURS_GROUPES
+  (recettes.js), 59 tags en 9 familles SCA. Chaque tag a une définition
+  courte dans TAGS_INFO (i18n.js, fr et en), affichée dans une bulle CSS au
+  survol ou au focus (attribut data-info, styles ".pilule[data-info]" dans
+  styles.css). Ne pas mettre de guillemets doubles dans ces définitions
+  (elles partent dans un attribut HTML).
+- `diagnostic` : zéro, une ou PLUSIEURS valeurs de DIAGNOSTICS (recettes.js)
+  séparées par `|` (choix multiple depuis la v7.2, une tasse peut être un
+  peu amère ET astringente). Les anciennes lignes à valeur unique se lisent
+  telles quelles (split sur `|`). 11 niveaux dont deux intermédiaires
+  ("Un peu acide", "Un peu amer") entre Équilibré et les extractions ratées.
+  Depuis la v7.19 ils sont GROUPÉS par levier de correction
+  (DIAGNOSTICS_GROUPES dans recettes.js) : "Rien à changer", "Réglage
+  d'extraction", "Ratio café et eau", "Le café lui même". `DIAGNOSTICS` reste
+  la liste à plat, dérivée des groupes, et garde son rôle pour l'ordre de
+  stockage, le filtre de l'historique et l'anneau. Chaque axe va du léger au
+  franc, avec un "un peu" partout : sans nuance on coche le cran du dessus par
+  défaut et le diagnostic devient faux. Les noms de groupe passent par
+  `I18N.groupe()`, donc par la carte GROUPES.
+  Chaque diagnostic porte DEUX textes, assemblés par `infoDiagnostic()` en une
+  bulle de deux lignes (`white-space: pre-line` sur la bulle) : QUAND le cocher
+  (`DIAGNOSTIC_QUAND`, une sensation en bouche à reconnaître) puis QUOI faire
+  (`DIAGNOSTIC_CORRECTIONS`). La correction seule disait quoi faire sans dire
+  dans quel cas on se trouve, et une bonne correction appliquée au mauvais
+  diagnostic empire la tasse suivante. Comme pour TAGS_INFO, aucun guillemet
+  double dans ces textes, ils partent dans un attribut HTML.
+  Chaque diagnostic a sa correction dans DIAGNOSTIC_CORRECTIONS (fr,
+  traduite via I18N.tr donc la phrase exacte doit exister comme clé dans
+  UI); les corrections des diagnostics cochés s'empilent sous les pilules
+  (majCorrectionDiagnostic) et chaque pilule porte la sienne en bulle au
+  survol. À l'enregistrement l'ordre stocké suit celui de DIAGNOSTICS. Le
+  filtre de l'historique matche si la valeur fait partie de la liste.
+  Ajouter une valeur ne casse rien; en retirer une casserait l'historique
+  (les anciennes valeurs stockées resteraient affichées telles quelles,
+  prévoir une migration).
+- Champs calculés (DATA.calculs, jamais stockés) : ratio (1:X.X), crans,
+  microns, age_jours, retention_ml (eau moins volume extrait),
+  volume_boisson_ml, cout_tasse_vnd, cout_reel_vnd, cafe_nom, moulu.
+
+### recettes.csv
+`id, nom, numero, methode, famille, variante, sous_titre, dose_g, eau_g,
+temperature_c, temp_texte, mouture_dial, ratio_texte, total_texte, lait,
+etapes, pour_qui, cafes_associes, note, par_defaut, avancee, variantes, actif`
+
+- `etapes` : segments "m:ss texte" ou "- texte" séparés par " || ".
+- `famille` + `variante` : les recettes d'une même famille partagent UNE
+  carte sur la page Référence avec des pilules de bascule (familles :
+  chronicler, costaud, brikka-lait, brikka-classique). Elles restent des recettes DISTINCTES
+  en base et dans l'historique.
+- `lait` 0/1 : affiche le champ lait en saisie, prérempli contenance de la
+  tasse moins volume de café estimé.
+- `variantes` 0/1 : active le bloc Tetsu (versements pilotables) : réservé au
+  Tetsu Devil, préservé à l'édition.
+- Les 9 recettes d'origine (RECETTES_DEPART dans recettes.js) sont
+  restaurables une par une via "Rétablir la version d'origine".
+
+Recettes d'origine v7 : Brikka classique (1.2.0), Brikka flat white et
+Brikka cappuccino (famille brikka-lait, lait), The Coffee Chronicler's Recipe
+et (Sweet) (famille chronicler, 1.6.0), Le Costaud (Bloom) 1.4.0 et
+(Immersion) 1.5.0 (famille costaud), The Tetsu Devil (2.0.0, variantes),
+La Sherrycipe (2.0.0, paliers 0:00/0:30/1:00/1:30). Toutes les Switch à
+15 g / 225 g, ratio 1:15, environ 195 ml.
+
+### tasses.csv
+`id, nom, contenance_ml`. Quatre par défaut (TASSES_DEPART) : Flat White Egg
+150, Espresso Egg 80, Nutty Tasting Cup 150, Classic Mug 330. Éditeur inline
+dans la saisie (bouton ✚). Défauts par méthode : Flat White Egg en Brikka,
+Classic Mug en Switch (non écrasés si l'utilisateur a choisi autre chose).
+Avertissement non bloquant si volume attendu (café + eau ajoutée + lait)
+dépasse la contenance.
+
+### achats.csv
+
+`id, cafe_id, date_achat, format_grammes, prix_vnd, date_torrefaction`
+
+Un achat = UN SACHET. Cette table existe pour deux raisons, la seconde étant la
+plus importante :
+
+1. Le stock restant devient calculable (format du sachet moins les doses
+   consommées DEPUIS sa date d'achat).
+2. Un café racheté gardait auparavant UNE seule date de torréfaction, celle du
+   tout premier paquet. La fraîcheur affichée était donc fausse pour toujours dès
+   le deuxième sachet. Chaque sachet porte maintenant la sienne.
+
+- `DATA.sachetCourant(cafeId)` : le dernier acheté, par `date_achat`.
+- `DATA.stockSachet(cafeId, doseDefaut)` : `{format, consomme, restant, depuis,
+  dateTorrefaction, sachets}`, ou `null` si aucun format n'est connu (on
+  préfère ne rien afficher qu'un badge faux). Ne comptent QUE les extractions
+  postérieures à `date_achat` : c'est tout l'intérêt de la table. Une extraction
+  sans dose compte pour la dose par défaut, sinon un oubli de saisie ferait croire
+  à un sachet intact. Un dépassement s'affiche en NÉGATIF, on ne le masque pas.
+- `DATA.ajouterAchat()` recopie format, prix et date de torréfaction sur la fiche
+  café, pour que tout ce qui lit encore la fiche reste cohérent avec le sachet en
+  cours.
+- Badge dans la liste "Mes cafés" : vert, orange sous 3 tasses restantes, rouge
+  et nom barré quand le sachet est fini.
+- Détection à l'import : `date_achat` est testé AVANT `cafe_id`, que les deux
+  tables possèdent.
+
+## 3. Migrations
+
+`DATA.migrerDonnees()` (data.js) est IDEMPOTENTE et tourne à chaque
+chargement (init, ouverture de dossier, import, chargement de la démo) :
+
+1. Renomme les anciennes recettes dans extractions et cafés via
+   `RENOMMAGES_RECETTES` (recettes.js). Historique des renommages :
+   Brikka référence et Brikka rang bơ vers Brikka classique, Le Fruité vers
+   The Coffee Chronicler's Recipe, Le Costaud vers Le Costaud (Bloom),
+   L'Adoucisseur vers Le Costaud (Immersion), Le 4:6 de Tetsu vers
+   The Tetsu Devil, The Sweet Variation vers The Coffee Chronicler's
+   Recipe (Sweet). Le Complet a été supprimé sans remplaçant : son nom reste
+   tel quel dans l'historique.
+2. Remplace les recettes seed d'ancienne génération (`ANCIENS_SEED_IDS`),
+   garantit la présence des nouvelles, applique les mises à niveau
+   structurelles (famille, variante, renommage) sans toucher aux paramètres
+   édités par l'utilisateur.
+3. Met à jour les fiches c1 (Sáng Tạo 4) et c4 (Balanced) une seule fois,
+   marquées par leur `tag`.
+4. Seed les tasses si absentes.
+5. Remplit `date_ajout` des cafés qui n'en ont pas avec la date de leur
+   première extraction (les cafés jamais extraits restent sans date, rien
+   n'est affiché).
+
+6. Achats : un sachet implicite pour chaque café qui a un `format_grammes` mais
+   aucun achat. IDEMPOTENTE grâce au test "aucun achat pour ce café", donc elle ne
+   recrée rien à chaque chargement et n'écrase aucun achat saisi. Sans elle, le
+   stock serait incalculable sur tout l'existant.
+
+6 bis. Extractions à l'eau préchauffée déplacées de "Brikka classique" vers
+   "Brikka classique (eau préchauffée)". Le préchauffage n'est pas un détail de
+   service : il change la montée en pression, la durée et le comportement de la
+   soupape, donc c'est un protocole distinct qui mérite sa ligne dans les
+   comparaisons. IDEMPOTENTE par construction, après le déplacement `recette` ne
+   vaut plus l'ancien nom. Ne touche que les lignes portant exactement
+   "Brikka classique", une extraction rangée à la main est laissée en place.
+
+6 ter. Puissance de feu : 3 sur toutes les extractions Brikka qui n'en ont pas.
+   Sans valeur de départ, le champ resterait vide sur tout l'historique et aucune
+   comparaison ne serait possible avant des semaines. IDEMPOTENTE : ne touche que
+   les lignes dont le champ est VIDE, donc une valeur saisie ou corrigée à la main
+   n'est jamais écrasée. Les extractions Switch ne sont pas touchées.
+
+Pour tout futur renommage ou changement de schéma : ajouter l'entrée dans
+RENOMMAGES_RECETTES ou un fallback dans normaliserX, jamais de rupture.
+
+## 4. i18n (js/i18n.js), mécanisme particulier
+
+Français par défaut, bouton EN/FR dans l'entête, choix dans localStorage.
+Trois mécanismes :
+
+1. `UI` : dictionnaire "fragment français exact vers anglais". Au premier
+   passage en anglais, un TreeWalker parcourt les NOEUDS DE TEXTE du document
+   (hors PRE, CODE, TEXTAREA et hors zones rendues en JS, liste ZONES_JS) et
+   remplace ceux dont le texte trimé est une clé du dictionnaire. Le français
+   d'origine est mémorisé pour la bascule retour. CONSÉQUENCE : toute
+   nouvelle chaîne statique du HTML doit être ajoutée TELLE QUELLE (même
+   ponctuation) comme clé dans UI. Les fragments coupés par des balises
+   (`<b>` au milieu d'une phrase) sont des noeuds séparés : une clé par
+   fragment.
+2. `T` : gabarits fr/en avec variables `{x}` pour les chaînes construites en
+   JS (`I18N.t("cle", {x: 1})`). Tout texte généré par app.js, charts.js ou
+   grind.js passe par là.
+3. Cartes d'affichage pour les VALEURS DE DONNÉES : `I18N.diag()`,
+   `I18N.tag()`, `I18N.tagInfo()` (définition courte d'un descripteur,
+   carte TAGS_INFO {fr, en}), `I18N.groupe()`, `I18N.tr()` (phrases
+   mémorisées comme les corrections de diagnostic ou les variantes du
+   Tetsu). Les valeurs stockées restent françaises, seul l'affichage change.
+
+À la bascule, app.js `rafraichirLangue()` re-rend tout ce qui est généré.
+`I18N.mol()` traduit le "à" des plages de molette ("0.8.3 à 1.5.4").
+
+## 5. Le moulin (js/grind.js)
+
+Base officielle Timemore : 8,32 µm par cran, 50 crans par rotation, butée
+150 crans = 1248 µm. `parseDial("1.5.0")` retourne {rotation, numero, cran,
+crans, microns} ou null. 13 méthodes officielles (GRIND.METHODES) avec bornes
+en microns ET en crans (Espresso 178 à 380, Moka Pot 358 à 659, Steep 447 à
+825...). La notation molette est calculée, bornée à 3.0.0.
+`verifierPlage(methode, dial)` valide contre Moka Pot (Brikka) ou
+Steep-and-release (Switch), messages non bloquants.
+GRIND.REFERENCES : 1.2.0 Brikka bleu, 1.5.0 commun vert, 1.6.0 et 2.0.0
+Switch orange. Note : les microns affichés statiquement sont des "environ"
+recalculés en base 8,32 (500, 624, 666, 832).
+
+## 6. Graphiques (js/charts.js)
+
+Chart.js pour : barres + note + grammes 30 jours (3 datasets, tooltip avec
+caféine et cafés du jour), barres horizontales (par café, par recette),
+comparatif Brikka/Switch, nuages (note contre mouture, note contre âge),
+anneau des diagnostics. SVG maison pour : heatmap calendaire (clés de date
+LOCALES, jamais toISOString) et `diagramme()`, la reproduction du diagramme
+officiel du C5 ESP (rangées identiques à Microns.png, axe rotations en haut,
+microns en bas, bandes, zone hachurée après 1248, marqueurs personnels,
+surlignage des méthodes compatibles avec le convertisseur). Tooltips SVG
+maison via data-tip. Les couleurs de thème sont lues des variables CSS à la
+création : à chaque changement de thème ou de langue, les graphes sont
+re-créés.
+
+## 7. Saisie et chrono (js/app.js)
+
+- Préremplissage au choix du café : méthode et recette recommandées, dose et
+  molette de la recette. L'EAU RESTE VIDE (pas de balance) et la température
+  part sur 95 (eau bouillie qui a fini de buller). Les cibles de la recette
+  restent visibles dans le panneau latéral (fiche recette complète : chips,
+  étapes, pour quels cafés, cafés associés, note, pas à pas) et la fiche du
+  café (profil, pastilles, prix au gramme, fraîcheur).
+- Avertissements non bloquants (recommandations, plage de mouture) et
+  BLOQUANTS (café non pur ou rang bơ en Switch : `cafeInterditSwitch`,
+  `avertissementsCombinaison` retourne {msgs, bloque}).
+- Chrono unique : Démarrer / Pause / Reprendre (cycles illimités) / Arrêter
+  et reporter / RAZ. Paliers minutés extraits de la recette sélectionnée,
+  étape courante en gros, suivante avec décompte, bip WebAudio doux (880 Hz)
+  à chaque palier, coupable (préférence localStorage "bips"). L'écoulement
+  est déduit : temps de l'étape contenant "ouvrir" jusqu'à l'arrêt.
+- Champs conditionnels : eau préchauffée (Brikka, décoché par défaut), ajout
+  d'eau (Brikka), agitation (Switch, auto-cochée si la recette mentionne
+  remuer, valeur 1), lait (recettes lait, recalculé au changement de tasse),
+  tasse avec défaut par méthode.
+- Volume extrait : estimation cliquable (Brikka : eau moins 0,7 fois la
+  dose; Switch : eau moins 2,1 fois la dose, le papier retient environ
+  2 g/g).
+- Caféine estimée : dose x pourcentage café réel x pourcentage caféine de
+  l'espèce (arabica 1,2, robusta 2,4, blend 1,8, liberica 1,4) x 0,9.
+
+## 8. Pièges connus
+
+- ATTRIBUT HIDDEN : la règle globale `[hidden] { display: none !important; }`
+  existe parce que `display: flex` sur .champ battait l'attribut. Ne pas la
+  retirer.
+- CAPTURES PLAYWRIGHT : jamais fullPage (rejoue les animations Chart.js),
+  toujours un viewport haut.
+- GRILLE CSS ET CANVAS : min-width: 0 sur les items de .grille-graphes,
+  sinon Chart.js fait gonfler les colonnes en boucle.
+- HEATMAP : clés de date en heure locale (cleLocale), l'UTC décale d'un jour
+  à Bangkok.
+- FILE SYSTEM ACCESS : absent de Firefox, désactivé par défaut dans Brave.
+  Le site le détecte et bascule en mode navigateur avec messages.
+ CONTRE `$` : `# DOCUMENTATION technique : Carnet d'extraction
+
+Doc de référence du projet, maintenue à chaque modification. Commencer par
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.25,
+2026-08-12.
+
+## 1. Vue d'ensemble
+
+Site mono-dossier, ouvert en `file://` dans Chrome. Aucune dépendance réseau :
+Chart.js 4.4.4 est embarqué dans `js/vendor/chart.umd.js`. Les scripts sont
+des scripts classiques (pas de modules ES, ils ne marchent pas en file://),
+chargés dans cet ordre : chart.umd, i18n, grind, recettes, demo-data, data,
+charts, app. Chaque fichier expose un objet global (I18N, GRIND, DATA, CHARTS)
+ou des constantes globales (RECETTES_DEPART, etc.). app.js est une IIFE.
+
+SIX écrans dans une page unique, bascule par nav et hash. La liste fait foi
+dans `ECRANS` (app.js) : tableau, saisie, historique, reglages, reference, guide.
+Elle était codée en dur en deux endroits, ce qui obligeait à penser aux deux à
+chaque ajout. Bouton flottant de saisie rapide en bas à
+droite (café + recette + note, le reste prérempli).
+
+## 2. Modèle de données
+
+Cinq tables, cinq CSV, éditables au tableur. La vérité vit dans un dossier
+lié via l'API File System Access (Chrome, Edge), avec copie miroir permanente
+dans IndexedDB (base `cafe-tracker`, store `kv`). Sans dossier lié, IndexedDB
+seul + import/export manuels.
+
+### cafes.csv
+`id, nom, torrefacteur, origine, espece, procede, torrefaction, deja_moulu,
+pourcentage_cafe_reel, tag, notes_annoncees, format_grammes, prix_vnd,
+date_torrefaction, machine_recommandee, recette_recommandee, date_ajout,
+actif`
+
+- `deja_moulu` 0/1 : si 1, le champ mouture est désactivé en saisie, affiché
+  "défaut paquet", rien n'est stocké, exclu du nuage note contre mouture.
+- `pourcentage_cafe_reel` (défaut 100) : sous 100, pastille rouge "X % café",
+  INTERDICTION du Switch (enregistrement refusé, saisie rapide comprise),
+  coût par gramme de café réel affiché en plus, caféine pondérée.
+- `tag` : "café aromatisé" (auto si pct < 100), "café de référence" (étalon,
+  barre verte dans le graphe par café). Champ libre.
+- `machine_recommandee` : Brikka | Switch | Les deux (valeurs françaises
+  fixes, les option des selects portent des attributs value explicites).
+- `date_ajout` (AAAA-MM-JJ, local, jamais toISOString) : posée à la création
+  d'un café (DATA.ajouterCafe), conservée à la modification (non éditable
+  dans le formulaire). Pour l'existant, la migration (étape 5) la déduit de
+  la première extraction du café; un café jamais extrait reste sans date.
+- `actif` 0/1 : un café désactivé n'apparaît PLUS DU TOUT dans le select de
+  saisie ni dans la saisie rapide. Exception : à l'édition d'une ancienne
+  extraction, remplirSelectCafes(garderId) réinjecte l'option "(inactif)"
+  pour que la valeur reste affichable. Dans la liste "Mes cafés", les
+  désactivés sont toujours triés en fin de liste (tri stable, ordre
+  d'origine conservé au sein de chaque groupe).
+- Liste "Mes cafés" : chaque ligne porte un badge de note moyenne
+  (.badge-note, "★ 7,4", moyenne des extractions notées du café, nombre
+  d'extractions en title) et la date d'ajout dans la ligne méta
+  ("ajouté le 12 août 2026", clé T li_ajoute, format via fmtDateCourte).
+
+### extractions.csv
+`id, date_heure, cafe_id, methode, recette, dose_g, eau_g, mouture_dial,
+temperature_c, temps_total_s, temps_ecoulement_s, volume_extrait_ml,
+eau_ajoutee_ml, lait_ml, agitation_nb, tasse, eau_prechauffee, note_sur_10,
+diagnostic, descripteurs, commentaire`
+
+- Seule la dose est obligatoire en saisie (étoile rouge). Date auto si vide.
+- `volume_extrait_ml` : ancien nom `volume_tasse_ml`, accepté en lecture
+  (normaliserExtraction fait le fallback).
+- `eau_ajoutee_ml` : Brikka seulement, eau d'allongement APRÈS extraction,
+  n'entre jamais dans le ratio. `lait_ml` : recettes au lait. Le calculé
+  `volume_boisson_ml` = extrait + eau ajoutée + lait.
+- `agitation_nb` : Switch, vide si pas d'agitation, défaut 1 quand coché.
+- `eau_prechauffee` : Brikka, 1 ou vide. Décoché par défaut.
+- `puissance_feu` : Brikka SEULEMENT, entier de 1 à 10, échelle personnelle de
+  Chris sur sa plaque. Vide pour le Switch, qui n'a pas de flamme. Borné et
+  arrondi à la normalisation : une valeur hors plage éditée au tableur est ramenée
+  dedans plutôt que jetée. Les recettes Brikka portent la même colonne, comme
+  cible qui préremplit la saisie (au même titre que dose, eau et molette).
+  Pourquoi ce champ : après une extraction à 4 minutes de cuisson suivie d'un
+  écoulement de 5 secondes, la conduite de la flamme est devenue LA variable à
+  régler, et elle n'était mesurée nulle part.
+- `descripteurs` : tags séparés par `|`, valeurs françaises (la traduction EN
+  est purement d'affichage). La liste vit dans DESCRIPTEURS_GROUPES
+  (recettes.js), 59 tags en 9 familles SCA. Chaque tag a une définition
+  courte dans TAGS_INFO (i18n.js, fr et en), affichée dans une bulle CSS au
+  survol ou au focus (attribut data-info, styles ".pilule[data-info]" dans
+  styles.css). Ne pas mettre de guillemets doubles dans ces définitions
+  (elles partent dans un attribut HTML).
+- `diagnostic` : zéro, une ou PLUSIEURS valeurs de DIAGNOSTICS (recettes.js)
+  séparées par `|` (choix multiple depuis la v7.2, une tasse peut être un
+  peu amère ET astringente). Les anciennes lignes à valeur unique se lisent
+  telles quelles (split sur `|`). 11 niveaux dont deux intermédiaires
+  ("Un peu acide", "Un peu amer") entre Équilibré et les extractions ratées.
+  Depuis la v7.19 ils sont GROUPÉS par levier de correction
+  (DIAGNOSTICS_GROUPES dans recettes.js) : "Rien à changer", "Réglage
+  d'extraction", "Ratio café et eau", "Le café lui même". `DIAGNOSTICS` reste
+  la liste à plat, dérivée des groupes, et garde son rôle pour l'ordre de
+  stockage, le filtre de l'historique et l'anneau. Chaque axe va du léger au
+  franc, avec un "un peu" partout : sans nuance on coche le cran du dessus par
+  défaut et le diagnostic devient faux. Les noms de groupe passent par
+  `I18N.groupe()`, donc par la carte GROUPES.
+  Chaque diagnostic porte DEUX textes, assemblés par `infoDiagnostic()` en une
+  bulle de deux lignes (`white-space: pre-line` sur la bulle) : QUAND le cocher
+  (`DIAGNOSTIC_QUAND`, une sensation en bouche à reconnaître) puis QUOI faire
+  (`DIAGNOSTIC_CORRECTIONS`). La correction seule disait quoi faire sans dire
+  dans quel cas on se trouve, et une bonne correction appliquée au mauvais
+  diagnostic empire la tasse suivante. Comme pour TAGS_INFO, aucun guillemet
+  double dans ces textes, ils partent dans un attribut HTML.
+  Chaque diagnostic a sa correction dans DIAGNOSTIC_CORRECTIONS (fr,
+  traduite via I18N.tr donc la phrase exacte doit exister comme clé dans
+  UI); les corrections des diagnostics cochés s'empilent sous les pilules
+  (majCorrectionDiagnostic) et chaque pilule porte la sienne en bulle au
+  survol. À l'enregistrement l'ordre stocké suit celui de DIAGNOSTICS. Le
+  filtre de l'historique matche si la valeur fait partie de la liste.
+  Ajouter une valeur ne casse rien; en retirer une casserait l'historique
+  (les anciennes valeurs stockées resteraient affichées telles quelles,
+  prévoir une migration).
+- Champs calculés (DATA.calculs, jamais stockés) : ratio (1:X.X), crans,
+  microns, age_jours, retention_ml (eau moins volume extrait),
+  volume_boisson_ml, cout_tasse_vnd, cout_reel_vnd, cafe_nom, moulu.
+
+### recettes.csv
+`id, nom, numero, methode, famille, variante, sous_titre, dose_g, eau_g,
+temperature_c, temp_texte, mouture_dial, ratio_texte, total_texte, lait,
+etapes, pour_qui, cafes_associes, note, par_defaut, avancee, variantes, actif`
+
+- `etapes` : segments "m:ss texte" ou "- texte" séparés par " || ".
+- `famille` + `variante` : les recettes d'une même famille partagent UNE
+  carte sur la page Référence avec des pilules de bascule (familles :
+  chronicler, costaud, brikka-lait, brikka-classique). Elles restent des recettes DISTINCTES
+  en base et dans l'historique.
+- `lait` 0/1 : affiche le champ lait en saisie, prérempli contenance de la
+  tasse moins volume de café estimé.
+- `variantes` 0/1 : active le bloc Tetsu (versements pilotables) : réservé au
+  Tetsu Devil, préservé à l'édition.
+- Les 9 recettes d'origine (RECETTES_DEPART dans recettes.js) sont
+  restaurables une par une via "Rétablir la version d'origine".
+
+Recettes d'origine v7 : Brikka classique (1.2.0), Brikka flat white et
+Brikka cappuccino (famille brikka-lait, lait), The Coffee Chronicler's Recipe
+et (Sweet) (famille chronicler, 1.6.0), Le Costaud (Bloom) 1.4.0 et
+(Immersion) 1.5.0 (famille costaud), The Tetsu Devil (2.0.0, variantes),
+La Sherrycipe (2.0.0, paliers 0:00/0:30/1:00/1:30). Toutes les Switch à
+15 g / 225 g, ratio 1:15, environ 195 ml.
+
+### tasses.csv
+`id, nom, contenance_ml`. Quatre par défaut (TASSES_DEPART) : Flat White Egg
+150, Espresso Egg 80, Nutty Tasting Cup 150, Classic Mug 330. Éditeur inline
+dans la saisie (bouton ✚). Défauts par méthode : Flat White Egg en Brikka,
+Classic Mug en Switch (non écrasés si l'utilisateur a choisi autre chose).
+Avertissement non bloquant si volume attendu (café + eau ajoutée + lait)
+dépasse la contenance.
+
+### achats.csv
+
+`id, cafe_id, date_achat, format_grammes, prix_vnd, date_torrefaction`
+
+Un achat = UN SACHET. Cette table existe pour deux raisons, la seconde étant la
+plus importante :
+
+1. Le stock restant devient calculable (format du sachet moins les doses
+   consommées DEPUIS sa date d'achat).
+2. Un café racheté gardait auparavant UNE seule date de torréfaction, celle du
+   tout premier paquet. La fraîcheur affichée était donc fausse pour toujours dès
+   le deuxième sachet. Chaque sachet porte maintenant la sienne.
+
+- `DATA.sachetCourant(cafeId)` : le dernier acheté, par `date_achat`.
+- `DATA.stockSachet(cafeId, doseDefaut)` : `{format, consomme, restant, depuis,
+  dateTorrefaction, sachets}`, ou `null` si aucun format n'est connu (on
+  préfère ne rien afficher qu'un badge faux). Ne comptent QUE les extractions
+  postérieures à `date_achat` : c'est tout l'intérêt de la table. Une extraction
+  sans dose compte pour la dose par défaut, sinon un oubli de saisie ferait croire
+  à un sachet intact. Un dépassement s'affiche en NÉGATIF, on ne le masque pas.
+- `DATA.ajouterAchat()` recopie format, prix et date de torréfaction sur la fiche
+  café, pour que tout ce qui lit encore la fiche reste cohérent avec le sachet en
+  cours.
+- Badge dans la liste "Mes cafés" : vert, orange sous 3 tasses restantes, rouge
+  et nom barré quand le sachet est fini.
+- Détection à l'import : `date_achat` est testé AVANT `cafe_id`, que les deux
+  tables possèdent.
+
+## 3. Migrations
+
+`DATA.migrerDonnees()` (data.js) est IDEMPOTENTE et tourne à chaque
+chargement (init, ouverture de dossier, import, chargement de la démo) :
+
+1. Renomme les anciennes recettes dans extractions et cafés via
+   `RENOMMAGES_RECETTES` (recettes.js). Historique des renommages :
+   Brikka référence et Brikka rang bơ vers Brikka classique, Le Fruité vers
+   The Coffee Chronicler's Recipe, Le Costaud vers Le Costaud (Bloom),
+   L'Adoucisseur vers Le Costaud (Immersion), Le 4:6 de Tetsu vers
+   The Tetsu Devil, The Sweet Variation vers The Coffee Chronicler's
+   Recipe (Sweet). Le Complet a été supprimé sans remplaçant : son nom reste
+   tel quel dans l'historique.
+2. Remplace les recettes seed d'ancienne génération (`ANCIENS_SEED_IDS`),
+   garantit la présence des nouvelles, applique les mises à niveau
+   structurelles (famille, variante, renommage) sans toucher aux paramètres
+   édités par l'utilisateur.
+3. Met à jour les fiches c1 (Sáng Tạo 4) et c4 (Balanced) une seule fois,
+   marquées par leur `tag`.
+4. Seed les tasses si absentes.
+5. Remplit `date_ajout` des cafés qui n'en ont pas avec la date de leur
+   première extraction (les cafés jamais extraits restent sans date, rien
+   n'est affiché).
+
+6. Achats : un sachet implicite pour chaque café qui a un `format_grammes` mais
+   aucun achat. IDEMPOTENTE grâce au test "aucun achat pour ce café", donc elle ne
+   recrée rien à chaque chargement et n'écrase aucun achat saisi. Sans elle, le
+   stock serait incalculable sur tout l'existant.
+
+6 bis. Extractions à l'eau préchauffée déplacées de "Brikka classique" vers
+   "Brikka classique (eau préchauffée)". Le préchauffage n'est pas un détail de
+   service : il change la montée en pression, la durée et le comportement de la
+   soupape, donc c'est un protocole distinct qui mérite sa ligne dans les
+   comparaisons. IDEMPOTENTE par construction, après le déplacement `recette` ne
+   vaut plus l'ancien nom. Ne touche que les lignes portant exactement
+   "Brikka classique", une extraction rangée à la main est laissée en place.
+
+6 ter. Puissance de feu : 3 sur toutes les extractions Brikka qui n'en ont pas.
+   Sans valeur de départ, le champ resterait vide sur tout l'historique et aucune
+   comparaison ne serait possible avant des semaines. IDEMPOTENTE : ne touche que
+   les lignes dont le champ est VIDE, donc une valeur saisie ou corrigée à la main
+   n'est jamais écrasée. Les extractions Switch ne sont pas touchées.
+
+Pour tout futur renommage ou changement de schéma : ajouter l'entrée dans
+RENOMMAGES_RECETTES ou un fallback dans normaliserX, jamais de rupture.
+
+## 4. i18n (js/i18n.js), mécanisme particulier
+
+Français par défaut, bouton EN/FR dans l'entête, choix dans localStorage.
+Trois mécanismes :
+
+1. `UI` : dictionnaire "fragment français exact vers anglais". Au premier
+   passage en anglais, un TreeWalker parcourt les NOEUDS DE TEXTE du document
+   (hors PRE, CODE, TEXTAREA et hors zones rendues en JS, liste ZONES_JS) et
+   remplace ceux dont le texte trimé est une clé du dictionnaire. Le français
+   d'origine est mémorisé pour la bascule retour. CONSÉQUENCE : toute
+   nouvelle chaîne statique du HTML doit être ajoutée TELLE QUELLE (même
+   ponctuation) comme clé dans UI. Les fragments coupés par des balises
+   (`<b>` au milieu d'une phrase) sont des noeuds séparés : une clé par
+   fragment.
+2. `T` : gabarits fr/en avec variables `{x}` pour les chaînes construites en
+   JS (`I18N.t("cle", {x: 1})`). Tout texte généré par app.js, charts.js ou
+   grind.js passe par là.
+3. Cartes d'affichage pour les VALEURS DE DONNÉES : `I18N.diag()`,
+   `I18N.tag()`, `I18N.tagInfo()` (définition courte d'un descripteur,
+   carte TAGS_INFO {fr, en}), `I18N.groupe()`, `I18N.tr()` (phrases
+   mémorisées comme les corrections de diagnostic ou les variantes du
+   Tetsu). Les valeurs stockées restent françaises, seul l'affichage change.
+
+À la bascule, app.js `rafraichirLangue()` re-rend tout ce qui est généré.
+`I18N.mol()` traduit le "à" des plages de molette ("0.8.3 à 1.5.4").
+
+## 5. Le moulin (js/grind.js)
+
+Base officielle Timemore : 8,32 µm par cran, 50 crans par rotation, butée
+150 crans = 1248 µm. `parseDial("1.5.0")` retourne {rotation, numero, cran,
+crans, microns} ou null. 13 méthodes officielles (GRIND.METHODES) avec bornes
+en microns ET en crans (Espresso 178 à 380, Moka Pot 358 à 659, Steep 447 à
+825...). La notation molette est calculée, bornée à 3.0.0.
+`verifierPlage(methode, dial)` valide contre Moka Pot (Brikka) ou
+Steep-and-release (Switch), messages non bloquants.
+GRIND.REFERENCES : 1.2.0 Brikka bleu, 1.5.0 commun vert, 1.6.0 et 2.0.0
+Switch orange. Note : les microns affichés statiquement sont des "environ"
+recalculés en base 8,32 (500, 624, 666, 832).
+
+## 6. Graphiques (js/charts.js)
+
+Chart.js pour : barres + note + grammes 30 jours (3 datasets, tooltip avec
+caféine et cafés du jour), barres horizontales (par café, par recette),
+comparatif Brikka/Switch, nuages (note contre mouture, note contre âge),
+anneau des diagnostics. SVG maison pour : heatmap calendaire (clés de date
+LOCALES, jamais toISOString) et `diagramme()`, la reproduction du diagramme
+officiel du C5 ESP (rangées identiques à Microns.png, axe rotations en haut,
+microns en bas, bandes, zone hachurée après 1248, marqueurs personnels,
+surlignage des méthodes compatibles avec le convertisseur). Tooltips SVG
+maison via data-tip. Les couleurs de thème sont lues des variables CSS à la
+création : à chaque changement de thème ou de langue, les graphes sont
+re-créés.
+
+## 7. Saisie et chrono (js/app.js)
+
+- Préremplissage au choix du café : méthode et recette recommandées, dose et
+  molette de la recette. L'EAU RESTE VIDE (pas de balance) et la température
+  part sur 95 (eau bouillie qui a fini de buller). Les cibles de la recette
+  restent visibles dans le panneau latéral (fiche recette complète : chips,
+  étapes, pour quels cafés, cafés associés, note, pas à pas) et la fiche du
+  café (profil, pastilles, prix au gramme, fraîcheur).
+- Avertissements non bloquants (recommandations, plage de mouture) et
+  BLOQUANTS (café non pur ou rang bơ en Switch : `cafeInterditSwitch`,
+  `avertissementsCombinaison` retourne {msgs, bloque}).
+- Chrono unique : Démarrer / Pause / Reprendre (cycles illimités) / Arrêter
+  et reporter / RAZ. Paliers minutés extraits de la recette sélectionnée,
+  étape courante en gros, suivante avec décompte, bip WebAudio doux (880 Hz)
+  à chaque palier, coupable (préférence localStorage "bips"). L'écoulement
+  est déduit : temps de l'étape contenant "ouvrir" jusqu'à l'arrêt.
+- Champs conditionnels : eau préchauffée (Brikka, décoché par défaut), ajout
+  d'eau (Brikka), agitation (Switch, auto-cochée si la recette mentionne
+  remuer, valeur 1), lait (recettes lait, recalculé au changement de tasse),
+  tasse avec défaut par méthode.
+- Volume extrait : estimation cliquable (Brikka : eau moins 0,7 fois la
+  dose; Switch : eau moins 2,1 fois la dose, le papier retient environ
+  2 g/g).
+- Caféine estimée : dose x pourcentage café réel x pourcentage caféine de
+  l'espèce (arabica 1,2, robusta 2,4, blend 1,8, liberica 1,4) x 0,9.
+
+## 8. Pièges connus
+
+- ATTRIBUT HIDDEN : la règle globale `[hidden] { display: none !important; }`
+  existe parce que `display: flex` sur .champ battait l'attribut. Ne pas la
+  retirer.
+- CAPTURES PLAYWRIGHT : jamais fullPage (rejoue les animations Chart.js),
+  toujours un viewport haut.
+- GRILLE CSS ET CANVAS : min-width: 0 sur les items de .grille-graphes,
+  sinon Chart.js fait gonfler les colonnes en boucle.
+- HEATMAP : clés de date en heure locale (cleLocale), l'UTC décale d'un jour
+  à Bangkok.
+- FILE SYSTEM ACCESS : absent de Firefox, désactivé par défaut dans Brave.
+  Le site le détecte et bascule en mode navigateur avec messages.
+ renvoie UN élément, `$` un tableau. Piège vicieux quand
+  on modifie app.js par script : dans une chaîne de remplacement JavaScript, `$`
+  signifie "un dollar littéral", donc `String.replace` transforme `$(` en `$(`
+  sans rien signaler. Le fichier se parse, tous les tests passent, et le tableau
+  de bord lève une TypeError à l'exécution. Arrivé le 14 août. Utiliser
+  `split().join()` plutôt que `replace()` sur du code contenant des `# DOCUMENTATION technique : Carnet d'extraction
+
+Doc de référence du projet, maintenue à chaque modification. Commencer par
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.25,
+2026-08-12.
+
+## 1. Vue d'ensemble
+
+Site mono-dossier, ouvert en `file://` dans Chrome. Aucune dépendance réseau :
+Chart.js 4.4.4 est embarqué dans `js/vendor/chart.umd.js`. Les scripts sont
+des scripts classiques (pas de modules ES, ils ne marchent pas en file://),
+chargés dans cet ordre : chart.umd, i18n, grind, recettes, demo-data, data,
+charts, app. Chaque fichier expose un objet global (I18N, GRIND, DATA, CHARTS)
+ou des constantes globales (RECETTES_DEPART, etc.). app.js est une IIFE.
+
+SIX écrans dans une page unique, bascule par nav et hash. La liste fait foi
+dans `ECRANS` (app.js) : tableau, saisie, historique, reglages, reference, guide.
+Elle était codée en dur en deux endroits, ce qui obligeait à penser aux deux à
+chaque ajout. Bouton flottant de saisie rapide en bas à
+droite (café + recette + note, le reste prérempli).
+
+## 2. Modèle de données
+
+Cinq tables, cinq CSV, éditables au tableur. La vérité vit dans un dossier
+lié via l'API File System Access (Chrome, Edge), avec copie miroir permanente
+dans IndexedDB (base `cafe-tracker`, store `kv`). Sans dossier lié, IndexedDB
+seul + import/export manuels.
+
+### cafes.csv
+`id, nom, torrefacteur, origine, espece, procede, torrefaction, deja_moulu,
+pourcentage_cafe_reel, tag, notes_annoncees, format_grammes, prix_vnd,
+date_torrefaction, machine_recommandee, recette_recommandee, date_ajout,
+actif`
+
+- `deja_moulu` 0/1 : si 1, le champ mouture est désactivé en saisie, affiché
+  "défaut paquet", rien n'est stocké, exclu du nuage note contre mouture.
+- `pourcentage_cafe_reel` (défaut 100) : sous 100, pastille rouge "X % café",
+  INTERDICTION du Switch (enregistrement refusé, saisie rapide comprise),
+  coût par gramme de café réel affiché en plus, caféine pondérée.
+- `tag` : "café aromatisé" (auto si pct < 100), "café de référence" (étalon,
+  barre verte dans le graphe par café). Champ libre.
+- `machine_recommandee` : Brikka | Switch | Les deux (valeurs françaises
+  fixes, les option des selects portent des attributs value explicites).
+- `date_ajout` (AAAA-MM-JJ, local, jamais toISOString) : posée à la création
+  d'un café (DATA.ajouterCafe), conservée à la modification (non éditable
+  dans le formulaire). Pour l'existant, la migration (étape 5) la déduit de
+  la première extraction du café; un café jamais extrait reste sans date.
+- `actif` 0/1 : un café désactivé n'apparaît PLUS DU TOUT dans le select de
+  saisie ni dans la saisie rapide. Exception : à l'édition d'une ancienne
+  extraction, remplirSelectCafes(garderId) réinjecte l'option "(inactif)"
+  pour que la valeur reste affichable. Dans la liste "Mes cafés", les
+  désactivés sont toujours triés en fin de liste (tri stable, ordre
+  d'origine conservé au sein de chaque groupe).
+- Liste "Mes cafés" : chaque ligne porte un badge de note moyenne
+  (.badge-note, "★ 7,4", moyenne des extractions notées du café, nombre
+  d'extractions en title) et la date d'ajout dans la ligne méta
+  ("ajouté le 12 août 2026", clé T li_ajoute, format via fmtDateCourte).
+
+### extractions.csv
+`id, date_heure, cafe_id, methode, recette, dose_g, eau_g, mouture_dial,
+temperature_c, temps_total_s, temps_ecoulement_s, volume_extrait_ml,
+eau_ajoutee_ml, lait_ml, agitation_nb, tasse, eau_prechauffee, note_sur_10,
+diagnostic, descripteurs, commentaire`
+
+- Seule la dose est obligatoire en saisie (étoile rouge). Date auto si vide.
+- `volume_extrait_ml` : ancien nom `volume_tasse_ml`, accepté en lecture
+  (normaliserExtraction fait le fallback).
+- `eau_ajoutee_ml` : Brikka seulement, eau d'allongement APRÈS extraction,
+  n'entre jamais dans le ratio. `lait_ml` : recettes au lait. Le calculé
+  `volume_boisson_ml` = extrait + eau ajoutée + lait.
+- `agitation_nb` : Switch, vide si pas d'agitation, défaut 1 quand coché.
+- `eau_prechauffee` : Brikka, 1 ou vide. Décoché par défaut.
+- `puissance_feu` : Brikka SEULEMENT, entier de 1 à 10, échelle personnelle de
+  Chris sur sa plaque. Vide pour le Switch, qui n'a pas de flamme. Borné et
+  arrondi à la normalisation : une valeur hors plage éditée au tableur est ramenée
+  dedans plutôt que jetée. Les recettes Brikka portent la même colonne, comme
+  cible qui préremplit la saisie (au même titre que dose, eau et molette).
+  Pourquoi ce champ : après une extraction à 4 minutes de cuisson suivie d'un
+  écoulement de 5 secondes, la conduite de la flamme est devenue LA variable à
+  régler, et elle n'était mesurée nulle part.
+- `descripteurs` : tags séparés par `|`, valeurs françaises (la traduction EN
+  est purement d'affichage). La liste vit dans DESCRIPTEURS_GROUPES
+  (recettes.js), 59 tags en 9 familles SCA. Chaque tag a une définition
+  courte dans TAGS_INFO (i18n.js, fr et en), affichée dans une bulle CSS au
+  survol ou au focus (attribut data-info, styles ".pilule[data-info]" dans
+  styles.css). Ne pas mettre de guillemets doubles dans ces définitions
+  (elles partent dans un attribut HTML).
+- `diagnostic` : zéro, une ou PLUSIEURS valeurs de DIAGNOSTICS (recettes.js)
+  séparées par `|` (choix multiple depuis la v7.2, une tasse peut être un
+  peu amère ET astringente). Les anciennes lignes à valeur unique se lisent
+  telles quelles (split sur `|`). 11 niveaux dont deux intermédiaires
+  ("Un peu acide", "Un peu amer") entre Équilibré et les extractions ratées.
+  Depuis la v7.19 ils sont GROUPÉS par levier de correction
+  (DIAGNOSTICS_GROUPES dans recettes.js) : "Rien à changer", "Réglage
+  d'extraction", "Ratio café et eau", "Le café lui même". `DIAGNOSTICS` reste
+  la liste à plat, dérivée des groupes, et garde son rôle pour l'ordre de
+  stockage, le filtre de l'historique et l'anneau. Chaque axe va du léger au
+  franc, avec un "un peu" partout : sans nuance on coche le cran du dessus par
+  défaut et le diagnostic devient faux. Les noms de groupe passent par
+  `I18N.groupe()`, donc par la carte GROUPES.
+  Chaque diagnostic porte DEUX textes, assemblés par `infoDiagnostic()` en une
+  bulle de deux lignes (`white-space: pre-line` sur la bulle) : QUAND le cocher
+  (`DIAGNOSTIC_QUAND`, une sensation en bouche à reconnaître) puis QUOI faire
+  (`DIAGNOSTIC_CORRECTIONS`). La correction seule disait quoi faire sans dire
+  dans quel cas on se trouve, et une bonne correction appliquée au mauvais
+  diagnostic empire la tasse suivante. Comme pour TAGS_INFO, aucun guillemet
+  double dans ces textes, ils partent dans un attribut HTML.
+  Chaque diagnostic a sa correction dans DIAGNOSTIC_CORRECTIONS (fr,
+  traduite via I18N.tr donc la phrase exacte doit exister comme clé dans
+  UI); les corrections des diagnostics cochés s'empilent sous les pilules
+  (majCorrectionDiagnostic) et chaque pilule porte la sienne en bulle au
+  survol. À l'enregistrement l'ordre stocké suit celui de DIAGNOSTICS. Le
+  filtre de l'historique matche si la valeur fait partie de la liste.
+  Ajouter une valeur ne casse rien; en retirer une casserait l'historique
+  (les anciennes valeurs stockées resteraient affichées telles quelles,
+  prévoir une migration).
+- Champs calculés (DATA.calculs, jamais stockés) : ratio (1:X.X), crans,
+  microns, age_jours, retention_ml (eau moins volume extrait),
+  volume_boisson_ml, cout_tasse_vnd, cout_reel_vnd, cafe_nom, moulu.
+
+### recettes.csv
+`id, nom, numero, methode, famille, variante, sous_titre, dose_g, eau_g,
+temperature_c, temp_texte, mouture_dial, ratio_texte, total_texte, lait,
+etapes, pour_qui, cafes_associes, note, par_defaut, avancee, variantes, actif`
+
+- `etapes` : segments "m:ss texte" ou "- texte" séparés par " || ".
+- `famille` + `variante` : les recettes d'une même famille partagent UNE
+  carte sur la page Référence avec des pilules de bascule (familles :
+  chronicler, costaud, brikka-lait, brikka-classique). Elles restent des recettes DISTINCTES
+  en base et dans l'historique.
+- `lait` 0/1 : affiche le champ lait en saisie, prérempli contenance de la
+  tasse moins volume de café estimé.
+- `variantes` 0/1 : active le bloc Tetsu (versements pilotables) : réservé au
+  Tetsu Devil, préservé à l'édition.
+- Les 9 recettes d'origine (RECETTES_DEPART dans recettes.js) sont
+  restaurables une par une via "Rétablir la version d'origine".
+
+Recettes d'origine v7 : Brikka classique (1.2.0), Brikka flat white et
+Brikka cappuccino (famille brikka-lait, lait), The Coffee Chronicler's Recipe
+et (Sweet) (famille chronicler, 1.6.0), Le Costaud (Bloom) 1.4.0 et
+(Immersion) 1.5.0 (famille costaud), The Tetsu Devil (2.0.0, variantes),
+La Sherrycipe (2.0.0, paliers 0:00/0:30/1:00/1:30). Toutes les Switch à
+15 g / 225 g, ratio 1:15, environ 195 ml.
+
+### tasses.csv
+`id, nom, contenance_ml`. Quatre par défaut (TASSES_DEPART) : Flat White Egg
+150, Espresso Egg 80, Nutty Tasting Cup 150, Classic Mug 330. Éditeur inline
+dans la saisie (bouton ✚). Défauts par méthode : Flat White Egg en Brikka,
+Classic Mug en Switch (non écrasés si l'utilisateur a choisi autre chose).
+Avertissement non bloquant si volume attendu (café + eau ajoutée + lait)
+dépasse la contenance.
+
+### achats.csv
+
+`id, cafe_id, date_achat, format_grammes, prix_vnd, date_torrefaction`
+
+Un achat = UN SACHET. Cette table existe pour deux raisons, la seconde étant la
+plus importante :
+
+1. Le stock restant devient calculable (format du sachet moins les doses
+   consommées DEPUIS sa date d'achat).
+2. Un café racheté gardait auparavant UNE seule date de torréfaction, celle du
+   tout premier paquet. La fraîcheur affichée était donc fausse pour toujours dès
+   le deuxième sachet. Chaque sachet porte maintenant la sienne.
+
+- `DATA.sachetCourant(cafeId)` : le dernier acheté, par `date_achat`.
+- `DATA.stockSachet(cafeId, doseDefaut)` : `{format, consomme, restant, depuis,
+  dateTorrefaction, sachets}`, ou `null` si aucun format n'est connu (on
+  préfère ne rien afficher qu'un badge faux). Ne comptent QUE les extractions
+  postérieures à `date_achat` : c'est tout l'intérêt de la table. Une extraction
+  sans dose compte pour la dose par défaut, sinon un oubli de saisie ferait croire
+  à un sachet intact. Un dépassement s'affiche en NÉGATIF, on ne le masque pas.
+- `DATA.ajouterAchat()` recopie format, prix et date de torréfaction sur la fiche
+  café, pour que tout ce qui lit encore la fiche reste cohérent avec le sachet en
+  cours.
+- Badge dans la liste "Mes cafés" : vert, orange sous 3 tasses restantes, rouge
+  et nom barré quand le sachet est fini.
+- Détection à l'import : `date_achat` est testé AVANT `cafe_id`, que les deux
+  tables possèdent.
+
+## 3. Migrations
+
+`DATA.migrerDonnees()` (data.js) est IDEMPOTENTE et tourne à chaque
+chargement (init, ouverture de dossier, import, chargement de la démo) :
+
+1. Renomme les anciennes recettes dans extractions et cafés via
+   `RENOMMAGES_RECETTES` (recettes.js). Historique des renommages :
+   Brikka référence et Brikka rang bơ vers Brikka classique, Le Fruité vers
+   The Coffee Chronicler's Recipe, Le Costaud vers Le Costaud (Bloom),
+   L'Adoucisseur vers Le Costaud (Immersion), Le 4:6 de Tetsu vers
+   The Tetsu Devil, The Sweet Variation vers The Coffee Chronicler's
+   Recipe (Sweet). Le Complet a été supprimé sans remplaçant : son nom reste
+   tel quel dans l'historique.
+2. Remplace les recettes seed d'ancienne génération (`ANCIENS_SEED_IDS`),
+   garantit la présence des nouvelles, applique les mises à niveau
+   structurelles (famille, variante, renommage) sans toucher aux paramètres
+   édités par l'utilisateur.
+3. Met à jour les fiches c1 (Sáng Tạo 4) et c4 (Balanced) une seule fois,
+   marquées par leur `tag`.
+4. Seed les tasses si absentes.
+5. Remplit `date_ajout` des cafés qui n'en ont pas avec la date de leur
+   première extraction (les cafés jamais extraits restent sans date, rien
+   n'est affiché).
+
+6. Achats : un sachet implicite pour chaque café qui a un `format_grammes` mais
+   aucun achat. IDEMPOTENTE grâce au test "aucun achat pour ce café", donc elle ne
+   recrée rien à chaque chargement et n'écrase aucun achat saisi. Sans elle, le
+   stock serait incalculable sur tout l'existant.
+
+6 bis. Extractions à l'eau préchauffée déplacées de "Brikka classique" vers
+   "Brikka classique (eau préchauffée)". Le préchauffage n'est pas un détail de
+   service : il change la montée en pression, la durée et le comportement de la
+   soupape, donc c'est un protocole distinct qui mérite sa ligne dans les
+   comparaisons. IDEMPOTENTE par construction, après le déplacement `recette` ne
+   vaut plus l'ancien nom. Ne touche que les lignes portant exactement
+   "Brikka classique", une extraction rangée à la main est laissée en place.
+
+6 ter. Puissance de feu : 3 sur toutes les extractions Brikka qui n'en ont pas.
+   Sans valeur de départ, le champ resterait vide sur tout l'historique et aucune
+   comparaison ne serait possible avant des semaines. IDEMPOTENTE : ne touche que
+   les lignes dont le champ est VIDE, donc une valeur saisie ou corrigée à la main
+   n'est jamais écrasée. Les extractions Switch ne sont pas touchées.
+
+Pour tout futur renommage ou changement de schéma : ajouter l'entrée dans
+RENOMMAGES_RECETTES ou un fallback dans normaliserX, jamais de rupture.
+
+## 4. i18n (js/i18n.js), mécanisme particulier
+
+Français par défaut, bouton EN/FR dans l'entête, choix dans localStorage.
+Trois mécanismes :
+
+1. `UI` : dictionnaire "fragment français exact vers anglais". Au premier
+   passage en anglais, un TreeWalker parcourt les NOEUDS DE TEXTE du document
+   (hors PRE, CODE, TEXTAREA et hors zones rendues en JS, liste ZONES_JS) et
+   remplace ceux dont le texte trimé est une clé du dictionnaire. Le français
+   d'origine est mémorisé pour la bascule retour. CONSÉQUENCE : toute
+   nouvelle chaîne statique du HTML doit être ajoutée TELLE QUELLE (même
+   ponctuation) comme clé dans UI. Les fragments coupés par des balises
+   (`<b>` au milieu d'une phrase) sont des noeuds séparés : une clé par
+   fragment.
+2. `T` : gabarits fr/en avec variables `{x}` pour les chaînes construites en
+   JS (`I18N.t("cle", {x: 1})`). Tout texte généré par app.js, charts.js ou
+   grind.js passe par là.
+3. Cartes d'affichage pour les VALEURS DE DONNÉES : `I18N.diag()`,
+   `I18N.tag()`, `I18N.tagInfo()` (définition courte d'un descripteur,
+   carte TAGS_INFO {fr, en}), `I18N.groupe()`, `I18N.tr()` (phrases
+   mémorisées comme les corrections de diagnostic ou les variantes du
+   Tetsu). Les valeurs stockées restent françaises, seul l'affichage change.
+
+À la bascule, app.js `rafraichirLangue()` re-rend tout ce qui est généré.
+`I18N.mol()` traduit le "à" des plages de molette ("0.8.3 à 1.5.4").
+
+## 5. Le moulin (js/grind.js)
+
+Base officielle Timemore : 8,32 µm par cran, 50 crans par rotation, butée
+150 crans = 1248 µm. `parseDial("1.5.0")` retourne {rotation, numero, cran,
+crans, microns} ou null. 13 méthodes officielles (GRIND.METHODES) avec bornes
+en microns ET en crans (Espresso 178 à 380, Moka Pot 358 à 659, Steep 447 à
+825...). La notation molette est calculée, bornée à 3.0.0.
+`verifierPlage(methode, dial)` valide contre Moka Pot (Brikka) ou
+Steep-and-release (Switch), messages non bloquants.
+GRIND.REFERENCES : 1.2.0 Brikka bleu, 1.5.0 commun vert, 1.6.0 et 2.0.0
+Switch orange. Note : les microns affichés statiquement sont des "environ"
+recalculés en base 8,32 (500, 624, 666, 832).
+
+## 6. Graphiques (js/charts.js)
+
+Chart.js pour : barres + note + grammes 30 jours (3 datasets, tooltip avec
+caféine et cafés du jour), barres horizontales (par café, par recette),
+comparatif Brikka/Switch, nuages (note contre mouture, note contre âge),
+anneau des diagnostics. SVG maison pour : heatmap calendaire (clés de date
+LOCALES, jamais toISOString) et `diagramme()`, la reproduction du diagramme
+officiel du C5 ESP (rangées identiques à Microns.png, axe rotations en haut,
+microns en bas, bandes, zone hachurée après 1248, marqueurs personnels,
+surlignage des méthodes compatibles avec le convertisseur). Tooltips SVG
+maison via data-tip. Les couleurs de thème sont lues des variables CSS à la
+création : à chaque changement de thème ou de langue, les graphes sont
+re-créés.
+
+## 7. Saisie et chrono (js/app.js)
+
+- Préremplissage au choix du café : méthode et recette recommandées, dose et
+  molette de la recette. L'EAU RESTE VIDE (pas de balance) et la température
+  part sur 95 (eau bouillie qui a fini de buller). Les cibles de la recette
+  restent visibles dans le panneau latéral (fiche recette complète : chips,
+  étapes, pour quels cafés, cafés associés, note, pas à pas) et la fiche du
+  café (profil, pastilles, prix au gramme, fraîcheur).
+- Avertissements non bloquants (recommandations, plage de mouture) et
+  BLOQUANTS (café non pur ou rang bơ en Switch : `cafeInterditSwitch`,
+  `avertissementsCombinaison` retourne {msgs, bloque}).
+- Chrono unique : Démarrer / Pause / Reprendre (cycles illimités) / Arrêter
+  et reporter / RAZ. Paliers minutés extraits de la recette sélectionnée,
+  étape courante en gros, suivante avec décompte, bip WebAudio doux (880 Hz)
+  à chaque palier, coupable (préférence localStorage "bips"). L'écoulement
+  est déduit : temps de l'étape contenant "ouvrir" jusqu'à l'arrêt.
+- Champs conditionnels : eau préchauffée (Brikka, décoché par défaut), ajout
+  d'eau (Brikka), agitation (Switch, auto-cochée si la recette mentionne
+  remuer, valeur 1), lait (recettes lait, recalculé au changement de tasse),
+  tasse avec défaut par méthode.
+- Volume extrait : estimation cliquable (Brikka : eau moins 0,7 fois la
+  dose; Switch : eau moins 2,1 fois la dose, le papier retient environ
+  2 g/g).
+- Caféine estimée : dose x pourcentage café réel x pourcentage caféine de
+  l'espèce (arabica 1,2, robusta 2,4, blend 1,8, liberica 1,4) x 0,9.
+
+## 8. Pièges connus
+
+- ATTRIBUT HIDDEN : la règle globale `[hidden] { display: none !important; }`
+  existe parce que `display: flex` sur .champ battait l'attribut. Ne pas la
+  retirer.
+- CAPTURES PLAYWRIGHT : jamais fullPage (rejoue les animations Chart.js),
+  toujours un viewport haut.
+- GRILLE CSS ET CANVAS : min-width: 0 sur les items de .grille-graphes,
+  sinon Chart.js fait gonfler les colonnes en boucle.
+- HEATMAP : clés de date en heure locale (cleLocale), l'UTC décale d'un jour
+  à Bangkok.
+- FILE SYSTEM ACCESS : absent de Firefox, désactivé par défaut dans Brave.
+  Le site le détecte et bascule en mode navigateur avec messages.
+, et
+  lancer `node tools/boot.test.mjs` après toute modification de app.js.
+- NOTIFIER AVALE LES ERREURS : `DATA.notifier()` enveloppe chaque abonné dans un
+  try/catch qui se contente d'un `console.error`. Une exception de rendu ne
+  remonte donc PAS : l'écran reste vide et rien ne s'affiche. C'est ce qui rend ce
+  genre de bug invisible sans regarder la console.
+- MANIFESTE PWA ET PORTE D'ENTRÉE : `<link rel="manifest">` est récupéré SANS
+  cookie par défaut. Derrière la porte d'entrée, le navigateur reçoit donc la
+  redirection vers /login, tente de parser du HTML en JSON, et la PWA n'est pas
+  installable. D'où `crossorigin="use-credentials"` sur le lien. Invisible en
+  `file://`, où il n'y a pas de porte : ce bug ne se voit QUE sur le site déployé.
 - ATTRIBUT STEP SUR LES CHAMPS NUMBER : un `step` sert de contrainte de
   VALIDATION, pas seulement de pas pour les flèches. Une valeur qui n'est pas
   un multiple exact du step rend le formulaire invalide, et `requestSubmit` ou
@@ -364,13 +1334,22 @@ print('PROPRE' if not pb else pb)"
 Régénérer la démo après tout changement de schéma :
 `python3 tools/gen_demo.py` (écrit demo/*.csv et js/demo-data.js).
 
-Trois suites sans navigateur, toutes sans dépendance, à lancer depuis `tracker/` :
+Quatre suites sans navigateur, sans dépendance, à lancer depuis `tracker/` :
 
 ```
-node worker/index.test.mjs   porte d'entrée, 32 assertions
+node tools/boot.test.mjs     demarrage et rendu des 6 ecrans
+node tools/data.test.mjs     couche de donnees, 73 assertions
 node worker/sync.test.mjs    fusion entre appareils, 23 assertions
-node tools/data.test.mjs     couche de données, 17 assertions
+node worker/index.test.mjs   porte d'entree, 32 assertions
 ```
+
+`tools/boot.test.mjs` est le plus important après une modification de `app.js`.
+Il monte un faux DOM et EXÉCUTE réellement l'application : démarrage, rendu des
+six écrans, bascule de langue. C'est le seul filet contre une erreur d'exécution,
+puisque le panneau navigateur de l'agent ne peut pas charger ce site. Il capte les
+exceptions par les trois chemins possibles (try/catch de notifier, promesse
+rejetée, throw direct), sans quoi il afficherait l'erreur sans échouer. Vérifié en
+réintroduisant volontairement le bug du 14 août : il échoue.
 
 `tools/data.test.mjs` charge les vrais scripts du site dans un seul scope, comme
 le navigateur avec des scripts classiques, sans IndexedDB ni DOM. Il garde
@@ -1108,3 +2087,10 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
 - v7.24 : nouvel écran "Mes meilleurs réglages", un par café, avec le calcul
   isolé dans `js/reglages.js` sans DOM. Priorité 6 du backlog, révisée : par café
   et non en général, et sur sa propre page.
+- v7.25 : correction d'une TypeError qui vidait tout le tableau de bord
+  (`$` au lieu de `$$` ligne 516, avalée par le try/catch de notifier), du
+  manifeste PWA que la porte d'entrée redirigeait vers /login faute de cookie
+  (`crossorigin="use-credentials"`, la PWA n'était donc pas installable), et de la
+  balise `apple-mobile-web-app-capable` dépréciée. Ajout de
+  `tools/boot.test.mjs`, qui exécute l'application dans un faux DOM et aurait
+  attrapé le premier des trois.

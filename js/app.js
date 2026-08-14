@@ -513,7 +513,7 @@
       (k.sur10 ? "<small> / 10</small>" : k.mg ? "<small> mg</small>" : k.plusMoins ? "<small> pt</small>" : "") +
       '</div><div class="kpi-label">' + k.label + "</div></div>"
     ).join("");
-    $("#kpis .kpi-nombre").forEach((el, i) =>
+    $$("#kpis .kpi-nombre").forEach((el, i) =>
       animerCompteur(el, kpis[i].valeur, kpis[i].dec, "", kpis[i].plusMoins ? "± " : ""));
 
     rendreInsights(exts);
@@ -645,7 +645,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.24";
+  const VERSION = "7.25";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -1701,7 +1701,7 @@
     $("#reglages-liste").innerHTML = bilans.length
       ? bilans.map(carteReglage).join("")
       : '<p class="carte-vide">' + I18N.t("rg_sans_cafe") + "</p>";
-    $("[data-refaire]").forEach(b => b.addEventListener("click", () => {
+    $$("[data-refaire]").forEach(b => b.addEventListener("click", () => {
       const ext = DATA.state.extractions.find(e => e.id === b.dataset.refaire);
       if (!ext) return;
       chargerExtractionDansSaisie(ext, true);
