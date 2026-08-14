@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.26,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.27,
 2026-08-12.
 
 ## 1. Vue d'ensemble
@@ -101,7 +101,13 @@ diagnostic, descripteurs, commentaire`
   ("Un peu acide", "Un peu amer") entre Équilibré et les extractions ratées.
   Depuis la v7.19 ils sont GROUPÉS par levier de correction
   (DIAGNOSTICS_GROUPES dans recettes.js) : "Rien à changer", "Réglage
-  d'extraction", "Ratio café et eau", "Le café lui même". `DIAGNOSTICS` reste
+  d'extraction", "Répartition dans le panier", "Ratio café et eau", "Le café lui
+  même". "Acide ET amer (extraction inégale)" est SEUL dans son groupe, et c'est
+  le point : rangé avec les réglages il passait pour un raccourci redondant des
+  deux valeurs acide et amer, alors qu'il nomme la CAUSE et pas les symptômes.
+  Cocher acide et amer séparément empile deux corrections qui s'annulent, moudre
+  plus fin ET moudre plus grossier; `majCorrectionDiagnostic()` détecte cette
+  combinaison et affiche une alerte qui renvoie vers la valeur combinée. `DIAGNOSTICS` reste
   la liste à plat, dérivée des groupes, et garde son rôle pour l'ordre de
   stockage, le filtre de l'historique et l'anneau. Chaque axe va du léger au
   franc, avec un "un peu" partout : sans nuance on coche le cran du dessus par
@@ -2110,3 +2116,9 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   y compris une reprise unique des recettes Brikka déjà stockées, sans quoi la
   recette aurait continué à préremplir 3. L'historique garde 3
   (PUISSANCE_FEU_HISTORIQUE), on ne réécrit pas le passé.
+- v7.27 : "Acide ET amer (extraction inégale)" sort du groupe des réglages pour
+  son propre groupe "Répartition dans le panier", et une alerte apparaît si les
+  deux familles opposées sont cochées séparément, ce qui produisait deux
+  corrections contradictoires. Sa correction couvre maintenant les deux machines
+  (l'ancienne parlait de verser en spirale, sans sens sur une Brikka). Les lignes
+  des 5 dernières extractions ouvrent l'édition, au clic comme au clavier.

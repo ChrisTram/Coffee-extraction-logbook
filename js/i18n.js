@@ -480,6 +480,7 @@ const I18N = (() => {
 
     // Corrections associées aux diagnostics
     "Rien à changer, note le réglage.": "Nothing to change, write the setting down.",
+    "Répartition : égaliser le lit sans jamais tasser. En Brikka, ne pas trop remplir le panier. Au Switch, remuer et verser en spirale.": "Distribution: level the bed and never tamp. On the Brikka, do not overfill the basket. On the Switch, stir and pour in a spiral.",
     "Presque bon : un ou deux crans plus grossier, et remuer moins.": "Almost there: one or two clicks coarser, and stir less.",
     "Presque bon : un peu moins d'eau, ou un gramme de café en plus.": "Almost there: slightly less water, or one more gram of coffee.",
     "Presque bon : un peu plus d'eau, ou un gramme de café en moins.": "Almost there: slightly more water, or one less gram of coffee.",
@@ -568,6 +569,11 @@ const I18N = (() => {
     ins_moment: {
       fr: "Tes tasses {quand} sortent mieux : {haut} de moyenne contre {bas} au reste de la journée.",
       en: "Your cups {quand} come out better: {haut} average against {bas} for the rest of the day.",
+    },
+
+    diag_contradiction: {
+      fr: "Acide ET amer ensemble, ce sont deux corrections opposées : coche plutôt \"Acide ET amer (extraction inégale)\", c'est un problème de répartition, pas de réglage.",
+      en: "Sour AND bitter together means two opposite fixes: tick \"Sour AND bitter (uneven extraction)\" instead, this is a distribution problem, not a setting one.",
     },
 
     ins_puissance: {
@@ -680,6 +686,7 @@ const I18N = (() => {
     d_descripteurs: { fr: "Descripteurs", en: "Descriptors" },
     d_commentaire: { fr: "Commentaire", en: "Comment" },
     d_rien: { fr: "Rien de plus à montrer sur cette extraction.", en: "Nothing more to show for this brew." },
+    h_editer: { fr: "Ouvrir en édition", en: "Open for editing" },
     h_detail: { fr: "Voir le détail", en: "Show details" },
     h_comparer: { fr: "Comparer avec une autre", en: "Compare with another" },
     cmp_une: { fr: "1 extraction sélectionnée, choisis en une seconde.", en: "1 brew selected, pick a second one." },
@@ -996,6 +1003,7 @@ const I18N = (() => {
   };
 
   const GROUPES = {
+    "Répartition dans le panier": "Distribution in the basket",
     "Acidité": "Acidity",
     "Rien à changer": "Nothing to change",
     "Réglage d'extraction": "Extraction setting",

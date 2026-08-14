@@ -365,8 +365,17 @@ const DIAGNOSTICS_GROUPES = [
       "Sur-extrait (amer)",
       "Un peu astringent",
       "Astringent",
-      "Acide ET amer (extraction inégale)",
     ],
+  },
+  {
+    /* Seul de son groupe, et c'est le POINT. Acide ET amer en même temps n'est pas
+       un symptôme de plus à cocher en doublon des deux autres : c'est la CAUSE,
+       l'eau a percé un canal et sur extrait une zone en contournant le reste.
+       Rangé avec les réglages, il passait pour un raccourci redondant. Il ne l'est
+       pas : cocher acide et amer séparément empile deux corrections qui
+       s'annulent, moudre plus fin ET moudre plus grossier. */
+    nom: "Répartition dans le panier",
+    diags: ["Acide ET amer (extraction inégale)"],
   },
   {
     nom: "Ratio café et eau",
@@ -432,7 +441,7 @@ const DIAGNOSTIC_CORRECTIONS = {
   "Sur-extrait (amer)": "Moudre plus grossier, moins chaud, moins longtemps.",
   "Un peu astringent": "Presque bon : un ou deux crans plus grossier, et remuer moins.",
   "Astringent": "Sur-extraction : plus grossier, et remuer moins.",
-  "Acide ET amer (extraction inégale)": "Distribution : aplanir le lit, remuer, verser en spirale.",
+  "Acide ET amer (extraction inégale)": "Répartition : égaliser le lit sans jamais tasser. En Brikka, ne pas trop remplir le panier. Au Switch, remuer et verser en spirale.",
   "Un peu léger": "Presque bon : un peu moins d'eau, ou un gramme de café en plus.",
   "Trop léger (aqueux)": "Resserrer le ratio (moins d'eau ou plus de café).",
   "Un peu concentré": "Presque bon : un peu plus d'eau, ou un gramme de café en moins.",

@@ -628,8 +628,13 @@
 
     // 5 dernières
     const dernieres = [...exts].sort((a, b) => b.date_heure.localeCompare(a.date_heure)).slice(0, 5);
+    // Chaque ligne ouvre l'édition de son extraction. role et tabindex plutôt
+    // qu'un vrai bouton : le contenu est structuré (div, span) et un bouton n'a
+    // pas le droit d'en contenir.
     $("#dernieres-liste").innerHTML = dernieres.map(e =>
-      "<li><span class=\"pastille-methode " + e.methode.toLowerCase() + "\"></span>" +
+      '<li class="derniere-cliquable" data-ext="' + e.id + '" tabindex="0" role="button" title="' +
+      attrTitre(I18N.t("h_editer")) + '">' +
+      "<span class=\"pastille-methode " + e.methode.toLowerCase() + "\"></span>" +
       "<div><span class=\"derniere-cafe\">" + I18N.tr(e._c.cafe_nom) + "</span>" +
       "<div class=\"derniere-infos\">" + fmtDateHeure(e.date_heure) + " · " + e.methode +
       (e.recette ? " · " + e.recette : "") + (e.mouture_dial ? " · " + I18N.t("molette") + " " + e.mouture_dial : "") +
@@ -645,7 +650,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.26";
+  const VERSION = "7.27";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -1284,11 +1289,27 @@
   }
 
   // Corrections des diagnostics cochés, une ligne chacune, sous les pilules.
+  // Familles opposées de l'axe d'extraction : cocher une de chaque empile deux
+  // corrections qui s'annulent (moudre plus fin ET plus grossier). C'est le signe
+  // d'une extraction inégale, qui a sa propre valeur.
+  const DIAGS_SOUS_EXTRAIT = ["Un peu acide", "Sous-extrait (acide)"];
+  const DIAGS_SUR_EXTRAIT = ["Un peu amer", "Sur-extrait (amer)", "Un peu astringent", "Astringent"];
+  const DIAG_INEGALE = "Acide ET amer (extraction inégale)";
+
   function majCorrectionDiagnostic() {
-    $("#diagnostic-correction").innerHTML = DIAGNOSTICS
+    const lignes = DIAGNOSTICS
       .filter(d => saisie.diagnostics.has(d))
       .map(d => I18N.tr(DIAGNOSTIC_CORRECTIONS[d] || ""))
-      .filter(Boolean).join("<br>");
+      .filter(Boolean);
+
+    // Avertir AVANT les corrections : sinon on lit deux conseils contradictoires
+    // sans savoir lequel suivre.
+    const contradiction = DIAGS_SOUS_EXTRAIT.some(d => saisie.diagnostics.has(d)) &&
+      DIAGS_SUR_EXTRAIT.some(d => saisie.diagnostics.has(d)) &&
+      !saisie.diagnostics.has(DIAG_INEGALE);
+    if (contradiction) lignes.unshift('<b class="diag-alerte">' + I18N.t("diag_contradiction") + "</b>");
+
+    $("#diagnostic-correction").innerHTML = lignes.join("<br>");
   }
 
   /* Bulle d'un diagnostic : QUAND le cocher, puis QUOI faire. Deux lignes, la
@@ -2456,6 +2477,23 @@
       } else if (btn.dataset.action === "comparer") {
         basculerComparaison(id);
       }
+    });
+
+    // Délégué sur la liste : son contenu est réécrit à chaque rendu, un handler
+    // par ligne fuirait à chaque rafraîchissement du tableau de bord.
+    const ouvrirDerniere = cible => {
+      const li = cible.closest("[data-ext]");
+      if (!li) return;
+      const ext = DATA.state.extractions.find(x => x.id === li.dataset.ext);
+      if (!ext) return;
+      chargerExtractionDansSaisie(ext, false);
+      activerEcran("saisie");
+    };
+    $("#dernieres-liste").addEventListener("click", ev => ouvrirDerniere(ev.target));
+    $("#dernieres-liste").addEventListener("keydown", ev => {
+      if (ev.key !== "Enter" && ev.key !== " ") return;
+      ev.preventDefault();
+      ouvrirDerniere(ev.target);
     });
 
     $("#comparaison-ouvrir").addEventListener("click", ouvrirComparaison);
