@@ -46,8 +46,6 @@ const RECETTES_DEPART = [
     variante: "Eau préchauffée",
     sousTitre: "Eau bouillante, flamme forte au départ, mouture plus grossière",
     dose: 14, eau: 100, temp: 100, tempTexte: "eau bouillante, versée aussitôt",
-    // Laissée à 3 comme demandé. Les étapes de cette recette prescrivent une
-    // flamme plus forte : à monter quand le bon chiffre sera connu.
     puissance_feu: 3,
     dial: "1.3.0",
     ratioTexte: "environ 1:7, environ 90 ml en tasse",
