@@ -859,7 +859,31 @@ input:focus, select:focus, textarea:focus {
 .historique-compte { color: var(--attenue); font-size: 0.85rem; margin: 0 0 10px 4px; }
 
 .table-conteneur { overflow-x: auto; padding: 0; }
-.table-historique { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+/* table-layout fixed : les colonnes ne s'elargissent PLUS avec leur contenu.
+   C'etait la cause du defilement horizontal, un nom de cafe long poussait toute
+   la table au dela du conteneur. Les largeurs sont maintenant imposees, et le
+   texte trop long est tronque avec des points de suspension.
+   min-width : en dessous (telephone), on defile plutot que d'ecraser neuf
+   colonnes en bouillie. */
+.table-historique {
+  width: 100%;
+  min-width: 900px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+/* Somme exacte de 100 pour cent. Les colonnes de texte libre (cafe, recette,
+   diagnostic) sont les seules a pouvoir deborder, ce sont donc elles qui
+   tronquent; les colonnes calculees ont juste la place qu'il leur faut. */
+.table-historique th:nth-child(1), .table-historique td:nth-child(1) { width: 14%; }
+.table-historique th:nth-child(2), .table-historique td:nth-child(2) { width: 15%; }
+.table-historique th:nth-child(3), .table-historique td:nth-child(3) { width: 9%; }
+.table-historique th:nth-child(4), .table-historique td:nth-child(4) { width: 13%; }
+.table-historique th:nth-child(5), .table-historique td:nth-child(5) { width: 12%; }
+.table-historique th:nth-child(6), .table-historique td:nth-child(6) { width: 7%; }
+.table-historique th:nth-child(7), .table-historique td:nth-child(7) { width: 7%; }
+.table-historique th:nth-child(8), .table-historique td:nth-child(8) { width: 12%; }
+.table-historique th:nth-child(9), .table-historique td:nth-child(9) { width: 11%; }
 .table-historique th {
   text-align: left;
   padding: 12px 12px;
@@ -879,9 +903,15 @@ input:focus, select:focus, textarea:focus {
 .table-historique td {
   padding: 10px 12px;
   border-bottom: 1px solid var(--lignes);
-  white-space: nowrap;
   vertical-align: middle;
+  /* Tronque au lieu d'elargir. L'attribut title pose sur les cellules de texte
+     libre donne la valeur complete au survol et au focus. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+/* Les en-tetes aussi, sinon un libelle long recreerait le probleme. */
+.table-historique th { overflow: hidden; text-overflow: ellipsis; }
 .table-historique tbody tr { transition: background 150ms; }
 .table-historique tbody tr:hover { background: var(--panneau-2); }
 .tri { font-size: 0.7rem; }
@@ -902,13 +932,13 @@ input:focus, select:focus, textarea:focus {
 .chip-methode.switch { background: var(--switch); }
 .chip-diagnostic { font-size: 0.8rem; color: var(--attenue); }
 
-.actions-ligne { display: flex; gap: 4px; }
+.actions-ligne { display: flex; gap: 2px; }
 .btn-ligne {
   border: none;
   background: transparent;
   cursor: pointer;
   font-size: 0.95rem;
-  padding: 4px 6px;
+  padding: 4px 5px;
   border-radius: 6px;
   color: var(--attenue);
   transition: all 150ms;

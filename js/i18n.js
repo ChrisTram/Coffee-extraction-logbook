@@ -556,14 +556,6 @@ const I18N = (() => {
       fr: "{gagnante} passe devant {perdante} : {haut} de moyenne contre {bas}.",
       en: "{gagnante} beats {perdante}: {haut} average against {bas}.",
     },
-    ins_prechauffe_pour: {
-      fr: "En Brikka, préchauffer l'eau paie : {haut} de moyenne contre {bas} sans.",
-      en: "On the Brikka, preheating the water pays off: {haut} average against {bas} without.",
-    },
-    ins_prechauffe_contre: {
-      fr: "En Brikka, tes tasses sans préchauffage sortent mieux : {haut} de moyenne contre {bas}.",
-      en: "On the Brikka, your cups without preheating come out better: {haut} average against {bas}.",
-    },
     ins_moment_matin: { fr: "le matin", en: "in the morning" },
     ins_moment_aprem: { fr: "l'après midi", en: "in the afternoon" },
     ins_moment_soir: { fr: "le soir", en: "in the evening" },
@@ -693,7 +685,6 @@ const I18N = (() => {
     w_foncee: { fr: "Torréfaction foncée dans le Switch : déconseillé, le papier accentue l'amertume sèche. La Brikka lui va mieux.", en: "Dark roast in the Switch: not advised, the paper sharpens the dry bitterness. The Brikka suits it better." },
     w_brikka_reco: { fr: "Ce café est noté pour la Brikka. Le Switch marchera mais ce n'est pas là qu'il donne le meilleur.", en: "This coffee is flagged for the Brikka. The Switch will work, but that is not where it shines." },
     w_switch_reco: { fr: "Ce café est noté pour le Switch. La pression de la Brikka peut amplifier son acidité.", en: "This coffee is flagged for the Switch. The Brikka's pressure can amplify its acidity." },
-    w_reco: { fr: "Recette conseillée pour ce café : {r}. Libre à toi d'explorer, c'est juste un rappel.", en: "Suggested recipe for this coffee: {r}. Feel free to explore, this is just a reminder." },
 
     s_nouvelle: { fr: "Nouvelle extraction", en: "New brew" },
     s_dupliquee: { fr: "Nouvelle extraction (dupliquée)", en: "New brew (duplicated)" },

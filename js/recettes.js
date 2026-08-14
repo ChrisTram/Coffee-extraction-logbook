@@ -506,15 +506,12 @@ function avertissementsCombinaison(cafe, methode, recetteNom, recettes) {
     msgs.push(I18N.t("w_switch_reco"));
   }
 
-  if (recetteNom && cafe.recette_recommandee && recetteNom !== cafe.recette_recommandee) {
-    const r = liste.find(x => x.nom === recetteNom);
-    if (r && r.methode === methode) {
-      const rReco = liste.find(x => x.nom === cafe.recette_recommandee);
-      if (rReco && rReco.methode === methode) {
-        msgs.push(I18N.t("w_reco", { r: cafe.recette_recommandee }));
-      }
-    }
-  }
+  // PAS d'avertissement quand la recette choisie diffère de `recette_recommandee`.
+  // Cette recommandation vient d'une valeur posée à la création du café, jamais
+  // vérifiée par une extraction : prétendre conseiller une recette sur un café
+  // qu'on n'a pas encore essayé n'est pas une aide, c'est du bruit. Les vraies
+  // recommandations viennent des insights du tableau de bord, qui eux sont
+  // calculés sur les notes réelles.
 
   return { msgs, bloque };
 }

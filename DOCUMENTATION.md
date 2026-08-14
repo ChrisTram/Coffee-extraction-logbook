@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.20,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.21,
 2026-08-12.
 
 ## 1. Vue d'ensemble
@@ -445,9 +445,15 @@ le reste dépasse le point. Tester premier contre deuxième reviendrait à ne
 jamais rien dire. Le regroupement donne en plus un effectif de comparaison bien
 plus grand.
 
-Les quatre règles : fenêtre de fraîcheur (trois tranches d'âge), meilleur
-réglage de mouture par machine, duel de recettes d'une même famille, effet du
-préchauffage de l'eau en Brikka. La règle recettes ne parle QUE des familles où
+Les règles : fenêtre de fraîcheur (trois tranches d'âge), meilleur réglage de
+mouture par machine (une par machine), duel de recettes d'une même famille,
+moment de la journée, puissance de feu en Brikka.
+
+Une règle sur le préchauffage a existé et a été RETIRÉE en v7.21 : depuis que le
+préchauffage est une recette à part entière (v7.17), elle comparait exactement les
+mêmes tasses que le duel de recettes et produisait donc deux fois la même phrase.
+Quand une variable devient une recette, sa règle dédiée devient un doublon, à
+retirer. La règle recettes ne parle QUE des familles où
 exactement deux recettes ont assez d'extractions : à trois ou plus, nommer une
 "perdante" serait faux puisqu'elle n'est peut être que deuxième.
 
@@ -596,6 +602,23 @@ l'application. `ecrireBrouillon()` sauvegarde le formulaire dans localStorage.
 - Écrit sur `visibilitychange` vers `hidden` sans attendre le debounce : c'est
   le dernier événement fiable avant qu'un navigateur mobile décharge la page.
 - Effacé à l'enregistrement, jamais avant.
+
+## 8 ter. Tableau de l'historique, largeurs figées
+
+`table-layout: fixed` avec neuf largeurs en pourcentage qui totalisent exactement
+100. Sans ça les colonnes s'élargissaient avec leur contenu (un nom de café long,
+un diagnostic multiple) et poussaient la table au delà du conteneur : d'où un
+défilement horizontal permanent.
+
+Le texte trop long est TRONQUÉ (`text-overflow: ellipsis`), et les trois colonnes
+de texte libre (café, recette, diagnostic) portent un attribut `title` qui donne
+la valeur complète au survol. Les guillemets doubles y sont neutralisés,
+`attrTitre()` dans app.js.
+
+`min-width: 900px` sur la table : en dessous, sur téléphone, on défile plutôt que
+d'écraser neuf colonnes en bouillie. Le défilement horizontal n'a donc pas
+disparu, il est devenu le comportement de repli sur petit écran au lieu d'être la
+norme sur grand écran.
 
 ## 9 bis. PWA, hors ligne et verrou d'écran
 
@@ -886,6 +909,16 @@ pas un design qui monterait à des centaines de milliers d'extractions.
   atteignables au doigt, et résumé chiffré avec la plus longue série de jours
   consécutifs. Détail et raisons en section 6 ter.
 
+### Ce qui n'est PAS un avertissement de saisie
+
+L'écart entre la recette choisie et `recette_recommandee` du café ne déclenche
+plus rien (retiré en v7.21). Cette recommandation vient d'une valeur posée à la
+création du café, jamais vérifiée par une extraction : conseiller une recette sur
+un café qu'on n'a pas encore essayé n'est pas une aide, c'est du bruit à chaque
+saisie. Les vraies recommandations viennent des insights, calculés sur les notes
+réelles. Les avertissements de MACHINE (`w_brikka_reco`, `w_switch_reco`) et les
+blocages (café non pur en Switch) restent, eux : ce sont des faits, pas des goûts.
+
 ## 6 quater. Cartes légitimement vides
 
 Trois cartes peuvent rester vides très longtemps avec des données parfaitement
@@ -966,3 +999,9 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
 - v7.20 : bulle d'aide des diagnostics enrichie. Elle donne maintenant QUAND
   cocher (description en bouche, `DIAGNOSTIC_QUAND`) puis QUOI faire, sur deux
   lignes. Les 16 descriptions existent en FR et EN.
+- v7.21 : tableau de l'historique à largeurs figées, il ne défile plus
+  horizontalement sur grand écran et tronque proprement avec la valeur complète au
+  survol. Retrait de l'avertissement "recette conseillée pour ce café", qui
+  reposait sur une valeur jamais vérifiée. Retrait de la règle d'insight sur le
+  préchauffage, devenue un doublon exact du duel de recettes depuis que le
+  préchauffage est une recette.

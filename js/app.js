@@ -226,21 +226,6 @@
     return null;
   }
 
-  function insightPrechauffage(notees) {
-    const avec = [], sans = [];
-    notees
-      .filter(e => e.methode === "Brikka")
-      .forEach(e => (Number(e.eau_prechauffee) === 1 ? avec : sans).push(e.note_sur_10));
-    if (avec.length < MIN_SAMPLE || sans.length < MIN_SAMPLE) return null;
-    const mAvec = moyenne(avec), mSans = moyenne(sans);
-    if (Math.abs(mAvec - mSans) < MIN_GAP) return null;
-    const pour = mAvec > mSans;
-    return I18N.t(pour ? "ins_prechauffe_pour" : "ins_prechauffe_contre", {
-      haut: note1(pour ? mAvec : mSans),
-      bas: note1(pour ? mSans : mAvec),
-    });
-  }
-
   // Moment de la journée : l'heure est déjà dans date_heure, donc cette règle ne
   // coûte aucune saisie supplémentaire. Répond à "est-ce que ma première tasse
   // est vraiment meilleure, ou juste bue avec plus d'enthousiasme".
@@ -286,7 +271,6 @@
       insightMouture(notees, "Brikka"),
       insightMouture(notees, "Switch"),
       insightRecettes(notees),
-      insightPrechauffage(notees),
       insightMoment(notees),
       insightPuissance(notees),
     ].filter(Boolean);
@@ -644,7 +628,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.20";
+  const VERSION = "7.21";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -1472,6 +1456,12 @@
     return e[col] === "" ? -1 : e[col];
   }
 
+  // Attribut title : la valeur complete d'une cellule tronquee, au survol.
+  // Les guillemets doubles casseraient l'attribut, on les neutralise.
+  function attrTitre(texte) {
+    return String(texte || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  }
+
   function rendreHistorique() {
     const liste = filtrerHistorique().sort((a, b) => {
       const va = valeurTri(a, tri.colonne), vb = valeurTri(b, tri.colonne);
@@ -1491,13 +1481,14 @@
     $("#h-corps").innerHTML = liste.map(e =>
       "<tr data-id=\"" + e.id + "\">" +
       "<td>" + fmtDateHeure(e.date_heure) + "</td>" +
-      "<td>" + I18N.tr(e._c.cafe_nom) + "</td>" +
+      '<td title="' + attrTitre(I18N.tr(e._c.cafe_nom)) + '">' + I18N.tr(e._c.cafe_nom) + "</td>" +
       '<td><span class="chip-methode ' + e.methode.toLowerCase() + '">' + e.methode + "</span></td>" +
-      "<td>" + (e.recette || "") + "</td>" +
+      '<td title="' + attrTitre(e.recette) + '">' + (e.recette || "") + "</td>" +
       "<td>" + (e.mouture_dial ? e.mouture_dial + " <small>(" + e._c.microns + " µm)</small>" : e._c.moulu ? "<small>" + I18N.t("paquet") + "</small>" : "") + "</td>" +
       "<td>" + e._c.ratioTexte + "</td>" +
       '<td class="note-cellule">' + (e.note_sur_10 !== "" ? e.note_sur_10 : "") + "</td>" +
-      '<td class="chip-diagnostic">' + (e.diagnostic ? diagsAffiches(e.diagnostic) : "") + "</td>" +
+      '<td class="chip-diagnostic" title="' + attrTitre(e.diagnostic ? diagsAffiches(e.diagnostic) : "") + '">' +
+      (e.diagnostic ? diagsAffiches(e.diagnostic) : "") + "</td>" +
       '<td><div class="actions-ligne">' +
       '<button class="btn-ligne" data-action="dupliquer" title="Dupliquer pour refaire la même">⧉</button>' +
       '<button class="btn-ligne" data-action="modifier" title="Modifier">✎</button>' +
