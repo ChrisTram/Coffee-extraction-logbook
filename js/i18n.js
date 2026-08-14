@@ -457,6 +457,11 @@ const I18N = (() => {
 
     // Corrections associées aux diagnostics
     "Rien à changer, note le réglage.": "Nothing to change, write the setting down.",
+    "Presque bon : un ou deux crans plus grossier, et remuer moins.": "Almost there: one or two clicks coarser, and stir less.",
+    "Presque bon : un peu moins d'eau, ou un gramme de café en plus.": "Almost there: slightly less water, or one more gram of coffee.",
+    "Presque bon : un peu plus d'eau, ou un gramme de café en moins.": "Almost there: slightly more water, or one less gram of coffee.",
+    "Le sachet commence à fatiguer : bien le refermer, et le finir plus vite.": "The bag is starting to fade: seal it properly, and finish it sooner.",
+    "Note de torréfaction un peu poussée : baisser la flamme, et retirer du feu plus tôt.": "Slightly pushed roast note: lower the flame, and take it off the heat sooner.",
     "Presque bon : un ou deux crans plus fin, ou 2 à 3 degrés plus chaud.": "Almost there: one or two clicks finer, or 2 to 3 degrees hotter.",
     "Presque bon : un ou deux crans plus grossier, ou 2 à 3 degrés moins chaud.": "Almost there: one or two clicks coarser, or 2 to 3 degrees cooler.",
     "Moudre plus fin, plus chaud, plus longtemps.": "Grind finer, go hotter, brew longer.",
@@ -809,11 +814,16 @@ const I18N = (() => {
     "Sous-extrait (acide)": "Under-extracted (sour)",
     "Un peu amer": "Slightly bitter",
     "Sur-extrait (amer)": "Over-extracted (bitter)",
+    "Un peu astringent": "Slightly astringent",
     "Astringent": "Astringent",
     "Acide ET amer (extraction inégale)": "Sour AND bitter (uneven extraction)",
+    "Un peu léger": "Slightly weak",
     "Trop léger (aqueux)": "Too weak (watery)",
+    "Un peu concentré": "Slightly strong",
     "Trop fort (concentré)": "Too strong (concentrated)",
+    "Un peu éventé": "Slightly stale",
     "Creux, plat (café éventé)": "Hollow, flat (stale coffee)",
+    "Un peu brûlé": "Slightly burnt",
     "Brûlé (défaut du sachet)": "Burnt (bag defect)",
   };
 
@@ -903,6 +913,10 @@ const I18N = (() => {
   };
 
   const GROUPES = {
+    "Rien à changer": "Nothing to change",
+    "Réglage d'extraction": "Extraction setting",
+    "Ratio café et eau": "Coffee to water ratio",
+    "Le café lui même": "The coffee itself",
     "Corps et texture": "Body and texture",
     "Cacao et noix": "Cocoa and nuts", "Sucré": "Sweet", "Fruité": "Fruity",
     "Floral et thé": "Floral and tea", "Épices": "Spices", "Céréales et malt": "Grains and malt",

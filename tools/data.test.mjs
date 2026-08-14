@@ -25,9 +25,10 @@ const charger = new Function(
   "location",
   "indexedDB",
   "console",
-  source + "\nreturn { DATA, SYNC, GRIND, RECETTES_DEPART };"
+  source + "\nreturn { DATA, SYNC, GRIND, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS };"
 );
-const { DATA, RECETTES_DEPART } = charger(undefined, { protocol: "file:" }, undefined, console);
+const { DATA, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS } =
+  charger(undefined, { protocol: "file:" }, undefined, console);
 
 let failures = 0;
 function check(label, condition, detail) {
@@ -228,6 +229,39 @@ const feuDe = id => DATA.state.extractions.find(e => e.id === id).puissance_feu;
 check("0 est ramene a 1", feuDe("b1") === 1, String(feuDe("b1")));
 check("12 est ramene a 10", feuDe("b2") === 10, String(feuDe("b2")));
 check("7,6 est arrondi a 8", feuDe("b3") === 8, String(feuDe("b3")));
+
+// 10. Diagnostics groupes. La regle non negociable du projet : ajouter une
+// valeur ne casse rien, en RETIRER une casserait l'historique deja enregistre.
+// Ce test verrouille exactement ca.
+const DIAGS_AVANT_REGROUPEMENT = [
+  "Équilibré", "Un peu acide", "Sous-extrait (acide)", "Un peu amer", "Sur-extrait (amer)",
+  "Astringent", "Acide ET amer (extraction inégale)", "Trop léger (aqueux)",
+  "Trop fort (concentré)", "Creux, plat (café éventé)", "Brûlé (défaut du sachet)",
+];
+const perdus = DIAGS_AVANT_REGROUPEMENT.filter(d => !DIAGNOSTICS.includes(d));
+check("aucun diagnostic historique retire", perdus.length === 0, perdus.join(", "));
+check("la liste a plat suit l'ordre des groupes",
+  DIAGNOSTICS.join("|") === DIAGNOSTICS_GROUPES.flatMap(g => g.diags).join("|"));
+check("aucun doublon entre groupes", new Set(DIAGNOSTICS).size === DIAGNOSTICS.length);
+check("chaque diagnostic a sa correction",
+  DIAGNOSTICS.every(d => DIAGNOSTIC_CORRECTIONS[d]),
+  DIAGNOSTICS.filter(d => !DIAGNOSTIC_CORRECTIONS[d]).join(", "));
+
+// Chaque nuance douce precede sa version franche : l'ordre porte le sens.
+const PAIRES = [
+  ["Un peu acide", "Sous-extrait (acide)"], ["Un peu amer", "Sur-extrait (amer)"],
+  ["Un peu astringent", "Astringent"], ["Un peu léger", "Trop léger (aqueux)"],
+  ["Un peu concentré", "Trop fort (concentré)"], ["Un peu éventé", "Creux, plat (café éventé)"],
+  ["Un peu brûlé", "Brûlé (défaut du sachet)"],
+];
+check("chaque nuance douce precede sa version franche",
+  PAIRES.every(([doux, franc]) => DIAGNOSTICS.indexOf(doux) >= 0 &&
+    DIAGNOSTICS.indexOf(doux) < DIAGNOSTICS.indexOf(franc)));
+
+// Un diagnostic multiple deja enregistre reste lisible tel quel
+const multi = "Trop léger (aqueux)|Acide ET amer (extraction inégale)";
+check("un diagnostic multiple historique reste reconnu",
+  multi.split("|").every(d => DIAGNOSTICS.includes(d)));
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

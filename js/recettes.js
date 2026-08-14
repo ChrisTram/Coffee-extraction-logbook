@@ -338,19 +338,55 @@ const DESCRIPTEURS_GROUPES = [
 ];
 const DESCRIPTEURS = DESCRIPTEURS_GROUPES.flatMap(g => g.tags);
 
-const DIAGNOSTICS = [
-  "Équilibré",
-  "Un peu acide",
-  "Sous-extrait (acide)",
-  "Un peu amer",
-  "Sur-extrait (amer)",
-  "Astringent",
-  "Acide ET amer (extraction inégale)",
-  "Trop léger (aqueux)",
-  "Trop fort (concentré)",
-  "Creux, plat (café éventé)",
-  "Brûlé (défaut du sachet)",
+/* Diagnostics groupés par CE QU'IL FAUT CORRIGER, et non en une liste à plat.
+   Trois leviers différents : le réglage d'extraction (mouture, temps,
+   température), le ratio (dose contre eau), et le café lui même, sur lequel
+   aucun réglage n'agit.
+
+   Chaque axe va du léger au franc, avec un "un peu" partout : une tasse
+   légèrement trop concentrée n'appelle pas la même correction qu'une tasse
+   franchement trop forte, et sans nuance on finit par cocher le cran du dessus
+   par défaut, ce qui fausse le diagnostic.
+
+   AUCUNE valeur existante n'a été retirée ni renommée : l'historique déjà
+   enregistré reste lisible tel quel. Ajouter ne casse rien, retirer casserait. */
+const DIAGNOSTICS_GROUPES = [
+  { nom: "Rien à changer", diags: ["Équilibré"] },
+  {
+    nom: "Réglage d'extraction",
+    diags: [
+      "Un peu acide",
+      "Sous-extrait (acide)",
+      "Un peu amer",
+      "Sur-extrait (amer)",
+      "Un peu astringent",
+      "Astringent",
+      "Acide ET amer (extraction inégale)",
+    ],
+  },
+  {
+    nom: "Ratio café et eau",
+    diags: [
+      "Un peu léger",
+      "Trop léger (aqueux)",
+      "Un peu concentré",
+      "Trop fort (concentré)",
+    ],
+  },
+  {
+    nom: "Le café lui même",
+    diags: [
+      "Un peu éventé",
+      "Creux, plat (café éventé)",
+      "Un peu brûlé",
+      "Brûlé (défaut du sachet)",
+    ],
+  },
 ];
+
+// Liste à plat, dans l'ordre des groupes. Reste la référence pour l'ordre de
+// stockage, le filtre de l'historique et l'anneau du tableau de bord.
+const DIAGNOSTICS = DIAGNOSTICS_GROUPES.flatMap(g => g.diags);
 
 const DIAGNOSTIC_CORRECTIONS = {
   "Équilibré": "Rien à changer, note le réglage.",
@@ -358,11 +394,16 @@ const DIAGNOSTIC_CORRECTIONS = {
   "Sous-extrait (acide)": "Moudre plus fin, plus chaud, plus longtemps.",
   "Un peu amer": "Presque bon : un ou deux crans plus grossier, ou 2 à 3 degrés moins chaud.",
   "Sur-extrait (amer)": "Moudre plus grossier, moins chaud, moins longtemps.",
+  "Un peu astringent": "Presque bon : un ou deux crans plus grossier, et remuer moins.",
   "Astringent": "Sur-extraction : plus grossier, et remuer moins.",
   "Acide ET amer (extraction inégale)": "Distribution : aplanir le lit, remuer, verser en spirale.",
+  "Un peu léger": "Presque bon : un peu moins d'eau, ou un gramme de café en plus.",
   "Trop léger (aqueux)": "Resserrer le ratio (moins d'eau ou plus de café).",
+  "Un peu concentré": "Presque bon : un peu plus d'eau, ou un gramme de café en moins.",
   "Trop fort (concentré)": "Élargir le ratio (plus d'eau ou moins de café).",
+  "Un peu éventé": "Le sachet commence à fatiguer : bien le refermer, et le finir plus vite.",
   "Creux, plat (café éventé)": "Fraîcheur : vérifier la date de torréfaction, resserrer le sachet.",
+  "Un peu brûlé": "Note de torréfaction un peu poussée : baisser la flamme, et retirer du feu plus tôt.",
   "Brûlé (défaut du sachet)": "Torréfaction trop foncée, aucun réglage ne l'enlèvera.",
 };
 

@@ -644,7 +644,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.18";
+  const VERSION = "7.19";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -1281,9 +1281,14 @@
     // Diagnostics à choix MULTIPLE (une tasse peut être un peu amère ET
     // astringente). Chaque pilule porte sa correction en infobulle (data-info,
     // bulle CSS au survol).
-    $("#f-diagnostic").innerHTML = DIAGNOSTICS.map(d =>
-      '<button type="button" class="pilule" data-diag="' + d + '" data-info="' +
-      I18N.tr(DIAGNOSTIC_CORRECTIONS[d] || "") + '">' + I18N.diag(d) + "</button>").join("");
+    // Groupés par ce qu'il faut corriger : réglage, ratio, ou le café lui même.
+    // Une liste à plat de seize entrées se lit mal et pousse à cocher au hasard.
+    $("#f-diagnostic").innerHTML = DIAGNOSTICS_GROUPES.map(g =>
+      '<div class="tags-groupe"><span class="tags-groupe-nom">' + I18N.groupe(g.nom) + "</span>" +
+      '<div class="tags">' + g.diags.map(d =>
+        '<button type="button" class="pilule" data-diag="' + d + '" data-info="' +
+        I18N.tr(DIAGNOSTIC_CORRECTIONS[d] || "") + '">' + I18N.diag(d) + "</button>").join("") +
+      "</div></div>").join("");
     $$("#f-diagnostic .pilule").forEach(b => b.addEventListener("click", () => {
       const d = b.dataset.diag;
       if (saisie.diagnostics.has(d)) saisie.diagnostics.delete(d);

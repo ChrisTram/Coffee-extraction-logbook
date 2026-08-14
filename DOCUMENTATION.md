@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.18,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.19,
 2026-08-12.
 
 ## 1. Vue d'ensemble
@@ -88,6 +88,14 @@ diagnostic, descripteurs, commentaire`
   peu amère ET astringente). Les anciennes lignes à valeur unique se lisent
   telles quelles (split sur `|`). 11 niveaux dont deux intermédiaires
   ("Un peu acide", "Un peu amer") entre Équilibré et les extractions ratées.
+  Depuis la v7.19 ils sont GROUPÉS par levier de correction
+  (DIAGNOSTICS_GROUPES dans recettes.js) : "Rien à changer", "Réglage
+  d'extraction", "Ratio café et eau", "Le café lui même". `DIAGNOSTICS` reste
+  la liste à plat, dérivée des groupes, et garde son rôle pour l'ordre de
+  stockage, le filtre de l'historique et l'anneau. Chaque axe va du léger au
+  franc, avec un "un peu" partout : sans nuance on coche le cran du dessus par
+  défaut et le diagnostic devient faux. Les noms de groupe passent par
+  `I18N.groupe()`, donc par la carte GROUPES.
   Chaque diagnostic a sa correction dans DIAGNOSTIC_CORRECTIONS (fr,
   traduite via I18N.tr donc la phrase exacte doit exister comme clé dans
   UI); les corrections des diagnostics cochés s'empilent sous les pilules
@@ -943,3 +951,8 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   Brikka, insight "quelle puissance de feu te réussit". Température préremplie à
   93 au lieu de 95 (`DEFAULT_TEMP_C`), sans toucher aux extractions déjà
   enregistrées.
+- v7.19 : diagnostics regroupés par levier de correction au lieu d'une liste à
+  plat de onze entrées, et cinq nuances "un peu" ajoutées là où elles manquaient
+  (astringent, léger, concentré, éventé, brûlé). AUCUNE valeur retirée ni
+  renommée, l'historique déjà enregistré reste lisible tel quel, ce que le test 10
+  de `tools/data.test.mjs` verrouille.
