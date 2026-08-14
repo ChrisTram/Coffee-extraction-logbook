@@ -29,7 +29,8 @@ entre appareils (D1), PWA installable et Wake Lock, insights automatiques,
 stock par sachet, calendrier lisible avec statistiques, classement des goûts par
 descripteur, numéro de version, brouillon de saisie, durées en minutes et
 secondes, puissance de feu, diagnostics groupés avec aide au survol, recette
-d'eau préchauffée séparée.
+d'eau préchauffée séparée, détail dépliable dans l'historique, comparateur de deux
+extractions, régularité en écart moyen, écran Mes meilleurs réglages par café.
 
 ## Le constat qui oriente ce backlog
 
@@ -96,45 +97,7 @@ en PWA sur téléphone, en cuisine.
 d'application, et elles ne passent pas par la couche i18n donc elles restent en
 français en mode anglais.
 
-## Priorité 4 : ligne dépliable dans l'historique
-
-**Coût : S (50k à 80k)**
-
-Huit colonnes sur vingt-deux champs. Le commentaire, les descripteurs, la
-puissance de feu, les temps, la tasse, le volume, tout ça est invisible une fois
-la tasse enregistrée. Une ligne qui se déplie au clic montre le reste sans élargir
-le tableau, qui vient tout juste d'être remis d'aplomb.
-
-C'est aussi ce qui rend le commentaire utile : aujourd'hui tu l'écris et tu ne le
-relis jamais.
-
-## Priorité 5 : comparateur de deux extractions
-
-**Coût : S (60k à 90k)**
-
-Cocher deux lignes de l'historique et les voir côte à côte, champ par champ,
-différences surlignées. C'est l'outil du test croisé en version manuelle, et il
-reste utile même avec la priorité 1 : celle-ci pilote un test à venir, le
-comparateur regarde deux tasses passées.
-
-Aucune donnée nouvelle, tout est déjà en mémoire. C'est de l'affichage pur.
-
-## Priorité 6 : ta meilleure combinaison
-
-**Coût : S (50k à 80k)**
-
-Une carte qui répond à "qu'est-ce que je refais quand je veux une bonne tasse" :
-la combinaison café plus recette plus mouture plus puissance de feu qui a la
-meilleure moyenne, avec le nombre de tasses qui l'appuient, et un bouton qui
-préremplit une saisie avec exactement ces réglages.
-
-C'est le vrai aboutissement d'un carnet d'extraction. Les insights donnent des
-tendances par variable ; ça, c'est la recette gagnante complète.
-
-Même prudence que les insights : rien tant qu'une combinaison n'a pas trois
-tasses.
-
-## Priorité 7 : ce que ça te coûte
+## Priorité 4 : ce que ça te coûte
 
 **Coût : S (50k à 80k)**
 
@@ -145,16 +108,7 @@ non purs, qui est nettement plus élevé qu'il n'y paraît.
 
 Utile au Vietnam où tu compares des sachets à des prix très différents.
 
-## Priorité 8 : régularité
-
-**Coût : XS (20k à 30k)**
-
-Un seul chiffre de plus dans les KPI : l'écart type de tes notes sur 30 jours,
-présenté en clair ("tes tasses varient de plus ou moins 1,2 point"). Progresser,
-ce n'est pas seulement monter la moyenne, c'est réduire la dispersion. Aucun champ
-nouveau, trois lignes de calcul.
-
-## Priorité 9 : radar des descripteurs par café
+## Priorité 5 : radar des descripteurs par café
 
 **Coût : S (50k à 80k)**
 
@@ -162,7 +116,7 @@ Le classement des goûts est global. Par café, il répondrait à "ce sachet me 
 quoi, selon mes propres notes" et confronterait les `notes_annoncees` du vendeur
 à ton palais. À faire quand un café aura une quinzaine de tasses.
 
-## Priorité 10 : rapport hebdomadaire partageable
+## Priorité 6 : rapport hebdomadaire partageable
 
 **Coût : M (80k à 120k)**
 
@@ -190,14 +144,17 @@ Vue imprimable ou PNG résumant la semaine. Confort pur, aucune urgence.
 
 ## Recommandation d'ordre
 
-Découper `app.js` d'abord, c'est ce qui rend tout le reste moins cher. Puis la
-priorité 2, qui est courte et répond à la question que tu te poses en ce moment
-sur ta Brikka. Puis la priorité 1, qui est la grosse pièce et la plus utile à
-terme.
+**Découper `app.js` d'abord.** Il dépasse 2500 lignes et c'est devenu le vrai
+frein. Le nouvel écran des réglages a été mis dans son propre fichier
+(`js/reglages.js`) précisément pour ne pas aggraver, mais ce n'est qu'un
+contournement.
 
-Les priorités 3 et 4 peuvent s'intercaler à tout moment, elles ne dépendent de
-rien.
+Puis la priorité 2, courte, qui répond à la question du moment sur la Brikka.
+Puis la priorité 1, la grosse pièce et la plus utile à terme.
 
-Tout ce qui concerne les moyennes par café ou par descripteur (6, 9) gagne à
-attendre : avec 11 extractions, ces cartes se tairont plus souvent qu'elles ne
-parleront.
+La priorité 3 peut s'intercaler à tout moment, elle ne dépend de rien.
+
+Le radar par café gagne à attendre : avec 11 extractions il se taira plus souvent
+qu'il ne parlera. Même remarque pour l'écran des réglages qui vient d'être livré,
+il dira surtout "refais le même réglage encore une fois" pendant quelques
+semaines, et c'est le comportement voulu.

@@ -141,6 +141,23 @@ button { font-family: inherit; }
   flex-wrap: wrap;
 }
 
+/* Ecran Mes meilleurs reglages : une carte par cafe. */
+#reglages-liste { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.reglage { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.reglage.inactif { opacity: 0.6; }
+.reglage-entete { display: flex; flex-direction: column; gap: 2px; }
+.reglage-entete b { font-family: var(--serif); font-size: 1.05rem; color: var(--encre); }
+.reglage-moyenne { font-size: 0.78rem; color: var(--attenue); }
+.reglage-note { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.reglage-note b { font-family: var(--serif); font-size: 2rem; color: var(--ok); line-height: 1; }
+.reglage-note span { font-size: 0.78rem; color: var(--attenue); }
+.reglage-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.reglage-chip {
+  font-size: 0.78rem; padding: 3px 10px; border-radius: 999px;
+  background: var(--panneau-2); border: 1px solid var(--lignes); color: var(--texte);
+}
+.ecran-intro { color: var(--attenue); max-width: 70ch; margin: 0 0 18px; }
+
 /* Barre de selection du comparateur. */
 .barre-comparaison {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;

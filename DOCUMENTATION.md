@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.23,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.24,
 2026-08-12.
 
 ## 1. Vue d'ensemble
@@ -13,8 +13,10 @@ chargés dans cet ordre : chart.umd, i18n, grind, recettes, demo-data, data,
 charts, app. Chaque fichier expose un objet global (I18N, GRIND, DATA, CHARTS)
 ou des constantes globales (RECETTES_DEPART, etc.). app.js est une IIFE.
 
-Cinq écrans dans une page unique, bascule par nav et hash (#tableau, #saisie,
-#historique, #reference, #guide). Bouton flottant de saisie rapide en bas à
+SIX écrans dans une page unique, bascule par nav et hash. La liste fait foi
+dans `ECRANS` (app.js) : tableau, saisie, historique, reglages, reference, guide.
+Elle était codée en dur en deux endroits, ce qui obligeait à penser aux deux à
+chaque ajout. Bouton flottant de saisie rapide en bas à
 droite (café + recette + note, le reste prérempli).
 
 ## 2. Modèle de données
@@ -422,6 +424,35 @@ Autres points, chacun pour une raison :
      la première extraction de la fenêtre), pas aux 18 semaines. Diviser par 18
      alors que le carnet a deux semaines donnerait un chiffre faux et
      décourageant.
+
+## 6 octies. Écran Mes meilleurs réglages
+
+`js/reglages.js`, chargé entre data.js et app.js. Le CALCUL y vit, sans aucune
+dépendance au DOM, ce qui le rend testable sans navigateur. app.js ne fait que
+l'affichage. Ce découpage est délibéré : app.js dépasse 2500 lignes et le backlog
+demande de le scinder, autant ne pas aggraver en attendant.
+
+PAR CAFÉ et pas en général. Le meilleur réglage d'un Sáng Tạo 4 déjà moulu à
+82 pour cent de café n'a rien à voir avec celui d'un Balanced en grains : une
+moyenne globale mélangerait les deux et ne serait actionnable pour aucun.
+
+Une COMBINAISON regroupe les leviers que Chris contrôle au moment de faire la
+tasse : recette, mouture, puissance de feu, préchauffage. Le café est la clé de
+regroupement, pas un levier. La note et le diagnostic sont des résultats, donc
+exclus. Les valeurs vides comptent : "pas de mouture" est une information sur un
+café déjà moulu, pas une donnée manquante.
+
+Seuil de `MIN_TASSES` (3), le même que les insights. Quand rien ne sort, la carte
+dit POURQUOI et distingue les deux cas, qui n'appellent pas la même action :
+
+- `pas_assez` : moins de trois tasses notées en tout.
+- `eparpille` : assez de tasses, mais chacune à un réglage différent. Le conseil
+  est alors de REFAIRE le réglage le plus joué, pas d'en essayer un nouveau, et le
+  nombre de tasses manquantes est annoncé.
+
+"Refaire cette tasse" duplique la tasse de RÉFÉRENCE de la combinaison, la mieux
+notée (la plus récente à égalité), plutôt que de reconstruire les champs un par
+un : on récupère ainsi tout le reste du contexte, tasse comprise.
 
 ## 6 septies. Régularité, et pourquoi pas l'écart type
 
@@ -1074,3 +1105,6 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   seulement les 8 colonnes), comparateur de deux extractions avec surbrillance des
   seules différences, et KPI de régularité en écart moyen. Priorités 4, 5 et 8 du
   backlog.
+- v7.24 : nouvel écran "Mes meilleurs réglages", un par café, avec le calcul
+  isolé dans `js/reglages.js` sans DOM. Priorité 6 du backlog, révisée : par café
+  et non en général, et sur sa propre page.

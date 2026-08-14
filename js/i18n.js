@@ -17,6 +17,9 @@ const I18N = (() => {
   const UI = {
     "Carnet d'extraction": "Brew journal",
     "Ce que tes données disent": "What your data says",
+    "Réglages": "Settings",
+    "Mes meilleurs réglages": "My best settings",
+    "Pour chaque café, la combinaison qui a le mieux marché chez toi. Par café et pas en général : le meilleur réglage d'un café déjà moulu n'a rien à voir avec celui d'un café en grains.": "For each coffee, the combination that worked best for you. Per coffee rather than overall: the best setting for a pre ground coffee has nothing to do with the best one for whole beans.",
     "Comparer deux extractions": "Compare two brews",
     "Comparer": "Compare",
     "Annuler": "Cancel",
@@ -686,6 +689,19 @@ const I18N = (() => {
     oui: { fr: "oui", en: "yes" },
     non: { fr: "non", en: "no" },
 
+    // Ecran Mes meilleurs reglages.
+    rg_moyenne: { fr: "{m} de moyenne sur {n} tasses", en: "{m} average over {n} cups" },
+    rg_sur: { fr: "sur {n} tasses", en: "over {n} cups" },
+    rg_mieux: { fr: "{x} point de mieux que ta moyenne sur ce café", en: "{x} point better than your average on this coffee" },
+    rg_moins: { fr: "{x} point sous ta moyenne sur ce café", en: "{x} point below your average on this coffee" },
+    rg_feu: { fr: "feu {f} / 10", en: "flame {f} / 10" },
+    rg_refaire: { fr: "Refaire cette tasse", en: "Brew this again" },
+    rg_preremplie: { fr: "Saisie préremplie avec ce réglage", en: "Entry prefilled with these settings" },
+    rg_aucune: { fr: "Aucune tasse notée sur ce café pour l instant.", en: "No scored cup on this coffee yet." },
+    rg_pas_assez: { fr: "Encore {n} tasse au même réglage et un gagnant apparaîtra. Il en faut {s} identiques.", en: "One more cup at the same settings and a winner appears, {n} to go. {s} identical ones are needed." },
+    rg_eparpille: { fr: "Assez de tasses, mais chacune à un réglage différent. Refais {n} fois ton réglage le plus joué plutôt que d en essayer un nouveau.", en: "Enough cups, but each at different settings. Repeat your most used setting {n} more times rather than trying another one." },
+    rg_sans_cafe: { fr: "Ajoute un café pour voir tes réglages ici.", en: "Add a coffee to see your settings here." },
+
     kpi_regularite: { fr: "régularité, écart moyen à ta moyenne", en: "consistency, average gap from your mean" },
 
     hm_st_tasses: { fr: "tasses", en: "cups" },
@@ -983,7 +999,7 @@ const I18N = (() => {
     "#conv-resultat,#table-plages,#avertissements,#aside-recette,#aside-cafe,#duel-machines," +
     "#tetsu-bloc,#pap-etapes,#g-heatmap,#reglette,#f-diagnostic,#f-descripteurs,#f-recette,#f-cafe," +
     "#h-cafe,#h-diagnostic,#q-cafe,#q-recette,#c-recette,#donnees-statut,#toast,#pap-params," +
-    "#insights,#sync-statut,#heatmap-stats,#version-site,#comparaison-compte," +
+    "#insights,#sync-statut,#heatmap-stats,#version-site,#comparaison-compte,#reglages-liste," +
     "#comparaison-resume,#comparaison-titres,#comparaison-corps," +
     "#vide-mouture,#vide-gouts,#vide-duel,#note-gouts";
 

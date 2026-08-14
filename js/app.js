@@ -113,6 +113,7 @@
 
   // ---------- Navigation ----------
 
+  const ECRANS = ["tableau", "saisie", "historique", "reglages", "reference", "guide"];
   let ecranCourant = "tableau";
 
   function activerEcran(nom) {
@@ -128,6 +129,7 @@
 
   function rendreEcranCourant(force) {
     if (ecranCourant === "tableau") rendreTableau();
+    else if (ecranCourant === "reglages") rendreReglages();
     else if (ecranCourant === "historique") rendreHistorique();
     else if (ecranCourant === "reference" && force) rendreConvertisseur();
   }
@@ -643,7 +645,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.23";
+  const VERSION = "7.24";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -1653,6 +1655,61 @@
     $("#modale-comparaison").showModal();
   }
 
+  /* ---------- Mes meilleurs réglages ----------
+     Le calcul vit dans js/reglages.js, sans DOM, pour être testable sans
+     navigateur. Ici, uniquement l'affichage. */
+  function carteReglage(bilan) {
+    const c = bilan.cafe;
+    const entete = '<div class="reglage-entete"><b>' + c.nom + "</b>" +
+      (c.actif === 0 ? ' <span class="cafe-meta">' + I18N.t("li_inactif") + "</span>" : "") +
+      (bilan.moyenne !== null
+        ? '<span class="reglage-moyenne">' + I18N.t("rg_moyenne", { m: fmtDecimal(bilan.moyenne, 1), n: bilan.total }) + "</span>"
+        : "") + "</div>";
+
+    if (!bilan.meilleure) {
+      const cle = bilan.raison === "aucune" ? "rg_aucune"
+        : bilan.raison === "pas_assez" ? "rg_pas_assez" : "rg_eparpille";
+      return '<article class="carte reglage' + (c.actif === 0 ? " inactif" : "") + '">' + entete +
+        '<p class="carte-vide">' + I18N.t(cle, { n: bilan.manque, s: REGLAGES.MIN_TASSES }) + "</p></article>";
+    }
+
+    const m = bilan.meilleure;
+    // Écart entre la combinaison gagnante et la moyenne du café : c'est lui qui
+    // dit si le réglage vaut vraiment le coup ou si tout se vaut.
+    const ecart = m.moyenne - bilan.moyenne;
+    const chips = [
+      m.recette ? '<span class="reglage-chip">' + I18N.tr(m.recette) + "</span>" : "",
+      m.mouture ? '<span class="reglage-chip">' + I18N.t("molette") + " " + m.mouture + "</span>"
+        : '<span class="reglage-chip">' + I18N.t("paquet") + "</span>",
+      m.puissance ? '<span class="reglage-chip">' + I18N.t("rg_feu", { f: m.puissance }) + "</span>" : "",
+      m.prechauffe ? '<span class="reglage-chip">' + I18N.t("d_prechauffee") + "</span>" : "",
+    ].filter(Boolean).join("");
+
+    return '<article class="carte reglage' + (c.actif === 0 ? " inactif" : "") + '">' + entete +
+      '<div class="reglage-note"><b>' + fmtDecimal(m.moyenne, 1) + "</b><small> / 10</small>" +
+      '<span>' + I18N.t("rg_sur", { n: m.n }) +
+      (Math.abs(ecart) >= 0.2 ? ", " + I18N.t(ecart > 0 ? "rg_mieux" : "rg_moins",
+        { x: fmtDecimal(Math.abs(ecart), 1) }) : "") + "</span></div>" +
+      '<div class="reglage-chips">' + chips + "</div>" +
+      '<button type="button" class="btn btn-petit" data-refaire="' + m.referenceId + '">' +
+      I18N.t("rg_refaire") + "</button></article>";
+  }
+
+  function rendreReglages() {
+    const exts = DATA.state.extractions;
+    const bilans = REGLAGES.tous(DATA.state.cafes, exts);
+    $("#reglages-liste").innerHTML = bilans.length
+      ? bilans.map(carteReglage).join("")
+      : '<p class="carte-vide">' + I18N.t("rg_sans_cafe") + "</p>";
+    $("[data-refaire]").forEach(b => b.addEventListener("click", () => {
+      const ext = DATA.state.extractions.find(e => e.id === b.dataset.refaire);
+      if (!ext) return;
+      chargerExtractionDansSaisie(ext, true);
+      activerEcran("saisie");
+      toast(I18N.t("rg_preremplie"));
+    }));
+  }
+
   function remplirFiltres() {
     const selCafe = $("#h-cafe");
     const v = selCafe.value;
@@ -2282,7 +2339,7 @@
     $$("[data-va]").forEach(b => b.addEventListener("click", () => activerEcran(b.dataset.va)));
     window.addEventListener("hashchange", () => {
       const h = location.hash.slice(1);
-      if (["tableau", "saisie", "historique", "reference", "guide"].includes(h) && h !== ecranCourant) activerEcran(h);
+      if (ECRANS.includes(h) && h !== ecranCourant) activerEcran(h);
     });
 
     // Thème
@@ -2605,7 +2662,7 @@
     if (restaurerBrouillon()) toast(I18N.t("t_brouillon"));
 
     const h = location.hash.slice(1);
-    activerEcran(["tableau", "saisie", "historique", "reference", "guide"].includes(h) ? h : "tableau");
+    activerEcran(ECRANS.includes(h) ? h : "tableau");
 
     // Le système relâche le verrou d'écran quand l'onglet part en arrière plan.
     // Au retour, si le chrono tourne toujours, on le reprend.

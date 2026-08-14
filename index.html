@@ -29,6 +29,7 @@
       <button class="nav-btn actif" data-ecran="tableau">Tableau de bord</button>
       <button class="nav-btn" data-ecran="saisie">Saisie</button>
       <button class="nav-btn" data-ecran="historique">Historique</button>
+      <button class="nav-btn" data-ecran="reglages">Réglages</button>
       <button class="nav-btn" data-ecran="reference">Référence</button>
       <button class="nav-btn" data-ecran="guide">Guide</button>
     </nav>
@@ -375,6 +376,13 @@
       <p>Aucune extraction ne correspond à ces filtres.</p>
     </div>
   </div>
+</section>
+
+<!-- ================= ECRAN : MES REGLAGES ================= -->
+<section id="ecran-reglages" class="ecran">
+  <h2>Mes meilleurs réglages</h2>
+  <p class="ecran-intro">Pour chaque café, la combinaison qui a le mieux marché chez toi. Par café et pas en général : le meilleur réglage d'un café déjà moulu n'a rien à voir avec celui d'un café en grains.</p>
+  <div id="reglages-liste"></div>
 </section>
 
 <!-- ================= ECRAN 4 : REFERENCE ================= -->
@@ -1066,6 +1074,7 @@ Cảm ơn shop.</pre>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
 <script src="js/sync.js"></script>
 <script src="js/data.js"></script>
+<script src="js/reglages.js"></script>
 <script src="js/charts.js"></script>
 <script src="js/app.js"></script>
 </body>

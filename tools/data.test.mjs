@@ -17,7 +17,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const SCRIPTS = ["js/grind.js", "js/recettes.js", "js/demo-data.js", "js/sync.js", "js/data.js"];
+const SCRIPTS = ["js/grind.js", "js/recettes.js", "js/demo-data.js", "js/sync.js", "js/data.js", "js/reglages.js"];
 
 const source = SCRIPTS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 const charger = new Function(
@@ -25,9 +25,9 @@ const charger = new Function(
   "location",
   "indexedDB",
   "console",
-  source + "\nreturn { DATA, SYNC, GRIND, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND };"
+  source + "\nreturn { DATA, SYNC, GRIND, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND, REGLAGES };"
 );
-const { DATA, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND } =
+const { DATA, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND, REGLAGES } =
   charger(undefined, { protocol: "file:" }, undefined, console);
 
 let failures = 0;
@@ -278,6 +278,57 @@ check("aucun tiret cadratin dans les descriptions",
   Object.values(DIAGNOSTIC_QUAND).every(v => !TIRETS_INTERDITS.test(v)));
 check("la bulle tient sur deux lignes pour chaque diagnostic",
   DIAGNOSTICS.every(d => [DIAGNOSTIC_QUAND[d], DIAGNOSTIC_CORRECTIONS[d]].filter(Boolean).length === 2));
+
+// 12. Meilleur reglage PAR CAFE (js/reglages.js). Par cafe et pas en general :
+// le meilleur reglage d'un cafe deja moulu a 82 pour cent n'a rien a voir avec
+// celui d'un cafe en grains, une moyenne globale melangerait les deux.
+const brew = (id, cafe, recette, mouture, feu, prech, note) => ({
+  id, cafe_id: cafe, recette, mouture_dial: mouture, puissance_feu: feu,
+  eau_prechauffee: prech ? 1 : "", note_sur_10: note,
+  date_heure: "2026-08-" + id.padStart(2, "0") + "T10:00",
+});
+
+const jeu = [
+  brew("01", "c1", "Brikka classique", "1.2.0", 3, false, 8),
+  brew("02", "c1", "Brikka classique", "1.2.0", 3, false, 8.5),
+  brew("03", "c1", "Brikka classique", "1.2.0", 3, false, 7.5),
+  brew("04", "c1", "Brikka classique", "1.3.0", 6, false, 6),
+  brew("05", "c1", "Brikka classique", "1.3.0", 6, false, 5.5),
+  brew("06", "c1", "Brikka classique", "1.3.0", 6, false, 6.5),
+];
+const bilan = REGLAGES.pourCafe("c1", jeu);
+check("la combinaison gagnante est trouvee", bilan.meilleure !== null);
+check("c'est la mieux notee", Math.round(bilan.meilleure.moyenne * 10) / 10 === 8, String(bilan.meilleure.moyenne));
+check("elle porte ses reglages", bilan.meilleure.mouture === "1.2.0" && bilan.meilleure.puissance === "3");
+check("la tasse de reference est la mieux notee", bilan.meilleure.referenceId === "02", bilan.meilleure.referenceId);
+
+const maigre = REGLAGES.pourCafe("c2", [brew("10", "c2", "R", "1.2.0", 3, false, 8), brew("11", "c2", "R", "1.2.0", 3, false, 7)]);
+check("sous le seuil, rien n'est affirme", maigre.meilleure === null && maigre.raison === "pas_assez");
+check("et on dit combien il manque", maigre.manque === 1, String(maigre.manque));
+
+const eparpille = REGLAGES.pourCafe("c3", ["1.2.0", "1.3.0", "1.4.0", "1.5.0"]
+  .map((m, k) => brew("2" + k, "c3", "R", m, 3, false, 7)));
+check("assez de tasses mais toutes differentes : rien", eparpille.meilleure === null);
+check("la raison distingue ce cas", eparpille.raison === "eparpille", eparpille.raison);
+
+const prech = [false, false, false, true, true, true]
+  .map((p, k) => brew("3" + k, "c4", "R", "1.2.0", 3, p, p ? 9 : 6));
+const avecPrech = REGLAGES.pourCafe("c4", prech);
+check("le prechauffage distingue deux combinaisons", avecPrech.combinaisons === 2, String(avecPrech.combinaisons));
+check("la meilleure des deux gagne", avecPrech.meilleure.prechauffe === true);
+
+const moulu = ["40", "41", "42"].map(id => brew(id, "c5", "R", "", 3, false, 7));
+check("un cafe deja moulu a une combinaison valide sans mouture",
+  REGLAGES.pourCafe("c5", moulu).meilleure?.mouture === "");
+
+check("un cafe jamais extrait est signale, pas ignore",
+  REGLAGES.pourCafe("c9", []).raison === "aucune");
+
+const classe = REGLAGES.tous(
+  [{ id: "c2", nom: "Sans", actif: 1 }, { id: "c1", nom: "Avec", actif: 1 }, { id: "cz", nom: "Off", actif: 0 }],
+  jeu.concat([brew("10", "c2", "R", "1.2.0", 3, false, 8)]));
+check("les cafes avec resultat passent devant", classe[0].cafe.id === "c1", classe.map(x => x.cafe.id).join());
+check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif === 0);
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);
