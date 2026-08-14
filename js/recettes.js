@@ -10,7 +10,10 @@ const RECETTES_DEPART = [
     nom: "Brikka classique",
     numero: "",
     methode: "Brikka",
-    famille: "",
+    // Famille ajoutée en v7.17 pour partager une carte avec la variante à l'eau
+    // bouillante. Le NOM ne change pas, seulement le regroupement d'affichage.
+    famille: "brikka-classique",
+    variante: "Standard",
     sousTitre: "La base quotidienne de la Brikka",
     dose: 14, eau: 100, temp: 85, tempTexte: "80 à 90 °C",
     dial: "1.2.0",
@@ -26,6 +29,37 @@ const RECETTES_DEPART = [
     pourQui: "L'usage quotidien de la Brikka, 14 g pour environ 90 ml en tasse.",
     cafesAssocies: ["Trung Nguyên Sáng Tạo 4", "Bana Cofe G4", "Là Việt Balanced"],
     note: "Après un Bana G4 ou un Sáng Tạo 4 : rinçage immédiat à l'eau chaude après usage, le sel et les graisses attaquent l'aluminium.",
+    parDefaut: false, avancee: false, variantes: false, actif: 1,
+  },
+  {
+    // Protocole distinct, pas une simple case à cocher : l'eau bouillante change
+    // la montée en pression, la durée et le comportement de la soupape. Réglé
+    // pour corriger le défaut observé, 4 minutes de cuisson puis un écoulement
+    // de 5 secondes. Mouture plus grossière que la Standard pour que la soupape
+    // lâche plus tôt et coule plus longtemps au lieu d'exploser.
+    id: "brikka-classique-bouillante",
+    nom: "Brikka classique (eau préchauffée)",
+    numero: "",
+    methode: "Brikka",
+    famille: "brikka-classique",
+    variante: "Eau préchauffée",
+    sousTitre: "Eau bouillante, flamme forte au départ, mouture plus grossière",
+    dose: 14, eau: 100, temp: 100, tempTexte: "eau bouillante, versée aussitôt",
+    dial: "1.3.0",
+    ratioTexte: "environ 1:7, environ 90 ml en tasse",
+    totalTexte: "montée en pression sous 2 minutes, écoulement de 20 à 45 secondes",
+    lait: false,
+    etapes: [
+      { t: null, texte: "Faire bouillir l'eau et la verser tout de suite : tiède, on cumule les inconvénients des deux méthodes." },
+      { t: null, texte: "Ne jamais dépasser la soupape." },
+      { t: null, texte: "Égaliser la mouture, ne jamais tasser : un panier tassé fait percer un canal." },
+      { t: null, texte: "Flamme forte jusqu'aux premières gouttes : c'est avant l'écoulement que la mouture cuit." },
+      { t: null, texte: "Baisser la flamme dès que ça coule, pour allonger l'écoulement." },
+      { t: null, texte: "Retirer du feu dès les premiers gargouillis." },
+    ],
+    pourQui: "L'alternative à tester contre la Standard : même dose, même eau, seuls la température de départ, la flamme et la mouture changent.",
+    cafesAssocies: ["Trung Nguyên Sáng Tạo 4", "Bana Cofe G4", "Là Việt Balanced"],
+    note: "Si l'écoulement dure moins de 10 secondes, la mouture est trop fine : passer à 1.4.0. Noter le temps total ET le temps d'écoulement, c'est leur écart qui dit combien de temps la mouture a cuit.",
     parDefaut: false, avancee: false, variantes: false, actif: 1,
   },
   {

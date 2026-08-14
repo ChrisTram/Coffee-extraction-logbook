@@ -25,9 +25,9 @@ const charger = new Function(
   "location",
   "indexedDB",
   "console",
-  source + "\nreturn { DATA, SYNC, GRIND };"
+  source + "\nreturn { DATA, SYNC, GRIND, RECETTES_DEPART };"
 );
-const { DATA } = charger(undefined, { protocol: "file:" }, undefined, console);
+const { DATA, RECETTES_DEPART } = charger(undefined, { protocol: "file:" }, undefined, console);
 
 let failures = 0;
 function check(label, condition, detail) {
@@ -142,6 +142,48 @@ check("ligne inconnue du CSV : estampillee", nouvelle[0].maj_le > 0);
 
 const sansConnues = reporte([{ id: "e3", maj_le: 0 }], undefined, DATA.EXT_COLS);
 check("aucune ligne connue : ne jette pas", sansConnues.length === 1 && sansConnues[0].maj_le > 0);
+
+// 8. Separation de la recette a l'eau prechauffee. Le prechauffage change la
+// montee en pression, la duree et le comportement de la soupape : c'est un
+// protocole distinct, pas une case a cocher, donc il merite sa propre ligne dans
+// les comparaisons de recettes.
+const CLASSIQUE = RECETTES_DEPART.find(r => r.id === "brikka-classique");
+const BOUILLANTE = RECETTES_DEPART.find(r => r.id === "brikka-classique-bouillante");
+check("le nom de Brikka classique reste inchange", CLASSIQUE.nom === "Brikka classique", CLASSIQUE.nom);
+check("les deux partagent une famille", CLASSIQUE.famille === "brikka-classique" && BOUILLANTE.famille === CLASSIQUE.famille);
+check("dose et eau identiques, comparaison propre", BOUILLANTE.dose === CLASSIQUE.dose && BOUILLANTE.eau === CLASSIQUE.eau);
+
+// migrerDonnees n'est pas exposee : on passe par importerTexteCSV, qui l'appelle
+// avant de persister. La persistance echoue faute d'IndexedDB, sans importance.
+const PRECHAUFFEES = [6, 7, 11];
+const NOTES = { 1: 8.5, 2: 8, 3: 8, 4: 8.5, 5: 7, 6: 7, 7: 6, 8: 7, 9: 7.5, 10: 7, 11: 4.5 };
+const lignes = [];
+for (let n = 1; n <= 11; n += 1) {
+  lignes.push({
+    id: "e" + n, date_heure: "2026-08-" + String(n + 2).padStart(2, "0") + "T10:00",
+    cafe_id: "c1", methode: "Brikka", recette: "Brikka classique", dose_g: 14,
+    eau_prechauffee: PRECHAUFFEES.includes(n) ? 1 : "", note_sur_10: NOTES[n],
+  });
+}
+DATA.importerTexteCSV(DATA.csvSerialiser(lignes, DATA.EXT_COLS)).catch(() => {});
+await new Promise(r => setTimeout(r, 80));
+
+const NOUVELLE = "Brikka classique (eau préchauffée)";
+const deplacees = DATA.state.extractions.filter(e => e.recette === NOUVELLE);
+const restees = DATA.state.extractions.filter(e => e.recette === "Brikka classique");
+check("les 3 extractions prechauffees sont deplacees", deplacees.length === 3, String(deplacees.length));
+check("les 8 autres restent en place", restees.length === 8, String(restees.length));
+check("aucune non prechauffee deplacee", restees.every(e => Number(e.eau_prechauffee) !== 1));
+check("notes intactes apres migration", DATA.state.extractions.find(e => e.id === "e11").note_sur_10 === 4.5);
+check("lignes deplacees estampillees pour la synchro", deplacees.every(e => Number(e.maj_le) > 0));
+
+DATA.importerTexteCSV(DATA.csvSerialiser(DATA.state.extractions, DATA.EXT_COLS)).catch(() => {});
+await new Promise(r => setTimeout(r, 80));
+check(
+  "migration idempotente : le rejeu ne redeplace rien",
+  DATA.state.extractions.filter(e => e.recette === NOUVELLE).length === 3,
+  String(DATA.state.extractions.filter(e => e.recette === NOUVELLE).length)
+);
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

@@ -427,7 +427,24 @@ const DATA = (() => {
         .map(e => e.date_heure).sort();
       if (dates.length) c.date_ajout = dates[0].slice(0, 10);
     });
-    // 6. Achats : un sachet implicite pour chaque café qui a un format mais aucun
+    // 6 bis. Les extractions faites à l'eau préchauffée quittent "Brikka
+    //    classique" pour la variante dédiée. Le préchauffage n'est pas un détail
+    //    de service : il change la montée en pression, la durée et le
+    //    comportement de la soupape, donc c'est un protocole distinct qui mérite
+    //    sa ligne dans les comparaisons.
+    //    IDEMPOTENTE par construction : après le déplacement, `recette` ne vaut
+    //    plus "Brikka classique", donc un rechargement ne redéplace rien. Et on
+    //    ne touche QUE les lignes qui portent exactement l'ancien nom, une
+    //    extraction déjà rangée à la main est laissée en place.
+    const RECETTE_PRECHAUFFEE = "Brikka classique (eau préchauffée)";
+    state.extractions.forEach(e => {
+      if (e.recette === "Brikka classique" && Number(e.eau_prechauffee) === 1) {
+        e.recette = RECETTE_PRECHAUFFEE;
+        estampiller(e);
+      }
+    });
+
+    // 7. Achats : un sachet implicite pour chaque café qui a un format mais aucun
     //    achat. IDEMPOTENTE grâce au test "aucun achat pour ce café", donc elle ne
     //    recrée rien à chaque chargement et n'écrase aucun achat saisi à la main.
     //    Sans elle, le stock serait incalculable sur tout l'existant.

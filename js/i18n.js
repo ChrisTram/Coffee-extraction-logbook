@@ -17,6 +17,9 @@ const I18N = (() => {
   const UI = {
     "Carnet d'extraction": "Brew journal",
     "Ce que tes données disent": "What your data says",
+    "Standard": "Standard",
+    "Eau préchauffée": "Preheated water",
+    "Eau bouillante, flamme forte au départ, mouture plus grossière": "Boiling water, strong flame to start, coarser grind",
     "Quels goûts font tes bonnes tasses": "Which flavours make your good cups",
     "Nouveau sachet": "New bag",
     "Enregistre un rachat : le stock repart du format plein et la fraîcheur suit la nouvelle date de torréfaction.": "Record a repurchase: stock restarts from the full bag size and freshness follows the new roast date.",

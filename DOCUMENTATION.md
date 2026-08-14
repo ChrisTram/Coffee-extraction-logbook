@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.16,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.17,
 2026-08-12.
 
 ## 1. Vue d'ensemble
@@ -101,7 +101,7 @@ etapes, pour_qui, cafes_associes, note, par_defaut, avancee, variantes, actif`
 - `etapes` : segments "m:ss texte" ou "- texte" séparés par " || ".
 - `famille` + `variante` : les recettes d'une même famille partagent UNE
   carte sur la page Référence avec des pilules de bascule (familles :
-  chronicler, costaud, brikka-lait). Elles restent des recettes DISTINCTES
+  chronicler, costaud, brikka-lait, brikka-classique). Elles restent des recettes DISTINCTES
   en base et dans l'historique.
 - `lait` 0/1 : affiche le champ lait en saisie, prérempli contenance de la
   tasse moins volume de café estimé.
@@ -181,6 +181,14 @@ chargement (init, ouverture de dossier, import, chargement de la démo) :
    aucun achat. IDEMPOTENTE grâce au test "aucun achat pour ce café", donc elle ne
    recrée rien à chaque chargement et n'écrase aucun achat saisi. Sans elle, le
    stock serait incalculable sur tout l'existant.
+
+6 bis. Extractions à l'eau préchauffée déplacées de "Brikka classique" vers
+   "Brikka classique (eau préchauffée)". Le préchauffage n'est pas un détail de
+   service : il change la montée en pression, la durée et le comportement de la
+   soupape, donc c'est un protocole distinct qui mérite sa ligne dans les
+   comparaisons. IDEMPOTENTE par construction, après le déplacement `recette` ne
+   vaut plus l'ancien nom. Ne touche que les lignes portant exactement
+   "Brikka classique", une extraction rangée à la main est laissée en place.
 
 Pour tout futur renommage ou changement de schéma : ajouter l'entrée dans
 RENOMMAGES_RECETTES ou un fallback dans normaliserX, jamais de rupture.
@@ -908,3 +916,11 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
 - v7.16 : durées de chrono saisies en minutes ET secondes (stockage inchangé,
   toujours en secondes), et brouillon de la saisie conservé dans localStorage quand
   on quitte l'onglet. Détail et pièges en section 7 bis.
+- v7.17 : "Brikka classique (eau préchauffée)" devient une recette à part
+  entière, dans la famille `brikka-classique` avec la Standard, dont le NOM est
+  inchangé. Même dose et même eau que la Standard pour que la comparaison soit
+  propre, seuls la température de départ, la conduite de la flamme et la mouture
+  (1.3.0 au lieu de 1.2.0) changent. Migration des extractions déjà cochées "eau
+  préchauffée". Critère retenu pour trancher ce genre de question : la recette
+  décrit l'EXTRACTION. Préchauffer en fait partie, allonger après coup non, ce
+  dernier reste donc un champ.
