@@ -558,10 +558,51 @@ input:focus, select:focus, textarea:focus {
 
 .grille-nombres {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 10px 12px;
+  /* 220px donne QUATRE colonnes sur un ecran large. Ce n est pas arbitraire :
+     en Brikka les champs visibles occupent exactement 8 unites de colonne
+     (7 champs dont la tasse qui en prend 2), soit deux lignes pleines, sans
+     cellule vide au milieu. A 5 colonnes la tasse se retrouvait seule sur sa
+     ligne avec trois trous a cote. */
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px 12px;
+  /* start : tous les champs se calent en HAUT de leur ligne. Sans ca, un champ
+     avec une aide sous l'input etirait sa cellule et decalait ses voisins. */
+  align-items: start;
 }
+/* Le gap de la grille suffit : le margin des champs s'y ajoutait et creait des
+   espacements irreguliers d'une ligne a l'autre. */
+.grille-nombres .champ { margin-bottom: 0; }
+/* Reserve aux formulaires cafe et recette. La grille de SAISIE n en utilise
+   plus : un element large ne tient pas dans une fin de ligne et bascule seul
+   sur la suivante, ce qui creait un trou au MILIEU du formulaire. Toutes ses
+   cellules font une colonne, les trous sont donc toujours en fin. */
 .champ-double { grid-column: span 2; }
+
+/* Options a cocher, hors de la grille chiffree. Elles n'ont pas de libelle au
+   dessus de leur controle, donc melangees aux champs numeriques elles
+   s'alignaient plus haut que leurs voisines. Regroupees, elles se lisent comme
+   ce qu'elles sont. */
+.options-saisie {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.option-saisie {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1 1 240px;
+  min-width: 0;
+  padding: 10px 12px;
+  background: var(--panneau-2);
+  border: 1px solid var(--lignes);
+  border-radius: var(--rayon-petit);
+}
+.option-saisie .champ-hint { margin: 0; }
+.option-saisie input[type="number"] { max-width: 110px; }
+/* Rien a afficher : le conteneur ne doit pas laisser un bloc vide. */
+.options-saisie:not(:has(.option-saisie:not([hidden]))) { display: none; }
 
 /* Méthode : deux gros boutons */
 .choix-methode { display: flex; gap: 10px; }

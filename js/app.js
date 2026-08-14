@@ -628,7 +628,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.21";
+  const VERSION = "7.22";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -804,7 +804,6 @@
     $$(".btn-methode").forEach(b => b.classList.toggle("actif", b.dataset.methode === m));
     // Champs propres à chaque méthode.
     $("#champ-ajout-eau").hidden = m !== "Brikka";
-    $("#champ-prechauffe").hidden = m !== "Brikka";
     $("#champ-puissance").hidden = m !== "Brikka";
     $("#champ-agitation").hidden = m !== "Switch";
     // Tasse par défaut : Flat White Egg en Brikka, Classic Mug en Switch.
@@ -815,8 +814,21 @@
       $("#f-tasse").value = defauts[m];
     }
     if (!garderRecette) remplirSelectRecettes();
+    majChampPrechauffe();
     majAvertissements();
     majLive();
+  }
+
+  /* La case "eau préchauffée" n'a de sens que quand la recette ne tranche pas
+     déjà la question. Sur la famille brikka-classique, c'est LA différence entre
+     les deux variantes : afficher la case en plus laisserait enregistrer une
+     contradiction, du genre recette préchauffée avec la case décochée.
+     On masque donc la case et on déduit la valeur de la recette. */
+  function majChampPrechauffe() {
+    const r = trouverRecette($("#f-recette").value);
+    const familleTranche = !!r && FAMILLES_PRECHAUFFAGE.includes(r.famille || "");
+    $("#champ-prechauffe").hidden = saisie.methode !== "Brikka" || familleTranche;
+    if (familleTranche) $("#f-prechauffe").checked = RECETTES_EAU_PRECHAUFFEE.includes(r.id);
   }
 
   // La recette demande-t-elle de remuer ? Coche l'agitation par défaut.
@@ -900,6 +912,7 @@
     $("#f-mouture").value = cafeCourantMoulu() ? "" : r.dial;
     if (r.methode === "Brikka") $("#f-puissance").value = r.puissance_feu || DEFAULT_PUISSANCE_FEU;
     majAgitationDepuisRecette();
+    majChampPrechauffe();
     majLait();
     majLive();
     majAvertissements();
@@ -1359,6 +1372,7 @@
     $("#f-eau-ajoutee").hidden = !$("#f-ajout-eau-oui").checked;
     $("#f-eau-ajoutee").value = ext.eau_ajoutee_ml !== undefined ? ext.eau_ajoutee_ml : "";
     $("#f-prechauffe").checked = Number(ext.eau_prechauffee) === 1;
+    majChampPrechauffe();
     $("#f-puissance").value = ext.puissance_feu || "";
     $("#f-agitation-oui").checked = ext.agitation_nb !== "" && ext.agitation_nb !== undefined;
     $("#f-agitation").hidden = !$("#f-agitation-oui").checked;

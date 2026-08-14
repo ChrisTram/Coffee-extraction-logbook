@@ -160,6 +160,8 @@
 
     <div id="avertissements" class="avertissements" aria-live="polite"></div>
 
+    <!-- UNE seule grille pour tous les champs chiffrés : deux grilles côte à
+         côte laissaient des cellules vides en fin de chacune. -->
     <div class="grille-nombres">
       <div class="champ">
         <label for="f-dose">Dose (g)<span class="requis" title="Obligatoire">*</span></label>
@@ -171,8 +173,8 @@
       </div>
       <div class="champ">
         <label for="f-temp">Température (°C)</label>
-        <input type="number" id="f-temp" step="1" min="60" max="100" inputmode="decimal" placeholder="95">
-        <span class="champ-hint">Sans thermomètre : eau bouillie qui a fini de buller, environ 95.</span>
+        <input type="number" id="f-temp" step="1" min="60" max="100" inputmode="decimal" placeholder="93">
+        <span class="champ-hint">Sans thermomètre : eau bouillie qui a fini de buller.</span>
       </div>
       <div class="champ">
         <label for="f-mouture">Mouture (molette)</label>
@@ -184,10 +186,17 @@
         <input type="number" id="f-volume" step="1" min="0" max="1000" inputmode="decimal">
         <button type="button" class="champ-hint champ-hint-btn" id="volume-estime" hidden></button>
       </div>
-    </div>
-
-    <div class="grille-nombres">
-      <div class="champ champ-double">
+      <div class="champ" id="champ-puissance" hidden>
+        <label for="f-puissance">Puissance de feu</label>
+        <input type="number" id="f-puissance" min="1" max="10" step="1" inputmode="numeric" value="3">
+        <span class="champ-hint">Ton échelle, de 1 à 10.</span>
+      </div>
+      <div class="champ" id="champ-lait" hidden>
+        <label for="f-lait">Lait ajouté (ml)</label>
+        <input type="number" id="f-lait" step="1" min="0" max="500" inputmode="decimal">
+        <span class="champ-hint" id="lait-hint"></span>
+      </div>
+      <div class="champ">
         <label for="f-tasse">Tasse utilisée</label>
         <div class="ligne-cafe">
           <select id="f-tasse"></select>
@@ -195,29 +204,25 @@
         </div>
         <span class="champ-hint" id="tasse-avert"></span>
       </div>
-      <div class="champ" id="champ-puissance" hidden>
-        <label for="f-puissance">Puissance de feu</label>
-        <input type="number" id="f-puissance" min="1" max="10" step="1" inputmode="numeric" value="3">
-        <span class="champ-hint">Ton échelle, de 1 à 10. C'est avant l'écoulement que la mouture cuit.</span>
-      </div>
-      <div class="champ" id="champ-prechauffe" hidden>
+    </div>
+
+    <!-- Les cases à cocher sortent de la grille chiffrée : sans libellé au dessus
+         elles s'alignaient plus haut que leurs voisines. Regroupées, elles se
+         lisent comme ce qu'elles sont, des options. -->
+    <div class="options-saisie">
+      <div class="option-saisie" id="champ-prechauffe" hidden>
         <label class="label-inline"><input type="checkbox" id="f-prechauffe"> Eau préchauffée</label>
         <span class="champ-hint">Versée chaude dans la chaudière, comme la recette le demande.</span>
       </div>
-      <div class="champ" id="champ-ajout-eau" hidden>
+      <div class="option-saisie" id="champ-ajout-eau" hidden>
         <label class="label-inline"><input type="checkbox" id="f-ajout-eau-oui"> Ajout d'eau après extraction</label>
         <input type="number" id="f-eau-ajoutee" step="1" min="0" max="500" inputmode="decimal" placeholder="ml" hidden>
         <span class="champ-hint">Pour allonger la boisson. N'entre pas dans le ratio.</span>
       </div>
-      <div class="champ" id="champ-agitation" hidden>
+      <div class="option-saisie" id="champ-agitation" hidden>
         <label class="label-inline"><input type="checkbox" id="f-agitation-oui"> Agitation</label>
         <input type="number" id="f-agitation" step="1" min="1" max="20" inputmode="numeric" value="1" hidden>
         <span class="champ-hint">Nombre de remuages, 1 par défaut.</span>
-      </div>
-      <div class="champ" id="champ-lait" hidden>
-        <label for="f-lait">Lait ajouté (ml)</label>
-        <input type="number" id="f-lait" step="1" min="0" max="500" inputmode="decimal">
-        <span class="champ-hint" id="lait-hint"></span>
       </div>
     </div>
 

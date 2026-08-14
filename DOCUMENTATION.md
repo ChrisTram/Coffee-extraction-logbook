@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.21,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.22,
 2026-08-12.
 
 ## 1. Vue d'ensemble
@@ -620,6 +620,36 @@ d'écraser neuf colonnes en bouillie. Le défilement horizontal n'a donc pas
 disparu, il est devenu le comportement de repli sur petit écran au lieu d'être la
 norme sur grand écran.
 
+## 7 ter. Mise en page du formulaire de saisie
+
+Trois défauts cumulés, corrigés en v7.22 :
+
+1. DEUX grilles `.grille-nombres` se suivaient, chacune laissant des cellules
+   vides en fin. Il n'y en a plus qu'UNE, les champs s'y enchaînent.
+2. Les cases à cocher vivaient dans cette grille alors qu'elles n'ont pas de
+   libellé au dessus de leur contrôle : elles se calaient donc plus haut que
+   leurs voisines. Elles sont sorties dans `.options-saisie`, un groupe à part.
+3. `.champ` porte un `margin-bottom` qui s'ajoutait au `gap` de la grille, d'où
+   des espacements irréguliers. Neutralisé dans la grille.
+
+Deux réglages qui ne sont PAS arbitraires :
+
+- `minmax(220px, 1fr)` donne quatre colonnes sur écran large. En Brikka les
+  champs visibles remplissent alors exactement deux lignes.
+- AUCUN champ de cette grille ne s'étend sur deux colonnes. Un élément large ne
+  tient pas dans une fin de ligne et bascule seul sur la suivante, ce qui créait
+  un trou au MILIEU du formulaire (cas d'une recette au lait). Toutes les cellules
+  font une colonne, les espaces restants sont donc toujours en fin.
+- `align-items: start` : un champ portant une aide sous son input étirait sa
+  cellule et décalait ses voisins.
+
+La case "eau préchauffée" est MASQUÉE sur la famille `brikka-classique`
+(`majChampPrechauffe`, `FAMILLES_PRECHAUFFAGE` dans recettes.js) : le
+préchauffage y est la différence entre les deux variantes, donc la case ferait
+doublon avec le choix de recette et permettrait d'enregistrer une contradiction.
+La valeur stockée se déduit alors de la recette, ce qui garde `eau_prechauffee`
+juste sur toute l'histoire. Elle reste visible sur les autres recettes Brikka.
+
 ## 9 bis. PWA, hors ligne et verrou d'écran
 
 Actif uniquement sur le site déployé (https). En `file://` le service worker ne
@@ -1005,3 +1035,7 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   reposait sur une valeur jamais vérifiée. Retrait de la règle d'insight sur le
   préchauffage, devenue un doublon exact du duel de recettes depuis que le
   préchauffage est une recette.
+- v7.22 : formulaire de saisie remis d'aplomb (une seule grille, options à
+  cocher regroupées à part, quatre colonnes, plus aucun champ à cheval sur deux
+  colonnes) et case "eau préchauffée" masquée sur la famille brikka-classique où
+  elle fait doublon avec le choix de recette. Détail en section 7 ter.

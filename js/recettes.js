@@ -394,6 +394,13 @@ const DIAGNOSTICS = DIAGNOSTICS_GROUPES.flatMap(g => g.diags);
 
    Descriptions en BOUCHE, pas en jargon : ce sont des sensations a reconnaitre.
    Aucun guillemet double, ces textes partent dans un attribut HTML. */
+/* Familles dont une variante EST le préchauffage. Pour celles là, la case à
+   cocher "eau préchauffée" ferait doublon avec le choix de recette : la case est
+   masquée et la valeur stockée se déduit de la recette choisie, ce qui garde la
+   colonne `eau_prechauffee` juste sur toute l'histoire. */
+const FAMILLES_PRECHAUFFAGE = ["brikka-classique"];
+const RECETTES_EAU_PRECHAUFFEE = ["brikka-classique-bouillante"];
+
 const DIAGNOSTIC_QUAND = {
   "Équilibré": "Rien ne dépasse, tu la referais à l'identique.",
   "Un peu acide": "Ça pique légèrement en attaque, sans être franchement citronné.",
