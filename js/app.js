@@ -645,7 +645,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.25";
+  const VERSION = "7.26";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -768,7 +768,7 @@
   const DEFAULT_TEMP_C = 93;
 
   // Puissance de feu par défaut, échelle personnelle de 1 à 10, Brikka seulement.
-  const DEFAULT_PUISSANCE_FEU = 3;
+  const DEFAULT_PUISSANCE_FEU = 4;
 
   const saisie = {
     methode: "Brikka",

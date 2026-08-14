@@ -16,7 +16,7 @@ const RECETTES_DEPART = [
     variante: "Standard",
     sousTitre: "La base quotidienne de la Brikka",
     dose: 14, eau: 100, temp: 85, tempTexte: "80 à 90 °C",
-    puissance_feu: 3,
+    puissance_feu: 4,
     dial: "1.2.0",
     ratioTexte: "environ 1:7, environ 90 ml en tasse",
     totalTexte: "retrait du feu aux premiers gargouillis",
@@ -46,7 +46,7 @@ const RECETTES_DEPART = [
     variante: "Eau préchauffée",
     sousTitre: "Eau bouillante, flamme forte au départ, mouture plus grossière",
     dose: 14, eau: 100, temp: 100, tempTexte: "eau bouillante, versée aussitôt",
-    puissance_feu: 3,
+    puissance_feu: 4,
     dial: "1.3.0",
     ratioTexte: "environ 1:7, environ 90 ml en tasse",
     totalTexte: "montée en pression sous 2 minutes, écoulement de 20 à 45 secondes",
@@ -73,7 +73,7 @@ const RECETTES_DEPART = [
     variante: "Flat white",
     sousTitre: "Extraction classique, complétée au lait jusqu'à la tasse",
     dose: 14, eau: 100, temp: 85, tempTexte: "80 à 90 °C",
-    puissance_feu: 3,
+    puissance_feu: 4,
     dial: "1.2.0",
     ratioTexte: "environ 90 ml de café, plus le lait",
     totalTexte: "extraction identique à la classique",
@@ -97,7 +97,7 @@ const RECETTES_DEPART = [
     variante: "Cappuccino",
     sousTitre: "Extraction classique, lait moussé, un tiers de mousse",
     dose: 14, eau: 100, temp: 85, tempTexte: "80 à 90 °C",
-    puissance_feu: 3,
+    puissance_feu: 4,
     dial: "1.2.0",
     ratioTexte: "environ 90 ml de café, plus le lait moussé",
     totalTexte: "extraction identique à la classique",
@@ -326,15 +326,19 @@ const CAFES_DEPART = [
 
 // Descripteurs organisés selon les familles de la roue des saveurs SCA.
 const DESCRIPTEURS_GROUPES = [
-  { nom: "Corps et texture", tags: ["rond", "sirupeux", "crémeux", "beurré", "gras", "velouté", "soyeux", "liquoreux", "sec", "léger"] },
+  { nom: "Corps et texture", tags: ["rond", "sirupeux", "crémeux", "beurré", "gras", "velouté", "soyeux", "liquoreux", "sec", "léger", "astringent", "rugueux", "aqueux"] },
   { nom: "Cacao et noix", tags: ["chocolat noir", "chocolat au lait", "cacao", "noisette", "amande", "cacahuète"] },
   { nom: "Sucré", tags: ["caramel", "sucre roux", "miel", "vanille", "mélasse", "praliné"] },
   { nom: "Fruité", tags: ["banane", "jacquier", "fruits tropicaux", "fruit de la passion", "fruits mûrs", "fruits rouges", "cerise", "fruits secs", "raisin", "pomme", "agrume", "pêche"] },
+  // L'acidité manquait entièrement comme AXE : seul "agrume" existait, et c'est
+  // un arôme, pas une structure. Or acide et aigre sont les mêmes acides pour
+  // deux verdicts opposés, et c'est la confusion la plus coûteuse en dégustation.
+  { nom: "Acidité", tags: ["acidité vive", "acidulé", "aigre", "citronné", "vinaigré"] },
   { nom: "Floral et thé", tags: ["floral", "jasmin", "rose", "thé noir", "thé vert"] },
   { nom: "Épices", tags: ["épices", "cannelle", "clou de girofle", "réglisse", "poivre"] },
   { nom: "Céréales et malt", tags: ["malt", "pain grillé", "biscuit"] },
   { nom: "Fermentation", tags: ["vineux", "fermenté", "rhum"] },
-  { nom: "Torréfaction et défauts", tags: ["fumé", "tabac", "brûlé", "cendre", "caoutchouc", "terreux", "boisé", "moisi", "papier"] },
+  { nom: "Torréfaction et défauts", tags: ["fumé", "tabac", "brûlé", "cendre", "caoutchouc", "terreux", "boisé", "moisi", "papier", "rance", "phénolique"] },
 ];
 const DESCRIPTEURS = DESCRIPTEURS_GROUPES.flatMap(g => g.tags);
 

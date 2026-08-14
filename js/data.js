@@ -17,8 +17,11 @@ const DATA = (() => {
     "etapes", "pour_qui", "cafes_associes", "note", "par_defaut", "avancee", "variantes", "actif",
     "puissance_feu"];
   const TASSE_COLS = ["id", "nom", "contenance_ml"];
-  // Puissance de feu par défaut, échelle personnelle de 1 à 10.
-  const PUISSANCE_FEU_DEFAUT = 3;
+  /* Valeur de RATTRAPAGE des extractions Brikka déjà enregistrées, qui n'avaient
+     pas ce champ. Ce n'est PAS le défaut du formulaire (voir DEFAULT_PUISSANCE_FEU
+     dans app.js, à 4) : l'historique garde ce qui était plausible au moment où il
+     a été saisi, on ne réécrit pas le passé quand le réglage courant change. */
+  const PUISSANCE_FEU_HISTORIQUE = 3;
 
   const ACHAT_COLS = ["id", "cafe_id", "date_achat", "format_grammes", "prix_vnd", "date_torrefaction"];
 
@@ -446,10 +449,29 @@ const DATA = (() => {
     //    valeur saisie ou corrigée à la main n'est jamais écrasée.
     state.extractions.forEach(e => {
       if (e.methode === "Brikka" && (e.puissance_feu === "" || e.puissance_feu === undefined)) {
-        e.puissance_feu = PUISSANCE_FEU_DEFAUT;
+        e.puissance_feu = PUISSANCE_FEU_HISTORIQUE;
         estampiller(e);
       }
     });
+
+    // 6 quater. Puissance de feu des recettes Brikka : 3 devient 4.
+    //    Les recettes stockées portent la valeur SEMÉE (3), pas un choix de
+    //    Chris, et c'est la recette qui préremplit la saisie : sans ce passage,
+    //    demander 4 par défaut n'aurait aucun effet visible.
+    //    UNE SEULE FOIS par appareil, marqué dans localStorage. Ce n'est pas une
+    //    migration idempotente au sens habituel : si on la rejouait, elle
+    //    écraserait un 3 choisi volontairement plus tard.
+    try {
+      if (typeof localStorage !== "undefined" && !localStorage.getItem("feu4")) {
+        state.recettes.forEach(rec => {
+          if (rec.methode === "Brikka" && Number(rec.puissance_feu) === 3) {
+            rec.puissance_feu = 4;
+            estampiller(rec);
+          }
+        });
+        localStorage.setItem("feu4", "1");
+      }
+    } catch (e) { /* stockage refusé : on laisse la valeur semée */ }
 
     // 6 bis. Les extractions faites à l'eau préchauffée quittent "Brikka
     //    classique" pour la variante dédiée. Le préchauffage n'est pas un détail

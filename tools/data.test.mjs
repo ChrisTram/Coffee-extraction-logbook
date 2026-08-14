@@ -193,7 +193,7 @@ check(
 check("puissance_feu dans EXT_COLS", DATA.EXT_COLS.includes("puissance_feu"));
 check("puissance_feu dans RECETTE_COLS", DATA.RECETTE_COLS.includes("puissance_feu"));
 const BRIKKAS = RECETTES_DEPART.filter(r => r.methode === "Brikka");
-check("les 4 recettes Brikka portent une cible a 3", BRIKKAS.length === 4 && BRIKKAS.every(r => r.puissance_feu === 3),
+check("les 4 recettes Brikka portent une cible a 4", BRIKKAS.length === 4 && BRIKKAS.every(r => r.puissance_feu === 4),
   BRIKKAS.map(r => r.nom + "=" + r.puissance_feu).join(" | "));
 check("aucune recette Switch n'en porte", RECETTES_DEPART.filter(r => r.methode === "Switch").every(r => r.puissance_feu === undefined));
 

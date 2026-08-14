@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.25,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.26,
 2026-08-12.
 
 ## 1. Vue d'ensemble
@@ -70,6 +70,15 @@ diagnostic, descripteurs, commentaire`
   `volume_boisson_ml` = extrait + eau ajoutée + lait.
 - `agitation_nb` : Switch, vide si pas d'agitation, défaut 1 quand coché.
 - `eau_prechauffee` : Brikka, 1 ou vide. Décoché par défaut.
+- VOCABULAIRE DE DÉGUSTATION : le groupe "Acidité" (v7.26) existe parce que
+  l'acidité manquait comme AXE, seul "agrume" était présent et c'est un arôme.
+  Distinction à ne pas perdre, c'est la confusion la plus coûteuse en dégustation :
+  ACIDITÉ est une qualité positive (vivacité), AIGRE est un défaut de
+  sous extraction. Mêmes acides, verdicts opposés. Et ASTRINGENT n'est pas un
+  goût mais une sensation TACTILE, d'où sa place dans "Corps et texture" et non
+  dans un groupe de saveurs. Le diagnostic historique "Sous-extrait (acide)" dirait
+  mieux "aigre", mais le renommer casserait l'historique déjà enregistré : le
+  vocabulaire a été ajouté côté descripteurs à la place.
 - `puissance_feu` : Brikka SEULEMENT, entier de 1 à 10, échelle personnelle de
   Chris sur sa plaque. Vide pour le Switch, qui n'a pas de flamme. Borné et
   arrondi à la normalisation : une valeur hors plage éditée au tableur est ramenée
@@ -80,7 +89,7 @@ diagnostic, descripteurs, commentaire`
   régler, et elle n'était mesurée nulle part.
 - `descripteurs` : tags séparés par `|`, valeurs françaises (la traduction EN
   est purement d'affichage). La liste vit dans DESCRIPTEURS_GROUPES
-  (recettes.js), 59 tags en 9 familles SCA. Chaque tag a une définition
+  (recettes.js), 69 tags en 10 familles. Chaque tag a une définition
   courte dans TAGS_INFO (i18n.js, fr et en), affichée dans une bulle CSS au
   survol ou au focus (attribut data-info, styles ".pilule[data-info]" dans
   styles.css). Ne pas mettre de guillemets doubles dans ces définitions
@@ -2094,3 +2103,10 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   balise `apple-mobile-web-app-capable` dépréciée. Ajout de
   `tools/boot.test.mjs`, qui exécute l'application dans un faux DOM et aurait
   attrapé le premier des trois.
+- v7.26 : vocabulaire de dégustation complété, groupe "Acidité" (acidité vive,
+  acidulé, aigre, citronné, vinaigré), astringence et texture (astringent, rugueux,
+  aqueux) dans Corps et texture, défauts rance et phénolique. 69 descripteurs, tous
+  avec nom et définition en FR et EN. Puissance de feu par défaut à 4 au lieu de 3,
+  y compris une reprise unique des recettes Brikka déjà stockées, sans quoi la
+  recette aurait continué à préremplir 3. L'historique garde 3
+  (PUISSANCE_FEU_HISTORIQUE), on ne réécrit pas le passé.

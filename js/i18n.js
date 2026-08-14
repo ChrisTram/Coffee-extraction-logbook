@@ -891,6 +891,16 @@ const I18N = (() => {
   };
 
   const TAGS = {
+    "acidité vive": "bright acidity",
+    "acidulé": "tangy",
+    "aigre": "sour",
+    "citronné": "lemony",
+    "vinaigré": "vinegary",
+    "astringent": "astringent",
+    "rugueux": "harsh",
+    "aqueux": "watery",
+    "rance": "rancid",
+    "phénolique": "phenolic",
     "rond": "round", "sirupeux": "syrupy", "crémeux": "creamy", "beurré": "buttery",
     "gras": "oily", "velouté": "velvety", "soyeux": "silky",
     "liquoreux": "liqueur-like", "sec": "dry", "léger": "thin",
@@ -914,6 +924,16 @@ const I18N = (() => {
   // bloc quand on coche un tag. Format : { fr, en }. Pas de guillemets doubles
   // dans les textes (ils partent dans des attributs title).
   const TAGS_INFO = {
+    "acidité vive": { fr: "Vivacité agréable, qui rend la tasse vivante. Une qualité, pas un défaut.", en: "Pleasant liveliness that makes the cup vivid. A quality, not a fault." },
+    "acidulé": { fr: "Petite pointe acide franche et plaisante, comme une pomme croquante.", en: "A clean, pleasant acid edge, like a crisp apple." },
+    "aigre": { fr: "Acidité sèche et agressive, sans profondeur. Signature d une sous extraction.", en: "Dry, aggressive acidity with no depth. The signature of under extraction." },
+    "citronné": { fr: "Acidité qui tire vers le citron. Agréable dosée, mordante si elle domine.", en: "Acidity leaning towards lemon. Pleasant in measure, biting when it dominates." },
+    "vinaigré": { fr: "Acidité poussée jusqu au vinaigre. Toujours un défaut.", en: "Acidity pushed all the way to vinegar. Always a fault." },
+    "astringent": { fr: "Sensation TACTILE, pas un goût : la bouche s assèche et se resserre, comme après un thé trop infusé.", en: "A TACTILE sensation, not a taste: the mouth dries and tightens, like after an over steeped tea." },
+    "rugueux": { fr: "Texture râpeuse et rude en bouche, sans finesse.", en: "A rasping, coarse texture in the mouth, with no finesse." },
+    "aqueux": { fr: "Aucune matière, la tasse ressemble à de l eau colorée.", en: "No substance at all, the cup is like coloured water." },
+    "rance": { fr: "Goût de gras oxydé, de vieille noix. Café trop vieux ou mal conservé.", en: "Oxidised fat, stale nut. Coffee too old or badly kept." },
+    "phénolique": { fr: "Note médicamenteuse ou de plastique. Défaut du grain, aucun réglage ne l enlève.", en: "A medicinal or plastic note. A bean defect, no setting removes it." },
     "rond": { fr: "Sensation pleine et douce en bouche, sans angle ni agressivité.", en: "Full, gentle mouthfeel, no rough edges." },
     "sirupeux": { fr: "Épais et enveloppant, coule comme un sirop.", en: "Thick and coating, flows like syrup." },
     "crémeux": { fr: "Texture riche qui rappelle la crème, sans lait ajouté.", en: "Rich texture reminiscent of cream, with no milk added." },
@@ -976,6 +996,7 @@ const I18N = (() => {
   };
 
   const GROUPES = {
+    "Acidité": "Acidity",
     "Rien à changer": "Nothing to change",
     "Réglage d'extraction": "Extraction setting",
     "Ratio café et eau": "Coffee to water ratio",
