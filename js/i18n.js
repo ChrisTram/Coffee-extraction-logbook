@@ -15,6 +15,27 @@ const I18N = (() => {
   // ---------- 1. Contenu statique : français vers anglais ----------
 
   const UI = {
+    "Paramètres": "Settings",
+    "Les valeurs pré-remplies quand tu ouvres une saisie. Elles appartiennent à la recette : c'est la même fiche que dans « Gérer les recettes », donc une seule vérité, et elle se synchronise entre tes appareils.": "The values prefilled when you open a log entry. They belong to the recipe: the same record as in \"Manage recipes\", so a single truth, and it syncs across your devices.",
+    "Valeurs par défaut de chaque recette": "Each recipe's default values",
+    "Un champ laissé vide n'est pas pré-rempli. C'est voulu pour la température de la Brikka : elle dépend de la puissance du feu, l'annoncer d'avance n'aurait aucun sens.": "A field left empty is not prefilled. That is deliberate for the Brikka temperature: it depends on the flame power, announcing it up front would make no sense.",
+    "Recette": "Recipe",
+    "Dose (g)": "Dose (g)",
+    "Eau (g)": "Water (g)",
+    "Température (°C)": "Temperature (°C)",
+    "Feu": "Flame",
+    "Mouture": "Grind",
+    "Enregistrer les valeurs par défaut": "Save the default values",
+    "Annuler mes changements": "Discard my changes",
+    "Repli quand la recette ne dit rien": "Fallback when the recipe says nothing",
+    "Utilisé seulement si la recette choisie laisse la valeur vide.": "Used only if the chosen recipe leaves the value empty.",
+    "Dose de repli (g)": "Fallback dose (g)",
+    "Puissance de feu de repli": "Fallback flame power",
+    "Cet appareil": "This device",
+    "Ces trois-là restent locaux et ne se synchronisent pas : un téléphone et un ordinateur n'ont pas les mêmes besoins.": "These stay local and do not sync: a phone and a computer do not have the same needs.",
+    "Bip du chronomètre à chaque palier": "Timer beep at every step",
+    "Le thème et la langue se règlent depuis l'en-tête, en haut à droite.": "Theme and language are set from the header, top right.",
+    "Puissance du feu (Brikka)": "Flame power (Brikka)",
     "Carnet d'extraction": "Brew journal",
     "Ce que tes données disent": "What your data says",
     "Réglages": "Settings",
@@ -89,9 +110,6 @@ const I18N = (() => {
     "Café": "Coffee",
     "Gérer les cafés": "Manage coffees",
     "Méthode": "Method",
-    "Recette": "Recipe",
-    "Dose (g)": "Dose (g)",
-    "Eau (g)": "Water (g)",
     "Température (°C), optionnel": "Temperature (°C), optional",
     "Sans thermomètre : eau bouillie qui a fini de buller, environ 95.": "No thermometer: water just off the boil, once the bubbling stops, is around 95.",
     "Mouture (molette)": "Grind (dial)",
@@ -410,7 +428,6 @@ const I18N = (() => {
     // Nouveaux champs de saisie
     "Volume extrait (ml)": "Extracted volume (ml)",
     "Tasse utilisée": "Cup used",
-    "Eau préchauffée": "Preheated water",
     "Versée chaude dans la chaudière, comme la recette le demande.": "Poured hot into the boiler, as the recipe asks.",
     "Ajout d'eau après extraction": "Water added after extraction",
     "Pour allonger la boisson. N'entre pas dans le ratio.": "To lengthen the drink. Does not count in the ratio.",
@@ -448,7 +465,6 @@ const I18N = (() => {
     "Sans café": "No coffee",
     "Café supprimé": "Deleted coffee",
     "Enregistrer le café": "Save the coffee",
-    "Annuler": "Cancel",
 
     "Mes recettes": "My recipes",
     "Tout est éditable : les valeurs préremplies en saisie viennent d'ici. Les 7 recettes d'origine peuvent toujours être rétablies à leur version vérifiée.": "Everything is editable: the values prefilled in the brew form come from here. The 7 original recipes can always be restored to their verified version.",
@@ -456,7 +472,6 @@ const I18N = (() => {
     "Nouvelle recette": "New recipe",
     "Numéro ou étiquette": "Number or label",
     "Sous-titre": "Subtitle",
-    "Température (°C)": "Temperature (°C)",
     "Température affichée": "Displayed temperature",
     "Ratio affiché": "Displayed ratio",
     "Durée affichée": "Displayed duration",
@@ -708,6 +723,19 @@ const I18N = (() => {
     rg_pas_assez: { fr: "Encore {n} tasse au même réglage et un gagnant apparaîtra. Il en faut {s} identiques.", en: "One more cup at the same settings and a winner appears, {n} to go. {s} identical ones are needed." },
     rg_eparpille: { fr: "Assez de tasses, mais chacune à un réglage différent. Refais {n} fois ton réglage le plus joué plutôt que d en essayer un nouveau.", en: "Enough cups, but each at different settings. Repeat your most used setting {n} more times rather than trying another one." },
     rg_sans_cafe: { fr: "Ajoute un café pour voir tes réglages ici.", en: "Add a coffee to see your settings here." },
+
+    param_vide: { fr: "aucune", en: "none" },
+    param_temp_feu: { fr: "dépend de la puissance du feu", en: "depends on the flame power" },
+    t_param_ok: { fr: "{n} recette(s) mise(s) à jour.", en: "{n} recipe(s) updated." },
+    t_param_replis: { fr: "Valeurs de repli enregistrées.", en: "Fallback values saved." },
+    t_param_dose: { fr: "La dose de repli doit être supérieure à zéro.", en: "The fallback dose must be greater than zero." },
+    t_param_feu: { fr: "La puissance de feu de repli doit être entre 1 et 10.", en: "The fallback flame power must be between 1 and 10." },
+
+    rt_tasse: { fr: "Ratio EN TASSE : {v} ml extraits divisés par {d} g de café. Sur la Brikka c est ce qui compte, une partie de la chaudière reste en vapeur et n arrive jamais dans la tasse.", en: "CUP ratio: {v} ml out divided by {d} g of coffee. On the Brikka this is what matters, part of the boiler stays as steam and never reaches the cup." },
+    rt_chaudiere: { fr: "Ratio de CHAUDIÈRE : {e} g d eau divisés par {d} g de café. Ce n est pas ce que tu bois. Renseigne le volume extrait pour avoir le vrai ratio en tasse.", en: "BOILER ratio: {e} g of water divided by {d} g of coffee. This is not what you drink. Fill in the volume out to get the real cup ratio." },
+    rt_infusion: { fr: "Ratio d infusion : {e} g d eau divisés par {d} g de café. Sur le Switch l eau versée traverse le café, donc c est le bon calcul.", en: "Brew ratio: {e} g of water divided by {d} g of coffee. On the Switch the poured water goes through the coffee, so this is the right measure." },
+    rt_boisson_court: { fr: "boisson", en: "drink" },
+    rt_rien: { fr: "Renseigne la dose et l eau, ou le volume extrait, pour voir le ratio.", en: "Fill in the dose and the water, or the volume out, to see the ratio." },
 
     kpi_regularite: { fr: "régularité, écart moyen à ta moyenne", en: "consistency, average gap from your mean" },
 
@@ -1029,7 +1057,7 @@ const I18N = (() => {
     "#h-cafe,#h-diagnostic,#q-cafe,#q-recette,#c-recette,#donnees-statut,#toast,#pap-params," +
     "#insights,#sync-statut,#heatmap-stats,#version-site,#comparaison-compte,#reglages-liste," +
     "#comparaison-resume,#comparaison-titres,#comparaison-corps," +
-    "#vide-mouture,#vide-gouts,#vide-duel,#note-gouts";
+    "#vide-mouture,#vide-gouts,#vide-duel,#note-gouts,#param-recettes";
 
   function scanner() {
     const marche = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {

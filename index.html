@@ -37,6 +37,7 @@
       <button class="nav-btn" data-ecran="reglages">Réglages</button>
       <button class="nav-btn" data-ecran="reference">Référence</button>
       <button class="nav-btn" data-ecran="guide">Guide</button>
+        <button class="nav-btn" data-ecran="parametres">Paramètres</button>
     </nav>
     <div class="entete-actions">
       <span id="badge-demo" class="badge badge-demo" hidden>Démo</span>
@@ -964,6 +965,55 @@ Cảm ơn shop.</pre>
 </dialog>
 
 <!-- ================= MODALE RECETTES ================= -->
+
+<!-- ================= ECRAN 7 : PARAMETRES ================= -->
+<section id="ecran-parametres" class="ecran">
+  <h2>Paramètres</h2>
+  <p class="ecran-intro">Les valeurs pré-remplies quand tu ouvres une saisie. Elles appartiennent à la recette : c'est la même fiche que dans « Gérer les recettes », donc une seule vérité, et elle se synchronise entre tes appareils.</p>
+
+  <article class="carte">
+    <h3>Valeurs par défaut de chaque recette</h3>
+    <p class="param-aide">Un champ laissé vide n'est pas pré-rempli. C'est voulu pour la température de la Brikka : elle dépend de la puissance du feu, l'annoncer d'avance n'aurait aucun sens.</p>
+    <div class="param-tableau-zone">
+      <table class="tableau param-tableau">
+        <thead>
+          <tr>
+            <th>Recette</th>
+            <th>Dose (g)</th>
+            <th>Eau (g)</th>
+            <th>Température (°C)</th>
+            <th>Feu</th>
+            <th>Mouture</th>
+          </tr>
+        </thead>
+        <tbody id="param-recettes"></tbody>
+      </table>
+    </div>
+    <div class="saisie-actions">
+      <button class="btn btn-primaire" id="param-enregistrer">Enregistrer les valeurs par défaut</button>
+      <button class="btn btn-discret" id="param-annuler">Annuler mes changements</button>
+    </div>
+  </article>
+
+  <article class="carte">
+    <h3>Repli quand la recette ne dit rien</h3>
+    <p class="param-aide">Utilisé seulement si la recette choisie laisse la valeur vide.</p>
+    <div class="grille-nombres">
+      <div class="champ"><label for="param-dose-defaut">Dose de repli (g)</label><input type="number" id="param-dose-defaut" step="0.5" min="1"></div>
+      <div class="champ"><label for="param-feu-defaut">Puissance de feu de repli</label><input type="number" id="param-feu-defaut" step="1" min="1" max="10"></div>
+    </div>
+  </article>
+
+  <article class="carte">
+    <h3>Cet appareil</h3>
+    <p class="param-aide">Ces trois-là restent locaux et ne se synchronisent pas : un téléphone et un ordinateur n'ont pas les mêmes besoins.</p>
+    <div class="grille-nombres">
+      <div class="champ"><label class="label-inline"><input type="checkbox" id="param-bips"> Bip du chronomètre à chaque palier</label></div>
+    </div>
+    <p class="param-aide">Le thème et la langue se règlent depuis l'en-tête, en haut à droite.</p>
+  </article>
+</section>
+
 <dialog id="modale-recettes" class="modale modale-large">
   <h2>Mes recettes</h2>
   <p class="modale-note">Tout est éditable : les valeurs préremplies en saisie viennent d'ici. Les 7 recettes d'origine peuvent toujours être rétablies à leur version vérifiée.</p>
@@ -981,6 +1031,7 @@ Cảm ơn shop.</pre>
       <div class="champ"><label for="r-dose">Dose (g)</label><input type="number" id="r-dose" step="0.5" min="1"></div>
       <div class="champ"><label for="r-eau">Eau (g)</label><input type="number" id="r-eau" step="1" min="10"></div>
       <div class="champ"><label for="r-temp">Température (°C)</label><input type="number" id="r-temp" step="1" min="60" max="100"></div>
+      <div class="champ"><label for="r-feu">Puissance du feu (Brikka)</label><input type="number" id="r-feu" step="1" min="1" max="10" placeholder="4"></div>
       <div class="champ"><label for="r-temp-texte">Température affichée</label><input type="text" id="r-temp-texte" placeholder="92 à 94 °C"></div>
       <div class="champ"><label for="r-dial">Mouture (molette)</label><input type="text" id="r-dial" placeholder="1.5.0"></div>
       <div class="champ"><label for="r-ratio-texte">Ratio affiché</label><input type="text" id="r-ratio-texte" placeholder="ratio 1:15"></div>

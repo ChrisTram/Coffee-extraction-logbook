@@ -113,7 +113,7 @@
 
   // ---------- Navigation ----------
 
-  const ECRANS = ["tableau", "saisie", "historique", "reglages", "reference", "guide"];
+  const ECRANS = ["tableau", "saisie", "historique", "reglages", "reference", "guide", "parametres"];
   let ecranCourant = "tableau";
 
   function activerEcran(nom) {
@@ -131,6 +131,7 @@
     if (ecranCourant === "tableau") rendreTableau();
     else if (ecranCourant === "reglages") rendreReglages();
     else if (ecranCourant === "historique") rendreHistorique();
+    else if (ecranCourant === "parametres") rendreParametres();
     else if (ecranCourant === "reference" && force) rendreConvertisseur();
   }
 
@@ -650,7 +651,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.28";
+  const VERSION = "7.29";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -766,14 +767,32 @@
 
   // Dose prise quand rien ne la preremplit (recette sans dose, formulaire
   // vierge). 15 g est la dose de toutes les recettes Switch d'origine.
-  const DEFAULT_DOSE_G = 15;
-
-  // Température de départ préremplie. 93 remplace 95 : demande de Chris, les
-  // extractions déjà enregistrées ne sont PAS modifiées.
-  const DEFAULT_TEMP_C = 93;
+  const DOSE_REPLI_USINE = 15;
 
   // Puissance de feu par défaut, échelle personnelle de 1 à 10, Brikka seulement.
-  const DEFAULT_PUISSANCE_FEU = 4;
+  const FEU_REPLI_USINE = 4;
+
+  /* Ces deux replis ne servent QUE si la recette choisie laisse la valeur vide.
+     Modifiables depuis l'écran Paramètres. Volontairement en localStorage et pas
+     dans les données synchronisées : ce sont des préférences de confort, pas des
+     mesures, et les faire voyager entre appareils créerait des conflits de fusion
+     pour rien. Les vraies valeurs par défaut, elles, vivent dans la recette. */
+  const CLE_REPLIS = "replis-saisie";
+  const replis = { dose: DOSE_REPLI_USINE, feu: FEU_REPLI_USINE };
+
+  function chargerReplis() {
+    let brut = null;
+    try { brut = JSON.parse(localStorage.getItem(CLE_REPLIS) || "null"); } catch (e) { return; }
+    if (!brut) return;
+    const dose = Number(brut.dose);
+    const feu = Number(brut.feu);
+    if (dose > 0) replis.dose = dose;
+    if (feu >= 1 && feu <= 10) replis.feu = Math.round(feu);
+  }
+
+  function ecrireReplis() {
+    try { localStorage.setItem(CLE_REPLIS, JSON.stringify(replis)); } catch (e) { /* tant pis */ }
+  }
 
   const saisie = {
     methode: "Brikka",
@@ -916,14 +935,18 @@
   function prefillDepuisRecette(nomRecette) {
     const r = trouverRecette(nomRecette);
     if (!r) return;
-    $("#f-dose").value = r.dose || DEFAULT_DOSE_G;
-    // L'eau reste vide (pas de balance pour la peser) et la température part
-    // sur DEFAULT_TEMP_C, l'eau bouillie qui a fini de buller. Les cibles de la recette
-    // restent visibles dans le panneau latéral.
-    $("#f-eau").value = "";
-    $("#f-temp").value = DEFAULT_TEMP_C;
+    /* Le formulaire suit désormais la RECETTE, y compris pour l'eau et la
+       température, au lieu de valeurs codées en dur qui l'écrasaient. C'est ce
+       qui fait de "Gérer les recettes" le vrai endroit où régler ses défauts :
+       une seule source de vérité, éditable, et déjà synchronisée entre appareils.
+       Une recette sans cible de température laisse le champ VIDE, ce qui est le
+       cas des Brikka : la température y dépend de la puissance du feu, la fixer
+       d'avance n'aurait aucun sens. */
+    $("#f-dose").value = r.dose || replis.dose;
+    $("#f-eau").value = r.eau || "";
+    $("#f-temp").value = r.temp === "" || r.temp === undefined ? "" : r.temp;
     $("#f-mouture").value = cafeCourantMoulu() ? "" : r.dial;
-    if (r.methode === "Brikka") $("#f-puissance").value = r.puissance_feu || DEFAULT_PUISSANCE_FEU;
+    if (r.methode === "Brikka") $("#f-puissance").value = r.puissance_feu || replis.feu;
     majAgitationDepuisRecette();
     majChampPrechauffe();
     majLait();
@@ -1043,11 +1066,31 @@
     majEtapesChrono(false);
   }
 
+  /* Explique le ratio affiché : quelle formule a servi, et pourquoi. Le calcul
+     diffère selon la machine et personne ne peut le deviner en regardant un
+     "1:5,6". Voir DATA.calculs pour la logique. */
+  function detailRatio(base, dose, eau, volume) {
+    if (base === "tasse") return I18N.t("rt_tasse", { d: dose, v: volume });
+    if (base === "chaudiere") return I18N.t("rt_chaudiere", { d: dose, e: eau });
+    if (base === "infusion") return I18N.t("rt_infusion", { d: dose, e: eau });
+    return "";
+  }
+
   function majLive() {
     const dose = parseFloat($("#f-dose").value);
     const eau = parseFloat($("#f-eau").value);
-    const ratio = dose > 0 && eau > 0 ? "1:" + (eau / dose).toFixed(1) : "…";
-    $("#live-ratio").innerHTML = I18N.t("lv_ratio") + " <b>" + ratio + "</b>";
+    // Même logique que DATA.calculs : sur la Brikka le volume extrait prime,
+    // la chaudière ne dit rien de la concentration en tasse.
+    const volume = parseFloat($("#f-volume").value);
+    const brikka = saisie.methode === "Brikka";
+    let ratio = "…", base = "";
+    if (dose > 0) {
+      if (brikka && volume > 0) { ratio = "1:" + (volume / dose).toFixed(1); base = "tasse"; }
+      else if (eau > 0) { ratio = "1:" + (eau / dose).toFixed(1); base = brikka ? "chaudiere" : "infusion"; }
+    }
+    const explication = base ? detailRatio(base, dose, eau, volume) : I18N.t("rt_rien");
+    $("#live-ratio").innerHTML = I18N.t("lv_ratio") +
+      ' <b class="aide-ratio" tabindex="0" data-info="' + attrTitre(explication) + '">' + ratio + "</b>";
 
     // Café déjà moulu : la molette ne s'applique pas, mouture par défaut du paquet.
     const moulu = cafeCourantMoulu();
@@ -1357,7 +1400,7 @@
     $("#btn-enregistrer").textContent = I18N.t("s_enregistrer");
     $("#btn-annuler-edition").hidden = true;
     $("#f-date").value = maintenantLocal();
-    $("#f-dose").value = DEFAULT_DOSE_G;
+    $("#f-dose").value = replis.dose;
     if (!garderCafe) $("#f-cafe").value = "";
     $("#f-commentaire").value = "";
     $("#f-note").value = 7;
@@ -1366,8 +1409,8 @@
     ecrireDuree("f-ecoulement", "");
     $("#f-volume").value = "";
     $("#f-eau").value = "";
-    $("#f-temp").value = DEFAULT_TEMP_C;
-    $("#f-puissance").value = DEFAULT_PUISSANCE_FEU;
+    $("#f-temp").value = "";
+    $("#f-puissance").value = replis.feu;
     $("#f-prechauffe").checked = false;
     $("#f-ajout-eau-oui").checked = false;
     $("#f-eau-ajoutee").hidden = true;
@@ -1575,7 +1618,8 @@
       '<td><span class="chip-methode ' + e.methode.toLowerCase() + '">' + e.methode + "</span></td>" +
       '<td title="' + attrTitre(e.recette) + '">' + (e.recette || "") + "</td>" +
       "<td>" + (e.mouture_dial ? e.mouture_dial + " <small>(" + e._c.microns + " µm)</small>" : e._c.moulu ? "<small>" + I18N.t("paquet") + "</small>" : "") + "</td>" +
-      "<td>" + e._c.ratioTexte + "</td>" +
+      '<td title="' + attrTitre(detailRatio(e._c.ratioBase, e.dose_g, e.eau_g, e.volume_extrait_ml)) + '">' +
+      e._c.ratioTexte + (e._c.ratioBoisson ? ' <small>(' + I18N.t("rt_boisson_court") + " " + e._c.ratioBoisson + ")</small>" : "") + "</td>" +
       '<td class="note-cellule">' + (e.note_sur_10 !== "" ? e.note_sur_10 : "") + "</td>" +
       '<td class="chip-diagnostic" title="' + attrTitre(e.diagnostic ? diagsAffiches(e.diagnostic) : "") + '">' +
       (e.diagnostic ? diagsAffiches(e.diagnostic) : "") + "</td>" +
@@ -1981,10 +2025,10 @@
         : "";
       // Stock du sachet en cours. Une dose manquante compte pour la dose par
       // défaut, sinon un oubli de saisie ferait croire à un sachet intact.
-      const stock = DATA.stockSachet(c.id, DEFAULT_DOSE_G);
+      const stock = DATA.stockSachet(c.id, replis.dose);
       let badgeStock = "";
       if (stock) {
-        const tasses = Math.floor(stock.restant / DEFAULT_DOSE_G);
+        const tasses = Math.floor(stock.restant / replis.dose);
         const classe = stock.restant <= 0 ? "vide" : tasses <= 3 ? "bas" : "ok";
         const libelle = stock.restant <= 0
           ? I18N.t("stock_vide")
@@ -2136,6 +2180,7 @@
     $("#r-dose").value = r ? r.dose : 15;
     $("#r-eau").value = r ? r.eau : 225;
     $("#r-temp").value = r ? r.temp : 92;
+    $("#r-feu").value = r ? r.puissance_feu : "";
     $("#r-temp-texte").value = r ? r.tempTexte : "";
     $("#r-dial").value = r ? r.dial : "1.5.0";
     $("#r-ratio-texte").value = r ? r.ratioTexte : "";
@@ -2163,7 +2208,10 @@
       dose: $("#r-dose").value,
       eau: $("#r-eau").value,
       temp: $("#r-temp").value,
-      tempTexte: $("#r-temp-texte").value.trim() || ($("#r-temp").value + " °C"),
+      puissance_feu: $("#r-feu").value,
+      // Sans cible de température, pas de texte inventé : " °C" tout seul n'a aucun sens.
+      tempTexte: $("#r-temp-texte").value.trim() ||
+        ($("#r-temp").value ? $("#r-temp").value + " °C" : ""),
       dial: $("#r-dial").value.trim().replace(/,/g, "."),
       ratioTexte: $("#r-ratio-texte").value.trim(),
       totalTexte: $("#r-total-texte").value.trim(),
@@ -2188,6 +2236,80 @@
     $("#form-recette").hidden = true;
     rendreListeRecettes();
     toast(I18N.t("t_recette"));
+  }
+
+  // ---------- Écran Paramètres ----------
+  /* Cet écran ne stocke rien de son côté. Chaque ligne du tableau édite la RECETTE
+     elle-même, la même fiche que "Gérer les recettes" : une seule source de vérité,
+     déjà synchronisée. Les seuls réglages propres à l'écran sont les deux replis,
+     locaux à l'appareil. */
+
+  function rendreParametres() {
+    const lignes = ["Brikka", "Switch"].map(m => {
+      const liste = recettesDeMethode(m);
+      if (!liste.length) return "";
+      return '<tr class="param-groupe"><td colspan="6">' + m + "</td></tr>" +
+        liste.map(r =>
+          '<tr data-param-recette="' + r.id + '">' +
+          "<td>" + I18N.tr(r.nom) + "</td>" +
+          '<td><input type="number" step="0.5" min="1" data-champ="dose" value="' + (r.dose || "") + '"></td>' +
+          '<td><input type="number" step="1" min="10" data-champ="eau" value="' + (r.eau || "") + '"></td>' +
+          '<td><input type="number" step="1" min="60" max="100" data-champ="temp" value="' + (r.temp === "" ? "" : r.temp) +
+            '" placeholder="' + I18N.t("param_vide") + '"></td>' +
+          "<td>" + (r.methode === "Brikka"
+            ? '<input type="number" step="1" min="1" max="10" data-champ="puissance_feu" value="' + (r.puissance_feu || "") + '">'
+            : '<span class="param-sans">&middot;</span>') + "</td>" +
+          '<td><input type="text" data-champ="dial" value="' + attrTitre(r.dial || "") + '"></td>' +
+          "</tr>").join("");
+    }).join("");
+    $("#param-recettes").innerHTML = lignes;
+    $("#param-dose-defaut").value = replis.dose;
+    $("#param-feu-defaut").value = replis.feu;
+    $("#param-bips").checked = $("#chrono-bip").checked;
+  }
+
+  async function enregistrerParametres() {
+    const dose = Number($("#param-dose-defaut").value);
+    const feu = Number($("#param-feu-defaut").value);
+    if (!(dose > 0)) { toast(I18N.t("t_param_dose")); return; }
+    if (!(feu >= 1 && feu <= 10)) { toast(I18N.t("t_param_feu")); return; }
+    replis.dose = dose;
+    replis.feu = Math.round(feu);
+    ecrireReplis();
+
+    /* On ne réécrit que les recettes réellement touchées : chaque écriture
+       estampille maj_le et gagnerait la fusion contre un autre appareil. */
+    let touchees = 0;
+    for (const tr of $$("[data-param-recette]")) {
+      const r = DATA.state.recettes.find(x => x.id === tr.dataset.paramRecette);
+      if (!r) continue;
+      const lu = {};
+      tr.querySelectorAll("[data-champ]").forEach(i => { lu[i.dataset.champ] = i.value.trim(); });
+      const change =
+        String(r.dose || "") !== lu.dose ||
+        String(r.eau || "") !== lu.eau ||
+        String(r.temp === "" ? "" : r.temp) !== lu.temp ||
+        String(r.dial || "") !== lu.dial ||
+        (r.methode === "Brikka" && String(r.puissance_feu || "") !== lu.puissance_feu);
+      if (!change) continue;
+      if (lu.dial && !GRIND.parseDial(lu.dial.replace(/,/g, "."))) { toast(I18N.t("t_mouture_invalide")); return; }
+      // Le tableau ne montre que ces champs : on repart de la recette entière pour
+      // ne rien perdre au passage (étapes, texte, café associés…).
+      await DATA.modifierRecette(r.id, {
+        ...r,
+        dose: lu.dose,
+        eau: lu.eau,
+        temp: lu.temp,
+        dial: lu.dial.replace(/,/g, "."),
+        puissance_feu: r.methode === "Brikka" ? lu.puissance_feu : "",
+        // Le texte affiché suivait l'ancienne cible, il devient faux sans ça.
+        tempTexte: lu.temp ? lu.temp + " °C" : (r.methode === "Brikka" ? I18N.t("param_temp_feu") : ""),
+      });
+      touchees++;
+    }
+    rendreParametres();
+    remplirSelectRecettes();
+    toast(touchees ? I18N.t("t_param_ok", { n: touchees }) : I18N.t("t_param_replis"));
   }
 
   // ---------- Saisie rapide flottante ----------
@@ -2252,7 +2374,7 @@
       cafe_id: cafeId,
       methode: r.methode,
       recette: r.nom,
-      dose_g: r.dose || DEFAULT_DOSE_G,
+      dose_g: r.dose || replis.dose,
       eau_g: r.eau,
       mouture_dial: cafeQ && Number(cafeQ.deja_moulu) === 1 ? "" : r.dial,
       temperature_c: r.temp,
@@ -2370,12 +2492,19 @@
     }));
     $("#f-cafe").addEventListener("change", surChoixCafe);
     $("#f-recette").addEventListener("change", () => { prefillDepuisRecette($("#f-recette").value); majAvertissements(); });
-    ["f-dose", "f-eau", "f-mouture"].forEach(id =>
+    ["f-dose", "f-eau", "f-mouture", "f-volume"].forEach(id =>
       $("#" + id).addEventListener("input", () => { majLive(); majAvertissements(); }));
     $("#f-note").addEventListener("input", () => $("#note-affichee").textContent = $("#f-note").value);
     $("#btn-chrono").addEventListener("click", chronoPrincipal);
     $("#btn-chrono-stop").addEventListener("click", chronoArreter);
     $("#btn-chrono-raz").addEventListener("click", chronoRaz);
+    $("#param-enregistrer").addEventListener("click", enregistrerParametres);
+    $("#param-annuler").addEventListener("click", rendreParametres);
+    // La case de l'écran Paramètres et celle du chrono pilotent le même réglage.
+    $("#param-bips").addEventListener("change", () => {
+      $("#chrono-bip").checked = $("#param-bips").checked;
+      $("#chrono-bip").dispatchEvent(new Event("change"));
+    });
     $("#chrono-bip").addEventListener("change", () => {
       try { localStorage.setItem("bips", $("#chrono-bip").checked ? "1" : "0"); } catch (e) { /* tant pis */ }
     });
@@ -2685,6 +2814,7 @@
     rendreRecettes();
     rendreConvertisseur();
     try { $("#chrono-bip").checked = localStorage.getItem("bips") !== "0"; } catch (e) { /* tant pis */ }
+    chargerReplis();
     choisirMethode("Brikka");
     reinitialiserSaisie();
     if (restaurerBrouillon()) toast(I18N.t("t_brouillon"));

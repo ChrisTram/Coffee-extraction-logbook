@@ -228,7 +228,12 @@ const DATA = (() => {
       sousTitre: r.sous_titre !== undefined ? r.sous_titre : (r.sousTitre || ""),
       dose: Number(r.dose_g !== undefined ? r.dose_g : r.dose) || 0,
       eau: Number(r.eau_g !== undefined ? r.eau_g : r.eau) || 0,
-      temp: Number(r.temperature_c !== undefined ? r.temperature_c : r.temp) || 0,
+      // "" veut dire AUCUNE cible, ce qui n'est pas la même chose que 0 degré.
+      // Sur la Brikka la température dépend de la flamme, la fixer n'a pas de sens.
+      temp: (() => {
+        const v = r.temperature_c !== undefined ? r.temperature_c : r.temp;
+        return v === "" || v === null || v === undefined ? "" : (Number(v) || "");
+      })(),
       // Puissance de feu visee par la recette, Brikka seulement. Preremplit la
       // saisie comme le font la dose et la molette.
       puissance_feu: r.puissance_feu === "" || r.puissance_feu === undefined || r.puissance_feu === null
@@ -521,8 +526,30 @@ const DATA = (() => {
   function calculs(ext) {
     const cafe = cafeDe(ext);
     const dial = GRIND.parseDial(ext.mouture_dial);
-    let ratio = "";
-    if (ext.dose_g && ext.eau_g) ratio = (ext.eau_g / ext.dose_g);
+    /* RATIO : deux logiques, une par machine, parce que "eau" ne désigne pas la
+       même chose des deux côtés.
+
+       SWITCH, percolation : l'eau versée traverse le café et finit dans la tasse.
+       Le ratio d'infusion classique, eau sur dose, est le bon (1:15).
+
+       BRIKKA : "eau" est le volume de la CHAUDIÈRE. Une partie reste en vapeur
+       et ne passe jamais dans la tasse. Utiliser eau sur dose donnerait 1:9,4
+       là où la tasse fait réellement 1:5,6, et surtout ce nombre ne bougerait
+       jamais puisque la chaudière est toujours remplie pareil. On prend donc le
+       VOLUME EXTRAIT, comme le brew ratio d'un espresso.
+       Sans volume extrait renseigné on retombe sur la chaudière, mais l'infobulle
+       le dit clairement au lieu de faire passer un chiffre pour l'autre. */
+    let ratio = "", ratioBase = "";
+    const estBrikka = ext.methode === "Brikka";
+    if (ext.dose_g > 0) {
+      if (estBrikka && ext.volume_extrait_ml !== "" && Number(ext.volume_extrait_ml) > 0) {
+        ratio = Number(ext.volume_extrait_ml) / ext.dose_g;
+        ratioBase = "tasse";
+      } else if (ext.eau_g) {
+        ratio = ext.eau_g / ext.dose_g;
+        ratioBase = estBrikka ? "chaudiere" : "infusion";
+      }
+    }
     let age = "";
     if (cafe && cafe.date_torrefaction && ext.date_heure) {
       const d1 = new Date(cafe.date_torrefaction + "T00:00");
@@ -547,6 +574,15 @@ const DATA = (() => {
     return {
       ratio,
       ratioTexte: ratio === "" ? "" : "1:" + ratio.toFixed(1),
+      ratioBase,
+      // Ratio de la BOISSON servie : inclut l'eau d'allongement et le lait. Sur
+      // une Brikka allongée, c'est lui qui décrit ce qu'on boit vraiment.
+      ratioBoisson: (() => {
+        if (!(ext.dose_g > 0) || boisson === "" || !(Number(boisson) > 0)) return "";
+        const ajout = (Number(ext.eau_ajoutee_ml) || 0) + (Number(ext.lait_ml) || 0);
+        if (!ajout) return "";
+        return "1:" + (Number(boisson) / ext.dose_g).toFixed(1);
+      })(),
       crans: dial ? dial.crans : "",
       microns: dial ? Math.round(dial.microns) : "",
       age_jours: age,
@@ -1051,6 +1087,9 @@ const DATA = (() => {
     ajouterExtraction, modifierExtraction, supprimerExtraction,
     ajouterCafe, modifierCafe,
     ajouterRecette, modifierRecette, reinitialiserRecette, supprimerRecette, estRecetteDorigine,
+    // Exposée pour les tests : c'est elle qui décide qu'une température vide
+    // reste vide au lieu de tomber à 0, et qu'une puissance de feu survit.
+    normaliserRecette,
     ajouterTasse, supprimerTasse,
     kvGet, kvSet,
   };

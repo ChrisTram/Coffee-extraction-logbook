@@ -30,7 +30,8 @@ stock par sachet, calendrier lisible avec statistiques, classement des goûts pa
 descripteur, numéro de version, brouillon de saisie, durées en minutes et
 secondes, puissance de feu, diagnostics groupés avec aide au survol, recette
 d'eau préchauffée séparée, détail dépliable dans l'historique, comparateur de deux
-extractions, régularité en écart moyen, écran Mes meilleurs réglages par café.
+extractions, régularité en écart moyen, écran Mes meilleurs réglages par café,
+ratio propre à chaque machine avec explication au survol, écran Paramètres.
 
 ## Le constat qui oriente ce backlog
 
@@ -136,7 +137,7 @@ Vue imprimable ou PNG résumant la semaine. Confort pur, aucune urgence.
 
 | Sujet | Coût | Note |
 |---|---|---|
-| Découper `app.js` (2482 lignes, une seule IIFE) | M | En modules par écran, toujours en scripts classiques concaténables. C'est devenu le vrai frein : chaque ajout se cherche une place dans un fichier qui a doublé. À faire AVANT la priorité 1. |
+| Découper `app.js` (2849 lignes, une seule IIFE) | M | En modules par écran, toujours en scripts classiques concaténables. C'est devenu le vrai frein : chaque ajout se cherche une place dans un fichier qui a doublé. À faire AVANT la priorité 1. |
 | Accessibilité | S | 63 boutons pour 14 attributs `aria` ou `role`. Il manque `aria-pressed` sur les bascules (pilules, tags, méthode) et un focus visible renforcé. Peu coûteux, bénéfice réel au clavier. |
 | Tests d'interface | M | Contrainte découverte le 14 août : le panneau navigateur de l'agent sert les fichiers en `data:`, donc la feuille de style n'est jamais chargée ET IndexedDB n'existe pas. Aucun test d'interface fiable n'est possible par ce chemin, il faut un vrai serveur local ou un Playwright installé. `tools/data.test.mjs` couvre déjà la couche de données sans navigateur. |
 | Généraliser le bloc variantes | S | Le bloc Tetsu est codé en dur dans `TETSU`. À généraliser si une autre recette veut des versements pilotables. |

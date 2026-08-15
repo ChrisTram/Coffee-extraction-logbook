@@ -330,5 +330,51 @@ const classe = REGLAGES.tous(
 check("les cafes avec resultat passent devant", classe[0].cafe.id === "c1", classe.map(x => x.cafe.id).join());
 check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif === 0);
 
+// Ratio : deux logiques distinctes, une par machine. Sur la Brikka l'eau saisie
+// est celle de la CHAUDIERE, dont une partie part en vapeur : la rapporter a la
+// dose donne un nombre qui ne bouge jamais (la chaudiere est toujours remplie
+// pareil) et qui ne dit rien de la concentration en tasse.
+{
+  const brikka = DATA.calculs({ methode: "Brikka", dose_g: 16, eau_g: 150, volume_extrait_ml: 90 });
+  check("Brikka : le ratio se base sur le volume en tasse", brikka.ratioTexte === "1:5.6", brikka.ratioTexte);
+  check("Brikka : la base est nommee", brikka.ratioBase === "tasse", brikka.ratioBase);
+
+  const sansVolume = DATA.calculs({ methode: "Brikka", dose_g: 16, eau_g: 150, volume_extrait_ml: "" });
+  check("Brikka sans volume : repli chaudiere, et il est nomme",
+    sansVolume.ratioTexte === "1:9.4" && sansVolume.ratioBase === "chaudiere",
+    sansVolume.ratioTexte + " / " + sansVolume.ratioBase);
+
+  const sw = DATA.calculs({ methode: "Switch", dose_g: 15, eau_g: 225, volume_extrait_ml: 190 });
+  check("Switch : ratio d'infusion, inchange", sw.ratioTexte === "1:15.0", sw.ratioTexte);
+  check("Switch : le volume extrait ne detourne pas le calcul", sw.ratioBase === "infusion", sw.ratioBase);
+
+  const allonge = DATA.calculs({ methode: "Brikka", dose_g: 16, eau_g: 150, volume_extrait_ml: 90, eau_ajoutee_ml: 40 });
+  check("allonger a l'eau ne touche pas au ratio d'extraction", allonge.ratioTexte === "1:5.6", allonge.ratioTexte);
+  check("allonger a l'eau donne un ratio boisson en plus", allonge.ratioBoisson === "1:8.1", allonge.ratioBoisson);
+  check("sans allongement, pas de ratio boisson",
+    DATA.calculs({ methode: "Brikka", dose_g: 16, eau_g: 150, volume_extrait_ml: 90 }).ratioBoisson === "");
+}
+
+// Valeurs par defaut d'une recette : "" veut dire AUCUNE cible, ce qui n'est pas
+// zero. Les recettes Brikka n'ont pas de temperature cible, la flamme decide.
+{
+  const brikkas = RECETTES_DEPART.filter(r => r.methode === "Brikka");
+  check("les recettes Brikka n'imposent aucune temperature",
+    brikkas.length > 0 && brikkas.every(r => DATA.normaliserRecette(r).temp === ""),
+    brikkas.map(r => r.nom + "=" + DATA.normaliserRecette(r).temp).join(", "));
+  check("les recettes Brikka preremplissent 150 g de chaudiere",
+    brikkas.every(r => DATA.normaliserRecette(r).eau === 150),
+    brikkas.map(r => r.nom + "=" + DATA.normaliserRecette(r).eau).join(", "));
+  check("les recettes Switch gardent une temperature cible",
+    RECETTES_DEPART.filter(r => r.methode === "Switch").every(r => DATA.normaliserRecette(r).temp > 0));
+  check("une temperature vide reste vide et ne devient pas 0",
+    DATA.normaliserRecette({ temp: "" }).temp === "" && DATA.normaliserRecette({ temp: 0 }).temp === "");
+  check("la puissance de feu de la recette survit a la normalisation",
+    DATA.normaliserRecette({ puissance_feu: 4 }).puissance_feu === 4);
+  check("la puissance de feu est bornee a l'echelle 1-10",
+    DATA.normaliserRecette({ puissance_feu: 99 }).puissance_feu === 10 &&
+    DATA.normaliserRecette({ puissance_feu: 0 }).puissance_feu === 1);
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);
