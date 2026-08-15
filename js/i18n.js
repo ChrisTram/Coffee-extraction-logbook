@@ -847,7 +847,6 @@ const I18N = (() => {
     lait_calc: { fr: "Calcul : {t} ml de tasse moins {v} ml de café = {l} ml de lait.", en: "Math: {t} ml cup minus {v} ml coffee = {l} ml milk." },
     lait_trop_petit: { fr: "Tasse plus petite que l'extraction : pas de lait, et ne pas tout verser.", en: "Cup smaller than the extraction: no milk, and do not pour everything." },
     lait_choisir_tasse: { fr: "Choisis une tasse pour calculer le lait.", en: "Pick a cup to compute the milk." },
-    tasse_deborde: { fr: "Environ {v} ml attendus pour une tasse de {c} ml : ça déborde, prends plus grand.", en: "About {v} ml expected for a {c} ml cup: it will overflow, pick a bigger one." },
     t_tasse_invalide: { fr: "Donne un nom et une contenance à la tasse", en: "Give the cup a name and a capacity" },
     btn_supprimer: { fr: "Supprimer", en: "Delete" },
     fam_chronicler: { fr: "Même famille : Chronicler", en: "Same family: Chronicler" },

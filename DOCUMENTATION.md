@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.27,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.28,
 2026-08-12.
 
 ## 1. Vue d'ensemble
@@ -162,8 +162,10 @@ La Sherrycipe (2.0.0, paliers 0:00/0:30/1:00/1:30). Toutes les Switch à
 150, Espresso Egg 80, Nutty Tasting Cup 150, Classic Mug 330. Éditeur inline
 dans la saisie (bouton ✚). Défauts par méthode : Flat White Egg en Brikka,
 Classic Mug en Switch (non écrasés si l'utilisateur a choisi autre chose).
-Avertissement non bloquant si volume attendu (café + eau ajoutée + lait)
-dépasse la contenance.
+La contenance sert au calcul du lait. Elle ne déclenche PLUS aucun avertissement
+de débordement (retiré en v7.28) : celui-ci supposait un service en une seule
+fois, alors qu on peut verser en deux, ce qui le rendait faux dans un usage
+normal. Un avertissement qui se trompe apprend à ignorer les avertissements.
 
 ### achats.csv
 
@@ -2122,3 +2124,5 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   corrections contradictoires. Sa correction couvre maintenant les deux machines
   (l'ancienne parlait de verser en spirale, sans sens sur une Brikka). Les lignes
   des 5 dernières extractions ouvrent l'édition, au clic comme au clavier.
+- v7.28 : retrait de l avertissement de débordement de tasse. Il supposait un
+  service en une seule fois et se déclenchait à tort dès qu on verse en deux.

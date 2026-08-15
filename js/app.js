@@ -650,7 +650,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.27";
+  const VERSION = "7.28";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -893,22 +893,13 @@
     if (v && DATA.state.tasses.some(t => t.nom === v)) sel.value = v;
   }
 
-  function majAvertTasse() {
-    const zone = $("#tasse-avert");
-    const tasse = DATA.state.tasses.find(t => t.nom === $("#f-tasse").value);
-    if (!tasse) { zone.textContent = ""; return; }
-    const dose = parseFloat($("#f-dose").value);
-    const eau = parseFloat($("#f-eau").value);
-    if (!(dose > 0 && eau > 0)) { zone.textContent = ""; return; }
-    const volCafe = Math.max(0, Math.round(saisie.methode === "Brikka" ? eau - 0.7 * dose : eau - 2.1 * dose));
-    const ajout = !$("#champ-ajout-eau").hidden && $("#f-ajout-eau-oui").checked ? (parseFloat($("#f-eau-ajoutee").value) || 0) : 0;
-    const lait = !$("#champ-lait").hidden ? (parseFloat($("#f-lait").value) || 0) : 0;
-    const total = volCafe + ajout + lait;
-    zone.classList.toggle("hint-alerte", total > tasse.contenance_ml);
-    zone.textContent = total > tasse.contenance_ml
-      ? I18N.t("tasse_deborde", { v: total, c: tasse.contenance_ml })
-      : "";
-  }
+  /* L'avertissement de débordement de tasse a été RETIRÉ. Il comparait le volume
+     attendu à la contenance et criait au débordement, en supposant qu'on sert
+     tout d'un coup. Or on peut très bien verser en deux fois, ce qui rend
+     l'avertissement faux dans un usage parfaitement normal. Un avertissement qui
+     se trompe apprend surtout à ignorer les avertissements.
+     La contenance des tasses reste utile : elle sert au calcul du lait. */
+
 
   function rendreTassesEditeur() {
     $("#tasses-liste").innerHTML = DATA.state.tasses.map(t =>
@@ -1113,7 +1104,6 @@
     } else {
       spanBoisson.hidden = true;
     }
-    majAvertTasse();
 
     // Volume en tasse estimé : la Brikka retient un peu d'eau dans la chaudière
     // et le marc, le papier du Switch retient environ 2 g d'eau par gramme de café.
