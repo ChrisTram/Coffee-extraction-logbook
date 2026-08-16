@@ -419,5 +419,23 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   delete globalThis.localStorage;
 }
 
+/* Le service worker doit precacher TOUS les scripts charges par index.html.
+   sync.js et reglages.js manquaient : hors ligne, SYNC et REGLAGES n'existaient
+   pas et app.js cassait au demarrage. Une liste ecrite a la main diverge
+   forcement, donc on la compare a la source. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  const sw = readFileSync(join(ROOT, "sw.js"), "utf8");
+  const scripts = [...html.matchAll(/<script src="([^"]+)"/g)].map(m => m[1]);
+  const manquants = scripts.filter(s => !sw.includes('"./' + s + '"'));
+  check("tous les scripts d'index.html sont precaches", manquants.length === 0, manquants.join(", "));
+  check("index.html charge bien une dizaine de scripts", scripts.length >= 9, String(scripts.length));
+
+  // La feuille de style et le manifeste comptent autant : sans eux la PWA
+  // s'ouvre hors ligne en page blanche non stylee.
+  ["./css/styles.css", "./manifest.json", "./index.html"].forEach(f =>
+    check("precache : " + f, sw.includes('"' + f + '"')));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

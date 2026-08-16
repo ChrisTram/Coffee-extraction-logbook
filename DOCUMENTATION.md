@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.30,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.31,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -1262,3 +1262,9 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   Surtout : les recettes STOCKÉES rattrapent enfin les valeurs semées
   (150 g de chaudière, plus de température cible, feu à 2), sans quoi changer
   RECETTES_DEPART ne change rien pour une installation existante.
+- v7.31 : audit complet dans AUDIT-2026-08.md, fait sur les données réelles de
+  production. Deux bugs corrigés au passage. `sw.js` ne précachait ni
+  `js/sync.js` ni `js/reglages.js`, tous deux chargés par index.html : hors
+  ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
+  Un test compare désormais la liste du service worker aux balises script.
+  Et trois recettes Brikka stockées portaient une puissance de feu vide.

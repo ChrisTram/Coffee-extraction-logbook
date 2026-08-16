@@ -474,6 +474,12 @@ const DATA = (() => {
       // 3 puis 4 puis 2, l'échelle de feu de Chris a bougé deux fois.
       ["feu4", rec => Number(rec.puissance_feu) === 3, rec => { rec.puissance_feu = 4; }],
       ["feu2", rec => Number(rec.puissance_feu) === 4, rec => { rec.puissance_feu = 2; }],
+      // Les recettes semées avant l'existence du champ ne portent RIEN. Sans ce
+      // passage, la colonne Feu des Paramètres reste vide et seul le repli
+      // sauvait le préremplissage, ce qui n'est pas une valeur par défaut mais
+      // un filet.
+      ["feuVide", rec => rec.puissance_feu === "" || rec.puissance_feu === undefined,
+        rec => { rec.puissance_feu = 2; }],
       // 100 g était une estimation, 150 g est la contenance réelle de la
       // chaudière. Et plus de température cible : c'est la flamme qui décide.
       ["brikka150", rec => Number(rec.eau) === 100, rec => { rec.eau = 150; rec.temp = ""; }],
