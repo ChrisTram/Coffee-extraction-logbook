@@ -193,7 +193,7 @@ check(
 check("puissance_feu dans EXT_COLS", DATA.EXT_COLS.includes("puissance_feu"));
 check("puissance_feu dans RECETTE_COLS", DATA.RECETTE_COLS.includes("puissance_feu"));
 const BRIKKAS = RECETTES_DEPART.filter(r => r.methode === "Brikka");
-check("les 4 recettes Brikka portent une cible a 4", BRIKKAS.length === 4 && BRIKKAS.every(r => r.puissance_feu === 4),
+check("les 4 recettes Brikka portent une cible a 2", BRIKKAS.length === 4 && BRIKKAS.every(r => r.puissance_feu === 2),
   BRIKKAS.map(r => r.nom + "=" + r.puissance_feu).join(" | "));
 check("aucune recette Switch n'en porte", RECETTES_DEPART.filter(r => r.methode === "Switch").every(r => r.puissance_feu === undefined));
 
@@ -374,6 +374,49 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("la puissance de feu est bornee a l'echelle 1-10",
     DATA.normaliserRecette({ puissance_feu: 99 }).puissance_feu === 10 &&
     DATA.normaliserRecette({ puissance_feu: 0 }).puissance_feu === 1);
+}
+
+/* Recettes stockees : changer RECETTES_DEPART ne suffit pas. Une installation
+   existante garde la valeur semee le jour de sa creation, et c'est la recette
+   qui preremplit la saisie. Sans ces passages, demander 150 g et un feu a 2
+   n'aurait aucun effet visible pour Chris. */
+{
+  const marques = new Set();
+  globalThis.localStorage = {
+    getItem: k => (marques.has(k) ? "1" : null),
+    setItem: k => marques.add(k),
+    removeItem: k => marques.delete(k),
+  };
+  // Une installation d'avant : chaudiere estimee a 100 g, feu a 4, temperature figee.
+  DATA.state.recettes = [
+    { id: "b1", nom: "Brikka classique", methode: "Brikka", eau: 100, temp: 93, puissance_feu: 4, maj_le: 0 },
+    { id: "b2", nom: "Brikka flat white", methode: "Brikka", eau: 100, temp: 93, puissance_feu: 3, maj_le: 0 },
+    // Choix volontaire posterieur : ne doit PAS etre ecrase.
+    { id: "b3", nom: "Brikka perso", methode: "Brikka", eau: 170, temp: "", puissance_feu: 6, maj_le: 0 },
+    { id: "s1", nom: "Switch 4:6", methode: "Switch", eau: 225, temp: 92, puissance_feu: "", maj_le: 0 },
+  ];
+  DATA.migrerDonnees();
+  const par = id => DATA.state.recettes.find(r => r.id === id);
+  check("la chaudiere Brikka passe de 100 a 150 g", par("b1").eau === 150 && par("b2").eau === 150,
+    par("b1").eau + " / " + par("b2").eau);
+  check("la temperature cible Brikka disparait", par("b1").temp === "" && par("b2").temp === "",
+    JSON.stringify([par("b1").temp, par("b2").temp]));
+  check("le feu semé a 4 devient 2", par("b1").puissance_feu === 2, par("b1").puissance_feu);
+  check("le feu semé a 3 passe par 4 puis finit a 2", par("b2").puissance_feu === 2, par("b2").puissance_feu);
+  check("une recette Brikka reglee a la main n'est pas touchee",
+    par("b3").eau === 170 && par("b3").puissance_feu === 6,
+    par("b3").eau + " / " + par("b3").puissance_feu);
+  check("le Switch n'est jamais concerne", par("s1").eau === 225 && par("s1").temp === 92);
+  check("les recettes touchees sont estampillees pour la synchro", par("b1").maj_le > 0);
+
+  // Rejouer ne doit RIEN faire : sinon un feu remis a 4 volontairement
+  // retomberait a 2 au prochain chargement.
+  par("b1").puissance_feu = 4;
+  par("b1").eau = 100;
+  DATA.migrerDonnees();
+  check("les passages ne se rejouent pas", par("b1").puissance_feu === 4 && par("b1").eau === 100,
+    par("b1").puissance_feu + " / " + par("b1").eau);
+  delete globalThis.localStorage;
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);

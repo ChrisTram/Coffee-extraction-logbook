@@ -403,6 +403,12 @@ button { font-family: inherit; }
 }
 .entete-actions { flex-wrap: wrap; }
 .btn-icone:hover { border-color: var(--accent); }
+
+/* Parametres : un 7e onglet faisait passer la nav a la ligne sous le reste.
+   Il vit donc avec les outils d'entete, en engrenage, mais garde la classe
+   .nav-btn pour que le clic et l'etat actif restent geres au meme endroit. */
+.nav-icone { font-size: 1.05rem; line-height: 1; }
+.nav-icone.actif { background: var(--accent-fond); border-color: var(--accent); color: var(--accent-fort); }
 .btn-icone-texte { font-size: 0.85rem; }
 
 /* ---------- Structure ---------- */

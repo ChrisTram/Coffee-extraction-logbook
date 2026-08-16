@@ -37,7 +37,6 @@
       <button class="nav-btn" data-ecran="reglages">Réglages</button>
       <button class="nav-btn" data-ecran="reference">Référence</button>
       <button class="nav-btn" data-ecran="guide">Guide</button>
-        <button class="nav-btn" data-ecran="parametres">Paramètres</button>
     </nav>
     <div class="entete-actions">
       <span id="badge-demo" class="badge badge-demo" hidden>Démo</span>
@@ -47,6 +46,7 @@
       <button id="btn-donnees" class="btn-icone" title="Gérer les données">⛁<span class="btn-icone-texte">Données</span></button>
       <button id="btn-lang" class="btn-icone" title="Switch to English">EN</button>
       <button id="btn-theme" class="btn-icone" title="Basculer clair ou sombre">◐</button>
+      <button class="btn-icone nav-btn nav-icone" data-ecran="parametres" title="Paramètres" aria-label="Paramètres">⚙</button>
     </div>
   </div>
 </header>
@@ -195,7 +195,7 @@
       </div>
       <div class="champ" id="champ-puissance" hidden>
         <label for="f-puissance">Puissance de feu</label>
-        <input type="number" id="f-puissance" min="1" max="10" step="1" inputmode="numeric" value="4">
+        <input type="number" id="f-puissance" min="1" max="10" step="1" inputmode="numeric" value="2">
         <span class="champ-hint">Ton échelle, de 1 à 10.</span>
       </div>
       <div class="champ" id="champ-lait" hidden>

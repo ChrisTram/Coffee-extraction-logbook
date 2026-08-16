@@ -459,24 +459,38 @@ const DATA = (() => {
       }
     });
 
-    // 6 quater. Puissance de feu des recettes Brikka : 3 devient 4.
-    //    Les recettes stockées portent la valeur SEMÉE (3), pas un choix de
-    //    Chris, et c'est la recette qui préremplit la saisie : sans ce passage,
-    //    demander 4 par défaut n'aurait aucun effet visible.
-    //    UNE SEULE FOIS par appareil, marqué dans localStorage. Ce n'est pas une
-    //    migration idempotente au sens habituel : si on la rejouait, elle
-    //    écraserait un 3 choisi volontairement plus tard.
+    /* 6 quater. Valeurs par défaut des recettes Brikka.
+       Les recettes SEMÉES ont évolué, mais les recettes STOCKÉES gardent la
+       valeur du jour où elles ont été semées : changer RECETTES_DEPART n'a donc
+       aucun effet visible pour qui utilise déjà le site. C'est ce qui a fait
+       croire que l'eau était restée à 100 g alors que la graine disait 150.
+
+       Trois passages, chacun marqué UNE SEULE FOIS par appareil dans
+       localStorage. Ce ne sont pas des migrations idempotentes au sens habituel :
+       les rejouer écraserait un réglage choisi volontairement ensuite. Chaque
+       passage ne touche d'ailleurs QUE la valeur semée d'avant, jamais autre
+       chose, pour la même raison. */
+    const passages = [
+      // 3 puis 4 puis 2, l'échelle de feu de Chris a bougé deux fois.
+      ["feu4", rec => Number(rec.puissance_feu) === 3, rec => { rec.puissance_feu = 4; }],
+      ["feu2", rec => Number(rec.puissance_feu) === 4, rec => { rec.puissance_feu = 2; }],
+      // 100 g était une estimation, 150 g est la contenance réelle de la
+      // chaudière. Et plus de température cible : c'est la flamme qui décide.
+      ["brikka150", rec => Number(rec.eau) === 100, rec => { rec.eau = 150; rec.temp = ""; }],
+    ];
     try {
-      if (typeof localStorage !== "undefined" && !localStorage.getItem("feu4")) {
-        state.recettes.forEach(rec => {
-          if (rec.methode === "Brikka" && Number(rec.puissance_feu) === 3) {
-            rec.puissance_feu = 4;
+      if (typeof localStorage !== "undefined") {
+        passages.forEach(([marqueur, concerne, appliquer]) => {
+          if (localStorage.getItem(marqueur)) return;
+          state.recettes.forEach(rec => {
+            if (rec.methode !== "Brikka" || !concerne(rec)) return;
+            appliquer(rec);
             estampiller(rec);
-          }
+          });
+          localStorage.setItem(marqueur, "1");
         });
-        localStorage.setItem("feu4", "1");
       }
-    } catch (e) { /* stockage refusé : on laisse la valeur semée */ }
+    } catch (e) { /* stockage refusé : on laisse les valeurs semées */ }
 
     // 6 bis. Les extractions faites à l'eau préchauffée quittent "Brikka
     //    classique" pour la variante dédiée. Le préchauffage n'est pas un détail
@@ -1090,6 +1104,9 @@ const DATA = (() => {
     // Exposée pour les tests : c'est elle qui décide qu'une température vide
     // reste vide au lieu de tomber à 0, et qu'une puissance de feu survit.
     normaliserRecette,
+    // Exposée pour les tests : c'est elle qui rattrape les recettes STOCKÉES
+    // quand les valeurs semées changent, et ce rattrapage est marqué une fois.
+    migrerDonnees,
     ajouterTasse, supprimerTasse,
     kvGet, kvSet,
   };

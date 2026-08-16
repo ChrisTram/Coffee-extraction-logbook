@@ -1,8 +1,8 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.29,
-2026-08-15.
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.30,
+2026-08-16.
 
 ## 1. Vue d'ensemble
 
@@ -1002,6 +1002,14 @@ Conséquence dans `prefillDepuisRecette()` : le formulaire suit la recette pour 
 dose, l'eau, la température, la puissance de feu et la molette. Plus aucune
 constante codée en dur ne les écrase.
 
+ATTENTION, le piège qui a fait croire que rien n'avait bougé : modifier
+`RECETTES_DEPART` ne touche QUE les nouvelles installations. Les recettes déjà
+stockées gardent la valeur du jour où elles ont été semées, et ce sont elles qui
+préremplissent la saisie. Tout changement de valeur par défaut doit donc
+s'accompagner d'un passage dans `migrerDonnees()` (section 3, bloc 6 quater),
+marqué une seule fois dans localStorage pour ne pas écraser un réglage choisi
+volontairement ensuite.
+
 Une température VIDE veut dire "aucune cible", ce qui n'est pas zéro degré.
 `normaliserRecette` préserve la chaîne vide exprès. Les quatre recettes Brikka
 sont dans ce cas : la température y dépend de la puissance du feu, l'annoncer
@@ -1249,3 +1257,8 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   n'imposent plus de température et préremplissent 150 g. Le champ puissance de
   feu manquait au formulaire de recette : l'éditer effaçait la valeur.
   DOCUMENTATION.md contenait trois copies de lui-même, retirées.
+- v7.30 : Paramètres passe en icône d'engrenage à droite de l'entête, un
+  septième onglet texte faisait passer la nav à la ligne. Feu par défaut à 2.
+  Surtout : les recettes STOCKÉES rattrapent enfin les valeurs semées
+  (150 g de chaudière, plus de température cible, feu à 2), sans quoi changer
+  RECETTES_DEPART ne change rien pour une installation existante.

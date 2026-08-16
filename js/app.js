@@ -651,7 +651,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.29";
+  const VERSION = "7.30";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -770,7 +770,7 @@
   const DOSE_REPLI_USINE = 15;
 
   // Puissance de feu par défaut, échelle personnelle de 1 à 10, Brikka seulement.
-  const FEU_REPLI_USINE = 4;
+  const FEU_REPLI_USINE = 2;
 
   /* Ces deux replis ne servent QUE si la recette choisie laisse la valeur vide.
      Modifiables depuis l'écran Paramètres. Volontairement en localStorage et pas
