@@ -113,7 +113,15 @@
 
   // ---------- Navigation ----------
 
-  const ECRANS = ["tableau", "saisie", "historique", "reglages", "reference", "guide", "parametres"];
+  const ECRANS = ["tableau", "saisie", "historique", "reglages", "guide", "parametres"];
+
+  /* Anciens noms d'écran encore présents dans un signet ou un raccourci PWA.
+     "reference" a fusionné dans "guide" : la référence et le guide d'achat
+     parlaient du même matériel et se consultaient l'un après l'autre. */
+  const ECRANS_RENOMMES = { reference: "guide" };
+  function normaliserEcran(nom) {
+    return ECRANS_RENOMMES[nom] || nom;
+  }
   let ecranCourant = "tableau";
 
   function activerEcran(nom) {
@@ -132,7 +140,7 @@
     else if (ecranCourant === "reglages") rendreReglages();
     else if (ecranCourant === "historique") rendreHistorique();
     else if (ecranCourant === "parametres") rendreParametres();
-    else if (ecranCourant === "reference" && force) rendreConvertisseur();
+    else if (ecranCourant === "guide" && force) rendreConvertisseur();
   }
 
   // ---------- Tableau de bord ----------
@@ -651,7 +659,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.31";
+  const VERSION = "7.32";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -2472,7 +2480,8 @@
     $$("[data-va]").forEach(b => b.addEventListener("click", () => activerEcran(b.dataset.va)));
     window.addEventListener("hashchange", () => {
       const h = location.hash.slice(1);
-      if (ECRANS.includes(h) && h !== ecranCourant) activerEcran(h);
+      const cible = normaliserEcran(h);
+      if (ECRANS.includes(cible) && cible !== ecranCourant) activerEcran(cible);
     });
 
     // Thème
@@ -2820,7 +2829,7 @@
     if (restaurerBrouillon()) toast(I18N.t("t_brouillon"));
 
     const h = location.hash.slice(1);
-    activerEcran(ECRANS.includes(h) ? h : "tableau");
+    activerEcran(ECRANS.includes(normaliserEcran(h)) ? normaliserEcran(h) : "tableau");
 
     // Le système relâche le verrou d'écran quand l'onglet part en arrière plan.
     // Au retour, si le chrono tourne toujours, on le reprend.

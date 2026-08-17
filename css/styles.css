@@ -164,10 +164,11 @@ button { font-family: inherit; }
 .derniere-cliquable:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* Ecran Parametres : un tableau d edition compact, une ligne par recette. */
+#ecran-parametres { max-width: 780px; }
 #ecran-parametres .carte { margin-bottom: 18px; }
 .param-aide { color: var(--attenue); font-size: 0.85rem; margin: 0 0 12px; max-width: 72ch; }
 .param-tableau-zone { overflow-x: auto; margin-bottom: 14px; }
-.param-tableau { min-width: 640px; }
+.param-tableau { min-width: 560px; }
 .param-tableau td { padding: 5px 8px; }
 .param-tableau input { width: 100%; min-width: 70px; padding: 5px 7px; }
 .param-tableau tr.param-groupe td {
@@ -407,7 +408,11 @@ button { font-family: inherit; }
 /* Parametres : un 7e onglet faisait passer la nav a la ligne sous le reste.
    Il vit donc avec les outils d'entete, en engrenage, mais garde la classe
    .nav-btn pour que le clic et l'etat actif restent geres au meme endroit. */
-.nav-icone { font-size: 1.05rem; line-height: 1; }
+.nav-icone {
+  font-size: 1.02rem; line-height: 1;
+  width: 34px; height: 32px; padding: 0;
+  justify-content: center;
+}
 .nav-icone.actif { background: var(--accent-fond); border-color: var(--accent); color: var(--accent-fort); }
 .btn-icone-texte { font-size: 0.85rem; }
 
@@ -1108,6 +1113,10 @@ input:focus, select:focus, textarea:focus {
   padding: 8px 0;
   margin-bottom: 8px;
 }
+.sommaire-sep {
+  width: 1px; align-self: stretch; margin: 2px 5px;
+  background: var(--lignes);
+}
 .sommaire a {
   text-decoration: none;
   color: var(--attenue);
@@ -1543,6 +1552,9 @@ input:focus, select:focus, textarea:focus {
   .entete-inner { padding: 8px 12px; gap: 8px; }
   .nav { order: 3; width: 100%; justify-content: space-between; }
   .nav-btn { padding: 8px 10px; font-size: 0.85rem; flex: 1; text-align: center; }
+  /* Les icônes d'écran restent des icônes, elles ne doivent pas s'étirer
+     comme les trois onglets à texte au dessus. */
+  .nav-icone { flex: 0 0 auto; width: 32px; height: 30px; }
   .btn-icone-texte { display: none; }
   main { padding: 16px 12px 70px; }
   .kpi-valeur { font-size: 1.4rem; }
@@ -1561,6 +1573,11 @@ input:focus, select:focus, textarea:focus {
 
 @media (max-width: 480px) {
   .kpis { grid-template-columns: repeat(2, 1fr); }
+  /* Huit outils dans l'entête : sur un petit écran ils se resserrent au lieu
+     de passer à la ligne et de repousser le contenu. */
+  .entete-actions { gap: 4px; }
+  .btn-icone { padding: 6px 7px; }
+  .nav-icone { width: 30px; height: 28px; }
   .grille-recettes { grid-template-columns: 1fr; }
   .btn-methode { padding: 14px 8px; }
   .nav-btn { padding: 8px 6px; font-size: 0.78rem; }

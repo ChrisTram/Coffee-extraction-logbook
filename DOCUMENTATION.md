@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.31,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.32,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -13,9 +13,20 @@ chargés dans cet ordre : chart.umd, i18n, grind, recettes, demo-data, data,
 charts, app. Chaque fichier expose un objet global (I18N, GRIND, DATA, CHARTS)
 ou des constantes globales (RECETTES_DEPART, etc.). app.js est une IIFE.
 
-SEPT écrans dans une page unique, bascule par nav et hash. La liste fait foi
-dans `ECRANS` (app.js) : tableau, saisie, historique, reglages, reference,
-guide, parametres.
+SIX écrans dans une page unique, bascule par nav et hash. La liste fait foi dans
+`ECRANS` (app.js) : tableau, saisie, historique, reglages, guide, parametres.
+
+La barre de navigation ne porte que TROIS onglets à texte, ceux où l'on va
+plusieurs fois par jour : tableau, saisie, historique. Les trois écrans
+consultatifs (reglages, guide, parametres) sont des icônes dans les outils
+d'entête, avec la classe `nav-btn nav-icone` pour que le clic et l'état actif
+restent gérés au même endroit que les onglets. Un septième onglet à texte faisait
+passer la barre à la ligne, sous le reste de la page. Un test le verrouille.
+
+L'écran `reference` a fusionné dans `guide` : la référence matériel et le guide
+d'achat parlaient du même sujet et se consultaient l'un après l'autre. Les anciens
+liens `#reference` restent valides grâce à `ECRANS_RENOMMES` dans app.js, qui est
+le bon endroit pour tout renommage futur d'écran.
 Elle était codée en dur en deux endroits, ce qui obligeait à penser aux deux à
 chaque ajout. Bouton flottant de saisie rapide en bas à
 droite (café + recette + note, le reste prérempli).

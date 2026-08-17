@@ -220,7 +220,7 @@ check("notifier() avec des données ne jette pas", true);
 
 // Chaque écran, un par un. Une exception dans l'un d'eux serait invisible sinon,
 // et c'est précisément ce qui s'était produit sur le tableau de bord.
-const ECRANS = ["tableau", "saisie", "historique", "reglages", "reference", "guide", "parametres"];
+const ECRANS = ["tableau", "saisie", "historique", "reglages", "guide", "parametres"];
 for (const nom of ECRANS) {
   location.hash = "#" + nom;
   let jete = null;

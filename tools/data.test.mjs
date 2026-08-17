@@ -437,5 +437,26 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     check("precache : " + f, sw.includes('"' + f + '"')));
 }
 
+/* La barre de navigation ne doit plus jamais passer a la ligne : trois onglets a
+   texte, tout le reste en icone a droite. C'est le 7e onglet Parametres qui avait
+   casse la mise en page. */
+{
+  const html = readFileSync(join(ROOT, 'index.html'), 'utf8');
+  const nav = html.slice(html.indexOf('<nav class="nav"'), html.indexOf('</nav>'));
+  const onglets = (nav.match(/nav-btn/g) || []).length;
+  check('trois onglets a texte au maximum dans la nav', onglets <= 3, String(onglets));
+
+  // Chaque icone d'ecran doit viser un ecran qui existe vraiment.
+  const cibles = [...html.matchAll(/data-ecran="(w+)"/g)].map(m => m[1]);
+  const app = readFileSync(join(ROOT, 'js/app.js'), 'utf8');
+  const liste = app.slice(app.indexOf('const ECRANS = ['), app.indexOf(']', app.indexOf('const ECRANS = [')));
+  const inconnues = cibles.filter(c => !liste.includes('"' + c + '"'));
+  check('toutes les cibles data-ecran existent', inconnues.length === 0, inconnues.join(', '));
+
+  // Une icone sans libelle accessible est muette au lecteur d'ecran.
+  const sansLabel = [...html.matchAll(/<button[^>]*nav-icone[^>]*>/g)].filter(m => !m[0].includes('aria-label'));
+  check('chaque icone d ecran porte un aria-label', sansLabel.length === 0, String(sansLabel.length));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

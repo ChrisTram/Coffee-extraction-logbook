@@ -30,23 +30,25 @@
         </div>
       </a>
     </div>
+    <!-- Trois entrées seulement : ce sont les seules où on va plusieurs fois par
+         jour. Tout le reste est consultatif et vit en icône à droite, ce qui évite
+         surtout à la barre de passer à la ligne. -->
     <nav class="nav" aria-label="Navigation principale">
       <button class="nav-btn actif" data-ecran="tableau">Tableau de bord</button>
       <button class="nav-btn" data-ecran="saisie">Saisie</button>
       <button class="nav-btn" data-ecran="historique">Historique</button>
-      <button class="nav-btn" data-ecran="reglages">Réglages</button>
-      <button class="nav-btn" data-ecran="reference">Référence</button>
-      <button class="nav-btn" data-ecran="guide">Guide</button>
     </nav>
     <div class="entete-actions">
       <span id="badge-demo" class="badge badge-demo" hidden>Démo</span>
       <span id="badge-fichier" class="badge badge-fichier" hidden title="Dossier de données lié">📁 <span id="badge-fichier-nom"></span></span>
-      <button id="btn-cafes-entete" class="btn-icone" title="Gérer mes cafés">☕<span class="btn-icone-texte">Cafés</span></button>
-      <button id="btn-recettes-entete" class="btn-icone" title="Gérer mes recettes">📖<span class="btn-icone-texte">Recettes</span></button>
-      <button id="btn-donnees" class="btn-icone" title="Gérer les données">⛁<span class="btn-icone-texte">Données</span></button>
+      <button id="btn-cafes-entete" class="btn-icone" title="Gérer mes cafés" aria-label="Gérer mes cafés">☕</button>
+      <button id="btn-recettes-entete" class="btn-icone" title="Gérer mes recettes" aria-label="Gérer mes recettes">📖</button>
+      <button id="btn-donnees" class="btn-icone" title="Gérer les données" aria-label="Gérer les données">⛁</button>
+      <button class="btn-icone nav-btn nav-icone" data-ecran="reglages" title="Mes meilleurs réglages" aria-label="Mes meilleurs réglages">🏆</button>
+      <button class="btn-icone nav-btn nav-icone" data-ecran="guide" title="Guide et référence" aria-label="Guide et référence">📚</button>
+      <button class="btn-icone nav-btn nav-icone" data-ecran="parametres" title="Paramètres" aria-label="Paramètres">⚙</button>
       <button id="btn-lang" class="btn-icone" title="Switch to English">EN</button>
       <button id="btn-theme" class="btn-icone" title="Basculer clair ou sombre">◐</button>
-      <button class="btn-icone nav-btn nav-icone" data-ecran="parametres" title="Paramètres" aria-label="Paramètres">⚙</button>
     </div>
   </div>
 </header>
@@ -390,14 +392,20 @@
   <div id="reglages-liste"></div>
 </section>
 
-<!-- ================= ECRAN 4 : REFERENCE ================= -->
-<section id="ecran-reference" class="ecran">
-  <nav class="sommaire" aria-label="Sommaire de la référence">
+<!-- ================= ECRAN 4 : GUIDE (référence + achats) ================= -->
+<section id="ecran-guide" class="ecran">
+  <nav class="sommaire" aria-label="Sommaire du guide">
     <a href="#ref-recettes">Recettes</a>
     <a href="#ref-moulin">Moulin</a>
     <a href="#ref-diagnostic">Diagnostic du goût</a>
     <a href="#ref-regles">Règles</a>
     <a href="#ref-vocabulaire">Vocabulaire</a>
+    <span class="sommaire-sep" aria-hidden="true"></span>
+    <a href="#gd-boutiques">Boutiques</a>
+    <a href="#gd-acheter">Quoi acheter</a>
+    <a href="#gd-regles">Règles d'achat</a>
+    <a href="#gd-materiel">Matériel</a>
+    <a href="#gd-messages">Messages à copier</a>
   </nav>
 
   <div class="ref-titre-ligne">
@@ -621,17 +629,6 @@
       </div>
     </details>
   </div>
-</section>
-
-<!-- ================= ECRAN 5 : GUIDE ================= -->
-<section id="ecran-guide" class="ecran">
-  <nav class="sommaire" aria-label="Sommaire du guide">
-    <a href="#gd-boutiques">Boutiques</a>
-    <a href="#gd-acheter">Quoi acheter</a>
-    <a href="#gd-regles">Règles d'achat</a>
-    <a href="#gd-materiel">Matériel et entretien</a>
-    <a href="#gd-messages">Messages prêts à copier</a>
-  </nav>
 
   <h2 id="gd-boutiques" class="ref-titre">Les boutiques, et quoi y prendre</h2>
   <p class="ref-intro">Tiré de mon guide Brikka et Switch. Sept de ces boutiques vendent principalement sur leur propre site plutôt que sur Shopee, et c'est presque toujours moins cher en direct.</p>
