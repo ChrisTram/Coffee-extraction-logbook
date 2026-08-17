@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.32,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.33,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -1012,6 +1012,24 @@ créé deux vérités qui divergent en silence.
 Conséquence dans `prefillDepuisRecette()` : le formulaire suit la recette pour la
 dose, l'eau, la température, la puissance de feu et la molette. Plus aucune
 constante codée en dur ne les écrase.
+
+DEUX PIÈGES qui ont fait croire que rien ne marchait, corrigés en v7.33 :
+
+1. `reinitialiserSaisie()` remettait tout à zéro et n'appliquait PAS la recette.
+   Les valeurs par défaut n'arrivaient donc que si on rechangeait de recette à la
+   main, c'est-à-dire jamais sur le cas courant. L'appel à
+   `prefillDepuisRecette` est maintenant la DERNIÈRE ligne de la fonction, et
+   doit le rester : plus haut, la remise à zéro du préchauffage l'écraserait.
+2. `remplirSelectRecettes()` ne posait `sel.value` que pour une recette marquée
+   `parDefaut`, ce qu'aucune Brikka n'est. Le navigateur sélectionne la première
+   option tout seul, mais le CODE l'ignorait, donc `prefillDepuisRecette("")`
+   repartait sans rien faire. Repli explicite sur `liste[0]` désormais.
+
+Le champ température n'a plus de `placeholder`. Un fond "93" annonçait une valeur
+par défaut qui n'existe plus, et un champ doit être soit prérempli soit vide.
+
+`tools/boot.test.mjs` vérifie ces trois points sur le vrai chemin de démarrage,
+sans crochet de test dans app.js.
 
 ATTENTION, le piège qui a fait croire que rien n'avait bougé : modifier
 `RECETTES_DEPART` ne touche QUE les nouvelles installations. Les recettes déjà

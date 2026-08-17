@@ -659,7 +659,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.32";
+  const VERSION = "7.33";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -843,7 +843,12 @@
     sel.innerHTML = liste.map(r => "<option>" + r.nom + "</option>").join("");
     if (liste.some(r => r.nom === valeur)) sel.value = valeur;
     else {
-      const defaut = liste.find(r => r.parDefaut);
+      /* Repli sur la PREMIÈRE recette quand aucune n'est marquée par défaut, ce
+         qui est le cas de toutes les Brikka. Le navigateur sélectionne déjà la
+         première option tout seul, mais le code ne le savait pas : sel.value
+         restait vide de son point de vue, donc prefillDepuisRecette repartait
+         sans rien faire et l'eau à 150 g n'arrivait jamais. */
+      const defaut = liste.find(r => r.parDefaut) || liste[0];
       if (defaut) sel.value = defaut.nom;
     }
   }
@@ -1430,8 +1435,13 @@
     $$("#f-descripteurs .tag").forEach(x => x.classList.remove("actif"));
     $("#diagnostic-correction").textContent = "";
     chronoRaz();
-    majAvertissements();
-    majLive();
+    /* EN DERNIER, et c'est le point important : les lignes ci-dessus posent les
+       replis, la recette a le dernier mot. Sans cet appel le formulaire vierge
+       restait vide, et les valeurs par défaut réglées dans Paramètres
+       n'arrivaient que si on rechangeait de recette à la main. Placé plus haut,
+       il se ferait écraser par la remise à zéro du préchauffage.
+       prefillDepuisRecette termine par majAvertissements et majLive. */
+    prefillDepuisRecette($("#f-recette").value);
   }
 
   function chargerExtractionDansSaisie(ext, duplication) {

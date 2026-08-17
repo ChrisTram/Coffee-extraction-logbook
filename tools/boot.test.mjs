@@ -250,5 +250,33 @@ api.I18N.basculer();
 await new Promise(r => setTimeout(r, 150));
 check("retour FR sans exception", api.I18N.lang() === "fr", api.I18N.lang());
 
+/* Le formulaire vierge doit porter les valeurs par defaut de la RECETTE.
+   Tombe deux fois : d'abord parce que le formulaire ignorait la recette, ensuite
+   parce que reinitialiserSaisie remettait tout a zero SANS la reappliquer. Le
+   champ eau restait vide alors que la Brikka demande 150 g, et l'ecran
+   Parametres ne servait a rien sur le cas le plus courant.
+   Ce test passe par le demarrage reel, sans crochet de test dans app.js :
+   demarrer() finit par reinitialiserSaisie(), c'est exactement le chemin casse. */
+const brikka = api.DATA.state.recettes.find(r => r.methode === "Brikka");
+check("une recette Brikka existe apres demarrage", !!brikka);
+if (brikka) {
+  check("la recette Brikka porte 150 g d'eau", Number(brikka.eau) === 150, String(brikka.eau));
+  check("la recette Brikka n'impose aucune temperature", brikka.temp === "", JSON.stringify(brikka.temp));
+  check("le formulaire vierge herite de l'eau de la recette",
+    String(document.querySelector("#f-eau").value) === String(brikka.eau),
+    JSON.stringify(document.querySelector("#f-eau").value));
+  check("le formulaire vierge laisse la temperature vide en Brikka",
+    document.querySelector("#f-temp").value === "",
+    JSON.stringify(document.querySelector("#f-temp").value));
+  check("le formulaire vierge herite de la puissance de feu",
+    String(document.querySelector("#f-puissance").value) === String(brikka.puissance_feu),
+    JSON.stringify(document.querySelector("#f-puissance").value));
+}
+
+// Aucun fond de champ ne doit annoncer une valeur par defaut qui n'existe pas.
+const htmlSaisie = readFileSync(join(ROOT, "index.html"), "utf8");
+const champTemp = (htmlSaisie.match(/<input[^>]*id="f-temp"[^>]*>/) || [""])[0];
+check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("placeholder"), champTemp);
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);
