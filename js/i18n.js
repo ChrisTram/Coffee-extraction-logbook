@@ -15,17 +15,14 @@ const I18N = (() => {
   // ---------- 1. Contenu statique : français vers anglais ----------
 
   const UI = {
-    "Estimer depuis ma méthode…": "Estimate from my method…",
-    "Bouillante, versée tout de suite": "Boiling, poured right away",
-    "Bouillie, 30 s de repos": "Boiled, rested 30 s",
-    "Bouillie, 1 min de repos": "Boiled, rested 1 min",
-    "Bouillie, 2 min de repos": "Boiled, rested 2 min",
-    "Bouillie, 3 min de repos": "Boiled, rested 3 min",
-    "Bouillie, 5 min de repos": "Boiled, rested 5 min",
-    "Bouillie, 8 min de repos": "Boiled, rested 8 min",
-    "3 volumes bouillante + 1 volume froide": "3 parts boiling + 1 part cold",
-    "2 volumes bouillante + 1 volume froide": "2 parts boiling + 1 part cold",
-    "Estimations pour une bouilloire ouverte d'environ un demi litre. Le mélange à l'eau froide est le seul repère fiable sans thermomètre.": "Estimates for an open kettle of about half a litre. The cold water blend is the only reliable reference without a thermometer.",
+    "Estimer…": "Estimate…",
+    "Petites bulles, pas encore frétillante": "Small bubbles, not simmering yet",
+    "Petites bulles, 30 s de repos": "Small bubbles, rested 30 s",
+    "Petites bulles, 1 min de repos": "Small bubbles, rested 1 min",
+    "Bouillante": "Boiling",
+    "Bouillante, 30 s de repos": "Boiling, rested 30 s",
+    "3 volumes bouillante + 1 froide": "3 parts boiling + 1 cold",
+    "Estimations, sauf le mélange à l'eau froide.": "Estimates, except the cold water blend.",
     "Paramètres": "Settings",
     "Les valeurs pré-remplies quand tu ouvres une saisie. Elles appartiennent à la recette : c'est la même fiche que dans « Gérer les recettes », donc une seule vérité, et elle se synchronise entre tes appareils.": "The values prefilled when you open a log entry. They belong to the recipe: the same record as in \"Manage recipes\", so a single truth, and it syncs across your devices.",
     "Valeurs par défaut de chaque recette": "Each recipe's default values",
@@ -742,6 +739,8 @@ const I18N = (() => {
     t_param_replis: { fr: "Valeurs de repli enregistrées.", en: "Fallback values saved." },
     t_param_dose: { fr: "La dose de repli doit être supérieure à zéro.", en: "The fallback dose must be greater than zero." },
     t_param_feu: { fr: "La puissance de feu de repli doit être entre 1 et 10.", en: "The fallback flame power must be between 1 and 10." },
+
+    a_adapte: { fr: "versements adaptés à {e} g", en: "pours scaled to {e} g" },
 
     rt_tasse: { fr: "Ratio EN TASSE : {v} ml extraits divisés par {d} g de café. Sur la Brikka c est ce qui compte, une partie de la chaudière reste en vapeur et n arrive jamais dans la tasse.", en: "CUP ratio: {v} ml out divided by {d} g of coffee. On the Brikka this is what matters, part of the boiler stays as steam and never reaches the cup." },
     rt_chaudiere: { fr: "Ratio de CHAUDIÈRE : {e} g d eau divisés par {d} g de café. Ce n est pas ce que tu bois. Renseigne le volume extrait pour avoir le vrai ratio en tasse.", en: "BOILER ratio: {e} g of water divided by {d} g of coffee. This is not what you drink. Fill in the volume out to get the real cup ratio." },

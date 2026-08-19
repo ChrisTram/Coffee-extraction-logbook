@@ -25,9 +25,10 @@ const charger = new Function(
   "location",
   "indexedDB",
   "console",
-  source + "\nreturn { DATA, SYNC, GRIND, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND, REGLAGES };"
+  source + "\nreturn { DATA, SYNC, GRIND, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND, REGLAGES, echelleVersements, SEUIL_VERSEMENT_G };"
 );
-const { DATA, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND, REGLAGES } =
+const { DATA, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND, REGLAGES,
+  echelleVersements, SEUIL_VERSEMENT_G } =
   charger(undefined, { protocol: "file:" }, undefined, console);
 
 let failures = 0;
@@ -489,13 +490,68 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   const debut = html.indexOf('<select id="f-temp-preset"');
   const sel = html.slice(debut, html.indexOf("</select>", debut));
   const options = [...sel.matchAll(/<option value="([0-9]*)"/g)].map(m => m[1]);
-  check("le select de temperature propose au moins 9 methodes", options.length >= 9, String(options.length));
+  check("le select de temperature propose au moins 6 methodes", options.length >= 6, String(options.length));
   check("la premiere option est neutre", options[0] === "", JSON.stringify(options[0]));
   const nombres = options.filter(Boolean).map(Number);
   check("les temperatures proposees tiennent dans les bornes du champ",
     nombres.every(n => n >= 60 && n <= 100), nombres.join(", "));
   check("aucune colonne n'a ete ajoutee pour la methode de chauffe",
     !DATA.EXT_COLS.includes("temp_methode") && DATA.EXT_COLS.includes("temperature_c"));
+}
+
+/* Mise a l'echelle des versements. Une recette ecrit ses paliers en grammes
+   ABSOLUS, donc changer l'eau dans la saisie la rendait fausse : elle reclamait
+   toujours 225 g alors que Chris en avait verse 240, et le chrono aussi. */
+{
+  const cc = RECETTES_DEPART.find(r => r.nom === "The Coffee Chronicler's Recipe");
+  check("la recette Chronicler existe et porte 225 g", cc && Number(cc.eau) === 225);
+
+  const paliers = cc.etapes.map(e => e.texte);
+  const a240 = paliers.map(x => echelleVersements(x, 240 / 225));
+  check("112 g devient 119 g quand on verse 240 au lieu de 225",
+    a240[0].includes("119 g") && !a240[0].includes("112 g"), a240[0]);
+  check("225 g devient 240 g", a240[1].includes("240 g"), a240[1]);
+  check("le palier sans gramme est intact", a240[2] === paliers[2], a240[2]);
+
+  const double = paliers.map(x => echelleVersements(x, 2));
+  check("au double, 112 g devient 224 g", double[0].includes("224 g"), double[0]);
+  check("au double, 225 g devient 450 g", double[1].includes("450 g"), double[1]);
+
+  check("un facteur de 1 ne touche a RIEN, au caractere pres",
+    paliers.every(x => echelleVersements(x, 1) === x));
+  check("un facteur absurde laisse le texte intact",
+    echelleVersements("Compléter à 225 g", 0) === "Compléter à 225 g" &&
+    echelleVersements("Compléter à 225 g", NaN) === "Compléter à 225 g");
+
+  // LE garde-fou : une dose de cafe citee dans un texte ne doit jamais bouger.
+  check("une dose de café dans le texte n'est pas multipliée",
+    echelleVersements("Doser 14 g de café puis verser 225 g", 2) === "Doser 14 g de café puis verser 225 g".replace("225 g", "450 g"),
+    echelleVersements("Doser 14 g de café puis verser 225 g", 2));
+  check("le seuil laisse passer un bloom de 45 g",
+    echelleVersements("Bloom 45 g", 2) === "Bloom 90 g", echelleVersements("Bloom 45 g", 2));
+  check("le seuil est sous le plus petit versement et au dessus de la plus grosse dose",
+    SEUIL_VERSEMENT_G < 45 && SEUIL_VERSEMENT_G >= 18, String(SEUIL_VERSEMENT_G));
+
+  // Les grammes de LAIT restent sous le seuil, donc protégés.
+  check("un ajout de lait de 20 g n'est pas multiplié",
+    echelleVersements("Ajouter 20 g de lait", 2) === "Ajouter 20 g de lait");
+
+  /* Cas reel trouve par ce test : deux recettes Brikka citent une DOSE dans leur
+     texte, "Extraire exactement comme la Brikka classique : 14 g". C'est
+     precisement ce que le seuil protege. On verifie que ces doses ne bougent pas
+     meme au double, et que les versements d'eau, eux, suivent bien. */
+  const tousPaliers = RECETTES_DEPART.flatMap(r => (r.etapes || []).map(e => e.texte));
+  const avecDose = tousPaliers.filter(x => x.includes("14 g"));
+  check("des paliers citent bien une dose de café, le cas que le seuil protège",
+    avecDose.length > 0, String(avecDose.length));
+  check("ces doses restent intactes même au double",
+    avecDose.every(x => echelleVersements(x, 2) === x), avecDose[0]);
+
+  const grammes = /([0-9]+(?:[.,][0-9]+)?)[ ]*g(?![a-z])/g;
+  const avecEau = tousPaliers.filter(x =>
+    [...x.matchAll(grammes)].some(m => Number(String(m[1]).replace(",", ".")) > SEUIL_VERSEMENT_G));
+  check("les paliers d'eau, eux, changent tous au double",
+    avecEau.length >= 8 && avecEau.every(x => echelleVersements(x, 2) !== x), String(avecEau.length));
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);

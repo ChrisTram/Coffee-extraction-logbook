@@ -481,6 +481,33 @@ const JAMAIS_SWITCH_NOMS = [
   "Signature Blend",
 ];
 
+/* MISE À L'ÉCHELLE DES VERSEMENTS.
+
+   Une recette écrit ses paliers en grammes ABSOLUS ("Compléter à 225 g"). Changer
+   l'eau dans la saisie rendait donc la recette fausse : elle réclamait toujours
+   225 g alors que Chris en avait versé 240, et le chronomètre annonçait les mêmes
+   chiffres périmés.
+
+   On ne touche QU'AUX nombres suivis de " g" et strictement supérieurs à
+   SEUIL_VERSEMENT_G. En dessous ce sont des doses de café ou des quantités de
+   lait, jamais un versement d'eau : le plus petit versement des recettes
+   d'origine est un bloom de 45 g, la plus grosse dose est de 18 g. Sans ce
+   garde-fou, une recette qui mentionnerait "14 g de café" dans son texte verrait
+   sa dose multipliée, ce qui serait pire que de ne rien adapter.
+
+   Fonction PURE et sans DOM, comme reglages.js, pour être testée sans navigateur.
+   Voir tools/data.test.mjs. */
+const SEUIL_VERSEMENT_G = 30;
+
+function echelleVersements(texte, facteur) {
+  if (!(facteur > 0) || facteur === 1) return String(texte);
+  return String(texte).replace(/(\d+(?:[.,]\d+)?)(\s*g\b)/g, (tout, nombre, suffixe) => {
+    const v = Number(String(nombre).replace(",", "."));
+    if (!(v > SEUIL_VERSEMENT_G)) return tout;
+    return Math.round(v * facteur) + suffixe;
+  });
+}
+
 /* Règles de cohérence café plus méthode plus recette.
    Retourne { msgs } : uniquement de l'INFORMATION, jamais un refus.
 

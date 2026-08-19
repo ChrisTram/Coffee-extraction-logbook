@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.34,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.35,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -1084,10 +1084,51 @@ la température. Même traitement pour le titre du guide.
 Verrouillé par `tools/data.test.mjs` : absence de `saisie.bloque`, de
 `t_bloque`, de `cafeInterditSwitch` et de `bloque = true`.
 
+## 7 quinquies. Les versements suivent l'eau réellement saisie
+
+Une recette écrit ses paliers en grammes ABSOLUS : "Verser jusqu'à 112 g",
+"Compléter à 225 g". Changer l'eau dans la saisie rendait donc la recette fausse.
+Chris a versé 240 g et le panneau latéral comme le chronomètre lui réclamaient
+toujours 225 g, sans rien signaler.
+
+`echelleVersements(texte, facteur)` vit dans `js/recettes.js`, pas dans app.js :
+c'est du calcul pur sur des chaînes, donc testable sans navigateur, comme
+`reglages.js`. `app.js` ne garde que `facteurEau()`, qui lit le champ. Un
+facteur de 1 laisse les textes intacts au caractère près.
+
+LE GARDE-FOU, à ne pas retirer : seuls les nombres suivis de " g" et
+STRICTEMENT supérieurs à `SEUIL_VERSEMENT_G` (30) sont mis à l'échelle. En
+dessous ce sont des doses de café ou des quantités de lait, jamais un versement
+d'eau. Le plus petit versement des recettes d'origine est un bloom de 45 g, la
+plus grosse dose est de 18 g, donc 30 sépare proprement les deux. Ce n'est pas
+théorique : deux recettes Brikka écrivent "Extraire exactement comme la Brikka
+classique : 14 g" dans leurs étapes, et sans le seuil cette dose serait
+multipliée. Un test le vérifie.
+
+Le point d'entrée unique est `etapesPour()`, ce qui met à l'échelle d'un seul
+coup les trois endroits qui affichent des paliers : le panneau latéral, le
+chronomètre et le mode pas à pas. Les fiches de l'écran Guide, elles, lisent
+`r.etapes` directement et restent donc à leurs valeurs canoniques : c'est la
+documentation de la recette, pas la tasse en cours.
+
+Quand le facteur n'est pas 1, le panneau latéral affiche une pastille
+`param-chip-adapte`. Sans elle, l'écart entre la fiche et les paliers affichés
+serait incompréhensible.
+
 ## 7 quater. Le select de température, aide de saisie et rien d'autre
 
-`#f-temp-preset` propose neuf méthodes de chauffe (bouillante, repos de 30 s à
-8 min, mélanges à l'eau froide) et écrit le degré correspondant dans `#f-temp`.
+`#f-temp-preset` propose six méthodes de chauffe et écrit le degré correspondant
+dans `#f-temp`. La liste en comptait neuf en v7.34 : trop pour un champ qu'on
+remplit tous les jours. Elle colle maintenant à ce que Chris fait réellement,
+c'est-à-dire couper le feu quand les petites bulles remontent, avant le
+frémissement, plus les cas bouillante et le mélange à l'eau froide.
+
+Le select et le champ nombre tiennent sur UNE ligne (`.ligne-temp`). Empilés, la
+cellule Température devenait deux fois plus haute que ses voisines et creusait un
+trou au milieu de `.grille-nombres`, dont la hauteur de rangée suit la cellule la
+plus haute. L'aide sous le champ tient elle aussi sur une seule ligne, pour la
+même raison.
+
 Trois choix de conception :
 
 - AUCUNE colonne ajoutée. Le choix n'est pas stocké, seule la mesure en degrés
@@ -1342,6 +1383,9 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.35 : les versements d'une recette suivent l'eau réellement saisie
+  (section 7 quinquies). Liste de température ramenée de neuf à six choix et
+  remise sur une seule ligne, elle creusait un trou dans la grille de saisie.
 - v7.32 : la navigation ne garde que TROIS onglets à texte, un septième la faisait
   passer à la ligne sous la page. Réglages, Guide et Paramètres deviennent des
   icônes dans les outils d'entête. L'écran reference fusionne dans guide. L'écran

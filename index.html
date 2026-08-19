@@ -186,20 +186,22 @@
              rien de plus. Rien n'est stocké de ce choix, la mesure reste le degré.
              Les value sont explicites pour que la traduction du libellé ne
              corrompe pas la valeur. -->
-        <select id="f-temp-preset" aria-label="Estimer la température depuis la méthode">
-          <option value="">Estimer depuis ma méthode…</option>
-          <option value="100">Bouillante, versée tout de suite</option>
-          <option value="97">Bouillie, 30 s de repos</option>
-          <option value="95">Bouillie, 1 min de repos</option>
-          <option value="91">Bouillie, 2 min de repos</option>
-          <option value="88">Bouillie, 3 min de repos</option>
-          <option value="83">Bouillie, 5 min de repos</option>
-          <option value="78">Bouillie, 8 min de repos</option>
-          <option value="83">3 volumes bouillante + 1 volume froide</option>
-          <option value="77">2 volumes bouillante + 1 volume froide</option>
-        </select>
-        <input type="number" id="f-temp" step="1" min="60" max="100" inputmode="decimal">
-        <span class="champ-hint">Estimations pour une bouilloire ouverte d'environ un demi litre. Le mélange à l'eau froide est le seul repère fiable sans thermomètre.</span>
+        <!-- Le select et le degré tiennent sur UNE ligne : empilés, la cellule
+             Température devenait deux fois plus haute que ses voisines et creusait
+             un trou au milieu de la grille. -->
+        <div class="ligne-temp">
+          <select id="f-temp-preset" aria-label="Estimer la température depuis la méthode">
+            <option value="">Estimer…</option>
+            <option value="85">Petites bulles, pas encore frétillante</option>
+            <option value="82">Petites bulles, 30 s de repos</option>
+            <option value="80">Petites bulles, 1 min de repos</option>
+            <option value="100">Bouillante</option>
+            <option value="97">Bouillante, 30 s de repos</option>
+            <option value="83">3 volumes bouillante + 1 froide</option>
+          </select>
+          <input type="number" id="f-temp" step="1" min="60" max="100" inputmode="decimal">
+        </div>
+        <span class="champ-hint">Estimations, sauf le mélange à l'eau froide.</span>
       </div>
       <div class="champ">
         <label for="f-mouture">Mouture (molette)</label>

@@ -659,7 +659,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.34";
+  const VERSION = "7.35";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -1024,6 +1024,9 @@
         (r.sousTitre ? '<p class="aside-sous">' + r.sousTitre + "</p>" : "") +
         '<div class="recette-params">' +
         '<span class="param-chip">' + r.dose + " g / " + r.eau + " g</span>" +
+        (facteurEau(r) !== 1
+          ? '<span class="param-chip param-chip-adapte">' + I18N.t("a_adapte", { e: $("#f-eau").value }) + "</span>"
+          : "") +
         (r.ratioTexte ? '<span class="param-chip">' + r.ratioTexte + "</span>" : "") +
         (r.tempTexte ? '<span class="param-chip">' + r.tempTexte + "</span>" : "") +
         '<span class="param-chip">' + I18N.t("molette") + " " + r.dial + "</span>" +
@@ -1921,16 +1924,28 @@
 
   const pap = { recette: null, etapes: [], index: -1, depart: null, interval: null };
 
+  /* Le calcul vit dans recettes.js, sans DOM, pour être testable sans
+     navigateur. Ici on ne fait que lire le champ. 1 veut dire "rien à mettre à
+     l'échelle", et les textes restent alors intacts au caractère près. */
+  function facteurEau(recette) {
+    const saisie = parseFloat($("#f-eau").value);
+    if (!recette || !(recette.eau > 0) || !(saisie > 0)) return 1;
+    return saisie / recette.eau;
+  }
+
   function etapesPour(recette) {
+    const f = facteurEau(recette);
+    const mettreAEchelle = liste => f === 1 ? liste
+      : liste.map(e => ({ ...e, texte: echelleVersements(e.texte, f) }));
     if (recette.variantes) {
       const { pours } = versementsTetsu();
       let cumul = 0;
-      return pours.map((p, i) => {
+      return mettreAEchelle(pours.map((p, i) => {
         cumul += p;
         return { t: null, texte: I18N.t("pap_verser", { p, c: cumul, b: i === 0 ? I18N.t("pap_bloom") : "" }) };
-      }).concat([{ t: null, texte: I18N.t("pap_drain") }]);
+      }).concat([{ t: null, texte: I18N.t("pap_drain") }]));
     }
-    return recette.etapes;
+    return mettreAEchelle(recette.etapes);
   }
 
   function ouvrirPasAPas(idRecette) {
@@ -2517,6 +2532,9 @@
     $("#f-recette").addEventListener("change", () => { prefillDepuisRecette($("#f-recette").value); majAvertissements(); });
     ["f-dose", "f-eau", "f-mouture", "f-volume"].forEach(id =>
       $("#" + id).addEventListener("input", () => { majLive(); majAvertissements(); }));
+    // majAvertissements redessine le panneau latéral, le chrono a besoin d'un
+    // rappel explicite : ses paliers sont mis à l'échelle de l'eau saisie.
+    $("#f-eau").addEventListener("input", () => majEtapesChrono(false));
     $("#f-temp-preset").addEventListener("change", () => {
       const v = $("#f-temp-preset").value;
       if (!v) return;

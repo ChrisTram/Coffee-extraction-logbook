@@ -665,6 +665,19 @@ input:focus, select:focus, textarea:focus {
 .saisie-entete h2 { margin: 0; }
 .champ-datetime { margin-bottom: 0; min-width: 220px; }
 
+/* Signale que les paliers affichés ne sont plus ceux de la fiche : ils suivent
+   l'eau saisie. Sans marqueur, l'écart serait incompréhensible. */
+.param-chip-adapte {
+  border-color: var(--accent) !important;
+  color: var(--accent-fort) !important;
+  background: var(--accent-fond) !important;
+}
+
+/* Estimation de température et degré côte à côte, voir index.html. */
+.ligne-temp { display: flex; gap: 6px; }
+.ligne-temp select { flex: 1; min-width: 0; }
+.ligne-temp input { flex: 0 0 66px; width: 66px; }
+
 .ligne-cafe { display: flex; gap: 8px; align-items: center; }
 .ligne-cafe select { flex: 1; }
 
