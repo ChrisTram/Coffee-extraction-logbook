@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.33,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.34,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -1058,6 +1058,51 @@ Deux bugs corrigés au passage, tous deux silencieux :
 - Le texte de température se repliait sur `valeur + " °C"`. Sans cible, cela
   produisait un " °C" orphelin.
 
+## 8 quinquies. Le carnet ne refuse jamais une saisie
+
+Il y avait un BLOCAGE : `avertissementsCombinaison` renvoyait un drapeau
+`bloque`, et `enregistrerSaisie` refusait alors d'enregistrer. Ça visait les
+cafés rang bơ et les cafés non purs passés au Switch, au motif que le filtre
+papier retiendrait le beurre ou les additifs.
+
+Retiré, et à ne pas réintroduire. Trois raisons :
+
+1. Le carnet sert à noter ce que Chris a bu, pas à arbitrer ce qu'il a le droit
+   de tenter. Il tenait sa tasse à la main et le site refusait de l'écrire.
+2. L'affirmation n'avait JAMAIS été testée. Zéro extraction Switch dans les
+   données, donc zéro preuve. Même erreur que l'avertissement de débordement de
+   tasse retiré en v7.28.
+3. Le blocage empêchait exactement l'essai qui produirait la donnée capable de
+   trancher. Un carnet qui refuse la mesure contredisant sa règle ne peut plus
+   apprendre.
+
+Les avertissements restent, ils informent. `w_rangbo` a été réécrit : il disait
+"ne va jamais dans le Switch, passe le à la Brikka", il dit maintenant que le
+papier retient une partie du beurre et que ça vaut le coup d'essayer en baissant
+la température. Même traitement pour le titre du guide.
+
+Verrouillé par `tools/data.test.mjs` : absence de `saisie.bloque`, de
+`t_bloque`, de `cafeInterditSwitch` et de `bloque = true`.
+
+## 7 quater. Le select de température, aide de saisie et rien d'autre
+
+`#f-temp-preset` propose neuf méthodes de chauffe (bouillante, repos de 30 s à
+8 min, mélanges à l'eau froide) et écrit le degré correspondant dans `#f-temp`.
+Trois choix de conception :
+
+- AUCUNE colonne ajoutée. Le choix n'est pas stocké, seule la mesure en degrés
+  l'est. Un champ `temp_methode` aurait demandé une migration et une colonne CSV
+  pour une information qui n'explique rien de plus que le degré lui-même.
+- Le select se REMET À VIDE après chaque usage, et aussi dès que Chris saisit à la
+  main ou que la recette préremplit (`razPresetTemp`). Un select resté sur un
+  choix qui ne correspond plus au nombre affiché mentirait.
+- Les `value` sont des nombres explicites dans le HTML, pour que la traduction du
+  libellé ne corrompe pas la valeur. Règle générale du projet, voir section 8.
+
+Les durées de repos sont des ESTIMATIONS pour une bouilloire ouverte d'un demi
+litre. Les deux options de mélange à l'eau froide sont de l'arithmétique, et
+c'est le seul repère fiable sans thermomètre. L'aide sous le champ le dit.
+
 ## 11. Changelog
 
 - v1 : site initial, 4 écrans, 2 CSV, démo, Chart.js local, thèmes.
@@ -1297,3 +1342,13 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.32 : la navigation ne garde que TROIS onglets à texte, un septième la faisait
+  passer à la ligne sous la page. Réglages, Guide et Paramètres deviennent des
+  icônes dans les outils d'entête. L'écran reference fusionne dans guide. L'écran
+  Paramètres reçoit une colonne de lecture bornée au lieu de s'étaler sur 1180 px.
+- v7.33 : un formulaire vierge suit enfin la recette. Deux bugs empilés
+  empêchaient les valeurs par défaut d'arriver, voir la section 6 decies. Le champ
+  température perd son fond "93".
+- v7.34 : le carnet ne refuse plus aucune saisie, le blocage rang bơ et café non
+  pur en Switch est parti (section 8 quinquies). Liste déroulante de méthode de
+  chauffe qui remplit la température (section 7 quater).

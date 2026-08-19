@@ -182,8 +182,24 @@
       </div>
       <div class="champ">
         <label for="f-temp">Température (°C)</label>
+        <!-- Aide de saisie, PAS une donnée : le select remplit le champ nombre et
+             rien de plus. Rien n'est stocké de ce choix, la mesure reste le degré.
+             Les value sont explicites pour que la traduction du libellé ne
+             corrompe pas la valeur. -->
+        <select id="f-temp-preset" aria-label="Estimer la température depuis la méthode">
+          <option value="">Estimer depuis ma méthode…</option>
+          <option value="100">Bouillante, versée tout de suite</option>
+          <option value="97">Bouillie, 30 s de repos</option>
+          <option value="95">Bouillie, 1 min de repos</option>
+          <option value="91">Bouillie, 2 min de repos</option>
+          <option value="88">Bouillie, 3 min de repos</option>
+          <option value="83">Bouillie, 5 min de repos</option>
+          <option value="78">Bouillie, 8 min de repos</option>
+          <option value="83">3 volumes bouillante + 1 volume froide</option>
+          <option value="77">2 volumes bouillante + 1 volume froide</option>
+        </select>
         <input type="number" id="f-temp" step="1" min="60" max="100" inputmode="decimal">
-        <span class="champ-hint">Sans thermomètre : eau bouillie qui a fini de buller.</span>
+        <span class="champ-hint">Estimations pour une bouilloire ouverte d'environ un demi litre. Le mélange à l'eau froide est le seul repère fiable sans thermomètre.</span>
       </div>
       <div class="champ">
         <label for="f-mouture">Mouture (molette)</label>
@@ -527,7 +543,7 @@
     <p>Pour une ouverture partielle, regarder le <b>niveau d'eau</b> et non le chronomètre. Le débit dépend de la mouture, de la dose et du café. Un chrono n'est pas reproductible, un niveau l'est.</p>
     <p>Remuer pendant la première infusion seulement, jamais pendant la seconde. Sur un lit déjà tassé, remuer déplace les fines vers le bas et bouche l'écoulement.</p>
 
-    <h4>Ce qui ne va jamais dans le Switch</h4>
+    <h4>Ce qui passe mal dans le Switch</h4>
     <p>Bana Cofe G4 (rang bơ, le papier retiendrait le beurre qui fait tout l'intérêt), Fine Robusta Honey (Every Half), Midnight Chocolate (Every Half), Proud of Việt Nam (Every Half), Robusta Honey (The Married Beans), Signature Blend (Ritachi), et tout café en wet hulled ou en torréfaction foncée. Le site t'avertit si tu tentes la combinaison.</p>
 
     <h4>La question de la double infusion, tranchée</h4>

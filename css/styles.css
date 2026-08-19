@@ -805,12 +805,6 @@ input:focus, select:focus, textarea:focus {
 .tasses-ajout input[type="number"] { max-width: 90px; }
 .hint-alerte { color: var(--danger) !important; font-weight: 600; }
 
-/* Avertissement bloquant */
-.avertissement-bloquant {
-  border-color: var(--danger);
-  background: color-mix(in srgb, var(--danger) 10%, transparent);
-}
-
 /* Pastilles cafés */
 .badge-nonpur {
   font-size: 0.68rem;

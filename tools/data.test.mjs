@@ -458,5 +458,45 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check('chaque icone d ecran porte un aria-label', sansLabel.length === 0, String(sansLabel.length));
 }
 
+/* Le carnet ne doit JAMAIS refuser un enregistrement au motif que la combinaison
+   cafe plus machine lui deplait. Il y avait un blocage sur les cafes rang bo et
+   non purs en Switch : il empechait exactement l'essai qui aurait produit la
+   donnee capable de trancher. Les avertissements restent, le refus est parti. */
+{
+  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  check("plus aucun refus d'enregistrement dans app.js",
+    !app.includes("saisie.bloque") && !app.includes("t_bloque"));
+
+  const rec = readFileSync(join(ROOT, "js/recettes.js"), "utf8");
+  check("avertissementsCombinaison ne renvoie plus de blocage", !rec.includes("bloque = true"));
+  check("la fonction cafeInterditSwitch a disparu", !rec.includes("cafeInterditSwitch"));
+
+  const i18n = readFileSync(join(ROOT, "js/i18n.js"), "utf8");
+  check("la cle du refus a disparu du dictionnaire", !i18n.includes("t_bloque"));
+  const ligneRangbo = (i18n.match(/^ *w_rangbo:.*$/m) || [""])[0];
+  check("le message rang bo n'interdit plus, il informe",
+    !ligneRangbo.includes("jamais") && ligneRangbo.includes("À tenter quand même"), ligneRangbo.slice(0, 90));
+
+  // Les avertissements eux-memes restent : ils informent sans interdire.
+  check("l'avertissement rang bo existe toujours", i18n.includes("w_rangbo"));
+  check("l'avertissement cafe non pur existe toujours", i18n.includes("w_aromatise"));
+}
+
+/* Le select de temperature est une aide de saisie et rien d'autre : il ecrit dans
+   le champ nombre, aucune colonne nouvelle, donc aucune migration. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  const debut = html.indexOf('<select id="f-temp-preset"');
+  const sel = html.slice(debut, html.indexOf("</select>", debut));
+  const options = [...sel.matchAll(/<option value="([0-9]*)"/g)].map(m => m[1]);
+  check("le select de temperature propose au moins 9 methodes", options.length >= 9, String(options.length));
+  check("la premiere option est neutre", options[0] === "", JSON.stringify(options[0]));
+  const nombres = options.filter(Boolean).map(Number);
+  check("les temperatures proposees tiennent dans les bornes du champ",
+    nombres.every(n => n >= 60 && n <= 100), nombres.join(", "));
+  check("aucune colonne n'a ete ajoutee pour la methode de chauffe",
+    !DATA.EXT_COLS.includes("temp_methode") && DATA.EXT_COLS.includes("temperature_c"));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

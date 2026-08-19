@@ -481,24 +481,17 @@ const JAMAIS_SWITCH_NOMS = [
   "Signature Blend",
 ];
 
-// Un café est INTERDIT en Switch (blocage, pas simple avertissement) si le
-// papier retiendrait ce qui fait son intérêt : rang bơ, ou café non pur
-// (soja, sucre, graisses). Les autres cas restent de simples avertissements.
-function cafeInterditSwitch(cafe) {
-  if (!cafe) return false;
-  const procede = (cafe.procede || "").toLowerCase();
-  const pct = cafe.pourcentage_cafe_reel === "" || cafe.pourcentage_cafe_reel === undefined ? 100 : Number(cafe.pourcentage_cafe_reel);
-  const tag = (cafe.tag || "").toLowerCase();
-  return pct < 100 || tag.includes("aromatisé") ||
-    procede.includes("rang bơ") || procede.includes("rang bo") || procede.includes("tẩm bơ");
-}
+/* Règles de cohérence café plus méthode plus recette.
+   Retourne { msgs } : uniquement de l'INFORMATION, jamais un refus.
 
-// Règles de cohérence café plus méthode plus recette.
-// Retourne { msgs, bloque } : bloque = combinaison refusée à l'enregistrement.
+   Il y avait ici un blocage qui refusait d'ENREGISTRER un café rang bơ ou non
+   pur en Switch. Retiré : le carnet sert à noter ce que Chris a bu, pas à
+   arbitrer ce qu'il a le droit de tenter. Une combinaison jamais essayée n'est
+   pas une combinaison mauvaise, et refuser la saisie empêchait précisément de
+   produire la donnée qui trancherait. Ne pas le réintroduire. */
 function avertissementsCombinaison(cafe, methode, recetteNom, recettes) {
   const msgs = [];
-  let bloque = false;
-  if (!cafe) return { msgs, bloque };
+  if (!cafe) return { msgs };
   const liste = recettes || [];
 
   if (methode === "Switch") {
@@ -506,13 +499,9 @@ function avertissementsCombinaison(cafe, methode, recetteNom, recettes) {
     const procede = (cafe.procede || "").toLowerCase();
     if (pct < 100 || (cafe.tag || "").toLowerCase().includes("aromatisé")) {
       msgs.push(I18N.t("w_aromatise", { pct }));
-      bloque = true;
-    } else if (procede.includes("rang bơ") || procede.includes("rang bo") || procede.includes("tẩm bơ")) {
+    } else if (procede.includes("rang bơ") || procede.includes("rang bo") || procede.includes("tẩm bơ") ||
+               JAMAIS_SWITCH_NOMS.some(n => (cafe.nom || "").toLowerCase().includes(n.toLowerCase()))) {
       msgs.push(I18N.t("w_rangbo"));
-      bloque = true;
-    } else if (JAMAIS_SWITCH_NOMS.some(n => (cafe.nom || "").toLowerCase().includes(n.toLowerCase()))) {
-      msgs.push(I18N.t("w_rangbo"));
-      bloque = true;
     } else if (procede.includes("wet hulled") || procede.includes("giling basah")) {
       msgs.push(I18N.t("w_wethulled"));
     } else if ((cafe.torrefaction || "").toLowerCase().includes("fonc")) {
@@ -533,5 +522,5 @@ function avertissementsCombinaison(cafe, methode, recetteNom, recettes) {
   // recommandations viennent des insights du tableau de bord, qui eux sont
   // calculés sur les notes réelles.
 
-  return { msgs, bloque };
+  return { msgs };
 }

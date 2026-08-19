@@ -659,7 +659,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.33";
+  const VERSION = "7.34";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -958,6 +958,7 @@
     $("#f-dose").value = r.dose || replis.dose;
     $("#f-eau").value = r.eau || "";
     $("#f-temp").value = r.temp === "" || r.temp === undefined ? "" : r.temp;
+    razPresetTemp();
     $("#f-mouture").value = cafeCourantMoulu() ? "" : r.dial;
     if (r.methode === "Brikka") $("#f-puissance").value = r.puissance_feu || replis.feu;
     majAgitationDepuisRecette();
@@ -985,19 +986,25 @@
     majLive();
   }
 
+  /* Le select de température est une aide de saisie : il écrit dans le champ
+     nombre puis se remet à zéro. Il ne doit JAMAIS rester sur un choix qui ne
+     correspond plus au nombre affiché, sinon il ment. */
+  function razPresetTemp() {
+    const sel = $("#f-temp-preset");
+    if (sel) sel.value = "";
+  }
+
   function majAvertissements() {
     const zone = $("#avertissements");
     const cafe = DATA.state.cafes.find(c => c.id === $("#f-cafe").value);
     const av = avertissementsCombinaison(cafe, saisie.methode, $("#f-recette").value, DATA.state.recettes);
-    saisie.bloque = av.bloque;
     const msgs = av.msgs.slice();
     const dial = $("#f-mouture").value.trim();
     if (dial && !cafeCourantMoulu()) {
       const v = GRIND.verifierPlage(saisie.methode, dial);
       if (!v.ok) msgs.push(v.message);
     }
-    zone.innerHTML = msgs.map((m, i) =>
-      '<div class="avertissement' + (av.bloque && i === 0 ? " avertissement-bloquant" : "") + '">' + m + "</div>").join("");
+    zone.innerHTML = msgs.map(m => '<div class="avertissement">' + m + "</div>").join("");
     majAsideSaisie();
   }
 
@@ -1490,7 +1497,6 @@
   async function enregistrerSaisie(ev) {
     ev.preventDefault();
     if (!$("#f-dose").value) { toast(I18N.t("t_dose")); return; }
-    if (saisie.bloque) { toast(I18N.t("t_bloque")); return; }
     const ext = {
       date_heure: $("#f-date").value || maintenantLocal(),
       cafe_id: $("#f-cafe").value,
@@ -2376,7 +2382,7 @@
   function majAvertRapide() {
     const cafe = DATA.state.cafes.find(c => c.id === $("#q-cafe").value);
     const r = trouverRecette($("#q-recette").value);
-    const av = r ? avertissementsCombinaison(cafe, r.methode, r.nom, DATA.state.recettes) : { msgs: [], bloque: false };
+    const av = r ? avertissementsCombinaison(cafe, r.methode, r.nom, DATA.state.recettes) : { msgs: [] };
     $("#q-avert").textContent = av.msgs.length ? "⚠ " + av.msgs[0] : "";
   }
 
@@ -2385,8 +2391,6 @@
     const r = trouverRecette($("#q-recette").value);
     if (!cafeId) { toast(I18N.t("t_choisis_cafe")); return; }
     if (!r) { toast(I18N.t("t_choisis_recette")); return; }
-    const cafeQ = DATA.state.cafes.find(c => c.id === cafeId);
-    if (r.methode === "Switch" && cafeInterditSwitch(cafeQ)) { toast(I18N.t("t_bloque")); return; }
     await DATA.ajouterExtraction({
       date_heure: maintenantLocal(),
       cafe_id: cafeId,
@@ -2513,6 +2517,15 @@
     $("#f-recette").addEventListener("change", () => { prefillDepuisRecette($("#f-recette").value); majAvertissements(); });
     ["f-dose", "f-eau", "f-mouture", "f-volume"].forEach(id =>
       $("#" + id).addEventListener("input", () => { majLive(); majAvertissements(); }));
+    $("#f-temp-preset").addEventListener("change", () => {
+      const v = $("#f-temp-preset").value;
+      if (!v) return;
+      $("#f-temp").value = v;
+      razPresetTemp();
+      majAvertissements();
+    });
+    // Une saisie manuelle a toujours le dernier mot sur l'estimation.
+    $("#f-temp").addEventListener("input", razPresetTemp);
     $("#f-note").addEventListener("input", () => $("#note-affichee").textContent = $("#f-note").value);
     $("#btn-chrono").addEventListener("click", chronoPrincipal);
     $("#btn-chrono-stop").addEventListener("click", chronoArreter);
