@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.35,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.36,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -1084,6 +1084,39 @@ la température. Même traitement pour le titre du guide.
 Verrouillé par `tools/data.test.mjs` : absence de `saisie.bloque`, de
 `t_bloque`, de `cafeInterditSwitch` et de `bloque = true`.
 
+## 7 sexies. Pas d'estimation de volume sur la Brikka
+
+Il y avait `eau - 0,7 x dose`, soit **139 ml annoncés** pour 150 g de chaudière et
+16 g de café. Chris en mesure **90 à 115 ml**. Le modèle était faux, pas le
+coefficient : sur une moka la chaudière ne se vide pas. Une partie de l'eau reste
+sous l'embouchure du tube montant, une autre part en vapeur, et ces deux pertes
+dépendent de la flamme et du moment où on retire du feu. Elles ne dépendent
+sûrement pas de la dose de café, qui est la seule variable qu'utilisait la
+formule.
+
+Ce chiffre faux ne restait pas dans son coin, il alimentait quatre choses :
+
+1. le ratio en tasse, quand le volume n'était pas saisi ;
+2. la ligne "boisson" du direct, donc le ratio de ce qui est bu ;
+3. le bouton "Estimation : 140 ml, reprendre", qui l'écrivait dans le champ ;
+4. le préremplissage du LAIT, calculé comme contenance de la tasse moins volume de
+   café. Pour une tasse de 150 ml il donnait 11 ml de lait, ce qui n'est pas un
+   flat white. Et comme les trois recettes lactées sont des Brikka, c'était
+   toujours faux.
+
+`volumeEstime(dose, eau)` est désormais le SEUL endroit qui estime un rendement,
+et il rend la main immédiatement en Brikka. Le Switch garde `eau - 2,1 x dose` :
+le papier et le marc retiennent environ 2,1 g d'eau par gramme de café, le reste
+passe, et ce modèle-là tient.
+
+Sans mesure, le champ lait ne se préremplit plus et affiche `lait_sans_volume`.
+Un champ vide et honnête vaut mieux qu'un nombre inventé.
+
+À NE PAS FAIRE : remettre une formule Brikka sans données mesurées. Quatre tests
+verrouillent l'absence de la formule, l'unicité de celle du Switch, et le fait que
+la rétention (`retention_ml` dans data.js) reste une SOUSTRACTION entre deux
+mesures et pas une estimation.
+
 ## 7 quinquies. Les versements suivent l'eau réellement saisie
 
 Une recette écrit ses paliers en grammes ABSOLUS : "Verser jusqu'à 112 g",
@@ -1383,6 +1416,9 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.36 : plus d'estimation de volume extrait sur la Brikka, elle annonçait
+  139 ml là où Chris en mesure 90 à 115 (section 7 sexies). Le préremplissage du
+  lait reposait sur la même formule et donnait 11 ml de lait pour un flat white.
 - v7.35 : les versements d'une recette suivent l'eau réellement saisie
   (section 7 quinquies). Liste de température ramenée de neuf à six choix et
   remise sur une seule ligne, elle creusait un trou dans la grille de saisie.

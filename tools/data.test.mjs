@@ -554,5 +554,27 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     avecEau.length >= 8 && avecEau.every(x => echelleVersements(x, 2) !== x), String(avecEau.length));
 }
 
+/* Aucune estimation de volume sur la Brikka : la formule eau - 0,7 x dose
+   annonçait 139 ml pour 150 g de chaudiere et 16 g de cafe, alors que la mesure
+   reelle est de 90 a 115 ml. Un chiffre faux etait pire que pas de chiffre : il
+   alimentait le ratio, le volume de boisson et le prereglage du lait. */
+{
+  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  check("la formule Brikka a disparu de app.js", !app.includes("0.7 * dose"));
+  check("volumeEstime rend la main tout de suite en Brikka",
+    /function volumeEstime[\s\S]{0,220}methode === "Brikka"[\s\S]{0,20}return 0/.test(app));
+  check("une seule formule de rendement subsiste, celle du Switch",
+    (app.match(/2\.1 \* dose/g) || []).length === 1,
+    String((app.match(/2\.1 \* dose/g) || []).length));
+  check("le prereglage du lait lit le volume mesure, pas une estimation",
+    app.includes("lait_sans_volume"));
+
+  // La retention, elle, reste calculee : c'est une MESURE, pas une estimation.
+  const c = DATA.calculs({ methode: "Brikka", dose_g: 16, eau_g: 150, volume_extrait_ml: 95 });
+  check("la retention se deduit des deux mesures", c.retention_ml === 55, String(c.retention_ml));
+  check("sans volume mesure, pas de retention inventee",
+    DATA.calculs({ methode: "Brikka", dose_g: 16, eau_g: 150, volume_extrait_ml: "" }).retention_ml === "");
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

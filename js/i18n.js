@@ -740,6 +740,8 @@ const I18N = (() => {
     t_param_dose: { fr: "La dose de repli doit être supérieure à zéro.", en: "The fallback dose must be greater than zero." },
     t_param_feu: { fr: "La puissance de feu de repli doit être entre 1 et 10.", en: "The fallback flame power must be between 1 and 10." },
 
+    lait_sans_volume: { fr: "Renseigne le volume extrait pour que le lait se calcule tout seul.", en: "Fill in the volume out and the milk works itself out." },
+
     a_adapte: { fr: "versements adaptés à {e} g", en: "pours scaled to {e} g" },
 
     rt_tasse: { fr: "Ratio EN TASSE : {v} ml extraits divisés par {d} g de café. Sur la Brikka c est ce qui compte, une partie de la chaudière reste en vapeur et n arrive jamais dans la tasse.", en: "CUP ratio: {v} ml out divided by {d} g of coffee. On the Brikka this is what matters, part of the boiler stays as steam and never reaches the cup." },

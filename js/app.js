@@ -659,7 +659,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.35";
+  const VERSION = "7.36";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -902,18 +902,24 @@
     $("#champ-lait").hidden = !visible;
     if (!visible) return;
     const tasse = DATA.state.tasses.find(t => t.nom === $("#f-tasse").value);
-    const dose = parseFloat($("#f-dose").value) || 14;
-    const eau = parseFloat($("#f-eau").value) || 100;
-    const volCafe = Math.max(0, Math.round((eau - 0.7 * dose) / 5) * 5);
-    if (tasse) {
-      const lait = Math.max(0, tasse.contenance_ml - volCafe);
-      $("#f-lait").value = lait;
-      $("#lait-hint").textContent = lait === 0
-        ? I18N.t("lait_trop_petit")
-        : I18N.t("lait_calc", { l: lait, t: tasse.contenance_ml, v: volCafe });
-    } else {
+    /* Le volume de café MESURÉ, jamais estimé sur une Brikka : c'est la même
+       raison que dans volumeEstime, et un lait calculé sur un volume faux est un
+       lait faux. Sans mesure on ne préremplit rien et on le dit. */
+    const volCafe = parseFloat($("#f-volume").value) ||
+      volumeEstime(parseFloat($("#f-dose").value), parseFloat($("#f-eau").value));
+    if (!tasse) {
       $("#lait-hint").textContent = I18N.t("lait_choisir_tasse");
+      return;
     }
+    if (!(volCafe > 0)) {
+      $("#lait-hint").textContent = I18N.t("lait_sans_volume");
+      return;
+    }
+    const lait = Math.max(0, tasse.contenance_ml - volCafe);
+    $("#f-lait").value = lait;
+    $("#lait-hint").textContent = lait === 0
+      ? I18N.t("lait_trop_petit")
+      : I18N.t("lait_calc", { l: lait, t: tasse.contenance_ml, v: volCafe });
   }
 
   // Tasses : liste déroulante, avertissement de contenance, mini éditeur.
@@ -1099,6 +1105,25 @@
     return "";
   }
 
+  /* Volume en tasse ESTIMÉ, quand Chris ne l'a pas mesuré.
+
+     SWITCH : le papier et le marc retiennent environ 2,1 g d'eau par gramme de
+     café. Le reste passe, donc `eau - 2,1 x dose` est une bonne approximation.
+
+     BRIKKA : PAS D'ESTIMATION, volontairement. La formule était `eau - 0,7 x
+     dose`, soit 139 ml annoncés pour 150 g de chaudière et 16 g de café. Chris
+     mesure 90 à 115 ml. L'erreur venait du modèle : sur une moka la chaudière ne
+     se vide pas, une partie de l'eau reste sous l'embouchure du tube et une autre
+     part en vapeur, et ces deux pertes dépendent de la flamme et du moment où on
+     retire du feu, pas de la dose. Un chiffre faux est pire que pas de chiffre :
+     il alimentait le ratio, le volume de boisson et le bouton "reprendre".
+     Ne pas remettre de formule Brikka sans données mesurées. */
+  function volumeEstime(dose, eau) {
+    if (saisie.methode === "Brikka") return 0;
+    if (!(dose > 0) || !(eau > 0)) return 0;
+    return Math.max(0, Math.round((eau - 2.1 * dose) / 5) * 5);
+  }
+
   function majLive() {
     const dose = parseFloat($("#f-dose").value);
     const eau = parseFloat($("#f-eau").value);
@@ -1156,8 +1181,7 @@
     $("#live-cout").innerHTML = I18N.t("lv_cout") + " <b>" + cout + "</b>";
 
     // Volume de la boisson : extraction plus eau ajoutée plus lait, en direct.
-    const volBase = parseFloat($("#f-volume").value) ||
-      (dose > 0 && eau > 0 ? Math.max(0, Math.round(saisie.methode === "Brikka" ? eau - 0.7 * dose : eau - 2.1 * dose)) : 0);
+    const volBase = parseFloat($("#f-volume").value) || volumeEstime(dose, eau) || 0;
     const ajoutEau = !$("#champ-ajout-eau").hidden && $("#f-ajout-eau-oui").checked ? (parseFloat($("#f-eau-ajoutee").value) || 0) : 0;
     const laitMl = !$("#champ-lait").hidden ? (parseFloat($("#f-lait").value) || 0) : 0;
     const spanBoisson = $("#live-boisson");
@@ -1171,18 +1195,16 @@
       spanBoisson.hidden = true;
     }
 
-    // Volume en tasse estimé : la Brikka retient un peu d'eau dans la chaudière
-    // et le marc, le papier du Switch retient environ 2 g d'eau par gramme de café.
     const btnVol = $("#volume-estime");
-    if (dose > 0 && eau > 0) {
-      const brut = saisie.methode === "Brikka" ? eau - 0.7 * dose : eau - 2.1 * dose;
-      const estime = Math.max(0, Math.round(brut / 5) * 5);
+    const estime = volumeEstime(dose, eau);
+    if (estime) {
       btnVol.hidden = false;
       btnVol.textContent = I18N.t("vol_estime", { v: estime });
       btnVol.title = I18N.t("vol_titre", { m: saisie.methode });
       btnVol.dataset.valeur = estime;
     } else {
       btnVol.hidden = true;
+      delete btnVol.dataset.valeur;
     }
   }
 
@@ -2535,6 +2557,8 @@
     // majAvertissements redessine le panneau latéral, le chrono a besoin d'un
     // rappel explicite : ses paliers sont mis à l'échelle de l'eau saisie.
     $("#f-eau").addEventListener("input", () => majEtapesChrono(false));
+    // Le volume extrait pilote le préremplissage du lait, il doit le rafraîchir.
+    $("#f-volume").addEventListener("input", majLait);
     $("#f-temp-preset").addEventListener("change", () => {
       const v = $("#f-temp-preset").value;
       if (!v) return;
