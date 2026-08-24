@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.36,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.37,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -1058,6 +1058,27 @@ Deux bugs corrigés au passage, tous deux silencieux :
 - Le texte de température se repliait sur `valeur + " °C"`. Sans cible, cela
   produisait un " °C" orphelin.
 
+## 8 sexies. "Acide ET amer" se DÉDUIT, il ne se coche plus
+
+Chris a signalé deux fois cette pilule comme un doublon des deux du dessus. La
+v7.28 lui avait donné son propre groupe avec une explication en commentaire, ce
+qui n'a rien réglé : dans l'interface elle ressemblait toujours à un raccourci
+redondant, et le site lui demandait de conclure à sa place.
+
+Il conclut maintenant tout seul. Dès qu'un diagnostic de la famille
+sous extraction ET un de la famille sur extraction sont cochés,
+`majCorrectionDiagnostic` REMPLACE les deux corrections par le diagnostic déduit
+et sa correction. Remplacer et pas empiler : les deux corrections d'origine
+s'annulent, moudre plus fin ET moudre plus grossier.
+
+Le libellé reste dans `DIAGNOSTICS` sans pilule, via `DIAGNOSTIC_DERIVE`. Il est
+dans l'historique de Chris (extraction du 11 août) et doit rester traduisible,
+filtrable et affichable. Le retirer casserait ses données passées. Un test vérifie
+les deux moitiés : absent des pilules, présent dans la liste.
+
+La clé `diag_contradiction` a disparu, elle servait à demander de cocher la
+pilule.
+
 ## 8 quinquies. Le carnet ne refuse jamais une saisie
 
 Il y avait un BLOCAGE : `avertissementsCombinaison` renvoyait un drapeau
@@ -1083,6 +1104,32 @@ la température. Même traitement pour le titre du guide.
 
 Verrouillé par `tools/data.test.mjs` : absence de `saisie.bloque`, de
 `t_bloque`, de `cafeInterditSwitch` et de `bloque = true`.
+
+## 7 septies. La molette du broyeur n'est pas le dial de la recette
+
+Deux choses différentes qui portaient le même nom, et le formulaire confondait les
+deux :
+
+- Le **dial d'une recette** est une CIBLE. La Brikka vise 1.2.0, le Switch de la
+  Chronicler vise 1.6.0.
+- Le **réglage du broyeur** est un ÉTAT physique. Chris laisse son Timemore C5 sur
+  1.5.0, le "compromis qui marche dans les deux" de son guide, 75 crans et 622
+  microns, pour ne pas recompter les crans à chaque changement de machine.
+
+Le formulaire préremplissait la cible, donc il lui faisait enregistrer une mouture
+qu'il n'avait pas utilisée. Toutes ses extractions Brikka auraient dit 1.2.0 alors
+que le broyeur était à 1.5.0.
+
+`MOLETTE_REPLI_USINE` vaut donc "1.5.0", `replis.molette` est modifiable dans
+Paramètres avec ses crans et microns affichés sous le champ, et le préremplissage
+lit ce réglage. La cible de la recette reste visible dans le panneau latéral, et
+`GRIND.verifierPlage` continue de signaler un écart qui sort de la plage de la
+machine. C'est ça la bonne division du travail : le carnet enregistre ce qui a
+été fait, la fiche dit ce qui était visé.
+
+Le champ mouture perd son `placeholder="1.5.0"`. Il promettait une valeur par
+défaut alors que le champ est prérempli, exactement la faute du "93" de la
+température corrigée en v7.33.
 
 ## 7 sexies. Pas d'estimation de volume sur la Brikka
 
@@ -1416,6 +1463,9 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.37 : la saisie préremplit le réglage RÉEL du broyeur et plus la cible de la
+  recette (section 7 septies), réglable dans Paramètres. Et "Acide ET amer" n'est
+  plus une pilule à cocher, le site le déduit (section 8 sexies).
 - v7.36 : plus d'estimation de volume extrait sur la Brikka, elle annonçait
   139 ml là où Chris en mesure 90 à 115 (section 7 sexies). Le préremplissage du
   lait reposait sur la même formule et donnait 11 ml de lait pour un flat white.

@@ -15,6 +15,9 @@ const I18N = (() => {
   // ---------- 1. Contenu statique : français vers anglais ----------
 
   const UI = {
+    "Où est réglée la molette de mon broyeur": "Where my grinder dial sits",
+    "C'est ce réglage qui prérempli la saisie, pas la cible de la recette. Ton C5 reste posé sur un seul réglage, la recette dit juste ce qu'elle viserait. La fiche continue d'afficher sa cible, et le site t'avertit si l'écart sort de la plage de la machine.": "This is what prefills the entry form, not the recipe's target. Your C5 stays on one setting, the recipe only says what it would aim for. The card still shows its target, and the site warns you if the gap leaves the machine's range.",
+    "Molette (rotation.numéro.cran)": "Dial (rotation.number.click)",
     "Estimer…": "Estimate…",
     "Petites bulles, pas encore frétillante": "Small bubbles, not simmering yet",
     "Petites bulles, 30 s de repos": "Small bubbles, rested 30 s",
@@ -595,10 +598,6 @@ const I18N = (() => {
       en: "Your cups {quand} come out better: {haut} average against {bas} for the rest of the day.",
     },
 
-    diag_contradiction: {
-      fr: "Acide ET amer ensemble, ce sont deux corrections opposées : coche plutôt \"Acide ET amer (extraction inégale)\", c'est un problème de répartition, pas de réglage.",
-      en: "Sour AND bitter together means two opposite fixes: tick \"Sour AND bitter (uneven extraction)\" instead, this is a distribution problem, not a setting one.",
-    },
 
     ins_puissance: {
       fr: "Sur la Brikka, une puissance de feu de {feu} te réussit mieux : {haut} de moyenne contre {bas} aux autres réglages.",
@@ -741,6 +740,8 @@ const I18N = (() => {
     t_param_feu: { fr: "La puissance de feu de repli doit être entre 1 et 10.", en: "The fallback flame power must be between 1 and 10." },
 
     lait_sans_volume: { fr: "Renseigne le volume extrait pour que le lait se calcule tout seul.", en: "Fill in the volume out and the milk works itself out." },
+
+    param_molette_detail: { fr: "{c} crans, environ {m} microns", en: "{c} clicks, about {m} microns" },
 
     a_adapte: { fr: "versements adaptés à {e} g", en: "pours scaled to {e} g" },
 

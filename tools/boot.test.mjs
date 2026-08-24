@@ -278,5 +278,20 @@ const htmlSaisie = readFileSync(join(ROOT, "index.html"), "utf8");
 const champTemp = (htmlSaisie.match(/<input[^>]*id="f-temp"[^>]*>/) || [""])[0];
 check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("placeholder"), champTemp);
 
+/* La molette preremplie doit etre le reglage REEL du broyeur, pas la cible de la
+   recette. Chris laisse son C5 sur 1.5.0, le compromis qui marche sur les deux
+   machines, alors que la recette Brikka vise 1.2.0. Le formulaire lui faisait
+   donc enregistrer une mouture qu'il n'avait pas utilisee. */
+{
+  const mouture = String(document.querySelector("#f-mouture").value);
+  check("le formulaire vierge prend le reglage du broyeur, 1.5.0",
+    mouture === "1.5.0", JSON.stringify(mouture));
+  const brikkaR = api.DATA.state.recettes.find(r => r.methode === "Brikka");
+  check("la recette Brikka garde sa CIBLE a elle, differente",
+    brikkaR && brikkaR.dial === "1.2.0", brikkaR && brikkaR.dial);
+  check("1.5.0 reste valide sur les deux machines",
+    api.GRIND.verifierPlage("Brikka", "1.5.0").ok && api.GRIND.verifierPlage("Switch", "1.5.0").ok);
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

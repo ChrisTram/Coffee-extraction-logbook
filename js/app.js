@@ -659,7 +659,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.36";
+  const VERSION = "7.37";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -780,13 +780,23 @@
   // Puissance de feu par défaut, échelle personnelle de 1 à 10, Brikka seulement.
   const FEU_REPLI_USINE = 2;
 
+  /* Réglage RÉEL du broyeur, celui où la molette est physiquement posée. Ce n'est
+     pas la même chose que le dial d'une recette, qui est une CIBLE : la Brikka
+     vise 1.2.0 et le Switch 1.6.0, mais Chris laisse son C5 sur 1.5.0, le
+     "compromis qui marche dans les deux" de son guide, pour ne pas recompter les
+     crans à chaque changement de machine. Le formulaire préremplissait la cible
+     et lui faisait donc enregistrer une mouture qu'il n'avait pas utilisée.
+     La cible reste visible dans le panneau latéral, et l'avertissement de plage
+     continue de signaler un écart réel. */
+  const MOLETTE_REPLI_USINE = "1.5.0";
+
   /* Ces deux replis ne servent QUE si la recette choisie laisse la valeur vide.
      Modifiables depuis l'écran Paramètres. Volontairement en localStorage et pas
      dans les données synchronisées : ce sont des préférences de confort, pas des
      mesures, et les faire voyager entre appareils créerait des conflits de fusion
      pour rien. Les vraies valeurs par défaut, elles, vivent dans la recette. */
   const CLE_REPLIS = "replis-saisie";
-  const replis = { dose: DOSE_REPLI_USINE, feu: FEU_REPLI_USINE };
+  const replis = { dose: DOSE_REPLI_USINE, feu: FEU_REPLI_USINE, molette: MOLETTE_REPLI_USINE };
 
   function chargerReplis() {
     let brut = null;
@@ -796,6 +806,7 @@
     const feu = Number(brut.feu);
     if (dose > 0) replis.dose = dose;
     if (feu >= 1 && feu <= 10) replis.feu = Math.round(feu);
+    if (typeof brut.molette === "string" && GRIND.parseDial(brut.molette)) replis.molette = brut.molette;
   }
 
   function ecrireReplis() {
@@ -965,7 +976,8 @@
     $("#f-eau").value = r.eau || "";
     $("#f-temp").value = r.temp === "" || r.temp === undefined ? "" : r.temp;
     razPresetTemp();
-    $("#f-mouture").value = cafeCourantMoulu() ? "" : r.dial;
+    // Le RÉGLAGE du broyeur, pas la cible de la recette : voir MOLETTE_REPLI_USINE.
+    $("#f-mouture").value = cafeCourantMoulu() ? "" : replis.molette;
     if (r.methode === "Brikka") $("#f-puissance").value = r.puissance_feu || replis.feu;
     majAgitationDepuisRecette();
     majChampPrechauffe();
@@ -1372,7 +1384,7 @@
   // d'une extraction inégale, qui a sa propre valeur.
   const DIAGS_SOUS_EXTRAIT = ["Un peu acide", "Sous-extrait (acide)"];
   const DIAGS_SUR_EXTRAIT = ["Un peu amer", "Sur-extrait (amer)", "Un peu astringent", "Astringent"];
-  const DIAG_INEGALE = "Acide ET amer (extraction inégale)";
+  const DIAG_INEGALE = DIAGNOSTIC_DERIVE;
 
   function majCorrectionDiagnostic() {
     const lignes = DIAGNOSTICS
@@ -1380,12 +1392,18 @@
       .map(d => I18N.tr(DIAGNOSTIC_CORRECTIONS[d] || ""))
       .filter(Boolean);
 
-    // Avertir AVANT les corrections : sinon on lit deux conseils contradictoires
-    // sans savoir lequel suivre.
-    const contradiction = DIAGS_SOUS_EXTRAIT.some(d => saisie.diagnostics.has(d)) &&
-      DIAGS_SUR_EXTRAIT.some(d => saisie.diagnostics.has(d)) &&
-      !saisie.diagnostics.has(DIAG_INEGALE);
-    if (contradiction) lignes.unshift('<b class="diag-alerte">' + I18N.t("diag_contradiction") + "</b>");
+    /* Acide ET amer ensemble : le site CONCLUT au lieu de demander à Chris de
+       cocher une troisième pilule. Les deux corrections d'origine s'annulent
+       (moudre plus fin ET plus grossier), donc on les remplace au lieu de les
+       empiler, sinon il lit deux conseils opposés sans savoir lequel suivre. */
+    const inegale = DIAGS_SOUS_EXTRAIT.some(d => saisie.diagnostics.has(d)) &&
+      DIAGS_SUR_EXTRAIT.some(d => saisie.diagnostics.has(d));
+    if (inegale) {
+      $("#diagnostic-correction").innerHTML =
+        '<b class="diag-alerte">' + I18N.diag(DIAG_INEGALE) + "</b><br>" +
+        I18N.tr(DIAGNOSTIC_CORRECTIONS[DIAG_INEGALE] || "");
+      return;
+    }
 
     $("#diagnostic-correction").innerHTML = lignes.join("<br>");
   }
@@ -2326,16 +2344,29 @@
     $("#param-recettes").innerHTML = lignes;
     $("#param-dose-defaut").value = replis.dose;
     $("#param-feu-defaut").value = replis.feu;
+    $("#param-molette").value = replis.molette;
+    majDetailMolette();
     $("#param-bips").checked = $("#chrono-bip").checked;
+  }
+
+  // Crans et microns sous le champ, pour vérifier qu'on a tapé le bon réglage.
+  function majDetailMolette() {
+    const p = GRIND.parseDial($("#param-molette").value.trim().replace(/,/g, "."));
+    $("#param-molette-detail").textContent = p
+      ? I18N.t("param_molette_detail", { c: p.crans, m: Math.round(p.microns) })
+      : "";
   }
 
   async function enregistrerParametres() {
     const dose = Number($("#param-dose-defaut").value);
     const feu = Number($("#param-feu-defaut").value);
+    const molette = $("#param-molette").value.trim().replace(/,/g, ".");
     if (!(dose > 0)) { toast(I18N.t("t_param_dose")); return; }
     if (!(feu >= 1 && feu <= 10)) { toast(I18N.t("t_param_feu")); return; }
+    if (!GRIND.parseDial(molette)) { toast(I18N.t("t_mouture_invalide")); return; }
     replis.dose = dose;
     replis.feu = Math.round(feu);
+    replis.molette = molette;
     ecrireReplis();
 
     /* On ne réécrit que les recettes réellement touchées : chaque écriture
@@ -2573,6 +2604,7 @@
     $("#btn-chrono-stop").addEventListener("click", chronoArreter);
     $("#btn-chrono-raz").addEventListener("click", chronoRaz);
     $("#param-enregistrer").addEventListener("click", enregistrerParametres);
+    $("#param-molette").addEventListener("input", majDetailMolette);
     $("#param-annuler").addEventListener("click", rendreParametres);
     // La case de l'écran Paramètres et celle du chrono pilotent le même réglage.
     $("#param-bips").addEventListener("change", () => {

@@ -205,7 +205,7 @@
       </div>
       <div class="champ">
         <label for="f-mouture">Mouture (molette)</label>
-        <input type="text" id="f-mouture" placeholder="1.5.0" pattern="[0-3][.,][0-9][.,][0-4]" inputmode="decimal">
+        <input type="text" id="f-mouture" pattern="[0-3][.,][0-9][.,][0-4]" inputmode="decimal">
         <span class="champ-hint" id="mouture-detail"></span>
       </div>
       <div class="champ">
@@ -1016,6 +1016,18 @@ Cảm ơn shop.</pre>
     <div class="grille-nombres">
       <div class="champ"><label for="param-dose-defaut">Dose de repli (g)</label><input type="number" id="param-dose-defaut" step="0.5" min="1"></div>
       <div class="champ"><label for="param-feu-defaut">Puissance de feu de repli</label><input type="number" id="param-feu-defaut" step="1" min="1" max="10"></div>
+    </div>
+  </article>
+
+  <article class="carte">
+    <h3>Où est réglée la molette de mon broyeur</h3>
+    <p class="param-aide">C'est ce réglage qui prérempli la saisie, pas la cible de la recette. Ton C5 reste posé sur un seul réglage, la recette dit juste ce qu'elle viserait. La fiche continue d'afficher sa cible, et le site t'avertit si l'écart sort de la plage de la machine.</p>
+    <div class="grille-nombres">
+      <div class="champ">
+        <label for="param-molette">Molette (rotation.numéro.cran)</label>
+        <input type="text" id="param-molette" pattern="[0-3][.,][0-9][.,][0-4]" inputmode="decimal" placeholder="1.5.0">
+        <span class="champ-hint" id="param-molette-detail"></span>
+      </div>
     </div>
   </article>
 

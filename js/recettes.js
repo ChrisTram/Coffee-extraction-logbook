@@ -368,16 +368,6 @@ const DIAGNOSTICS_GROUPES = [
     ],
   },
   {
-    /* Seul de son groupe, et c'est le POINT. Acide ET amer en même temps n'est pas
-       un symptôme de plus à cocher en doublon des deux autres : c'est la CAUSE,
-       l'eau a percé un canal et sur extrait une zone en contournant le reste.
-       Rangé avec les réglages, il passait pour un raccourci redondant. Il ne l'est
-       pas : cocher acide et amer séparément empile deux corrections qui
-       s'annulent, moudre plus fin ET moudre plus grossier. */
-    nom: "Répartition dans le panier",
-    diags: ["Acide ET amer (extraction inégale)"],
-  },
-  {
     nom: "Ratio café et eau",
     diags: [
       "Un peu léger",
@@ -399,7 +389,19 @@ const DIAGNOSTICS_GROUPES = [
 
 // Liste à plat, dans l'ordre des groupes. Reste la référence pour l'ordre de
 // stockage, le filtre de l'historique et l'anneau du tableau de bord.
-const DIAGNOSTICS = DIAGNOSTICS_GROUPES.flatMap(g => g.diags);
+/* DÉDUIT, jamais coché. Acide et amer dans la même gorgée n'est pas un symptôme
+   de plus à cocher, c'est la CAUSE : l'eau a percé un canal et sur extrait une
+   zone en contournant le reste. Chris l'a signalé deux fois comme un doublon des
+   deux pilules du dessus, et il avait raison du point de vue de l'interface : le
+   site lui demandait de conclure à sa place. Il conclut maintenant tout seul dès
+   que les deux familles sont cochées, voir majCorrectionDiagnostic dans app.js.
+
+   Le libellé reste dans DIAGNOSTICS, sans pilule : il existe dans l'historique
+   de Chris (extraction du 11 août) et doit rester traduisible, filtrable et
+   affichable. Le retirer casserait ses données passées. */
+const DIAGNOSTIC_DERIVE = "Acide ET amer (extraction inégale)";
+
+const DIAGNOSTICS = DIAGNOSTICS_GROUPES.flatMap(g => g.diags).concat([DIAGNOSTIC_DERIVE]);
 
 /* Quand cocher chaque diagnostic. La correction seule ne suffisait pas : elle
    dit quoi faire, pas dans quel cas on est. Sans ce repere on coche au jugé, et

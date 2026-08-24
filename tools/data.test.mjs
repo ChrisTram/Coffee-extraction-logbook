@@ -241,8 +241,29 @@ const DIAGS_AVANT_REGROUPEMENT = [
 ];
 const perdus = DIAGS_AVANT_REGROUPEMENT.filter(d => !DIAGNOSTICS.includes(d));
 check("aucun diagnostic historique retire", perdus.length === 0, perdus.join(", "));
-check("la liste a plat suit l'ordre des groupes",
-  DIAGNOSTICS.join("|") === DIAGNOSTICS_GROUPES.flatMap(g => g.diags).join("|"));
+const DIAGS_PILULES = DIAGNOSTICS_GROUPES.flatMap(g => g.diags);
+check("la liste a plat commence par les pilules, dans l'ordre des groupes",
+  DIAGNOSTICS.slice(0, DIAGS_PILULES.length).join("|") === DIAGS_PILULES.join("|"));
+
+/* "Acide ET amer" n'a plus de pilule : le site le DEDUIT quand les deux familles
+   sont cochees, au lieu de demander a Chris de conclure a sa place. Le libelle
+   reste dans DIAGNOSTICS parce qu'il est dans son historique du 11 aout et doit
+   rester traduisible, filtrable et affichable. */
+const DERIVE = "Acide ET amer (extraction inégale)";
+check("le diagnostic deduit n'est plus propose en pilule", !DIAGS_PILULES.includes(DERIVE));
+check("mais il reste connu du systeme", DIAGNOSTICS.includes(DERIVE));
+check("aucun groupe ne se retrouve vide", DIAGNOSTICS_GROUPES.every(g => g.diags.length > 0),
+  DIAGNOSTICS_GROUPES.filter(g => !g.diags.length).map(g => g.nom).join(", "));
+check("il garde sa correction, c'est elle qui s'affiche a la deduction",
+  !!DIAGNOSTIC_CORRECTIONS[DERIVE]);
+
+// La deduction doit s'appuyer sur des listes qui existent vraiment dans app.js.
+{
+  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  check("app.js deduit au lieu d'avertir", app.includes("const inegale = DIAGS_SOUS_EXTRAIT"));
+  check("l'ancien message qui demandait de cocher a disparu",
+    !app.includes("diag_contradiction"));
+}
 check("aucun doublon entre groupes", new Set(DIAGNOSTICS).size === DIAGNOSTICS.length);
 check("chaque diagnostic a sa correction",
   DIAGNOSTICS.every(d => DIAGNOSTIC_CORRECTIONS[d]),
@@ -574,6 +595,22 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("la retention se deduit des deux mesures", c.retention_ml === 55, String(c.retention_ml));
   check("sans volume mesure, pas de retention inventee",
     DATA.calculs({ methode: "Brikka", dose_g: 16, eau_g: 150, volume_extrait_ml: "" }).retention_ml === "");
+}
+
+/* Le champ mouture avait un fond "1.5.0" ecrit en dur, qui promettait une valeur
+   par defaut alors que le champ est prerempli. Meme faute que le "93" de la
+   temperature en v7.33. Le reglage du broyeur se regle dans Parametres. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  const champ = (html.match(/<input[^>]*id="f-mouture"[^>]*>/) || [""])[0];
+  check("le champ mouture n'a plus de fond trompeur", !champ.includes("placeholder"), champ);
+  check("Parametres porte le reglage du broyeur", html.includes('id="param-molette"'));
+
+  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  check("le prefill lit le reglage du broyeur, pas le dial de la recette",
+    app.includes('$("#f-mouture").value = cafeCourantMoulu() ? "" : replis.molette;'));
+  check("le reglage d'usine est le compromis des deux machines",
+    app.includes('MOLETTE_REPLI_USINE = "1.5.0"'));
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
