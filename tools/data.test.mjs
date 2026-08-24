@@ -613,5 +613,42 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     app.includes('MOLETTE_REPLI_USINE = "1.5.0"'));
 }
 
+/* Le bouton Saisie de la navigation continuait une MODIFICATION en cours :
+   Chris ouvrait une extraction depuis l'historique, allait ailleurs, revenait
+   par l'onglet, et le formulaire ecrasait l'extraction passee en croyant creer
+   une tasse. Perte de donnees silencieuse. */
+{
+  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  check("arriver sur Saisie par la navigation abandonne l'edition",
+    app.includes('if (nom === "saisie" && saisie.editId && !ouvertureEdition)'));
+  check("l'abandon est annonce, il n'est pas silencieux",
+    app.includes('t_edition_abandonnee'));
+  check("le drapeau protege l'ouverture legitime d'une edition",
+    app.includes("ouvertureEdition = true") && app.includes("ouvertureEdition = false"));
+
+  /* Les appels a activerEcran qui SUIVAIENT chargerExtractionDansSaisie sont
+     partis : la fonction ouvre deja l'ecran, et le rappel reinitialisait
+     desormais l'edition qu'on venait d'ouvrir. */
+  check("plus aucun activerEcran redondant apres un chargement d'extraction",
+    !/chargerExtractionDansSaisie\([^)]*\);\s*\n\s*activerEcran\("saisie"\)/.test(app));
+
+  const i18n = readFileSync(join(ROOT, "js/i18n.js"), "utf8");
+  check("le message d'abandon existe en FR et EN",
+    /t_edition_abandonnee:.*fr:.*en:/.test(i18n));
+}
+
+/* Molette unique : Chris ne recompte pas les crans a chaque machine. */
+{
+  const dials = [...new Set(RECETTES_DEPART.map(r => r.dial))];
+  check("toutes les recettes semees portent 1.5.0",
+    dials.length === 1 && dials[0] === "1.5.0", dials.join(", "));
+
+  // Changer la graine ne suffit jamais : les recettes STOCKEES doivent suivre.
+  const data = readFileSync(join(ROOT, "js/data.js"), "utf8");
+  check("une migration rattrape les recettes deja stockees", data.includes("molette150"));
+  check("elle ne se limite pas a la Brikka, les Switch aussi sont concernees",
+    /molette150[\s\S]{0,400}state\.recettes\.forEach/.test(data));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

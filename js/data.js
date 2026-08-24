@@ -484,6 +484,26 @@ const DATA = (() => {
       // chaudière. Et plus de température cible : c'est la flamme qui décide.
       ["brikka150", rec => Number(rec.eau) === 100, rec => { rec.eau = 150; rec.temp = ""; }],
     ];
+
+    /* Molette unique, demande de Chris le 24 août. Son Timemore reste posé sur
+       1.5.0, le "compromis qui marche dans les deux" de son guide, et il ne
+       recompte pas les crans à chaque machine. Les cibles par recette (1.2.0 en
+       Brikka, 1.6.0 pour la Chronicler, 2.0.0 pour le Tetsu) décrivaient donc un
+       réglage qu'il ne fait jamais.
+
+       À part des trois passages ci-dessus parce que ce n'est PAS réservé à la
+       Brikka : il faut aussi toucher les six recettes Switch. Marqué une seule
+       fois, comme les autres, pour ne jamais écraser un réglage choisi ensuite. */
+    try {
+      if (typeof localStorage !== "undefined" && !localStorage.getItem("molette150")) {
+        state.recettes.forEach(rec => {
+          if (rec.dial === "1.5.0") return;
+          rec.dial = "1.5.0";
+          estampiller(rec);
+        });
+        localStorage.setItem("molette150", "1");
+      }
+    } catch (e) { /* stockage refusé : on laisse les valeurs semées */ }
     try {
       if (typeof localStorage !== "undefined") {
         passages.forEach(([marqueur, concerne, appliquer]) => {

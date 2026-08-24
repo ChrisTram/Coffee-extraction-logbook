@@ -124,7 +124,20 @@
   }
   let ecranCourant = "tableau";
 
+  /* Vrai UNIQUEMENT pendant que chargerExtractionDansSaisie ouvre l'ecran, pour
+     que l'abandon ci-dessous ne casse pas l'edition qu'on vient de demander. */
+  let ouvertureEdition = false;
+
   function activerEcran(nom) {
+    /* Arriver sur Saisie par la navigation veut dire "je veux noter une tasse",
+       jamais "reprends la modification d'il y a dix minutes". On abandonne donc
+       l'edition en cours, et on le DIT : sans le message, l'abandon serait aussi
+       silencieux que le bug qu'il corrige. Rien n'est perdu en base, l'extraction
+       modifiee n'avait pas ete enregistree et reste ouvrable depuis l'historique. */
+    if (nom === "saisie" && saisie.editId && !ouvertureEdition) {
+      reinitialiserSaisie();
+      toast(I18N.t("t_edition_abandonnee"));
+    }
     ecranCourant = nom;
     $$(".ecran").forEach(e => e.classList.remove("actif"));
     $$(".nav-btn").forEach(b => b.classList.toggle("actif", b.dataset.ecran === nom));
@@ -659,7 +672,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.37";
+  const VERSION = "7.38";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -1495,6 +1508,7 @@
   }
 
   function chargerExtractionDansSaisie(ext, duplication) {
+    ouvertureEdition = true;
     remplirSelectCafes(ext.cafe_id);
     saisie.editId = duplication ? null : ext.id;
     $("#f-date").value = duplication ? maintenantLocal() : ext.date_heure;
@@ -1535,6 +1549,7 @@
     majAvertissements();
     majLive();
     activerEcran("saisie");
+    ouvertureEdition = false;
   }
 
   async function enregistrerSaisie(ev) {
@@ -1827,7 +1842,6 @@
       const ext = DATA.state.extractions.find(e => e.id === b.dataset.refaire);
       if (!ext) return;
       chargerExtractionDansSaisie(ext, true);
-      activerEcran("saisie");
       toast(I18N.t("rg_preremplie"));
     }));
   }
@@ -2712,7 +2726,6 @@
       const ext = DATA.state.extractions.find(x => x.id === li.dataset.ext);
       if (!ext) return;
       chargerExtractionDansSaisie(ext, false);
-      activerEcran("saisie");
     };
     $("#dernieres-liste").addEventListener("click", ev => ouvrirDerniere(ev.target));
     $("#dernieres-liste").addEventListener("keydown", ev => {

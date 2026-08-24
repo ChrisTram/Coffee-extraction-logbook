@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.37,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.38,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -1105,13 +1105,44 @@ la température. Même traitement pour le titre du guide.
 Verrouillé par `tools/data.test.mjs` : absence de `saisie.bloque`, de
 `t_bloque`, de `cafeInterditSwitch` et de `bloque = true`.
 
+## 7 octies. Le bouton Saisie ne continue jamais une modification
+
+BUG DE PERTE DE DONNÉES, signalé le 24 août. Chris ouvrait une extraction depuis
+l'historique, partait sur un autre écran, revenait par l'onglet Saisie, et le
+formulaire était TOUJOURS en mode modification. Le bouton du bas disait
+"Enregistrer la modification", mais il croyait noter une tasse neuve : il écrasait
+donc une extraction passée, sans rien voir.
+
+`activerEcran("saisie")` abandonne maintenant l'édition en cours. Arriver sur cet
+écran par la navigation veut dire "je veux noter une tasse", jamais "reprends la
+modification d'il y a dix minutes".
+
+Deux points à ne pas défaire :
+
+1. L'abandon est ANNONCÉ par un toast. Un abandon silencieux serait aussi vicieux
+   que le bug qu'il corrige. Rien n'est perdu en base : l'extraction n'avait pas
+   été réenregistrée et reste ouvrable depuis l'historique.
+2. Le drapeau `ouvertureEdition` encadre `chargerExtractionDansSaisie`, sinon
+   l'ouverture légitime d'une édition se réinitialiserait elle-même en appelant
+   `activerEcran`.
+
+Au passage, les `activerEcran("saisie")` qui SUIVAIENT un
+`chargerExtractionDansSaisie` ont été retirés. Ils étaient déjà redondants, la
+fonction ouvre l'écran elle-même, mais ils devenaient surtout nuisibles : le
+rappel réinitialisait l'édition qu'on venait d'ouvrir. Un test vérifie qu'aucun ne
+revient.
+
 ## 7 septies. La molette du broyeur n'est pas le dial de la recette
 
 Deux choses différentes qui portaient le même nom, et le formulaire confondait les
 deux :
 
-- Le **dial d'une recette** est une CIBLE. La Brikka vise 1.2.0, le Switch de la
-  Chronicler vise 1.6.0.
+- Le **dial d'une recette** était une CIBLE propre à chaque recette : 1.2.0 en
+  Brikka, 1.6.0 pour la Chronicler, 2.0.0 pour le Tetsu. Chris a demandé le
+  24 août que TOUTES portent 1.5.0, et il a raison sur le fond : il ne recompte
+  pas les crans à chaque changement de machine, donc une cible par recette
+  décrivait un geste qu'il ne fait jamais. Les recommandations d'origine en
+  microns restent dans la `note` des recettes concernées.
 - Le **réglage du broyeur** est un ÉTAT physique. Chris laisse son Timemore C5 sur
   1.5.0, le "compromis qui marche dans les deux" de son guide, 75 crans et 622
   microns, pour ne pas recompter les crans à chaque changement de machine.
@@ -1463,6 +1494,10 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.38 : toutes les recettes portent la molette 1.5.0, avec migration pour les
+  recettes déjà stockées. Et correction d'un bug de PERTE DE DONNÉES : le bouton
+  Saisie continuait une modification en cours et écrasait une extraction passée
+  (section 7 octies).
 - v7.37 : la saisie préremplit le réglage RÉEL du broyeur et plus la cible de la
   recette (section 7 septies), réglable dans Paramètres. Et "Acide ET amer" n'est
   plus une pilule à cocher, le site le déduit (section 8 sexies).

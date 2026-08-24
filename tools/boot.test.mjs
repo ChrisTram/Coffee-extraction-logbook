@@ -286,9 +286,12 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
   const mouture = String(document.querySelector("#f-mouture").value);
   check("le formulaire vierge prend le reglage du broyeur, 1.5.0",
     mouture === "1.5.0", JSON.stringify(mouture));
-  const brikkaR = api.DATA.state.recettes.find(r => r.methode === "Brikka");
-  check("la recette Brikka garde sa CIBLE a elle, differente",
-    brikkaR && brikkaR.dial === "1.2.0", brikkaR && brikkaR.dial);
+  // Chris a demande le 24 aout que TOUTES les recettes portent son reglage
+  // unique : il ne recompte pas les crans a chaque changement de machine, donc
+  // une cible par recette decrivait un geste qu'il ne fait jamais.
+  check("toutes les recettes portent la meme molette que le broyeur",
+    api.DATA.state.recettes.every(r => r.dial === "1.5.0"),
+    [...new Set(api.DATA.state.recettes.map(r => r.dial))].join(", "));
   check("1.5.0 reste valide sur les deux machines",
     api.GRIND.verifierPlage("Brikka", "1.5.0").ok && api.GRIND.verifierPlage("Switch", "1.5.0").ok);
 }

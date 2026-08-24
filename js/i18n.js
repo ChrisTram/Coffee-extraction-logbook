@@ -743,6 +743,8 @@ const I18N = (() => {
 
     param_molette_detail: { fr: "{c} crans, environ {m} microns", en: "{c} clicks, about {m} microns" },
 
+    t_edition_abandonnee: { fr: "Modification abandonnée, tu repars sur une saisie neuve.", en: "Edit dropped, starting a fresh entry." },
+
     a_adapte: { fr: "versements adaptés à {e} g", en: "pours scaled to {e} g" },
 
     rt_tasse: { fr: "Ratio EN TASSE : {v} ml extraits divisés par {d} g de café. Sur la Brikka c est ce qui compte, une partie de la chaudière reste en vapeur et n arrive jamais dans la tasse.", en: "CUP ratio: {v} ml out divided by {d} g of coffee. On the Brikka this is what matters, part of the boiler stays as steam and never reaches the cup." },
