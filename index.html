@@ -413,10 +413,10 @@
 <!-- ================= ECRAN 4 : GUIDE (référence + achats) ================= -->
 <section id="ecran-guide" class="ecran">
   <nav class="sommaire" aria-label="Sommaire du guide">
-    <a href="#ref-recettes">Recettes</a>
     <a href="#ref-moulin">Moulin</a>
     <a href="#ref-diagnostic">Diagnostic du goût</a>
     <a href="#ref-regles">Règles</a>
+    <a href="#ref-recettes">Recettes</a>
     <a href="#ref-vocabulaire">Vocabulaire</a>
     <span class="sommaire-sep" aria-hidden="true"></span>
     <a href="#gd-boutiques">Boutiques</a>
@@ -425,40 +425,6 @@
     <a href="#gd-materiel">Matériel</a>
     <a href="#gd-messages">Messages à copier</a>
   </nav>
-
-  <div class="ref-titre-ligne">
-    <h2 id="ref-recettes" class="ref-titre">Recettes</h2>
-    <button class="btn btn-petit" id="btn-gerer-recettes">Gérer les recettes</button>
-  </div>
-  <p class="ref-intro">Deux recettes Brikka, cinq recettes Switch : trois pour le quotidien, deux avancées qui imposent de recompter la mouture. Le principe qui les gouverne toutes : le Switch ne doit pas refaire ce que la Brikka fait mieux. Chaque recette est éditable, et les recettes d'origine restent restaurables à tout moment.</p>
-  <div class="grille-recettes" id="grille-recettes"></div>
-
-  <div class="carte ref-bloc encadre-costaud">
-    <h4>Choisir son Costaud : le test</h4>
-    <p>Y a-t-il du sucré et du corps <b>derrière</b> l'acidité ?</p>
-    <p><b>Non</b>, c'est acide et creux, ça s'arrête court : sous-extraction, prends <b>Bloom</b>.</p>
-    <p><b>Oui</b>, mais c'est trop vif pour moi : extraction correcte, prends <b>Immersion</b>.</p>
-  </div>
-
-  <div class="carte ref-bloc">
-    <h4>Récapitulatif mouture des recettes Switch</h4>
-    <div class="table-conteneur">
-      <table class="table-ref">
-        <thead><tr><th>Recette</th><th>Molette</th><th>Crans</th><th>Microns</th></tr></thead>
-        <tbody>
-          <tr><td>1. The Coffee Chronicler's Recipe</td><td><code>1.6.0</code></td><td>80</td><td>environ 666</td></tr>
-          <tr><td>2. The Coffee Chronicler's Recipe (Sweet)</td><td><code>1.6.0</code></td><td>80</td><td>environ 666</td></tr>
-          <tr><td>3. Le Costaud (Bloom)</td><td><code>1.4.0</code></td><td>70</td><td>environ 582</td></tr>
-          <tr><td>4. Le Costaud (Immersion)</td><td><code>1.5.0</code></td><td>75</td><td>environ 624</td></tr>
-          <tr><td>5. The Tetsu Devil</td><td><code>2.0.0</code></td><td>100</td><td>environ 832</td></tr>
-          <tr><td>6. La Sherrycipe</td><td><code>2.0.0</code></td><td>100</td><td>environ 832</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <p class="carte-note">Les quatre premières restent dans la zone commune avec la Brikka à 1.2.0. Les deux dernières demandent d'ouvrir de deux numéros de plus.</p>
-  </div>
-
-  <!-- Bloc Tetsu variantes, rempli par JS dans la carte de la recette 5 -->
 
   <h2 id="ref-moulin" class="ref-titre">Le moulin : réglage et conversions</h2>
   <div class="carte ref-bloc">
@@ -471,15 +437,32 @@
     <p class="formule"><code>crans = rotation × 50 + numéro × 5 + cran</code> puis <code>microns = crans × 8,32</code></p>
 
     <div class="convertisseur">
-      <div class="champ">
-        <label for="conv-dial">Convertisseur : tape un réglage de molette</label>
-        <input type="text" id="conv-dial" placeholder="1.5.0" value="1.5.0" inputmode="decimal">
+      <div class="conv-ligne">
+        <div class="champ">
+          <label for="conv-dial">Réglage de molette</label>
+          <input type="text" id="conv-dial" value="1.5.0" inputmode="decimal">
+        </div>
+        <button type="button" class="btn btn-petit" id="conv-appliquer">Utiliser comme réglage par défaut</button>
       </div>
+      <!-- Le curseur est en CRANS, l'unité réelle du moulin : un cran de la
+           molette égale un cran ici, donc ce qu'on lit se reproduit à la main. -->
+      <label class="label" for="conv-slider">Faire glisser, un pas égale un cran</label>
+      <input type="range" id="conv-slider" min="0" max="150" step="1" value="75" class="conv-slider">
+      <div class="conv-slider-reperes" id="conv-reperes" aria-hidden="true"></div>
       <div class="convertisseur-resultat" id="conv-resultat" aria-live="polite"></div>
+      <div class="conv-conseil" id="conv-conseil"></div>
     </div>
 
     <div id="reglette" class="diagramme-conteneur"></div>
-    <p class="carte-note">Le diagramme officiel du C5 ESP : rotations en haut, microns en bas, une boîte par méthode, tes quatre réglages marqués en couleur, la zone hachurée est hors de portée du moulin. Survole ou touche une boîte pour le détail. Le réglage saisi dans le convertisseur met en évidence les méthodes compatibles.</p>
+    <p class="carte-note">Le diagramme officiel du C5 ESP : rotations en haut, microns en bas, une boîte par méthode, les repères de référence marqués en couleur, la zone hachurée est hors de portée du moulin. Le trait noir suit le curseur, le trait vert épais marque ton réglage par défaut. Survole ou touche une boîte pour le détail.</p>
+
+    <div class="encadre encadre-zero">
+      <h4>Attention, le zéro de MON moulin n'est pas le zéro imprimé</h4>
+      <p>Sur mon C5, les meules se touchent déjà vers <code>0.0.2</code> : à 2 crans du zéro imprimé la manivelle ne tourne plus. Mon vrai point de contact est donc environ <b>2 crans après le 0 du cadran</b>.</p>
+      <p>Toute l'échelle en microns de cette page part du point de contact des meules. Chez moi, tout est donc surestimé de 2 × 8,32 = <b>environ 17 microns</b>, soit 2,7 % à 1.5.0 : 624 affichés pour à peu près 607 réels.</p>
+      <p><b>Ce qui compte quand même plus que ça :</b> enregistrer toujours ce que le cadran affiche. La valeur absolue en microns est indicative, la reproductibilité est ce qui rend mes comparaisons valables. 2,7 % est en dessous de la dispersion normale d'un jeu de meules et de l'imprécision du 8,32 µm par cran, qui est une valeur nominale.</p>
+      <p>Et ne jamais forcer la manivelle. Si ça bloque, les meules se touchent : on cherche le zéro à vide, doucement, puis on recule.</p>
+    </div>
 
     <h4>Plages par méthode, en crans depuis le point de contact des meules</h4>
     <div class="table-conteneur">
@@ -494,10 +477,10 @@
       <table class="table-ref">
         <thead><tr><th>Usage</th><th>Molette</th><th>Crans</th><th>Microns</th></tr></thead>
         <tbody>
-          <tr><td>Brikka</td><td><code>1.2.0</code></td><td>60</td><td>environ 500</td></tr>
-          <tr><td>Réglage commun aux deux machines</td><td><code>1.5.0</code></td><td>75</td><td>environ 624</td></tr>
-          <tr><td>Switch recettes 1 et 2</td><td><code>1.6.0</code></td><td>80</td><td>environ 666</td></tr>
-          <tr><td>Switch recettes 5 et 6</td><td><code>2.0.0</code></td><td>100</td><td>environ 832</td></tr>
+          <tr><td>Optimum moka pot, Brikka seule</td><td><code>1.2.0</code></td><td>60</td><td>environ 500</td></tr>
+          <tr><td><b>Mon réglage unique, marche sur les deux</b></td><td><code>1.5.0</code></td><td>75</td><td>environ 624</td></tr>
+          <tr><td>Optimum Switch, percolation puis immersion</td><td><code>1.6.0</code></td><td>80</td><td>environ 666</td></tr>
+          <tr><td>Switch en percolation pure</td><td><code>2.0.0</code></td><td>100</td><td>environ 832</td></tr>
         </tbody>
       </table>
     </div>
@@ -551,6 +534,30 @@
     <h4>La question de la double infusion, tranchée</h4>
     <p>Fractionner l'infusion augmente l'extraction et l'intensité, <b>pas le corps</b>. Le corps vient des huiles et des fines, et le papier les retient quel que soit le nombre de cycles. Ce que les recettes 4 et 5 apportent, c'est de la clarté avec de la puissance. Dans le Switch, les trois vrais leviers de corps sont, dans l'ordre : resserrer le ratio vers 1:14, moudre plus fin, remuer davantage.</p>
   </div>
+
+
+  <!-- Recettes : descendu ici, un onglet entier leur est consacré. -->
+  <div class="ref-titre-ligne">
+    <h2 id="ref-recettes" class="ref-titre">Recettes</h2>
+    <button class="btn btn-petit" id="btn-gerer-recettes">Gérer les recettes</button>
+  </div>
+  <p class="ref-intro">Quatre recettes Brikka et six recettes Switch. Le principe qui les gouverne toutes : le Switch ne doit pas refaire ce que la Brikka fait mieux. Toutes portent maintenant ma molette unique, 1.5.0, et chaque recette garde dans sa note la mouture que sa source recommandait. Chaque recette est éditable, et les recettes d'origine restent restaurables à tout moment.</p>
+  <div class="grille-recettes" id="grille-recettes"></div>
+
+  <div class="carte ref-bloc encadre-costaud">
+    <h4>Choisir son Costaud : le test</h4>
+    <p>Y a-t-il du sucré et du corps <b>derrière</b> l'acidité ?</p>
+    <p><b>Non</b>, c'est acide et creux, ça s'arrête court : sous-extraction, prends <b>Bloom</b>.</p>
+    <p><b>Oui</b>, mais c'est trop vif pour moi : extraction correcte, prends <b>Immersion</b>.</p>
+  </div>
+
+  <div class="carte ref-bloc">
+    <h4>Une seule mouture pour tout</h4>
+    <p>Les dix recettes portent <code>1.5.0</code>, mon réglage unique. Chacune avait la cible de sa source, entre 1.4.0 et 2.0.0, mais je ne recompte pas les crans à chaque changement de machine : une cible par recette décrivait un geste que je ne fais jamais.</p>
+    <p class="carte-note">Les recommandations d'origine restent dans la note de chaque recette, par exemple 600 à 700 microns pour la Chronicler. Pour changer de réglage, le curseur du moulin plus haut, ou l'écran Paramètres.</p>
+  </div>
+
+  <!-- Bloc Tetsu variantes, rempli par JS dans la carte de la recette 5 -->
 
   <h2 id="ref-vocabulaire" class="ref-titre">Vocabulaire et culture</h2>
   <div class="fiches" id="fiches-vocabulaire">

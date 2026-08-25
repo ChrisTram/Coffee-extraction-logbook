@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.39,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.40,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -278,6 +278,42 @@ Trois mécanismes :
 
 À la bascule, app.js `rafraichirLangue()` re-rend tout ce qui est généré.
 `I18N.mol()` traduit le "à" des plages de molette ("0.8.3 à 1.5.4").
+
+## 5 bis. Le moulin dans l'écran Guide : un réglage, pas un convertisseur
+
+Le bloc était un champ texte et un diagramme figé. C'est devenu l'endroit où Chris
+choisit sa mouture.
+
+- **Curseur en CRANS**, de 0 à 150, pas de 1. L'unité est celle du moulin lui
+  même : un pas du curseur égale un cran de la molette, donc ce qu'il lit se
+  reproduit à la main. Un curseur en microns aurait été plus joli et intraduisible
+  en geste.
+- **Repères cliquables** sous le curseur, alimentés par `GRIND.REFERENCES`.
+- **`conseilMouture()`** répond à trois questions dans cet ordre : est-ce que ça
+  marche sur ses deux machines, quel goût donne un déplacement, et à combien de
+  crans il est de son réglage enregistré. Rien d'inventé, les plages viennent de
+  `GRIND.verifierPlage` et l'écart se compte en crans.
+- **Un bouton applique le réglage** dans `replis.molette`, le MÊME repli que
+  l'écran Paramètres. Une seule source, deux portes d'entrée. Le bouton se
+  désactive et change de texte quand la valeur est déjà celle enregistrée.
+- `CHARTS.diagramme` prend un troisième argument, le réglage enregistré, tracé en
+  trait vert épais distinct du curseur noir : en glissant, l'écart doit se voir.
+
+ORDRE DE DÉMARRAGE : `chargerReplis()` doit tourner AVANT
+`rendreConvertisseur()` et `reinitialiserSaisie()`. Il était appelé après, donc le
+convertisseur s'affichait sur la valeur d'usine et pas sur celle de Chris.
+
+Le décalage du zéro de SON moulin est documenté dans un encadré : les meules se
+touchent vers 0.0.2, donc l'échelle en microns le surestime d'environ 17 µm, soit
+2,7 %. Non corrigé dans le calcul, volontairement : c'est en dessous de la
+dispersion d'un jeu de meules et de l'imprécision du 8,32 µm par cran, et ce qui
+compte est d'enregistrer toujours ce que le cadran affiche.
+
+L'écran Guide a aussi été remis d'aplomb : Recettes descend sous Règles puisqu'un
+onglet entier leur est consacré, le comptage annoncé passe de "deux Brikka, cinq
+Switch" à quatre et six, et le récapitulatif de mouture par recette a disparu
+puisque les dix portent 1.5.0. Des tests comparent maintenant ces affirmations aux
+données réelles plutôt que de les laisser vieillir toutes seules.
 
 ## 5. Le moulin (js/grind.js)
 
@@ -1499,6 +1535,10 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.40 : le moulin de l'écran Guide devient interactif, curseur en crans,
+  conseils vivants et bouton qui pose le réglage par défaut (section 5 bis). Le
+  décalage du zéro est documenté. Page remise d'aplomb : Recettes descend, et
+  trois affirmations périmées corrigées puis verrouillées par des tests.
 - v7.39 : l'écran Paramètres est centré. Il était borné en largeur sans marge
   auto, donc collé à gauche.
 - v7.38 : toutes les recettes portent la molette 1.5.0, avec migration pour les

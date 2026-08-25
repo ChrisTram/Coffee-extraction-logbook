@@ -287,7 +287,7 @@ const CHARTS = (() => {
     ["cupping"],
   ];
 
-  function diagramme(conteneur, dialCourant) {
+  function diagramme(conteneur, dialCourant, dialDefaut) {
     const el = typeof conteneur === "string" ? document.getElementById(conteneur) : conteneur;
     if (!el) return;
     const maxU = 1400;
@@ -360,6 +360,15 @@ const CHARTS = (() => {
         '<circle cx="' + gx + '" cy="' + (hautAxe + 5) + '" r="4.5" style="fill:' + r.couleur + '" class="dg-ref-point" data-tip="' +
         r.dial + " : " + I18N.tr(r.usage) + ", " + r.crans + " " + I18N.t("cv_crans") + ", " + I18N.t("cv_environ") + " " + Math.round(u) + ' µm"></circle>';
     });
+
+    /* Réglage par défaut de Chris, trait vert épais. Distinct du curseur noir :
+       en glissant, il doit voir d'un coup d'oeil de combien il s'écarte de ce
+       qu'il a réellement sur le moulin. */
+    const pd = dialDefaut ? GRIND.parseDial(dialDefaut) : null;
+    if (pd) {
+      const dx = x(pd.microns);
+      svg += '<line x1="' + dx + '" y1="' + (hautAxe - 4) + '" x2="' + dx + '" y2="' + (yBandes + hBandes) + '" class="dg-defaut"></line>';
+    }
 
     // Curseur du convertisseur.
     if (p) {

@@ -675,6 +675,30 @@ input:focus, select:focus, textarea:focus {
   background: var(--accent-fond) !important;
 }
 
+/* Moulin : le convertisseur se manipule au curseur, l'unité du pas est le cran
+   du moulin lui-même pour que ce qu'on lit se reproduise à la main. */
+.conv-ligne { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+.conv-ligne .champ { flex: 0 0 160px; margin-bottom: 0; }
+.conv-slider { width: 100%; margin: 10px 0 4px; accent-color: var(--accent); }
+.conv-slider-reperes { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.conv-repere {
+  border: 1px solid var(--lignes); background: var(--panneau); color: var(--texte);
+  border-radius: 999px; padding: 3px 10px; font-size: 0.78rem; cursor: pointer;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+.conv-repere:hover { border-color: var(--accent); color: var(--accent-fort); }
+.conv-conseil { margin-top: 12px; }
+.conv-conseil p { margin: 0 0 7px; font-size: 0.87rem; color: var(--texte); }
+.conv-conseil p:last-child { margin-bottom: 0; }
+.conv-hors { color: var(--danger); }
+
+/* Le zéro du moulin de Chris : un encadré, pas une note en passant. */
+.encadre-zero { border-left: 3px solid var(--accent); }
+.encadre-zero h4 { margin-top: 0; }
+
+/* Trait du réglage enregistré sur le diagramme, distinct du curseur noir. */
+.dg-defaut { stroke: var(--ok); stroke-width: 3; opacity: 0.75; }
+
 /* Estimation de température et degré côte à côte, voir index.html. */
 .ligne-temp { display: flex; gap: 6px; }
 .ligne-temp select { flex: 1; min-width: 0; }

@@ -661,5 +661,51 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("tout ecran a largeur bornee est centre", decentres.length === 0, decentres.join(", "));
 }
 
+/* Ecran Guide : le moulin se manipule au curseur et le reglage s'applique en un
+   bouton. Le curseur est en CRANS, l'unite reelle du moulin. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  const sl = (html.match(/<input[^>]*id="conv-slider"[^>]*>/) || [""])[0];
+  check("le curseur du moulin existe", sl.length > 0);
+  check("il couvre toute la course du moulin, 0 a 150 crans",
+    sl.includes('min="0"') && sl.includes('max="150"'), sl);
+  check("son pas vaut UN cran, pas un arrondi", sl.includes('step="1"'), sl);
+  const grind = readFileSync(join(ROOT, "js/grind.js"), "utf8");
+  check("la butee du curseur est celle du moulin", grind.includes("CRANS_MAX = 150"));
+  check("le bouton d'application existe", html.includes('id="conv-appliquer"'));
+  check("la zone de conseil existe", html.includes('id="conv-conseil"'));
+
+  /* Le zero decale du moulin de Chris doit etre ecrit sur la page : il fausse
+     toute l'echelle en microns de 2 crans, et rien d'autre ne le dit. */
+  check("le decalage du zero est documente", html.includes("encadre-zero"));
+  check("il donne le chiffre, pas juste une mise en garde",
+    html.includes("2 crans après le 0 du cadran"));
+
+  // Recettes : descendues sous les Regles, un onglet leur est deja consacre.
+  const ordre = [...html.matchAll(/id="(ref-[a-z]+)"/g)].map(m => m[1]);
+  const rang = k => ordre.indexOf(k);
+  check("le moulin passe avant les recettes", rang("ref-moulin") < rang("ref-recettes"),
+    ordre.join(" > "));
+  check("le sommaire suit le meme ordre que la page",
+    ordre.filter(k => k !== "ref-recettes").join(",") ===
+    ["ref-moulin", "ref-diagnostic", "ref-regles", "ref-vocabulaire"].join(","),
+    ordre.join(","));
+}
+
+/* Coherence de la page Guide avec les donnees reelles : elle affirmait des
+   comptages et des moutures qui ne correspondaient plus aux recettes. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  const nbBrikka = RECETTES_DEPART.filter(r => r.methode === "Brikka").length;
+  const nbSwitch = RECETTES_DEPART.filter(r => r.methode === "Switch").length;
+  check("le guide annonce le bon nombre de recettes",
+    html.includes("Quatre recettes Brikka et six recettes Switch") && nbBrikka === 4 && nbSwitch === 6,
+    nbBrikka + " Brikka, " + nbSwitch + " Switch");
+  check("le vieux recapitulatif de mouture par recette a disparu",
+    !html.includes("Récapitulatif mouture des recettes Switch"));
+  check("les reperes de reference ne parlent plus de numeros de recette",
+    !html.includes("Switch recettes 1 et 2") && !html.includes("Switch recettes 5 et 6"));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

@@ -672,7 +672,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.39";
+  const VERSION = "7.40";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -2062,22 +2062,73 @@
 
   // ---------- Référence : convertisseur et tables ----------
 
+  /* Conseil vivant sous le curseur du moulin. Trois questions, dans cet ordre :
+     est-ce que ça marche sur MES machines, quel goût ça donne si je bouge, et à
+     quelle distance je suis de mon réglage enregistré. Rien d'inventé : les
+     plages viennent de GRIND, l'écart se compte en crans. */
+  function conseilMouture(p) {
+    const brikkaOk = GRIND.verifierPlage("Brikka", GRIND.dialDepuisCrans(p.crans)).ok;
+    const switchOk = GRIND.verifierPlage("Switch", GRIND.dialDepuisCrans(p.crans)).ok;
+    const lignes = [];
+
+    if (brikkaOk && switchOk) lignes.push("<b>" + I18N.t("cm_deux") + "</b>");
+    else if (brikkaOk) lignes.push("<b>" + I18N.t("cm_brikka") + "</b>");
+    else if (switchOk) lignes.push("<b>" + I18N.t("cm_switch") + "</b>");
+    else lignes.push('<b class="conv-hors">' + I18N.t("cm_aucune") + "</b>");
+
+    lignes.push(I18N.t("cm_plus_fin"));
+    lignes.push(I18N.t("cm_plus_grossier"));
+
+    // Écart au réglage enregistré, en crans, l'unité que la main comprend.
+    const d = GRIND.parseDial(replis.molette);
+    if (d) {
+      const ecart = p.crans - d.crans;
+      lignes.push(ecart === 0
+        ? I18N.t("cm_actuel", { m: replis.molette })
+        : I18N.t("cm_ecart", {
+          n: Math.abs(ecart),
+          sens: I18N.t(ecart > 0 ? "cm_ouvrir" : "cm_fermer"),
+          m: replis.molette,
+        }));
+    }
+    return lignes.map(x => "<p>" + x + "</p>").join("");
+  }
+
   function rendreConvertisseur() {
-    const texte = $("#conv-dial").value.trim();
+    const texte = $("#conv-dial").value.trim().replace(/,/g, ".");
     const zone = $("#conv-resultat");
     const p = GRIND.parseDial(texte);
     if (!p) {
       zone.innerHTML = '<span class="conv-erreur">' + I18N.t("cv_erreur") + "</span>";
-      CHARTS.diagramme("reglette", null);
+      $("#conv-conseil").innerHTML = "";
+      $("#conv-appliquer").disabled = true;
+      CHARTS.diagramme("reglette", null, replis.molette);
       return;
     }
+    // Le curseur suit toujours la valeur, y compris quand elle vient du texte.
+    if (Number($("#conv-slider").value) !== p.crans) $("#conv-slider").value = p.crans;
     const compatibles = GRIND.methodesCompatibles(p.microns).map(m => I18N.methode(m.nom));
     zone.innerHTML =
       '<span class="conv-chip"><b>' + p.crans + "</b> " + I18N.t("cv_crans") + "</span>" +
       '<span class="conv-chip">' + I18N.t("cv_environ") + " <b>" + Math.round(p.microns) + "</b> " + I18N.t("cv_microns") + "</span>" +
       '<span class="conv-chip">' + I18N.t("cv_bande") + " <b>" + GRIND.bande(p.microns).nom + "</b></span>" +
       '<span class="conv-chip">' + (compatibles.length ? I18N.t("cv_compatible") + " <b>" + compatibles.join(", ") + "</b>" : "<b>" + I18N.t("cv_hors") + "</b>") + "</span>";
-    CHARTS.diagramme("reglette", texte);
+    $("#conv-conseil").innerHTML = conseilMouture(p);
+    $("#conv-appliquer").disabled = texte === replis.molette;
+    $("#conv-appliquer").textContent = texte === replis.molette
+      ? I18N.t("cv_deja") : I18N.t("cv_appliquer");
+    CHARTS.diagramme("reglette", texte, replis.molette);
+  }
+
+  // Repères sous le curseur : les positions de référence, cliquables.
+  function rendreReperesMouture() {
+    $("#conv-reperes").innerHTML = GRIND.REFERENCES.map(r =>
+      '<button type="button" class="conv-repere" data-dial="' + r.dial + '" title="' +
+      attrTitre(I18N.tr(r.usage)) + '">' + r.dial + "</button>").join("");
+    $$("#conv-reperes .conv-repere").forEach(b => b.addEventListener("click", () => {
+      $("#conv-dial").value = b.dataset.dial;
+      rendreConvertisseur();
+    }));
   }
 
   function rendreTablePlages() {
@@ -2619,6 +2670,21 @@
     $("#btn-chrono-raz").addEventListener("click", chronoRaz);
     $("#param-enregistrer").addEventListener("click", enregistrerParametres);
     $("#param-molette").addEventListener("input", majDetailMolette);
+    $("#conv-slider").addEventListener("input", () => {
+      $("#conv-dial").value = GRIND.dialDepuisCrans(Number($("#conv-slider").value));
+      rendreConvertisseur();
+    });
+    /* Le seul chemin qui change vraiment un réglage depuis cet écran. Il écrit
+       le même repli que l'écran Paramètres, il n'y a donc qu'une source. */
+    $("#conv-appliquer").addEventListener("click", () => {
+      const dial = $("#conv-dial").value.trim().replace(/,/g, ".");
+      if (!GRIND.parseDial(dial)) { toast(I18N.t("t_mouture_invalide")); return; }
+      replis.molette = dial;
+      ecrireReplis();
+      rendreConvertisseur();
+      if ($("#param-molette")) $("#param-molette").value = dial;
+      toast(I18N.t("t_molette_appliquee", { m: dial }));
+    });
     $("#param-annuler").addEventListener("click", rendreParametres);
     // La case de l'écran Paramètres et celle du chrono pilotent le même réglage.
     $("#param-bips").addEventListener("change", () => {
@@ -2931,9 +2997,11 @@
     remplirSelectRecetteReco();
     remplirSelectTasses();
     rendreRecettes();
-    rendreConvertisseur();
     try { $("#chrono-bip").checked = localStorage.getItem("bips") !== "0"; } catch (e) { /* tant pis */ }
+    // AVANT tout ce qui lit replis : le convertisseur et la saisie en dependent.
     chargerReplis();
+    rendreReperesMouture();
+    rendreConvertisseur();
     choisirMethode("Brikka");
     reinitialiserSaisie();
     if (restaurerBrouillon()) toast(I18N.t("t_brouillon"));
