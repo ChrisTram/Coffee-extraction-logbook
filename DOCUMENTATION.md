@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.38,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.39,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -1234,6 +1234,11 @@ remplit tous les jours. Elle colle maintenant à ce que Chris fait réellement,
 c'est-à-dire couper le feu quand les petites bulles remontent, avant le
 frémissement, plus les cas bouillante et le mélange à l'eau froide.
 
+L'écran Paramètres est borné à 780 px ET centré par `margin: 0 auto`. Sans la
+marge, il se collait à gauche de `main`, qui fait 1180 px, et toute la page
+paraissait de travers. Un test vérifie la règle en général : tout `#ecran-*` qui
+porte un `max-width` doit porter la marge auto.
+
 Le select et le champ nombre tiennent sur UNE ligne (`.ligne-temp`). Empilés, la
 cellule Température devenait deux fois plus haute que ses voisines et creusait un
 trou au milieu de `.grille-nombres`, dont la hauteur de rangée suit la cellule la
@@ -1494,6 +1499,8 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.39 : l'écran Paramètres est centré. Il était borné en largeur sans marge
+  auto, donc collé à gauche.
 - v7.38 : toutes les recettes portent la molette 1.5.0, avec migration pour les
   recettes déjà stockées. Et correction d'un bug de PERTE DE DONNÉES : le bouton
   Saisie continuait une modification en cours et écrasait une extraction passée

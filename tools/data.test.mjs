@@ -650,5 +650,16 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     /molette150[\s\S]{0,400}state\.recettes\.forEach/.test(data));
 }
 
+/* Tout ecran a largeur bornee doit etre CENTRE dans main, qui fait 1180 px.
+   L'ecran Parametres avait max-width sans margin auto : il se collait a gauche
+   et la page paraissait de travers. Regle generale, pas correction ponctuelle. */
+{
+  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  const bornes = [...css.matchAll(/#ecran-([a-z]+) \{([^}]*max-width[^}]*)\}/g)];
+  check("au moins un ecran borne existe", bornes.length > 0, String(bornes.length));
+  const decentres = bornes.filter(m => !/margin:\s*0\s+auto/.test(m[2])).map(m => m[1]);
+  check("tout ecran a largeur bornee est centre", decentres.length === 0, decentres.join(", "));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);
