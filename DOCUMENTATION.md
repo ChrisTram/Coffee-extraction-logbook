@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.40,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.41,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -1231,6 +1231,35 @@ verrouillent l'absence de la formule, l'unicité de celle du Switch, et le fait 
 la rétention (`retention_ml` dans data.js) reste une SOUSTRACTION entre deux
 mesures et pas une estimation.
 
+## 7 nonies. La Chronicler porte 240 g, pas 225
+
+Erreur de TRANSCRIPTION, présente depuis la première version et repérée le
+24 août en comparant le site au document source de Chris,
+`Prompt-Fable-Tracker-Cafe.md`. Celui-ci écrit pour la recette 1 :
+
+    15 g / 240 g, ratio 1:16, 92 degrés, mouture 1.6.0
+    0:00 verser 120 g, vanne OUVERTE
+    0:45 verser 120 g, vanne FERMÉE
+
+Le site portait 225 g, 1:15 et un premier versement de 112 g. La recette avait
+donc été rétrécie de 6 % sans raison. Corrigé sur la Chronicler et sur sa variante
+Sweet, paliers compris, plus le volume en tasse annoncé qui passe de 195 à 210 ml
+(240 moins 2,1 x 15).
+
+Migration `chronicler240` pour les recettes déjà stockées, ciblée : uniquement la
+famille `chronicler`, et uniquement si elle porte encore 225.
+
+À NE PAS CONFONDRE avec la mise à l'échelle de la section 7 quinquies. Celle-ci
+adapte les PALIERS quand Chris tape une autre quantité dans la saisie ; elle ne
+corrige pas la valeur par défaut de la recette, qui est une donnée. Chris a
+justement buté sur la différence : il voyait 225 g et croyait que l'échelle aurait
+dû s'en occuper.
+
+Restent deux écarts connus avec le document source, non corrigés faute de
+décision : "Le Costaud (Immersion)" est en réalité la recette 3 "L'Adoucisseur",
+dont le rôle explicite est de rattraper les cafés trop acides, et le Tetsu y est
+donné pour 20 g / 300 g au lieu de 15 / 225.
+
 ## 7 quinquies. Les versements suivent l'eau réellement saisie
 
 Une recette écrit ses paliers en grammes ABSOLUS : "Verser jusqu'à 112 g",
@@ -1291,6 +1320,10 @@ Trois choix de conception :
   choix qui ne correspond plus au nombre affiché mentirait.
 - Les `value` sont des nombres explicites dans le HTML, pour que la traduction du
   libellé ne corrompe pas la valeur. Règle générale du projet, voir section 8.
+
+La liste couvre de 80 à 100 degrés sans trou de plus de 6 degrés, verrouillé par
+un test : les paliers "1 min" et "2 min" ont été ajoutés le 24 août parce que la
+liste sautait de 85 à 97 alors que les recettes Switch visent 92 à 95.
 
 Les durées de repos sont des ESTIMATIONS pour une bouilloire ouverte d'un demi
 litre. Les deux options de mélange à l'eau froide sont de l'arithmétique, et
@@ -1535,6 +1568,9 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.41 : la Chronicler et sa variante Sweet portent enfin les 240 g de leur
+  source, avec migration (section 7 nonies). La liste de température comble le
+  trou entre 85 et 97, où vivent justement les recettes Switch.
 - v7.40 : le moulin de l'écran Guide devient interactif, curseur en crans,
   conseils vivants et bouton qui pose le réglage par défaut (section 5 bis). Le
   décalage du zéro est documenté. Page remise d'aplomb : Recettes descend, et

@@ -485,6 +485,28 @@ const DATA = (() => {
       ["brikka150", rec => Number(rec.eau) === 100, rec => { rec.eau = 150; rec.temp = ""; }],
     ];
 
+    /* Chronicler et Sweet : 240 g d'eau, pas 225. Le document source de Chris
+       dit "15 g / 240 g, ratio 1:16" et un premier versement de 120 g ; la
+       transcription d'origine avait rétréci la recette à 225. Repéré le 24 août
+       en comparant le site au spec. On ne touche QUE les deux recettes concernées
+       et seulement si elles portent encore la mauvaise valeur. */
+    try {
+      if (typeof localStorage !== "undefined" && !localStorage.getItem("chronicler240")) {
+        state.recettes.forEach(rec => {
+          if (rec.famille !== "chronicler" || Number(rec.eau) !== 225) return;
+          rec.eau = 240;
+          rec.ratioTexte = "ratio 1:16, environ 210 ml en tasse";
+          rec.etapes = (rec.etapes || []).map(e => ({
+            ...e,
+            texte: String(e.texte).split("112 g").join("120 g").split("225 g").join("240 g"),
+          }));
+          rec.note = String(rec.note || "").split("225 g").join("240 g").split("affiche 225").join("affiche 240");
+          estampiller(rec);
+        });
+        localStorage.setItem("chronicler240", "1");
+      }
+    } catch (e) { /* stockage refusé : on laisse les valeurs semées */ }
+
     /* Molette unique, demande de Chris le 24 août. Son Timemore reste posé sur
        1.5.0, le "compromis qui marche dans les deux" de son guide, et il ne
        recompte pas les crans à chaque machine. Les cibles par recette (1.2.0 en

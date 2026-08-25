@@ -524,19 +524,29 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
    ABSOLUS, donc changer l'eau dans la saisie la rendait fausse : elle reclamait
    toujours 225 g alors que Chris en avait verse 240, et le chrono aussi. */
 {
+  /* La Chronicler porte 240 g depuis le 24 août : le document source de Chris
+     dit "15 g / 240 g, ratio 1:16", la transcription d'origine l'avait rétrécie
+     à 225. Les paliers suivent, 120 g puis 240 g. */
   const cc = RECETTES_DEPART.find(r => r.nom === "The Coffee Chronicler's Recipe");
-  check("la recette Chronicler existe et porte 225 g", cc && Number(cc.eau) === 225);
+  check("la recette Chronicler existe et porte 240 g", cc && Number(cc.eau) === 240,
+    cc && String(cc.eau));
+  check("son ratio annonce bien 1:16", (cc.ratioTexte || "").includes("1:16"), cc.ratioTexte);
+  check("sa variante Sweet porte la meme eau",
+    RECETTES_DEPART.filter(r => r.famille === "chronicler").every(r => Number(r.eau) === 240));
 
   const paliers = cc.etapes.map(e => e.texte);
-  const a240 = paliers.map(x => echelleVersements(x, 240 / 225));
-  check("112 g devient 119 g quand on verse 240 au lieu de 225",
-    a240[0].includes("119 g") && !a240[0].includes("112 g"), a240[0]);
-  check("225 g devient 240 g", a240[1].includes("240 g"), a240[1]);
-  check("le palier sans gramme est intact", a240[2] === paliers[2], a240[2]);
+  check("ses paliers citent 120 g puis 240 g",
+    paliers[0].includes("120 g") && paliers[1].includes("240 g"), paliers.join(" | "));
+
+  // Mise a l'echelle : verser 300 au lieu de 240 est un facteur de 1,25.
+  const a300 = paliers.map(x => echelleVersements(x, 300 / 240));
+  check("a 300 g, 120 g devient 150 g", a300[0].includes("150 g"), a300[0]);
+  check("a 300 g, 240 g devient 300 g", a300[1].includes("300 g"), a300[1]);
+  check("le palier sans gramme est intact", a300[2] === paliers[2], a300[2]);
 
   const double = paliers.map(x => echelleVersements(x, 2));
-  check("au double, 112 g devient 224 g", double[0].includes("224 g"), double[0]);
-  check("au double, 225 g devient 450 g", double[1].includes("450 g"), double[1]);
+  check("au double, 120 g devient 240 g", double[0].includes("240 g"), double[0]);
+  check("au double, 240 g devient 480 g", double[1].includes("480 g"), double[1]);
 
   check("un facteur de 1 ne touche a RIEN, au caractere pres",
     paliers.every(x => echelleVersements(x, 1) === x));
@@ -705,6 +715,31 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     !html.includes("Récapitulatif mouture des recettes Switch"));
   check("les reperes de reference ne parlent plus de numeros de recette",
     !html.includes("Switch recettes 1 et 2") && !html.includes("Switch recettes 5 et 6"));
+}
+
+/* Les recettes STOCKEES ne suivent jamais la graine toutes seules : sans
+   migration, Chris aurait continue a lire 225 g sur son site. */
+{
+  const data = readFileSync(join(ROOT, "js/data.js"), "utf8");
+  check("une migration rattrape les Chronicler deja stockees", data.includes("chronicler240"));
+  check("elle ne vise que la famille concernee et la mauvaise valeur",
+    /chronicler240[\s\S]{0,500}famille !== "chronicler"[\s\S]{0,80}225/.test(data));
+}
+
+/* Le trou de temperature entre 85 et 97 : les recettes visent 92 a 95, il n'y
+   avait aucun palier pour les atteindre. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  const debut = html.indexOf('<select id="f-temp-preset"');
+  const sel = html.slice(debut, html.indexOf("</select>", debut));
+  const temps = [...sel.matchAll(/<option value="([0-9]+)"/g)].map(m => Number(m[1])).sort((a, b) => a - b);
+  check("les paliers couvrent la zone des recettes Switch, 92 a 95",
+    temps.some(t => t >= 90 && t <= 96), temps.join(", "));
+  // Aucun ecart de plus de 6 degres entre deux paliers consecutifs au dessus de 80.
+  const hauts = temps.filter(t => t >= 80);
+  const trous = hauts.slice(1).map((t, i) => t - hauts[i]).filter(e => e > 6);
+  check("aucun trou de plus de 6 degres dans la liste", trous.length === 0,
+    hauts.join(", ") + " -> trous de " + trous.join(", "));
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);

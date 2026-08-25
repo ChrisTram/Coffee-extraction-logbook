@@ -15,6 +15,8 @@ const I18N = (() => {
   // ---------- 1. Contenu statique : français vers anglais ----------
 
   const UI = {
+    "Bouillante, 1 min de repos": "Boiling, rested 1 min",
+    "Bouillante, 2 min de repos": "Boiling, rested 2 min",
     "Le diagramme officiel du C5 ESP : rotations en haut, microns en bas, une boîte par méthode, les repères de référence marqués en couleur, la zone hachurée est hors de portée du moulin. Le trait noir suit le curseur, le trait vert épais marque ton réglage par défaut. Survole ou touche une boîte pour le détail.": "The official C5 ESP diagram: rotations on top, microns at the bottom, one box per method, the reference marks in colour, the hatched area is beyond the grinder's reach. The black line follows the slider, the thick green line marks your default setting. Hover or tap a box for detail.",
     "Sur mon C5, les meules se touchent déjà vers": "On my C5 the burrs already touch around",
     ": à 2 crans du zéro imprimé la manivelle ne tourne plus. Mon vrai point de contact est donc environ": ": two clicks from the printed zero the crank will not turn. So my real contact point is about",
