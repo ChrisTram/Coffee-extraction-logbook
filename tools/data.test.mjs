@@ -742,5 +742,26 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     hauts.join(", ") + " -> trous de " + trous.join(", "));
 }
 
+/* Un etat selectionne ne doit changer QUE des couleurs. Toute propriete qui
+   touche a la largeur du texte reorganise la ligne au clic : cocher un
+   descripteur envoyait le groupe suivant a la ligne, sous les doigts. */
+{
+  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  const metriques = /font-weight|font-size|letter-spacing|padding|border-width/;
+  const fautives = [];
+  const re = /([^{}]*\.actif[^{}]*)\{([^}]*)\}/g;
+  let m;
+  while ((m = re.exec(css))) {
+    if (metriques.test(m[2])) fautives.push(m[1].trim());
+  }
+  check("aucun etat selectionne ne change la largeur du texte",
+    fautives.length === 0, fautives.join(" | "));
+
+  // Le fond et la couleur doivent bien rester, sinon la selection ne se voit plus.
+  const tagActif = (css.match(/\.tag\.actif \{([^}]*)\}/) || ["", ""])[1];
+  check("la selection reste visible par le fond et la couleur",
+    tagActif.includes("background") && tagActif.includes("color"), tagActif.trim());
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

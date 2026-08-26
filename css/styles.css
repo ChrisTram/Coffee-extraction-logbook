@@ -372,7 +372,9 @@ button { font-family: inherit; }
   transition: background var(--transition), color var(--transition);
 }
 .nav-btn:hover { color: var(--encre); background: var(--panneau-2); }
-.nav-btn.actif { background: var(--accent-fond); color: var(--accent-fort); font-weight: 600; }
+/* Un état sélectionné ne change QUE des couleurs : voir le commentaire sur
+   .tag.actif plus bas. Le gras élargissait le libellé et décalait les voisins. */
+.nav-btn.actif { background: var(--accent-fond); color: var(--accent-fort); }
 
 .entete-actions { display: flex; align-items: center; gap: 8px; }
 
@@ -933,7 +935,6 @@ input:focus, select:focus, textarea:focus {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff8ef;
-  font-weight: 600;
 }
 
 /* Champ obligatoire */
@@ -986,11 +987,16 @@ input:focus, select:focus, textarea:focus {
   transition: all var(--transition);
 }
 .tag:hover { color: var(--encre); border-color: var(--attenue); }
+/* PAS de font-weight ici, ni ailleurs sur un état sélectionné, et c'est un
+   correctif pas une préférence. Le gras est plus large que le normal : la pilule
+   grandissait au clic, la ligne se réorganisait, et cocher "citronné" envoyait
+   tout le groupe "floral et thé" à la ligne suivante. Le fond et la couleur
+   d'accent suffisent largement à montrer la sélection. Verrouillé par un test
+   qui refuse toute propriété de largeur dans une règle .actif. */
 .tag.actif {
   background: var(--accent-fond);
   border-color: var(--accent);
   color: var(--accent-fort);
-  font-weight: 600;
 }
 
 /* Infobulle de définition au survol (ou au focus clavier) des pilules de

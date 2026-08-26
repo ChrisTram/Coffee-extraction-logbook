@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.41,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.42,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -367,6 +367,28 @@ re-créés.
   2 g/g).
 - Caféine estimée : dose x pourcentage café réel x pourcentage caféine de
   l'espèce (arabica 1,2, robusta 2,4, blend 1,8, liberica 1,4) x 0,9.
+
+## 8 septies. Un état sélectionné ne change QUE des couleurs
+
+`.tag.actif`, `.pilule.actif` et `.nav-btn.actif` passaient le libellé en
+`font-weight: 600`. Le gras est plus large que le normal, donc la pastille
+grandissait au clic, donc la ligne se réorganisait : cocher "citronné" envoyait
+tout le groupe "floral et thé" à la ligne suivante, sous les doigts de Chris.
+
+Le gras était de toute façon redondant. L'état actif porte déjà un fond et une
+couleur d'accent, et sur les pilules un fond plein avec du texte presque blanc :
+ça se voit de l'autre bout de la pièce.
+
+RÈGLE À TENIR : un état sélectionné ne change que des couleurs. Jamais
+`font-weight`, `font-size`, `letter-spacing`, `padding` ni `border-width`. Un
+test parcourt les règles `.actif` de `styles.css` et refuse ces cinq propriétés,
+donc la règle vaut pour tout ce qui sera ajouté plus tard, pas seulement pour les
+trois sélecteurs corrigés. Vérifié en réintroduisant le `font-weight` : le test
+échoue.
+
+Le corollaire, pour un état qui DOIT changer une bordure : la déclarer dès l'état
+normal et ne changer que sa couleur, ce que font déjà `.tag` et `.pilule` avec
+leur `border: 1px solid var(--lignes)`.
 
 ## 8. Pièges connus
 
@@ -1568,6 +1590,8 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.42 : sélectionner un descripteur ne réorganise plus la ligne. Le gras de
+  l'état actif élargissait la pastille (section 8 septies).
 - v7.41 : la Chronicler et sa variante Sweet portent enfin les 240 g de leur
   source, avec migration (section 7 nonies). La liste de température comble le
   trou entre 85 et 97, où vivent justement les recettes Switch.
