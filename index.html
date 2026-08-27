@@ -168,6 +168,8 @@
     </div>
 
     <div id="avertissements" class="avertissements" aria-live="polite"></div>
+    <!-- Déduit de la date d'ouverture du sachet, jamais saisi ici. -->
+    <p class="age-paquet" id="age-paquet" hidden></p>
 
     <!-- UNE seule grille pour tous les champs chiffrés : deux grilles côte à
          côte laissaient des cellules vides en fin de chacune. -->
@@ -972,6 +974,7 @@ Cảm ơn shop.</pre>
       <div class="champ"><label for="s-date">Date d'achat</label><input type="date" id="s-date" required></div>
       <div class="champ"><label for="s-format">Format (g)</label><input type="number" id="s-format" min="1" step="1" required></div>
       <div class="champ"><label for="s-prix">Prix (VND)</label><input type="number" id="s-prix" min="0" step="1"></div>
+      <div class="champ"><label for="s-ouverture">Date d'ouverture</label><input type="date" id="s-ouverture"><span class="champ-hint">Le jour où tu as ouvert le sachet. Laisse vide tant qu'il dort.</span></div>
       <div class="champ"><label for="s-torref">Date de torréfaction</label><input type="date" id="s-torref"></div>
     </div>
     <div class="saisie-actions">

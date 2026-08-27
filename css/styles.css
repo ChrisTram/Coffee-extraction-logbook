@@ -681,6 +681,9 @@ input:focus, select:focus, textarea:focus {
    il ne doit juste pas avoir l'air de proposer une valeur. */
 .curseur-note.curseur-inactif { opacity: 0.45; }
 
+/* Âge du paquet sous le choix du café : une information, pas une alerte. */
+.age-paquet { margin: 0 0 12px; font-size: 0.85rem; color: var(--attenue); }
+
 /* Moulin : le convertisseur se manipule au curseur, l'unité du pas est le cran
    du moulin lui-même pour que ce qu'on lit se reproduise à la main. */
 .conv-ligne { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }

@@ -15,6 +15,8 @@ const I18N = (() => {
   // ---------- 1. Contenu statique : français vers anglais ----------
 
   const UI = {
+    "Date d'ouverture": "Opening date",
+    "Le jour où tu as ouvert le sachet. Laisse vide tant qu'il dort.": "The day you opened the bag. Leave empty while it sits unopened.",
     "Pas encore notée, je reviendrai": "Not rated yet, I will come back",
     "Bouillante, 1 min de repos": "Boiling, rested 1 min",
     "Bouillante, 2 min de repos": "Boiling, rested 2 min",
@@ -591,22 +593,10 @@ const I18N = (() => {
     // Insights automatiques du tableau de bord. Phrases construites en JS, donc
     // gabarits T et pas entrées UI. Éviter les pluriels variables dans les
     // formulations : les nombres arrivent déjà formatés.
-    ins_frais_tot: {
-      fr: "dans la première semaine après torréfaction",
-      en: "within the first week after roasting",
-    },
-    ins_frais_median: {
-      fr: "entre 8 et 21 jours après torréfaction",
-      en: "between 8 and 21 days after roasting",
-    },
-    ins_frais_tard: {
-      fr: "plus de trois semaines après torréfaction",
-      en: "more than three weeks after roasting",
-    },
-    ins_fraicheur: {
-      fr: "Tes meilleures tasses sortent {quand} : {haut} de moyenne contre {bas} le reste du temps.",
-      en: "Your best cups land {quand}: {haut} average against {bas} the rest of the time.",
-    },
+    ins_paquet_frais: { fr: "dans la première semaine après ouverture", en: "in the first week after opening" },
+    ins_paquet_median: { fr: "entre 1 et 3 semaines après ouverture", en: "between 1 and 3 weeks after opening" },
+    ins_paquet_vieux: { fr: "au delà de 3 semaines après ouverture", en: "beyond 3 weeks after opening" },
+    ins_paquet: { fr: "Tes tasses sont meilleures {quand} : {haut} de moyenne contre {bas} le reste du temps.", en: "Your cups are better {quand}: {haut} on average against {bas} the rest of the time." },
     ins_mouture: {
       fr: "Sur la {machine}, {dial} est ton meilleur réglage : {haut} de moyenne contre {bas} pour tes autres réglages.",
       en: "On the {machine}, {dial} is your best setting: {haut} average against {bas} for your other settings.",
@@ -789,6 +779,9 @@ const I18N = (() => {
     cv_appliquer: { fr: "Utiliser comme réglage par défaut", en: "Use as my default setting" },
     cv_deja: { fr: "C'est déjà ton réglage par défaut", en: "Already your default setting" },
     t_molette_appliquee: { fr: "Réglage par défaut : {m}. La saisie le prérempli maintenant.", en: "Default setting: {m}. The entry form prefills it now." },
+
+    ap_jours: { fr: "Paquet ouvert depuis {n} jour(s).", en: "Bag open for {n} day(s)." },
+    d_ouvert: { fr: "Jours d'ouverture", en: "Days open" },
 
     a_adapte: { fr: "versements adaptés à {e} g", en: "pours scaled to {e} g" },
 

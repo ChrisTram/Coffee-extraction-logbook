@@ -200,18 +200,23 @@
     return { gagnant, moyReste, nReste: reste.length };
   }
 
-  function insightFraicheur(notees) {
-    const groupes = { ins_frais_tot: [], ins_frais_median: [], ins_frais_tard: [] };
+  /* Âge du PAQUET, pas âge de la torréfaction. La règle précédente partait de
+     `date_torrefaction`, absente des cinq cafés de Chris et destinée à le rester :
+     elle n'a jamais pu se déclencher une seule fois. Le jour d'ouverture, lui, il
+     le connaît toujours, et c'est ce qu'il décrit comme faisant le plus bouger ses
+     tasses. Les tranches suivent le dégazage puis l'éventement. */
+  function insightAgePaquet(notees) {
+    const groupes = { ins_paquet_frais: [], ins_paquet_median: [], ins_paquet_vieux: [] };
     notees.forEach(e => {
-      const j = e._c.age_jours;
+      const j = e._c.jours_ouvert;
       if (j === "" || j < 0) return;
-      if (j <= 7) groupes.ins_frais_tot.push(e.note_sur_10);
-      else if (j <= 21) groupes.ins_frais_median.push(e.note_sur_10);
-      else groupes.ins_frais_tard.push(e.note_sur_10);
+      if (j <= 7) groupes.ins_paquet_frais.push(e.note_sur_10);
+      else if (j <= 21) groupes.ins_paquet_median.push(e.note_sur_10);
+      else groupes.ins_paquet_vieux.push(e.note_sur_10);
     });
     const res = bestOfGroups(groupes);
     if (!res) return null;
-    return I18N.t("ins_fraicheur", {
+    return I18N.t("ins_paquet", {
       quand: I18N.t(res.gagnant.cle),
       haut: note1(res.gagnant.moy),
       bas: note1(res.moyReste),
@@ -304,7 +309,7 @@
   function computeInsights(exts) {
     const notees = exts.filter(e => e.note_sur_10 !== "");
     const phrases = [
-      insightFraicheur(notees),
+      insightAgePaquet(notees),
       insightMouture(notees, "Brikka"),
       insightMouture(notees, "Switch"),
       insightRecettes(notees),
@@ -672,7 +677,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.46";
+  const VERSION = "7.47";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -1070,6 +1075,22 @@
     return $("#f-note-vide").checked ? "" : $("#f-note").value;
   }
 
+  /* Âge du paquet au moment de la tasse, affiché sous le choix du café. En
+     lecture seule : il se DÉDUIT de la date d'ouverture du sachet, le saisir à la
+     main serait une deuxième vérité. Muet tant qu'aucune date d'ouverture n'est
+     renseignée, plutôt que d'afficher un zéro faux. */
+  function majAgePaquet() {
+    const zone = $("#age-paquet");
+    if (!zone) return;
+    const c = DATA.calculs({
+      cafe_id: $("#f-cafe").value,
+      date_heure: $("#f-date").value || maintenantLocal(),
+    });
+    if (c.jours_ouvert === "") { zone.hidden = true; zone.textContent = ""; return; }
+    zone.hidden = false;
+    zone.textContent = I18N.t("ap_jours", { n: c.jours_ouvert });
+  }
+
   function majAvertissements() {
     const zone = $("#avertissements");
     const cafe = DATA.state.cafes.find(c => c.id === $("#f-cafe").value);
@@ -1081,6 +1102,7 @@
       if (!v.ok) msgs.push(v.message);
     }
     zone.innerHTML = msgs.map(m => '<div class="avertissement">' + m + "</div>").join("");
+    majAgePaquet();
     majAsideSaisie();
   }
 
@@ -1803,6 +1825,7 @@
       { cle: "d_dose", lire: e => e.dose_g !== "" ? e.dose_g + " g" : "" },
       { cle: "d_eau", lire: e => e.eau_g !== "" ? e.eau_g + " g" : "" },
       { cle: "d_ratio", lire: e => e._c.ratioTexte },
+      { cle: "d_ouvert", lire: e => e._c.jours_ouvert === "" ? "" : e._c.jours_ouvert },
       { cle: "d_mouture", lire: e => e.mouture_dial || (e._c.moulu ? I18N.t("paquet") : "") },
       { cle: "d_temp", lire: e => e.temperature_c !== "" ? e.temperature_c + " °C" : "" },
       { cle: "d_puissance", lire: e => e.puissance_feu !== "" ? e.puissance_feu + " / 10" : "" },
@@ -2280,6 +2303,9 @@
     $("#s-date").value = maintenantLocal().slice(0, 10);
     $("#s-format").value = c.format_grammes || "";
     $("#s-prix").value = c.prix_vnd || "";
+    // Le cas courant est d'ouvrir le sachet le jour où on l'enregistre. Chris
+    // peut vider le champ si le paquet part au placard.
+    $("#s-ouverture").value = maintenantLocal().slice(0, 10);
     $("#s-torref").value = "";
     $("#form-sachet").hidden = false;
     $("#s-date").focus();
@@ -2294,6 +2320,7 @@
       format_grammes: $("#s-format").value,
       prix_vnd: $("#s-prix").value,
       date_torrefaction: $("#s-torref").value,
+      date_ouverture: $("#s-ouverture").value,
     });
     $("#form-sachet").hidden = true;
     sachetCafeId = null;
@@ -2713,6 +2740,7 @@
       prefillDepuisRecette($("#f-recette").value);
     }));
     $("#f-cafe").addEventListener("change", surChoixCafe);
+    $("#f-date").addEventListener("change", majAgePaquet);
     $("#f-recette").addEventListener("change", () => { prefillDepuisRecette($("#f-recette").value); majAvertissements(); });
     ["f-dose", "f-eau", "f-mouture", "f-volume"].forEach(id =>
       $("#" + id).addEventListener("input", () => { majLive(); majAvertissements(); }));

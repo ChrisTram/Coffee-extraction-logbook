@@ -29,7 +29,7 @@ const DATA = (() => {
      a été saisi, on ne réécrit pas le passé quand le réglage courant change. */
   const PUISSANCE_FEU_HISTORIQUE = 3;
 
-  const ACHAT_COLS = ["id", "cafe_id", "date_achat", "format_grammes", "prix_vnd", "date_torrefaction"];
+  const ACHAT_COLS = ["id", "cafe_id", "date_achat", "format_grammes", "prix_vnd", "date_torrefaction", "date_ouverture"];
 
   const state = {
     cafes: [],
@@ -340,12 +340,26 @@ const DATA = (() => {
       format_grammes: r.format_grammes === "" || r.format_grammes === undefined ? "" : Number(r.format_grammes),
       prix_vnd: r.prix_vnd === "" || r.prix_vnd === undefined ? "" : Number(r.prix_vnd),
       date_torrefaction: r.date_torrefaction || "",
+      /* Jour où le sachet a été OUVERT, la seule fraîcheur qui compte ici. Vide
+         tant qu'il dort dans le placard, ce qui est une information en soi. */
+      date_ouverture: r.date_ouverture || "",
     };
   }
 
   /* Sachet en cours d'un café : le dernier acheté. Retourne null si le café n'a
      aucun achat, auquel cas l'appelant retombe sur les champs de la fiche café,
      qui restent la source pour un café à sachet unique. */
+  /* Le sachet en vigueur à une DATE donnée, et pas simplement le dernier acheté.
+     Sans ça, une extraction du 10 août serait rattachée au sachet acheté le 20 et
+     afficherait un âge négatif. */
+  function sachetALaDate(cafeId, date) {
+    const jour = String(date || "").slice(0, 10);
+    const candidats = state.achats
+      .filter(a => a.cafe_id === cafeId && (!jour || String(a.date_achat).slice(0, 10) <= jour))
+      .sort((a, b) => String(b.date_achat).localeCompare(String(a.date_achat)));
+    return candidats[0] || null;
+  }
+
   function sachetCourant(cafeId) {
     return state.achats
       .filter(a => a.cafe_id === cafeId)
@@ -683,6 +697,18 @@ const DATA = (() => {
     const ratioTasse = ext.dose_g > 0 && ext.volume_extrait_ml !== "" && Number(ext.volume_extrait_ml) > 0
       ? Number(ext.volume_extrait_ml) / ext.dose_g
       : "";
+    /* Jours depuis l'OUVERTURE du sachet. C'est la variable de fraîcheur utile :
+       Chris n'a de date de torréfaction sur aucun café et n'en aura pas, mais il
+       sait toujours quand il a ouvert un paquet. */
+    let joursOuvert = "";
+    if (ext.cafe_id && ext.date_heure) {
+      const sachet = sachetALaDate(ext.cafe_id, ext.date_heure);
+      if (sachet && sachet.date_ouverture) {
+        const d1 = new Date(sachet.date_ouverture + "T00:00");
+        const d2 = new Date(ext.date_heure);
+        if (!isNaN(d1) && !isNaN(d2)) joursOuvert = Math.max(0, Math.floor((d2 - d1) / 86400000));
+      }
+    }
     let age = "";
     if (cafe && cafe.date_torrefaction && ext.date_heure) {
       const d1 = new Date(cafe.date_torrefaction + "T00:00");
@@ -721,6 +747,7 @@ const DATA = (() => {
       crans: dial ? dial.crans : "",
       microns: dial ? Math.round(dial.microns) : "",
       age_jours: age,
+      jours_ouvert: joursOuvert,
       retention_ml: retention,
       volume_boisson_ml: boisson,
       cout_tasse_vnd: cout,
@@ -1235,6 +1262,7 @@ const DATA = (() => {
     ajouterRecette, modifierRecette, reinitialiserRecette, supprimerRecette, estRecetteDorigine,
     // Exposée pour les tests : c'est elle qui décide qu'une température vide
     // reste vide au lieu de tomber à 0, et qu'une puissance de feu survit.
+    sachetALaDate,
     normaliserRecette, normaliserReglages,
     reglagesCourants, majReglages, REGLAGE_COLS, REGLAGE_ID,
     // Exposée pour les tests : c'est elle qui rattrape les recettes STOCKÉES

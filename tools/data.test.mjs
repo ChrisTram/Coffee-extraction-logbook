@@ -108,7 +108,7 @@ check(
 // 6. Stock par sachet. Le comportement CENTRAL : un rachat repart du format
 // plein. Sans ca la table achats n'apporterait rien sur un cafe rachete, ce qui
 // est precisement le cas d'usage qui la justifie.
-const ACHAT_ENTETE = "id,cafe_id,date_achat,format_grammes,prix_vnd,date_torrefaction";
+const ACHAT_ENTETE = "id,cafe_id,date_achat,format_grammes,prix_vnd,date_torrefaction,date_ouverture";
 const achatCsv = DATA.csvSerialiser([{ id: "a1", cafe_id: "c1", format_grammes: 250, maj_le: 999 }], DATA.ACHAT_COLS);
 const premiereLigneAchats = achatCsv.split("\n")[0];
 check("entete achats.csv", premiereLigneAchats === ACHAT_ENTETE, premiereLigneAchats);
@@ -884,6 +884,50 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("entete reglages.csv", csv.split("\n")[0] === "id,dose_g,puissance_feu,mouture_dial,schema_version",
     csv.split("\n")[0]);
   check("maj_le absent du CSV reglages", !csv.includes("1699999999999"));
+}
+
+/* JOURS DEPUIS L'OUVERTURE DU PAQUET. La date de torrefaction ne servait a rien :
+   aucun des cinq cafes de Chris ne la porte et il n'en aura pas. Le jour
+   d'ouverture, lui, il le connait toujours, et c'est ce qui fait le plus bouger
+   ses tasses entre J+1 et J+21. */
+{
+  DATA.state.cafes = [{ id: "c1", nom: "Test", actif: 1 }];
+  DATA.state.achats = [
+    { id: "a1", cafe_id: "c1", date_achat: "2026-08-01", date_ouverture: "2026-08-03", format_grammes: 250 },
+    { id: "a2", cafe_id: "c1", date_achat: "2026-08-20", date_ouverture: "2026-08-25", format_grammes: 250 },
+  ];
+
+  const jours = (date) => DATA.calculs({ cafe_id: "c1", date_heure: date }).jours_ouvert;
+  check("le jour de l'ouverture compte zero", jours("2026-08-03T09:00") === 0, String(jours("2026-08-03T09:00")));
+  check("une semaine plus tard, sept jours", jours("2026-08-10T09:00") === 7, String(jours("2026-08-10T09:00")));
+
+  /* Le sachet retenu est celui EN VIGUEUR ce jour la, pas le dernier achete.
+     Sinon une tasse du 10 aout serait rattachee au sachet du 20 et afficherait un
+     age negatif. */
+  check("une tasse d avant le rachat suit l ancien sachet",
+    jours("2026-08-15T09:00") === 12, String(jours("2026-08-15T09:00")));
+  check("une tasse d'apres le rachat suit le nouveau",
+    jours("2026-08-27T09:00") === 2, String(jours("2026-08-27T09:00")));
+
+  // Sans date d'ouverture, on ne raconte rien plutot que d'afficher un zero faux.
+  DATA.state.achats = [{ id: "a1", cafe_id: "c1", date_achat: "2026-08-01", date_ouverture: "", format_grammes: 250 }];
+  check("sachet pas encore ouvert : aucun age", jours("2026-08-10T09:00") === "",
+    JSON.stringify(jours("2026-08-10T09:00")));
+  check("cafe sans sachet du tout : aucun age",
+    DATA.calculs({ cafe_id: "inconnu", date_heure: "2026-08-10T09:00" }).jours_ouvert === "");
+
+  // La colonne existe dans le CSV, et maj_le n'y entre toujours pas.
+  check("date_ouverture est une colonne d'achats", DATA.ACHAT_COLS.includes("date_ouverture"));
+  const csv = DATA.csvSerialiser([{ id: "a1", maj_le: 1699999999999, date_ouverture: "2026-08-03" }], DATA.ACHAT_COLS);
+  check("la date d'ouverture sort dans le CSV", csv.includes("2026-08-03"));
+  check("maj_le n'entre toujours pas dans le CSV", !csv.includes("1699999999999"));
+
+  // L'ancienne regle de fraicheur a disparu, la nouvelle l'a remplacee.
+  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  check("la regle de fraicheur par torrefaction a disparu", !app.includes("insightFraicheur"));
+  check("la regle d'age du paquet la remplace", app.includes("insightAgePaquet"));
+  const i18n = readFileSync(join(ROOT, "js/i18n.js"), "utf8");
+  check("ses cles mortes sont parties avec elle", !i18n.includes("ins_frais_tot"));
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);

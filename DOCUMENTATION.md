@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.46,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.47,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -383,6 +383,32 @@ Deux détails qui comptent :
 
 Un test vérifie qu'une note vide reste vide jusque dans le CSV. Elle ne doit
 JAMAIS devenir 0, qui serait la pire des notes.
+
+## 6 duodecies. Jours depuis l ouverture du paquet
+
+La règle de fraîcheur partait de `date_torrefaction`. Aucun des cinq cafés de
+Chris ne la porte, et il n en aura pas : les torréfacteurs vietnamiens ne
+l impriment pas. La règle n a donc jamais pu se déclencher une seule fois.
+
+Ce qui fait vraiment bouger ses tasses, il le dit lui même, c est le temps depuis
+qu il a OUVERT le sachet. Le café dégaze, puis s évente, et une tasse à J+1 n a
+rien à voir avec la même à J+21.
+
+`date_ouverture` vit sur le SACHET (table `achats`) et pas sur le café : un café
+racheté a plusieurs sachets, ouverts des jours différents. Vide tant qu il dort
+dans le placard, ce qui est une information en soi.
+
+`sachetALaDate(cafeId, date)` retient le sachet EN VIGUEUR ce jour là et pas
+simplement le dernier acheté. Sans ça, une tasse du 10 août serait rattachée au
+sachet acheté le 20 et afficherait un âge négatif.
+
+`jours_ouvert` est un champ CALCULÉ, jamais saisi : la saisie l affiche en
+lecture seule sous le choix du café, et se tait quand la date d ouverture manque
+plutôt que d afficher un zéro faux. Le saisir à la main aurait créé une deuxième
+vérité.
+
+Les tranches de la règle d insight suivent le dégazage puis l éventement :
+première semaine, une à trois semaines, au delà.
 
 ## 6 undecies. Tasses restantes, à la dose du café
 
@@ -1638,6 +1664,9 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.47 : jours depuis l ouverture du paquet, sur le SACHET et pas sur le café.
+  Remplace la règle de fraîcheur par date de torréfaction, qui ne pouvait pas se
+  déclencher (section 6 duodecies).
 - v7.46 : les six rattrapages à usage unique deviennent une VERSION DE SCHÉMA
   stockée avec les données, donc synchronisée. Les drapeaux localStorage étaient
   par appareil alors que les données sont partagées (section 3).
