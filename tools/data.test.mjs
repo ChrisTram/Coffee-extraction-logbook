@@ -930,5 +930,38 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("ses cles mortes sont parties avec elle", !i18n.includes("ins_frais_tot"));
 }
 
+/* COURBE DE TENDANCE. Les notes brutes sautent trop pour se lire : 8 puis 4 puis
+   7,5 d'un jour a l'autre. La moyenne glissante raconte l'histoire reelle. */
+{
+  const tasse = (jour, note) => ({ id: "t" + jour, date_heure: "2026-08-" + jour + "T12:00", note_sur_10: note });
+  const jeu = [tasse("01", 8), tasse("02", 8), tasse("03", 8), tasse("04", 8), tasse("05", 8),
+              tasse("06", 3), tasse("07", 3), tasse("08", 3), tasse("09", 3), tasse("10", 3)];
+  const g = REGLAGES.moyenneGlissante(jeu, 5);
+
+  check("une valeur par tasse notee", g.length === 10, String(g.length));
+  /* Les quatre premieres sont vides : afficher une moyenne de deux tasses comme
+     si c'en etait une de cinq mentirait sur sa solidite. */
+  check("la fenetre ne demarre qu'une fois pleine",
+    g.slice(0, 4).every(x => x.valeur === null) && g[4].valeur === 8,
+    JSON.stringify(g.slice(0, 5).map(x => x.valeur)));
+  check("elle descend progressivement, sans sauter",
+    g.slice(4).map(x => x.valeur).join() === "8,7,6,5,4,3",
+    g.slice(4).map(x => x.valeur).join());
+
+  // Les tasses NON NOTEES ne comptent pas, elles ne doivent pas creuser la courbe.
+  const avecTrous = jeu.concat([{ id: "x", date_heure: "2026-08-11T12:00", note_sur_10: "" }]);
+  check("une tasse sans note est ignoree", REGLAGES.moyenneGlissante(avecTrous, 5).length === 10);
+
+  // L'ordre d'entree ne doit rien changer : on trie par date.
+  const melange = [jeu[9], jeu[0], jeu[5], jeu[2], jeu[7], jeu[1], jeu[8], jeu[3], jeu[6], jeu[4]];
+  check("le desordre d'entree ne change rien",
+    REGLAGES.moyenneGlissante(melange, 5).map(x => x.valeur).join() === g.map(x => x.valeur).join());
+
+  // Moins de tasses que la fenetre : que des vides, jamais une moyenne partielle.
+  check("trois tasses pour une fenetre de cinq ne donnent aucune valeur",
+    REGLAGES.moyenneGlissante(jeu.slice(0, 3), 5).every(x => x.valeur === null));
+  check("aucune tasse, aucun point", REGLAGES.moyenneGlissante([], 5).length === 0);
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

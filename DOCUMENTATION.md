@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.47,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.48,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -383,6 +383,31 @@ Deux détails qui comptent :
 
 Un test vérifie qu'une note vide reste vide jusque dans le CSV. Elle ne doit
 JAMAIS devenir 0, qui serait la pire des notes.
+
+## 6 terdecies. La courbe de tendance
+
+Les notes brutes sautent trop pour se lire : chez Chris elles font 8, puis 4, puis
+7,5 d un jour à l autre. La moyenne glissante sur cinq tasses raconte l histoire
+réelle, et elle en a une : 8,0 début août, 5,1 le 16, retour à 7,0 le 27.
+
+`REGLAGES.moyenneGlissante(extractions, fenetre)` est PUR, sans DOM, testé sans
+navigateur comme le reste de ce fichier. Trois choix :
+
+- La fenêtre compte des TASSES notées, pas des jours. À une ou deux tasses par
+  jour actif, une fenêtre en jours serait pleine de trous et sauterait autant que
+  les points bruts.
+- Elle renvoie `null` tant qu elle n est pas pleine. Afficher une moyenne de deux
+  tasses comme si c en était une de cinq mentirait sur sa solidité.
+- Elle trie par date, donc l ordre d entrée ne change rien.
+
+Côté tableau de bord, la courbe se calcule sur TOUT l historique noté et pas sur
+la fenêtre de 30 jours : sinon elle serait vide les quatre premiers jours
+affichés. Elle est ensuite projetée jour par jour en gardant la dernière valeur
+connue, pour ne pas se couper les jours sans tasse.
+
+Elle partage l axe de note avec les points bruts : deux échelles différentes sur
+le même graphe se compareraient sans qu on le voie. Trait épais et sans point,
+pour se lire comme un fond et pas comme une mesure de plus.
 
 ## 6 duodecies. Jours depuis l ouverture du paquet
 
@@ -1664,6 +1689,8 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.48 : courbe de tendance sur le graphe des 30 jours, moyenne glissante sur
+  les 5 dernières tasses notées.
 - v7.47 : jours depuis l ouverture du paquet, sur le SACHET et pas sur le café.
   Remplace la règle de fraîcheur par date de torréfaction, qui ne pouvait pas se
   déclencher (section 6 duodecies).

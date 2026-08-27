@@ -546,7 +546,14 @@
     rendreInsights(exts);
 
     // 30 derniers jours : barres, note, grammes, caféine dans le tooltip
-    const labels = [], comptes = [], moyennes = [], grammes = [], details = [];
+    const labels = [], comptes = [], moyennes = [], grammes = [], details = [], tendance = [];
+    /* La tendance se calcule sur TOUT l'historique noté, pas sur les 30 jours :
+       une moyenne glissante qui redémarrerait au bord de la fenêtre serait vide
+       les quatre premiers jours affichés. On la projette ensuite jour par jour,
+       en gardant la dernière valeur connue, pour qu'elle ne se coupe pas les
+       jours sans tasse. */
+    const glissante = REGLAGES.moyenneGlissante(DATA.state.extractions, 5);
+    let iGliss = 0, derniere = null;
     for (let i = 29; i >= 0; i--) {
       const d = new Date(); d.setDate(d.getDate() - i);
       const cle = cleLocale(d);
@@ -562,7 +569,17 @@
       const nomsCafes = [...new Set(duJour.map(e => (DATA.cafeDe(e) || {}).nom).filter(Boolean))];
       details.push(I18N.t("tip_cafeine", { mg }) + "\n" + nomsCafes.join(", "));
     }
-    CHARTS.barresEtLigne30j("g-30jours", labels, comptes, moyennes, grammes, details);
+    // Second passage : la tendance suit les mêmes libellés que les barres.
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const cle = cleLocale(d);
+      while (iGliss < glissante.length && String(glissante[iGliss].date).slice(0, 10) <= cle) {
+        if (glissante[iGliss].valeur !== null) derniere = glissante[iGliss].valeur;
+        iGliss += 1;
+      }
+      tendance.push(derniere);
+    }
+    CHARTS.barresEtLigne30j("g-30jours", labels, comptes, moyennes, grammes, details, tendance);
 
     // Heatmap
     const parJour = {}, infoParJour = {};
@@ -677,7 +694,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.47";
+  const VERSION = "7.48";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le

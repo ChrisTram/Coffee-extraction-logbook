@@ -15,6 +15,7 @@ const I18N = (() => {
   // ---------- 1. Contenu statique : français vers anglais ----------
 
   const UI = {
+    "Extractions, note et tendance, 30 derniers jours": "Extractions, rating and trend, last 30 days",
     "Date d'ouverture": "Opening date",
     "Le jour où tu as ouvert le sachet. Laisse vide tant qu'il dort.": "The day you opened the bag. Leave empty while it sits unopened.",
     "Pas encore notée, je reviendrai": "Not rated yet, I will come back",
@@ -579,6 +580,7 @@ const I18N = (() => {
     kpi_note7: { fr: "note moyenne 7 jours", en: "7-day average score" },
     kpi_cafeine: { fr: "caféine par jour, 7 jours (estimation)", en: "caffeine per day, 7 days (estimate)" },
 
+    l_tendance: { fr: "Tendance, moyenne des 5 dernières tasses", en: "Trend, average of the last 5 cups" },
     l_note_jour: { fr: "Note moyenne du jour", en: "Daily average score" },
     l_cafe_g: { fr: "Café consommé (g)", en: "Coffee used (g)" },
     l_extractions: { fr: "Extractions", en: "Brews" },

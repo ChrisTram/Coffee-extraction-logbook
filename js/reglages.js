@@ -16,6 +16,26 @@
  * dans AUDIT.md).
  */
 
+/* Moyenne glissante sur une fenêtre de tasses NOTÉES, pas de jours : à une ou
+   deux tasses par jour actif, une fenêtre en jours serait pleine de trous et la
+   courbe sauterait autant que les points bruts.
+
+   Renvoie une valeur par extraction notée, dans l'ordre chronologique, et null
+   tant que la fenêtre n'est pas pleine : afficher une moyenne de deux tasses
+   comme si c'en était une de cinq serait mentir sur sa solidité. */
+function moyenneGlissante(extractions, fenetre) {
+  const n = fenetre || 5;
+  const ord = extractions
+    .filter(e => e.note_sur_10 !== "" && e.note_sur_10 !== undefined && e.date_heure)
+    .slice()
+    .sort((a, b) => String(a.date_heure).localeCompare(String(b.date_heure)));
+  return ord.map((e, i) => {
+    if (i < n - 1) return { date: e.date_heure, valeur: null };
+    const f = ord.slice(i - n + 1, i + 1).map(x => Number(x.note_sur_10));
+    return { date: e.date_heure, valeur: Math.round(f.reduce((s, x) => s + x, 0) / n * 100) / 100 };
+  });
+}
+
 const REGLAGES = (() => {
   // Même seuil que les insights : sous trois tasses, une moyenne est du hasard.
   const MIN_TASSES = 3;
@@ -107,5 +127,5 @@ const REGLAGES = (() => {
       });
   }
 
-  return { MIN_TASSES, signature, pourCafe, tous };
+  return { MIN_TASSES, signature, pourCafe, tous, moyenneGlissante };
 })();

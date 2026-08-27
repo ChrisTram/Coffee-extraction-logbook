@@ -58,7 +58,7 @@ const CHARTS = (() => {
 
   // Barres du nombre d'extractions par jour, note moyenne du jour en ligne,
   // grammes de café en ligne pointillée, caféine et détail dans le tooltip.
-  function barresEtLigne30j(idCanvas, labels, comptes, moyennes, grammes, details) {
+  function barresEtLigne30j(idCanvas, labels, comptes, moyennes, grammes, details, tendance) {
     creer(idCanvas, {
       data: {
         labels,
@@ -73,6 +73,16 @@ const CHARTS = (() => {
             borderColor: C_DEUX, backgroundColor: C_DEUX,
             borderDash: [5, 4], borderWidth: 1.5, pointRadius: 2, pointHoverRadius: 4,
             spanGaps: false, tension: 0.3,
+          },
+          {
+            /* Tendance : même axe de note que les points bruts, sinon on
+               comparerait deux échelles différentes sans le voir. Trait épais et
+               sans point, pour qu'on la lise comme un fond et pas comme une
+               mesure de plus. */
+            type: "line", label: I18N.t("l_tendance"), data: tendance || [], yAxisID: "y2",
+            borderColor: C_DEUX, backgroundColor: C_DEUX,
+            spanGaps: true, tension: 0.4, pointRadius: 0, pointHoverRadius: 4, borderWidth: 3,
+            fill: false,
           },
           {
             type: "bar", label: I18N.t("l_extractions"), data: comptes, yAxisID: "y",
