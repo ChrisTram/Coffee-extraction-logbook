@@ -16,6 +16,52 @@
     toast._h = setTimeout(() => t.setAttribute("hidden", ""), 2600);
   }
 
+  /* Message avec un bouton d'action, cinq secondes. Sert à l'annulation d'une
+     suppression, qui est DÉJÀ faite quand ce message s'affiche : voir
+     supprimerExtractionAvecRetour. Le bouton disparaît avec le message, il n'y a
+     donc pas de suite à gérer. */
+  function toastAction(message, libelle, action) {
+    const t = $("#toast");
+    t.innerHTML = "";
+    t.appendChild(document.createTextNode(message + " "));
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "toast-action";
+    b.textContent = libelle;
+    b.addEventListener("click", () => {
+      t.setAttribute("hidden", "");
+      clearTimeout(toast._h);
+      action();
+    });
+    t.appendChild(b);
+    t.removeAttribute("hidden");
+    clearTimeout(toast._h);
+    toast._h = setTimeout(() => {
+      t.setAttribute("hidden", "");
+      t.textContent = "";
+    }, 5000);
+  }
+
+  /* Supprime pour de vrai, immédiatement, et propose de revenir en arrière.
+
+     L'ordre compte et il est délibéré. Retarder la suppression aurait été plus
+     simple à écrire, mais fermer l'onglet pendant le délai aurait alors ANNULÉ
+     une suppression que Chris croyait faite. Ici la ligne part tout de suite,
+     part à la synchro tout de suite, et l'annulation la réinsère comme une
+     nouvelle écriture, ce que la fusion sait gérer : elle est postérieure à la
+     pierre tombale, donc elle gagne. */
+  async function supprimerExtractionAvecRetour(ext) {
+    const copie = { ...ext };
+    delete copie._c;
+    await DATA.supprimerExtraction(ext.id);
+    rendreHistorique();
+    toastAction(I18N.t("t_supprimee"), I18N.t("t_annuler"), async () => {
+      await DATA.restaurerExtraction(copie);
+      rendreHistorique();
+      toast(I18N.t("t_restauree"));
+    });
+  }
+
   function fmtTemps(s) {
     if (s === "" || s === null || s === undefined || isNaN(s)) return "";
     const m = Math.floor(s / 60), sec = Math.round(s % 60);
@@ -706,7 +752,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.50";
+  const VERSION = "7.51";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -2920,11 +2966,10 @@
       const ext = DATA.state.extractions.find(e => e.id === id);
       if (!ext) return;
       if (btn.dataset.action === "supprimer") {
-        if (confirm(I18N.t("c_suppr"))) {
-          await DATA.supprimerExtraction(id);
-          toast(I18N.t("t_supprimee"));
-          rendreHistorique();
-        }
+        // Plus de confirm() natif : le retour arrière remplace la question. Une
+        // boîte système sur téléphone casse l'impression d'application, et elle
+        // ne passe pas par la couche i18n.
+        await supprimerExtractionAvecRetour(ext);
       } else if (btn.dataset.action === "modifier") {
         chargerExtractionDansSaisie(ext, false);
       } else if (btn.dataset.action === "dupliquer") {

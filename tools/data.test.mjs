@@ -1045,5 +1045,39 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     Math.round(parGramme / 0.82 * 14) === 7482, String(Math.round(parGramme / 0.82 * 14)));
 }
 
+/* SUPPRESSION AVEC RETOUR ARRIERE. Contrainte posee par Chris : si la page se
+   ferme pendant les cinq secondes, la suppression doit QUAND MEME avoir lieu.
+   Ca exclut la solution naive qui serait de retarder la suppression. On supprime
+   donc tout de suite, pour de vrai, et on garde une copie en memoire. */
+{
+  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  const bloc = app.slice(app.indexOf("async function supprimerExtractionAvecRetour"),
+    app.indexOf("async function supprimerExtractionAvecRetour") + 700);
+
+  /* LE point : la suppression precede le message, elle n'est pas retardee.
+     Si un setTimeout entourait la suppression, fermer l'onglet l'annulerait. */
+  check("la suppression est faite AVANT d'afficher le retour arriere",
+    bloc.indexOf("supprimerExtraction(") < bloc.indexOf("toastAction("),
+    String(bloc.indexOf("supprimerExtraction(")) + " contre " + String(bloc.indexOf("toastAction(")));
+  check("aucun delai n'entoure la suppression elle meme", !bloc.includes("setTimeout"));
+
+  check("le confirm natif de suppression a disparu", !app.includes('confirm(I18N.t("c_suppr"))'));
+  check("le retour arriere restaure sous l'id d'origine", app.includes("DATA.restaurerExtraction"));
+
+  const data = readFileSync(join(ROOT, "js/data.js"), "utf8");
+  const rest = data.slice(data.indexOf("async function restaurerExtraction"),
+    data.indexOf("async function ajouterExtraction"));
+  /* L'id d'origine compte : les liens d'edition, la selection du comparateur et
+     les references de l'historique pointent dessus. */
+  check("restaurerExtraction garde l'id", rest.includes("e.id = ext.id"));
+  check("elle estampille, donc elle bat la pierre tombale", rest.includes("estampiller("));
+  check("elle remplace la ligne si elle est deja la, sinon elle l'ajoute",
+    rest.includes("findIndex") && rest.includes("push(e)"));
+
+  const i18n = readFileSync(join(ROOT, "js/i18n.js"), "utf8");
+  check("le bouton Annuler existe en FR et EN", /t_annuler:.*fr:.*en:/.test(i18n));
+  check("le message de retablissement aussi", /t_restauree:.*fr:.*en:/.test(i18n));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

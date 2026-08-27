@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.50,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.51,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -755,6 +755,35 @@ extractions dans les vraies données.
 - L'ordre des lignes dans un tableau n'est PAS significatif (l'interface trie ce
   qu'elle affiche). La fusion est commutative sur le CONTENU. En production le
   document serveur est toujours le premier opérande, donc l'ordre converge aussi.
+
+## 8 nonies. Supprimer, puis pouvoir revenir en arrière
+
+Contrainte posée par Chris et qui décide de toute la conception : **si la page se
+ferme pendant les cinq secondes, la suppression doit quand même avoir lieu.**
+
+Ça exclut la solution naïve, qui aurait été de retarder la suppression de cinq
+secondes. Elle est plus simple à écrire, mais fermer l'onglet pendant le délai
+aurait alors ANNULÉ une suppression que Chris croyait faite. C'est exactement le
+genre de piège silencieux qu'on essaie d'éviter partout ailleurs.
+
+Donc : on supprime TOUT DE SUITE, pour de vrai, synchro comprise, et on garde une
+copie de la ligne en mémoire. Le message propose "Annuler" pendant cinq secondes.
+Fermer la page, changer d'écran ou laisser filer le délai ne font rien de plus,
+la suppression est déjà acquise.
+
+`DATA.restaurerExtraction()` réinsère SOUS L'ID D'ORIGINE, contrairement à
+`ajouterExtraction()` qui en attribue un nouveau. Les liens d'édition, la
+sélection du comparateur et les références de l'historique pointent sur l'id : une
+restauration sous un autre id aurait marché tout en cassant l'identité. La fusion
+sait gérer le retour d'une ligne supprimée, elle compare la pierre tombale à
+`maj_le` et l'écriture la plus récente gagne, donc l'annulation voyage aussi vers
+les autres appareils.
+
+Le `confirm()` natif de suppression disparaît avec ça : le retour arrière remplace
+la question. Sur téléphone une boîte système casse l'impression d'application, et
+elle ne passe pas par la couche i18n donc elle reste en français en mode anglais.
+Il en reste quatre, sur des gestes rares et vraiment destructeurs (vider les
+données, charger la démo, rétablir ou supprimer une recette).
 
 ## 8 octies. Les réglages du matériel se synchronisent
 
@@ -1715,6 +1744,8 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.51 : supprimer une extraction propose un retour arrière de cinq secondes,
+  et le confirm() natif disparaît (section 8 nonies).
 - v7.50 : coût par tasse sur la fiche de chaque café, avec le coût en café RÉEL
   pour les cafés non purs.
 - v7.49 : constat PAR CAFÉ et PAR MACHINE dans les insights, à la place de la

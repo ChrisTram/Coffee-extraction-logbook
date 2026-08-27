@@ -792,6 +792,9 @@ const I18N = (() => {
     cout_tasse: { fr: "{v} la tasse de {d} g", en: "{v} per {d} g cup" },
     cout_reel: { fr: "({v} en café réel)", en: "({v} of actual coffee)" },
 
+    t_annuler: { fr: "Annuler", en: "Undo" },
+    t_restauree: { fr: "Extraction rétablie.", en: "Extraction restored." },
+
     a_adapte: { fr: "versements adaptés à {e} g", en: "pours scaled to {e} g" },
 
     rt_tasse_court: { fr: "en tasse", en: "in the cup" },

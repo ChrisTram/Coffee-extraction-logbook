@@ -684,6 +684,19 @@ input:focus, select:focus, textarea:focus {
 /* Âge du paquet sous le choix du café : une information, pas une alerte. */
 .age-paquet { margin: 0 0 12px; font-size: 0.85rem; color: var(--attenue); }
 
+/* Bouton d'annulation dans le message : il doit se voir sans écraser le texte. */
+.toast-action {
+  margin-left: 4px;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 0.85em;
+  cursor: pointer;
+}
+.toast-action:hover { background: rgba(255, 255, 255, 0.15); }
+
 /* Moulin : le convertisseur se manipule au curseur, l'unité du pas est le cran
    du moulin lui-même pour que ce qu'on lit se reproduise à la main. */
 .conv-ligne { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }

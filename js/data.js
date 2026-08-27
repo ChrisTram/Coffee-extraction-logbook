@@ -1061,6 +1061,21 @@ const DATA = (() => {
     planifierSync();
   }
 
+  /* Réinsère une extraction supprimée SOUS SON ID D'ORIGINE. Sert à l'annulation
+     de suppression : la ligne est déjà partie, tombstone comprise, et cette
+     écriture postérieure la fait revenir partout, y compris sur les autres
+     appareils. */
+  async function restaurerExtraction(ext) {
+    if (!ext || !ext.id) return null;
+    const e = estampiller(normaliserExtraction(ext));
+    e.id = ext.id;
+    const i = state.extractions.findIndex(x => x.id === e.id);
+    if (i >= 0) state.extractions[i] = e;
+    else state.extractions.push(e);
+    await persister();
+    return e;
+  }
+
   async function ajouterExtraction(ext) {
     const e = estampiller(normaliserExtraction(ext));
     e.id = nouvelId("e", state.extractions);
@@ -1257,7 +1272,7 @@ const DATA = (() => {
     lierDossier, delierDossier, sauverFichiers,
     importerTexteCSV, exporterCafes, exporterExtractions, exporterRecettes,
     chargerDemo, viderDonnees,
-    ajouterExtraction, modifierExtraction, supprimerExtraction,
+    ajouterExtraction, modifierExtraction, supprimerExtraction, restaurerExtraction,
     ajouterCafe, modifierCafe,
     ajouterRecette, modifierRecette, reinitialiserRecette, supprimerRecette, estRecetteDorigine,
     // Exposée pour les tests : c'est elle qui décide qu'une température vide
