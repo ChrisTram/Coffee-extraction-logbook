@@ -2,7 +2,7 @@
 
 Tu reprends un projet existant et fonctionnel. Lis ce fichier en entier, puis
 `DOCUMENTATION.md` avant de toucher au moindre fichier. Le backlog d'idées est
-dans `V2 suggestions.md`.
+dans `AUDIT.md`.
 
 ## Le projet en trois phrases
 
@@ -71,7 +71,7 @@ jamais à la main dans les CSV.
 | Fichier | Rôle |
 |---|---|
 | `DOCUMENTATION.md` | La doc technique complète, à maintenir à chaque modif |
-| `V2 suggestions.md` | Le backlog d'améliorations proposées, priorisé |
+| `AUDIT.md` | L'audit du projet et les dix améliorations proposées, chiffrées |
 | `index.html` | La page unique, tout le HTML statique |
 | `css/styles.css` | Styles, thèmes sombre (défaut) et clair |
 | `js/i18n.js` | Traduction FR/EN, à toucher dès qu'un texte change |

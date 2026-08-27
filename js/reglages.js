@@ -13,7 +13,7 @@
  * Fichier séparé de app.js et sans aucune dépendance au DOM : le calcul est
  * ainsi testable sans navigateur, ce qui compte d'autant plus que le panneau
  * navigateur de l'agent ne peut pas exécuter ce site (voir la dette technique
- * dans V2 suggestions.md).
+ * dans AUDIT.md).
  */
 
 const REGLAGES = (() => {

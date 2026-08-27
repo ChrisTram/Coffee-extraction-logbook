@@ -934,7 +934,7 @@ CORS en `file://` (origine `null`) : le double clic sur `index.html`, qui est
 l'usage principal, cesserait de marcher. Et il n'y a rien à gagner en face,
 aucune dépendance npm (Chart.js est vendorisé), pas de JSX ni de TypeScript.
 Le seul découpage utile est celui déjà listé en dette technique dans
-`V2 suggestions.md` : scinder `app.js` par écran, en scripts classiques.
+`AUDIT.md` : scinder `app.js` par écran, en scripts classiques.
 
 ### La porte d'entrée (worker/index.js)
 
@@ -1048,7 +1048,7 @@ pas un design qui monterait à des centaines de milliers d'extractions.
   Edge desktop seulement. Sur téléphone (Chrome Android), showDirectoryPicker
   n'existe pas : le site retombe proprement sur IndexedDB + export manuel,
   comportement déjà géré (v5).
-- Le https débloque la suggestion 1 de `V2 suggestions.md` : service worker,
+- Le https débloque le service worker :
   manifest PWA (installable sur le téléphone) et API Wake Lock pendant le
   chrono. C'est le prolongement naturel de ce déploiement.
 - Le site déployé est PRIVÉ depuis la v7.5 (voir "La porte d'entrée"). Une
@@ -1411,7 +1411,7 @@ c'est le seul repère fiable sans thermomètre. L'aide sous le champ le dit.
   tasses par défaut par méthode, case eau préchauffée (finalement décochée
   par défaut), eau vide et température 95 par défaut en saisie, pourcentage
   retiré du nom dans le select des cafés. Docs de reprise (START-HERE,
-  DOCUMENTATION, V2 suggestions).
+  DOCUMENTATION, AUDIT).
 - v7.1 : deux diagnostics intermédiaires ("Un peu acide", "Un peu amer",
   corrections en demi-mesures), 17 descripteurs de plus (beurré, gras,
   velouté, chocolat au lait, cacahuète, praliné, fruit de la passion,
@@ -1618,7 +1618,7 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   Surtout : les recettes STOCKÉES rattrapent enfin les valeurs semées
   (150 g de chaudière, plus de température cible, feu à 2), sans quoi changer
   RECETTES_DEPART ne change rien pour une installation existante.
-- v7.31 : audit complet dans AUDIT-2026-08.md, fait sur les données réelles de
+- v7.31 : audit complet, fait sur les données réelles de
   production. Deux bugs corrigés au passage. `sw.js` ne précachait ni
   `js/sync.js` ni `js/reglages.js`, tous deux chargés par index.html : hors
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
