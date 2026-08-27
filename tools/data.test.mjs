@@ -1019,5 +1019,31 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
       { minLot: 6, minParGroupe: 3, minEcart: 0.4 })[0].total === 6);
 }
 
+/* COUT PAR TASSE sur la fiche cafe. Tout etait calculable depuis la table des
+   achats, rien n'etait affiche. Le prix au sachet depend du format et le prix au
+   gramme ne dit rien tant qu'on ignore la dose : le cout d'UNE tasse est le seul
+   chiffre qui se compare d'un sachet a l'autre. */
+{
+  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  check("la fiche cafe porte un cout par tasse", app.includes("function coutParTasse"));
+  check("il utilise la dose moyenne du cafe, pas la dose de repli",
+    app.includes("coutTasse = doseTypique"));
+
+  /* Le second chiffre, pour les cafes NON PURS : le Sang Tao est a 82 % de cafe,
+     donc bien plus cher au gramme de VRAI cafe qu'il n'en a l'air. Le champ
+     pourcentage_cafe_reel ne servait qu'au calcul de cafeine. */
+  check("le cafe non pur montre son cout reel", app.includes("cout_reel"));
+  const i18n = readFileSync(join(ROOT, "js/i18n.js"), "utf8");
+  check("les deux libelles existent en FR et EN",
+    /cout_tasse:.*fr:.*en:/.test(i18n) && /cout_reel:.*fr:.*en:/.test(i18n));
+
+  // L'arithmetique, sur les vrais chiffres du Sang Tao : 149 000 d les 340 g.
+  const parGramme = 149000 / 340;
+  check("une tasse de 14 g coute environ 6 135 d", Math.round(parGramme * 14) === 6135,
+    String(Math.round(parGramme * 14)));
+  check("la meme en cafe reel a 82 % en coute 7 482",
+    Math.round(parGramme / 0.82 * 14) === 7482, String(Math.round(parGramme / 0.82 * 14)));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

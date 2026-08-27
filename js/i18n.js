@@ -789,6 +789,9 @@ const I18N = (() => {
     ap_jours: { fr: "Paquet ouvert depuis {n} jour(s).", en: "Bag open for {n} day(s)." },
     d_ouvert: { fr: "Jours d'ouverture", en: "Days open" },
 
+    cout_tasse: { fr: "{v} la tasse de {d} g", en: "{v} per {d} g cup" },
+    cout_reel: { fr: "({v} en café réel)", en: "({v} of actual coffee)" },
+
     a_adapte: { fr: "versements adaptés à {e} g", en: "pours scaled to {e} g" },
 
     rt_tasse_court: { fr: "en tasse", en: "in the cup" },

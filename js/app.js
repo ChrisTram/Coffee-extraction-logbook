@@ -706,7 +706,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.49";
+  const VERSION = "7.50";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -2258,6 +2258,23 @@
     if (!m.open) m.showModal();
   }
 
+  /* Coût d'une tasse de ce café, à la dose donnée. Muet si le prix ou le format
+     manquent : un coût inventé serait pire qu'un coût absent.
+
+     Second chiffre pour les cafés NON PURS. Le Sáng Tạo est à 82 % de café, donc
+     à 534 ₫ le gramme de vrai café contre 348 pour le G4 : il paraît 26 % plus
+     cher au gramme, il l'est de 53 %. Le champ pourcentage_cafe_reel ne servait
+     jusqu'ici qu'au calcul de caféine. */
+  function coutParTasse(cafe, dose) {
+    if (!cafe.prix_vnd || !cafe.format_grammes || !(dose > 0)) return "";
+    const parGramme = cafe.prix_vnd / cafe.format_grammes;
+    const base = I18N.t("cout_tasse", { v: fmtVND(parGramme * dose), d: fmtDecimal(dose, 1) });
+    const pct = cafe.pourcentage_cafe_reel === "" || cafe.pourcentage_cafe_reel === undefined
+      ? 100 : Number(cafe.pourcentage_cafe_reel);
+    if (!(pct > 0) || pct >= 100) return base;
+    return base + " " + I18N.t("cout_reel", { v: fmtVND(parGramme / (pct / 100) * dose) });
+  }
+
   function rendreListeCafes() {
     // Actifs d'abord (ordre d'origine conservé), désactivés toujours en fin
     // de liste. Chaque café porte un badge de note moyenne (sur ses
@@ -2275,6 +2292,8 @@
       // défaut, sinon un oubli de saisie ferait croire à un sachet intact.
       const stock = DATA.stockSachet(c.id, replis.dose);
       let badgeStock = "";
+      // Dose retenue pour le coût, la même que pour les tasses restantes.
+      let coutTasse = replis.dose;
       if (stock) {
         /* Le reste se compte avec la dose MOYENNE de ce café, pas la dose de
            repli : Chris dose 16 g sur le G4 et 14 sur un autre, un chiffre unique
@@ -2284,6 +2303,7 @@
           .filter(e => e.cafe_id === c.id && Number(e.dose_g) > 0)
           .map(e => Number(e.dose_g));
         const doseTypique = doses.length ? moyenne(doses) : replis.dose;
+        coutTasse = doseTypique;
         const tasses = Math.max(0, Math.floor(stock.restant / doseTypique));
         const classe = stock.restant <= 0 ? "vide" : tasses <= 3 ? "bas" : "ok";
         const libelle = stock.restant <= 0
@@ -2307,6 +2327,11 @@
       [c.torrefacteur, c.espece, c.procede,
         c.machine_recommandee ? I18N.t("li_machine", { m: I18N.machine(c.machine_recommandee) }) : "",
         c.prix_vnd ? fmtVND(c.prix_vnd) + " / " + c.format_grammes + " g" : "",
+        /* Coût d'UNE tasse, à la dose moyenne de ce café. C'est le seul chiffre
+           de prix qui se compare d'un sachet à l'autre : le prix au sachet dépend
+           du format, le prix au gramme ne dit rien tant qu'on ne sait pas combien
+           on en met. */
+        coutParTasse(c, coutTasse),
         c.date_ajout ? I18N.t("li_ajoute", { d: fmtDateCourte(c.date_ajout) }) : ""].filter(Boolean).join(" · ") +
       "</div></div>" +
       '<span class="cafe-meta">' + (c.actif === 0 ? I18N.t("li_inactif") : "") + "</span>" +

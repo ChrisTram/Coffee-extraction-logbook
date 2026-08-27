@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.49,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.50,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -1715,6 +1715,8 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.50 : coût par tasse sur la fiche de chaque café, avec le coût en café RÉEL
+  pour les cafés non purs.
 - v7.49 : constat PAR CAFÉ et PAR MACHINE dans les insights, à la place de la
   règle mouture qui ne pouvait pas se déclencher (section 6 quaterdecies).
 - v7.48 : courbe de tendance sur le graphe des 30 jours, moyenne glissante sur
