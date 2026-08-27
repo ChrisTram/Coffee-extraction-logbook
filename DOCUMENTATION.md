@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.56,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.57,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -1775,6 +1775,8 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.57 : anti-rebond sur les rendus déclenchés à la frappe, et rendu ciblé par
+  signature de table au lieu de tout refaire à chaque sauvegarde.
 - v7.56 : le jeu de démonstration quitte le chemin critique, il ne sert qu à un
   bouton de la modale d accueil.
 - v7.55 : i18n scindée par langue, le paquet anglais est chargé à la demande.

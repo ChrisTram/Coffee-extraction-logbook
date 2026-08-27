@@ -47,6 +47,43 @@
     racine.addEventListener("pointercancel", () => { annuler(); fermer(); });
   }
 
+  /* Retarde un appel jusqu'à ce que les frappes s'arrêtent. Une fonction par
+     usage, pas une file partagée : deux champs différents ne doivent pas
+     s'annuler l'un l'autre. */
+  /* Signature d'une table : de quoi savoir si elle a bougé, sans la comparer
+     ligne à ligne. maj_le bouge à chaque mutation (voir estampiller dans
+     data.js), la longueur couvre les suppressions. */
+  function signatureTable(tableau) {
+    let max = 0;
+    for (const x of tableau) if (x.maj_le > max) max = x.maj_le;
+    return tableau.length + ":" + max;
+  }
+
+  /* N execute la fonction que si la signature a changé depuis la dernière fois.
+     La cle separe les memoires : deux appelants ne doivent pas se marcher dessus. */
+  const signatures = new Map();
+  function siChange(cle, tableau, fn) {
+    const s = signatureTable(tableau);
+    if (signatures.get(cle) === s) return false;
+    signatures.set(cle, s);
+    fn();
+    return true;
+  }
+
+  /* Force le prochain rendu, quelle que soit la signature. Sert à la bascule de
+     langue : les données n'ont pas bougé, mais tout le texte doit être refait. */
+  function oublierSignatures() {
+    signatures.clear();
+  }
+
+  function antiRebond(fn, delai) {
+    let h = null;
+    return (...args) => {
+      clearTimeout(h);
+      h = setTimeout(() => fn(...args), delai === undefined ? 120 : delai);
+    };
+  }
+
   function basculerEtat(el, actif) {
     el.classList.toggle("actif", actif);
     el.setAttribute("aria-pressed", actif ? "true" : "false");
@@ -802,7 +839,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.56";
+  const VERSION = "7.57";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -1826,6 +1863,11 @@
     return String(texte || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
   }
 
+  /* Version différée pour les FILTRES seulement. Les autres appels (suppression,
+     tri, retour d'édition) restent immédiats : ils suivent un geste unique, il n'y
+     a rien à regrouper. */
+  const rendreHistoriqueDifferee = antiRebond(() => rendreHistorique());
+
   function rendreHistorique() {
     const liste = filtrerHistorique().sort((a, b) => {
       const va = valeurTri(a, tri.colonne), vb = valeurTri(b, tri.colonne);
@@ -2293,6 +2335,8 @@
     }
     return lignes.map(x => "<p>" + x + "</p>").join("");
   }
+
+  const rendreConvertisseurDifferee = antiRebond(() => rendreConvertisseur(), 90);
 
   function rendreConvertisseur() {
     const texte = $("#conv-dial").value.trim().replace(/,/g, ".");
@@ -2927,7 +2971,9 @@
     $("#param-molette").addEventListener("input", majDetailMolette);
     $("#conv-slider").addEventListener("input", () => {
       $("#conv-dial").value = GRIND.dialDepuisCrans(Number($("#conv-slider").value));
-      rendreConvertisseur();
+      /* Le curseur envoie un événement par cran : sans anti-rebond, glisser d'un
+         bout à l'autre redessine 150 fois un SVG de 151 traits. */
+      rendreConvertisseurDifferee();
     });
     /* Le seul chemin qui change vraiment un réglage depuis cet écran. Il écrit
        le même repli que l'écran Paramètres, il n'y a donc qu'une source. */
@@ -2999,7 +3045,7 @@
 
     // Historique
     ["h-cafe", "h-methode", "h-diagnostic", "h-note-min", "h-du", "h-au"].forEach(id =>
-      $("#" + id).addEventListener("input", rendreHistorique));
+      $("#" + id).addEventListener("input", rendreHistoriqueDifferee));
     $("#h-reinitialiser").addEventListener("click", () => {
       ["h-cafe", "h-methode", "h-diagnostic", "h-note-min", "h-du", "h-au"].forEach(id => $("#" + id).value = "");
       rendreHistorique();
@@ -3058,7 +3104,7 @@
     $("#comparaison-vider").addEventListener("click", () => { comparaison.clear(); rendreHistorique(); });
 
     // Référence
-    $("#conv-dial").addEventListener("input", rendreConvertisseur);
+    $("#conv-dial").addEventListener("input", rendreConvertisseurDifferee);
     $("#pap-demarrer").addEventListener("click", papDemarrer);
     $("#pap-suivant").addEventListener("click", papSuivant);
     $("#btn-gerer-recettes").addEventListener("click", ouvrirModaleRecettes);
@@ -3184,14 +3230,20 @@
     DATA.abonner(() => {
       // Les réglages peuvent arriver d'un autre appareil : on relit avant de rendre.
       chargerReplis();
+      // Toujours : ces deux là sont minuscules et reflètent l'état courant.
       majBadges();
       majStatutSync();
-      remplirSelectCafes();
-      remplirFiltres();
-      remplirSelectRecettes();
-      remplirSelectRecetteReco();
-      remplirSelectTasses();
-      rendreRecettes();
+      /* Le reste ne se refait que si sa table a bougé. Enregistrer une tasse ne
+         change ni les cafés, ni les recettes, ni les tasses : les reconstruire
+         était du travail pur perte, et le coût grossit avec le catalogue. */
+      const cafes = DATA.state.cafes, recettes = DATA.state.recettes;
+      siChange("cafes", cafes, () => { remplirSelectCafes(); remplirSelectRecetteReco(); });
+      siChange("filtres", DATA.state.extractions, remplirFiltres);
+      siChange("recettes", recettes, () => {
+        remplirSelectRecettes();
+        rendreRecettes();
+      });
+      siChange("tasses", DATA.state.tasses, remplirSelectTasses);
       if (rapideOuvert) majPanneauRapide();
       rendreEcranCourant();
     });
@@ -3207,6 +3259,8 @@
 
   // Bascule de langue : re-rend tout ce qui est généré en JavaScript.
   function rafraichirLangue() {
+    // Les données n'ont pas bougé, tout le TEXTE si : on invalide les mémoires.
+    oublierSignatures();
     $("#btn-lang").textContent = I18N.lang() === "fr" ? "EN" : "FR";
     $("#btn-lang").title = I18N.lang() === "fr" ? "Switch to English" : "Passer en français";
     construirePilules();

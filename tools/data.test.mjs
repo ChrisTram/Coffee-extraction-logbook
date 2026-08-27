@@ -1221,5 +1221,49 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("mais il n'est pas une balise script", !html.includes("i18n.en.js"));
 }
 
+/* REACTIVITE : ne pas refaire ce qui n'a pas change.
+
+   Deux gaspillages mesures. Les filtres de l'historique regeneraient tout le
+   tableau a CHAQUE caractere, et le convertisseur du moulin redessinait 151
+   traits SVG a chaque frappe et a chaque cran du curseur. Et surtout, chaque
+   sauvegarde d'extraction reconstruisait cinq listes deroulantes et les dix
+   cartes de recettes, alors qu'enregistrer une tasse ne change ni les cafes ni
+   les recettes. */
+{
+  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+
+  check("un anti-rebond existe", app.includes("function antiRebond"));
+  check("les filtres de l'historique passent par lui",
+    app.includes('addEventListener("input", rendreHistoriqueDifferee)'));
+  check("le convertisseur du moulin aussi",
+    app.includes('addEventListener("input", rendreConvertisseurDifferee)'));
+  /* Le curseur envoie un evenement par cran : sans anti-rebond, le traverser
+     redessine 150 fois un SVG de 151 traits. */
+  check("et le curseur du moulin egalement",
+    /conv-slider[\s\S]{0,400}rendreConvertisseurDifferee\(\)/.test(app));
+
+  /* Les autres appels a rendreHistorique restent IMMEDIATS : suppression, tri,
+     retour d'edition suivent un geste unique, il n'y a rien a regrouper. */
+  check("le rendu immediat reste disponible", app.includes("function rendreHistorique("));
+
+  // La garde par signature.
+  check("une signature de table existe", app.includes("function signatureTable"));
+  check("elle couvre les modifications ET les suppressions",
+    /function signatureTable[\s\S]{0,260}maj_le[\s\S]{0,120}length/.test(app));
+  check("le rendu des recettes est garde", /siChange\("recettes"/.test(app));
+  check("celui des cafes aussi", /siChange\("cafes"/.test(app));
+  check("celui des tasses aussi", /siChange\("tasses"/.test(app));
+
+  /* LE piege : la bascule de langue ne change aucune donnee, donc aucune
+     signature, mais tout le texte doit etre refait. Sans invalidation, passer en
+     anglais laisserait les recettes et les listes en francais. */
+  check("la bascule de langue invalide les memoires",
+    /function rafraichirLangue[\s\S]{0,200}oublierSignatures\(\)/.test(app));
+
+  // Les badges et l'etat de synchro restent inconditionnels : ils sont minuscules
+  // et refletent l'instant present.
+  check("les badges se refont toujours", /DATA\.abonner[\s\S]{0,400}majBadges\(\);/.test(app));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);
