@@ -1,2910 +1,18 @@
-// Application : navigation, tableau de bord, saisie, historique, référence.
+/* Application : liaison des données, câblage des écouteurs, démarrage.
+ *
+ * Ce fichier se charge en DERNIER et ne définit presque rien : il branche des
+ * fonctions définies ailleurs sur des éléments du document, puis lance le
+ * démarrage. S'il se met à contenir de la logique d'écran, c'est qu'elle est au
+ * mauvais endroit. */
 "use strict";
 
 (() => {
 
-  // ---------- Petits outils ----------
-
-  const $ = s => document.querySelector(s);
-  const $$ = s => Array.from(document.querySelectorAll(s));
-
-  /* Bascule l'état visuel ET l'état annoncé d'un même geste. Les séparer serait
-     la garantie qu'ils divergent : c'est déjà arrivé sur d'autres projets, la
-     classe suit et l'attribut reste figé. */
-  /* Appui LONG sur une pilule ou un tag : ouvre sa définition. Le survol n'existe
-     pas au doigt et un tap ne déclenche pas :focus-visible, donc sur téléphone la
-     moitié du vocabulaire était inatteignable. L'appui court garde son rôle de
-     bascule, et on annule la bulle dès que le doigt bouge pour ne pas la déclencher
-     pendant un défilement. */
-  const APPUI_LONG_MS = 450;
-
-  function activerAppuiLong(racine) {
-    let minuteur = null, cible = null;
-    const fermer = () => {
-      racine.querySelectorAll(".info-ouverte").forEach(x => x.classList.remove("info-ouverte"));
-    };
-    const annuler = () => { clearTimeout(minuteur); minuteur = null; cible = null; };
-
-    racine.addEventListener("pointerdown", ev => {
-      const el = ev.target.closest("[data-info]");
-      if (!el) return;
-      cible = el;
-      minuteur = setTimeout(() => {
-        fermer();
-        el.classList.add("info-ouverte");
-        minuteur = null;
-      }, APPUI_LONG_MS);
-    });
-    racine.addEventListener("pointermove", annuler);
-    racine.addEventListener("pointerup", () => {
-      // Un appui long a déjà ouvert la bulle : le clic qui suit ne doit pas
-      // basculer la pilule en plus. On laisse le clic passer sinon.
-      if (cible && cible.classList.contains("info-ouverte")) {
-        setTimeout(fermer, 2500);
-      }
-      annuler();
-    });
-    racine.addEventListener("pointercancel", () => { annuler(); fermer(); });
-  }
-
-  /* Retarde un appel jusqu'à ce que les frappes s'arrêtent. Une fonction par
-     usage, pas une file partagée : deux champs différents ne doivent pas
-     s'annuler l'un l'autre. */
-  /* Signature d'une table : de quoi savoir si elle a bougé, sans la comparer
-     ligne à ligne. maj_le bouge à chaque mutation (voir estampiller dans
-     data.js), la longueur couvre les suppressions. */
-  /* Cache de recherche pour les éléments STATIQUES d'index.html. À n'utiliser que
-     sur des nœuds jamais remplacés : un nœud issu d'un innerHTML serait mis en
-     cache détaché, et les écritures suivantes partiraient dans le vide. */
-  const cacheChamps = new Map();
-  function $f(sel) {
-    let el = cacheChamps.get(sel);
-    if (!el) { el = document.querySelector(sel); if (el) cacheChamps.set(sel, el); }
-    return el;
-  }
-
-  /* N'écrit QUE si ça change. Une affectation innerHTML invalide la mise en page
-     même quand le contenu est identique, et la ligne live est réécrite à chaque
-     caractère alors que la plupart des frappes n'en changent aucune partie :
-     taper dans la molette ne touche ni au ratio ni au coût. */
-  function poser(el, html) {
-    if (el && el.innerHTML !== html) el.innerHTML = html;
-  }
-
-  function poserTexte(el, texte) {
-    if (el && el.textContent !== texte) el.textContent = texte;
-  }
-
-  function signatureTable(tableau) {
-    let max = 0;
-    for (const x of tableau) if (x.maj_le > max) max = x.maj_le;
-    return tableau.length + ":" + max;
-  }
-
-  /* N execute la fonction que si la signature a changé depuis la dernière fois.
-     La cle separe les memoires : deux appelants ne doivent pas se marcher dessus. */
-  const signatures = new Map();
-  function siChange(cle, tableau, fn) {
-    const s = signatureTable(tableau);
-    if (signatures.get(cle) === s) return false;
-    signatures.set(cle, s);
-    fn();
-    return true;
-  }
-
-  /* Force le prochain rendu, quelle que soit la signature. Sert à la bascule de
-     langue : les données n'ont pas bougé, mais tout le texte doit être refait. */
-  function oublierSignatures() {
-    signatures.clear();
-  }
-
-  function antiRebond(fn, delai) {
-    let h = null;
-    return (...args) => {
-      clearTimeout(h);
-      h = setTimeout(() => fn(...args), delai === undefined ? 120 : delai);
-    };
-  }
-
-  function basculerEtat(el, actif) {
-    el.classList.toggle("actif", actif);
-    el.setAttribute("aria-pressed", actif ? "true" : "false");
-  }
-
-  function toast(message) {
-    const t = $("#toast");
-    t.textContent = message;
-    t.removeAttribute("hidden");
-    clearTimeout(toast._h);
-    toast._h = setTimeout(() => t.setAttribute("hidden", ""), 2600);
-  }
-
-  /* Message avec un bouton d'action, cinq secondes. Sert à l'annulation d'une
-     suppression, qui est DÉJÀ faite quand ce message s'affiche : voir
-     supprimerExtractionAvecRetour. Le bouton disparaît avec le message, il n'y a
-     donc pas de suite à gérer. */
-  function toastAction(message, libelle, action) {
-    const t = $("#toast");
-    t.innerHTML = "";
-    t.appendChild(document.createTextNode(message + " "));
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "toast-action";
-    b.textContent = libelle;
-    b.addEventListener("click", () => {
-      t.setAttribute("hidden", "");
-      clearTimeout(toast._h);
-      action();
-    });
-    t.appendChild(b);
-    t.removeAttribute("hidden");
-    clearTimeout(toast._h);
-    toast._h = setTimeout(() => {
-      t.setAttribute("hidden", "");
-      t.textContent = "";
-    }, 5000);
-  }
-
-  /* Supprime pour de vrai, immédiatement, et propose de revenir en arrière.
-
-     L'ordre compte et il est délibéré. Retarder la suppression aurait été plus
-     simple à écrire, mais fermer l'onglet pendant le délai aurait alors ANNULÉ
-     une suppression que Chris croyait faite. Ici la ligne part tout de suite,
-     part à la synchro tout de suite, et l'annulation la réinsère comme une
-     nouvelle écriture, ce que la fusion sait gérer : elle est postérieure à la
-     pierre tombale, donc elle gagne. */
-  async function supprimerExtractionAvecRetour(ext) {
-    const copie = { ...ext };
-    delete copie._c;
-    await DATA.supprimerExtraction(ext.id);
-    rendreHistorique();
-    toastAction(I18N.t("t_supprimee"), I18N.t("t_annuler"), async () => {
-      await DATA.restaurerExtraction(copie);
-      rendreHistorique();
-      toast(I18N.t("t_restauree"));
-    });
-  }
-
-  function fmtTemps(s) {
-    if (s === "" || s === null || s === undefined || isNaN(s)) return "";
-    const m = Math.floor(s / 60), sec = Math.round(s % 60);
-    return m + ":" + String(sec).padStart(2, "0");
-  }
-
-  function fmtVND(n) {
-    if (n === "" || n === null || isNaN(n)) return "";
-    return Math.round(n).toLocaleString("fr-FR") + " ₫";
-  }
-
-  function cleLocale(d) {
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const j = String(d.getDate()).padStart(2, "0");
-    return d.getFullYear() + "-" + m + "-" + j;
-  }
-
-  function maintenantLocal() {
-    const d = new Date();
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    return d.toISOString().slice(0, 16);
-  }
-
-  function fmtDateHeure(dh) {
-    const d = new Date(dh);
-    if (isNaN(d)) return dh;
-    return d.toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" }) + " " +
-      d.toLocaleTimeString(I18N.locale(), { hour: "2-digit", minute: "2-digit" });
-  }
-
-  // "2026-08-12" vers "12 août 2026", en construisant la date en LOCAL
-  // (new Date("2026-08-12") serait interprété en UTC).
-  function fmtDateCourte(s) {
-    const [a, m, j] = String(s).split("-").map(Number);
-    if (!a || !m || !j) return s;
-    return new Date(a, m - 1, j).toLocaleDateString(I18N.locale(), { day: "numeric", month: "short", year: "numeric" });
-  }
-
-  function fmtDecimal(n, dec) {
-    return Number(n.toFixed(dec)).toLocaleString(I18N.locale(), { maximumFractionDigits: dec });
-  }
-
-  function animerCompteur(el, cible, decimales, suffixe, prefixe) {
-    const duree = 750, depart = performance.now();
-    const dec = decimales || 0;
-    function pas(t) {
-      const p = Math.min(1, (t - depart) / duree);
-      const eased = 1 - Math.pow(1 - p, 3);
-      const v = cible * eased;
-      el.textContent = (prefixe || "") +
-        v.toLocaleString(I18N.locale(), { minimumFractionDigits: dec, maximumFractionDigits: dec }) + (suffixe || "");
-      if (p < 1) requestAnimationFrame(pas);
-    }
-    requestAnimationFrame(pas);
-  }
-
-  /* Régularité : ÉCART MOYEN à la moyenne, pas écart type.
-     L'écart type est la mesure canonique mais elle ne se lit pas : personne ne
-     sait ce que vaut un sigma de 1,2. L'écart moyen se dit en français exact,
-     "tes tasses s'écartent en moyenne de 1,2 point de ta moyenne", et sur une
-     poignée de notes les deux donnent de toute façon des chiffres très proches.
-     Clarté avant orthodoxie statistique. */
-  function ecartMoyen(liste) {
-    if (liste.length < 2) return null;
-    const m = liste.reduce((a, b) => a + b, 0) / liste.length;
-    return liste.reduce((a, n) => a + Math.abs(n - m), 0) / liste.length;
-  }
-
-  function moyenne(liste) {
-    if (!liste.length) return null;
-    return liste.reduce((a, b) => a + b, 0) / liste.length;
-  }
-
-  // Recettes vivantes (éditables, stockées avec les données).
-  function recettesVivantes() { return DATA.state.recettes.filter(r => r.actif !== 0); }
-  function recettesDeMethode(m) { return recettesVivantes().filter(r => r.methode === m); }
-  function trouverRecette(nom) { return DATA.state.recettes.find(r => r.nom === nom); }
-  function recetteAvecVariantes() { return recettesVivantes().find(r => r.variantes); }
-
-  // ---------- Thème ----------
-
-  function appliquerTheme(theme) {
-    document.documentElement.setAttribute("data-theme", theme);
-    try { localStorage.setItem("theme", theme); } catch (e) { /* indisponible, tant pis */ }
-    if (typeof Chart !== "undefined") {
-      CHARTS.appliquerDefauts();
-      rendreEcranCourant(true);
-    }
-  }
-
-  try {
-    const t = localStorage.getItem("theme");
-    if (t) document.documentElement.setAttribute("data-theme", t);
-  } catch (e) { /* indisponible */ }
-
-  // ---------- Navigation ----------
-
-  const ECRANS = ["tableau", "saisie", "historique", "reglages", "guide", "parametres"];
-
-  /* Anciens noms d'écran encore présents dans un signet ou un raccourci PWA.
-     "reference" a fusionné dans "guide" : la référence et le guide d'achat
-     parlaient du même matériel et se consultaient l'un après l'autre. */
-  const ECRANS_RENOMMES = { reference: "guide" };
-  function normaliserEcran(nom) {
-    return ECRANS_RENOMMES[nom] || nom;
-  }
-  let ecranCourant = "tableau";
-
-  /* Vrai UNIQUEMENT pendant que chargerExtractionDansSaisie ouvre l'ecran, pour
-     que l'abandon ci-dessous ne casse pas l'edition qu'on vient de demander. */
-  let ouvertureEdition = false;
-
-  /* Enveloppe un changement d'écran dans une transition de vue quand le moteur
-     sait le faire. Sinon on appelle directement : le repli est le comportement
-     d'avant, pas une version dégradée.
-
-     On respecte aussi le mouvement réduit ici et pas seulement en CSS : lancer la
-     machinerie pour l'annuler ensuite serait du travail pour rien. */
-  function avecTransition(fn) {
-    const bouge = typeof matchMedia === "function" &&
-      matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (bouge || !document.startViewTransition) { fn(); return; }
-    document.startViewTransition(fn);
-  }
-
-  function activerEcran(nom) {
-    /* Arriver sur Saisie par la navigation veut dire "je veux noter une tasse",
-       jamais "reprends la modification d'il y a dix minutes". On abandonne donc
-       l'edition en cours, et on le DIT : sans le message, l'abandon serait aussi
-       silencieux que le bug qu'il corrige. Rien n'est perdu en base, l'extraction
-       modifiee n'avait pas ete enregistree et reste ouvrable depuis l'historique. */
-    if (nom === "saisie" && saisie.editId && !ouvertureEdition) {
-      reinitialiserSaisie();
-      toast(I18N.t("t_edition_abandonnee"));
-    }
-    ecranCourant = nom;
-    // Seule la bascule VISUELLE entre dans la transition. L'abandon d'édition
-    // ci-dessus est de la logique métier : il se produit dans tous les cas.
-    avecTransition(() => {
-      $$(".ecran").forEach(e => e.classList.remove("actif"));
-      /* aria-current="page" et pas aria-pressed : ce sont des liens de navigation
-          déguisés en boutons, pas des bascules. */
-      $$(".nav-btn").forEach(b => {
-        b.classList.toggle("actif", b.dataset.ecran === nom);
-        if (b.dataset.ecran === nom) b.setAttribute("aria-current", "page");
-        else b.removeAttribute("aria-current");
-      });
-      const sec = $("#ecran-" + nom);
-      if (sec) sec.classList.add("actif");
-      if (location.hash !== "#" + nom) history.replaceState(null, "", "#" + nom);
-      rendreEcranCourant();
-    });
-    window.scrollTo({ top: 0 });
-  }
-
-  function rendreEcranCourant(force) {
-    if (ecranCourant === "tableau") rendreTableau();
-    else if (ecranCourant === "reglages") rendreReglages();
-    else if (ecranCourant === "historique") rendreHistorique();
-    else if (ecranCourant === "parametres") rendreParametres();
-    else if (ecranCourant === "guide" && force) rendreConvertisseur();
-  }
-
-  // ---------- Tableau de bord ----------
-
-  function extAvecCalculs() {
-    return DATA.state.extractions.map(e => ({ ...e, _c: DATA.calculs(e) }));
-  }
-
-  // ---------- Insights automatiques ----------
-  // Des phrases calculées, pas des graphiques en plus. Les règles sont
-  // volontairement simples ET prudentes : il faut au moins MIN_SAMPLE
-  // extractions notées dans CHACUN des groupes comparés, et au moins MIN_GAP
-  // point d'écart, sinon on se tait. Avec une poignée d'extractions, n'importe
-  // quelle corrélation est du bruit, et une phrase affirmative serait un
-  // mensonge. Chaque règle retourne une chaîne déjà traduite, ou null.
-
-  const MIN_SAMPLE = 3;
-  const MIN_GAP = 0.4;
-  const note1 = n => fmtDecimal(n, 1);
-
-  // Compare des groupes nommés {cle: [notes]} et oppose le MEILLEUR au RESTE MIS
-  // EN COMMUN, pas au deuxième.
-  //
-  // Pourquoi : la mouille se découpe en beaucoup de groupes fins (13 réglages de
-  // molette sur le Switch dans la démo). Entre le premier et le deuxième l'écart
-  // est alors toujours minuscule, même quand l'écart entre le meilleur et tout
-  // le reste dépasse le point. Tester premier contre deuxième reviendrait à ne
-  // jamais rien dire. Mettre le reste en commun donne en plus un effectif de
-  // comparaison bien plus grand, donc une moyenne moins bruitée.
-  //
-  // Retourne null si moins de deux groupes atteignent MIN_SAMPLE, ou si l'écart
-  // reste sous MIN_GAP.
-  function bestOfGroups(groups) {
-    const classes = Object.entries(groups)
-      .filter(([, notes]) => notes.length >= MIN_SAMPLE)
-      .map(([cle, notes]) => ({ cle, notes, moy: moyenne(notes) }))
-      .sort((a, b) => b.moy - a.moy);
-    if (classes.length < 2) return null;
-
-    const gagnant = classes[0];
-    const reste = classes.slice(1).flatMap(c => c.notes);
-    const moyReste = moyenne(reste);
-    if (gagnant.moy - moyReste < MIN_GAP) return null;
-    return { gagnant, moyReste, nReste: reste.length };
-  }
-
-  /* Âge du PAQUET, pas âge de la torréfaction. La règle précédente partait de
-     `date_torrefaction`, absente des cinq cafés de Chris et destinée à le rester :
-     elle n'a jamais pu se déclencher une seule fois. Le jour d'ouverture, lui, il
-     le connaît toujours, et c'est ce qu'il décrit comme faisant le plus bouger ses
-     tasses. Les tranches suivent le dégazage puis l'éventement. */
-  function insightAgePaquet(notees) {
-    const groupes = { ins_paquet_frais: [], ins_paquet_median: [], ins_paquet_vieux: [] };
-    notees.forEach(e => {
-      const j = e._c.jours_ouvert;
-      if (j === "" || j < 0) return;
-      if (j <= 7) groupes.ins_paquet_frais.push(e.note_sur_10);
-      else if (j <= 21) groupes.ins_paquet_median.push(e.note_sur_10);
-      else groupes.ins_paquet_vieux.push(e.note_sur_10);
-    });
-    const res = bestOfGroups(groupes);
-    if (!res) return null;
-    return I18N.t("ins_paquet", {
-      quand: I18N.t(res.gagnant.cle),
-      haut: note1(res.gagnant.moy),
-      bas: note1(res.moyReste),
-    });
-  }
-
-  /* LE CONSTAT PAR CAFÉ ET PAR MACHINE, la phrase la plus utile du lot.
-
-     Les autres règles comparent des groupes sur TOUT l'historique. Mélanger un
-     Sáng Tạo en Brikka et un Liberica en Switch pour conclure sur la puissance de
-     feu ne décrit aucune tasse réelle. Celle-ci isole donc chaque couple (café,
-     machine) et cherche, parmi six leviers, celui qui sépare le mieux SES tasses.
-
-     Les garde-fous sont les mêmes que partout : trois tasses de chaque côté et
-     0,4 point d'écart. Sur les données actuelles de Chris, aucun ne passe encore,
-     et c'est le bon comportement : le meilleur écart par café tombe à 0,17. */
-  function insightsParCafe(exts) {
-    return REGLAGES.constatsParCafe(DATA.state.cafes, exts, {
-      minLot: MIN_SAMPLE * 2,
-      minParGroupe: MIN_SAMPLE,
-      minEcart: MIN_GAP,
-    }).slice(0, 2).map(c => I18N.t("ins_cafe_levier", {
-      cafe: c.cafe ? c.cafe.nom : "",
-      machine: I18N.machine(c.methode),
-      levier: I18N.t("lev_" + c.levier),
-      valeur: I18N.tr(String(c.valeur)),
-      haut: note1(c.haut),
-      bas: note1(c.bas),
-      n: c.n,
-    }));
-  }
-
-  // Duel entre recettes d'une même famille : c'est la comparaison qui a du sens
-  // (même méthode, même intention), contrairement à un classement global.
-  function insightRecettes(notees) {
-    const parFamille = {};
-    notees.forEach(e => {
-      const r = trouverRecette(e.recette);
-      if (!r || !r.famille) return;
-      const f = (parFamille[r.famille] = parFamille[r.famille] || {});
-      (f[r.nom] = f[r.nom] || []).push(e.note_sur_10);
-    });
-    // Vrai duel, donc on ne parle QUE des familles où exactement deux recettes
-    // ont assez d'extractions notées. À trois recettes ou plus, nommer une
-    // perdante serait faux (elle n'est peut-être que deuxième).
-    for (const famille of Object.keys(parFamille)) {
-      const classes = Object.entries(parFamille[famille])
-        .filter(([, notes]) => notes.length >= MIN_SAMPLE)
-        .map(([nom, notes]) => ({ nom, moy: moyenne(notes) }))
-        .sort((a, b) => b.moy - a.moy);
-      if (classes.length !== 2) continue;
-      if (classes[0].moy - classes[1].moy < MIN_GAP) continue;
-      return I18N.t("ins_recettes", {
-        gagnante: I18N.tr(classes[0].nom),
-        perdante: I18N.tr(classes[1].nom),
-        haut: note1(classes[0].moy),
-        bas: note1(classes[1].moy),
-      });
-    }
-    return null;
-  }
-
-  // Moment de la journée : l'heure est déjà dans date_heure, donc cette règle ne
-  // coûte aucune saisie supplémentaire. Répond à "est-ce que ma première tasse
-  // est vraiment meilleure, ou juste bue avec plus d'enthousiasme".
-  function insightMoment(notees) {
-    const groupes = { ins_moment_matin: [], ins_moment_aprem: [], ins_moment_soir: [] };
-    notees.forEach(e => {
-      const heure = Number(String(e.date_heure).slice(11, 13));
-      if (!Number.isFinite(heure)) return;
-      if (heure < 12) groupes.ins_moment_matin.push(e.note_sur_10);
-      else if (heure < 18) groupes.ins_moment_aprem.push(e.note_sur_10);
-      else groupes.ins_moment_soir.push(e.note_sur_10);
-    });
-    const res = bestOfGroups(groupes);
-    if (!res) return null;
-    return I18N.t("ins_moment", {
-      quand: I18N.t(res.gagnant.cle),
-      haut: note1(res.gagnant.moy),
-      bas: note1(res.moyReste),
-    });
-  }
-
-  // Puissance de feu, Brikka seulement. C'est la variable que Chris cherche
-  // justement à régler : tant qu'elle vaut 3 partout, la règle se tait, et elle
-  // parlera dès qu'il aura essayé autre chose.
-  function insightPuissance(notees) {
-    const groupes = {};
-    notees
-      .filter(e => e.methode === "Brikka" && e.puissance_feu !== "" && e.puissance_feu !== undefined)
-      .forEach(e => (groupes[e.puissance_feu] = groupes[e.puissance_feu] || []).push(e.note_sur_10));
-    const res = bestOfGroups(groupes);
-    if (!res) return null;
-    return I18N.t("ins_puissance", {
-      feu: res.gagnant.cle,
-      haut: note1(res.gagnant.moy),
-      bas: note1(res.moyReste),
-    });
-  }
-
-  function computeInsights(exts) {
-    const notees = exts.filter(e => e.note_sur_10 !== "");
-    /* Les constats PAR CAFÉ d'abord : ils sont plus précis, donc plus
-       actionnables. Les règles globales ensuite, et elles annoncent elles mêmes
-       qu'elles mélangent les cafés : c'est leur limite, autant la dire. */
-    const phrases = insightsParCafe(exts).concat([
-      insightAgePaquet(notees),
-      insightRecettes(notees),
-      insightMoment(notees),
-      insightPuissance(notees),
-    ].filter(Boolean).map(p => I18N.t("ins_global", { p })));
-
-    if (phrases.length) return phrases;
-
-    // Rien à dire : on explique POURQUOI plutôt que de laisser un cadre vide.
-    // C'est la différence entre "pas assez de données" et "le site est cassé".
-    // On ne réclame PAS les dates de torréfaction ici : les paquets vietnamiens
-    // ne les portent presque jamais, le rappel serait un reproche permanent.
-    return [I18N.t("ins_vide", { n: MIN_SAMPLE })];
-  }
-
-  function rendreInsights(exts) {
-    $("#insights").innerHTML = computeInsights(exts)
-      .map(p => "<li>" + p + "</li>")
-      .join("");
-  }
-
-  // ---------- Calendrier d'activité ----------
-  // 18 semaines et pas 26 : à raison d'une ou deux tasses par jour, six mois de
-  // grille sont surtout six mois de cases vides, ce qui donne l'impression que
-  // le calendrier ne marche pas.
-  const SEMAINES_HEATMAP = 18;
-
-  /* Chiffre la période affichée. Une grille de cases ne dit rien de mesurable
-     toute seule; ces cinq nombres sont ce qu'on vient y chercher.
-
-     La SÉRIE EN COURS est comptée depuis le dernier jour actif, et n'est
-     annoncée que si ce jour est aujourd'hui ou hier. Sinon, à huit heures du
-     matin avant le premier café, elle retomberait à zéro tous les jours et ne
-     voudrait plus rien dire. */
-  function statsHeatmap(parJour) {
-    const fin = new Date();
-    fin.setHours(0, 0, 0, 0);
-    const debut = new Date(fin);
-    debut.setDate(debut.getDate() - (SEMAINES_HEATMAP * 7 - 1));
-
-    const jours = [];
-    const jour = new Date(debut);
-    while (jour <= fin) {
-      jours.push(parJour[cleLocale(jour)] || 0);
-      jour.setDate(jour.getDate() + 1);
-    }
-
-    let tasses = 0, joursActifs = 0, serie = 0, meilleureSerie = 0;
-    jours.forEach(n => {
-      if (n > 0) {
-        tasses += n;
-        joursActifs += 1;
-        serie += 1;
-        if (serie > meilleureSerie) meilleureSerie = serie;
-      } else {
-        serie = 0;
-      }
-    });
-
-    // Série en cours : on remonte depuis la fin, en tolérant qu'aujourd'hui soit
-    // encore vide (index dernier = aujourd'hui).
-    let serieEnCours = 0;
-    let i = jours.length - 1;
-    if (jours[i] === 0) i -= 1; // aujourd'hui pas encore entamé, on part d'hier
-    while (i >= 0 && jours[i] > 0) { serieEnCours += 1; i -= 1; }
-
-    // Moyenne par semaine rapportée au temps RÉELLEMENT couvert : diviser par
-    // 18 semaines alors que le premier café date de 15 jours donnerait un chiffre
-    // faux et décourageant.
-    const premierActif = jours.findIndex(n => n > 0);
-    const joursCouverts = premierActif === -1 ? 0 : jours.length - premierActif;
-    const parSemaine = joursCouverts > 0 ? tasses / (joursCouverts / 7) : 0;
-
-    return { tasses, joursActifs, serieEnCours, meilleureSerie, parSemaine };
-  }
-
-  function rendreStatsHeatmap(parJour) {
-    const s = statsHeatmap(parJour);
-    if (!s.tasses) {
-      $("#heatmap-stats").innerHTML =
-        '<p class="carte-vide">' + I18N.t("hm_resume_vide", { s: SEMAINES_HEATMAP }) + "</p>";
-      return;
-    }
-    const cases = [
-      { v: s.tasses, l: I18N.t("hm_st_tasses") },
-      { v: s.joursActifs, l: I18N.t("hm_st_jours") },
-      { v: s.serieEnCours, l: I18N.t("hm_st_serie_now") },
-      { v: s.meilleureSerie, l: I18N.t("hm_st_serie_max") },
-      { v: fmtDecimal(s.parSemaine, 1), l: I18N.t("hm_st_semaine") },
-    ];
-    $("#heatmap-stats").innerHTML = cases
-      .map(c => '<div class="mini-stat"><b>' + c.v + "</b><span>" + c.l + "</span></div>")
-      .join("");
-  }
-
-  /* Un graphe vide ne dit pas POURQUOI il est vide, et ça se lit comme un site
-     cassé. Ces trois cartes sont les seules qui peuvent rester vides longtemps
-     avec des données parfaitement valides, donc chacune annonce sa vraie cause
-     plutôt qu'un "pas de données" générique qui n'aide personne. */
-  function majCarteVide(id, nbPoints, cle) {
-    const vide = nbPoints === 0;
-    $("#boite-" + id).hidden = vide;
-    const msg = $("#vide-" + id);
-    msg.hidden = !vide;
-    if (vide) msg.textContent = I18N.t(cle);
-  }
-
-  function causeMoutureVide(notees) {
-    if (!notees.length) return "vide_rien";
-    // Cas le plus courant chez un buveur de café déjà moulu : la mouture n'est
-    // volontairement pas stockée, donc le nuage ne peut rien montrer.
-    const toutesMoulues = notees.every(e => {
-      const c = DATA.cafeDe(e);
-      return c && Number(c.deja_moulu) === 1;
-    });
-    return toutesMoulues ? "vide_mouture_moulu" : "vide_mouture";
-  }
-
-  function causeGoutsVide(notees) {
-    if (!notees.length) return "vide_rien";
-    const avecTags = notees.filter(e => (e.descripteurs || "").trim() !== "").length;
-    // Distinguer "tu ne coches jamais de descripteurs" de "pas encore assez de
-    // fois le même", parce que l'action à faire n'est pas la même.
-    return avecTags === 0 ? "vide_gouts_aucun" : "vide_gouts_seuil";
-  }
-
-  /* Note moyenne par descripteur. C'est le seul graphique du tableau de bord qui
-     parle de GOÛT plutôt que de réglage, alors que c'est le sujet du carnet.
-     Il remplace un nuage note contre âge du café, qui dépendait d'une date de
-     torréfaction que les paquets vietnamiens ne portent presque jamais : il était
-     donc structurellement vide.
-
-     Ici la donnée est toujours là, puisque les descripteurs se cochent à chaque
-     tasse. On garde les 10 meilleurs et les 5 pires : sur 59 tags, tout afficher
-     serait illisible, et ce sont les extrêmes qui portent l'information. */
-  const MIN_TASSES_GOUT = 3;
-  const TOP_GOUTS = 10;
-  const PIRES_GOUTS = 5;
-
-  function rendreGouts(notees) {
-    const parTag = {};
-    notees.forEach(e => {
-      (e.descripteurs || "").split("|").filter(Boolean).forEach(tag => {
-        (parTag[tag] = parTag[tag] || []).push(e.note_sur_10);
-      });
-    });
-
-    const classes = Object.entries(parTag)
-      .filter(([, notes]) => notes.length >= MIN_TASSES_GOUT)
-      .map(([tag, notes]) => ({ tag, moy: moyenne(notes), n: notes.length }))
-      .sort((a, b) => b.moy - a.moy);
-
-    if (!classes.length) {
-      $("#note-gouts").textContent = "";
-      return [];
-    }
-
-    // Les extrêmes, sans doublon si la liste est courte.
-    const retenus = classes.length > TOP_GOUTS + PIRES_GOUTS
-      ? [...classes.slice(0, TOP_GOUTS), ...classes.slice(-PIRES_GOUTS)]
-      : classes;
-
-    const moyenneGlobale = moyenne(notees.map(e => e.note_sur_10));
-    const items = retenus.map(c => ({
-      label: I18N.tag(c.tag),
-      value: +c.moy.toFixed(1),
-      extra: I18N.t("b_extractions", { n: c.n }),
-    }));
-    // Vert au dessus de ta moyenne, rouge en dessous : sans repère, "7,9" ne dit
-    // pas si c'est bon pour TOI.
-    const couleurs = retenus.map(c =>
-      c.moy >= moyenneGlobale
-        ? getComputedStyle(document.documentElement).getPropertyValue("--ok").trim()
-        : getComputedStyle(document.documentElement).getPropertyValue("--danger").trim());
-
-    CHARTS.barresHorizontales("g-gouts", items, couleurs, I18N.t("axe_note_moy"), 10);
-    $("#note-gouts").textContent = I18N.t("gouts_note", {
-      m: fmtDecimal(moyenneGlobale, 1),
-      n: MIN_TASSES_GOUT,
-    });
-    return items;
-  }
-
-  function causeDuelVide(notees) {
-    if (!notees.length) return "vide_rien";
-    const machines = new Set(notees.map(e => e.methode).filter(Boolean));
-    // Une seule machine utilisée : il n'y a rien à comparer, ce n'est pas un bug.
-    return machines.size < 2 ? "vide_duel_une_machine" : "vide_duel";
-  }
-
-  function rendreTableau() {
-    const exts = extAvecCalculs();
-    const vide = exts.length === 0;
-    $("#tableau-vide").hidden = !vide;
-    $("#tableau-contenu").hidden = vide;
-    if (vide) return;
-
-    const auj = cleLocale(new Date());
-    const maintenant = new Date();
-    const lundi = new Date(maintenant);
-    lundi.setDate(lundi.getDate() - ((lundi.getDay() + 6) % 7));
-    const cleLundi = cleLocale(lundi);
-    const moisCourant = auj.slice(0, 7);
-    const il7j = new Date(maintenant); il7j.setDate(il7j.getDate() - 7);
-
-    const notes = exts.filter(e => e.note_sur_10 !== "").map(e => e.note_sur_10);
-    const notes7j = exts.filter(e => e.note_sur_10 !== "" && new Date(e.date_heure) >= il7j).map(e => e.note_sur_10);
-
-    // Caféine estimée par jour sur les 7 derniers jours.
-    const mgCafeine = e => {
-      const cafe = DATA.cafeDe(e);
-      return cafeineMg(e.dose_g || 0, cafe ? cafe.espece : "", cafe ? cafe.pourcentage_cafe_reel : 100);
-    };
-    const cafeine7j = exts.filter(e => new Date(e.date_heure) >= il7j).reduce((a, e) => a + mgCafeine(e), 0);
-
-    const kpis = [
-      { valeur: exts.filter(e => e.date_heure.slice(0, 10) === auj).length, label: I18N.t("kpi_auj"), dec: 0 },
-      { valeur: exts.filter(e => e.date_heure.slice(0, 10) >= cleLundi).length, label: I18N.t("kpi_semaine"), dec: 0 },
-      { valeur: exts.length, label: I18N.t("kpi_total"), dec: 0 },
-      { valeur: moyenne(notes) || 0, label: I18N.t("kpi_note"), dec: 1, sur10: true },
-      { valeur: moyenne(notes7j) || 0, label: I18N.t("kpi_note7"), dec: 1, sur10: true },
-      { valeur: Math.round(cafeine7j / 7), label: I18N.t("kpi_cafeine"), dec: 0, mg: true },
-      { valeur: ecartMoyen(notes) || 0, label: I18N.t("kpi_regularite"), dec: 1, plusMoins: true },
-    ];
-    $("#kpis").innerHTML = kpis.map(k =>
-      '<div class="kpi"><div class="kpi-valeur"><span class="kpi-nombre"></span>' +
-      (k.sur10 ? "<small> / 10</small>" : k.mg ? "<small> mg</small>" : k.plusMoins ? "<small> pt</small>" : "") +
-      '</div><div class="kpi-label">' + k.label + "</div></div>"
-    ).join("");
-    $$("#kpis .kpi-nombre").forEach((el, i) =>
-      animerCompteur(el, kpis[i].valeur, kpis[i].dec, "", kpis[i].plusMoins ? "± " : ""));
-
-    rendreInsights(exts);
-
-    // 30 derniers jours : barres, note, grammes, caféine dans le tooltip
-    const labels = [], comptes = [], moyennes = [], grammes = [], details = [], tendance = [];
-    /* La tendance se calcule sur TOUT l'historique noté, pas sur les 30 jours :
-       une moyenne glissante qui redémarrerait au bord de la fenêtre serait vide
-       les quatre premiers jours affichés. On la projette ensuite jour par jour,
-       en gardant la dernière valeur connue, pour qu'elle ne se coupe pas les
-       jours sans tasse. */
-    const glissante = REGLAGES.moyenneGlissante(DATA.state.extractions, 5);
-    let iGliss = 0, derniere = null;
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date(); d.setDate(d.getDate() - i);
-      const cle = cleLocale(d);
-      const duJour = exts.filter(e => e.date_heure.slice(0, 10) === cle);
-      labels.push(d.toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" }));
-      comptes.push(duJour.length);
-      const nJour = duJour.filter(e => e.note_sur_10 !== "").map(e => e.note_sur_10);
-      moyennes.push(nJour.length ? +moyenne(nJour).toFixed(1) : null);
-      const g = duJour.reduce((a, e) => a + (e.dose_g || 0), 0);
-      grammes.push(duJour.length ? Math.round(g * 10) / 10 : null);
-      if (!duJour.length) { details.push(""); continue; }
-      const mg = duJour.reduce((a, e) => a + mgCafeine(e), 0);
-      const nomsCafes = [...new Set(duJour.map(e => (DATA.cafeDe(e) || {}).nom).filter(Boolean))];
-      details.push(I18N.t("tip_cafeine", { mg }) + "\n" + nomsCafes.join(", "));
-    }
-    // Second passage : la tendance suit les mêmes libellés que les barres.
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date(); d.setDate(d.getDate() - i);
-      const cle = cleLocale(d);
-      while (iGliss < glissante.length && String(glissante[iGliss].date).slice(0, 10) <= cle) {
-        if (glissante[iGliss].valeur !== null) derniere = glissante[iGliss].valeur;
-        iGliss += 1;
-      }
-      tendance.push(derniere);
-    }
-    CHARTS.barresEtLigne30j("g-30jours", labels, comptes, moyennes, grammes, details, tendance);
-
-    // Heatmap
-    const parJour = {}, infoParJour = {};
-    exts.forEach(e => {
-      const cle = e.date_heure.slice(0, 10);
-      parJour[cle] = (parJour[cle] || 0) + 1;
-    });
-    Object.keys(parJour).forEach(cle => {
-      const nJour = exts.filter(e => e.date_heure.slice(0, 10) === cle && e.note_sur_10 !== "").map(e => e.note_sur_10);
-      if (nJour.length) infoParJour[cle] = "note moyenne " + moyenne(nJour).toFixed(1);
-    });
-    CHARTS.heatmap("g-heatmap", parJour, infoParJour, SEMAINES_HEATMAP);
-    rendreStatsHeatmap(parJour);
-
-    // Note moyenne par café
-    const parCafe = {};
-    exts.forEach(e => {
-      if (e.note_sur_10 === "") return;
-      (parCafe[e._c.cafe_nom] = parCafe[e._c.cafe_nom] || []).push(e.note_sur_10);
-    });
-    const itemsCafes = Object.entries(parCafe)
-      .map(([nom, ns]) => ({ label: I18N.tr(nom), value: +moyenne(ns).toFixed(1), extra: I18N.t("b_extractions", { n: ns.length }), nomBrut: nom }))
-      .sort((a, b) => b.value - a.value);
-    // Le café de référence (étalon) ressort en vert.
-    const couleursCafes = itemsCafes.map(i => {
-      const c = DATA.state.cafes.find(x => x.nom === i.nomBrut);
-      return c && (c.tag || "").includes("référence") ? CHARTS.C_DEUX : undefined;
-    });
-    const accentCafes = couleursCafes.some(Boolean) ? couleursCafes.map(c => c || getComputedStyle(document.documentElement).getPropertyValue("--accent").trim()) : null;
-    CHARTS.barresHorizontales("g-cafes", itemsCafes, accentCafes, I18N.t("axe_note_moy"), 10);
-
-    // Duel Brikka contre Switch
-    const brikka = exts.filter(e => e.methode === "Brikka");
-    const swtch = exts.filter(e => e.methode === "Switch");
-    const nB = brikka.filter(e => e.note_sur_10 !== "").map(e => e.note_sur_10);
-    const nS = swtch.filter(e => e.note_sur_10 !== "").map(e => e.note_sur_10);
-    $("#duel-machines").innerHTML =
-      '<div class="duel-col brikka"><b>' + brikka.length + "</b><span>" + I18N.t("d_ext_brikka") + "</span><b>" +
-      (nB.length ? moyenne(nB).toFixed(1) : "...") + "</b><span>" + I18N.t("d_note") + "</span></div>" +
-      '<div class="duel-col switch"><b>' + swtch.length + "</b><span>" + I18N.t("d_ext_switch") + "</span><b>" +
-      (nS.length ? moyenne(nS).toFixed(1) : "...") + "</b><span>" + I18N.t("d_note") + "</span></div>";
-
-    // Cafés passés dans les deux machines
-    const cafesDeux = DATA.state.cafes.filter(c => {
-      const eb = exts.some(e => e.cafe_id === c.id && e.methode === "Brikka" && e.note_sur_10 !== "");
-      const es = exts.some(e => e.cafe_id === c.id && e.methode === "Switch" && e.note_sur_10 !== "");
-      return eb && es;
-    });
-    CHARTS.comparatifMachines("g-duel",
-      cafesDeux.map(c => c.nom),
-      cafesDeux.map(c => +moyenne(exts.filter(e => e.cafe_id === c.id && e.methode === "Brikka" && e.note_sur_10 !== "").map(e => e.note_sur_10)).toFixed(1)),
-      cafesDeux.map(c => +moyenne(exts.filter(e => e.cafe_id === c.id && e.methode === "Switch" && e.note_sur_10 !== "").map(e => e.note_sur_10)).toFixed(1)));
-
-    // Nuages
-    const pts = m => exts
-      .filter(e => e.methode === m && e.note_sur_10 !== "" && e._c.microns !== "")
-      .map(e => ({ x: e._c.microns, y: e.note_sur_10, nom: e._c.cafe_nom + ", " + e.mouture_dial }));
-    CHARTS.nuage("g-mouture", pts("Brikka"), pts("Switch"), I18N.t("axe_mouture"), "µm");
-
-    const notees = exts.filter(e => e.note_sur_10 !== "");
-    const gouts = rendreGouts(notees);
-
-    // Les trois cartes qui peuvent rester vides avec des données valides.
-    majCarteVide("mouture", pts("Brikka").length + pts("Switch").length, causeMoutureVide(notees));
-    majCarteVide("gouts", gouts.length, causeGoutsVide(notees));
-    majCarteVide("duel", cafesDeux.length, causeDuelVide(notees));
-
-    // Diagnostics
-    const parDiag = {};
-    exts.forEach(e => (e.diagnostic || "").split("|").filter(Boolean).forEach(d => {
-      parDiag[d] = (parDiag[d] || 0) + 1;
-    }));
-    const diagLabels = DIAGNOSTICS.filter(d => parDiag[d]);
-    CHARTS.anneauDiagnostics("g-diagnostics", diagLabels, diagLabels.map(d => parDiag[d]));
-
-    // Note par recette
-    const parRecette = {};
-    exts.forEach(e => {
-      if (e.note_sur_10 === "" || !e.recette) return;
-      (parRecette[e.recette] = parRecette[e.recette] || []).push(e.note_sur_10);
-    });
-    const itemsRecettes = Object.entries(parRecette)
-      .map(([nom, ns]) => ({ label: nom, value: +moyenne(ns).toFixed(1), extra: I18N.t("b_extractions", { n: ns.length }) }))
-      .sort((a, b) => b.value - a.value);
-    const couleursRecettes = itemsRecettes.map(i => {
-      const r = trouverRecette(i.label);
-      return r ? (r.methode === "Brikka" ? CHARTS.C_BRIKKA : CHARTS.C_SWITCH) : CHARTS.C_DEUX;
-    });
-    CHARTS.barresHorizontales("g-recettes", itemsRecettes, couleursRecettes, I18N.t("axe_note_moy"), 10);
-
-    // 5 dernières
-    const dernieres = [...exts].sort((a, b) => b.date_heure.localeCompare(a.date_heure)).slice(0, 5);
-    // Chaque ligne ouvre l'édition de son extraction. role et tabindex plutôt
-    // qu'un vrai bouton : le contenu est structuré (div, span) et un bouton n'a
-    // pas le droit d'en contenir.
-    $("#dernieres-liste").innerHTML = dernieres.map(e =>
-      '<li class="derniere-cliquable" data-ext="' + e.id + '" tabindex="0" role="button" title="' +
-      attrTitre(I18N.t("h_editer")) + '">' +
-      "<span class=\"pastille-methode " + e.methode.toLowerCase() + "\"></span>" +
-      "<div><span class=\"derniere-cafe\">" + I18N.tr(e._c.cafe_nom) + "</span>" +
-      "<div class=\"derniere-infos\">" + fmtDateHeure(e.date_heure) + " · " + e.methode +
-      (e.recette ? " · " + e.recette : "") + (e.mouture_dial ? " · " + I18N.t("molette") + " " + e.mouture_dial : "") +
-      (e.diagnostic ? " · " + diagsAffiches(e.diagnostic) : "") + "</div></div>" +
-      "<span class=\"derniere-note\">" + (e.note_sur_10 !== "" ? e.note_sur_10 + "<small>/10</small>" : "") + "</span></li>"
-    ).join("");
-  }
-
-  // ---------- Saisie ----------
-
-  // Version affichée dans le pied de page. À INCRÉMENTER en même temps que le
-  // changelog de DOCUMENTATION.md. Sert à savoir d'un coup d'oeil quelle version
-  // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
-  // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
-  // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.59";
-
-  /* ---------- Brouillon de saisie ----------
-     Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
-     navigateur décharge la page pour récupérer de la mémoire. Sans brouillon,
-     tout ce qui était tapé disparaît, et c'est justement pendant l'extraction
-     qu'on sort de l'appli.
-
-     Volontairement en localStorage et PAS dans les données synchronisées : un
-     brouillon est propre à un appareil, l'envoyer sur le serveur ferait
-     apparaître une saisie fantôme sur l'autre. */
-  const CLE_BROUILLON = "brouillon-saisie";
-  const BROUILLON_MAX_MS = 24 * 60 * 60 * 1000;
-  const CHAMPS_BROUILLON = [
-    "f-date", "f-cafe", "f-recette", "f-dose", "f-eau", "f-mouture", "f-temp",
-    "f-volume", "f-eau-ajoutee", "f-lait", "f-agitation", "f-tasse", "f-note",
-    "f-commentaire", "f-total-min", "f-total-sec", "f-ecoulement-min", "f-ecoulement-sec",
-    "f-puissance",
-  ];
-  const CASES_BROUILLON = ["f-prechauffe", "f-ajout-eau-oui"];
-  let brouillonMinuteur = null;
-
-  function ecrireBrouillon() {
-    // On ne sauvegarde JAMAIS pendant l'édition d'une extraction existante :
-    // le brouillon écraserait le formulaire au prochain démarrage avec des
-    // valeurs qui appartiennent à une ligne déjà enregistrée.
-    if (saisie.editId) return;
-    const valeurs = {};
-    CHAMPS_BROUILLON.forEach(id => { const el = $("#" + id); if (el) valeurs[id] = el.value; });
-    CASES_BROUILLON.forEach(id => { const el = $("#" + id); if (el) valeurs[id] = el.checked; });
-    try {
-      localStorage.setItem(CLE_BROUILLON, JSON.stringify({
-        le: Date.now(),
-        methode: saisie.methode,
-        diagnostics: [...saisie.diagnostics],
-        descripteurs: [...saisie.descripteurs],
-        valeurs,
-      }));
-    } catch (e) { /* stockage plein ou refusé, tant pis */ }
-  }
-
-  function planifierBrouillon() {
-    clearTimeout(brouillonMinuteur);
-    brouillonMinuteur = setTimeout(ecrireBrouillon, 400);
-  }
-
-  function effacerBrouillon() {
-    clearTimeout(brouillonMinuteur);
-    try { localStorage.removeItem(CLE_BROUILLON); } catch (e) { /* tant pis */ }
-  }
-
-  /* Ne restaure que si le brouillon dit quelque chose : sans ce test, le
-     formulaire vierge sauvegardé au premier chargement déclencherait un message
-     "brouillon repris" à chaque ouverture, ce qui serait absurde. */
-  function brouillonUtile(b) {
-    const v = b.valeurs || {};
-    return Boolean(v["f-cafe"] || (v["f-commentaire"] || "").trim() ||
-      b.diagnostics.length || b.descripteurs.length ||
-      v["f-total-min"] || v["f-total-sec"] || v["f-volume"] || v["f-eau"]);
-  }
-
-  function restaurerBrouillon() {
-    let b;
-    try { b = JSON.parse(localStorage.getItem(CLE_BROUILLON) || "null"); } catch (e) { return false; }
-    if (!b || !b.valeurs) return false;
-    if (Date.now() - (b.le || 0) > BROUILLON_MAX_MS) { effacerBrouillon(); return false; }
-    if (!brouillonUtile(b)) return false;
-
-    if (b.methode) choisirMethode(b.methode, true);
-    Object.entries(b.valeurs).forEach(([id, valeur]) => {
-      const el = $("#" + id);
-      if (el && valeur !== undefined && valeur !== null) el.value = valeur;
-    });
-    CASES_BROUILLON.forEach(id => { const el = $("#" + id); if (el) el.checked = !!b.valeurs[id]; });
-
-    saisie.diagnostics = new Set(b.diagnostics || []);
-    saisie.descripteurs = new Set(b.descripteurs || []);
-    $$("#f-diagnostic .pilule").forEach(x => basculerEtat(x, saisie.diagnostics.has(x.dataset.diag)));
-    $$("#f-descripteurs .tag").forEach(x => basculerEtat(x, saisie.descripteurs.has(x.dataset.tag)));
-
-    $("#note-affichee").textContent = $("#f-note").value;
-    $("#f-eau-ajoutee").hidden = !$("#f-ajout-eau-oui").checked;
-    majCorrectionDiagnostic();
-    majAvertissements();
-    majLive();
-    majAsideSaisie();
-    return true;
-  }
-
-  /* Durées saisies en minutes ET secondes, stockées en secondes.
-     Taper "4 min 18" est plus rapide et moins risqué que convertir 258 de tête,
-     surtout sur téléphone. Le stockage ne change pas : les CSV gardent des
-     secondes, donc l'historique reste lisible et rien à migrer. */
-  function lireDuree(prefixe) {
-    const min = parseInt($("#" + prefixe + "-min").value, 10);
-    const sec = parseInt($("#" + prefixe + "-sec").value, 10);
-    const m = Number.isFinite(min) ? min : 0;
-    const s = Number.isFinite(sec) ? sec : 0;
-    // Les deux champs vides veulent dire "pas de temps", pas "zéro seconde".
-    if (!Number.isFinite(min) && !Number.isFinite(sec)) return "";
-    return m * 60 + s;
-  }
-
-  function ecrireDuree(prefixe, secondes) {
-    const total = Number(secondes);
-    if (secondes === "" || secondes === null || secondes === undefined || !Number.isFinite(total)) {
-      $("#" + prefixe + "-min").value = "";
-      $("#" + prefixe + "-sec").value = "";
-      return;
-    }
-    $("#" + prefixe + "-min").value = Math.floor(total / 60);
-    $("#" + prefixe + "-sec").value = total % 60;
-  }
-
-  // Dose prise quand rien ne la preremplit (recette sans dose, formulaire
-  // vierge). 15 g est la dose de toutes les recettes Switch d'origine.
-  const DOSE_REPLI_USINE = 15;
-
-  // Puissance de feu par défaut, échelle personnelle de 1 à 10, Brikka seulement.
-  const FEU_REPLI_USINE = 2;
-
-  /* Réglage RÉEL du broyeur, celui où la molette est physiquement posée. Ce n'est
-     pas la même chose que le dial d'une recette, qui est une CIBLE : la Brikka
-     vise 1.2.0 et le Switch 1.6.0, mais Chris laisse son C5 sur 1.5.0, le
-     "compromis qui marche dans les deux" de son guide, pour ne pas recompter les
-     crans à chaque changement de machine. Le formulaire préremplissait la cible
-     et lui faisait donc enregistrer une mouture qu'il n'avait pas utilisée.
-     La cible reste visible dans le panneau latéral, et l'avertissement de plage
-     continue de signaler un écart réel. */
-  const MOLETTE_REPLI_USINE = "1.5.0";
-
-  /* VUE en lecture sur la table `reglages`, qui se synchronise. Ces trois
-     valeurs décrivent le MATÉRIEL de Chris : sa molette de broyeur est la même
-     vue du téléphone et de l'ordinateur. Elles vivaient en localStorage, donc son
-     téléphone ignorait ce qu'il réglait sur l'ordinateur, et il ne pouvait pas le
-     voir puisque ce sont des champs préremplis d'apparence normale.
-
-     Le thème et les bips, eux, restent locaux à juste titre : un téléphone en
-     cuisine et un ordinateur n'ont pas les mêmes besoins.
-
-     `replis` reste un objet simple parce qu'il est lu partout dans le code de
-     rendu ; il est juste rafraîchi depuis DATA à chaque notification. */
-  const CLE_REPLIS = "replis-saisie";
-  const replis = { dose: DOSE_REPLI_USINE, feu: FEU_REPLI_USINE, molette: MOLETTE_REPLI_USINE };
-
-  function chargerReplis() {
-    const r = DATA.reglagesCourants();
-    replis.dose = r.dose_g;
-    replis.feu = r.puissance_feu;
-    replis.molette = r.mouture_dial;
-  }
-
-  /* Reprise unique des réglages posés avant la synchro. Sans elle, Chris
-     retrouverait les valeurs d'usine et devrait tout reposer à la main. Marquée
-     une fois, et seulement si la table est encore vide : une reprise qui
-     écraserait un réglage déjà synchronisé serait pire que pas de reprise. */
-  async function reprendreReplisLocaux() {
-    let brut = null;
-    try {
-      if (localStorage.getItem("replis-repris")) return;
-      brut = JSON.parse(localStorage.getItem(CLE_REPLIS) || "null");
-      localStorage.setItem("replis-repris", "1");
-    } catch (e) { return; }
-    if (!brut || DATA.state.reglages.length) return;
-    await DATA.majReglages({
-      dose_g: brut.dose,
-      puissance_feu: brut.feu,
-      mouture_dial: brut.molette,
-    });
-    chargerReplis();
-  }
-
-  async function ecrireReplis() {
-    await DATA.majReglages({
-      dose_g: replis.dose,
-      puissance_feu: replis.feu,
-      mouture_dial: replis.molette,
-    });
-  }
-
-  const saisie = {
-    methode: "Brikka",
-    descripteurs: new Set(),
-    diagnostics: new Set(),
-    editId: null,
-  };
-
-  // "Sous-extrait (acide)|Astringent" vers un affichage traduit "Under-extracted (sour), Astringent".
-  function diagsAffiches(s) {
-    return (s || "").split("|").filter(Boolean).map(d => I18N.diag(d)).join(", ");
-  }
-
-  function cafesSelectionnables() {
-    return DATA.state.cafes.filter(c => c.actif !== 0);
-  }
-
-  function cafeCourantMoulu() {
-    const c = DATA.state.cafes.find(x => x.id === $("#f-cafe").value);
-    return !!(c && Number(c.deja_moulu) === 1);
-  }
-
-  function remplirSelectCafes(garderId) {
-    // Les cafés désactivés n'apparaissent PAS en saisie. Seule exception :
-    // l'édition d'une ancienne extraction dont le café a été désactivé depuis
-    // (l'option est réinjectée pour que la valeur reste affichable).
-    const sel = $("#f-cafe");
-    const valeur = garderId || sel.value;
-    const inactifGarde = DATA.state.cafes.find(c => c.id === valeur && c.actif === 0);
-    sel.innerHTML = '<option value="">' + I18N.t("choisir_cafe") + "</option>" +
-      cafesSelectionnables().map(c => '<option value="' + c.id + '">' + c.nom + "</option>").join("") +
-      (inactifGarde ? '<option value="' + inactifGarde.id + '">' + inactifGarde.nom + " " + I18N.t("inactif") + "</option>" : "");
-    if (valeur) sel.value = valeur;
-  }
-
-  function remplirSelectRecettes() {
-    const sel = $("#f-recette");
-    const valeur = sel.value;
-    const liste = recettesDeMethode(saisie.methode);
-    sel.innerHTML = liste.map(r => "<option>" + r.nom + "</option>").join("");
-    if (liste.some(r => r.nom === valeur)) sel.value = valeur;
-    else {
-      /* Repli sur la PREMIÈRE recette quand aucune n'est marquée par défaut, ce
-         qui est le cas de toutes les Brikka. Le navigateur sélectionne déjà la
-         première option tout seul, mais le code ne le savait pas : sel.value
-         restait vide de son point de vue, donc prefillDepuisRecette repartait
-         sans rien faire et l'eau à 150 g n'arrivait jamais. */
-      const defaut = liste.find(r => r.parDefaut) || liste[0];
-      if (defaut) sel.value = defaut.nom;
-    }
-  }
-
-  function choisirMethode(m, garderRecette) {
-    saisie.methode = m;
-    $$(".btn-methode").forEach(b => basculerEtat(b, b.dataset.methode === m));
-    // Champs propres à chaque méthode.
-    $("#champ-ajout-eau").hidden = m !== "Brikka";
-    $("#champ-puissance").hidden = m !== "Brikka";
-    $("#champ-agitation").hidden = m !== "Switch";
-    // Tasse par défaut : Flat White Egg en Brikka, Classic Mug en Switch.
-    const defauts = { "Brikka": "Loveramics Flat White Egg", "Switch": "Classic Mug" };
-    const tasseActuelle = $("#f-tasse").value;
-    if ((tasseActuelle === "" || Object.values(defauts).includes(tasseActuelle)) &&
-        DATA.state.tasses.some(t => t.nom === defauts[m])) {
-      $("#f-tasse").value = defauts[m];
-    }
-    if (!garderRecette) remplirSelectRecettes();
-    majChampPrechauffe();
-    majAvertissements();
-    majLive();
-  }
-
-  /* La case "eau préchauffée" n'a de sens que quand la recette ne tranche pas
-     déjà la question. Sur la famille brikka-classique, c'est LA différence entre
-     les deux variantes : afficher la case en plus laisserait enregistrer une
-     contradiction, du genre recette préchauffée avec la case décochée.
-     On masque donc la case et on déduit la valeur de la recette. */
-  function majChampPrechauffe() {
-    const r = trouverRecette($("#f-recette").value);
-    const familleTranche = !!r && FAMILLES_PRECHAUFFAGE.includes(r.famille || "");
-    $("#champ-prechauffe").hidden = saisie.methode !== "Brikka" || familleTranche;
-    if (familleTranche) $("#f-prechauffe").checked = RECETTES_EAU_PRECHAUFFEE.includes(r.id);
-  }
-
-  // La recette demande-t-elle de remuer ? Coche l'agitation par défaut.
-  function majAgitationDepuisRecette() {
-    const r = trouverRecette($("#f-recette").value);
-    if (!r || r.methode !== "Switch") return;
-    const remue = etapesPour(r).some(e => /remuer/i.test(e.texte));
-    $("#f-agitation-oui").checked = remue;
-    $("#f-agitation").hidden = !remue;
-    if (remue && !$("#f-agitation").value) $("#f-agitation").value = 1;
-  }
-
-  // Champ lait : visible quand la recette le prévoit, prérempli depuis la tasse.
-  function majLait() {
-    const r = trouverRecette($("#f-recette").value);
-    const visible = !!(r && r.lait);
-    $("#champ-lait").hidden = !visible;
-    if (!visible) return;
-    const tasse = DATA.state.tasses.find(t => t.nom === $("#f-tasse").value);
-    /* Le volume de café MESURÉ, jamais estimé sur une Brikka : c'est la même
-       raison que dans volumeEstime, et un lait calculé sur un volume faux est un
-       lait faux. Sans mesure on ne préremplit rien et on le dit. */
-    const volCafe = parseFloat($("#f-volume").value) ||
-      volumeEstime(parseFloat($("#f-dose").value), parseFloat($("#f-eau").value));
-    if (!tasse) {
-      $("#lait-hint").textContent = I18N.t("lait_choisir_tasse");
-      return;
-    }
-    if (!(volCafe > 0)) {
-      $("#lait-hint").textContent = I18N.t("lait_sans_volume");
-      return;
-    }
-    const lait = Math.max(0, tasse.contenance_ml - volCafe);
-    $("#f-lait").value = lait;
-    $("#lait-hint").textContent = lait === 0
-      ? I18N.t("lait_trop_petit")
-      : I18N.t("lait_calc", { l: lait, t: tasse.contenance_ml, v: volCafe });
-  }
-
-  // Tasses : liste déroulante, avertissement de contenance, mini éditeur.
-  function remplirSelectTasses() {
-    const sel = $("#f-tasse");
-    const v = sel.value;
-    sel.innerHTML = '<option value=""></option>' + DATA.state.tasses.map(t =>
-      '<option value="' + t.nom + '">' + t.nom + " · " + t.contenance_ml + " ml</option>").join("");
-    if (v && DATA.state.tasses.some(t => t.nom === v)) sel.value = v;
-  }
-
-  /* L'avertissement de débordement de tasse a été RETIRÉ. Il comparait le volume
-     attendu à la contenance et criait au débordement, en supposant qu'on sert
-     tout d'un coup. Or on peut très bien verser en deux fois, ce qui rend
-     l'avertissement faux dans un usage parfaitement normal. Un avertissement qui
-     se trompe apprend surtout à ignorer les avertissements.
-     La contenance des tasses reste utile : elle sert au calcul du lait. */
-
-
-  function rendreTassesEditeur() {
-    $("#tasses-liste").innerHTML = DATA.state.tasses.map(t =>
-      '<div class="tasse-ligne"><span>' + t.nom + " · " + t.contenance_ml + ' ml</span>' +
-      '<button type="button" class="btn-ligne danger" data-tasse-suppr="' + t.id + '" title="' + I18N.t("btn_supprimer") + '">✕</button></div>'
-    ).join("");
-    $$("[data-tasse-suppr]").forEach(b => b.addEventListener("click", async () => {
-      await DATA.supprimerTasse(b.dataset.tasseSuppr);
-      rendreTassesEditeur();
-      remplirSelectTasses();
-    }));
-  }
-
-  function prefillDepuisRecette(nomRecette) {
-    const r = trouverRecette(nomRecette);
-    if (!r) return;
-    /* Le formulaire suit désormais la RECETTE, y compris pour l'eau et la
-       température, au lieu de valeurs codées en dur qui l'écrasaient. C'est ce
-       qui fait de "Gérer les recettes" le vrai endroit où régler ses défauts :
-       une seule source de vérité, éditable, et déjà synchronisée entre appareils.
-       Une recette sans cible de température laisse le champ VIDE, ce qui est le
-       cas des Brikka : la température y dépend de la puissance du feu, la fixer
-       d'avance n'aurait aucun sens. */
-    $("#f-dose").value = r.dose || replis.dose;
-    $("#f-eau").value = r.eau || "";
-    $("#f-temp").value = r.temp === "" || r.temp === undefined ? "" : r.temp;
-    razPresetTemp();
-    // Le RÉGLAGE du broyeur, pas la cible de la recette : voir MOLETTE_REPLI_USINE.
-    $("#f-mouture").value = cafeCourantMoulu() ? "" : replis.molette;
-    if (r.methode === "Brikka") $("#f-puissance").value = r.puissance_feu || replis.feu;
-    majAgitationDepuisRecette();
-    majChampPrechauffe();
-    majLait();
-    majLive();
-    majAvertissements();
-    // Le libelle "pas encore notee" est genere : il ne suit pas le TreeWalker.
-    majAffichageNote();
-  }
-
-  function surChoixCafe() {
-    const cafe = DATA.state.cafes.find(c => c.id === $("#f-cafe").value);
-    if (!cafe) { majAvertissements(); return; }
-    // Présélectionne la machine et la recette recommandées, tout reste modifiable.
-    const rReco = trouverRecette(cafe.recette_recommandee);
-    if (rReco) {
-      choisirMethode(rReco.methode, true);
-      remplirSelectRecettes();
-      $("#f-recette").value = rReco.nom;
-      prefillDepuisRecette(rReco.nom);
-    } else if (cafe.machine_recommandee === "Brikka" || cafe.machine_recommandee === "Switch") {
-      choisirMethode(cafe.machine_recommandee);
-      prefillDepuisRecette($("#f-recette").value);
-    }
-    majAvertissements();
-    majLive();
-  }
-
-  /* Le select de température est une aide de saisie : il écrit dans le champ
-     nombre puis se remet à zéro. Il ne doit JAMAIS rester sur un choix qui ne
-     correspond plus au nombre affiché, sinon il ment. */
-  function razPresetTemp() {
-    const sel = $("#f-temp-preset");
-    if (sel) sel.value = "";
-  }
-
-  /* La note est facultative. Le curseur ne peut pas être vide, donc l'absence de
-     note vit dans une case à cocher : cochée, on enregistre "" et l'extraction
-     compte comme non notée partout (moyennes, insights, meilleurs réglages, qui
-     filtrent déjà sur note_sur_10 !== ""). Toucher le curseur décoche la case,
-     y compris quand il ne bouge pas, d'où le pointerdown en plus de l'input. */
-  function majAffichageNote() {
-    const vide = $("#f-note-vide").checked;
-    $("#note-affichee").textContent = vide
-      ? I18N.t("n_pas_notee")
-      : $("#f-note").value + " / 10";
-    $("#f-note").classList.toggle("curseur-inactif", vide);
-  }
-
-  function noteSaisie() {
-    return $("#f-note-vide").checked ? "" : $("#f-note").value;
-  }
-
-  /* Âge du paquet au moment de la tasse, affiché sous le choix du café. En
-     lecture seule : il se DÉDUIT de la date d'ouverture du sachet, le saisir à la
-     main serait une deuxième vérité. Muet tant qu'aucune date d'ouverture n'est
-     renseignée, plutôt que d'afficher un zéro faux. */
-  function majAgePaquet() {
-    const zone = $("#age-paquet");
-    if (!zone) return;
-    const c = DATA.calculs({
-      cafe_id: $("#f-cafe").value,
-      date_heure: $("#f-date").value || maintenantLocal(),
-    });
-    if (c.jours_ouvert === "") { zone.hidden = true; zone.textContent = ""; return; }
-    zone.hidden = false;
-    zone.textContent = I18N.t("ap_jours", { n: c.jours_ouvert });
-  }
-
-  function majAvertissements() {
-    const zone = $("#avertissements");
-    const cafe = DATA.state.cafes.find(c => c.id === $("#f-cafe").value);
-    const av = avertissementsCombinaison(cafe, saisie.methode, $("#f-recette").value, DATA.state.recettes);
-    const msgs = av.msgs.slice();
-    const dial = $("#f-mouture").value.trim();
-    if (dial && !cafeCourantMoulu()) {
-      const v = GRIND.verifierPlage(saisie.methode, dial);
-      if (!v.ok) msgs.push(v.message);
-    }
-    zone.innerHTML = msgs.map(m => '<div class="avertissement">' + m + "</div>").join("");
-    majAgePaquet();
-    majAsideSaisie();
-  }
-
-  // Panneau latéral de la saisie : la recette et le café sélectionnés, sous les yeux.
-  function majAsideSaisie() {
-    const zoneR = $("#aside-recette");
-    const zoneC = $("#aside-cafe");
-    if (!zoneR || !zoneC) return;
-
-    const r = trouverRecette($("#f-recette").value);
-    if (!r) {
-      zoneR.innerHTML = '<p class="aside-vide">' + I18N.t("a_choisir_recette") + "</p>";
-    } else {
-      const etapes = etapesPour(r);
-      zoneR.innerHTML =
-        '<div class="aside-titre"><span class="pastille-methode ' + r.methode.toLowerCase() + '"></span><h4>' + r.nom + "</h4></div>" +
-        (r.sousTitre ? '<p class="aside-sous">' + r.sousTitre + "</p>" : "") +
-        '<div class="recette-params">' +
-        '<span class="param-chip">' + r.dose + " g / " + r.eau + " g</span>" +
-        (facteurEau(r) !== 1
-          ? '<span class="param-chip param-chip-adapte">' + I18N.t("a_adapte", { e: $("#f-eau").value }) + "</span>"
-          : "") +
-        (r.ratioTexte ? '<span class="param-chip">' + r.ratioTexte + "</span>" : "") +
-        (r.tempTexte ? '<span class="param-chip">' + r.tempTexte + "</span>" : "") +
-        '<span class="param-chip">' + I18N.t("molette") + " " + r.dial + "</span>" +
-        (r.totalTexte ? '<span class="param-chip">' + r.totalTexte + "</span>" : "") +
-        "</div>" +
-        (etapes.length ? '<ol class="recette-etapes">' + etapes.map(e =>
-          "<li><span class=\"etape-temps\">" + (e.t === null ? "·" : fmtTemps(e.t)) + "</span><span>" + e.texte + "</span></li>"
-        ).join("") + "</ol>" : "") +
-        (r.pourQui ? '<p class="aside-pourqui"><b>' + I18N.t("r_pourqui") + "</b> " + r.pourQui + "</p>" : "") +
-        (r.cafesAssocies.length ? '<p class="aside-cafes"><b>' + I18N.t("r_cafes") + "</b> " + r.cafesAssocies.join(", ") + "</p>" : "") +
-        (r.note ? '<p class="aside-note-recette">' + r.note + "</p>" : "") +
-        '<button type="button" class="btn btn-petit" id="aside-pap" data-r="' + r.id + '">' + I18N.t("a_pap") + "</button>";
-      const btn = $("#aside-pap");
-      if (btn) btn.addEventListener("click", () => ouvrirPasAPas(btn.dataset.r));
-    }
-
-    const cafe = DATA.state.cafes.find(c => c.id === $("#f-cafe").value);
-    if (!cafe) {
-      zoneC.innerHTML = '<p class="aside-vide">' + I18N.t("a_choisir_cafe") + "</p>";
-    } else {
-      const lignes = [];
-      const pct = cafe.pourcentage_cafe_reel === "" || cafe.pourcentage_cafe_reel === undefined ? 100 : Number(cafe.pourcentage_cafe_reel);
-      let pastille = "";
-      if (pct < 100) pastille = '<span class="badge-nonpur">' + pct + " % " + I18N.t("pct_cafe") + "</span>";
-      else if ((cafe.tag || "").includes("référence")) pastille = '<span class="badge-reference">' + I18N.t("badge_etalon") + "</span>";
-      const identite = [cafe.torrefacteur, cafe.origine].filter(Boolean).join(" · ");
-      const profil = [cafe.espece, cafe.procede,
-        cafe.torrefaction ? I18N.t("a_torref", { t: cafe.torrefaction.toLowerCase() }) : ""].filter(Boolean).join(" · ");
-      if (identite) lignes.push('<p class="aside-sous">' + identite + "</p>");
-      if (profil) lignes.push("<p>" + profil + "</p>");
-      if (cafe.notes_annoncees) lignes.push('<p class="aside-notes">' + cafe.notes_annoncees + "</p>");
-      if (Number(cafe.deja_moulu) === 1) lignes.push('<p class="aside-reco">' + I18N.t("paquet_aside") + "</p>");
-      const reco = [cafe.machine_recommandee ? I18N.t("a_machine", { m: I18N.machine(cafe.machine_recommandee) }) : "",
-        cafe.recette_recommandee ? I18N.t("a_recette", { r: cafe.recette_recommandee }) : ""].filter(Boolean).join(", ");
-      if (reco) lignes.push('<p class="aside-reco">' + I18N.t("a_reco") + reco + "</p>");
-      if (cafe.prix_vnd && cafe.format_grammes) {
-        let prixLigne = I18N.t("a_prix", {
-          p: fmtVND(cafe.prix_vnd), g: cafe.format_grammes,
-          pg: Math.round(cafe.prix_vnd / cafe.format_grammes).toLocaleString(I18N.locale()),
-        });
-        if (pct < 100) {
-          prixLigne += " " + I18N.t("a_prix_reel", {
-            pr: Math.round(cafe.prix_vnd / (cafe.format_grammes * pct / 100)).toLocaleString(I18N.locale()),
-          });
-        }
-        lignes.push("<p>" + prixLigne + "</p>");
-      }
-      if (cafe.date_torrefaction) {
-        const jours = Math.floor((new Date() - new Date(cafe.date_torrefaction + "T00:00")) / 86400000);
-        if (!isNaN(jours) && jours >= 0) {
-          let fraicheur;
-          if (jours < 3) fraicheur = I18N.t("f_degaz");
-          else if (jours <= 42) fraicheur = I18N.t("f_ok");
-          else fraicheur = I18N.t("f_vieux");
-          lignes.push('<p class="aside-age">' + I18N.t("a_age", { j: jours, s: jours > 1 ? "s" : "", f: fraicheur }) + "</p>");
-        }
-      }
-      zoneC.innerHTML = '<div class="aside-titre"><h4>' + cafe.nom + "</h4>" + pastille + "</div>" + lignes.join("");
-    }
-    majEtapesChrono(false);
-  }
-
-  /* Explique le ratio affiché : quelle formule a servi, et pourquoi. Le calcul
-     diffère selon la machine et personne ne peut le deviner en regardant un
-     "1:5,6". Voir DATA.calculs pour la logique. */
-  function detailRatio(base, dose, eau) {
-    if (base === "chaudiere") return I18N.t("rt_chaudiere", { d: dose, e: eau });
-    if (base === "infusion") return I18N.t("rt_infusion", { d: dose, e: eau });
-    return "";
-  }
-
-  /* Volume en tasse ESTIMÉ, quand Chris ne l'a pas mesuré.
-
-     SWITCH : le papier et le marc retiennent environ 2,1 g d'eau par gramme de
-     café. Le reste passe, donc `eau - 2,1 x dose` est une bonne approximation.
-
-     BRIKKA : PAS D'ESTIMATION, volontairement. La formule était `eau - 0,7 x
-     dose`, soit 139 ml annoncés pour 150 g de chaudière et 16 g de café. Chris
-     mesure 90 à 115 ml. L'erreur venait du modèle : sur une moka la chaudière ne
-     se vide pas, une partie de l'eau reste sous l'embouchure du tube et une autre
-     part en vapeur, et ces deux pertes dépendent de la flamme et du moment où on
-     retire du feu, pas de la dose. Un chiffre faux est pire que pas de chiffre :
-     il alimentait le ratio, le volume de boisson et le bouton "reprendre".
-     Ne pas remettre de formule Brikka sans données mesurées. */
-  function volumeEstime(dose, eau) {
-    if (saisie.methode === "Brikka") return 0;
-    if (!(dose > 0) || !(eau > 0)) return 0;
-    return Math.max(0, Math.round((eau - 2.1 * dose) / 5) * 5);
-  }
-
-  function majLive() {
-    const dose = parseFloat($f("#f-dose").value);
-    const eau = parseFloat($f("#f-eau").value);
-    /* Même logique que DATA.calculs : le ratio principal est EAU sur DOSE sur les
-       deux machines, c'est la convention universelle et la seule comparable à une
-       recette. Le ratio en tasse suit en second, et seulement s'il est mesuré. */
-    const volume = parseFloat($f("#f-volume").value);
-    const brikka = saisie.methode === "Brikka";
-    let ratio = "…", base = "";
-    if (dose > 0 && eau > 0) {
-      ratio = "1:" + (eau / dose).toFixed(1);
-      base = brikka ? "chaudiere" : "infusion";
-    }
-    const enTasse = dose > 0 && volume > 0 ? "1:" + (volume / dose).toFixed(1) : "";
-    const explication = base ? detailRatio(base, dose, eau) : I18N.t("rt_rien");
-    poser($f("#live-ratio"), I18N.t("lv_ratio") +
-      ' <b class="aide-ratio" tabindex="0" data-info="' + attrTitre(explication) + '">' + ratio + "</b>" +
-      (enTasse ? ' <small>(' + I18N.t("rt_tasse_court") + " " + enTasse + ")</small>" : ""));
-
-    // Café déjà moulu : la molette ne s'applique pas, mouture par défaut du paquet.
-    const moulu = cafeCourantMoulu();
-    const champMouture = $f("#f-mouture");
-    champMouture.disabled = moulu;
-    if (moulu && champMouture.value) champMouture.value = "";
-    champMouture.placeholder = moulu ? I18N.t("paquet") : "1.5.0";
-
-    const dial = champMouture.value.trim();
-    const p = GRIND.parseDial(dial);
-    const horsPlage = !moulu && p && !GRIND.verifierPlage(saisie.methode, dial).ok;
-    poser($f("#live-mouture"), I18N.t("lv_mouture") + " <b>" +
-      (moulu ? I18N.t("paquet")
-        : p ? I18N.t("lv_detail", { c: p.crans, u: Math.round(p.microns) })
-        : dial ? I18N.t("lv_invalide") : "…") + "</b>");
-    $f("#live-mouture").classList.toggle("hors-plage", !!horsPlage || (!moulu && dial !== "" && !p));
-    // Détail affiché juste sous le champ molette.
-    const detailMouture = $f("#mouture-detail");
-    if (moulu) {
-      poserTexte(detailMouture, I18N.t("paquet"));
-      detailMouture.classList.remove("hint-alerte");
-    } else if (p) {
-      poserTexte(detailMouture, I18N.t("lv_detail", { c: p.crans, u: Math.round(p.microns) }) + " · " + GRIND.bande(p.microns).nom);
-      detailMouture.classList.toggle("hint-alerte", !!horsPlage);
-    } else {
-      poserTexte(detailMouture, dial ? I18N.t("lv_invalide") : "");
-      detailMouture.classList.toggle("hint-alerte", !!dial);
-    }
-
-    const cafe = DATA.state.cafes.find(c => c.id === $f("#f-cafe").value);
-    let cout = "…";
-    if (cafe && cafe.prix_vnd && cafe.format_grammes && dose > 0) {
-      cout = fmtVND(cafe.prix_vnd / cafe.format_grammes * dose);
-      // Café non pur : seconde valeur, le coût rapporté au café réel.
-      const pct = cafe.pourcentage_cafe_reel === "" || cafe.pourcentage_cafe_reel === undefined ? 100 : Number(cafe.pourcentage_cafe_reel);
-      if (pct < 100 && pct > 0) {
-        cout += " <small>(" + I18N.t("lv_cout_reel", { v: fmtVND(cafe.prix_vnd / (cafe.format_grammes * pct / 100) * dose) }) + ")</small>";
-      }
-    }
-    poser($f("#live-cout"), I18N.t("lv_cout") + " <b>" + cout + "</b>");
-
-    // Volume de la boisson : extraction plus eau ajoutée plus lait, en direct.
-    const volBase = parseFloat($f("#f-volume").value) || volumeEstime(dose, eau) || 0;
-    const ajoutEau = !$f("#champ-ajout-eau").hidden && $f("#f-ajout-eau-oui").checked ? (parseFloat($f("#f-eau-ajoutee").value) || 0) : 0;
-    const laitMl = !$f("#champ-lait").hidden ? (parseFloat($f("#f-lait").value) || 0) : 0;
-    const spanBoisson = $f("#live-boisson");
-    if (volBase > 0 && (ajoutEau > 0 || laitMl > 0)) {
-      const parts = [];
-      if (ajoutEau > 0) parts.push("+" + ajoutEau + " ml");
-      if (laitMl > 0) parts.push("+" + laitMl + " ml " + I18N.t("lv_lait"));
-      spanBoisson.hidden = false;
-      poser(spanBoisson, I18N.t("lv_boisson") + " <b>" + volBase + " ml (" + parts.join(", ") + ") = " + (volBase + ajoutEau + laitMl) + " ml</b>");
-    } else {
-      spanBoisson.hidden = true;
-    }
-
-    const btnVol = $f("#volume-estime");
-    const estime = volumeEstime(dose, eau);
-    if (estime) {
-      btnVol.hidden = false;
-      btnVol.textContent = I18N.t("vol_estime", { v: estime });
-      btnVol.title = I18N.t("vol_titre", { m: saisie.methode });
-      btnVol.dataset.valeur = estime;
-    } else {
-      btnVol.hidden = true;
-      delete btnVol.dataset.valeur;
-    }
-  }
-
-  // Chronomètre unique : Démarrer, Pause, Reprendre, Arrêter, Reset.
-  // Les paliers viennent de la recette sélectionnée, avec bip discret à chacun.
-  // L'écoulement se déduit : du palier "ouvrir" à l'arrêt du chrono.
-  const chrono = { etat: "arrete", accumule: 0, departTs: null, interval: null, passes: new Set() };
-  let audioCtx = null;
-
-  // Verrou d'écran pendant le chrono : l'écran du téléphone ne doit pas se
-  // verrouiller au milieu d'une extraction, les mains sont mouillées.
-  // L'API n'existe qu'en contexte sécurisé (https), donc PAS en file:// : on
-  // échoue en silence, ce n'est pas une fonction critique. Le système relâche
-  // le verrou dès que l'onglet passe en arrière plan, d'où la reprise sur
-  // visibilitychange.
-  let screenWakeLock = null;
-
-  async function acquireWakeLock() {
-    if (screenWakeLock || !("wakeLock" in navigator)) return;
-    try {
-      const lock = await navigator.wakeLock.request("screen");
-      lock.addEventListener("release", () => { if (screenWakeLock === lock) screenWakeLock = null; });
-      screenWakeLock = lock;
-    } catch (e) { /* refusé, ou onglet caché : tant pis */ }
-  }
-
-  function releaseWakeLock() {
-    if (!screenWakeLock) return;
-    const lock = screenWakeLock;
-    screenWakeLock = null;
-    lock.release().catch(() => { /* déjà relâché */ });
-  }
-
-  // Un seul point de vérité : le verrou suit l'état du chrono.
-  function syncWakeLock() {
-    if (chrono.etat === "encours") acquireWakeLock();
-    else releaseWakeLock();
-  }
-
-  function chronoEcoule() {
-    return (chrono.accumule + (chrono.etat === "encours" ? Date.now() - chrono.departTs : 0)) / 1000;
-  }
-
-  function paliersCourants() {
-    const r = trouverRecette($("#f-recette").value);
-    if (!r) return [];
-    return etapesPour(r).filter(e => e.t !== null && e.t !== undefined);
-  }
-
-  function tOuverture() {
-    const pal = paliersCourants().find(e => /ouvr|open/i.test(e.texte));
-    return pal ? pal.t : null;
-  }
-
-  function jouerBip() {
-    if (!$("#chrono-bip").checked) return;
-    try {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const o = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
-      o.type = "sine";
-      o.frequency.value = 880;
-      g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.07, audioCtx.currentTime + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.28);
-      o.connect(g);
-      g.connect(audioCtx.destination);
-      o.start();
-      o.stop(audioCtx.currentTime + 0.3);
-    } catch (e) { /* audio indisponible */ }
-  }
-
-  function majEtapesChrono(avecBips) {
-    const s = chronoEcoule();
-    const paliers = paliersCourants();
-    const zone = $("#chrono-etapes");
-    if (!paliers.length) { zone.hidden = true; return; }
-    zone.hidden = false;
-    let courante = null, suivante = null;
-    paliers.forEach(pal => { if (pal.t <= s) courante = pal; else if (!suivante) suivante = pal; });
-    $("#chrono-courante").textContent = courante
-      ? fmtTemps(courante.t) + " · " + courante.texte
-      : I18N.t("ch_pret");
-    if (suivante) {
-      $("#chrono-suivante").textContent = I18N.t("ch_suivante", {
-        t: fmtTemps(suivante.t), d: Math.max(0, Math.ceil(suivante.t - s)), texte: suivante.texte,
-      });
-    } else {
-      $("#chrono-suivante").textContent = courante ? I18N.t("ch_derniere") : "";
-    }
-    if (avecBips && chrono.etat === "encours") {
-      paliers.forEach(pal => {
-        if (pal.t > 0 && pal.t <= s && !chrono.passes.has(pal.t)) {
-          chrono.passes.add(pal.t);
-          jouerBip();
-        }
-      });
-    }
-  }
-
-  function chronoTic() {
-    $("#chrono-total").textContent = fmtTemps(Math.floor(chronoEcoule()));
-    majEtapesChrono(true);
-  }
-
-  function majBoutonsChrono() {
-    const b = $("#btn-chrono");
-    if (chrono.etat === "arrete") b.textContent = I18N.t("ch_demarrer");
-    else if (chrono.etat === "encours") b.textContent = I18N.t("ch_pause");
-    else b.textContent = I18N.t("ch_reprendre");
-    $("#btn-chrono-stop").hidden = chrono.etat === "arrete";
-    $("#btn-chrono-raz").hidden = chrono.etat === "arrete" && chronoEcoule() === 0;
-    $(".chrono").classList.toggle("en-cours", chrono.etat === "encours");
-    // Appelée à chaque transition du chrono, c'est le bon endroit pour aligner
-    // le verrou d'écran sans risque d'oubli dans une branche.
-    syncWakeLock();
-  }
-
-  function chronoPrincipal() {
-    if (chrono.etat === "arrete") {
-      chrono.accumule = 0;
-      chrono.passes.clear();
-      chrono.departTs = Date.now();
-      chrono.etat = "encours";
-      chrono.interval = setInterval(chronoTic, 200);
-    } else if (chrono.etat === "encours") {
-      chrono.accumule += Date.now() - chrono.departTs;
-      chrono.etat = "pause";
-      clearInterval(chrono.interval);
-    } else {
-      chrono.departTs = Date.now();
-      chrono.etat = "encours";
-      chrono.interval = setInterval(chronoTic, 200);
-    }
-    majBoutonsChrono();
-  }
-
-  function chronoArreter() {
-    if (chrono.etat === "arrete") return;
-    if (chrono.etat === "encours") chrono.accumule += Date.now() - chrono.departTs;
-    clearInterval(chrono.interval);
-    const total = Math.round(chrono.accumule / 1000);
-    chrono.etat = "arrete";
-    ecrireDuree("f-total", total);
-    const tOuv = tOuverture();
-    if (tOuv !== null && total > tOuv) ecrireDuree("f-ecoulement", total - tOuv);
-    majBoutonsChrono();
-    toast(I18N.t("t_temps"));
-  }
-
-  function chronoRaz() {
-    clearInterval(chrono.interval);
-    chrono.etat = "arrete";
-    chrono.accumule = 0;
-    chrono.departTs = null;
-    chrono.passes.clear();
-    $("#chrono-total").textContent = "0:00";
-    majEtapesChrono(false);
-    majBoutonsChrono();
-  }
-
-  // Corrections des diagnostics cochés, une ligne chacune, sous les pilules.
-  // Familles opposées de l'axe d'extraction : cocher une de chaque empile deux
-  // corrections qui s'annulent (moudre plus fin ET plus grossier). C'est le signe
-  // d'une extraction inégale, qui a sa propre valeur.
-  const DIAGS_SOUS_EXTRAIT = ["Un peu acide", "Sous-extrait (acide)"];
-  const DIAGS_SUR_EXTRAIT = ["Un peu amer", "Sur-extrait (amer)", "Un peu astringent", "Astringent"];
-  const DIAG_INEGALE = DIAGNOSTIC_DERIVE;
-
-  function majCorrectionDiagnostic() {
-    const lignes = DIAGNOSTICS
-      .filter(d => saisie.diagnostics.has(d))
-      .map(d => I18N.tr(DIAGNOSTIC_CORRECTIONS[d] || ""))
-      .filter(Boolean);
-
-    /* Acide ET amer ensemble : le site CONCLUT au lieu de demander à Chris de
-       cocher une troisième pilule. Les deux corrections d'origine s'annulent
-       (moudre plus fin ET plus grossier), donc on les remplace au lieu de les
-       empiler, sinon il lit deux conseils opposés sans savoir lequel suivre. */
-    const inegale = DIAGS_SOUS_EXTRAIT.some(d => saisie.diagnostics.has(d)) &&
-      DIAGS_SUR_EXTRAIT.some(d => saisie.diagnostics.has(d));
-    if (inegale) {
-      $("#diagnostic-correction").innerHTML =
-        '<b class="diag-alerte">' + I18N.diag(DIAG_INEGALE) + "</b><br>" +
-        I18N.tr(DIAGNOSTIC_CORRECTIONS[DIAG_INEGALE] || "");
-      return;
-    }
-
-    $("#diagnostic-correction").innerHTML = lignes.join("<br>");
-  }
-
-  /* Bulle d'un diagnostic : QUAND le cocher, puis QUOI faire. Deux lignes, la
-     CSS de la bulle est en white-space pre-line. La correction seule laissait
-     deviner dans quel cas on se trouve, et une bonne correction appliquée au
-     mauvais diagnostic empire la tasse suivante. */
-  function infoDiagnostic(d) {
-    const quand = I18N.tr(DIAGNOSTIC_QUAND[d] || "");
-    const corr = I18N.tr(DIAGNOSTIC_CORRECTIONS[d] || "");
-    return [quand, corr].filter(Boolean).join("\n");
-  }
-
-  /* Un écouteur par CONTENEUR, posé une seule fois au câblage. Les conteneurs ne
-     sont jamais remplacés, seul leur contenu l'est : la délégation survit donc à
-     toutes les reconstructions, et construirePilules() n'a plus rien à
-     réattacher. 85 écouteurs économisés à chaque bascule de langue. */
-  function brancherPilules() {
-    $("#f-diagnostic").addEventListener("click", ev => {
-      const b = ev.target.closest(".pilule");
-      if (!b || !b.dataset.diag) return;
-      const d = b.dataset.diag;
-      if (saisie.diagnostics.has(d)) saisie.diagnostics.delete(d);
-      else saisie.diagnostics.add(d);
-      basculerEtat(b, saisie.diagnostics.has(d));
-      planifierBrouillon();
-      majCorrectionDiagnostic();
-    });
-    $("#f-descripteurs").addEventListener("click", ev => {
-      const b = ev.target.closest(".tag");
-      if (!b || !b.dataset.tag) return;
-      const t = b.dataset.tag;
-      if (saisie.descripteurs.has(t)) saisie.descripteurs.delete(t);
-      else saisie.descripteurs.add(t);
-      basculerEtat(b, saisie.descripteurs.has(t));
-    });
-  }
-
-  function construirePilules() {
-    // Diagnostics à choix MULTIPLE (une tasse peut être un peu amère ET
-    // astringente). Chaque pilule porte sa correction en infobulle (data-info,
-    // bulle CSS au survol).
-    // Groupés par ce qu'il faut corriger : réglage, ratio, ou le café lui même.
-    // Une liste à plat de seize entrées se lit mal et pousse à cocher au hasard.
-    $("#f-diagnostic").innerHTML = DIAGNOSTICS_GROUPES.map(g =>
-      '<div class="tags-groupe"><span class="tags-groupe-nom">' + I18N.groupe(g.nom) + "</span>" +
-      '<div class="tags">' + g.diags.map(d =>
-        '<button type="button" class="pilule" aria-pressed="false" data-diag="' + d + '" data-info="' +
-        infoDiagnostic(d) + '">' + I18N.diag(d) + "</button>").join("") +
-      "</div></div>").join("");
-    // Les clics sont délégués une fois pour toutes, voir brancherPilules().
-
-    // Descripteurs groupés par famille de la roue des saveurs. Chaque tag
-    // porte sa définition en infobulle (data-info, bulle CSS au survol).
-    $("#f-descripteurs").innerHTML = DESCRIPTEURS_GROUPES.map(g =>
-      '<div class="tags-groupe"><span class="tags-groupe-nom">' + I18N.groupe(g.nom) + "</span>" +
-      '<div class="tags">' + g.tags.map(d =>
-        '<button type="button" class="tag" aria-pressed="false" data-tag="' + d + '" data-info="' +
-        I18N.tagInfo(d) + '">' + I18N.tag(d) + "</button>").join("") +
-      "</div></div>").join("");
-
-  }
-
-  function reinitialiserSaisie(garderCafe) {
-    saisie.editId = null;
-    saisie.diagnostics.clear();
-    saisie.descripteurs.clear();
-    $("#saisie-titre").textContent = I18N.t("s_nouvelle");
-    $("#btn-enregistrer").textContent = I18N.t("s_enregistrer");
-    $("#btn-annuler-edition").hidden = true;
-    $("#f-date").value = maintenantLocal();
-    $("#f-dose").value = replis.dose;
-    if (!garderCafe) $("#f-cafe").value = "";
-    $("#f-commentaire").value = "";
-    // Milieu de course et case cochée : le curseur ne doit suggérer aucune note.
-    $("#f-note").value = 5;
-    $("#f-note-vide").checked = true;
-    majAffichageNote();
-    ecrireDuree("f-total", "");
-    ecrireDuree("f-ecoulement", "");
-    $("#f-volume").value = "";
-    $("#f-eau").value = "";
-    $("#f-temp").value = "";
-    $("#f-puissance").value = replis.feu;
-    $("#f-prechauffe").checked = false;
-    $("#f-ajout-eau-oui").checked = false;
-    $("#f-eau-ajoutee").hidden = true;
-    $("#f-eau-ajoutee").value = "";
-    $("#f-lait").value = "";
-    majAgitationDepuisRecette();
-    majLait();
-    $$("#f-diagnostic .pilule").forEach(x => basculerEtat(x, false));
-    $$("#f-descripteurs .tag").forEach(x => basculerEtat(x, false));
-    $("#diagnostic-correction").textContent = "";
-    chronoRaz();
-    /* EN DERNIER, et c'est le point important : les lignes ci-dessus posent les
-       replis, la recette a le dernier mot. Sans cet appel le formulaire vierge
-       restait vide, et les valeurs par défaut réglées dans Paramètres
-       n'arrivaient que si on rechangeait de recette à la main. Placé plus haut,
-       il se ferait écraser par la remise à zéro du préchauffage.
-       prefillDepuisRecette termine par majAvertissements et majLive. */
-    prefillDepuisRecette($("#f-recette").value);
-  }
-
-  function chargerExtractionDansSaisie(ext, duplication) {
-    ouvertureEdition = true;
-    remplirSelectCafes(ext.cafe_id);
-    saisie.editId = duplication ? null : ext.id;
-    $("#f-date").value = duplication ? maintenantLocal() : ext.date_heure;
-    $("#f-cafe").value = ext.cafe_id;
-    choisirMethode(ext.methode || "Brikka", true);
-    remplirSelectRecettes();
-    if (ext.recette) $("#f-recette").value = ext.recette;
-    $("#f-dose").value = ext.dose_g;
-    $("#f-eau").value = ext.eau_g;
-    $("#f-temp").value = ext.temperature_c;
-    $("#f-mouture").value = ext.mouture_dial;
-    $("#f-volume").value = ext.volume_extrait_ml;
-    $("#f-ajout-eau-oui").checked = ext.eau_ajoutee_ml !== "" && ext.eau_ajoutee_ml !== undefined;
-    $("#f-eau-ajoutee").hidden = !$("#f-ajout-eau-oui").checked;
-    $("#f-eau-ajoutee").value = ext.eau_ajoutee_ml !== undefined ? ext.eau_ajoutee_ml : "";
-    $("#f-prechauffe").checked = Number(ext.eau_prechauffee) === 1;
-    majChampPrechauffe();
-    $("#f-puissance").value = ext.puissance_feu || "";
-    $("#f-agitation-oui").checked = ext.agitation_nb !== "" && ext.agitation_nb !== undefined;
-    $("#f-agitation").hidden = !$("#f-agitation-oui").checked;
-    $("#f-agitation").value = ext.agitation_nb !== undefined && ext.agitation_nb !== "" ? ext.agitation_nb : 1;
-    $("#f-tasse").value = ext.tasse || "";
-    $("#f-lait").value = ext.lait_ml !== undefined ? ext.lait_ml : "";
-    $("#champ-lait").hidden = !(trouverRecette(ext.recette) || {}).lait;
-    ecrireDuree("f-total", ext.temps_total_s);
-    ecrireDuree("f-ecoulement", ext.temps_ecoulement_s);
-    $("#f-note").value = ext.note_sur_10 === "" ? 5 : ext.note_sur_10;
-    $("#f-note-vide").checked = ext.note_sur_10 === "";
-    majAffichageNote();
-    $("#f-commentaire").value = ext.commentaire;
-    saisie.diagnostics = new Set((ext.diagnostic || "").split("|").filter(Boolean));
-    $$("#f-diagnostic .pilule").forEach(x => x.classList.toggle("actif", saisie.diagnostics.has(x.dataset.diag)));
-    majCorrectionDiagnostic();
-    saisie.descripteurs = new Set((ext.descripteurs || "").split("|").filter(Boolean));
-    $$("#f-descripteurs .tag").forEach(x => x.classList.toggle("actif", saisie.descripteurs.has(x.dataset.tag)));
-    $("#saisie-titre").textContent = duplication ? I18N.t("s_dupliquee") : I18N.t("s_modifier");
-    $("#btn-enregistrer").textContent = duplication ? I18N.t("s_enregistrer") : I18N.t("s_enregistrer_modif");
-    $("#btn-annuler-edition").hidden = duplication;
-    majAvertissements();
-    majLive();
-    activerEcran("saisie");
-    ouvertureEdition = false;
-  }
-
-  async function enregistrerSaisie(ev) {
-    ev.preventDefault();
-    if (!$("#f-dose").value) { toast(I18N.t("t_dose")); return; }
-    const ext = {
-      date_heure: $("#f-date").value || maintenantLocal(),
-      cafe_id: $("#f-cafe").value,
-      methode: saisie.methode,
-      recette: $("#f-recette").value,
-      dose_g: $("#f-dose").value,
-      eau_g: $("#f-eau").value,
-      mouture_dial: $("#f-mouture").value.trim().replace(/,/g, "."),
-      temperature_c: $("#f-temp").value,
-      temps_total_s: lireDuree("f-total"),
-      temps_ecoulement_s: lireDuree("f-ecoulement"),
-      volume_extrait_ml: $("#f-volume").value,
-      eau_ajoutee_ml: saisie.methode === "Brikka" && $("#f-ajout-eau-oui").checked ? $("#f-eau-ajoutee").value : "",
-      lait_ml: !$("#champ-lait").hidden ? $("#f-lait").value : "",
-      agitation_nb: saisie.methode === "Switch" && $("#f-agitation-oui").checked ? ($("#f-agitation").value || 1) : "",
-      tasse: $("#f-tasse").value,
-      eau_prechauffee: saisie.methode === "Brikka" && $("#f-prechauffe").checked ? 1 : "",
-      puissance_feu: saisie.methode === "Brikka" ? $("#f-puissance").value : "",
-      note_sur_10: noteSaisie(),
-      diagnostic: DIAGNOSTICS.filter(d => saisie.diagnostics.has(d)).join("|"),
-      descripteurs: Array.from(saisie.descripteurs).join("|"),
-      commentaire: $("#f-commentaire").value.trim(),
-    };
-    if (saisie.editId) {
-      await DATA.modifierExtraction(saisie.editId, ext);
-      effacerBrouillon();
-      toast(I18N.t("t_modifiee"));
-      reinitialiserSaisie();
-      activerEcran("historique");
-    } else {
-      await DATA.ajouterExtraction(ext);
-      effacerBrouillon();
-      toast(I18N.t("t_enregistree"));
-      reinitialiserSaisie(true);
-      activerEcran("tableau");
-    }
-  }
-
-  // ---------- Historique ----------
-
-  const tri = { colonne: "date_heure", sens: -1 };
-
-  /* Retire les diacritiques pour que "brule" trouve "brûlé" et "cafe" trouve
-     "café". Sans ça une recherche en français est inutilisable au clavier. */
-  function sansAccents(s) {
-    return String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  }
-
-  /* Tout ce dans quoi une recherche a du sens : ce que Chris a ÉCRIT, plus ce
-     qu'il a choisi. Pas les nombres, on a des filtres dédiés pour ça. */
-  function texteCherchable(e) {
-    const cafe = DATA.cafeDe(e);
-    return sansAccents([
-      e.commentaire, e.descripteurs, e.diagnostic, e.recette, e.methode,
-      cafe ? cafe.nom : "",
-    ].filter(Boolean).join(" ").toLowerCase());
-  }
-
-  function filtrerHistorique() {
-    const exts = extAvecCalculs();
-    const fCafe = $("#h-cafe").value;
-    const fMethode = $("#h-methode").value;
-    const fDiag = $("#h-diagnostic").value;
-    const fNote = parseFloat($("#h-note-min").value);
-    const fDu = $("#h-du").value;
-    const fAu = $("#h-au").value;
-    /* Recherche insensible à la casse ET aux accents : taper "brule" doit trouver
-       "brûlé". normalize + suppression des diacritiques, c'est la seule façon
-       correcte de le faire en français sans table de correspondance. */
-    const q = sansAccents($("#h-recherche").value.trim().toLowerCase());
-    return exts.filter(e =>
-      (!q || texteCherchable(e).includes(q)) &&
-      (!fCafe || e.cafe_id === fCafe) &&
-      (!fMethode || e.methode === fMethode) &&
-      (!fDiag || (e.diagnostic || "").split("|").includes(fDiag)) &&
-      (isNaN(fNote) || (e.note_sur_10 !== "" && e.note_sur_10 >= fNote)) &&
-      (!fDu || e.date_heure.slice(0, 10) >= fDu) &&
-      (!fAu || e.date_heure.slice(0, 10) <= fAu)
-    );
-  }
-
-  function valeurTri(e, col) {
-    if (col === "cafe_nom") return e._c.cafe_nom;
-    if (col === "ratio") return e._c.ratio === "" ? -1 : e._c.ratio;
-    if (col === "mouture") return e._c.crans === "" ? -1 : e._c.crans;
-    if (col === "note_sur_10") return e.note_sur_10 === "" ? -1 : e.note_sur_10;
-    return e[col] === "" ? -1 : e[col];
-  }
-
-  // Attribut title : la valeur complete d'une cellule tronquee, au survol.
-  // Les guillemets doubles casseraient l'attribut, on les neutralise.
-  function attrTitre(texte) {
-    return String(texte || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
-  }
-
-  /* Version différée pour les FILTRES seulement. Les autres appels (suppression,
-     tri, retour d'édition) restent immédiats : ils suivent un geste unique, il n'y
-     a rien à regrouper. */
-  const rendreHistoriqueDifferee = antiRebond(() => rendreHistorique());
-
-  function rendreHistorique() {
-    const liste = filtrerHistorique().sort((a, b) => {
-      const va = valeurTri(a, tri.colonne), vb = valeurTri(b, tri.colonne);
-      if (va < vb) return -tri.sens;
-      if (va > vb) return tri.sens;
-      return 0;
-    });
-    $("#h-compte").textContent = I18N.t("h_compte", {
-      n: liste.length, s: liste.length > 1 ? "s" : "", t: DATA.state.extractions.length,
-    });
-    $("#h-vide").hidden = liste.length > 0;
-
-    $$("#h-table th .tri").forEach(s => s.textContent = "");
-    const th = $('#h-table th[data-tri="' + tri.colonne + '"] .tri');
-    if (th) th.textContent = tri.sens > 0 ? "▲" : "▼";
-
-    $("#h-corps").innerHTML = liste.map(e => ligneHistorique(e)).join("");
-    majBarreComparaison();
-  }
-
-  /* Détail dépliable : le carnet stocke 22 champs par extraction et le tableau
-     n'en montre que 8. Tout le reste (commentaire, descripteurs, temps, tasse,
-     puissance de feu, volume) disparaissait à l'enregistrement. Le détail se
-     rend dans une ligne en colspan, donc sans toucher aux largeurs de colonnes
-     qui viennent d'être figées. */
-  const detailsOuverts = new Set();
-  const comparaison = new Set();
-
-  function ligneDetail(e) {
-    const item = (cle, valeur) => valeur === "" || valeur === undefined || valeur === null
-      ? "" : '<div class="detail-item"><span>' + I18N.t(cle) + "</span><b>" + valeur + "</b></div>";
-    const cases = [
-      item("d_dose", e.dose_g !== "" ? e.dose_g + " g" : ""),
-      item("d_eau", e.eau_g !== "" ? e.eau_g + " g" : ""),
-      item("d_temp", e.temperature_c !== "" ? e.temperature_c + " °C" : ""),
-      item("d_puissance", e.puissance_feu !== "" ? e.puissance_feu + " / 10" : ""),
-      item("d_total", e.temps_total_s !== "" ? fmtTemps(e.temps_total_s) : ""),
-      item("d_ecoulement", e.temps_ecoulement_s !== "" ? fmtTemps(e.temps_ecoulement_s) : ""),
-      item("d_volume", e.volume_extrait_ml !== "" ? e.volume_extrait_ml + " ml" : ""),
-      item("d_eau_ajoutee", e.eau_ajoutee_ml !== "" ? e.eau_ajoutee_ml + " ml" : ""),
-      item("d_lait", e.lait_ml !== "" ? e.lait_ml + " ml" : ""),
-      item("d_agitation", e.agitation_nb !== "" ? e.agitation_nb : ""),
-      item("d_tasse", e.tasse),
-      item("d_prechauffee", Number(e.eau_prechauffee) === 1 ? I18N.t("oui") : ""),
-      item("d_boisson", e._c.volume_boisson_ml !== "" ? e._c.volume_boisson_ml + " ml" : ""),
-      item("d_cout", e._c.cout_tasse_vnd !== "" ? fmtVND(e._c.cout_tasse_vnd) : ""),
-    ].filter(Boolean).join("");
-
-    const tags = (e.descripteurs || "").split("|").filter(Boolean)
-      .map(t => '<span class="detail-tag">' + I18N.tag(t) + "</span>").join("");
-
-    return '<tr class="ligne-detail" data-detail="' + e.id + '"><td colspan="9">' +
-      (cases ? '<div class="detail-grille">' + cases + "</div>" : "") +
-      (tags ? '<div class="detail-tags">' + tags + "</div>" : "") +
-      (e.commentaire ? '<p class="detail-commentaire">' + e.commentaire + "</p>" : "") +
-      (cases || tags || e.commentaire ? "" : '<p class="detail-vide">' + I18N.t("d_rien") + "</p>") +
-      "</td></tr>";
-  }
-
-  function ligneHistorique(e) {
-    const ouvert = detailsOuverts.has(e.id);
-    const compare = comparaison.has(e.id);
-    return '<tr data-id="' + e.id + '" class="ligne-histo' + (ouvert ? " ouverte" : "") +
-      (compare ? " comparee" : "") + '">' +
-      '<td><button type="button" class="btn-deplier" data-action="deplier" aria-expanded="' + ouvert +
-      '" title="' + attrTitre(I18N.t("h_detail")) + '">' + (ouvert ? "▾" : "▸") + "</button> " +
-      fmtDateHeure(e.date_heure) + "</td>" +
-      '<td title="' + attrTitre(I18N.tr(e._c.cafe_nom)) + '">' + I18N.tr(e._c.cafe_nom) + "</td>" +
-      '<td><span class="chip-methode ' + e.methode.toLowerCase() + '">' + e.methode + "</span></td>" +
-      '<td title="' + attrTitre(e.recette) + '">' + (e.recette || "") + "</td>" +
-      "<td>" + (e.mouture_dial ? e.mouture_dial + " <small>(" + e._c.microns + " µm)</small>" : e._c.moulu ? "<small>" + I18N.t("paquet") + "</small>" : "") + "</td>" +
-      '<td title="' + attrTitre(detailRatio(e._c.ratioBase, e.dose_g, e.eau_g)) + '">' +
-      e._c.ratioTexte +
-      (e._c.ratioTasseTexte ? ' <small>(' + I18N.t("rt_tasse_court") + " " + e._c.ratioTasseTexte + ")</small>" : "") +
-      (e._c.ratioBoisson ? ' <small>(' + I18N.t("rt_boisson_court") + " " + e._c.ratioBoisson + ")</small>" : "") + "</td>" +
-      '<td class="note-cellule">' + (e.note_sur_10 !== "" ? e.note_sur_10 : "") + "</td>" +
-      '<td class="chip-diagnostic" title="' + attrTitre(e.diagnostic ? diagsAffiches(e.diagnostic) : "") + '">' +
-      (e.diagnostic ? diagsAffiches(e.diagnostic) : "") + "</td>" +
-      '<td><div class="actions-ligne">' +
-      '<button class="btn-ligne' + (compare ? " actif" : "") + '" data-action="comparer" title="' +
-      attrTitre(I18N.t("h_comparer")) + '">⇄</button>' +
-      '<button class="btn-ligne" data-action="dupliquer" title="Dupliquer pour refaire la même">⧉</button>' +
-      '<button class="btn-ligne" data-action="modifier" title="Modifier">✎</button>' +
-      '<button class="btn-ligne danger" data-action="supprimer" title="Supprimer">🗑</button>' +
-      "</div></td></tr>" + (ouvert ? ligneDetail(e) : "");
-  }
-
-  /* Comparateur : deux extractions côte à côte, différences surlignées. C'est le
-     test croisé en version manuelle, celui que le guide recommande (même café
-     dans les deux machines le même jour) et qui n'existait pas.
-
-     La sélection passe par un bouton de la colonne Actions et PAS par une colonne
-     de cases à cocher : le tableau vient d'être figé à neuf colonnes, en ajouter
-     une casserait les largeurs. */
-  function basculerComparaison(id) {
-    if (comparaison.has(id)) comparaison.delete(id);
-    else {
-      // Au delà de deux, la plus ancienne sélection cède sa place : plus simple
-      // que de refuser le clic, et ça permet d'enchaîner les comparaisons.
-      if (comparaison.size >= 2) comparaison.delete([...comparaison][0]);
-      comparaison.add(id);
-    }
-    rendreHistorique();
-    if (comparaison.size === 2) ouvrirComparaison();
-  }
-
-  function majBarreComparaison() {
-    const barre = $("#barre-comparaison");
-    if (!barre) return;
-    barre.hidden = comparaison.size === 0;
-    $("#comparaison-compte").textContent = I18N.t(
-      comparaison.size === 1 ? "cmp_une" : "cmp_deux", { n: comparaison.size });
-    $("#comparaison-ouvrir").disabled = comparaison.size !== 2;
-  }
-
-  // Lignes du tableau de comparaison. Chaque entrée sait lire sa valeur affichable.
-  function champsComparaison() {
-    return [
-      { cle: "d_cafe", lire: e => I18N.tr(e._c.cafe_nom) },
-      { cle: "d_methode", lire: e => e.methode },
-      { cle: "d_recette", lire: e => e.recette },
-      { cle: "d_dose", lire: e => e.dose_g !== "" ? e.dose_g + " g" : "" },
-      { cle: "d_eau", lire: e => e.eau_g !== "" ? e.eau_g + " g" : "" },
-      { cle: "d_ratio", lire: e => e._c.ratioTexte },
-      { cle: "d_ouvert", lire: e => e._c.jours_ouvert === "" ? "" : e._c.jours_ouvert },
-      { cle: "d_mouture", lire: e => e.mouture_dial || (e._c.moulu ? I18N.t("paquet") : "") },
-      { cle: "d_temp", lire: e => e.temperature_c !== "" ? e.temperature_c + " °C" : "" },
-      { cle: "d_puissance", lire: e => e.puissance_feu !== "" ? e.puissance_feu + " / 10" : "" },
-      { cle: "d_prechauffee", lire: e => Number(e.eau_prechauffee) === 1 ? I18N.t("oui") : I18N.t("non") },
-      { cle: "d_total", lire: e => e.temps_total_s !== "" ? fmtTemps(e.temps_total_s) : "" },
-      { cle: "d_ecoulement", lire: e => e.temps_ecoulement_s !== "" ? fmtTemps(e.temps_ecoulement_s) : "" },
-      { cle: "d_volume", lire: e => e.volume_extrait_ml !== "" ? e.volume_extrait_ml + " ml" : "" },
-      { cle: "d_tasse", lire: e => e.tasse },
-      { cle: "d_note", lire: e => e.note_sur_10 !== "" ? e.note_sur_10 + " / 10" : "" },
-      { cle: "d_diagnostic", lire: e => e.diagnostic ? diagsAffiches(e.diagnostic) : "" },
-      { cle: "d_descripteurs", lire: e => (e.descripteurs || "").split("|").filter(Boolean).map(t => I18N.tag(t)).join(", ") },
-      { cle: "d_commentaire", lire: e => e.commentaire },
-    ];
-  }
-
-  function ouvrirComparaison() {
-    const ids = [...comparaison];
-    const exts = extAvecCalculs().filter(e => ids.includes(e.id))
-      .sort((x, y) => String(x.date_heure).localeCompare(String(y.date_heure)));
-    if (exts.length !== 2) return;
-    const [a, b] = exts;
-
-    $("#comparaison-titres").innerHTML = "<th></th><th>" + fmtDateHeure(a.date_heure) +
-      "</th><th>" + fmtDateHeure(b.date_heure) + "</th>";
-    $("#comparaison-corps").innerHTML = champsComparaison().map(c => {
-      const va = String(c.lire(a) || ""), vb = String(c.lire(b) || "");
-      if (!va && !vb) return "";
-      // Surligner UNIQUEMENT ce qui diffère : c'est là que se trouve l'explication
-      // de l'écart de note, le reste est du bruit visuel.
-      const differe = va !== vb;
-      return '<tr' + (differe ? ' class="differe"' : "") + "><th>" + I18N.t(c.cle) + "</th>" +
-        "<td>" + va + "</td><td>" + vb + "</td></tr>";
-    }).join("");
-
-    const ecart = a.note_sur_10 !== "" && b.note_sur_10 !== ""
-      ? I18N.t("cmp_ecart", { x: fmtDecimal(Math.abs(a.note_sur_10 - b.note_sur_10), 1) })
-      : I18N.t("cmp_sans_note");
-    $("#comparaison-resume").textContent = ecart;
-    $("#modale-comparaison").showModal();
-  }
-
-  /* ---------- Mes meilleurs réglages ----------
-     Le calcul vit dans js/reglages.js, sans DOM, pour être testable sans
-     navigateur. Ici, uniquement l'affichage. */
-  function carteReglage(bilan) {
-    const c = bilan.cafe;
-    const entete = '<div class="reglage-entete"><b>' + c.nom + "</b>" +
-      (c.actif === 0 ? ' <span class="cafe-meta">' + I18N.t("li_inactif") + "</span>" : "") +
-      (bilan.moyenne !== null
-        ? '<span class="reglage-moyenne">' + I18N.t("rg_moyenne", { m: fmtDecimal(bilan.moyenne, 1), n: bilan.total }) + "</span>"
-        : "") + "</div>";
-
-    if (!bilan.meilleure) {
-      const cle = bilan.raison === "aucune" ? "rg_aucune"
-        : bilan.raison === "pas_assez" ? "rg_pas_assez" : "rg_eparpille";
-      return '<article class="carte reglage' + (c.actif === 0 ? " inactif" : "") + '">' + entete +
-        '<p class="carte-vide">' + I18N.t(cle, { n: bilan.manque, s: REGLAGES.MIN_TASSES }) + "</p></article>";
-    }
-
-    const m = bilan.meilleure;
-    // Écart entre la combinaison gagnante et la moyenne du café : c'est lui qui
-    // dit si le réglage vaut vraiment le coup ou si tout se vaut.
-    const ecart = m.moyenne - bilan.moyenne;
-    const chips = [
-      m.recette ? '<span class="reglage-chip">' + I18N.tr(m.recette) + "</span>" : "",
-      m.mouture ? '<span class="reglage-chip">' + I18N.t("molette") + " " + m.mouture + "</span>"
-        : '<span class="reglage-chip">' + I18N.t("paquet") + "</span>",
-      m.puissance ? '<span class="reglage-chip">' + I18N.t("rg_feu", { f: m.puissance }) + "</span>" : "",
-      m.prechauffe ? '<span class="reglage-chip">' + I18N.t("d_prechauffee") + "</span>" : "",
-    ].filter(Boolean).join("");
-
-    return '<article class="carte reglage' + (c.actif === 0 ? " inactif" : "") + '">' + entete +
-      '<div class="reglage-note"><b>' + fmtDecimal(m.moyenne, 1) + "</b><small> / 10</small>" +
-      '<span>' + I18N.t("rg_sur", { n: m.n }) +
-      (Math.abs(ecart) >= 0.2 ? ", " + I18N.t(ecart > 0 ? "rg_mieux" : "rg_moins",
-        { x: fmtDecimal(Math.abs(ecart), 1) }) : "") + "</span></div>" +
-      '<div class="reglage-chips">' + chips + "</div>" +
-      '<button type="button" class="btn btn-petit" data-refaire="' + m.referenceId + '">' +
-      I18N.t("rg_refaire") + "</button></article>";
-  }
-
-  function rendreReglages() {
-    const exts = DATA.state.extractions;
-    const bilans = REGLAGES.tous(DATA.state.cafes, exts);
-    $("#reglages-liste").innerHTML = bilans.length
-      ? bilans.map(carteReglage).join("")
-      : '<p class="carte-vide">' + I18N.t("rg_sans_cafe") + "</p>";
-    $$("[data-refaire]").forEach(b => b.addEventListener("click", () => {
-      const ext = DATA.state.extractions.find(e => e.id === b.dataset.refaire);
-      if (!ext) return;
-      chargerExtractionDansSaisie(ext, true);
-      toast(I18N.t("rg_preremplie"));
-    }));
-  }
-
-  function remplirFiltres() {
-    const selCafe = $("#h-cafe");
-    const v = selCafe.value;
-    selCafe.innerHTML = '<option value="">' + I18N.t("tous") + "</option>" +
-      DATA.state.cafes.map(c => '<option value="' + c.id + '">' + c.nom + "</option>").join("");
-    selCafe.value = v;
-    const selDiag = $("#h-diagnostic");
-    const vd = selDiag.value;
-    selDiag.innerHTML = '<option value="">' + I18N.t("tous") + "</option>" +
-      DIAGNOSTICS.map(d => '<option value="' + d + '">' + I18N.diag(d) + "</option>").join("");
-    selDiag.value = vd;
-  }
-
-  // ---------- Référence : recettes ----------
-
-  const tetsuChoix = { p40: "sucre", p60: "plein" };
-  const familleSelection = {}; // famille -> id de la variante affichée
-
-  function carteRecette(r, groupe) {
-    const badges = (r.parDefaut ? '<span class="badge-defaut">' + I18N.t("badge_defaut") + "</span>" : "") +
-      (r.avancee ? '<span class="badge-avancee">' + I18N.t("badge_avancee") + "</span>" : "");
-    const params =
-      '<span class="param-chip">' + r.dose + " g / " + r.eau + " g</span>" +
-      '<span class="param-chip">' + r.ratioTexte + "</span>" +
-      '<span class="param-chip">' + r.tempTexte + "</span>" +
-      '<span class="param-chip">' + I18N.t("molette") + " " + r.dial + "</span>" +
-      '<span class="param-chip">' + r.totalTexte + "</span>";
-    let etapes = "";
-    if (r.etapes.length) {
-      etapes = '<ol class="recette-etapes">' + r.etapes.map(e =>
-        "<li><span class=\"etape-temps\">" + (e.t === null ? "·" : fmtTemps(e.t)) + "</span><span>" + e.texte + "</span></li>"
-      ).join("") + "</ol>";
-    }
-    const tetsu = r.variantes ? '<div class="tetsu-variantes" id="tetsu-bloc"></div>' : "";
-    // Bascule de variante quand la recette appartient à une famille.
-    let pilules = "";
-    if (groupe && groupe.length > 1) {
-      pilules = '<div class="variantes-recette">' + groupe.map(x =>
-        '<button type="button" class="pilule' + (x.id === r.id ? " actif" : "") +
-        '" data-var-fam="' + r.famille + '" data-var-id="' + x.id + '">' +
-        I18N.tr(x.variante || x.nom) + "</button>").join("") + "</div>";
-    }
-    return '<article class="carte recette-carte ' + r.methode.toLowerCase() + '" data-recette="' + r.id + '">' +
-      '<div class="recette-entete">' +
-      (r.numero ? '<span class="recette-numero">' + r.numero + "</span>" : '<span class="recette-numero">' + r.methode + "</span>") +
-      badges + "</div>" +
-      "<h3>" + r.nom + "</h3>" +
-      pilules +
-      '<p class="recette-sous">' + r.sousTitre + "</p>" +
-      '<div class="recette-params">' + params + "</div>" +
-      etapes + tetsu +
-      (r.pourQui ? '<p class="recette-pourqui"><b>' + I18N.t("r_pourqui") + "</b> " + r.pourQui + "</p>" : "") +
-      (r.cafesAssocies.length ? '<p class="recette-cafes"><b>' + I18N.t("r_cafes") + "</b> " + r.cafesAssocies.join(", ") + "</p>" : "") +
-      (r.note ? '<p class="recette-note">' + r.note + "</p>" : "") +
-      '<div class="recette-actions">' +
-      '<button class="btn btn-primaire btn-petit" data-pasapas="' + r.id + '">' + I18N.t("a_pap") + "</button>" +
-      '<button class="btn btn-petit" data-recette-edit="' + r.id + '">' + I18N.t("btn_modifier") + "</button>" +
-      "</div></article>";
-  }
-
-  function rendreRecettes() {
-    const liste = recettesVivantes();
-    const rendues = new Set();
-    const cartes = [];
-    liste.forEach(r => {
-      if (rendues.has(r.id)) return;
-      if (r.famille) {
-        const groupe = liste.filter(x => x.famille === r.famille);
-        if (groupe.length > 1) {
-          groupe.forEach(x => rendues.add(x.id));
-          const memo = familleSelection[r.famille];
-          const sel = groupe.find(x => x.id === memo) || groupe[0];
-          cartes.push(carteRecette(sel, groupe));
-          return;
-        }
-      }
-      rendues.add(r.id);
-      cartes.push(carteRecette(r, null));
-    });
-    $("#grille-recettes").innerHTML = cartes.join("");
-
-    rendreTetsu();
-
-    $$("[data-var-fam]").forEach(b => b.addEventListener("click", () => {
-      familleSelection[b.dataset.varFam] = b.dataset.varId;
-      rendreRecettes();
-    }));
-    $$("[data-pasapas]").forEach(b => b.addEventListener("click", () => ouvrirPasAPas(b.dataset.pasapas)));
-    $$("[data-recette-edit]").forEach(b => b.addEventListener("click", () => {
-      ouvrirModaleRecettes();
-      ouvrirFormRecette(b.dataset.recetteEdit);
-    }));
-  }
-
-  function versementsTetsu() {
-    const v40 = TETSU.premier40.find(v => v.id === tetsuChoix.p40);
-    const v60 = TETSU.dernier60.find(v => v.id === tetsuChoix.p60);
-    const r = recetteAvecVariantes();
-    const eau = r ? r.eau : 300;
-    return { pours: TETSU.versements(eau, v40, v60), v40, v60, eau };
-  }
-
-  function rendreTetsu() {
-    const bloc = $("#tetsu-bloc");
-    if (!bloc) return;
-    const { pours, v40, v60, eau } = versementsTetsu();
-    let cumul = 0;
-    const lignes = pours.map((p, i) => {
-      cumul += p;
-      const phase = i < 2 ? "40 %" : "60 %";
-      return "<li><span class=\"etape-temps\">" + (i + 1) + "</span><span>" +
-        I18N.t("te_ligne", { p, c: cumul }) + " <small>(" + phase + ")</small></span></li>";
-    }).join("");
-    bloc.innerHTML =
-      '<div class="tetsu-groupe"><span class="label">' + I18N.t("te_40") + "</span>" +
-      '<div class="tetsu-options">' + TETSU.premier40.map(v =>
-        '<button type="button" class="pilule' + (v.id === tetsuChoix.p40 ? " actif" : "") + '" data-t40="' + v.id + '">' + I18N.tr(v.nom) + "</button>").join("") +
-      "</div></div>" +
-      '<div class="tetsu-groupe"><span class="label">' + I18N.t("te_60") + "</span>" +
-      '<div class="tetsu-options">' + TETSU.dernier60.map(v =>
-        '<button type="button" class="pilule' + (v.id === tetsuChoix.p60 ? " actif" : "") + '" data-t60="' + v.id + '">' + I18N.tr(v.nom) + "</button>").join("") +
-      "</div></div>" +
-      '<ul class="tetsu-versements">' + lignes + "</ul>" +
-      '<p class="tetsu-detail">' + I18N.tr(v40.detail) + " " + I18N.tr(v60.detail) + " " + I18N.t("te_fin") + "</p>";
-    $$("[data-t40]").forEach(b => b.addEventListener("click", () => { tetsuChoix.p40 = b.dataset.t40; rendreTetsu(); }));
-    $$("[data-t60]").forEach(b => b.addEventListener("click", () => { tetsuChoix.p60 = b.dataset.t60; rendreTetsu(); }));
-  }
-
-  // ---------- Mode pas à pas ----------
-
-  const pap = { recette: null, etapes: [], index: -1, depart: null, interval: null };
-
-  /* Le calcul vit dans recettes.js, sans DOM, pour être testable sans
-     navigateur. Ici on ne fait que lire le champ. 1 veut dire "rien à mettre à
-     l'échelle", et les textes restent alors intacts au caractère près. */
-  function facteurEau(recette) {
-    const saisie = parseFloat($("#f-eau").value);
-    if (!recette || !(recette.eau > 0) || !(saisie > 0)) return 1;
-    return saisie / recette.eau;
-  }
-
-  function etapesPour(recette) {
-    const f = facteurEau(recette);
-    const mettreAEchelle = liste => f === 1 ? liste
-      : liste.map(e => ({ ...e, texte: echelleVersements(e.texte, f) }));
-    if (recette.variantes) {
-      const { pours } = versementsTetsu();
-      let cumul = 0;
-      return mettreAEchelle(pours.map((p, i) => {
-        cumul += p;
-        return { t: null, texte: I18N.t("pap_verser", { p, c: cumul, b: i === 0 ? I18N.t("pap_bloom") : "" }) };
-      }).concat([{ t: null, texte: I18N.t("pap_drain") }]));
-    }
-    return mettreAEchelle(recette.etapes);
-  }
-
-  function ouvrirPasAPas(idRecette) {
-    const r = DATA.state.recettes.find(x => x.id === idRecette);
-    if (!r) return;
-    pap.recette = r;
-    pap.etapes = etapesPour(r);
-    pap.index = -1;
-    clearInterval(pap.interval);
-    pap.depart = null;
-    $("#pap-titre").textContent = r.nom;
-    $("#pap-chrono").textContent = "0:00";
-    $("#pap-params").textContent = r.dose + " g / " + r.eau + " g, " + r.tempTexte + ", " + I18N.t("molette") + " " + r.dial + ", " + r.totalTexte;
-    $("#pap-demarrer").textContent = I18N.t("pap_demarrer");
-    $("#pap-suivant").disabled = true;
-    rendrePapEtapes();
-    $("#modale-pas-a-pas").showModal();
-  }
-
-  function rendrePapEtapes() {
-    $("#pap-etapes").innerHTML = pap.etapes.map((e, i) =>
-      '<li class="' + (i < pap.index ? "faite" : i === pap.index ? "courante" : "") + '">' +
-      '<span class="etape-temps">' + (e.t === null ? "·" : fmtTemps(e.t)) + "</span><span>" + e.texte + "</span></li>"
-    ).join("");
-  }
-
-  function papTic() {
-    const s = Math.floor((Date.now() - pap.depart) / 1000);
-    $("#pap-chrono").textContent = fmtTemps(s);
-    // Avance automatique sur les étapes minutées.
-    const prochaine = pap.index + 1;
-    if (prochaine < pap.etapes.length && pap.etapes[prochaine].t !== null && s >= pap.etapes[prochaine].t) {
-      pap.index = prochaine;
-      rendrePapEtapes();
-    }
-  }
-
-  function papDemarrer() {
-    if (pap.depart) {
-      clearInterval(pap.interval);
-      pap.depart = null;
-      $("#pap-demarrer").textContent = I18N.t("pap_reprendre");
-      $("#pap-suivant").disabled = true;
-      return;
-    }
-    pap.depart = Date.now();
-    pap.index = 0;
-    rendrePapEtapes();
-    pap.interval = setInterval(papTic, 300);
-    $("#pap-demarrer").textContent = I18N.t("pap_arreter");
-    $("#pap-suivant").disabled = false;
-  }
-
-  function papSuivant() {
-    if (pap.index < pap.etapes.length - 1) {
-      pap.index++;
-      rendrePapEtapes();
-    }
-  }
-
-  // ---------- Référence : convertisseur et tables ----------
-
-  /* Conseil vivant sous le curseur du moulin. Trois questions, dans cet ordre :
-     est-ce que ça marche sur MES machines, quel goût ça donne si je bouge, et à
-     quelle distance je suis de mon réglage enregistré. Rien d'inventé : les
-     plages viennent de GRIND, l'écart se compte en crans. */
-  function conseilMouture(p) {
-    const brikkaOk = GRIND.verifierPlage("Brikka", GRIND.dialDepuisCrans(p.crans)).ok;
-    const switchOk = GRIND.verifierPlage("Switch", GRIND.dialDepuisCrans(p.crans)).ok;
-    const lignes = [];
-
-    if (brikkaOk && switchOk) lignes.push("<b>" + I18N.t("cm_deux") + "</b>");
-    else if (brikkaOk) lignes.push("<b>" + I18N.t("cm_brikka") + "</b>");
-    else if (switchOk) lignes.push("<b>" + I18N.t("cm_switch") + "</b>");
-    else lignes.push('<b class="conv-hors">' + I18N.t("cm_aucune") + "</b>");
-
-    lignes.push(I18N.t("cm_plus_fin"));
-    lignes.push(I18N.t("cm_plus_grossier"));
-
-    // Écart au réglage enregistré, en crans, l'unité que la main comprend.
-    const d = GRIND.parseDial(replis.molette);
-    if (d) {
-      const ecart = p.crans - d.crans;
-      lignes.push(ecart === 0
-        ? I18N.t("cm_actuel", { m: replis.molette })
-        : I18N.t("cm_ecart", {
-          n: Math.abs(ecart),
-          sens: I18N.t(ecart > 0 ? "cm_ouvrir" : "cm_fermer"),
-          m: replis.molette,
-        }));
-    }
-    return lignes.map(x => "<p>" + x + "</p>").join("");
-  }
-
-  const rendreConvertisseurDifferee = antiRebond(() => rendreConvertisseur(), 90);
-
-  function rendreConvertisseur() {
-    const texte = $("#conv-dial").value.trim().replace(/,/g, ".");
-    const zone = $("#conv-resultat");
-    const p = GRIND.parseDial(texte);
-    if (!p) {
-      zone.innerHTML = '<span class="conv-erreur">' + I18N.t("cv_erreur") + "</span>";
-      $("#conv-conseil").innerHTML = "";
-      $("#conv-appliquer").disabled = true;
-      CHARTS.diagramme("reglette", null, replis.molette);
-      return;
-    }
-    // Le curseur suit toujours la valeur, y compris quand elle vient du texte.
-    if (Number($("#conv-slider").value) !== p.crans) $("#conv-slider").value = p.crans;
-    const compatibles = GRIND.methodesCompatibles(p.microns).map(m => I18N.methode(m.nom));
-    zone.innerHTML =
-      '<span class="conv-chip"><b>' + p.crans + "</b> " + I18N.t("cv_crans") + "</span>" +
-      '<span class="conv-chip">' + I18N.t("cv_environ") + " <b>" + Math.round(p.microns) + "</b> " + I18N.t("cv_microns") + "</span>" +
-      '<span class="conv-chip">' + I18N.t("cv_bande") + " <b>" + GRIND.bande(p.microns).nom + "</b></span>" +
-      '<span class="conv-chip">' + (compatibles.length ? I18N.t("cv_compatible") + " <b>" + compatibles.join(", ") + "</b>" : "<b>" + I18N.t("cv_hors") + "</b>") + "</span>";
-    $("#conv-conseil").innerHTML = conseilMouture(p);
-    $("#conv-appliquer").disabled = texte === replis.molette;
-    $("#conv-appliquer").textContent = texte === replis.molette
-      ? I18N.t("cv_deja") : I18N.t("cv_appliquer");
-    CHARTS.diagramme("reglette", texte, replis.molette);
-  }
-
-  // Repères sous le curseur : les positions de référence, cliquables.
-  function rendreReperesMouture() {
-    $("#conv-reperes").innerHTML = GRIND.REFERENCES.map(r =>
-      '<button type="button" class="conv-repere" data-dial="' + r.dial + '" title="' +
-      attrTitre(I18N.tr(r.usage)) + '">' + r.dial + "</button>").join("");
-    $$("#conv-reperes .conv-repere").forEach(b => b.addEventListener("click", () => {
-      $("#conv-dial").value = b.dataset.dial;
-      rendreConvertisseur();
-    }));
-  }
-
-  function rendreTablePlages() {
-    $("#table-plages").innerHTML = GRIND.METHODES.map(m => {
-      const fort = m.id === "brikka" || m.id === "switch";
-      const nom = I18N.methode(m.nom);
-      return "<tr" + (fort ? ' class="ligne-perso"' : "") + "><td>" + (fort ? "<b>" + nom + "</b>" : nom) + "</td>" +
-        "<td>" + (m.minU === 0 ? I18N.t("plage_moins_u", { x: m.maxU }) : I18N.t("plage_a", { a: m.minU, b: m.maxU })) + "</td>" +
-        "<td>" + (m.minC === 0 ? I18N.t("plage_moins_u", { x: m.maxC }) : I18N.t("plage_a", { a: m.minC, b: m.maxC })) + "</td>" +
-        "<td><code>" + I18N.mol(m.molette) + "</code></td></tr>";
-    }).join("");
-  }
-
-  // ---------- Gestion des cafés ----------
-
-  let cafeEditId = null;
-
-  function ouvrirModaleCafes() {
-    rendreListeCafes();
-    $("#form-cafe").hidden = true;
-    $("#form-sachet").hidden = true;
-    const m = $("#modale-cafes");
-    if (!m.open) m.showModal();
-  }
-
-  /* Coût d'une tasse de ce café, à la dose donnée. Muet si le prix ou le format
-     manquent : un coût inventé serait pire qu'un coût absent.
-
-     Second chiffre pour les cafés NON PURS. Le Sáng Tạo est à 82 % de café, donc
-     à 534 ₫ le gramme de vrai café contre 348 pour le G4 : il paraît 26 % plus
-     cher au gramme, il l'est de 53 %. Le champ pourcentage_cafe_reel ne servait
-     jusqu'ici qu'au calcul de caféine. */
-  function coutParTasse(cafe, dose) {
-    if (!cafe.prix_vnd || !cafe.format_grammes || !(dose > 0)) return "";
-    const parGramme = cafe.prix_vnd / cafe.format_grammes;
-    const base = I18N.t("cout_tasse", { v: fmtVND(parGramme * dose), d: fmtDecimal(dose, 1) });
-    const pct = cafe.pourcentage_cafe_reel === "" || cafe.pourcentage_cafe_reel === undefined
-      ? 100 : Number(cafe.pourcentage_cafe_reel);
-    if (!(pct > 0) || pct >= 100) return base;
-    return base + " " + I18N.t("cout_reel", { v: fmtVND(parGramme / (pct / 100) * dose) });
-  }
-
-  function rendreListeCafes() {
-    // Actifs d'abord (ordre d'origine conservé), désactivés toujours en fin
-    // de liste. Chaque café porte un badge de note moyenne (sur ses
-    // extractions notées) et sa date d'ajout dans le système.
-    const tri = [...DATA.state.cafes].sort((a, b) => (a.actif === 0 ? 1 : 0) - (b.actif === 0 ? 1 : 0));
-    $("#cafes-liste").innerHTML = tri.map(c => {
-      const notes = DATA.state.extractions
-        .filter(e => e.cafe_id === c.id && e.note_sur_10 !== "")
-        .map(e => Number(e.note_sur_10));
-      const badgeNote = notes.length
-        ? ' <span class="badge-note" title="' + I18N.t("b_extractions", { n: notes.length }) + '">★ ' +
-          fmtDecimal(moyenne(notes), 1) + "</span>"
-        : "";
-      // Stock du sachet en cours. Une dose manquante compte pour la dose par
-      // défaut, sinon un oubli de saisie ferait croire à un sachet intact.
-      const stock = DATA.stockSachet(c.id, replis.dose);
-      let badgeStock = "";
-      // Dose retenue pour le coût, la même que pour les tasses restantes.
-      let coutTasse = replis.dose;
-      if (stock) {
-        /* Le reste se compte avec la dose MOYENNE de ce café, pas la dose de
-           repli : Chris dose 16 g sur le G4 et 14 sur un autre, un chiffre unique
-           surestimerait les tasses restantes de presque 10 %. Repli sur la dose
-           par défaut tant que le café n'a aucune extraction. */
-        const doses = DATA.state.extractions
-          .filter(e => e.cafe_id === c.id && Number(e.dose_g) > 0)
-          .map(e => Number(e.dose_g));
-        const doseTypique = doses.length ? moyenne(doses) : replis.dose;
-        coutTasse = doseTypique;
-        const tasses = Math.max(0, Math.floor(stock.restant / doseTypique));
-        const classe = stock.restant <= 0 ? "vide" : tasses <= 3 ? "bas" : "ok";
-        const libelle = stock.restant <= 0
-          ? I18N.t("stock_vide")
-          : I18N.t("stock_reste", { g: fmtDecimal(stock.restant, 0), n: tasses });
-        badgeStock = ' <span class="badge-stock badge-stock-' + classe + '" title="' +
-          I18N.t("stock_titre", {
-            f: stock.format,
-            c: fmtDecimal(stock.consomme, 0),
-            r: fmtDecimal(Math.max(0, stock.restant), 0),
-            d: fmtDecimal(doseTypique, 1),
-            src: I18N.t(doses.length ? "stock_dose_moy" : "stock_dose_defaut"),
-          }) + '">' + libelle + "</span>";
-      }
-      return '<div class="cafe-ligne' + (c.actif === 0 ? " inactif" : "") +
-      (stock && stock.restant <= 0 ? " epuise" : "") + '">' +
-      "<div><b>" + c.nom + "</b>" + badgeNote + badgeStock +
-      (Number(c.pourcentage_cafe_reel) < 100 ? ' <span class="badge-nonpur">' + c.pourcentage_cafe_reel + " % " + I18N.t("pct_cafe") + "</span>" : "") +
-      ((c.tag || "").includes("référence") ? ' <span class="badge-reference">' + I18N.t("badge_etalon") + "</span>" : "") +
-      "<div class=\"cafe-meta\">" +
-      [c.torrefacteur, c.espece, c.procede,
-        c.machine_recommandee ? I18N.t("li_machine", { m: I18N.machine(c.machine_recommandee) }) : "",
-        c.prix_vnd ? fmtVND(c.prix_vnd) + " / " + c.format_grammes + " g" : "",
-        /* Coût d'UNE tasse, à la dose moyenne de ce café. C'est le seul chiffre
-           de prix qui se compare d'un sachet à l'autre : le prix au sachet dépend
-           du format, le prix au gramme ne dit rien tant qu'on ne sait pas combien
-           on en met. */
-        coutParTasse(c, coutTasse),
-        c.date_ajout ? I18N.t("li_ajoute", { d: fmtDateCourte(c.date_ajout) }) : ""].filter(Boolean).join(" · ") +
-      "</div></div>" +
-      '<span class="cafe-meta">' + (c.actif === 0 ? I18N.t("li_inactif") : "") + "</span>" +
-      '<button class="btn btn-petit" data-cafe-sachet="' + c.id + '">' + I18N.t("btn_sachet") + "</button>" +
-      '<button class="btn btn-petit" data-cafe-edit="' + c.id + '">' + I18N.t("btn_modifier") + "</button></div>";
-    }).join("");
-    $$("[data-cafe-edit]").forEach(b => b.addEventListener("click", () => ouvrirFormCafe(b.dataset.cafeEdit)));
-    $$("[data-cafe-sachet]").forEach(b => b.addEventListener("click", () => ouvrirFormSachet(b.dataset.cafeSachet)));
-  }
-
-  // ---------- Nouveau sachet ----------
-  // Enregistrer un rachat remet le compteur de stock à zéro ET donne au café une
-  // date de torréfaction à jour. C'est ce second effet qui corrige un vrai
-  // mensonge de l'ancien modèle : un café racheté gardait la date du tout premier
-  // paquet, donc la fraîcheur affichée était fausse pour toujours.
-  let sachetCafeId = null;
-
-  function ouvrirFormSachet(cafeId) {
-    const c = DATA.state.cafes.find(x => x.id === cafeId);
-    if (!c) return;
-    sachetCafeId = cafeId;
-    $("#form-sachet-titre").textContent = I18N.t("sachet_titre", { n: c.nom });
-    $("#s-date").value = maintenantLocal().slice(0, 10);
-    $("#s-format").value = c.format_grammes || "";
-    $("#s-prix").value = c.prix_vnd || "";
-    // Le cas courant est d'ouvrir le sachet le jour où on l'enregistre. Chris
-    // peut vider le champ si le paquet part au placard.
-    $("#s-ouverture").value = maintenantLocal().slice(0, 10);
-    $("#s-torref").value = "";
-    $("#form-sachet").hidden = false;
-    $("#s-date").focus();
-  }
-
-  async function enregistrerSachet(ev) {
-    ev.preventDefault();
-    if (!sachetCafeId) return;
-    await DATA.ajouterAchat({
-      cafe_id: sachetCafeId,
-      date_achat: $("#s-date").value || maintenantLocal().slice(0, 10),
-      format_grammes: $("#s-format").value,
-      prix_vnd: $("#s-prix").value,
-      date_torrefaction: $("#s-torref").value,
-      date_ouverture: $("#s-ouverture").value,
-    });
-    $("#form-sachet").hidden = true;
-    sachetCafeId = null;
-    rendreListeCafes();
-    toast(I18N.t("t_sachet"));
-  }
-
-  function ouvrirFormCafe(id) {
-    cafeEditId = id || null;
-    const c = id ? DATA.state.cafes.find(x => x.id === id) : null;
-    $("#form-cafe-titre").textContent = c ? I18N.t("f_modif", { n: c.nom }) : I18N.t("fc_nouveau");
-    $("#c-nom").value = c ? c.nom : "";
-    $("#c-torrefacteur").value = c ? c.torrefacteur : "";
-    $("#c-origine").value = c ? c.origine : "";
-    $("#c-espece").value = c ? c.espece : "";
-    $("#c-procede").value = c ? c.procede : "";
-    $("#c-torrefaction").value = c ? c.torrefaction : "";
-    $("#c-format").value = c ? c.format_grammes : "";
-    $("#c-prix").value = c ? c.prix_vnd : "";
-    $("#c-date-torref").value = c ? c.date_torrefaction : "";
-    $("#c-machine").value = c ? c.machine_recommandee : "";
-    $("#c-recette").value = c ? c.recette_recommandee : "";
-    $("#c-notes").value = c ? c.notes_annoncees : "";
-    $("#c-pct").value = c ? (c.pourcentage_cafe_reel === "" || c.pourcentage_cafe_reel === undefined ? 100 : c.pourcentage_cafe_reel) : 100;
-    $("#c-moulu").checked = c ? Number(c.deja_moulu) === 1 : false;
-    $("#c-actif").checked = c ? c.actif !== 0 : true;
-    $("#form-cafe").hidden = false;
-    $("#c-nom").focus();
-  }
-
-  async function enregistrerCafe(ev) {
-    ev.preventDefault();
-    const cafe = {
-      nom: $("#c-nom").value.trim(),
-      torrefacteur: $("#c-torrefacteur").value.trim(),
-      origine: $("#c-origine").value.trim(),
-      espece: $("#c-espece").value.trim(),
-      procede: $("#c-procede").value.trim(),
-      torrefaction: $("#c-torrefaction").value,
-      format_grammes: $("#c-format").value,
-      prix_vnd: $("#c-prix").value,
-      date_torrefaction: $("#c-date-torref").value,
-      machine_recommandee: $("#c-machine").value,
-      recette_recommandee: $("#c-recette").value,
-      notes_annoncees: $("#c-notes").value.trim(),
-      pourcentage_cafe_reel: $("#c-pct").value || 100,
-      tag: (cafeEditId && (DATA.state.cafes.find(x => x.id === cafeEditId) || {}).tag) || "",
-      deja_moulu: $("#c-moulu").checked ? 1 : 0,
-      actif: $("#c-actif").checked ? 1 : 0,
-    };
-    if (Number(cafe.pourcentage_cafe_reel) < 100 && !cafe.tag) cafe.tag = "café aromatisé";
-    if (cafeEditId) await DATA.modifierCafe(cafeEditId, cafe);
-    else await DATA.ajouterCafe(cafe);
-    $("#form-cafe").hidden = true;
-    rendreListeCafes();
-    remplirSelectCafes();
-    remplirFiltres();
-    toast(I18N.t("t_cafe"));
-  }
-
-  // ---------- Gestion des recettes ----------
-
-  let recetteEditId = null;
-
-  function ouvrirModaleRecettes() {
-    rendreListeRecettes();
-    $("#form-recette").hidden = true;
-    const m = $("#modale-recettes");
-    if (!m.open) m.showModal();
-  }
-
-  function rendreListeRecettes() {
-    $("#recettes-liste").innerHTML = DATA.state.recettes.map(r =>
-      '<div class="cafe-ligne' + (r.actif === 0 ? " inactif" : "") + '">' +
-      '<span class="chip-methode ' + r.methode.toLowerCase() + '">' + r.methode + "</span>" +
-      "<div><b>" + r.nom + "</b><div class=\"cafe-meta\">" +
-      [r.numero, r.dose + " g / " + r.eau + " g", I18N.t("molette") + " " + r.dial,
-        DATA.estRecetteDorigine(r.id) ? "" : I18N.t("li_perso"),
-        r.actif === 0 ? I18N.t("li_masquee") : ""].filter(Boolean).join(" · ") +
-      "</div></div>" +
-      '<button class="btn btn-petit" data-recette-form="' + r.id + '">' + I18N.t("btn_modifier") + "</button></div>"
-    ).join("");
-    $$("[data-recette-form]").forEach(b => b.addEventListener("click", () => ouvrirFormRecette(b.dataset.recetteForm)));
-  }
-
-  function ouvrirFormRecette(id) {
-    recetteEditId = id || null;
-    const r = id ? DATA.state.recettes.find(x => x.id === id) : null;
-    $("#form-recette-titre").textContent = r ? I18N.t("f_modif", { n: r.nom }) : I18N.t("fr_nouvelle");
-    $("#r-nom").value = r ? r.nom : "";
-    $("#r-methode").value = r ? r.methode : "Switch";
-    $("#r-numero").value = r ? r.numero : "";
-    $("#r-sous-titre").value = r ? r.sousTitre : "";
-    $("#r-dose").value = r ? r.dose : 15;
-    $("#r-eau").value = r ? r.eau : 225;
-    $("#r-temp").value = r ? r.temp : 92;
-    $("#r-feu").value = r ? r.puissance_feu : "";
-    $("#r-temp-texte").value = r ? r.tempTexte : "";
-    $("#r-dial").value = r ? r.dial : "1.5.0";
-    $("#r-ratio-texte").value = r ? r.ratioTexte : "";
-    $("#r-total-texte").value = r ? r.totalTexte : "";
-    $("#r-etapes").value = r ? etapesVersTexte(r.etapes) : "";
-    $("#r-pourqui").value = r ? r.pourQui : "";
-    $("#r-cafes").value = r ? r.cafesAssocies.join("\n") : "";
-    $("#r-note").value = r ? r.note : "";
-    $("#r-defaut").checked = r ? !!r.parDefaut : false;
-    $("#r-avancee").checked = r ? !!r.avancee : false;
-    $("#r-actif").checked = r ? r.actif !== 0 : true;
-    const origine = r && DATA.estRecetteDorigine(r.id);
-    $("#recette-retablir").hidden = !origine;
-    $("#recette-supprimer").hidden = !r || origine;
-    $("#form-recette").hidden = false;
-    $("#r-nom").focus();
-  }
-
-  function lireFormRecette() {
-    return {
-      nom: $("#r-nom").value.trim(),
-      methode: $("#r-methode").value,
-      numero: $("#r-numero").value.trim(),
-      sousTitre: $("#r-sous-titre").value.trim(),
-      dose: $("#r-dose").value,
-      eau: $("#r-eau").value,
-      temp: $("#r-temp").value,
-      puissance_feu: $("#r-feu").value,
-      // Sans cible de température, pas de texte inventé : " °C" tout seul n'a aucun sens.
-      tempTexte: $("#r-temp-texte").value.trim() ||
-        ($("#r-temp").value ? $("#r-temp").value + " °C" : ""),
-      dial: $("#r-dial").value.trim().replace(/,/g, "."),
-      ratioTexte: $("#r-ratio-texte").value.trim(),
-      totalTexte: $("#r-total-texte").value.trim(),
-      etapes: texteVersEtapes($("#r-etapes").value),
-      pourQui: $("#r-pourqui").value.trim(),
-      cafesAssocies: $("#r-cafes").value.split("\n").map(s => s.trim()).filter(Boolean),
-      note: $("#r-note").value.trim(),
-      parDefaut: $("#r-defaut").checked,
-      avancee: $("#r-avancee").checked,
-      actif: $("#r-actif").checked ? 1 : 0,
-    };
-  }
-
-  async function enregistrerRecette(ev) {
-    ev.preventDefault();
-    const donnees = lireFormRecette();
-    if (!donnees.nom) { toast(I18N.t("t_nom_recette")); return; }
-    const dial = GRIND.parseDial(donnees.dial);
-    if (donnees.dial && !dial) { toast(I18N.t("t_mouture_invalide")); return; }
-    if (recetteEditId) await DATA.modifierRecette(recetteEditId, donnees);
-    else await DATA.ajouterRecette(donnees);
-    $("#form-recette").hidden = true;
-    rendreListeRecettes();
-    toast(I18N.t("t_recette"));
-  }
-
-  // ---------- Écran Paramètres ----------
-  /* Cet écran ne stocke rien de son côté. Chaque ligne du tableau édite la RECETTE
-     elle-même, la même fiche que "Gérer les recettes" : une seule source de vérité,
-     déjà synchronisée. Les seuls réglages propres à l'écran sont les deux replis,
-     locaux à l'appareil. */
-
-  function rendreParametres() {
-    const lignes = ["Brikka", "Switch"].map(m => {
-      const liste = recettesDeMethode(m);
-      if (!liste.length) return "";
-      return '<tr class="param-groupe"><td colspan="6">' + m + "</td></tr>" +
-        liste.map(r =>
-          '<tr data-param-recette="' + r.id + '">' +
-          "<td>" + I18N.tr(r.nom) + "</td>" +
-          '<td><input type="number" step="0.5" min="1" data-champ="dose" value="' + (r.dose || "") + '"></td>' +
-          '<td><input type="number" step="1" min="10" data-champ="eau" value="' + (r.eau || "") + '"></td>' +
-          '<td><input type="number" step="1" min="60" max="100" data-champ="temp" value="' + (r.temp === "" ? "" : r.temp) +
-            '" placeholder="' + I18N.t("param_vide") + '"></td>' +
-          "<td>" + (r.methode === "Brikka"
-            ? '<input type="number" step="1" min="1" max="10" data-champ="puissance_feu" value="' + (r.puissance_feu || "") + '">'
-            : '<span class="param-sans">&middot;</span>') + "</td>" +
-          '<td><input type="text" data-champ="dial" value="' + attrTitre(r.dial || "") + '"></td>' +
-          "</tr>").join("");
-    }).join("");
-    $("#param-recettes").innerHTML = lignes;
-    $("#param-dose-defaut").value = replis.dose;
-    $("#param-feu-defaut").value = replis.feu;
-    $("#param-molette").value = replis.molette;
-    majDetailMolette();
-    $("#param-bips").checked = $("#chrono-bip").checked;
-  }
-
-  // Crans et microns sous le champ, pour vérifier qu'on a tapé le bon réglage.
-  function majDetailMolette() {
-    const p = GRIND.parseDial($("#param-molette").value.trim().replace(/,/g, "."));
-    $("#param-molette-detail").textContent = p
-      ? I18N.t("param_molette_detail", { c: p.crans, m: Math.round(p.microns) })
-      : "";
-  }
-
-  async function enregistrerParametres() {
-    const dose = Number($("#param-dose-defaut").value);
-    const feu = Number($("#param-feu-defaut").value);
-    const molette = $("#param-molette").value.trim().replace(/,/g, ".");
-    if (!(dose > 0)) { toast(I18N.t("t_param_dose")); return; }
-    if (!(feu >= 1 && feu <= 10)) { toast(I18N.t("t_param_feu")); return; }
-    if (!GRIND.parseDial(molette)) { toast(I18N.t("t_mouture_invalide")); return; }
-    replis.dose = dose;
-    replis.feu = Math.round(feu);
-    replis.molette = molette;
-    await ecrireReplis();
-
-    /* On ne réécrit que les recettes réellement touchées : chaque écriture
-       estampille maj_le et gagnerait la fusion contre un autre appareil. */
-    let touchees = 0;
-    for (const tr of $$("[data-param-recette]")) {
-      const r = DATA.state.recettes.find(x => x.id === tr.dataset.paramRecette);
-      if (!r) continue;
-      const lu = {};
-      tr.querySelectorAll("[data-champ]").forEach(i => { lu[i.dataset.champ] = i.value.trim(); });
-      const change =
-        String(r.dose || "") !== lu.dose ||
-        String(r.eau || "") !== lu.eau ||
-        String(r.temp === "" ? "" : r.temp) !== lu.temp ||
-        String(r.dial || "") !== lu.dial ||
-        (r.methode === "Brikka" && String(r.puissance_feu || "") !== lu.puissance_feu);
-      if (!change) continue;
-      if (lu.dial && !GRIND.parseDial(lu.dial.replace(/,/g, "."))) { toast(I18N.t("t_mouture_invalide")); return; }
-      // Le tableau ne montre que ces champs : on repart de la recette entière pour
-      // ne rien perdre au passage (étapes, texte, café associés…).
-      await DATA.modifierRecette(r.id, {
-        ...r,
-        dose: lu.dose,
-        eau: lu.eau,
-        temp: lu.temp,
-        dial: lu.dial.replace(/,/g, "."),
-        puissance_feu: r.methode === "Brikka" ? lu.puissance_feu : "",
-        // Le texte affiché suivait l'ancienne cible, il devient faux sans ça.
-        tempTexte: lu.temp ? lu.temp + " °C" : (r.methode === "Brikka" ? I18N.t("param_temp_feu") : ""),
-      });
-      touchees++;
-    }
-    rendreParametres();
-    remplirSelectRecettes();
-    toast(touchees ? I18N.t("t_param_ok", { n: touchees }) : I18N.t("t_param_replis"));
-  }
-
-  // ---------- Saisie rapide flottante ----------
-
-  let rapideOuvert = false;
-
-  function basculerRapide(forcer) {
-    rapideOuvert = forcer !== undefined ? forcer : !rapideOuvert;
-    $("#panneau-rapide").classList.toggle("ouvert", rapideOuvert);
-    $("#fab-rapide").classList.toggle("ouvert", rapideOuvert);
-    if (rapideOuvert) majPanneauRapide();
-  }
-
-  function majPanneauRapide() {
-    const selCafe = $("#q-cafe");
-    const v = selCafe.value;
-    selCafe.innerHTML = '<option value="">' + I18N.t("choisir_cafe") + "</option>" +
-      cafesSelectionnables().map(c => '<option value="' + c.id + '">' + c.nom + "</option>").join("");
-    if (v && cafesSelectionnables().some(c => c.id === v)) selCafe.value = v;
-    majRecettesRapide();
-  }
-
-  function majRecettesRapide() {
-    const sel = $("#q-recette");
-    const v = sel.value;
-    const groupes = ["Brikka", "Switch"].map(m => {
-      const liste = recettesDeMethode(m);
-      if (!liste.length) return "";
-      return '<optgroup label="' + m + '">' +
-        liste.map(r => "<option>" + r.nom + "</option>").join("") + "</optgroup>";
-    }).join("");
-    sel.innerHTML = groupes;
-    if (v && trouverRecette(v)) sel.value = v;
-    majAvertRapide();
-  }
-
-  function surChoixCafeRapide() {
-    const cafe = DATA.state.cafes.find(c => c.id === $("#q-cafe").value);
-    if (cafe) {
-      const r = trouverRecette(cafe.recette_recommandee);
-      if (r && r.actif !== 0) $("#q-recette").value = r.nom;
-    }
-    majAvertRapide();
-  }
-
-  function majAvertRapide() {
-    const cafe = DATA.state.cafes.find(c => c.id === $("#q-cafe").value);
-    const r = trouverRecette($("#q-recette").value);
-    const av = r ? avertissementsCombinaison(cafe, r.methode, r.nom, DATA.state.recettes) : { msgs: [] };
-    $("#q-avert").textContent = av.msgs.length ? "⚠ " + av.msgs[0] : "";
-  }
-
-  async function enregistrerRapide() {
-    const cafeId = $("#q-cafe").value;
-    const r = trouverRecette($("#q-recette").value);
-    if (!cafeId) { toast(I18N.t("t_choisis_cafe")); return; }
-    if (!r) { toast(I18N.t("t_choisis_recette")); return; }
-    await DATA.ajouterExtraction({
-      date_heure: maintenantLocal(),
-      cafe_id: cafeId,
-      methode: r.methode,
-      recette: r.nom,
-      dose_g: r.dose || replis.dose,
-      eau_g: r.eau,
-      mouture_dial: cafeQ && Number(cafeQ.deja_moulu) === 1 ? "" : r.dial,
-      temperature_c: r.temp,
-      temps_total_s: "",
-      temps_ecoulement_s: "",
-      volume_extrait_ml: "",
-      tasse: (DATA.state.tasses.find(t => t.nom === (r.methode === "Brikka" ? "Loveramics Flat White Egg" : "Classic Mug")) || { nom: "" }).nom,
-      note_sur_10: $("#q-note").value,
-      diagnostic: "",
-      descripteurs: "",
-      commentaire: "",
-    });
-    toast(I18N.t("t_rapide", { r: r.nom, n: $("#q-note").value }));
-    basculerRapide(false);
-  }
+  // Emprunté au noyau, chargé avant nous.
+  const { $, $$, ECRANS, activerAppuiLong, activerEcran, appliquerTheme, basculerEtat,
+    chargerReplis, ecrireReplis, nav, normaliserEcran, oublierSignatures, recettesVivantes,
+    rendreEcranCourant, replis, reprendreReplisLocaux, siChange,
+    supprimerExtractionAvecRetour, toast, trouverRecette } = UI;
 
   // ---------- Données : liaison, import, export ----------
 
@@ -2988,7 +96,7 @@
     window.addEventListener("hashchange", () => {
       const h = location.hash.slice(1);
       const cible = normaliserEcran(h);
-      if (ECRANS.includes(cible) && cible !== ecranCourant) activerEcran(cible);
+      if (ECRANS.includes(cible) && cible !== nav.ecran) activerEcran(cible);
     });
 
     // Thème
@@ -3003,51 +111,51 @@
 
     // Saisie
     $$(".btn-methode").forEach(b => b.addEventListener("click", () => {
-      choisirMethode(b.dataset.methode);
-      prefillDepuisRecette($("#f-recette").value);
+      UI.choisirMethode(b.dataset.methode);
+      UI.prefillDepuisRecette($("#f-recette").value);
     }));
-    $("#f-cafe").addEventListener("change", surChoixCafe);
-    $("#f-date").addEventListener("change", majAgePaquet);
-    $("#f-recette").addEventListener("change", () => { prefillDepuisRecette($("#f-recette").value); majAvertissements(); });
+    $("#f-cafe").addEventListener("change", UI.surChoixCafe);
+    $("#f-date").addEventListener("change", UI.majAgePaquet);
+    $("#f-recette").addEventListener("change", () => { UI.prefillDepuisRecette($("#f-recette").value); UI.majAvertissements(); });
     ["f-dose", "f-eau", "f-mouture", "f-volume"].forEach(id =>
-      $("#" + id).addEventListener("input", () => { majLive(); majAvertissements(); }));
+      $("#" + id).addEventListener("input", () => { UI.majLive(); UI.majAvertissements(); }));
     // majAvertissements redessine le panneau latéral, le chrono a besoin d'un
     // rappel explicite : ses paliers sont mis à l'échelle de l'eau saisie.
-    $("#f-eau").addEventListener("input", () => majEtapesChrono(false));
+    $("#f-eau").addEventListener("input", () => UI.majEtapesChrono(false));
     // Le volume extrait pilote le préremplissage du lait, il doit le rafraîchir.
-    $("#f-volume").addEventListener("input", majLait);
+    $("#f-volume").addEventListener("input", UI.majLait);
     $("#f-temp-preset").addEventListener("change", () => {
       const v = $("#f-temp-preset").value;
       if (!v) return;
       $("#f-temp").value = v;
-      razPresetTemp();
-      majAvertissements();
+      UI.razPresetTemp();
+      UI.majAvertissements();
     });
     // Une saisie manuelle a toujours le dernier mot sur l'estimation.
-    $("#f-temp").addEventListener("input", razPresetTemp);
+    $("#f-temp").addEventListener("input", UI.razPresetTemp);
     /* pointerdown en plus d'input : poser le doigt sur le curseur là où il est
        déjà ne déclenche aucun input, la note serait restée vide sans le savoir. */
     ["input", "pointerdown", "keydown"].forEach(ev =>
       $("#f-note").addEventListener(ev, () => {
         $("#f-note-vide").checked = false;
-        majAffichageNote();
+        UI.majAffichageNote();
       }));
-    $("#f-note-vide").addEventListener("change", majAffichageNote);
-    $("#btn-chrono").addEventListener("click", chronoPrincipal);
-    $("#btn-chrono-stop").addEventListener("click", chronoArreter);
-    $("#btn-chrono-raz").addEventListener("click", chronoRaz);
-    $("#param-enregistrer").addEventListener("click", enregistrerParametres);
+    $("#f-note-vide").addEventListener("change", UI.majAffichageNote);
+    $("#btn-chrono").addEventListener("click", UI.chronoPrincipal);
+    $("#btn-chrono-stop").addEventListener("click", UI.chronoArreter);
+    $("#btn-chrono-raz").addEventListener("click", UI.chronoRaz);
+    $("#param-enregistrer").addEventListener("click", UI.enregistrerParametres);
     // UNE SEULE FOIS : les conteneurs survivent aux reconstructions de pilules,
     // les attacher depuis construirePilules empilerait un jeu par bascule de langue.
-    brancherPilules();
+    UI.brancherPilules();
     activerAppuiLong($("#f-diagnostic"));
     activerAppuiLong($("#f-descripteurs"));
-    $("#param-molette").addEventListener("input", majDetailMolette);
+    $("#param-molette").addEventListener("input", UI.majDetailMolette);
     $("#conv-slider").addEventListener("input", () => {
       $("#conv-dial").value = GRIND.dialDepuisCrans(Number($("#conv-slider").value));
       /* Le curseur envoie un événement par cran : sans anti-rebond, glisser d'un
          bout à l'autre redessine 150 fois un SVG de 151 traits. */
-      rendreConvertisseurDifferee();
+      UI.rendreConvertisseurDifferee();
     });
     /* Le seul chemin qui change vraiment un réglage depuis cet écran. Il écrit
        le même repli que l'écran Paramètres, il n'y a donc qu'une source. */
@@ -3056,11 +164,11 @@
       if (!GRIND.parseDial(dial)) { toast(I18N.t("t_mouture_invalide")); return; }
       replis.molette = dial;
       await ecrireReplis();
-      rendreConvertisseur();
+      UI.rendreConvertisseur();
       if ($("#param-molette")) $("#param-molette").value = dial;
       toast(I18N.t("t_molette_appliquee", { m: dial }));
     });
-    $("#param-annuler").addEventListener("click", rendreParametres);
+    $("#param-annuler").addEventListener("click", UI.rendreParametres);
     // La case de l'écran Paramètres et celle du chrono pilotent le même réglage.
     $("#param-bips").addEventListener("change", () => {
       $("#chrono-bip").checked = $("#param-bips").checked;
@@ -3069,39 +177,39 @@
     $("#chrono-bip").addEventListener("change", () => {
       try { localStorage.setItem("bips", $("#chrono-bip").checked ? "1" : "0"); } catch (e) { /* tant pis */ }
     });
-    $("#form-saisie").addEventListener("submit", enregistrerSaisie);
-    $("#form-saisie").addEventListener("input", planifierBrouillon);
-    $("#form-saisie").addEventListener("change", planifierBrouillon);
+    $("#form-saisie").addEventListener("submit", UI.enregistrerSaisie);
+    $("#form-saisie").addEventListener("input", UI.planifierBrouillon);
+    $("#form-saisie").addEventListener("change", UI.planifierBrouillon);
     // visibilitychange est le dernier evenement fiable avant qu'un navigateur
     // mobile decharge la page : on ecrit tout de suite, sans attendre le debounce.
     document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "hidden") ecrireBrouillon();
+      if (document.visibilityState === "hidden") UI.ecrireBrouillon();
     });
-    $("#btn-annuler-edition").addEventListener("click", () => { reinitialiserSaisie(); activerEcran("historique"); });
-    $("#btn-gerer-cafes").addEventListener("click", ouvrirModaleCafes);
-    $("#btn-cafes-entete").addEventListener("click", ouvrirModaleCafes);
-    $("#btn-recettes-entete").addEventListener("click", ouvrirModaleRecettes);
+    $("#btn-annuler-edition").addEventListener("click", () => { UI.reinitialiserSaisie(); activerEcran("historique"); });
+    $("#btn-gerer-cafes").addEventListener("click", UI.ouvrirModaleCafes);
+    $("#btn-cafes-entete").addEventListener("click", UI.ouvrirModaleCafes);
+    $("#btn-recettes-entete").addEventListener("click", UI.ouvrirModaleRecettes);
     $("#volume-estime").addEventListener("click", () => {
       const v = $("#volume-estime").dataset.valeur;
-      if (v !== undefined) { $("#f-volume").value = v; majLive(); }
+      if (v !== undefined) { $("#f-volume").value = v; UI.majLive(); }
     });
 
     // Ajout d'eau, agitation, lait, tasse
     $("#f-ajout-eau-oui").addEventListener("change", () => {
       $("#f-eau-ajoutee").hidden = !$("#f-ajout-eau-oui").checked;
-      majLive();
+      UI.majLive();
     });
-    $("#f-eau-ajoutee").addEventListener("input", majLive);
+    $("#f-eau-ajoutee").addEventListener("input", UI.majLive);
     $("#f-agitation-oui").addEventListener("change", () => {
       $("#f-agitation").hidden = !$("#f-agitation-oui").checked;
       if ($("#f-agitation-oui").checked && !$("#f-agitation").value) $("#f-agitation").value = 1;
     });
-    $("#f-lait").addEventListener("input", majLive);
-    $("#f-tasse").addEventListener("change", () => { majLait(); majLive(); });
+    $("#f-lait").addEventListener("input", UI.majLive);
+    $("#f-tasse").addEventListener("change", () => { UI.majLait(); UI.majLive(); });
     $("#btn-tasses").addEventListener("click", () => {
       const ed = $("#tasses-editeur");
       ed.hidden = !ed.hidden;
-      if (!ed.hidden) rendreTassesEditeur();
+      if (!ed.hidden) UI.rendreTassesEditeur();
     });
     $("#tasse-ajouter").addEventListener("click", async () => {
       const nom = $("#tasse-nom").value.trim();
@@ -3110,16 +218,16 @@
       await DATA.ajouterTasse(nom, ml);
       $("#tasse-nom").value = "";
       $("#tasse-ml").value = "";
-      rendreTassesEditeur();
-      remplirSelectTasses();
+      UI.rendreTassesEditeur();
+      UI.remplirSelectTasses();
       $("#f-tasse").value = nom;
-      majLait();
-      majLive();
+      UI.majLait();
+      UI.majLive();
     });
 
     // Historique
     ["h-recherche", "h-cafe", "h-methode", "h-diagnostic", "h-note-min", "h-du", "h-au"].forEach(id =>
-      $("#" + id).addEventListener("input", rendreHistoriqueDifferee));
+      $("#" + id).addEventListener("input", UI.rendreHistoriqueDifferee));
     /* REPRISE QUAND LE RÉSEAU REVIENT. Une synchro ratée attendait le prochain
        geste de Chris : en cuisine, il enregistre sa tasse, range son téléphone, et
        la synchro ne repartait qu'à l'ouverture suivante. Le navigateur sait dire
@@ -3136,7 +244,7 @@
        dialogues : ils restaient ouverts et il fallait viser leur bouton. */
     document.addEventListener("keydown", ev => {
       if (ev.key !== "Escape") return;
-      if (rapideOuvert) { basculerRapide(false); return; }
+      if (UI.rapideEstOuvert()) { UI.basculerRapide(false); return; }
       const ouverts = ["#form-cafe", "#form-sachet", "#form-recette"]
         .map(s => $(s)).filter(x => x && !x.hidden);
       if (ouverts.length) { ouverts.forEach(x => { x.hidden = true; }); return; }
@@ -3146,16 +254,16 @@
 
     $("#h-reinitialiser").addEventListener("click", () => {
       ["h-recherche", "h-cafe", "h-methode", "h-diagnostic", "h-note-min", "h-du", "h-au"].forEach(id => $("#" + id).value = "");
-      rendreHistorique();
+      UI.rendreHistorique();
     });
     $("#h-exporter").addEventListener("click", () => {
-      DATA.exporterExtractions(filtrerHistorique().map(e => { const { _c, ...reste } = e; return reste; }));
+      DATA.exporterExtractions(UI.filtrerHistorique().map(e => { const { _c, ...reste } = e; return reste; }));
       toast(I18N.t("t_export_filtre"));
     });
     $$("#h-table th[data-tri]").forEach(th => th.addEventListener("click", () => {
-      if (tri.colonne === th.dataset.tri) tri.sens = -tri.sens;
-      else { tri.colonne = th.dataset.tri; tri.sens = -1; }
-      rendreHistorique();
+      if (UI.tri.colonne === th.dataset.tri) UI.tri.sens = -UI.tri.sens;
+      else { UI.tri.colonne = th.dataset.tri; UI.tri.sens = -1; }
+      UI.rendreHistorique();
     }));
     $("#h-corps").addEventListener("click", async ev => {
       const btn = ev.target.closest("[data-action]");
@@ -3169,16 +277,16 @@
         // ne passe pas par la couche i18n.
         await supprimerExtractionAvecRetour(ext);
       } else if (btn.dataset.action === "modifier") {
-        chargerExtractionDansSaisie(ext, false);
+        UI.chargerExtractionDansSaisie(ext, false);
       } else if (btn.dataset.action === "dupliquer") {
-        chargerExtractionDansSaisie(ext, true);
+        UI.chargerExtractionDansSaisie(ext, true);
         toast(I18N.t("t_dupliquee"));
       } else if (btn.dataset.action === "deplier") {
-        if (detailsOuverts.has(id)) detailsOuverts.delete(id);
-        else detailsOuverts.add(id);
-        rendreHistorique();
+        if (UI.detailsOuverts.has(id)) UI.detailsOuverts.delete(id);
+        else UI.detailsOuverts.add(id);
+        UI.rendreHistorique();
       } else if (btn.dataset.action === "comparer") {
-        basculerComparaison(id);
+        UI.basculerComparaison(id);
       }
     });
 
@@ -3189,7 +297,7 @@
       if (!li) return;
       const ext = DATA.state.extractions.find(x => x.id === li.dataset.ext);
       if (!ext) return;
-      chargerExtractionDansSaisie(ext, false);
+      UI.chargerExtractionDansSaisie(ext, false);
     };
     $("#dernieres-liste").addEventListener("click", ev => ouvrirDerniere(ev.target));
     $("#dernieres-liste").addEventListener("keydown", ev => {
@@ -3198,44 +306,30 @@
       ouvrirDerniere(ev.target);
     });
 
-    $("#comparaison-ouvrir").addEventListener("click", ouvrirComparaison);
-    $("#comparaison-vider").addEventListener("click", () => { comparaison.clear(); rendreHistorique(); });
+    $("#comparaison-ouvrir").addEventListener("click", UI.ouvrirComparaison);
+    $("#comparaison-vider").addEventListener("click", () => { UI.comparaison.clear(); UI.rendreHistorique(); });
 
     // Référence
-    $("#conv-dial").addEventListener("input", rendreConvertisseurDifferee);
-    $("#pap-demarrer").addEventListener("click", papDemarrer);
-    $("#pap-suivant").addEventListener("click", papSuivant);
-    $("#btn-gerer-recettes").addEventListener("click", ouvrirModaleRecettes);
+    $("#conv-dial").addEventListener("input", UI.rendreConvertisseurDifferee);
+    $("#pap-demarrer").addEventListener("click", UI.papDemarrer);
+    $("#pap-suivant").addEventListener("click", UI.papSuivant);
+    $("#btn-gerer-recettes").addEventListener("click", UI.ouvrirModaleRecettes);
 
     // Recettes : formulaire
-    $("#recette-nouvelle").addEventListener("click", () => ouvrirFormRecette(null));
+    $("#recette-nouvelle").addEventListener("click", () => UI.ouvrirFormRecette(null));
     $("#recette-annuler").addEventListener("click", () => $("#form-recette").hidden = true);
-    $("#form-recette").addEventListener("submit", enregistrerRecette);
-    $("#recette-retablir").addEventListener("click", async () => {
-      if (!recetteEditId) return;
-      if (!confirm(I18N.t("c_retablir"))) return;
-      await DATA.reinitialiserRecette(recetteEditId);
-      $("#form-recette").hidden = true;
-      rendreListeRecettes();
-      toast(I18N.t("t_retablie"));
-    });
-    $("#recette-supprimer").addEventListener("click", async () => {
-      if (!recetteEditId) return;
-      if (!confirm(I18N.t("c_suppr_recette"))) return;
-      await DATA.supprimerRecette(recetteEditId);
-      $("#form-recette").hidden = true;
-      rendreListeRecettes();
-      toast(I18N.t("t_recette_supprimee"));
-    });
+    $("#form-recette").addEventListener("submit", UI.enregistrerRecette);
+    $("#recette-retablir").addEventListener("click", UI.retablirRecetteCourante);
+    $("#recette-supprimer").addEventListener("click", UI.supprimerRecetteCourante);
 
     // Saisie rapide flottante
-    $("#fab-rapide").addEventListener("click", () => basculerRapide());
-    $("#q-fermer").addEventListener("click", () => basculerRapide(false));
-    $("#q-cafe").addEventListener("change", surChoixCafeRapide);
-    $("#q-recette").addEventListener("change", majAvertRapide);
+    $("#fab-rapide").addEventListener("click", () => UI.basculerRapide());
+    $("#q-fermer").addEventListener("click", () => UI.basculerRapide(false));
+    $("#q-cafe").addEventListener("change", UI.surChoixCafeRapide);
+    $("#q-recette").addEventListener("change", UI.majAvertRapide);
     $("#q-note").addEventListener("input", () => $("#q-note-affichee").textContent = $("#q-note").value);
-    $("#q-enregistrer").addEventListener("click", enregistrerRapide);
-    $("#q-complet").addEventListener("click", () => { basculerRapide(false); activerEcran("saisie"); });
+    $("#q-enregistrer").addEventListener("click", UI.enregistrerRapide);
+    $("#q-complet").addEventListener("click", () => { UI.basculerRapide(false); activerEcran("saisie"); });
 
     // Guide : boutons de copie des messages
     $$("[data-copier]").forEach(b => b.addEventListener("click", async () => {
@@ -3257,7 +351,7 @@
 
     // Modales génériques
     $$(".modale-fermer[data-ferme]").forEach(b => b.addEventListener("click", () => $("#" + b.dataset.ferme).close()));
-    $("#modale-pas-a-pas").addEventListener("close", () => clearInterval(pap.interval));
+    $("#modale-pas-a-pas").addEventListener("close", () => clearInterval(UI.pap.interval));
 
     // Accueil
     $("#acc-creer").addEventListener("click", () => actionLier(true));
@@ -3312,13 +406,13 @@
     });
 
     // Café : formulaire
-    $("#cafe-nouveau").addEventListener("click", () => ouvrirFormCafe(null));
+    $("#cafe-nouveau").addEventListener("click", () => UI.ouvrirFormCafe(null));
     $("#cafe-annuler").addEventListener("click", () => $("#form-cafe").hidden = true);
-    $("#form-cafe").addEventListener("submit", enregistrerCafe);
+    $("#form-cafe").addEventListener("submit", UI.enregistrerCafe);
 
     // Les changements de données rafraîchissent l'interface.
-    $("#form-sachet").addEventListener("submit", enregistrerSachet);
-    $("#sachet-annuler").addEventListener("click", () => { $("#form-sachet").hidden = true; sachetCafeId = null; });
+    $("#form-sachet").addEventListener("submit", UI.enregistrerSachet);
+    $("#sachet-annuler").addEventListener("click", UI.fermerFormSachet);
 
     $("#don-sync").addEventListener("click", async () => {
       const etat = await DATA.synchroniser(true);
@@ -3335,14 +429,14 @@
          change ni les cafés, ni les recettes, ni les tasses : les reconstruire
          était du travail pur perte, et le coût grossit avec le catalogue. */
       const cafes = DATA.state.cafes, recettes = DATA.state.recettes;
-      siChange("cafes", cafes, () => { remplirSelectCafes(); remplirSelectRecetteReco(); });
-      siChange("filtres", DATA.state.extractions, remplirFiltres);
+      siChange("cafes", cafes, () => { UI.remplirSelectCafes(); remplirSelectRecetteReco(); });
+      siChange("filtres", DATA.state.extractions, UI.remplirFiltres);
       siChange("recettes", recettes, () => {
-        remplirSelectRecettes();
-        rendreRecettes();
+        UI.remplirSelectRecettes();
+        UI.rendreRecettes();
       });
-      siChange("tasses", DATA.state.tasses, remplirSelectTasses);
-      if (rapideOuvert) majPanneauRapide();
+      siChange("tasses", DATA.state.tasses, UI.remplirSelectTasses);
+      if (UI.rapideEstOuvert()) UI.majPanneauRapide();
       rendreEcranCourant();
     });
   }
@@ -3361,33 +455,40 @@
     oublierSignatures();
     $("#btn-lang").textContent = I18N.lang() === "fr" ? "EN" : "FR";
     $("#btn-lang").title = I18N.lang() === "fr" ? "Switch to English" : "Passer en français";
-    construirePilules();
-    $$("#f-diagnostic .pilule").forEach(x => basculerEtat(x, saisie.diagnostics.has(x.dataset.diag)));
-    $$("#f-descripteurs .tag").forEach(x => basculerEtat(x, saisie.descripteurs.has(x.dataset.tag)));
-    majCorrectionDiagnostic();
-    majBoutonsChrono();
-    majEtapesChrono(false);
-    $("#saisie-titre").textContent = saisie.editId ? I18N.t("s_modifier") : I18N.t("s_nouvelle");
-    $("#btn-enregistrer").textContent = saisie.editId ? I18N.t("s_enregistrer_modif") : I18N.t("s_enregistrer");
-    remplirSelectCafes();
-    remplirFiltres();
-    remplirSelectRecettes();
+    UI.construirePilules();
+    $$("#f-diagnostic .pilule").forEach(x => basculerEtat(x, UI.saisie.diagnostics.has(x.dataset.diag)));
+    $$("#f-descripteurs .tag").forEach(x => basculerEtat(x, UI.saisie.descripteurs.has(x.dataset.tag)));
+    UI.majCorrectionDiagnostic();
+    UI.majBoutonsChrono();
+    UI.majEtapesChrono(false);
+    $("#saisie-titre").textContent = UI.saisie.editId ? I18N.t("s_modifier") : I18N.t("s_nouvelle");
+    $("#btn-enregistrer").textContent = UI.saisie.editId ? I18N.t("s_enregistrer_modif") : I18N.t("s_enregistrer");
+    UI.remplirSelectCafes();
+    UI.remplirFiltres();
+    UI.remplirSelectRecettes();
     remplirSelectRecetteReco();
-    remplirSelectTasses();
-    rendreRecettes();
-    rendreTablePlages();
-    rendreConvertisseur();
+    UI.remplirSelectTasses();
+    UI.rendreRecettes();
+    UI.rendreTablePlages();
+    UI.rendreConvertisseur();
     majBadges();
-    majLait();
-    majLive();
-    majAvertissements();
+    UI.majLait();
+    UI.majLive();
+    UI.majAvertissements();
     // Le libelle "pas encore notee" est genere : il ne suit pas le TreeWalker.
-    majAffichageNote();
-    if (rapideOuvert) majPanneauRapide();
+    UI.majAffichageNote();
+    if (UI.rapideEstOuvert()) UI.majPanneauRapide();
     rendreEcranCourant(true);
   }
 
   // ---------- Démarrage ----------
+
+  // Version affichée dans le pied de page. À INCRÉMENTER en même temps que le
+  // changelog de DOCUMENTATION.md. Sert à savoir d'un coup d'oeil quelle version
+  // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
+  // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
+  // l'ancienne version" n'est pas diagnosticable.
+  const VERSION = "7.60";
 
   async function demarrer() {
     /* AVANT tout rendu : si Chris avait laissé le site en anglais, le paquet de
@@ -3399,27 +500,27 @@
     $("#btn-lang").textContent = I18N.lang() === "fr" ? "EN" : "FR";
     $("#btn-lang").title = I18N.lang() === "fr" ? "Switch to English" : "Passer en français";
     CHARTS.appliquerDefauts();
-    construirePilules();
+    UI.construirePilules();
     cabler();
-    rendreTablePlages();
+    UI.rendreTablePlages();
 
     const aDesDonnees = await DATA.init();
     majBadges();
-    remplirSelectCafes();
-    remplirFiltres();
-    remplirSelectRecettes();
+    UI.remplirSelectCafes();
+    UI.remplirFiltres();
+    UI.remplirSelectRecettes();
     remplirSelectRecetteReco();
-    remplirSelectTasses();
-    rendreRecettes();
+    UI.remplirSelectTasses();
+    UI.rendreRecettes();
     try { $("#chrono-bip").checked = localStorage.getItem("bips") !== "0"; } catch (e) { /* tant pis */ }
     // AVANT tout ce qui lit replis : le convertisseur et la saisie en dependent.
     await reprendreReplisLocaux();
     chargerReplis();
-    rendreReperesMouture();
-    rendreConvertisseur();
-    choisirMethode("Brikka");
-    reinitialiserSaisie();
-    if (restaurerBrouillon()) toast(I18N.t("t_brouillon"));
+    UI.rendreReperesMouture();
+    UI.rendreConvertisseur();
+    UI.choisirMethode("Brikka");
+    UI.reinitialiserSaisie();
+    if (UI.restaurerBrouillon()) toast(I18N.t("t_brouillon"));
 
     const h = location.hash.slice(1);
     activerEcran(ECRANS.includes(normaliserEcran(h)) ? normaliserEcran(h) : "tableau");
@@ -3431,7 +532,7 @@
     // Le système relâche le verrou d'écran quand l'onglet part en arrière plan.
     // Au retour, si le chrono tourne toujours, on le reprend.
     document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") syncWakeLock();
+      if (document.visibilityState === "visible") UI.syncWakeLock();
     });
 
     // Service worker : uniquement en http(s). En file:// l'enregistrement lève
@@ -3451,4 +552,10 @@
   }
 
   document.addEventListener("DOMContentLoaded", demarrer);
+
+  // Mis à disposition des autres écrans.
+  Object.assign(UI, {
+    LIBELLES_SYNC, VERSION, actionLier, cabler, demarrer, majBadges, majStatutDonnees,
+    majStatutSync, rafraichirLangue, remplirSelectRecetteReco,
+  });
 })();

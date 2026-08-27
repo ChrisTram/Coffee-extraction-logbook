@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.59,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.60,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -9,12 +9,16 @@ Doc de référence du projet, maintenue à chaque modification. Commencer par
 Site mono-dossier, ouvert en `file://` dans Chrome. Aucune dépendance réseau :
 Chart.js 4.4.4 est embarqué dans `js/vendor/chart.umd.js`. Les scripts sont
 des scripts classiques (pas de modules ES, ils ne marchent pas en file://),
-chargés dans cet ordre : chart.umd, i18n, grind, recettes, demo-data, data,
-charts, app. Chaque fichier expose un objet global (I18N, GRIND, DATA, CHARTS)
-ou des constantes globales (RECETTES_DEPART, etc.). app.js est une IIFE.
+chargés dans cet ordre : chart.umd, i18n, grind, recettes, demo-data, sync, data,
+reglages, charts, puis les six fichiers d'interface et app. Chaque fichier expose
+un objet global (I18N, GRIND, DATA, CHARTS) ou des constantes globales
+(RECETTES_DEPART, etc.).
+
+L'interface tenait dans un seul `app.js` de 3 400 lignes et une seule IIFE. Elle
+est découpée depuis la v7.60 (voir section 1 bis).
 
 SIX écrans dans une page unique, bascule par nav et hash. La liste fait foi dans
-`ECRANS` (app.js) : tableau, saisie, historique, reglages, guide, parametres.
+`ECRANS` (js/ui-noyau.js) : tableau, saisie, historique, reglages, guide, parametres.
 
 La barre de navigation ne porte que TROIS onglets à texte, ceux où l'on va
 plusieurs fois par jour : tableau, saisie, historique. Les trois écrans
@@ -25,11 +29,87 @@ passer la barre à la ligne, sous le reste de la page. Un test le verrouille.
 
 L'écran `reference` a fusionné dans `guide` : la référence matériel et le guide
 d'achat parlaient du même sujet et se consultaient l'un après l'autre. Les anciens
-liens `#reference` restent valides grâce à `ECRANS_RENOMMES` dans app.js, qui est
+liens `#reference` restent valides grâce à `ECRANS_RENOMMES` dans js/ui-noyau.js,
+qui est
 le bon endroit pour tout renommage futur d'écran.
 Elle était codée en dur en deux endroits, ce qui obligeait à penser aux deux à
 chaque ajout. Bouton flottant de saisie rapide en bas à
 droite (café + recette + note, le reste prérempli).
+
+## 1 bis. L'interface en sept fichiers
+
+Jusqu'à la v7.60, toute l'interface tenait dans `js/app.js` : 3 400 lignes, une
+IIFE, une seule portée. C'était confortable, tout se voyait de partout, et
+personne ne pouvait mal se câbler. C'était aussi devenu illisible, et la portée
+unique cachait au moins un bug (voir plus bas).
+
+### Le découpage
+
+| fichier | rôle |
+| --- | --- |
+| `js/ui-noyau.js` | outils partagés, thème, navigation. Définit `UI`. |
+| `js/ui-tableau.js` | écran d'accueil : insights et calendrier d'activité |
+| `js/ui-saisie.js` | formulaire, chronomètre, brouillon, panneau rapide |
+| `js/ui-historique.js` | tableau, filtres, tri, comparateur |
+| `js/ui-guide.js` | recettes de référence, pas à pas, convertisseur de mouture |
+| `js/ui-catalogue.js` | modales cafés, sachets, recettes, écran Paramètres |
+| `js/app.js` | liaison des données, câblage des écouteurs, démarrage |
+
+### Les deux règles
+
+**Le noyau se charge en premier, donc on l'emprunte.** Chaque fichier commence
+par `const { $, $$, toast, ... } = UI;`. C'est une liaison de valeur, mais les
+noms empruntés sont des fonctions et des objets : elles ne changent jamais
+d'identité.
+
+**Les écrans s'appellent par `UI.`, jamais directement.** `UI.rendreHistorique()`
+est résolu au moment de l'appel, pas au chargement. C'est ce qui autorise deux
+écrans à s'appeler mutuellement, ce qu'ils font : la saisie ouvre le pas à pas du
+guide, le guide relit l'état de la saisie. Avec des emprunts, il aurait fallu un
+ordre de chargement sans cycle, et il n'y en a pas.
+
+Le noyau lui-même n'emprunte rien et ne connaît aucun écran : quand il doit en
+redessiner un, il passe par `UI`. Un noyau qui appellerait `rendreHistorique()`
+directement ne serait plus un noyau, ce serait l'application entière avec des
+étapes.
+
+### Le piège, et il est silencieux
+
+**Ne jamais partager un `let` par emprunt.** La déstructuration lie une VALEUR :
+un fichier qui emprunte une variable réassignée plus tard par le noyau reste figé
+sur la valeur du chargement, pour toujours, sans que rien ne le signale. C'est
+arrivé pendant le découpage lui-même, sur l'écran courant : `ecranCourant` et
+`ouvertureEdition` étaient deux `let`, et seule une relecture l'a attrapé.
+
+L'état partagé doit être un OBJET muté en place. C'est déjà la forme de `saisie`,
+`chrono`, `tri`, `replis`, et c'est maintenant celle de `nav`
+(`{ ecran, ouvertureEdition }`). `tools/modules.test.mjs` refuse tout emprunt
+d'une variable réassignable du noyau.
+
+### Ce que le découpage a trouvé
+
+`enregistrerRapide()` lisait `cafeQ`, un nom qui n'existait nulle part. Le code
+est en mode strict, donc cette lecture levait une ReferenceError AVANT l'appel à
+`ajouterExtraction` : le bouton d'enregistrement du panneau rapide ne faisait
+rien du tout, et la tasse était perdue en silence.
+
+Tant que 3 400 lignes partageaient une portée, aucun outil ne pouvait poser la
+question : le nom aurait pu venir de n'importe où dans le fichier. C'est en
+séparant les portées qu'elle devient posable. `tools/modules.test.mjs` la pose
+maintenant à chaque exécution.
+
+### Ajouter du code
+
+- Une fonction utilisée par UN seul écran : dans son fichier, sans l'exposer.
+- Une fonction appelée depuis un autre écran : l'ajouter à l'`Object.assign(UI, …)`
+  de son fichier, et l'appeler en `UI.laFonction()`.
+- Un outil utile à DEUX écrans au moins : dans le noyau. Pas avant : un nom placé
+  dans le noyau est un nom que tous les écrans peuvent utiliser, et c'est un
+  engagement.
+- Un nouveau fichier d'interface : le déclarer dans `index.html`, `sw.js` ET
+  `tools/boot.test.mjs`. En oublier un donne trois pannes différentes (écran
+  blanc, application hors ligne cassée, test qui passe alors que le site est
+  mort). Deux tests comparent ces listes entre elles.
 
 ## 2. Modèle de données
 
@@ -518,7 +598,7 @@ leur `border: 1px solid var(--lignes)`.
   passer de 1 100 à 2 129 lignes sans que rien ne le signale. Utiliser
   `split().join()` plutôt que `replace()` sur tout code ou texte porteur de
   dollars, et
-  lancer `node tools/boot.test.mjs` après toute modification de app.js.
+  lancer `node tools/boot.test.mjs` après toute modification de l'interface.
 - NOTIFIER AVALE LES ERREURS : `DATA.notifier()` enveloppe chaque abonné dans un
   try/catch qui se contente d'un `console.error`. Une exception de rendu ne
   remonte donc PAS : l'écran reste vide et rien ne s'affiche. C'est ce qui rend ce
@@ -576,16 +656,23 @@ print('PROPRE' if not pb else pb)"
 Régénérer la démo après tout changement de schéma :
 `python3 tools/gen_demo.py` (écrit demo/*.csv et js/demo-data.js).
 
-Quatre suites sans navigateur, sans dépendance, à lancer depuis `tracker/` :
+Cinq suites sans navigateur, sans dépendance, à lancer depuis `tracker/` :
 
 ```
 node tools/boot.test.mjs     demarrage et rendu des 7 ecrans
 node tools/data.test.mjs     couche de donnees, dont les deux logiques de ratio
+node tools/modules.test.mjs  frontieres entre les sept fichiers d'interface
 node worker/sync.test.mjs    fusion entre appareils, 23 assertions
 node worker/index.test.mjs   porte d'entree, 32 assertions
 ```
 
-`tools/boot.test.mjs` est le plus important après une modification de `app.js`.
+`tools/modules.test.mjs` lit les fichiers d'interface sans les exécuter et
+vérifie les frontières que le découpage a créées : aucun nom libre inconnu,
+tout ce qui est lu sur `UI` y est bien posé, aucun emprunt d'une variable
+réassignable, et les trois listes de scripts restent d'accord. Il est vérifié en
+réintroduisant le bug de `cafeQ` : il échoue.
+
+`tools/boot.test.mjs` est le plus important après une modification de l'interface.
 Il monte un faux DOM et EXÉCUTE réellement l'application : démarrage, rendu des
 sept écrans, bascule de langue. C'est le seul filet contre une erreur d'exécution,
 puisque le panneau navigateur de l'agent ne peut pas charger ce site. Il capte les
@@ -1775,6 +1862,9 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.60 : l'interface est découpée en sept fichiers (section 1 bis), avec une
+  suite de tests dédiée aux frontières. Elle a trouvé du premier coup un bug réel :
+  le bouton d'enregistrement du panneau rapide ne marchait pas.
 - v7.59 : majLive ne fait plus de recherche DOM ni d écriture inutile à chaque
   frappe, les clics des 85 pilules sont délégués, et 34 champs annoncent leur
   touche de validation au clavier mobile.

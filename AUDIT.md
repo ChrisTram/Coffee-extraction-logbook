@@ -8,6 +8,17 @@ Rien ici n'est une supposition. Les chiffres du code viennent de mesures sur les
 fichiers, ceux des données viennent du document D1 de production, lu et passé dans
 la couche pure du site.
 
+## Où en est cette liste
+
+**Les dix points sont faits**, entre la v7.44 et la v7.60. Le détail de chacun est
+dans le changelog de DOCUMENTATION.md, qui fait foi ; plusieurs ont été livrés
+avec des modifications demandées en cours de route, et les sections ci-dessous ne
+les reflètent pas.
+
+Le reste de ce document est laissé tel qu'il a été écrit le 27 août. C'est le
+RAISONNEMENT qui sert encore, pas la liste de tâches : les chiffres décrivent la
+v7.43, pas le site d'aujourd'hui.
+
 ## L'état des lieux en dix chiffres
 
 | Mesure | Valeur | Commentaire |
@@ -239,6 +250,7 @@ temps.
 ## 10. Découper `app.js`
 
 **Coût M.** La dette qui rend tout le reste plus cher.
+**Fait en v7.60.** Voir la section 1 bis de DOCUMENTATION.md pour le résultat.
 
 **3 081 lignes en une seule IIFE**, 141 fonctions, contre 2 482 il y a douze jours,
 soit **+24 % en une semaine et demie**. Deux fonctions pèsent 536 lignes à elles
@@ -260,6 +272,18 @@ de visible. Mais chaque amélioration au dessus coûte un peu plus cher tant qu'
 n'est pas faite, et le risque d'un bug silencieux augmente mécaniquement avec la
 taille du fichier.
 
+**Ce qui a changé par rapport à ce plan.** Sept fichiers au lieu de six : un
+`js/ui-noyau.js` s'est imposé pour les outils partagés, sans quoi chaque écran
+aurait dû emprunter à `app.js`, donc dépendre du dernier fichier chargé.
+`ui-reglages.js` s'appelle `ui-catalogue.js` : il gère les cafés, les sachets et
+les recettes, pas les réglages du broyeur, et le nom se confondait avec l'écran
+Paramètres.
+
+L'argument du « bug silencieux qui augmente avec la taille » s'est vérifié le jour
+même. Le contrôle de frontières écrit avec le découpage a trouvé du premier coup
+un appel à un nom qui n'existait nulle part : le bouton d'enregistrement du
+panneau rapide ne marchait pas, et la tasse était perdue en silence.
+
 ---
 
 ## Envisagé, puis écarté
@@ -275,7 +299,8 @@ taille du fichier.
 
 ## Ce qui va bien, et qu'il ne faut pas casser
 
-- **262 assertions** sur 4 suites sans navigateur, en moins d'une seconde. Elles
+- **262 assertions** sur 4 suites sans navigateur, en moins d'une seconde (une
+  cinquième suite s'est ajoutée depuis, pour les frontières entre fichiers). Elles
   ont attrapé cinq régressions rien que cette semaine, dont deux que je n'aurais
   pas vues autrement.
 - **Zéro dépendance réseau.** Le site s'ouvre toujours en double-clic sur un

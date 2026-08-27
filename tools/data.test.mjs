@@ -17,6 +17,14 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+
+/* Le code de l'interface tient en sept fichiers depuis le découpage. Les
+   contrôles qui cherchent une chaîne dans "l'interface" doivent les lire tous :
+   sinon ils repassent au vert dès qu'un bout de code change de fichier, ce qui
+   est exactement le moment où on aimerait qu'ils regardent. */
+const SOURCE_UI = ["js/ui-noyau.js", "js/ui-tableau.js", "js/ui-saisie.js",
+  "js/ui-historique.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/app.js"]
+  .map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 /* demo-data.js n'est plus une balise script depuis la v7.56, mais le harnais le
    charge quand meme : chargerDemo() en a besoin et il n'y a pas de reseau ici. */
 const SCRIPTS = ["js/grind.js", "js/recettes.js", "js/demo-data.js", "js/sync.js", "js/data.js", "js/reglages.js"];
@@ -284,7 +292,7 @@ check("il garde sa correction, c'est elle qui s'affiche a la deduction",
 
 // La deduction doit s'appuyer sur des listes qui existent vraiment dans app.js.
 {
-  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  const app = SOURCE_UI;
   check("app.js deduit au lieu d'avertir", app.includes("const inegale = DIAGS_SOUS_EXTRAIT"));
   check("l'ancien message qui demandait de cocher a disparu",
     !app.includes("diag_contradiction"));
@@ -557,7 +565,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
 
   // Chaque icone d'ecran doit viser un ecran qui existe vraiment.
   const cibles = [...html.matchAll(/data-ecran="(w+)"/g)].map(m => m[1]);
-  const app = readFileSync(join(ROOT, 'js/app.js'), 'utf8');
+  const app = SOURCE_UI;
   const liste = app.slice(app.indexOf('const ECRANS = ['), app.indexOf(']', app.indexOf('const ECRANS = [')));
   const inconnues = cibles.filter(c => !liste.includes('"' + c + '"'));
   check('toutes les cibles data-ecran existent', inconnues.length === 0, inconnues.join(', '));
@@ -572,7 +580,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
    non purs en Switch : il empechait exactement l'essai qui aurait produit la
    donnee capable de trancher. Les avertissements restent, le refus est parti. */
 {
-  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  const app = SOURCE_UI;
   check("plus aucun refus d'enregistrement dans app.js",
     !app.includes("saisie.bloque") && !app.includes("t_bloque"));
 
@@ -677,7 +685,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
    reelle est de 90 a 115 ml. Un chiffre faux etait pire que pas de chiffre : il
    alimentait le ratio, le volume de boisson et le prereglage du lait. */
 {
-  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  const app = SOURCE_UI;
   check("la formule Brikka a disparu de app.js", !app.includes("0.7 * dose"));
   check("volumeEstime rend la main tout de suite en Brikka",
     /function volumeEstime[\s\S]{0,220}methode === "Brikka"[\s\S]{0,20}return 0/.test(app));
@@ -703,7 +711,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("le champ mouture n'a plus de fond trompeur", !champ.includes("placeholder"), champ);
   check("Parametres porte le reglage du broyeur", html.includes('id="param-molette"'));
 
-  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  const app = SOURCE_UI;
   check("le prefill lit le reglage du broyeur, pas le dial de la recette",
     app.includes('$("#f-mouture").value = cafeCourantMoulu() ? "" : replis.molette;'));
   check("le reglage d'usine est le compromis des deux machines",
@@ -715,13 +723,13 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
    par l'onglet, et le formulaire ecrasait l'extraction passee en croyant creer
    une tasse. Perte de donnees silencieuse. */
 {
-  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  const app = SOURCE_UI;
   check("arriver sur Saisie par la navigation abandonne l'edition",
-    app.includes('if (nom === "saisie" && saisie.editId && !ouvertureEdition)'));
+    app.includes('if (nom === "saisie" && UI.saisie.editId && !nav.ouvertureEdition)'));
   check("l'abandon est annonce, il n'est pas silencieux",
     app.includes('t_edition_abandonnee'));
   check("le drapeau protege l'ouverture legitime d'une edition",
-    app.includes("ouvertureEdition = true") && app.includes("ouvertureEdition = false"));
+    app.includes("nav.ouvertureEdition = true") && app.includes("nav.ouvertureEdition = false"));
 
   /* Les appels a activerEcran qui SUIVAIENT chargerExtractionDansSaisie sont
      partis : la fonction ouvre deja l'ecran, et le rappel reinitialisait
@@ -861,7 +869,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("le curseur ne suggere plus 7",
     /<input[^>]*id="f-note"[^>]*value="5"/.test(html));
 
-  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  const app = SOURCE_UI;
   check("l'enregistrement lit noteSaisie et plus le curseur brut",
     app.includes("note_sur_10: noteSaisie()"));
   check("poser le doigt sur le curseur compte, meme sans mouvement",
@@ -944,7 +952,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("maj_le n'entre toujours pas dans le CSV", !csv.includes("1699999999999"));
 
   // L'ancienne regle de fraicheur a disparu, la nouvelle l'a remplacee.
-  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  const app = SOURCE_UI;
   check("la regle de fraicheur par torrefaction a disparu", !app.includes("insightFraicheur"));
   check("la regle d'age du paquet la remplace", app.includes("insightAgePaquet"));
   const i18n = readFileSync(join(ROOT, "js/i18n.js"), "utf8");
@@ -1045,7 +1053,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
    gramme ne dit rien tant qu'on ignore la dose : le cout d'UNE tasse est le seul
    chiffre qui se compare d'un sachet a l'autre. */
 {
-  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  const app = SOURCE_UI;
   check("la fiche cafe porte un cout par tasse", app.includes("function coutParTasse"));
   check("il utilise la dose moyenne du cafe, pas la dose de repli",
     app.includes("coutTasse = doseTypique"));
@@ -1071,7 +1079,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
    Ca exclut la solution naive qui serait de retarder la suppression. On supprime
    donc tout de suite, pour de vrai, et on garde une copie en memoire. */
 {
-  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  const app = SOURCE_UI;
   const bloc = app.slice(app.indexOf("async function supprimerExtractionAvecRetour"),
     app.indexOf("async function supprimerExtractionAvecRetour") + 700);
 
@@ -1105,7 +1113,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
    chocolat noir" sans jamais dire s'il etait coche. */
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
-  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  const app = SOURCE_UI;
 
   // Le choix de machine, dans le HTML statique.
   const methodes = [...html.matchAll(/<button[^>]*class="btn-methode[^"]*"[^>]*>/g)].map(m => m[0]);
@@ -1210,7 +1218,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
      repli, sans que rien ne le corrige jamais. */
   check("la langue voulue est memorisee, pas appliquee", fr.includes("langueSouhaitee"));
   check("c'est preparer() qui tranche, une fois le paquet la", fr.includes("function preparer"));
-  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  const app = SOURCE_UI;
   check("et le demarrage l'attend avant le premier rendu",
     /async function demarrer[\s\S]{0,300}await I18N\.preparer/.test(app));
 
@@ -1230,13 +1238,13 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
    cartes de recettes, alors qu'enregistrer une tasse ne change ni les cafes ni
    les recettes. */
 {
-  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  const app = SOURCE_UI;
 
   check("un anti-rebond existe", app.includes("function antiRebond"));
   check("les filtres de l'historique passent par lui",
-    app.includes('addEventListener("input", rendreHistoriqueDifferee)'));
+    app.includes('addEventListener("input", UI.rendreHistoriqueDifferee)'));
   check("le convertisseur du moulin aussi",
-    app.includes('addEventListener("input", rendreConvertisseurDifferee)'));
+    app.includes('addEventListener("input", UI.rendreConvertisseurDifferee)'));
   /* Le curseur envoie un evenement par cran : sans anti-rebond, le traverser
      redessine 150 fois un SVG de 151 traits. */
   check("et le curseur du moulin egalement",
@@ -1270,7 +1278,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
    d'avant, pas une version degradee. */
 {
   const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
-  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  const app = SOURCE_UI;
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
 
   /* MOUVEMENT REDUIT. Cinq animations et vingt et une transitions, rien ne les
@@ -1321,7 +1329,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
    volume : elle faisait 18 recherches DOM et 4 ecritures innerHTML a chaque fois,
    alors que la plupart des frappes ne changent aucune des quatre zones. */
 {
-  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  const app = SOURCE_UI;
   const l = app.split("\n");
   const i = l.findIndex(x => x.includes("function majLive() {"));
   let f = i;

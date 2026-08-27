@@ -163,7 +163,8 @@ Chart.defaults = creuse();
 /* ---------- Exécution ---------- */
 
 const SCRIPTS = ["js/i18n.en.js", "js/i18n.js", "js/grind.js", "js/recettes.js", "js/demo-data.js",
-  "js/sync.js", "js/data.js", "js/reglages.js", "js/charts.js", "js/app.js"];
+  "js/sync.js", "js/data.js", "js/reglages.js", "js/charts.js",
+  "js/ui-noyau.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-historique.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/app.js"];
 const source = SCRIPTS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 
 // console.error interceptée : c'est par là que sortent les erreurs de rendu.
@@ -178,7 +179,10 @@ const lancer = new Function(
   "document", "window", "localStorage", "location", "history", "navigator",
   "getComputedStyle", "requestAnimationFrame", "performance", "Chart", "indexedDB",
   "setTimeout", "clearTimeout", "setInterval", "clearInterval", "NodeFilter", "AudioContext",
-  source + "\nreturn { DATA, I18N, CHARTS, REGLAGES, GRIND };"
+  /* UI est rendu au test depuis le decoupage de l'interface en sept fichiers :
+     c'est la surface que les ecrans se partagent, donc le seul point d'entree
+     pour declencher une action d'ecran sans simuler un clic. */
+  source + "\nreturn { DATA, I18N, CHARTS, REGLAGES, GRIND, UI };"
 );
 
 const api = lancer(document, window, localStorage, location, history, navigator,
@@ -315,6 +319,43 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
     [...new Set(api.DATA.state.recettes.map(r => r.dial))].join(", "));
   check("1.5.0 reste valide sur les deux machines",
     api.GRIND.verifierPlage("Brikka", "1.5.0").ok && api.GRIND.verifierPlage("Switch", "1.5.0").ok);
+}
+
+/* LE PANNEAU RAPIDE ENREGISTRE VRAIMENT.
+
+   enregistrerRapide() lisait `cafeQ`, un nom qui n'existait nulle part. En mode
+   strict cette lecture leve une ReferenceError AVANT l'appel a
+   ajouterExtraction : le bouton du panneau rapide ne faisait rien, et la tasse
+   partait en fumee. Personne ne l'avait vu parce que rien ne peut signaler un
+   nom libre inconnu tant que 3 400 lignes partagent une seule portee.
+
+   Le controle statique de tools/modules.test.mjs empeche ce nom de revenir.
+   Celui-ci verifie le comportement : la tasse arrive bien en base. */
+{
+  const cafe = api.DATA.state.cafes.find(c => c.actif !== 0);
+  const recette = api.DATA.state.recettes.find(r => r.actif !== 0);
+  check("un cafe et une recette existent pour la saisie rapide", !!cafe && !!recette);
+  if (cafe && recette) {
+    document.querySelector("#q-cafe").value = cafe.id;
+    document.querySelector("#q-recette").value = recette.nom;
+    document.querySelector("#q-note").value = "";
+    const avant = api.DATA.state.extractions.length;
+    let leve = null;
+    try { await api.UI.enregistrerRapide(); } catch (e) { leve = e; }
+    check("la saisie rapide n'explose pas", !leve, leve && leve.message);
+    check("et la tasse est bien enregistree",
+      api.DATA.state.extractions.length === avant + 1,
+      api.DATA.state.extractions.length + " au lieu de " + (avant + 1));
+    const derniere = api.DATA.state.extractions[api.DATA.state.extractions.length - 1];
+    check("sur le cafe choisi dans le panneau", derniere && derniere.cafe_id === cafe.id,
+      derniere && derniere.cafe_id);
+    /* Un cafe deja moulu n'a pas de reglage de molette a enregistrer : reprendre
+       celui de la recette serait inventer un geste que Chris n'a pas fait. */
+    const moulu = Number(cafe.deja_moulu) === 1;
+    check("la molette suit l'etat du cafe, moulu ou non",
+      derniere && (moulu ? derniere.mouture_dial === "" : derniere.mouture_dial === recette.dial),
+      derniere && JSON.stringify(derniere.mouture_dial));
+  }
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
