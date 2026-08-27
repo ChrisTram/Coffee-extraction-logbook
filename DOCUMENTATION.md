@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.53,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.54,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -1775,6 +1775,8 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.54 : Chart.js chargée à la demande, elle pesait 30 % du site pour un seul
+  écran. Toujours précachée, donc le hors ligne marche.
 - v7.53 : les dix scripts passent en defer, ils bloquaient le parsing du HTML.
 - v7.52 : les bascules annoncent enfin leur état, et les définitions s'ouvrent
   au doigt par appui long (section 8 decies).

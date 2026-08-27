@@ -28,6 +28,7 @@ const CHARTS = (() => {
   }
 
   function appliquerDefauts() {
+    if (typeof Chart === "undefined") return;
     Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
     Chart.defaults.font.size = 12;
     Chart.defaults.color = cssVar("--attenue");
@@ -44,9 +45,58 @@ const CHARTS = (() => {
     Chart.defaults.maintainAspectRatio = false;
   }
 
+  /* CHARGEMENT À LA DEMANDE DE CHART.JS.
+
+     La bibliothèque pèse 68 Ko gzippés, soit 30 % du poids du site, et ne sert
+     QUE sur le tableau de bord. La heatmap et la réglette du moulin sont du SVG
+     maison et n'en dépendent pas : ouvrir le site sur Saisie, Historique ou Guide
+     ne doit donc rien télécharger de tout ça.
+
+     Elle reste PRÉCACHÉE par le service worker : le chargement différé marche
+     donc aussi hors ligne, il lit simplement le cache au lieu du réseau.
+
+     La file d'attente garde le DERNIER appel par canvas. Pendant le
+     téléchargement, un rendu peut être redemandé plusieurs fois (bascule de
+     langue, notification de données) : rejouer tout serait du gâchis, et rejouer
+     le premier afficherait un graphe périmé. */
+  let chartPret = typeof Chart !== "undefined";
+  let chargementChart = null;
+  const enAttente = new Map();
+
+  function chargerChart() {
+    if (chartPret) return Promise.resolve(true);
+    if (!chargementChart) {
+      chargementChart = new Promise(resolve => {
+        const s = document.createElement("script");
+        s.src = "js/vendor/chart.umd.js";
+        s.onload = () => {
+          chartPret = true;
+          appliquerDefauts();
+          resolve(true);
+        };
+        // Un échec ne doit pas casser le tableau de bord : les KPI, les insights
+        // et la heatmap SVG restent parfaitement lisibles sans les graphes.
+        s.onerror = () => { chargementChart = null; resolve(false); };
+        document.head.appendChild(s);
+      });
+    }
+    return chargementChart;
+  }
+
+  function viderFile() {
+    const travaux = [...enAttente.entries()];
+    enAttente.clear();
+    travaux.forEach(([id, config]) => creer(id, config));
+  }
+
   function creer(idCanvas, config) {
     const el = document.getElementById(idCanvas);
     if (!el) return null;
+    if (!chartPret) {
+      enAttente.set(idCanvas, config);
+      chargerChart().then(ok => { if (ok) viderFile(); else enAttente.clear(); });
+      return null;
+    }
     if (registre[idCanvas]) registre[idCanvas].destroy();
     registre[idCanvas] = new Chart(el.getContext("2d"), config);
     return registre[idCanvas];
@@ -54,6 +104,7 @@ const CHARTS = (() => {
 
   function toutDetruire() {
     Object.keys(registre).forEach(k => { registre[k].destroy(); delete registre[k]; });
+    enAttente.clear();
   }
 
   // Barres du nombre d'extractions par jour, note moyenne du jour en ligne,
@@ -430,7 +481,7 @@ const CHARTS = (() => {
 
   return {
     C_BRIKKA, C_SWITCH, C_DEUX, C_DIAG,
-    appliquerDefauts, toutDetruire,
+    appliquerDefauts, toutDetruire, chargerChart,
     barresEtLigne30j, barresHorizontales, comparatifMachines, nuage, anneauDiagnostics,
     heatmap, diagramme,
   };

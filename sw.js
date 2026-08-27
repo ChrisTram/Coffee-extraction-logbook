@@ -26,6 +26,8 @@ const PRECACHE_URLS = [
   "./index.html",
   "./manifest.json",
   "./css/styles.css",
+  // Plus chargée par une balise script depuis la v7.54, mais toujours précachée :
+  // le chargement à la demande doit fonctionner hors ligne.
   "./js/vendor/chart.umd.js",
   "./js/i18n.js",
   "./js/grind.js",

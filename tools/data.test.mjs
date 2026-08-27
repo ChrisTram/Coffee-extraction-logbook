@@ -1130,5 +1130,39 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     "attache avant le cablage");
 }
 
+/* CHART.JS A LA DEMANDE. 68 Ko gzippes, 30 % du poids du site, pour un seul
+   ecran. Ouvrir sur Saisie, Historique ou Guide ne doit plus rien telecharger de
+   tout ca : la heatmap et la reglette du moulin sont du SVG maison. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  check("Chart.js n'est plus une balise script", !html.includes("chart.umd.js"));
+
+  const sw = readFileSync(join(ROOT, "sw.js"), "utf8");
+  /* Toujours PRECACHEE : le chargement differe doit marcher hors ligne, il lit
+     alors le cache au lieu du reseau. */
+  check("mais elle reste precachee pour le hors ligne", sw.includes("chart.umd.js"));
+
+  const charts = readFileSync(join(ROOT, "js/charts.js"), "utf8");
+  check("charts.js sait la charger lui meme", charts.includes("function chargerChart"));
+  /* Un seul point d'entree : toutes les fonctions Chart.js passent par creer(),
+     donc la file d'attente les couvre toutes sans exception. */
+  check("le chargement passe par creer(), point d'entree unique",
+    /function creer[\s\S]{0,300}chargerChart\(\)/.test(charts));
+  /* La file garde le DERNIER appel par canvas : pendant le telechargement un
+     rendu peut etre redemande, rejouer le premier afficherait un graphe perime. */
+  check("la file garde le dernier appel par canvas", charts.includes("enAttente.set(idCanvas"));
+  check("un echec de chargement ne casse pas le tableau de bord",
+    /onerror[\s\S]{0,120}resolve\(false\)/.test(charts));
+  /* appliquerDefauts touche Chart.defaults : muette sans la bibliotheque, et
+     rejouee des son arrivee. */
+  check("appliquerDefauts se tait sans la bibliotheque",
+    /function appliquerDefauts[\s\S]{0,200}typeof Chart === "undefined"/.test(charts));
+
+  // Le SVG maison ne doit surtout pas etre passe par la file.
+  const svg = charts.slice(charts.indexOf("function heatmap"), charts.indexOf("function attacherTooltips"));
+  check("la heatmap et la reglette restent independantes de Chart.js",
+    !svg.includes("creer("), "du SVG maison passe par creer()");
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);
