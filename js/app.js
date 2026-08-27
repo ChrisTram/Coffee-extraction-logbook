@@ -255,6 +255,19 @@
      que l'abandon ci-dessous ne casse pas l'edition qu'on vient de demander. */
   let ouvertureEdition = false;
 
+  /* Enveloppe un changement d'écran dans une transition de vue quand le moteur
+     sait le faire. Sinon on appelle directement : le repli est le comportement
+     d'avant, pas une version dégradée.
+
+     On respecte aussi le mouvement réduit ici et pas seulement en CSS : lancer la
+     machinerie pour l'annuler ensuite serait du travail pour rien. */
+  function avecTransition(fn) {
+    const bouge = typeof matchMedia === "function" &&
+      matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (bouge || !document.startViewTransition) { fn(); return; }
+    document.startViewTransition(fn);
+  }
+
   function activerEcran(nom) {
     /* Arriver sur Saisie par la navigation veut dire "je veux noter une tasse",
        jamais "reprends la modification d'il y a dix minutes". On abandonne donc
@@ -266,18 +279,22 @@
       toast(I18N.t("t_edition_abandonnee"));
     }
     ecranCourant = nom;
-    $$(".ecran").forEach(e => e.classList.remove("actif"));
-    /* aria-current="page" et pas aria-pressed : ce sont des liens de navigation
-        déguisés en boutons, pas des bascules. */
-    $$(".nav-btn").forEach(b => {
-      b.classList.toggle("actif", b.dataset.ecran === nom);
-      if (b.dataset.ecran === nom) b.setAttribute("aria-current", "page");
-      else b.removeAttribute("aria-current");
+    // Seule la bascule VISUELLE entre dans la transition. L'abandon d'édition
+    // ci-dessus est de la logique métier : il se produit dans tous les cas.
+    avecTransition(() => {
+      $$(".ecran").forEach(e => e.classList.remove("actif"));
+      /* aria-current="page" et pas aria-pressed : ce sont des liens de navigation
+          déguisés en boutons, pas des bascules. */
+      $$(".nav-btn").forEach(b => {
+        b.classList.toggle("actif", b.dataset.ecran === nom);
+        if (b.dataset.ecran === nom) b.setAttribute("aria-current", "page");
+        else b.removeAttribute("aria-current");
+      });
+      const sec = $("#ecran-" + nom);
+      if (sec) sec.classList.add("actif");
+      if (location.hash !== "#" + nom) history.replaceState(null, "", "#" + nom);
+      rendreEcranCourant();
     });
-    const sec = $("#ecran-" + nom);
-    if (sec) sec.classList.add("actif");
-    if (location.hash !== "#" + nom) history.replaceState(null, "", "#" + nom);
-    rendreEcranCourant();
     window.scrollTo({ top: 0 });
   }
 
@@ -839,7 +856,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.57";
+  const VERSION = "7.58";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -1831,6 +1848,22 @@
 
   const tri = { colonne: "date_heure", sens: -1 };
 
+  /* Retire les diacritiques pour que "brule" trouve "brûlé" et "cafe" trouve
+     "café". Sans ça une recherche en français est inutilisable au clavier. */
+  function sansAccents(s) {
+    return String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  }
+
+  /* Tout ce dans quoi une recherche a du sens : ce que Chris a ÉCRIT, plus ce
+     qu'il a choisi. Pas les nombres, on a des filtres dédiés pour ça. */
+  function texteCherchable(e) {
+    const cafe = DATA.cafeDe(e);
+    return sansAccents([
+      e.commentaire, e.descripteurs, e.diagnostic, e.recette, e.methode,
+      cafe ? cafe.nom : "",
+    ].filter(Boolean).join(" ").toLowerCase());
+  }
+
   function filtrerHistorique() {
     const exts = extAvecCalculs();
     const fCafe = $("#h-cafe").value;
@@ -1839,7 +1872,12 @@
     const fNote = parseFloat($("#h-note-min").value);
     const fDu = $("#h-du").value;
     const fAu = $("#h-au").value;
+    /* Recherche insensible à la casse ET aux accents : taper "brule" doit trouver
+       "brûlé". normalize + suppression des diacritiques, c'est la seule façon
+       correcte de le faire en français sans table de correspondance. */
+    const q = sansAccents($("#h-recherche").value.trim().toLowerCase());
     return exts.filter(e =>
+      (!q || texteCherchable(e).includes(q)) &&
       (!fCafe || e.cafe_id === fCafe) &&
       (!fMethode || e.methode === fMethode) &&
       (!fDiag || (e.diagnostic || "").split("|").includes(fDiag)) &&
@@ -3044,10 +3082,34 @@
     });
 
     // Historique
-    ["h-cafe", "h-methode", "h-diagnostic", "h-note-min", "h-du", "h-au"].forEach(id =>
+    ["h-recherche", "h-cafe", "h-methode", "h-diagnostic", "h-note-min", "h-du", "h-au"].forEach(id =>
       $("#" + id).addEventListener("input", rendreHistoriqueDifferee));
+    /* REPRISE QUAND LE RÉSEAU REVIENT. Une synchro ratée attendait le prochain
+       geste de Chris : en cuisine, il enregistre sa tasse, range son téléphone, et
+       la synchro ne repartait qu'à l'ouverture suivante. Le navigateur sait dire
+       quand la connexion revient, autant l'écouter.
+
+       DATA.synchroniser gère déjà le cas où une synchro est en cours, il n'y a pas
+       de course à craindre. */
+    window.addEventListener("online", () => {
+      if (DATA.syncPossible()) DATA.synchroniser(false);
+    });
+
+    /* ÉCHAP ferme ce qui est ouvert. Les <dialog> natifs le font tout seuls, mais
+       le panneau de saisie rapide et les formulaires dépliés ne sont pas des
+       dialogues : ils restaient ouverts et il fallait viser leur bouton. */
+    document.addEventListener("keydown", ev => {
+      if (ev.key !== "Escape") return;
+      if (rapideOuvert) { basculerRapide(false); return; }
+      const ouverts = ["#form-cafe", "#form-sachet", "#form-recette"]
+        .map(s => $(s)).filter(x => x && !x.hidden);
+      if (ouverts.length) { ouverts.forEach(x => { x.hidden = true; }); return; }
+      // Une bulle d'aide ouverte au doigt se ferme aussi, avant tout le reste.
+      $$(".info-ouverte").forEach(x => x.classList.remove("info-ouverte"));
+    });
+
     $("#h-reinitialiser").addEventListener("click", () => {
-      ["h-cafe", "h-methode", "h-diagnostic", "h-note-min", "h-du", "h-au"].forEach(id => $("#" + id).value = "");
+      ["h-recherche", "h-cafe", "h-methode", "h-diagnostic", "h-note-min", "h-du", "h-au"].forEach(id => $("#" + id).value = "");
       rendreHistorique();
     });
     $("#h-exporter").addEventListener("click", () => {
@@ -3325,6 +3387,10 @@
 
     const h = location.hash.slice(1);
     activerEcran(ECRANS.includes(normaliserEcran(h)) ? normaliserEcran(h) : "tableau");
+
+    // Le premier écran est rendu : le voile de chargement n'a plus de raison d'être.
+    const voile = $("#chargement");
+    if (voile) voile.remove();
 
     // Le système relâche le verrou d'écran quand l'onglet part en arrière plan.
     // Au retour, si le chrono tourne toujours, on le reprend.

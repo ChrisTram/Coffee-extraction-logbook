@@ -1265,5 +1265,55 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("les badges se refont toujours", /DATA\.abonner[\s\S]{0,400}majBadges\(\);/.test(app));
 }
 
+/* MODERNITE ET CONFORT. Rien ici ne doit dependre d'une fonctionnalite recente
+   pour marcher : chaque ajout a un repli, et le repli est le comportement
+   d'avant, pas une version degradee. */
+{
+  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+
+  /* MOUVEMENT REDUIT. Cinq animations et vingt et une transitions, rien ne les
+     coupait. Pour qui souffre de troubles vestibulaires, une interface qui bouge
+     donne la nausee. */
+  check("le mouvement reduit est respecte", css.includes("prefers-reduced-motion"));
+  /* 0.01ms et pas 0 : certaines animations ont un gestionnaire de fin qu'une
+     duree nulle peut empecher de se declencher. */
+  check("les durees tombent a 0.01ms, pas a zero", css.includes("0.01ms"));
+  check("les transitions de vue le respectent aussi",
+    /prefers-reduced-motion[\s\S]{0,400}view-transition/.test(css));
+  check("et le code ne lance pas la machinerie pour rien",
+    /function avecTransition[\s\S]{0,300}prefers-reduced-motion/.test(app));
+
+  /* Le repli des transitions de vue doit etre l'appel DIRECT, pas un cas mort. */
+  check("sans l'API, le changement d'ecran se fait quand meme",
+    /startViewTransition\) \{ fn\(\); return; \}/.test(app));
+
+  check("le rendu hors ecran est differe", css.includes("content-visibility: auto"));
+  /* Sans hauteur estimee, la barre de defilement saute pendant qu'on descend. */
+  check("avec une hauteur estimee pour ne pas faire sauter le defilement",
+    css.includes("contain-intrinsic-size"));
+  check("les titres evitent la ligne orpheline", css.includes("text-wrap: balance"));
+
+  // Recherche texte dans l'historique.
+  check("un champ de recherche existe", html.includes('id="h-recherche"'));
+  /* En francais, une recherche sans normalisation des accents est inutilisable :
+     taper brule doit trouver brule accentue. */
+  check("elle ignore les accents", app.includes("function sansAccents") && app.includes("NFD"));
+  check("elle cherche dans ce que Chris a ecrit",
+    /function texteCherchable[\s\S]{0,260}commentaire[\s\S]{0,120}descripteurs/.test(app));
+  check("elle se reinitialise avec les autres filtres",
+    /h-reinitialiser[\s\S]{0,200}"h-recherche"/.test(app));
+
+  // Reprise reseau et Echap.
+  check("la synchro repart quand le reseau revient", /addEventListener\("online"/.test(app));
+  check("Echap ferme ce qui est ouvert", /ev\.key !== "Escape"/.test(app));
+
+  /* Le voile de chargement doit etre dans le HTML : cree en JS, il n'apparaitrait
+     qu'apres l'execution des scripts, donc trop tard pour servir a quelque chose. */
+  check("le voile de chargement est dans le HTML", html.includes('id="chargement"'));
+  check("et il est retire une fois le premier ecran rendu", app.includes('$("#chargement")'));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

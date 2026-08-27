@@ -1644,3 +1644,80 @@ input:focus, select:focus, textarea:focus {
   .btn-methode { padding: 14px 8px; }
   .nav-btn { padding: 8px 6px; font-size: 0.78rem; }
 }
+
+/* ---------- Mouvement, lisibilité, rendu différé ---------- */
+
+/* MOUVEMENT RÉDUIT. Cinq animations et vingt et une transitions, et rien ne les
+   coupait. Ce n'est pas un détail de confort : pour qui souffre de troubles
+   vestibulaires, une interface qui bouge donne la nausée. Le système expose le
+   réglage, il suffit de l'écouter.
+
+   On ne met pas les durées à zéro, on les met à 0,01 ms : certaines animations
+   ont un gestionnaire de fin, et une durée nulle peut l'empêcher de se déclencher
+   sur certains moteurs. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* RENDU DIFFÉRÉ de ce qui est hors écran. L'écran Guide fait à lui seul plus de
+   mille lignes de HTML, mises en page d'un bloc alors qu'on n'en voit qu'un
+   dixième. `contain-intrinsic-size` donne une hauteur estimée pour que la barre
+   de défilement ne saute pas pendant qu'on descend. */
+.ref-bloc,
+.grille-boutiques > .carte,
+.grille-diagnostic > .carte,
+.messages-vn > .carte {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
+}
+
+/* Titres : évite la ligne orpheline d'un seul mot. Ignoré par les moteurs qui ne
+   connaissent pas, donc sans repli à écrire. */
+h1, h2, h3, h4, .ref-titre, .carte h3 {
+  text-wrap: balance;
+}
+
+/* Paragraphes de texte long : empêche le mot seul en fin de paragraphe. */
+.ref-intro, .ecran-intro, .param-aide, .carte-note {
+  text-wrap: pretty;
+}
+
+/* TRANSITIONS DE VUE entre écrans. Progressive : les moteurs qui ne connaissent
+   pas l'API gardent l'animation d'apparition existante, ceux qui la connaissent
+   ont un fondu croisé propre. Coupée par le mouvement réduit ci-dessus. */
+@view-transition {
+  navigation: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* Voile de chargement, visible avant le premier rendu. Retiré par app.js.
+   Le grain tourne doucement plutôt que de clignoter : une animation lente se
+   remarque moins et fatigue moins qu'un pulsement. */
+.chargement {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 45vh;
+  color: var(--attenue);
+  font-size: 0.95rem;
+}
+.chargement-grain {
+  font-size: 1.8rem;
+  animation: chargement-tourne 1.6s linear infinite;
+}
+@keyframes chargement-tourne {
+  to { transform: rotate(360deg); }
+}

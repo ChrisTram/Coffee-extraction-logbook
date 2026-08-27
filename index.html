@@ -53,6 +53,14 @@
   </div>
 </header>
 
+<!-- Retiré par app.js dès que le premier écran est rendu. Volontairement dans le
+     HTML et pas créé en JS : il doit être visible AVANT que le moindre script ne
+     s'exécute, c'est tout son intérêt. -->
+<div id="chargement" class="chargement" role="status" aria-live="polite">
+  <span class="chargement-grain" aria-hidden="true">☕</span>
+  <span>Chargement de ton carnet…</span>
+</div>
+
 <main>
 
 <!-- ================= ECRAN 1 : TABLEAU DE BORD ================= -->
@@ -349,6 +357,8 @@
   <div class="historique-filtres carte">
     <div class="champ">
       <label for="h-cafe">Café</label>
+      <input type="search" id="h-recherche" placeholder="Chercher dans les commentaires et les goûts" enterkeyhint="search" autocomplete="off">
+      <input type="search" id="h-recherche" placeholder="Chercher dans les commentaires et les goûts" enterkeyhint="search" autocomplete="off">
       <select id="h-cafe"><option value="">Tous</option></select>
     </div>
     <div class="champ">
