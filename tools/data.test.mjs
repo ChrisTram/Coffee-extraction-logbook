@@ -763,5 +763,29 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     tagActif.includes("background") && tagActif.includes("color"), tagActif.trim());
 }
 
+/* La note est facultative : Chris enregistre en sortant la tasse et revient
+   noter apres l'avoir bue. Une note vide doit rester vide de bout en bout, et
+   surtout ne jamais devenir 0, qui serait la pire des notes. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  check("la case pas encore notee existe et est cochee par defaut",
+    /<input[^>]*id="f-note-vide"[^>]*checked/.test(html));
+  check("le curseur ne suggere plus 7",
+    /<input[^>]*id="f-note"[^>]*value="5"/.test(html));
+
+  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  check("l'enregistrement lit noteSaisie et plus le curseur brut",
+    app.includes("note_sur_10: noteSaisie()"));
+  check("poser le doigt sur le curseur compte, meme sans mouvement",
+    app.includes("pointerdown"));
+
+  // Le point qui compte vraiment : "" ne doit pas se transformer en 0.
+  const csv = DATA.csvSerialiser([{ id: "e1", note_sur_10: "" }], DATA.EXT_COLS);
+  const ligne = csv.split("\n")[1];
+  const iNote = DATA.EXT_COLS.indexOf("note_sur_10");
+  check("une note vide reste vide dans le CSV", ligne.split(",")[iNote] === "",
+    JSON.stringify(ligne.split(",")[iNote]));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

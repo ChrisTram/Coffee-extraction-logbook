@@ -672,7 +672,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.42";
+  const VERSION = "7.43";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -997,6 +997,8 @@
     majLait();
     majLive();
     majAvertissements();
+    // Le libelle "pas encore notee" est genere : il ne suit pas le TreeWalker.
+    majAffichageNote();
   }
 
   function surChoixCafe() {
@@ -1023,6 +1025,23 @@
   function razPresetTemp() {
     const sel = $("#f-temp-preset");
     if (sel) sel.value = "";
+  }
+
+  /* La note est facultative. Le curseur ne peut pas être vide, donc l'absence de
+     note vit dans une case à cocher : cochée, on enregistre "" et l'extraction
+     compte comme non notée partout (moyennes, insights, meilleurs réglages, qui
+     filtrent déjà sur note_sur_10 !== ""). Toucher le curseur décoche la case,
+     y compris quand il ne bouge pas, d'où le pointerdown en plus de l'input. */
+  function majAffichageNote() {
+    const vide = $("#f-note-vide").checked;
+    $("#note-affichee").textContent = vide
+      ? I18N.t("n_pas_notee")
+      : $("#f-note").value + " / 10";
+    $("#f-note").classList.toggle("curseur-inactif", vide);
+  }
+
+  function noteSaisie() {
+    return $("#f-note-vide").checked ? "" : $("#f-note").value;
   }
 
   function majAvertissements() {
@@ -1479,8 +1498,10 @@
     $("#f-dose").value = replis.dose;
     if (!garderCafe) $("#f-cafe").value = "";
     $("#f-commentaire").value = "";
-    $("#f-note").value = 7;
-    $("#note-affichee").textContent = "7";
+    // Milieu de course et case cochée : le curseur ne doit suggérer aucune note.
+    $("#f-note").value = 5;
+    $("#f-note-vide").checked = true;
+    majAffichageNote();
     ecrireDuree("f-total", "");
     ecrireDuree("f-ecoulement", "");
     $("#f-volume").value = "";
@@ -1535,8 +1556,9 @@
     $("#champ-lait").hidden = !(trouverRecette(ext.recette) || {}).lait;
     ecrireDuree("f-total", ext.temps_total_s);
     ecrireDuree("f-ecoulement", ext.temps_ecoulement_s);
-    $("#f-note").value = ext.note_sur_10 === "" ? 7 : ext.note_sur_10;
-    $("#note-affichee").textContent = $("#f-note").value;
+    $("#f-note").value = ext.note_sur_10 === "" ? 5 : ext.note_sur_10;
+    $("#f-note-vide").checked = ext.note_sur_10 === "";
+    majAffichageNote();
     $("#f-commentaire").value = ext.commentaire;
     saisie.diagnostics = new Set((ext.diagnostic || "").split("|").filter(Boolean));
     $$("#f-diagnostic .pilule").forEach(x => x.classList.toggle("actif", saisie.diagnostics.has(x.dataset.diag)));
@@ -1573,7 +1595,7 @@
       tasse: $("#f-tasse").value,
       eau_prechauffee: saisie.methode === "Brikka" && $("#f-prechauffe").checked ? 1 : "",
       puissance_feu: saisie.methode === "Brikka" ? $("#f-puissance").value : "",
-      note_sur_10: $("#f-note").value,
+      note_sur_10: noteSaisie(),
       diagnostic: DIAGNOSTICS.filter(d => saisie.diagnostics.has(d)).join("|"),
       descripteurs: Array.from(saisie.descripteurs).join("|"),
       commentaire: $("#f-commentaire").value.trim(),
@@ -2172,13 +2194,27 @@
       const stock = DATA.stockSachet(c.id, replis.dose);
       let badgeStock = "";
       if (stock) {
-        const tasses = Math.floor(stock.restant / replis.dose);
+        /* Le reste se compte avec la dose MOYENNE de ce café, pas la dose de
+           repli : Chris dose 16 g sur le G4 et 14 sur un autre, un chiffre unique
+           surestimerait les tasses restantes de presque 10 %. Repli sur la dose
+           par défaut tant que le café n'a aucune extraction. */
+        const doses = DATA.state.extractions
+          .filter(e => e.cafe_id === c.id && Number(e.dose_g) > 0)
+          .map(e => Number(e.dose_g));
+        const doseTypique = doses.length ? moyenne(doses) : replis.dose;
+        const tasses = Math.max(0, Math.floor(stock.restant / doseTypique));
         const classe = stock.restant <= 0 ? "vide" : tasses <= 3 ? "bas" : "ok";
         const libelle = stock.restant <= 0
           ? I18N.t("stock_vide")
           : I18N.t("stock_reste", { g: fmtDecimal(stock.restant, 0), n: tasses });
         badgeStock = ' <span class="badge-stock badge-stock-' + classe + '" title="' +
-          I18N.t("stock_titre", { f: stock.format, c: fmtDecimal(stock.consomme, 0) }) + '">' + libelle + "</span>";
+          I18N.t("stock_titre", {
+            f: stock.format,
+            c: fmtDecimal(stock.consomme, 0),
+            r: fmtDecimal(Math.max(0, stock.restant), 0),
+            d: fmtDecimal(doseTypique, 1),
+            src: I18N.t(doses.length ? "stock_dose_moy" : "stock_dose_defaut"),
+          }) + '">' + libelle + "</span>";
       }
       return '<div class="cafe-ligne' + (c.actif === 0 ? " inactif" : "") +
       (stock && stock.restant <= 0 ? " epuise" : "") + '">' +
@@ -2664,7 +2700,14 @@
     });
     // Une saisie manuelle a toujours le dernier mot sur l'estimation.
     $("#f-temp").addEventListener("input", razPresetTemp);
-    $("#f-note").addEventListener("input", () => $("#note-affichee").textContent = $("#f-note").value);
+    /* pointerdown en plus d'input : poser le doigt sur le curseur là où il est
+       déjà ne déclenche aucun input, la note serait restée vide sans le savoir. */
+    ["input", "pointerdown", "keydown"].forEach(ev =>
+      $("#f-note").addEventListener(ev, () => {
+        $("#f-note-vide").checked = false;
+        majAffichageNote();
+      }));
+    $("#f-note-vide").addEventListener("change", majAffichageNote);
     $("#btn-chrono").addEventListener("click", chronoPrincipal);
     $("#btn-chrono-stop").addEventListener("click", chronoArreter);
     $("#btn-chrono-raz").addEventListener("click", chronoRaz);
@@ -2973,6 +3016,8 @@
     majLait();
     majLive();
     majAvertissements();
+    // Le libelle "pas encore notee" est genere : il ne suit pas le TreeWalker.
+    majAffichageNote();
     if (rapideOuvert) majPanneauRapide();
     rendreEcranCourant(true);
   }

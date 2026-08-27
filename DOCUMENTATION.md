@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.42,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.43,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -367,6 +367,40 @@ re-créés.
   2 g/g).
 - Caféine estimée : dose x pourcentage café réel x pourcentage caféine de
   l'espèce (arabica 1,2, robusta 2,4, blend 1,8, liberica 1,4) x 0,9.
+
+## 7 decies. La note est FACULTATIVE
+
+Chris enregistre souvent l'extraction en sortant la tasse, puis revient noter
+après l'avoir bue. Le formulaire imposait 7 sur 10 par défaut, donc une tasse
+oubliée gardait un 7 inventé qui polluait toutes les moyennes.
+
+Un curseur HTML ne peut pas être vide, donc l'absence de note vit dans une case à
+cocher `#f-note-vide`, cochée par défaut. Cochée, `noteSaisie()` renvoie `""` et
+l'extraction compte comme non notée partout : moyennes, insights, meilleurs
+réglages et classements filtrent déjà tous sur `note_sur_10 !== ""`, il n'y avait
+donc rien à changer en aval.
+
+Deux détails qui comptent :
+
+- Le curseur démarre à 5, au milieu, et pas à 7. Une position n'est pas une
+  proposition, mais autant qu'elle ne ressemble à aucune note en particulier.
+- La case se décoche sur `input` ET sur `pointerdown`. Poser le doigt sur le
+  curseur là où il est déjà ne déclenche aucun `input` : sans le `pointerdown`,
+  Chris aurait cru noter 5 et enregistré une tasse non notée.
+
+Un test vérifie qu'une note vide reste vide jusque dans le CSV. Elle ne doit
+JAMAIS devenir 0, qui serait la pire des notes.
+
+## 6 undecies. Tasses restantes, à la dose du café
+
+Le badge de stock disait "{g} g, {n} tasses", ce qui se lisait aussi bien comme du
+consommé que du restant. Il dit maintenant "reste {g} g, environ {n} tasses".
+
+Surtout, l'estimation utilise désormais la dose MOYENNE de ce café et plus la dose
+de repli. Chris dose 15,9 g en moyenne sur son G4 : avec la dose de repli à 15 g,
+un sachet où il reste 139 g annonçait 9 tasses au lieu de 8. Repli sur la dose par
+défaut tant que le café n'a aucune extraction, et l'infobulle dit laquelle des
+deux a servi.
 
 ## 8 septies. Un état sélectionné ne change QUE des couleurs
 
@@ -1590,6 +1624,9 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.43 : la note devient facultative, plus de 7 imposé par défaut (section
+  7 decies). Le badge de stock annonce les tasses RESTANTES, estimées à la dose
+  moyenne du café (section 6 undecies).
 - v7.42 : sélectionner un descripteur ne réorganise plus la ligne. Le gras de
   l'état actif élargissait la pastille (section 8 septies).
 - v7.41 : la Chronicler et sa variante Sweet portent enfin les 240 g de leur

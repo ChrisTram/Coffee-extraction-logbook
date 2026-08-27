@@ -677,6 +677,10 @@ input:focus, select:focus, textarea:focus {
   background: var(--accent-fond) !important;
 }
 
+/* Curseur de note quand aucune note n'est encore donnée : il reste utilisable,
+   il ne doit juste pas avoir l'air de proposer une valeur. */
+.curseur-note.curseur-inactif { opacity: 0.45; }
+
 /* Moulin : le convertisseur se manipule au curseur, l'unité du pas est le cran
    du moulin lui-même pour que ce qu'on lit se reproduise à la main. */
 .conv-ligne { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }

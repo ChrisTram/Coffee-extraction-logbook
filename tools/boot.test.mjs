@@ -214,9 +214,23 @@ api.DATA.state.extractions = [
     note_sur_10: 4.5, diagnostic: "Acide ET amer (extraction inégale)", descripteurs: "brûlé",
     commentaire: "a pete d un coup", puissance_feu: 3 },
 ];
+/* Sans note : le cas par defaut depuis que la note est facultative. Toutes les
+   moyennes, insights et classements filtrent sur note_sur_10 !== "", cette ligne
+   verifie qu'aucun ecran ne trebuche dessus. */
+api.DATA.state.extractions.push({
+  id: "e3", date_heure: "2026-08-16T09:10", cafe_id: "c1", methode: "Brikka",
+  recette: "Brikka classique", dose_g: 16, eau_g: 150, mouture_dial: "1.5.0",
+  temperature_c: "", temps_total_s: "", temps_ecoulement_s: "", volume_extrait_ml: 95,
+  eau_ajoutee_ml: "", lait_ml: "", agitation_nb: "", tasse: "", eau_prechauffee: "",
+  note_sur_10: "", diagnostic: "", descripteurs: "", commentaire: "", puissance_feu: 2,
+});
+
 api.DATA.notifier();
 await new Promise(r => setTimeout(r, 200));
 check("notifier() avec des données ne jette pas", true);
+check("une extraction sans note ne fausse pas les moyennes",
+  api.DATA.state.extractions.filter(e => e.note_sur_10 !== "").length === 2,
+  String(api.DATA.state.extractions.filter(e => e.note_sur_10 !== "").length));
 
 // Chaque écran, un par un. Une exception dans l'un d'eux serait invisible sinon,
 // et c'est précisément ce qui s'était produit sur le tableau de bord.

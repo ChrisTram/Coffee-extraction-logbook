@@ -15,6 +15,7 @@ const I18N = (() => {
   // ---------- 1. Contenu statique : français vers anglais ----------
 
   const UI = {
+    "Pas encore notée, je reviendrai": "Not rated yet, I will come back",
     "Bouillante, 1 min de repos": "Boiling, rested 1 min",
     "Bouillante, 2 min de repos": "Boiling, rested 2 min",
     "Le diagramme officiel du C5 ESP : rotations en haut, microns en bas, une boîte par méthode, les repères de référence marqués en couleur, la zone hachurée est hors de portée du moulin. Le trait noir suit le curseur, le trait vert épais marque ton réglage par défaut. Survole ou touche une boîte pour le détail.": "The official C5 ESP diagram: rotations on top, microns at the bottom, one box per method, the reference marks in colour, the hatched area is beyond the grinder's reach. The black line follows the slider, the thick green line marks your default setting. Hover or tap a box for detail.",
@@ -700,9 +701,15 @@ const I18N = (() => {
     },
 
     // Stock du sachet en cours.
-    stock_reste: { fr: "{g} g, {n} tasses", en: "{g} g, {n} cups" },
+    stock_reste: { fr: "reste {g} g, environ {n} tasses", en: "{g} g left, about {n} cups" },
     stock_vide: { fr: "sachet fini", en: "bag empty" },
-    stock_titre: { fr: "Sachet de {f} g, {c} g consommes", en: "{f} g bag, {c} g used" },
+    stock_titre: {
+      fr: "Sachet de {f} g. {c} g consommés, {r} g restants. Estimation à {d} g par tasse, {src}.",
+      en: "{f} g bag. {c} g used, {r} g left. Estimated at {d} g per cup, {src}.",
+    },
+    stock_dose_moy: { fr: "ta dose moyenne sur ce café", en: "your average dose on this coffee" },
+    stock_dose_defaut: { fr: "la dose de repli, ce café n'a pas encore d'extraction", en: "the fallback dose, this coffee has no extraction yet" },
+    n_pas_notee: { fr: "pas encore notée", en: "not rated yet" },
     btn_sachet: { fr: "Nouveau sachet", en: "New bag" },
     sachet_titre: { fr: "Nouveau sachet : {n}", en: "New bag: {n}" },
     t_sachet: { fr: "Sachet enregistre", en: "Bag recorded" },
@@ -1110,7 +1117,7 @@ const I18N = (() => {
     "#h-cafe,#h-diagnostic,#q-cafe,#q-recette,#c-recette,#donnees-statut,#toast,#pap-params," +
     "#insights,#sync-statut,#heatmap-stats,#version-site,#comparaison-compte,#reglages-liste," +
     "#comparaison-resume,#comparaison-titres,#comparaison-corps," +
-    "#vide-mouture,#vide-gouts,#vide-duel,#note-gouts,#param-recettes";
+    "#vide-mouture,#vide-gouts,#vide-duel,#note-gouts,#param-recettes,#note-affichee";
 
   function scanner() {
     const marche = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
