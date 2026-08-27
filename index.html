@@ -1163,16 +1163,19 @@ Cảm ơn shop.</pre>
   <span id="version-site"></span>
 </footer>
 
-<script src="js/vendor/chart.umd.js"></script>
-<script src="js/i18n.js"></script>
-<script src="js/grind.js"></script>
-<script src="js/recettes.js"></script>
-<script src="js/demo-data.js"></script>
+<!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
+     et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
+     desormais en parallele du parsing du HTML au lieu de le bloquer. -->
+<script defer src="js/vendor/chart.umd.js"></script>
+<script defer src="js/i18n.js"></script>
+<script defer src="js/grind.js"></script>
+<script defer src="js/recettes.js"></script>
+<script defer src="js/demo-data.js"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script src="js/sync.js"></script>
-<script src="js/data.js"></script>
-<script src="js/reglages.js"></script>
-<script src="js/charts.js"></script>
-<script src="js/app.js"></script>
+<script defer src="js/sync.js"></script>
+<script defer src="js/data.js"></script>
+<script defer src="js/reglages.js"></script>
+<script defer src="js/charts.js"></script>
+<script defer src="js/app.js"></script>
 </body>
 </html>

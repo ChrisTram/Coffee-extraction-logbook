@@ -513,7 +513,14 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
   const sw = readFileSync(join(ROOT, "sw.js"), "utf8");
-  const scripts = [...html.matchAll(/<script src="([^"]+)"/g)].map(m => m[1]);
+  const balises = [...html.matchAll(/<script\b[^>]*src="([^"]+)"[^>]*>/g)];
+  const scripts = balises.map(m => m[1]);
+  check("tous les scripts sont differes, le HTML ne les attend plus",
+    balises.every(m => m[0].includes(" defer")),
+    balises.filter(m => !m[0].includes(" defer")).map(m => m[1]).join(", "));
+  check("aucun n'est en async : defer preserve l'ordre, async non",
+    balises.every(m => !m[0].includes(" async")),
+    balises.filter(m => m[0].includes(" async")).map(m => m[1]).join(", "));
   const manquants = scripts.filter(s => !sw.includes('"./' + s + '"'));
   check("tous les scripts d'index.html sont precaches", manquants.length === 0, manquants.join(", "));
   check("index.html charge bien une dizaine de scripts", scripts.length >= 9, String(scripts.length));
