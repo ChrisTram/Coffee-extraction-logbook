@@ -802,7 +802,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.54";
+  const VERSION = "7.55";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -3238,6 +3238,10 @@
   // ---------- Démarrage ----------
 
   async function demarrer() {
+    /* AVANT tout rendu : si Chris avait laissé le site en anglais, le paquet de
+       traduction doit être là, sinon la page s'afficherait en français puis
+       clignoterait. Ne fait rien du tout en français, le cas normal. */
+    await I18N.preparer(I18N.langueSouhaitee());
     I18N.appliquerStatique();
     $("#version-site").textContent = "v" + VERSION;
     $("#btn-lang").textContent = I18N.lang() === "fr" ? "EN" : "FR";

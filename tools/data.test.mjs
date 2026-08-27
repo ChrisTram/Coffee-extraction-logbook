@@ -32,6 +32,15 @@ const { DATA, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORR
   charger(undefined, { protocol: "file:" }, undefined, console);
 
 let failures = 0;
+
+/* Une cle de gabarit vit desormais en deux morceaux : sa moitie francaise dans
+   js/i18n.js, sa moitie anglaise dans js/i18n.en.js, charge a la demande. Oublier
+   la seconde afficherait du francais en mode anglais, sans aucune erreur. */
+const I18N_FR_SRC = readFileSync(join(ROOT, "js/i18n.js"), "utf8");
+const I18N_EN_SRC = readFileSync(join(ROOT, "js/i18n.en.js"), "utf8");
+const bilingue = cle =>
+  new RegExp("^\\s*" + cle + ": \\{ fr:", "m").test(I18N_FR_SRC) &&
+  new RegExp("^\\s*" + cle + ": ", "m").test(I18N_EN_SRC);
 function check(label, condition, detail) {
   if (!condition) failures += 1;
   console.log(`${condition ? "OK  " : "FAIL"} ${label}${!condition && detail ? ` -> ${detail}` : ""}`);
@@ -715,8 +724,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     !/chargerExtractionDansSaisie\([^)]*\);\s*\n\s*activerEcran\("saisie"\)/.test(app));
 
   const i18n = readFileSync(join(ROOT, "js/i18n.js"), "utf8");
-  check("le message d'abandon existe en FR et EN",
-    /t_edition_abandonnee:.*fr:.*en:/.test(i18n));
+  check("le message d'abandon existe en FR et EN", bilingue("t_edition_abandonnee"));
 }
 
 /* Molette unique : Chris ne recompte pas les crans a chaque machine. */
@@ -1042,7 +1050,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("le cafe non pur montre son cout reel", app.includes("cout_reel"));
   const i18n = readFileSync(join(ROOT, "js/i18n.js"), "utf8");
   check("les deux libelles existent en FR et EN",
-    /cout_tasse:.*fr:.*en:/.test(i18n) && /cout_reel:.*fr:.*en:/.test(i18n));
+    bilingue("cout_tasse") && bilingue("cout_reel"));
 
   // L'arithmetique, sur les vrais chiffres du Sang Tao : 149 000 d les 340 g.
   const parGramme = 149000 / 340;
@@ -1082,8 +1090,8 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     rest.includes("findIndex") && rest.includes("push(e)"));
 
   const i18n = readFileSync(join(ROOT, "js/i18n.js"), "utf8");
-  check("le bouton Annuler existe en FR et EN", /t_annuler:.*fr:.*en:/.test(i18n));
-  check("le message de retablissement aussi", /t_restauree:.*fr:.*en:/.test(i18n));
+  check("le bouton Annuler existe en FR et EN", bilingue("t_annuler"));
+  check("le message de retablissement aussi", bilingue("t_restauree"));
 }
 
 /* ACCESSIBILITE DES BASCULES. 70 boutons et zero aria-pressed : l'etat se voyait
@@ -1162,6 +1170,49 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   const svg = charts.slice(charts.indexOf("function heatmap"), charts.indexOf("function attacherTooltips"));
   check("la heatmap et la reglette restent independantes de Chart.js",
     !svg.includes("creer("), "du SVG maison passe par creer()");
+}
+
+/* DECOUPAGE DE L'I18N PAR LANGUE. Le francais chargeait 29 Ko gzippes d'anglais
+   qu'il ne consulte jamais : tr(), diag(), tag() et compagnie renvoient leur
+   entree telle quelle en francais, et les gabarits se rabattent sur leur moitie
+   francaise. Le risque du decoupage est une cle oubliee : elle ne leve aucune
+   erreur, elle affiche du francais en mode anglais. */
+{
+  const fr = I18N_FR_SRC, en = I18N_EN_SRC;
+
+  // Toute cle de gabarit doit exister des DEUX cotes.
+  const clesFr = [...fr.matchAll(/^ {4}([a-z_0-9]+): \{ fr:/gm)].map(m => m[1]);
+  const clesEn = [...en.matchAll(/^ {4}([a-z_0-9]+): "/gm)].map(m => m[1]);
+  check("il y a bien quelques centaines de gabarits", clesFr.length > 250, String(clesFr.length));
+  const sansAnglais = clesFr.filter(k => !clesEn.includes(k));
+  check("aucun gabarit ne perd sa moitie anglaise", sansAnglais.length === 0,
+    sansAnglais.slice(0, 6).join(", "));
+  const orphelins = clesEn.filter(k => !clesFr.includes(k));
+  check("aucune traduction anglaise ne pointe dans le vide", orphelins.length === 0,
+    orphelins.slice(0, 6).join(", "));
+
+  /* Les dictionnaires cle FR vers valeur EN sont VIDES cote francais : c'est tout
+     le gain. S'ils se remplissaient a nouveau, le decoupage ne servirait plus. */
+  ["UI", "DIAG", "TAGS", "GROUPES"].forEach(nom => {
+    check("le dictionnaire " + nom + " est vide en francais",
+      new RegExp("const " + nom + " = \\{\\};").test(fr));
+    check("et rempli dans le paquet anglais", new RegExp("^  " + nom + ": \\{", "m").test(en));
+  });
+
+  /* La langue enregistree ne doit PAS etre appliquee au chargement du fichier :
+     sans le paquet, la page se declarerait anglaise et rendrait du francais par
+     repli, sans que rien ne le corrige jamais. */
+  check("la langue voulue est memorisee, pas appliquee", fr.includes("langueSouhaitee"));
+  check("c'est preparer() qui tranche, une fois le paquet la", fr.includes("function preparer"));
+  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  check("et le demarrage l'attend avant le premier rendu",
+    /async function demarrer[\s\S]{0,300}await I18N\.preparer/.test(app));
+
+  // Le paquet doit rester precache, sinon la bascule casse hors ligne.
+  const sw = readFileSync(join(ROOT, "sw.js"), "utf8");
+  check("le paquet anglais est precache", sw.includes("i18n.en.js"));
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  check("mais il n'est pas une balise script", !html.includes("i18n.en.js"));
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);

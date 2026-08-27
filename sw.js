@@ -30,6 +30,9 @@ const PRECACHE_URLS = [
   // le chargement à la demande doit fonctionner hors ligne.
   "./js/vendor/chart.umd.js",
   "./js/i18n.js",
+  // Chargé à la demande depuis la v7.55, mais précaché pour que la bascule de
+  // langue fonctionne aussi hors ligne.
+  "./js/i18n.en.js",
   "./js/grind.js",
   "./js/recettes.js",
   "./js/demo-data.js",
