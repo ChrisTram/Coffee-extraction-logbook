@@ -948,7 +948,23 @@ const DATA = (() => {
 
   // ---------- Démo ----------
 
+  /* Le jeu de démonstration est chargé À LA DEMANDE : il ne sert qu'au bouton de
+     la modale d'accueil, que Chris ne reverra jamais puisqu'il a ses données.
+     Précaché quand même, pour que la démo marche hors ligne comme le reste. */
+  function chargerScriptDemo() {
+    if (typeof DEMO_CAFES_CSV !== "undefined") return Promise.resolve(true);
+    return new Promise(resolve => {
+      const s = document.createElement("script");
+      s.src = "js/demo-data.js";
+      s.onload = () => resolve(typeof DEMO_CAFES_CSV !== "undefined");
+      s.onerror = () => resolve(false);
+      document.head.appendChild(s);
+    });
+  }
+
   async function chargerDemo() {
+    // Un échec laisse les données en place plutôt que de vider l'état à moitié.
+    if (!await chargerScriptDemo()) throw new Error("Jeu de démonstration indisponible.");
     state.cafes = csvParse(DEMO_CAFES_CSV).map(normaliserCafe);
     state.extractions = csvParse(DEMO_EXTRACTIONS_CSV).map(normaliserExtraction);
     state.recettes = recettesDefaut();

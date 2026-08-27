@@ -17,6 +17,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+/* demo-data.js n'est plus une balise script depuis la v7.56, mais le harnais le
+   charge quand meme : chargerDemo() en a besoin et il n'y a pas de reseau ici. */
 const SCRIPTS = ["js/grind.js", "js/recettes.js", "js/demo-data.js", "js/sync.js", "js/data.js", "js/reglages.js"];
 
 const source = SCRIPTS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
@@ -532,7 +534,11 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     balises.filter(m => m[0].includes(" async")).map(m => m[1]).join(", "));
   const manquants = scripts.filter(s => !sw.includes('"./' + s + '"'));
   check("tous les scripts d'index.html sont precaches", manquants.length === 0, manquants.join(", "));
-  check("index.html charge bien une dizaine de scripts", scripts.length >= 9, String(scripts.length));
+  /* Le compte baisse a mesure qu on sort des fichiers du chemin critique :
+     Chart.js, le paquet anglais et la demo sont desormais charges a la demande.
+     Ce qui doit rester vrai, c est que TOUT ce qui est encore une balise script
+     soit precache, verifie juste au dessus. */
+  check("le socle reste charge par des balises script", scripts.length >= 6, String(scripts.length));
 
   // La feuille de style et le manifeste comptent autant : sans eux la PWA
   // s'ouvre hors ligne en page blanche non stylee.

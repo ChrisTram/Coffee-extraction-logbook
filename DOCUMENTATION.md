@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.55,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.56,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -1775,6 +1775,8 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.56 : le jeu de démonstration quitte le chemin critique, il ne sert qu à un
+  bouton de la modale d accueil.
 - v7.55 : i18n scindée par langue, le paquet anglais est chargé à la demande.
   9 600 comparaisons clé par clé pour vérifier que rien n a bougé.
 - v7.54 : Chart.js chargée à la demande, elle pesait 30 % du site pour un seul

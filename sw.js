@@ -35,6 +35,8 @@ const PRECACHE_URLS = [
   "./js/i18n.en.js",
   "./js/grind.js",
   "./js/recettes.js",
+  // Chargé à la demande depuis la v7.56, précaché pour que la démo marche
+  // hors ligne comme le reste du site.
   "./js/demo-data.js",
   "./js/sync.js",
   "./js/data.js",
