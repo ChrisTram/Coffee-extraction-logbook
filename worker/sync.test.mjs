@@ -1,4 +1,4 @@
-import { mergePayloads, sanitisePayload, emptyPayload, TOMBSTONE_RETENTION_MS } from "./sync.js";
+import { mergePayloads, sanitisePayload, emptyPayload, TOMBSTONE_RETENTION_MS, TABLES } from "./sync.js";
 
 let failures = 0;
 function check(label, condition, detail) {
@@ -96,10 +96,12 @@ check("lignes sans id jetees", ids(sale).join() === "ok", ids(sale).join());
 check("maj_le converti en nombre", sale.tables.extractions[0].maj_le === 123);
 check("tombe sans id jetee", JSON.stringify(sale.tombes.extractions) === '{"bon":50}');
 check("charge utile absurde toleree", JSON.stringify(sanitisePayload(null)) === JSON.stringify(emptyPayload()));
+/* Pas de liste en dur : le compte suit TABLES, seule source de verite cote
+   serveur. Une table oubliee ici ne se synchroniserait pas, en silence. */
 check(
-  "toutes les tables presentes",
-  Object.keys(emptyPayload().tables).sort().join() === "achats,cafes,extractions,recettes,tasses",
-  Object.keys(emptyPayload().tables).join()
+  "toutes les tables de TABLES sont presentes",
+  Object.keys(emptyPayload().tables).sort().join() === [...TABLES].sort().join(),
+  Object.keys(emptyPayload().tables).sort().join()
 );
 
 // 10. maj_le absent (donnees d'avant la synchro) : traite comme le plus ancien

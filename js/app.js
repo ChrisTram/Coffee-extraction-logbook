@@ -672,7 +672,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.44";
+  const VERSION = "7.45";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -803,27 +803,53 @@
      continue de signaler un écart réel. */
   const MOLETTE_REPLI_USINE = "1.5.0";
 
-  /* Ces deux replis ne servent QUE si la recette choisie laisse la valeur vide.
-     Modifiables depuis l'écran Paramètres. Volontairement en localStorage et pas
-     dans les données synchronisées : ce sont des préférences de confort, pas des
-     mesures, et les faire voyager entre appareils créerait des conflits de fusion
-     pour rien. Les vraies valeurs par défaut, elles, vivent dans la recette. */
+  /* VUE en lecture sur la table `reglages`, qui se synchronise. Ces trois
+     valeurs décrivent le MATÉRIEL de Chris : sa molette de broyeur est la même
+     vue du téléphone et de l'ordinateur. Elles vivaient en localStorage, donc son
+     téléphone ignorait ce qu'il réglait sur l'ordinateur, et il ne pouvait pas le
+     voir puisque ce sont des champs préremplis d'apparence normale.
+
+     Le thème et les bips, eux, restent locaux à juste titre : un téléphone en
+     cuisine et un ordinateur n'ont pas les mêmes besoins.
+
+     `replis` reste un objet simple parce qu'il est lu partout dans le code de
+     rendu ; il est juste rafraîchi depuis DATA à chaque notification. */
   const CLE_REPLIS = "replis-saisie";
   const replis = { dose: DOSE_REPLI_USINE, feu: FEU_REPLI_USINE, molette: MOLETTE_REPLI_USINE };
 
   function chargerReplis() {
-    let brut = null;
-    try { brut = JSON.parse(localStorage.getItem(CLE_REPLIS) || "null"); } catch (e) { return; }
-    if (!brut) return;
-    const dose = Number(brut.dose);
-    const feu = Number(brut.feu);
-    if (dose > 0) replis.dose = dose;
-    if (feu >= 1 && feu <= 10) replis.feu = Math.round(feu);
-    if (typeof brut.molette === "string" && GRIND.parseDial(brut.molette)) replis.molette = brut.molette;
+    const r = DATA.reglagesCourants();
+    replis.dose = r.dose_g;
+    replis.feu = r.puissance_feu;
+    replis.molette = r.mouture_dial;
   }
 
-  function ecrireReplis() {
-    try { localStorage.setItem(CLE_REPLIS, JSON.stringify(replis)); } catch (e) { /* tant pis */ }
+  /* Reprise unique des réglages posés avant la synchro. Sans elle, Chris
+     retrouverait les valeurs d'usine et devrait tout reposer à la main. Marquée
+     une fois, et seulement si la table est encore vide : une reprise qui
+     écraserait un réglage déjà synchronisé serait pire que pas de reprise. */
+  async function reprendreReplisLocaux() {
+    let brut = null;
+    try {
+      if (localStorage.getItem("replis-repris")) return;
+      brut = JSON.parse(localStorage.getItem(CLE_REPLIS) || "null");
+      localStorage.setItem("replis-repris", "1");
+    } catch (e) { return; }
+    if (!brut || DATA.state.reglages.length) return;
+    await DATA.majReglages({
+      dose_g: brut.dose,
+      puissance_feu: brut.feu,
+      mouture_dial: brut.molette,
+    });
+    chargerReplis();
+  }
+
+  async function ecrireReplis() {
+    await DATA.majReglages({
+      dose_g: replis.dose,
+      puissance_feu: replis.feu,
+      mouture_dial: replis.molette,
+    });
   }
 
   const saisie = {
@@ -2472,7 +2498,7 @@
     replis.dose = dose;
     replis.feu = Math.round(feu);
     replis.molette = molette;
-    ecrireReplis();
+    await ecrireReplis();
 
     /* On ne réécrit que les recettes réellement touchées : chaque écriture
        estampille maj_le et gagnerait la fusion contre un autre appareil. */
@@ -2723,11 +2749,11 @@
     });
     /* Le seul chemin qui change vraiment un réglage depuis cet écran. Il écrit
        le même repli que l'écran Paramètres, il n'y a donc qu'une source. */
-    $("#conv-appliquer").addEventListener("click", () => {
+    $("#conv-appliquer").addEventListener("click", async () => {
       const dial = $("#conv-dial").value.trim().replace(/,/g, ".");
       if (!GRIND.parseDial(dial)) { toast(I18N.t("t_mouture_invalide")); return; }
       replis.molette = dial;
-      ecrireReplis();
+      await ecrireReplis();
       rendreConvertisseur();
       if ($("#param-molette")) $("#param-molette").value = dial;
       toast(I18N.t("t_molette_appliquee", { m: dial }));
@@ -2975,6 +3001,8 @@
     });
 
     DATA.abonner(() => {
+      // Les réglages peuvent arriver d'un autre appareil : on relit avant de rendre.
+      chargerReplis();
       majBadges();
       majStatutSync();
       remplirSelectCafes();
@@ -3048,6 +3076,7 @@
     rendreRecettes();
     try { $("#chrono-bip").checked = localStorage.getItem("bips") !== "0"; } catch (e) { /* tant pis */ }
     // AVANT tout ce qui lit replis : le convertisseur et la saisie en dependent.
+    await reprendreReplisLocaux();
     chargerReplis();
     rendreReperesMouture();
     rendreConvertisseur();

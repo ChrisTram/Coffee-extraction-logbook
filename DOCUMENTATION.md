@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.44,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.45,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -685,6 +685,37 @@ extractions dans les vraies données.
 - L'ordre des lignes dans un tableau n'est PAS significatif (l'interface trie ce
   qu'elle affiche). La fusion est commutative sur le CONTENU. En production le
   document serveur est toujours le premier opérande, donc l'ordre converge aussi.
+
+## 8 octies. Les réglages du matériel se synchronisent
+
+`replis` (dose de repli, puissance de feu, molette du broyeur) vivait en
+`localStorage`. Ces trois valeurs décrivent le MATÉRIEL de Chris, pas l'appareil
+qu'il tient : sa molette de broyeur est la même vue du téléphone et de
+l'ordinateur. Il réglait donc sur le portable et son téléphone continuait de
+préremplir les valeurs d'usine, sans qu'il puisse le voir puisque ce sont des
+champs préremplis d'apparence normale.
+
+C'est devenu une TABLE `reglages` d'une seule ligne, d'id fixe `moi`. Le choix
+surprend, alors il faut le justifier : la fusion par `maj_le`, les tombstones et
+l'assainissement réseau existent déjà et sont testés. Un mécanisme dédié aux
+préférences aurait été un DEUXIÈME chemin de synchronisation à écrire, tester et
+maintenir, pour une ligne de données. Une table coûte six lignes réparties et
+hérite de tout le reste.
+
+`normaliserReglages` borne les trois valeurs et retombe sur l'usine hors bornes :
+ce qui arrive du réseau n'est jamais digne de confiance.
+
+Reprise : `reprendreReplisLocaux()` remonte une fois les valeurs posées en
+`localStorage` avant la bascule, marquée par `replis-repris`, et SEULEMENT si la
+table est encore vide. Une reprise qui écraserait un réglage déjà synchronisé
+serait pire que pas de reprise du tout.
+
+Restent locaux à juste titre : le THÈME et les BIPS. Un téléphone en cuisine et un
+ordinateur n'ont pas les mêmes besoins, ce sont de vraies préférences d'appareil.
+
+Les deux tests de comptage de tables ne comptent plus : ils comparent
+`js/sync.js`, `worker/sync.js` et l'état entre eux. Un oubli dans l'une des deux
+listes ne se voyait pas autrement.
 
 ### Ajouter une table : le piège qui ne fait aucun bruit
 
@@ -1614,6 +1645,9 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.45 : les réglages du matériel (dose de repli, puissance de feu, molette du
+  broyeur) se synchronisent entre appareils. Ils vivaient en localStorage, donc le
+  téléphone ignorait ce que l'ordinateur réglait. Nouvelle table `reglages`.
 - v7.44 : le ratio principal redevient eau sur dose sur les deux machines
   (section 6 nonies). Le ratio en tasse passe en mention secondaire.
 - v7.43 : la note devient facultative, plus de 7 imposé par défaut (section

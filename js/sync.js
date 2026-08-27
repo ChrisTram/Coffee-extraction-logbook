@@ -17,7 +17,7 @@ const SYNC = (() => {
   const ENDPOINT = "api/sync";
   // Toute nouvelle table DOIT etre ajoutee ici ET dans worker/sync.js, sinon
   // elle ne se synchronise pas, en silence et sans erreur.
-  const TABLES = ["cafes", "extractions", "recettes", "tasses", "achats"];
+  const TABLES = ["cafes", "extractions", "recettes", "tasses", "achats", "reglages"];
   const TIMEOUT_MS = 15000;
 
   // Pas de serveur en file:// : inutile d'essayer, et le fetch echouerait de

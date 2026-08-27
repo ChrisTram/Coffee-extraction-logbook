@@ -76,11 +76,25 @@ check("retention calculee", calc.retention_ml === 35, String(calc.retention_ml))
 // 4. En file:// la synchronisation est inerte
 check("etat initial de synchro", DATA.state.syncEtat === "inconnu", DATA.state.syncEtat);
 check("syncPossible faux en file://", DATA.syncPossible() === false);
-check(
-  "tombes initialisees pour les 5 tables",
-  Object.keys(DATA.state.tombes).sort().join() === "achats,cafes,extractions,recettes,tasses",
-  Object.keys(DATA.state.tombes).join()
-);
+/* Pas de compte en dur : la liste des tables est ecrite DEUX fois, dans
+   js/sync.js et worker/sync.js, et l'oublier a un endroit fait rater la synchro
+   EN SILENCE. On compare donc les trois sources entre elles. */
+const TABLES_ATTENDUES = ["achats", "cafes", "extractions", "recettes", "reglages", "tasses"];
+check("tombes initialisees pour toutes les tables",
+  Object.keys(DATA.state.tombes).sort().join() === TABLES_ATTENDUES.join(),
+  Object.keys(DATA.state.tombes).sort().join());
+{
+  const lireTables = f => {
+    const m = readFileSync(join(ROOT, f), "utf8").match(/TABLES = \[([^\]]*)\]/);
+    return m ? m[1].split(",").map(x => x.trim().replace(/"/g, "")).sort() : [];
+  };
+  const cote = lireTables("js/sync.js");
+  const serveur = lireTables("worker/sync.js");
+  check("les deux listes TABLES sont identiques", cote.join() === serveur.join(),
+    cote.join() + "  contre  " + serveur.join());
+  check("et elles couvrent exactement les tables de l'etat",
+    cote.join() === TABLES_ATTENDUES.join(), cote.join());
+}
 
 // 5. Une synchro impossible degrade sans jeter et sans rien perdre
 DATA.state.cafes = [{ id: "c1", nom: "garde moi" }];
@@ -791,6 +805,38 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   const iNote = DATA.EXT_COLS.indexOf("note_sur_10");
   check("une note vide reste vide dans le CSV", ligne.split(",")[iNote] === "",
     JSON.stringify(ligne.split(",")[iNote]));
+}
+
+/* Les reglages du MATERIEL (dose de repli, puissance de feu, molette du broyeur)
+   se synchronisent, parce qu'ils decrivent le moulin et la cafetiere de Chris et
+   pas l'appareil qu'il tient. Ils vivaient en localStorage, donc son telephone
+   ignorait ce qu'il reglait sur l'ordinateur. */
+{
+  check("les reglages sont une table synchronisee", Array.isArray(DATA.state.reglages));
+
+  const parDefaut = DATA.normaliserReglages({});
+  check("valeurs d'usine : 15 g, feu 2, molette 1.5.0",
+    parDefaut.dose_g === 15 && parDefaut.puissance_feu === 2 && parDefaut.mouture_dial === "1.5.0",
+    JSON.stringify(parDefaut));
+  check("une seule ligne, d'id fixe", parDefaut.id === DATA.REGLAGE_ID);
+
+  // Ce qui arrive du reseau n'est pas digne de confiance : on borne tout.
+  const absurde = DATA.normaliserReglages({ dose_g: -5, puissance_feu: 99, mouture_dial: "nawak" });
+  check("une dose negative retombe sur la valeur d'usine", absurde.dose_g === 15, String(absurde.dose_g));
+  check("un feu hors echelle retombe sur la valeur d'usine", absurde.puissance_feu === 2);
+  check("une molette invalide retombe sur la valeur d'usine", absurde.mouture_dial === "1.5.0");
+  const bon = DATA.normaliserReglages({ dose_g: 16, puissance_feu: 3, mouture_dial: "1.2.0" });
+  check("des valeurs valides passent telles quelles",
+    bon.dose_g === 16 && bon.puissance_feu === 3 && bon.mouture_dial === "1.2.0", JSON.stringify(bon));
+
+  // maj_le preserve, jamais restampe a la lecture : meme regle que partout.
+  check("maj_le est preserve tel quel", DATA.normaliserReglages({ maj_le: 1234 }).maj_le === 1234);
+
+  // Et surtout : maj_le ne doit pas fuir dans le CSV.
+  const csv = DATA.csvSerialiser([{ id: "moi", maj_le: 1699999999999, dose_g: 16 }], DATA.REGLAGE_COLS);
+  check("entete reglages.csv", csv.split("\n")[0] === "id,dose_g,puissance_feu,mouture_dial",
+    csv.split("\n")[0]);
+  check("maj_le absent du CSV reglages", !csv.includes("1699999999999"));
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);

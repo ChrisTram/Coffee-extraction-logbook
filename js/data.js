@@ -12,6 +12,12 @@ const DATA = (() => {
     "mouture_dial", "temperature_c", "temps_total_s", "temps_ecoulement_s",
     "volume_extrait_ml", "eau_ajoutee_ml", "lait_ml", "agitation_nb", "tasse", "eau_prechauffee",
     "note_sur_10", "diagnostic", "descripteurs", "commentaire", "puissance_feu"];
+
+  /* Réglages du matériel de Chris. UNE seule ligne, d'id fixe, parce que c'est
+     un utilisateur unique : voir normaliserReglages pour le pourquoi de la
+     table. maj_le n'est pas dans les colonnes, comme partout ailleurs. */
+  const REGLAGE_ID = "moi";
+  const REGLAGE_COLS = ["id", "dose_g", "puissance_feu", "mouture_dial"];
   const RECETTE_COLS = ["id", "nom", "numero", "methode", "famille", "variante", "sous_titre", "dose_g", "eau_g",
     "temperature_c", "temp_texte", "mouture_dial", "ratio_texte", "total_texte", "lait",
     "etapes", "pour_qui", "cafes_associes", "note", "par_defaut", "avancee", "variantes", "actif",
@@ -34,6 +40,7 @@ const DATA = (() => {
     // date de torréfaction, donc la fraîcheur mentait dès le deuxième sachet, et
     // le stock restant n'était pas calculable.
     achats: [],
+    reglages: [],
     dirHandle: null,
     fsDisponible: typeof window !== "undefined" && "showDirectoryPicker" in window,
     demoActive: false,
@@ -210,6 +217,40 @@ const DATA = (() => {
   // Recette : forme JS interne <-> ligne CSV lisible au tableur.
   // Les étapes sont encodées une par segment "m:ss texte" ou "- texte",
   // séparées par " || ". Les cafés associés sont séparés par " ; ".
+  /* Réglages du matériel. Une TABLE d'une ligne plutôt qu'un mécanisme dédié :
+     la fusion par maj_le, les tombstones et l'assainissement réseau existent
+     déjà. Ces trois valeurs décrivent le MATÉRIEL de Chris, pas son appareil :
+     sa molette de broyeur est la même vue du téléphone et de l'ordinateur, alors
+     que le thème et les bips restent en localStorage à juste titre. */
+  function normaliserReglages(r) {
+    const nombre = (v, min, max, defaut) => {
+      const n = Number(v);
+      return Number.isFinite(n) && n >= min && n <= max ? n : defaut;
+    };
+    return {
+      id: REGLAGE_ID,
+      maj_le: Number(r && r.maj_le) || 0,
+      dose_g: nombre(r && r.dose_g, 0.1, 100, 15),
+      puissance_feu: nombre(r && r.puissance_feu, 1, 10, 2),
+      mouture_dial: typeof (r && r.mouture_dial) === "string" && GRIND.parseDial(r.mouture_dial)
+        ? r.mouture_dial : "1.5.0",
+    };
+  }
+
+  function reglagesCourants() {
+    return state.reglages[0] || normaliserReglages({});
+  }
+
+  /* Écrit les réglages et les fait voyager. Comme toute mutation, ça estampille :
+     l'appareil qui règle en dernier gagne la fusion, ce qui est exactement ce
+     qu'on veut pour une préférence. */
+  async function majReglages(partiel) {
+    const fusion = estampiller(normaliserReglages({ ...reglagesCourants(), ...partiel }));
+    state.reglages = [fusion];
+    await persister();
+    return fusion;
+  }
+
   function normaliserRecette(r) {
     return {
       id: String(r.id || "").trim(),
@@ -696,6 +737,7 @@ const DATA = (() => {
     await kvSet("tasses", state.tasses);
     await kvSet("demoActive", state.demoActive);
     await kvSet("achats", state.achats);
+    await kvSet("reglages", state.reglages);
     await kvSet("tombes", state.tombes);
   }
 
@@ -740,6 +782,7 @@ const DATA = (() => {
           await ecrireFichier("recettes.csv", csvRecettes());
           await ecrireFichier("tasses.csv", csvSerialiser(state.tasses, TASSE_COLS));
           await ecrireFichier("achats.csv", csvSerialiser(state.achats, ACHAT_COLS));
+          await ecrireFichier("reglages.csv", csvSerialiser(state.reglages, REGLAGE_COLS));
           resolve(true);
         } catch (e) {
           console.error("Écriture fichier impossible", e);
@@ -763,12 +806,14 @@ const DATA = (() => {
       await ecrireFichier("recettes.csv", csvRecettes());
       await ecrireFichier("tasses.csv", csvSerialiser(state.tasses, TASSE_COLS));
       await ecrireFichier("achats.csv", csvSerialiser(state.achats, ACHAT_COLS));
+      await ecrireFichier("reglages.csv", csvSerialiser(state.reglages, REGLAGE_COLS));
     } else {
       const tc = await lireFichier("cafes.csv");
       const te = await lireFichier("extractions.csv");
       const tr = await lireFichier("recettes.csv");
       const tt = await lireFichier("tasses.csv");
       const ta = await lireFichier("achats.csv");
+      const tg = await lireFichier("reglages.csv");
       if (tc === null && te === null) {
         throw new Error("Ce dossier ne contient ni cafes.csv ni extractions.csv.");
       }
@@ -778,6 +823,7 @@ const DATA = (() => {
       else if (!state.recettes.length) state.recettes = recettesDefaut();
       if (tt !== null) state.tasses = reporterHorodatage(csvParse(tt).map(normaliserTasse), state.tasses, TASSE_COLS);
       if (ta !== null) state.achats = reporterHorodatage(csvParse(ta).map(normaliserAchat), state.achats, ACHAT_COLS);
+      if (tg !== null) state.reglages = reporterHorodatage(csvParse(tg).map(normaliserReglages), state.reglages, REGLAGE_COLS).slice(0, 1);
       migrerDonnees();
       await ecrireFichier("recettes.csv", csvRecettes());
       state.demoActive = false;
@@ -893,6 +939,7 @@ const DATA = (() => {
         recettes: state.recettes,
         tasses: state.tasses,
         achats: state.achats,
+        reglages: state.reglages,
       },
       tombes: state.tombes,
     };
@@ -924,6 +971,7 @@ const DATA = (() => {
       state.recettes = (fusion.tables.recettes || []).map(normaliserRecette);
       state.tasses = (fusion.tables.tasses || []).map(normaliserTasse);
       state.achats = (fusion.tables.achats || []).map(normaliserAchat);
+      state.reglages = (fusion.tables.reglages || []).map(normaliserReglages).slice(0, 1);
       state.tombes = fusion.tombes || SYNC.tombesVides();
       if (!state.recettes.length) state.recettes = recettesDefaut();
       if (!state.tasses.length) state.tasses = tassesDefaut();
@@ -1095,6 +1143,7 @@ const DATA = (() => {
     const recettes = await kvGet("recettes");
     const tasses = await kvGet("tasses");
     const achats = await kvGet("achats");
+    const reglages = await kvGet("reglages");
     const demoActive = await kvGet("demoActive");
     if (Array.isArray(cafes)) state.cafes = cafes.map(normaliserCafe);
     if (Array.isArray(extractions)) state.extractions = extractions.map(normaliserExtraction);
@@ -1103,6 +1152,7 @@ const DATA = (() => {
     if (Array.isArray(tasses) && tasses.length) state.tasses = tasses;
     else state.tasses = tassesDefaut();
     if (Array.isArray(achats)) state.achats = achats.map(normaliserAchat);
+    if (Array.isArray(reglages)) state.reglages = reglages.map(normaliserReglages).slice(0, 1);
     state.demoActive = !!demoActive;
     const handle = await kvGet("dirHandle");
     if (handle) {
@@ -1116,11 +1166,13 @@ const DATA = (() => {
           const tr = await lireFichier("recettes.csv");
           const tt = await lireFichier("tasses.csv");
           const ta = await lireFichier("achats.csv");
+          const tg = await lireFichier("reglages.csv");
           if (tc !== null) state.cafes = reporterHorodatage(csvParse(tc).map(normaliserCafe), state.cafes, CAFE_COLS);
           if (te !== null) state.extractions = reporterHorodatage(csvParse(te).map(normaliserExtraction), state.extractions, EXT_COLS);
           if (tr !== null) state.recettes = reporterHorodatage(csvParse(tr).map(normaliserRecette), state.recettes, RECETTE_COLS);
           if (tt !== null) state.tasses = reporterHorodatage(csvParse(tt).map(normaliserTasse), state.tasses, TASSE_COLS);
           if (ta !== null) state.achats = reporterHorodatage(csvParse(ta).map(normaliserAchat), state.achats, ACHAT_COLS);
+          if (tg !== null) state.reglages = reporterHorodatage(csvParse(tg).map(normaliserReglages), state.reglages, REGLAGE_COLS).slice(0, 1);
         }
       } catch (e) { console.warn("Relecture du dossier lié impossible", e); }
     }
@@ -1153,7 +1205,8 @@ const DATA = (() => {
     ajouterRecette, modifierRecette, reinitialiserRecette, supprimerRecette, estRecetteDorigine,
     // Exposée pour les tests : c'est elle qui décide qu'une température vide
     // reste vide au lieu de tomber à 0, et qu'une puissance de feu survit.
-    normaliserRecette,
+    normaliserRecette, normaliserReglages,
+    reglagesCourants, majReglages, REGLAGE_COLS, REGLAGE_ID,
     // Exposée pour les tests : c'est elle qui rattrape les recettes STOCKÉES
     // quand les valeurs semées changent, et ce rattrapage est marqué une fois.
     migrerDonnees,
