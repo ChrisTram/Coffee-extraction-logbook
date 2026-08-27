@@ -17,7 +17,7 @@ const DATA = (() => {
      un utilisateur unique : voir normaliserReglages pour le pourquoi de la
      table. maj_le n'est pas dans les colonnes, comme partout ailleurs. */
   const REGLAGE_ID = "moi";
-  const REGLAGE_COLS = ["id", "dose_g", "puissance_feu", "mouture_dial"];
+  const REGLAGE_COLS = ["id", "dose_g", "puissance_feu", "mouture_dial", "schema_version"];
   const RECETTE_COLS = ["id", "nom", "numero", "methode", "famille", "variante", "sous_titre", "dose_g", "eau_g",
     "temperature_c", "temp_texte", "mouture_dial", "ratio_texte", "total_texte", "lait",
     "etapes", "pour_qui", "cafes_associes", "note", "par_defaut", "avancee", "variantes", "actif",
@@ -234,6 +234,10 @@ const DATA = (() => {
       puissance_feu: nombre(r && r.puissance_feu, 1, 10, 2),
       mouture_dial: typeof (r && r.mouture_dial) === "string" && GRIND.parseDial(r.mouture_dial)
         ? r.mouture_dial : "1.5.0",
+      // Version de schéma du document, voir PAS_DE_SCHEMA. Rangée ici parce que
+      // cette ligne est le seul endroit synchronisé qui ne soit pas une donnée
+      // de café : la version doit voyager avec les données qu'elle décrit.
+      schema_version: nombre(r && r.schema_version, 0, 999, 0),
     };
   }
 
@@ -420,6 +424,109 @@ const DATA = (() => {
 
   // ---------- Migration : anciens noms de recettes et anciennes fiches ----------
   // Idempotente : peut tourner à chaque chargement sans effet de bord.
+  /* ---------- VERSION DE SCHÉMA ----------
+
+     Il y avait six rattrapages à usage unique, chacun marqué par un drapeau dans
+     `localStorage`, donc PAR APPAREIL, alors que les données qu'ils corrigent
+     sont PARTAGÉES entre appareils. Un appareil qui démarrait avec un stockage
+     vide posait ses drapeaux sur rien, recevait ensuite le document du serveur
+     non migré, et ne le migrait plus jamais. Ce n'est pas théorique : c'est
+     arrivé avec les 150 g de chaudière de la Brikka.
+
+     Maintenant : un numéro de version rangé dans la ligne `reglages`, donc
+     synchronisé avec le reste. On applique les pas dont le numéro dépasse la
+     version du document, puis on écrit la nouvelle version. Un appareil neuf qui
+     reçoit un document déjà migré ne rejoue rien, et un document en retard est
+     rattrapé par le premier appareil qui l'ouvre, quel qu'il soit.
+
+     POUR AJOUTER UNE MIGRATION : un pas de plus à la FIN, avec le numéro suivant,
+     et `SCHEMA_ACTUEL` incrémenté. Ne jamais renuméroter, ne jamais insérer au
+     milieu : le numéro déjà écrit chez Chris est une promesse.
+
+     Chaque pas ne touche QUE la valeur semée d'avant. Un pas qui écraserait un
+     réglage choisi volontairement serait un bug, pas une migration. */
+  const SCHEMA_ACTUEL = 6;
+
+  // Rattrapage de la puissance de feu des recettes Brikka : l'échelle de Chris a
+  // bougé deux fois, 3 puis 4 puis 2.
+  const majFeuBrikka = (concerne, valeur) => () => {
+    let touche = false;
+    state.recettes.forEach(rec => {
+      if (rec.methode !== "Brikka" || !concerne(rec)) return;
+      rec.puissance_feu = valeur;
+      estampiller(rec);
+      touche = true;
+    });
+    return touche;
+  };
+
+  const PAS_DE_SCHEMA = [
+    { v: 1, nom: "feu 3 devient 4", appliquer: majFeuBrikka(r => Number(r.puissance_feu) === 3, 4) },
+    { v: 2, nom: "feu 4 devient 2", appliquer: majFeuBrikka(r => Number(r.puissance_feu) === 4, 2) },
+    // Les recettes semées avant l'existence du champ ne portent rien : la colonne
+    // Feu des Paramètres restait vide et seul le repli sauvait le préremplissage.
+    { v: 3, nom: "feu vide devient 2",
+      appliquer: majFeuBrikka(r => r.puissance_feu === "" || r.puissance_feu === undefined, 2) },
+    // 100 g était une estimation, 150 g est la contenance réelle de la chaudière.
+    // Et plus de température cible : sur la Brikka c'est la flamme qui décide.
+    { v: 4, nom: "chaudière Brikka a 150 g", appliquer: () => {
+      let touche = false;
+      state.recettes.forEach(rec => {
+        if (rec.methode !== "Brikka" || Number(rec.eau) !== 100) return;
+        rec.eau = 150;
+        rec.temp = "";
+        estampiller(rec);
+        touche = true;
+      });
+      return touche;
+    } },
+    /* Molette unique. Le Timemore de Chris reste posé sur 1.5.0, le compromis qui
+       marche sur les deux machines : une cible par recette décrivait un geste
+       qu'il ne fait jamais. Concerne les dix recettes, Switch comprises. */
+    { v: 5, nom: "molette unique a 1.5.0", appliquer: () => {
+      let touche = false;
+      state.recettes.forEach(rec => {
+        if (rec.dial === "1.5.0") return;
+        rec.dial = "1.5.0";
+        estampiller(rec);
+        touche = true;
+      });
+      return touche;
+    } },
+    /* Chronicler et Sweet : 240 g, pas 225. Le document source dit "15 g / 240 g,
+       ratio 1:16" avec un premier versement de 120 g ; la transcription d'origine
+       avait rétréci la recette de 6 %. */
+    { v: 6, nom: "Chronicler a 240 g", appliquer: () => {
+      let touche = false;
+      state.recettes.forEach(rec => {
+        if (rec.famille !== "chronicler" || Number(rec.eau) !== 225) return;
+        rec.eau = 240;
+        rec.ratioTexte = "ratio 1:16, environ 210 ml en tasse";
+        rec.etapes = (rec.etapes || []).map(e => ({
+          ...e,
+          texte: String(e.texte).split("112 g").join("120 g").split("225 g").join("240 g"),
+        }));
+        rec.note = String(rec.note || "").split("225 g").join("240 g").split("affiche 225").join("affiche 240");
+        estampiller(rec);
+        touche = true;
+      });
+      return touche;
+    } },
+  ];
+
+  /* Applique les pas manquants et écrit la nouvelle version. Renvoie vrai si
+     quelque chose a bougé, pour que l'appelant sache qu'il faut persister. */
+  function appliquerSchema() {
+    const version = Number(reglagesCourants().schema_version) || 0;
+    if (version >= SCHEMA_ACTUEL) return false;
+    PAS_DE_SCHEMA.filter(p => p.v > version).forEach(p => p.appliquer());
+    state.reglages = [estampiller(normaliserReglages({
+      ...reglagesCourants(),
+      schema_version: SCHEMA_ACTUEL,
+    }))];
+    return true;
+  }
+
   function migrerDonnees() {
     // 1. Renomme les anciennes recettes dans l'historique et les cafés.
     state.extractions.forEach(e => {
@@ -500,86 +607,9 @@ const DATA = (() => {
       }
     });
 
-    /* 6 quater. Valeurs par défaut des recettes Brikka.
-       Les recettes SEMÉES ont évolué, mais les recettes STOCKÉES gardent la
-       valeur du jour où elles ont été semées : changer RECETTES_DEPART n'a donc
-       aucun effet visible pour qui utilise déjà le site. C'est ce qui a fait
-       croire que l'eau était restée à 100 g alors que la graine disait 150.
-
-       Trois passages, chacun marqué UNE SEULE FOIS par appareil dans
-       localStorage. Ce ne sont pas des migrations idempotentes au sens habituel :
-       les rejouer écraserait un réglage choisi volontairement ensuite. Chaque
-       passage ne touche d'ailleurs QUE la valeur semée d'avant, jamais autre
-       chose, pour la même raison. */
-    const passages = [
-      // 3 puis 4 puis 2, l'échelle de feu de Chris a bougé deux fois.
-      ["feu4", rec => Number(rec.puissance_feu) === 3, rec => { rec.puissance_feu = 4; }],
-      ["feu2", rec => Number(rec.puissance_feu) === 4, rec => { rec.puissance_feu = 2; }],
-      // Les recettes semées avant l'existence du champ ne portent RIEN. Sans ce
-      // passage, la colonne Feu des Paramètres reste vide et seul le repli
-      // sauvait le préremplissage, ce qui n'est pas une valeur par défaut mais
-      // un filet.
-      ["feuVide", rec => rec.puissance_feu === "" || rec.puissance_feu === undefined,
-        rec => { rec.puissance_feu = 2; }],
-      // 100 g était une estimation, 150 g est la contenance réelle de la
-      // chaudière. Et plus de température cible : c'est la flamme qui décide.
-      ["brikka150", rec => Number(rec.eau) === 100, rec => { rec.eau = 150; rec.temp = ""; }],
-    ];
-
-    /* Chronicler et Sweet : 240 g d'eau, pas 225. Le document source de Chris
-       dit "15 g / 240 g, ratio 1:16" et un premier versement de 120 g ; la
-       transcription d'origine avait rétréci la recette à 225. Repéré le 24 août
-       en comparant le site au spec. On ne touche QUE les deux recettes concernées
-       et seulement si elles portent encore la mauvaise valeur. */
-    try {
-      if (typeof localStorage !== "undefined" && !localStorage.getItem("chronicler240")) {
-        state.recettes.forEach(rec => {
-          if (rec.famille !== "chronicler" || Number(rec.eau) !== 225) return;
-          rec.eau = 240;
-          rec.ratioTexte = "ratio 1:16, environ 210 ml en tasse";
-          rec.etapes = (rec.etapes || []).map(e => ({
-            ...e,
-            texte: String(e.texte).split("112 g").join("120 g").split("225 g").join("240 g"),
-          }));
-          rec.note = String(rec.note || "").split("225 g").join("240 g").split("affiche 225").join("affiche 240");
-          estampiller(rec);
-        });
-        localStorage.setItem("chronicler240", "1");
-      }
-    } catch (e) { /* stockage refusé : on laisse les valeurs semées */ }
-
-    /* Molette unique, demande de Chris le 24 août. Son Timemore reste posé sur
-       1.5.0, le "compromis qui marche dans les deux" de son guide, et il ne
-       recompte pas les crans à chaque machine. Les cibles par recette (1.2.0 en
-       Brikka, 1.6.0 pour la Chronicler, 2.0.0 pour le Tetsu) décrivaient donc un
-       réglage qu'il ne fait jamais.
-
-       À part des trois passages ci-dessus parce que ce n'est PAS réservé à la
-       Brikka : il faut aussi toucher les six recettes Switch. Marqué une seule
-       fois, comme les autres, pour ne jamais écraser un réglage choisi ensuite. */
-    try {
-      if (typeof localStorage !== "undefined" && !localStorage.getItem("molette150")) {
-        state.recettes.forEach(rec => {
-          if (rec.dial === "1.5.0") return;
-          rec.dial = "1.5.0";
-          estampiller(rec);
-        });
-        localStorage.setItem("molette150", "1");
-      }
-    } catch (e) { /* stockage refusé : on laisse les valeurs semées */ }
-    try {
-      if (typeof localStorage !== "undefined") {
-        passages.forEach(([marqueur, concerne, appliquer]) => {
-          if (localStorage.getItem(marqueur)) return;
-          state.recettes.forEach(rec => {
-            if (rec.methode !== "Brikka" || !concerne(rec)) return;
-            appliquer(rec);
-            estampiller(rec);
-          });
-          localStorage.setItem(marqueur, "1");
-        });
-      }
-    } catch (e) { /* stockage refusé : on laisse les valeurs semées */ }
+    // Les rattrapages de valeurs semées vivent dans PAS_DE_SCHEMA, plus haut :
+    // ils dépendent d'un numéro de version stocké AVEC les données.
+    appliquerSchema();
 
     // 6 bis. Les extractions faites à l'eau préchauffée quittent "Brikka
     //    classique" pour la variante dédiée. Le préchauffage n'est pas un détail

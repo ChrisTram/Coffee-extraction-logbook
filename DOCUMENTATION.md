@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.45,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.46,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -207,51 +207,44 @@ plus importante :
 - Détection à l'import : `date_achat` est testé AVANT `cafe_id`, que les deux
   tables possèdent.
 
-## 3. Migrations
+## 3. Migrations : une VERSION DE SCHÉMA, pas des drapeaux
 
-`DATA.migrerDonnees()` (data.js) est IDEMPOTENTE et tourne à chaque
-chargement (init, ouverture de dossier, import, chargement de la démo) :
+`migrerDonnees()` fait deux choses de nature différente, et il faut les
+distinguer.
 
-1. Renomme les anciennes recettes dans extractions et cafés via
-   `RENOMMAGES_RECETTES` (recettes.js). Historique des renommages :
-   Brikka référence et Brikka rang bơ vers Brikka classique, Le Fruité vers
-   The Coffee Chronicler's Recipe, Le Costaud vers Le Costaud (Bloom),
-   L'Adoucisseur vers Le Costaud (Immersion), Le 4:6 de Tetsu vers
-   The Tetsu Devil, The Sweet Variation vers The Coffee Chronicler's
-   Recipe (Sweet). Le Complet a été supprimé sans remplaçant : son nom reste
-   tel quel dans l'historique.
-2. Remplace les recettes seed d'ancienne génération (`ANCIENS_SEED_IDS`),
-   garantit la présence des nouvelles, applique les mises à niveau
-   structurelles (famille, variante, renommage) sans toucher aux paramètres
-   édités par l'utilisateur.
-3. Met à jour les fiches c1 (Sáng Tạo 4) et c4 (Balanced) une seule fois,
-   marquées par leur `tag`.
-4. Seed les tasses si absentes.
-5. Remplit `date_ajout` des cafés qui n'en ont pas avec la date de leur
-   première extraction (les cafés jamais extraits restent sans date, rien
-   n'est affiché).
+**Les rattrapages IDEMPOTENTS**, en tête de fonction : renommages de recettes,
+fiches café complétées, tasses par défaut, date d'ajout déduite, puissance de feu
+des extractions historiques. Ils se reconnaissent à leur condition, du genre « si
+le champ est vide » ou « si le tag est absent », donc les rejouer ne fait rien. Ils
+peuvent tourner à chaque démarrage sans risque.
 
-6. Achats : un sachet implicite pour chaque café qui a un `format_grammes` mais
-   aucun achat. IDEMPOTENTE grâce au test "aucun achat pour ce café", donc elle ne
-   recrée rien à chaque chargement et n'écrase aucun achat saisi. Sans elle, le
-   stock serait incalculable sur tout l'existant.
+**Les rattrapages À USAGE UNIQUE**, dans `PAS_DE_SCHEMA`. Ceux-là changent une
+valeur SEMÉE vers une autre valeur, donc les rejouer écraserait un réglage que
+Chris aurait choisi volontairement entre temps. Il leur faut une mémoire.
 
-6 bis. Extractions à l'eau préchauffée déplacées de "Brikka classique" vers
-   "Brikka classique (eau préchauffée)". Le préchauffage n'est pas un détail de
-   service : il change la montée en pression, la durée et le comportement de la
-   soupape, donc c'est un protocole distinct qui mérite sa ligne dans les
-   comparaisons. IDEMPOTENTE par construction, après le déplacement `recette` ne
-   vaut plus l'ancien nom. Ne touche que les lignes portant exactement
-   "Brikka classique", une extraction rangée à la main est laissée en place.
+Cette mémoire était un drapeau par migration dans `localStorage`. C'était faux :
+les drapeaux sont PAR APPAREIL alors que les données sont PARTAGÉES. Un appareil
+qui démarrait avec un stockage vide posait ses drapeaux sur rien, recevait ensuite
+le document du serveur non migré, et ne le migrait plus jamais. Ce n'est pas
+théorique, c'est arrivé avec les 150 g de chaudière de la Brikka.
 
-6 ter. Puissance de feu : 3 sur toutes les extractions Brikka qui n'en ont pas.
-   Sans valeur de départ, le champ resterait vide sur tout l'historique et aucune
-   comparaison ne serait possible avant des semaines. IDEMPOTENTE : ne touche que
-   les lignes dont le champ est VIDE, donc une valeur saisie ou corrigée à la main
-   n'est jamais écrasée. Les extractions Switch ne sont pas touchées.
+La mémoire est maintenant un NUMÉRO DE VERSION rangé dans la ligne `reglages`,
+donc synchronisé avec le reste. `appliquerSchema()` exécute les pas dont le numéro
+dépasse la version du document, puis écrit `SCHEMA_ACTUEL`. Conséquences :
 
-Pour tout futur renommage ou changement de schéma : ajouter l'entrée dans
-RENOMMAGES_RECETTES ou un fallback dans normaliserX, jamais de rupture.
+- un appareil neuf qui reçoit un document déjà migré ne rejoue rien ;
+- un document en retard est rattrapé par le premier appareil qui l'ouvre, quel
+  qu'il soit ;
+- un export CSV porte sa version, donc il se réimporte correctement.
+
+POUR AJOUTER UNE MIGRATION : un pas de plus à la FIN de `PAS_DE_SCHEMA`, avec le
+numéro suivant, et `SCHEMA_ACTUEL` incrémenté. **Ne jamais renuméroter, ne jamais
+insérer au milieu** : le numéro déjà écrit chez Chris est une promesse. Et chaque
+pas ne doit toucher QUE la valeur semée d'avant.
+
+Les tests font tourner le moteur pour de vrai, sur quatre scénarios : document
+sans version, document déjà migré, document en retard, et rejeu après un réglage
+manuel.
 
 ## 4. i18n (js/i18n.js), mécanisme particulier
 
@@ -1645,6 +1638,9 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.46 : les six rattrapages à usage unique deviennent une VERSION DE SCHÉMA
+  stockée avec les données, donc synchronisée. Les drapeaux localStorage étaient
+  par appareil alors que les données sont partagées (section 3).
 - v7.45 : les réglages du matériel (dose de repli, puissance de feu, molette du
   broyeur) se synchronisent entre appareils. Ils vivaient en localStorage, donc le
   téléphone ignorait ce que l'ordinateur réglait. Nouvelle table `reglages`.

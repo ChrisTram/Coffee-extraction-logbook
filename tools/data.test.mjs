@@ -418,47 +418,92 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     DATA.normaliserRecette({ puissance_feu: 0 }).puissance_feu === 1);
 }
 
-/* Recettes stockees : changer RECETTES_DEPART ne suffit pas. Une installation
-   existante garde la valeur semee le jour de sa creation, et c'est la recette
-   qui preremplit la saisie. Sans ces passages, demander 150 g et un feu a 2
-   n'aurait aucun effet visible pour Chris. */
+/* VERSION DE SCHEMA. Les rattrapages de valeurs semees dependaient de drapeaux
+   dans localStorage, donc PAR APPAREIL, alors que les donnees sont PARTAGEES : un
+   appareil au stockage vide posait ses drapeaux sur rien puis recevait un
+   document non migre. Le numero vit maintenant DANS la ligne reglages, donc il
+   voyage avec les donnees qu'il decrit. */
 {
-  const marques = new Set();
-  globalThis.localStorage = {
-    getItem: k => (marques.has(k) ? "1" : null),
-    setItem: k => marques.add(k),
-    removeItem: k => marques.delete(k),
+  // Une installation d'avant : valeurs semees d'autrefois, aucune version.
+  const avant = () => {
+    DATA.state.reglages = [];
+    DATA.state.recettes = [
+      { id: "b1", nom: "Brikka classique", methode: "Brikka", famille: "", eau: 100, temp: 93,
+        puissance_feu: 4, dial: "1.2.0", etapes: [], maj_le: 0 },
+      { id: "b2", nom: "Brikka flat white", methode: "Brikka", famille: "", eau: 100, temp: 93,
+        puissance_feu: 3, dial: "1.2.0", etapes: [], maj_le: 0 },
+      // Reglage choisi VOLONTAIREMENT apres coup : ne doit pas etre ecrase.
+      { id: "b3", nom: "Brikka perso", methode: "Brikka", famille: "", eau: 170, temp: "",
+        puissance_feu: 6, dial: "1.5.0", etapes: [], maj_le: 0 },
+      { id: "s1", nom: "Chronicler", methode: "Switch", famille: "chronicler", eau: 225, temp: 92,
+        puissance_feu: "", dial: "1.6.0", maj_le: 0,
+        etapes: [{ t: 0, texte: "Verser jusqu'à 112 g." }, { t: 45, texte: "Compléter à 225 g." }],
+        note: "compléter à 225 g veut dire que la balance affiche 225" },
+    ];
   };
-  // Une installation d'avant : chaudiere estimee a 100 g, feu a 4, temperature figee.
-  DATA.state.recettes = [
-    { id: "b1", nom: "Brikka classique", methode: "Brikka", eau: 100, temp: 93, puissance_feu: 4, maj_le: 0 },
-    { id: "b2", nom: "Brikka flat white", methode: "Brikka", eau: 100, temp: 93, puissance_feu: 3, maj_le: 0 },
-    // Choix volontaire posterieur : ne doit PAS etre ecrase.
-    { id: "b3", nom: "Brikka perso", methode: "Brikka", eau: 170, temp: "", puissance_feu: 6, maj_le: 0 },
-    { id: "s1", nom: "Switch 4:6", methode: "Switch", eau: 225, temp: 92, puissance_feu: "", maj_le: 0 },
-  ];
-  DATA.migrerDonnees();
   const par = id => DATA.state.recettes.find(r => r.id === id);
+
+  avant();
+  check("un document sans version part de zero", Number(DATA.reglagesCourants().schema_version) === 0);
+  DATA.migrerDonnees();
+
   check("la chaudiere Brikka passe de 100 a 150 g", par("b1").eau === 150 && par("b2").eau === 150,
     par("b1").eau + " / " + par("b2").eau);
   check("la temperature cible Brikka disparait", par("b1").temp === "" && par("b2").temp === "",
     JSON.stringify([par("b1").temp, par("b2").temp]));
-  check("le feu semé a 4 devient 2", par("b1").puissance_feu === 2, par("b1").puissance_feu);
-  check("le feu semé a 3 passe par 4 puis finit a 2", par("b2").puissance_feu === 2, par("b2").puissance_feu);
-  check("une recette Brikka reglee a la main n'est pas touchee",
+  check("le feu seme a 4 finit a 2", par("b1").puissance_feu === 2, par("b1").puissance_feu);
+  check("le feu seme a 3 passe par 4 puis finit a 2", par("b2").puissance_feu === 2, par("b2").puissance_feu);
+  check("la molette unique s'applique aussi au Switch", par("s1").dial === "1.5.0", par("s1").dial);
+  check("la Chronicler passe a 240 g", par("s1").eau === 240, par("s1").eau);
+  check("ses paliers suivent",
+    par("s1").etapes.map(e => e.texte).join(" ").includes("120 g") &&
+    par("s1").etapes.map(e => e.texte).join(" ").includes("240 g"),
+    par("s1").etapes.map(e => e.texte).join(" | "));
+  check("une recette reglee a la main n'est pas touchee",
     par("b3").eau === 170 && par("b3").puissance_feu === 6,
     par("b3").eau + " / " + par("b3").puissance_feu);
-  check("le Switch n'est jamais concerne", par("s1").eau === 225 && par("s1").temp === 92);
   check("les recettes touchees sont estampillees pour la synchro", par("b1").maj_le > 0);
 
-  // Rejouer ne doit RIEN faire : sinon un feu remis a 4 volontairement
-  // retomberait a 2 au prochain chargement.
+  // La version est ecrite, et elle voyage avec les donnees.
+  const v = Number(DATA.reglagesCourants().schema_version);
+  check("la version de schema est ecrite apres coup", v > 0, String(v));
+  check("elle est estampillee comme le reste", DATA.state.reglages[0].maj_le > 0);
+
+  /* Rejouer ne doit RIEN faire : sinon un reglage remis a la main retomberait a
+     la valeur migree au prochain chargement. */
   par("b1").puissance_feu = 4;
   par("b1").eau = 100;
   DATA.migrerDonnees();
-  check("les passages ne se rejouent pas", par("b1").puissance_feu === 4 && par("b1").eau === 100,
+  check("les pas ne se rejouent pas une fois la version atteinte",
+    par("b1").puissance_feu === 4 && par("b1").eau === 100,
     par("b1").puissance_feu + " / " + par("b1").eau);
-  delete globalThis.localStorage;
+
+  /* LE cas qui cassait avant : un appareil neuf, stockage vide, qui recoit un
+     document DEJA migre. Il ne doit rien rejouer, meme sans aucun drapeau local. */
+  avant();
+  DATA.state.reglages = [DATA.normaliserReglages({ schema_version: v })];
+  DATA.migrerDonnees();
+  check("un document deja migre n'est jamais retouche",
+    par("b1").eau === 100 && par("b1").puissance_feu === 4,
+    par("b1").eau + " / " + par("b1").puissance_feu);
+
+  // Et l'inverse : un appareil neuf qui recoit un document EN RETARD le rattrape.
+  avant();
+  DATA.state.reglages = [DATA.normaliserReglages({ schema_version: 3 })];
+  DATA.migrerDonnees();
+  check("un document en retard est rattrape par n'importe quel appareil",
+    par("b1").eau === 150 && par("s1").dial === "1.5.0",
+    par("b1").eau + " / " + par("s1").dial);
+  check("mais seulement les pas manquants : le feu de b1 avait deja ete traite",
+    par("b1").puissance_feu === 4, par("b1").puissance_feu);
+
+  // Plus aucun drapeau par appareil dans la couche de donnees.
+  const data = readFileSync(join(ROOT, "js/data.js"), "utf8");
+  const bloc = data.slice(data.indexOf("const PAS_DE_SCHEMA"), data.indexOf("function migrerDonnees"));
+  check("les pas ne dependent plus du stockage local", !bloc.includes("localStorage"));
+  check("les numeros de pas se suivent sans trou",
+    [...bloc.matchAll(/\{ v: (\d+)/g)].map(m => Number(m[1])).join() === "1,2,3,4,5,6",
+    [...bloc.matchAll(/\{ v: (\d+)/g)].map(m => Number(m[1])).join());
 }
 
 /* Le service worker doit precacher TOUS les scripts charges par index.html.
@@ -675,9 +720,10 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
 
   // Changer la graine ne suffit jamais : les recettes STOCKEES doivent suivre.
   const data = readFileSync(join(ROOT, "js/data.js"), "utf8");
-  check("une migration rattrape les recettes deja stockees", data.includes("molette150"));
+  check("un pas de schema rattrape la molette des recettes stockees",
+    data.includes("molette unique a 1.5.0"));
   check("elle ne se limite pas a la Brikka, les Switch aussi sont concernees",
-    /molette150[\s\S]{0,400}state\.recettes\.forEach/.test(data));
+    /molette unique a 1\.5\.0[\s\S]{0,300}state\.recettes\.forEach/.test(data));
 }
 
 /* Tout ecran a largeur bornee doit etre CENTRE dans main, qui fait 1180 px.
@@ -741,9 +787,10 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
    migration, Chris aurait continue a lire 225 g sur son site. */
 {
   const data = readFileSync(join(ROOT, "js/data.js"), "utf8");
-  check("une migration rattrape les Chronicler deja stockees", data.includes("chronicler240"));
+  check("un pas de schema rattrape les Chronicler stockees",
+    data.includes("Chronicler a 240 g"));
   check("elle ne vise que la famille concernee et la mauvaise valeur",
-    /chronicler240[\s\S]{0,500}famille !== "chronicler"[\s\S]{0,80}225/.test(data));
+    /Chronicler a 240 g[\s\S]{0,300}famille !== "chronicler"[\s\S]{0,80}225/.test(data));
 }
 
 /* Le trou de temperature entre 85 et 97 : les recettes visent 92 a 95, il n'y
@@ -834,7 +881,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
 
   // Et surtout : maj_le ne doit pas fuir dans le CSV.
   const csv = DATA.csvSerialiser([{ id: "moi", maj_le: 1699999999999, dose_g: 16 }], DATA.REGLAGE_COLS);
-  check("entete reglages.csv", csv.split("\n")[0] === "id,dose_g,puissance_feu,mouture_dial",
+  check("entete reglages.csv", csv.split("\n")[0] === "id,dose_g,puissance_feu,mouture_dial,schema_version",
     csv.split("\n")[0]);
   check("maj_le absent du CSV reglages", !csv.includes("1699999999999"));
 }
