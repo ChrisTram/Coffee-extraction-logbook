@@ -53,6 +53,28 @@
   /* Signature d'une table : de quoi savoir si elle a bougé, sans la comparer
      ligne à ligne. maj_le bouge à chaque mutation (voir estampiller dans
      data.js), la longueur couvre les suppressions. */
+  /* Cache de recherche pour les éléments STATIQUES d'index.html. À n'utiliser que
+     sur des nœuds jamais remplacés : un nœud issu d'un innerHTML serait mis en
+     cache détaché, et les écritures suivantes partiraient dans le vide. */
+  const cacheChamps = new Map();
+  function $f(sel) {
+    let el = cacheChamps.get(sel);
+    if (!el) { el = document.querySelector(sel); if (el) cacheChamps.set(sel, el); }
+    return el;
+  }
+
+  /* N'écrit QUE si ça change. Une affectation innerHTML invalide la mise en page
+     même quand le contenu est identique, et la ligne live est réécrite à chaque
+     caractère alors que la plupart des frappes n'en changent aucune partie :
+     taper dans la molette ne touche ni au ratio ni au coût. */
+  function poser(el, html) {
+    if (el && el.innerHTML !== html) el.innerHTML = html;
+  }
+
+  function poserTexte(el, texte) {
+    if (el && el.textContent !== texte) el.textContent = texte;
+  }
+
   function signatureTable(tableau) {
     let max = 0;
     for (const x of tableau) if (x.maj_le > max) max = x.maj_le;
@@ -856,7 +878,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.58";
+  const VERSION = "7.59";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -1395,12 +1417,12 @@
   }
 
   function majLive() {
-    const dose = parseFloat($("#f-dose").value);
-    const eau = parseFloat($("#f-eau").value);
+    const dose = parseFloat($f("#f-dose").value);
+    const eau = parseFloat($f("#f-eau").value);
     /* Même logique que DATA.calculs : le ratio principal est EAU sur DOSE sur les
        deux machines, c'est la convention universelle et la seule comparable à une
        recette. Le ratio en tasse suit en second, et seulement s'il est mesuré. */
-    const volume = parseFloat($("#f-volume").value);
+    const volume = parseFloat($f("#f-volume").value);
     const brikka = saisie.methode === "Brikka";
     let ratio = "…", base = "";
     if (dose > 0 && eau > 0) {
@@ -1409,13 +1431,13 @@
     }
     const enTasse = dose > 0 && volume > 0 ? "1:" + (volume / dose).toFixed(1) : "";
     const explication = base ? detailRatio(base, dose, eau) : I18N.t("rt_rien");
-    $("#live-ratio").innerHTML = I18N.t("lv_ratio") +
+    poser($f("#live-ratio"), I18N.t("lv_ratio") +
       ' <b class="aide-ratio" tabindex="0" data-info="' + attrTitre(explication) + '">' + ratio + "</b>" +
-      (enTasse ? ' <small>(' + I18N.t("rt_tasse_court") + " " + enTasse + ")</small>" : "");
+      (enTasse ? ' <small>(' + I18N.t("rt_tasse_court") + " " + enTasse + ")</small>" : ""));
 
     // Café déjà moulu : la molette ne s'applique pas, mouture par défaut du paquet.
     const moulu = cafeCourantMoulu();
-    const champMouture = $("#f-mouture");
+    const champMouture = $f("#f-mouture");
     champMouture.disabled = moulu;
     if (moulu && champMouture.value) champMouture.value = "";
     champMouture.placeholder = moulu ? I18N.t("paquet") : "1.5.0";
@@ -1423,25 +1445,25 @@
     const dial = champMouture.value.trim();
     const p = GRIND.parseDial(dial);
     const horsPlage = !moulu && p && !GRIND.verifierPlage(saisie.methode, dial).ok;
-    $("#live-mouture").innerHTML = I18N.t("lv_mouture") + " <b>" +
+    poser($f("#live-mouture"), I18N.t("lv_mouture") + " <b>" +
       (moulu ? I18N.t("paquet")
         : p ? I18N.t("lv_detail", { c: p.crans, u: Math.round(p.microns) })
-        : dial ? I18N.t("lv_invalide") : "…") + "</b>";
-    $("#live-mouture").classList.toggle("hors-plage", !!horsPlage || (!moulu && dial !== "" && !p));
+        : dial ? I18N.t("lv_invalide") : "…") + "</b>");
+    $f("#live-mouture").classList.toggle("hors-plage", !!horsPlage || (!moulu && dial !== "" && !p));
     // Détail affiché juste sous le champ molette.
-    const detailMouture = $("#mouture-detail");
+    const detailMouture = $f("#mouture-detail");
     if (moulu) {
-      detailMouture.textContent = I18N.t("paquet");
+      poserTexte(detailMouture, I18N.t("paquet"));
       detailMouture.classList.remove("hint-alerte");
     } else if (p) {
-      detailMouture.textContent = I18N.t("lv_detail", { c: p.crans, u: Math.round(p.microns) }) + " · " + GRIND.bande(p.microns).nom;
+      poserTexte(detailMouture, I18N.t("lv_detail", { c: p.crans, u: Math.round(p.microns) }) + " · " + GRIND.bande(p.microns).nom);
       detailMouture.classList.toggle("hint-alerte", !!horsPlage);
     } else {
-      detailMouture.textContent = dial ? I18N.t("lv_invalide") : "";
+      poserTexte(detailMouture, dial ? I18N.t("lv_invalide") : "");
       detailMouture.classList.toggle("hint-alerte", !!dial);
     }
 
-    const cafe = DATA.state.cafes.find(c => c.id === $("#f-cafe").value);
+    const cafe = DATA.state.cafes.find(c => c.id === $f("#f-cafe").value);
     let cout = "…";
     if (cafe && cafe.prix_vnd && cafe.format_grammes && dose > 0) {
       cout = fmtVND(cafe.prix_vnd / cafe.format_grammes * dose);
@@ -1451,24 +1473,24 @@
         cout += " <small>(" + I18N.t("lv_cout_reel", { v: fmtVND(cafe.prix_vnd / (cafe.format_grammes * pct / 100) * dose) }) + ")</small>";
       }
     }
-    $("#live-cout").innerHTML = I18N.t("lv_cout") + " <b>" + cout + "</b>";
+    poser($f("#live-cout"), I18N.t("lv_cout") + " <b>" + cout + "</b>");
 
     // Volume de la boisson : extraction plus eau ajoutée plus lait, en direct.
-    const volBase = parseFloat($("#f-volume").value) || volumeEstime(dose, eau) || 0;
-    const ajoutEau = !$("#champ-ajout-eau").hidden && $("#f-ajout-eau-oui").checked ? (parseFloat($("#f-eau-ajoutee").value) || 0) : 0;
-    const laitMl = !$("#champ-lait").hidden ? (parseFloat($("#f-lait").value) || 0) : 0;
-    const spanBoisson = $("#live-boisson");
+    const volBase = parseFloat($f("#f-volume").value) || volumeEstime(dose, eau) || 0;
+    const ajoutEau = !$f("#champ-ajout-eau").hidden && $f("#f-ajout-eau-oui").checked ? (parseFloat($f("#f-eau-ajoutee").value) || 0) : 0;
+    const laitMl = !$f("#champ-lait").hidden ? (parseFloat($f("#f-lait").value) || 0) : 0;
+    const spanBoisson = $f("#live-boisson");
     if (volBase > 0 && (ajoutEau > 0 || laitMl > 0)) {
       const parts = [];
       if (ajoutEau > 0) parts.push("+" + ajoutEau + " ml");
       if (laitMl > 0) parts.push("+" + laitMl + " ml " + I18N.t("lv_lait"));
       spanBoisson.hidden = false;
-      spanBoisson.innerHTML = I18N.t("lv_boisson") + " <b>" + volBase + " ml (" + parts.join(", ") + ") = " + (volBase + ajoutEau + laitMl) + " ml</b>";
+      poser(spanBoisson, I18N.t("lv_boisson") + " <b>" + volBase + " ml (" + parts.join(", ") + ") = " + (volBase + ajoutEau + laitMl) + " ml</b>");
     } else {
       spanBoisson.hidden = true;
     }
 
-    const btnVol = $("#volume-estime");
+    const btnVol = $f("#volume-estime");
     const estime = volumeEstime(dose, eau);
     if (estime) {
       btnVol.hidden = false;
@@ -1679,6 +1701,31 @@
     return [quand, corr].filter(Boolean).join("\n");
   }
 
+  /* Un écouteur par CONTENEUR, posé une seule fois au câblage. Les conteneurs ne
+     sont jamais remplacés, seul leur contenu l'est : la délégation survit donc à
+     toutes les reconstructions, et construirePilules() n'a plus rien à
+     réattacher. 85 écouteurs économisés à chaque bascule de langue. */
+  function brancherPilules() {
+    $("#f-diagnostic").addEventListener("click", ev => {
+      const b = ev.target.closest(".pilule");
+      if (!b || !b.dataset.diag) return;
+      const d = b.dataset.diag;
+      if (saisie.diagnostics.has(d)) saisie.diagnostics.delete(d);
+      else saisie.diagnostics.add(d);
+      basculerEtat(b, saisie.diagnostics.has(d));
+      planifierBrouillon();
+      majCorrectionDiagnostic();
+    });
+    $("#f-descripteurs").addEventListener("click", ev => {
+      const b = ev.target.closest(".tag");
+      if (!b || !b.dataset.tag) return;
+      const t = b.dataset.tag;
+      if (saisie.descripteurs.has(t)) saisie.descripteurs.delete(t);
+      else saisie.descripteurs.add(t);
+      basculerEtat(b, saisie.descripteurs.has(t));
+    });
+  }
+
   function construirePilules() {
     // Diagnostics à choix MULTIPLE (une tasse peut être un peu amère ET
     // astringente). Chaque pilule porte sa correction en infobulle (data-info,
@@ -1691,14 +1738,7 @@
         '<button type="button" class="pilule" aria-pressed="false" data-diag="' + d + '" data-info="' +
         infoDiagnostic(d) + '">' + I18N.diag(d) + "</button>").join("") +
       "</div></div>").join("");
-    $$("#f-diagnostic .pilule").forEach(b => b.addEventListener("click", () => {
-      const d = b.dataset.diag;
-      if (saisie.diagnostics.has(d)) saisie.diagnostics.delete(d);
-      else saisie.diagnostics.add(d);
-      basculerEtat(b, saisie.diagnostics.has(d));
-      planifierBrouillon();
-      majCorrectionDiagnostic();
-    }));
+    // Les clics sont délégués une fois pour toutes, voir brancherPilules().
 
     // Descripteurs groupés par famille de la roue des saveurs. Chaque tag
     // porte sa définition en infobulle (data-info, bulle CSS au survol).
@@ -1708,12 +1748,7 @@
         '<button type="button" class="tag" aria-pressed="false" data-tag="' + d + '" data-info="' +
         I18N.tagInfo(d) + '">' + I18N.tag(d) + "</button>").join("") +
       "</div></div>").join("");
-    $$("#f-descripteurs .tag").forEach(b => b.addEventListener("click", () => {
-      const t = b.dataset.tag;
-      if (saisie.descripteurs.has(t)) saisie.descripteurs.delete(t);
-      else saisie.descripteurs.add(t);
-      basculerEtat(b, saisie.descripteurs.has(t));
-    }));
+
   }
 
   function reinitialiserSaisie(garderCafe) {
@@ -3004,6 +3039,7 @@
     $("#param-enregistrer").addEventListener("click", enregistrerParametres);
     // UNE SEULE FOIS : les conteneurs survivent aux reconstructions de pilules,
     // les attacher depuis construirePilules empilerait un jeu par bascule de langue.
+    brancherPilules();
     activerAppuiLong($("#f-diagnostic"));
     activerAppuiLong($("#f-descripteurs"));
     $("#param-molette").addEventListener("input", majDetailMolette);

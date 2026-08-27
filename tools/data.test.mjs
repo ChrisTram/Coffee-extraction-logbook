@@ -1315,5 +1315,52 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("et il est retire une fois le premier ecran rendu", app.includes('$("#chargement")'));
 }
 
+/* TRAVAIL A LA FRAPPE ET AU RENDU.
+
+   majLive tourne a CHAQUE caractere tape dans la dose, l'eau, la mouture ou le
+   volume : elle faisait 18 recherches DOM et 4 ecritures innerHTML a chaque fois,
+   alors que la plupart des frappes ne changent aucune des quatre zones. */
+{
+  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  const l = app.split("\n");
+  const i = l.findIndex(x => x.includes("function majLive() {"));
+  let f = i;
+  for (let n = i + 1; n < l.length; n++) if (l[n] === "  }") { f = n; break; }
+  const corps = l.slice(i, f).join("\n");
+
+  check("majLive ne fait plus de recherche DOM non cachee",
+    (corps.match(/[$]\("/g) || []).length === 0,
+    String((corps.match(/[$]\("/g) || []).length));
+  check("et plus aucune ecriture innerHTML directe",
+    !corps.includes("innerHTML ="), "une affectation directe subsiste");
+  check("les ecritures passent par une garde qui compare avant d'ecrire",
+    /function poser\(el, html\)[\s\S]{0,120}innerHTML !== html/.test(app));
+
+  /* Le cache ne vaut QUE pour les noeuds statiques d'index.html : un noeud issu
+     d'un innerHTML serait mis en cache detache et les ecritures partiraient dans
+     le vide. Le commentaire doit le dire, c'est le seul garde-fou possible. */
+  check("le cache previent contre son mauvais usage",
+    /function [$]f[\s\S]{0,80}/.test(app) && app.includes("jamais remplac"));
+
+  /* Les pilules : 69 descripteurs plus 16 diagnostics reattaches a chaque
+     bascule de langue et a chaque remise a zero du formulaire. */
+  check("les clics des pilules sont delegues au conteneur",
+    app.includes("function brancherPilules"));
+  check("et construirePilules ne reattache plus rien",
+    !/construirePilules[\s\S]{0,900}f-descripteurs \.tag"\)\.forEach\(b => b\.addEventListener/.test(app));
+  /* Pose UNE FOIS au cablage : les conteneurs survivent aux reconstructions,
+     la poser depuis le rendu empilerait un jeu d'ecouteurs par bascule. */
+  check("la delegation est posee au cablage",
+    /function cabler[\s\S]*brancherPilules\(\)/.test(app));
+
+  // enterkeyhint : la touche de validation du clavier mobile.
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  const hints = (html.match(/enterkeyhint=/g) || []).length;
+  check("les champs annoncent leur touche de validation", hints >= 30, String(hints));
+  /* Pas de "send" : le formulaire ne se soumet pas a la touche entree,
+     l'annoncer serait mentir au clavier. */
+  check("aucun ne promet un envoi qui n'existe pas", !html.includes('enterkeyhint="send"'));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

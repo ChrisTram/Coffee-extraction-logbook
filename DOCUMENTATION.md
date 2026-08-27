@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.58,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.59,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -1775,6 +1775,9 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.59 : majLive ne fait plus de recherche DOM ni d écriture inutile à chaque
+  frappe, les clics des 85 pilules sont délégués, et 34 champs annoncent leur
+  touche de validation au clavier mobile.
 - v7.58 : mouvement réduit respecté, transitions de vue entre écrans, rendu
   différé hors écran, recherche texte dans l historique, reprise réseau, Échap,
   et un voile de chargement au lieu du blanc.

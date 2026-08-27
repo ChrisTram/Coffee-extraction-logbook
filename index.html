@@ -184,11 +184,11 @@
     <div class="grille-nombres">
       <div class="champ">
         <label for="f-dose">Dose (g)<span class="requis" title="Obligatoire">*</span></label>
-        <input type="number" id="f-dose" step="0.1" min="1" max="60" inputmode="decimal" value="15" required>
+        <input type="number" id="f-dose" enterkeyhint="next" step="0.1" min="1" max="60" inputmode="decimal" value="15" required>
       </div>
       <div class="champ">
         <label for="f-eau">Eau (g)</label>
-        <input type="number" id="f-eau" step="1" min="10" max="1000" inputmode="decimal">
+        <input type="number" id="f-eau" enterkeyhint="next" step="1" min="10" max="1000" inputmode="decimal">
       </div>
       <div class="champ">
         <label for="f-temp">Température (°C)</label>
@@ -211,18 +211,18 @@
             <option value="91">Bouillante, 2 min de repos</option>
             <option value="83">3 volumes bouillante + 1 froide</option>
           </select>
-          <input type="number" id="f-temp" step="1" min="60" max="100" inputmode="decimal">
+          <input type="number" id="f-temp" enterkeyhint="next" step="1" min="60" max="100" inputmode="decimal">
         </div>
         <span class="champ-hint">Estimations, sauf le mélange à l'eau froide.</span>
       </div>
       <div class="champ">
         <label for="f-mouture">Mouture (molette)</label>
-        <input type="text" id="f-mouture" pattern="[0-3][.,][0-9][.,][0-4]" inputmode="decimal">
+        <input type="text" id="f-mouture" enterkeyhint="next" pattern="[0-3][.,][0-9][.,][0-4]" inputmode="decimal">
         <span class="champ-hint" id="mouture-detail"></span>
       </div>
       <div class="champ">
         <label for="f-volume">Volume extrait (ml)</label>
-        <input type="number" id="f-volume" step="1" min="0" max="1000" inputmode="decimal">
+        <input type="number" id="f-volume" enterkeyhint="next" step="1" min="0" max="1000" inputmode="decimal">
         <button type="button" class="champ-hint champ-hint-btn" id="volume-estime" hidden></button>
       </div>
       <div class="champ" id="champ-puissance" hidden>
@@ -232,7 +232,7 @@
       </div>
       <div class="champ" id="champ-lait" hidden>
         <label for="f-lait">Lait ajouté (ml)</label>
-        <input type="number" id="f-lait" step="1" min="0" max="500" inputmode="decimal">
+        <input type="number" id="f-lait" enterkeyhint="next" step="1" min="0" max="500" inputmode="decimal">
         <span class="champ-hint" id="lait-hint"></span>
       </div>
       <div class="champ">
@@ -254,12 +254,12 @@
       </div>
       <div class="option-saisie" id="champ-ajout-eau" hidden>
         <label class="label-inline"><input type="checkbox" id="f-ajout-eau-oui"> Ajout d'eau après extraction</label>
-        <input type="number" id="f-eau-ajoutee" step="1" min="0" max="500" inputmode="decimal" placeholder="ml" hidden>
+        <input type="number" id="f-eau-ajoutee" enterkeyhint="next" step="1" min="0" max="500" inputmode="decimal" placeholder="ml" hidden>
         <span class="champ-hint">Pour allonger la boisson. N'entre pas dans le ratio.</span>
       </div>
       <div class="option-saisie" id="champ-agitation" hidden>
         <label class="label-inline"><input type="checkbox" id="f-agitation-oui"> Agitation</label>
-        <input type="number" id="f-agitation" step="1" min="1" max="20" inputmode="numeric" value="1" hidden>
+        <input type="number" id="f-agitation" enterkeyhint="next" step="1" min="1" max="20" inputmode="numeric" value="1" hidden>
         <span class="champ-hint">Nombre de remuages, 1 par défaut.</span>
       </div>
     </div>
@@ -336,7 +336,7 @@
 
     <div class="champ">
       <label for="f-commentaire">Commentaire</label>
-      <textarea id="f-commentaire" rows="2" placeholder="Libre, par exemple : superbe tasse, ronde et sucrée"></textarea>
+      <textarea id="f-commentaire" enterkeyhint="done" rows="2" placeholder="Libre, par exemple : superbe tasse, ronde et sucrée"></textarea>
     </div>
 
     <div class="saisie-actions">
@@ -457,7 +457,7 @@
       <div class="conv-ligne">
         <div class="champ">
           <label for="conv-dial">Réglage de molette</label>
-          <input type="text" id="conv-dial" value="1.5.0" inputmode="decimal">
+          <input type="text" id="conv-dial" enterkeyhint="done" value="1.5.0" inputmode="decimal">
         </div>
         <button type="button" class="btn btn-petit" id="conv-appliquer">Utiliser comme réglage par défaut</button>
       </div>
@@ -948,25 +948,25 @@ Cảm ơn shop.</pre>
   <form id="form-cafe" class="form-cafe" hidden>
     <h3 id="form-cafe-titre">Nouveau café</h3>
     <div class="grille-nombres">
-      <div class="champ champ-double"><label for="c-nom">Nom</label><input type="text" id="c-nom" required></div>
-      <div class="champ"><label for="c-torrefacteur">Torréfacteur</label><input type="text" id="c-torrefacteur"></div>
-      <div class="champ"><label for="c-origine">Origine</label><input type="text" id="c-origine"></div>
-      <div class="champ"><label for="c-espece">Espèce</label><input type="text" id="c-espece" list="liste-especes"></div>
-      <div class="champ"><label for="c-procede">Procédé</label><input type="text" id="c-procede" list="liste-procedes"></div>
+      <div class="champ champ-double"><label for="c-nom">Nom</label><input type="text" id="c-nom" enterkeyhint="next" required></div>
+      <div class="champ"><label for="c-torrefacteur">Torréfacteur</label><input type="text" id="c-torrefacteur" enterkeyhint="next"></div>
+      <div class="champ"><label for="c-origine">Origine</label><input type="text" id="c-origine" enterkeyhint="next"></div>
+      <div class="champ"><label for="c-espece">Espèce</label><input type="text" id="c-espece" enterkeyhint="next" list="liste-especes"></div>
+      <div class="champ"><label for="c-procede">Procédé</label><input type="text" id="c-procede" enterkeyhint="next" list="liste-procedes"></div>
       <div class="champ"><label for="c-torrefaction">Torréfaction</label>
         <select id="c-torrefaction"><option value="">Choisir</option><option value="Claire">Claire</option><option value="Medium">Medium</option><option value="Foncée">Foncée</option></select>
       </div>
-      <div class="champ"><label for="c-format">Format (g)</label><input type="number" id="c-format" min="0" step="1"></div>
-      <div class="champ"><label for="c-prix">Prix (VND)</label><input type="number" id="c-prix" min="0" step="1"></div>
+      <div class="champ"><label for="c-format">Format (g)</label><input type="number" id="c-format" enterkeyhint="next" min="0" step="1"></div>
+      <div class="champ"><label for="c-prix">Prix (VND)</label><input type="number" id="c-prix" enterkeyhint="next" min="0" step="1"></div>
       <div class="champ"><label for="c-date-torref">Date de torréfaction</label><input type="date" id="c-date-torref"></div>
       <div class="champ"><label for="c-machine">Machine recommandée</label>
         <select id="c-machine"><option value="">Choisir</option><option value="Brikka">Brikka</option><option value="Switch">Switch</option><option value="Les deux">Les deux</option></select>
       </div>
       <div class="champ"><label for="c-recette">Recette recommandée</label><select id="c-recette"><option value=""></option></select></div>
-      <div class="champ champ-double"><label for="c-notes">Notes annoncées</label><input type="text" id="c-notes"></div>
+      <div class="champ champ-double"><label for="c-notes">Notes annoncées</label><input type="text" id="c-notes" enterkeyhint="done"></div>
       <div class="champ">
         <label for="c-pct">Pourcentage de café réel</label>
-        <input type="number" id="c-pct" min="1" max="100" step="1" value="100">
+        <input type="number" id="c-pct" enterkeyhint="next" min="1" max="100" step="1" value="100">
         <span class="champ-hint">Vérifie la ligne thành phần au dos du paquet.</span>
       </div>
       <div class="champ champ-double"><label class="label-inline"><input type="checkbox" id="c-moulu"> Déjà moulu (mouture par défaut du paquet)</label></div>
@@ -982,8 +982,8 @@ Cảm ơn shop.</pre>
     <p class="modale-note">Enregistre un rachat : le stock repart du format plein et la fraîcheur suit la nouvelle date de torréfaction.</p>
     <div class="grille-nombres">
       <div class="champ"><label for="s-date">Date d'achat</label><input type="date" id="s-date" required></div>
-      <div class="champ"><label for="s-format">Format (g)</label><input type="number" id="s-format" min="1" step="1" required></div>
-      <div class="champ"><label for="s-prix">Prix (VND)</label><input type="number" id="s-prix" min="0" step="1"></div>
+      <div class="champ"><label for="s-format">Format (g)</label><input type="number" id="s-format" enterkeyhint="next" min="1" step="1" required></div>
+      <div class="champ"><label for="s-prix">Prix (VND)</label><input type="number" id="s-prix" enterkeyhint="next" min="0" step="1"></div>
       <div class="champ"><label for="s-ouverture">Date d'ouverture</label><input type="date" id="s-ouverture"><span class="champ-hint">Le jour où tu as ouvert le sachet. Laisse vide tant qu'il dort.</span></div>
       <div class="champ"><label for="s-torref">Date de torréfaction</label><input type="date" id="s-torref"></div>
     </div>
@@ -1039,8 +1039,8 @@ Cảm ơn shop.</pre>
     <h3>Repli quand la recette ne dit rien</h3>
     <p class="param-aide">Utilisé seulement si la recette choisie laisse la valeur vide.</p>
     <div class="grille-nombres">
-      <div class="champ"><label for="param-dose-defaut">Dose de repli (g)</label><input type="number" id="param-dose-defaut" step="0.5" min="1"></div>
-      <div class="champ"><label for="param-feu-defaut">Puissance de feu de repli</label><input type="number" id="param-feu-defaut" step="1" min="1" max="10"></div>
+      <div class="champ"><label for="param-dose-defaut">Dose de repli (g)</label><input type="number" id="param-dose-defaut" enterkeyhint="next" step="0.5" min="1"></div>
+      <div class="champ"><label for="param-feu-defaut">Puissance de feu de repli</label><input type="number" id="param-feu-defaut" enterkeyhint="next" step="1" min="1" max="10"></div>
     </div>
   </article>
 
@@ -1050,7 +1050,7 @@ Cảm ơn shop.</pre>
     <div class="grille-nombres">
       <div class="champ">
         <label for="param-molette">Molette (rotation.numéro.cran)</label>
-        <input type="text" id="param-molette" pattern="[0-3][.,][0-9][.,][0-4]" inputmode="decimal" placeholder="1.5.0">
+        <input type="text" id="param-molette" enterkeyhint="done" pattern="[0-3][.,][0-9][.,][0-4]" inputmode="decimal" placeholder="1.5.0">
         <span class="champ-hint" id="param-molette-detail"></span>
       </div>
     </div>
@@ -1074,28 +1074,28 @@ Cảm ơn shop.</pre>
   <form id="form-recette" class="form-cafe" hidden>
     <h3 id="form-recette-titre">Nouvelle recette</h3>
     <div class="grille-nombres">
-      <div class="champ champ-double"><label for="r-nom">Nom</label><input type="text" id="r-nom" required></div>
+      <div class="champ champ-double"><label for="r-nom">Nom</label><input type="text" id="r-nom" enterkeyhint="next" required></div>
       <div class="champ"><label for="r-methode">Méthode</label>
         <select id="r-methode"><option>Brikka</option><option>Switch</option></select>
       </div>
-      <div class="champ"><label for="r-numero">Numéro ou étiquette</label><input type="text" id="r-numero" placeholder="Recette 6"></div>
-      <div class="champ champ-double"><label for="r-sous-titre">Sous-titre</label><input type="text" id="r-sous-titre" placeholder="Percolation puis immersion"></div>
-      <div class="champ"><label for="r-dose">Dose (g)</label><input type="number" id="r-dose" step="0.5" min="1"></div>
-      <div class="champ"><label for="r-eau">Eau (g)</label><input type="number" id="r-eau" step="1" min="10"></div>
-      <div class="champ"><label for="r-temp">Température (°C)</label><input type="number" id="r-temp" step="1" min="60" max="100"></div>
-      <div class="champ"><label for="r-feu">Puissance du feu (Brikka)</label><input type="number" id="r-feu" step="1" min="1" max="10" placeholder="4"></div>
+      <div class="champ"><label for="r-numero">Numéro ou étiquette</label><input type="text" id="r-numero" enterkeyhint="next" placeholder="Recette 6"></div>
+      <div class="champ champ-double"><label for="r-sous-titre">Sous-titre</label><input type="text" id="r-sous-titre" enterkeyhint="next" placeholder="Percolation puis immersion"></div>
+      <div class="champ"><label for="r-dose">Dose (g)</label><input type="number" id="r-dose" enterkeyhint="next" step="0.5" min="1"></div>
+      <div class="champ"><label for="r-eau">Eau (g)</label><input type="number" id="r-eau" enterkeyhint="next" step="1" min="10"></div>
+      <div class="champ"><label for="r-temp">Température (°C)</label><input type="number" id="r-temp" enterkeyhint="next" step="1" min="60" max="100"></div>
+      <div class="champ"><label for="r-feu">Puissance du feu (Brikka)</label><input type="number" id="r-feu" enterkeyhint="next" step="1" min="1" max="10" placeholder="4"></div>
       <div class="champ"><label for="r-temp-texte">Température affichée</label><input type="text" id="r-temp-texte" placeholder="92 à 94 °C"></div>
-      <div class="champ"><label for="r-dial">Mouture (molette)</label><input type="text" id="r-dial" placeholder="1.5.0"></div>
+      <div class="champ"><label for="r-dial">Mouture (molette)</label><input type="text" id="r-dial" enterkeyhint="next" placeholder="1.5.0"></div>
       <div class="champ"><label for="r-ratio-texte">Ratio affiché</label><input type="text" id="r-ratio-texte" placeholder="ratio 1:15"></div>
       <div class="champ"><label for="r-total-texte">Durée affichée</label><input type="text" id="r-total-texte" placeholder="total environ 2:45"></div>
     </div>
     <div class="champ">
       <label for="r-etapes">Étapes, une par ligne : "0:45 texte" pour une étape minutée, "- texte" sinon</label>
-      <textarea id="r-etapes" rows="5" placeholder="0:00 Verser 120 g, vanne OUVERTE&#10;0:45 Verser 120 g, vanne FERMÉE&#10;2:00 Ouvrir, laisser s'écouler"></textarea>
+      <textarea id="r-etapes" enterkeyhint="done" rows="5" placeholder="0:00 Verser 120 g, vanne OUVERTE&#10;0:45 Verser 120 g, vanne FERMÉE&#10;2:00 Ouvrir, laisser s'écouler"></textarea>
     </div>
     <div class="champ"><label for="r-pourqui">Pour quels cafés</label><textarea id="r-pourqui" rows="2"></textarea></div>
     <div class="champ"><label for="r-cafes">Cafés associés, un par ligne</label><textarea id="r-cafes" rows="3"></textarea></div>
-    <div class="champ"><label for="r-note">Note ou remarque</label><input type="text" id="r-note"></div>
+    <div class="champ"><label for="r-note">Note ou remarque</label><input type="text" id="r-note" enterkeyhint="done"></div>
     <div class="grille-nombres">
       <div class="champ"><label class="label-inline"><input type="checkbox" id="r-defaut"> Recette par défaut</label></div>
       <div class="champ"><label class="label-inline"><input type="checkbox" id="r-avancee"> Avancée</label></div>
