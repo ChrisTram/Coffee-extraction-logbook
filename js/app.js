@@ -8,6 +8,50 @@
   const $ = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
 
+  /* Bascule l'état visuel ET l'état annoncé d'un même geste. Les séparer serait
+     la garantie qu'ils divergent : c'est déjà arrivé sur d'autres projets, la
+     classe suit et l'attribut reste figé. */
+  /* Appui LONG sur une pilule ou un tag : ouvre sa définition. Le survol n'existe
+     pas au doigt et un tap ne déclenche pas :focus-visible, donc sur téléphone la
+     moitié du vocabulaire était inatteignable. L'appui court garde son rôle de
+     bascule, et on annule la bulle dès que le doigt bouge pour ne pas la déclencher
+     pendant un défilement. */
+  const APPUI_LONG_MS = 450;
+
+  function activerAppuiLong(racine) {
+    let minuteur = null, cible = null;
+    const fermer = () => {
+      racine.querySelectorAll(".info-ouverte").forEach(x => x.classList.remove("info-ouverte"));
+    };
+    const annuler = () => { clearTimeout(minuteur); minuteur = null; cible = null; };
+
+    racine.addEventListener("pointerdown", ev => {
+      const el = ev.target.closest("[data-info]");
+      if (!el) return;
+      cible = el;
+      minuteur = setTimeout(() => {
+        fermer();
+        el.classList.add("info-ouverte");
+        minuteur = null;
+      }, APPUI_LONG_MS);
+    });
+    racine.addEventListener("pointermove", annuler);
+    racine.addEventListener("pointerup", () => {
+      // Un appui long a déjà ouvert la bulle : le clic qui suit ne doit pas
+      // basculer la pilule en plus. On laisse le clic passer sinon.
+      if (cible && cible.classList.contains("info-ouverte")) {
+        setTimeout(fermer, 2500);
+      }
+      annuler();
+    });
+    racine.addEventListener("pointercancel", () => { annuler(); fermer(); });
+  }
+
+  function basculerEtat(el, actif) {
+    el.classList.toggle("actif", actif);
+    el.setAttribute("aria-pressed", actif ? "true" : "false");
+  }
+
   function toast(message) {
     const t = $("#toast");
     t.textContent = message;
@@ -186,7 +230,13 @@
     }
     ecranCourant = nom;
     $$(".ecran").forEach(e => e.classList.remove("actif"));
-    $$(".nav-btn").forEach(b => b.classList.toggle("actif", b.dataset.ecran === nom));
+    /* aria-current="page" et pas aria-pressed : ce sont des liens de navigation
+        déguisés en boutons, pas des bascules. */
+    $$(".nav-btn").forEach(b => {
+      b.classList.toggle("actif", b.dataset.ecran === nom);
+      if (b.dataset.ecran === nom) b.setAttribute("aria-current", "page");
+      else b.removeAttribute("aria-current");
+    });
     const sec = $("#ecran-" + nom);
     if (sec) sec.classList.add("actif");
     if (location.hash !== "#" + nom) history.replaceState(null, "", "#" + nom);
@@ -752,7 +802,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.51";
+  const VERSION = "7.52";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -829,8 +879,8 @@
 
     saisie.diagnostics = new Set(b.diagnostics || []);
     saisie.descripteurs = new Set(b.descripteurs || []);
-    $$("#f-diagnostic .pilule").forEach(x => x.classList.toggle("actif", saisie.diagnostics.has(x.dataset.diag)));
-    $$("#f-descripteurs .tag").forEach(x => x.classList.toggle("actif", saisie.descripteurs.has(x.dataset.tag)));
+    $$("#f-diagnostic .pilule").forEach(x => basculerEtat(x, saisie.diagnostics.has(x.dataset.diag)));
+    $$("#f-descripteurs .tag").forEach(x => basculerEtat(x, saisie.descripteurs.has(x.dataset.tag)));
 
     $("#note-affichee").textContent = $("#f-note").value;
     $("#f-eau-ajoutee").hidden = !$("#f-ajout-eau-oui").checked;
@@ -985,7 +1035,7 @@
 
   function choisirMethode(m, garderRecette) {
     saisie.methode = m;
-    $$(".btn-methode").forEach(b => b.classList.toggle("actif", b.dataset.methode === m));
+    $$(".btn-methode").forEach(b => basculerEtat(b, b.dataset.methode === m));
     // Champs propres à chaque méthode.
     $("#champ-ajout-eau").hidden = m !== "Brikka";
     $("#champ-puissance").hidden = m !== "Brikka";
@@ -1584,14 +1634,14 @@
     $("#f-diagnostic").innerHTML = DIAGNOSTICS_GROUPES.map(g =>
       '<div class="tags-groupe"><span class="tags-groupe-nom">' + I18N.groupe(g.nom) + "</span>" +
       '<div class="tags">' + g.diags.map(d =>
-        '<button type="button" class="pilule" data-diag="' + d + '" data-info="' +
+        '<button type="button" class="pilule" aria-pressed="false" data-diag="' + d + '" data-info="' +
         infoDiagnostic(d) + '">' + I18N.diag(d) + "</button>").join("") +
       "</div></div>").join("");
     $$("#f-diagnostic .pilule").forEach(b => b.addEventListener("click", () => {
       const d = b.dataset.diag;
       if (saisie.diagnostics.has(d)) saisie.diagnostics.delete(d);
       else saisie.diagnostics.add(d);
-      b.classList.toggle("actif", saisie.diagnostics.has(d));
+      basculerEtat(b, saisie.diagnostics.has(d));
       planifierBrouillon();
       majCorrectionDiagnostic();
     }));
@@ -1601,14 +1651,14 @@
     $("#f-descripteurs").innerHTML = DESCRIPTEURS_GROUPES.map(g =>
       '<div class="tags-groupe"><span class="tags-groupe-nom">' + I18N.groupe(g.nom) + "</span>" +
       '<div class="tags">' + g.tags.map(d =>
-        '<button type="button" class="tag" data-tag="' + d + '" data-info="' +
+        '<button type="button" class="tag" aria-pressed="false" data-tag="' + d + '" data-info="' +
         I18N.tagInfo(d) + '">' + I18N.tag(d) + "</button>").join("") +
       "</div></div>").join("");
     $$("#f-descripteurs .tag").forEach(b => b.addEventListener("click", () => {
       const t = b.dataset.tag;
       if (saisie.descripteurs.has(t)) saisie.descripteurs.delete(t);
       else saisie.descripteurs.add(t);
-      b.classList.toggle("actif", saisie.descripteurs.has(t));
+      basculerEtat(b, saisie.descripteurs.has(t));
     }));
   }
 
@@ -1640,8 +1690,8 @@
     $("#f-lait").value = "";
     majAgitationDepuisRecette();
     majLait();
-    $$("#f-diagnostic .pilule").forEach(x => x.classList.remove("actif"));
-    $$("#f-descripteurs .tag").forEach(x => x.classList.remove("actif"));
+    $$("#f-diagnostic .pilule").forEach(x => basculerEtat(x, false));
+    $$("#f-descripteurs .tag").forEach(x => basculerEtat(x, false));
     $("#diagnostic-correction").textContent = "";
     chronoRaz();
     /* EN DERNIER, et c'est le point important : les lignes ci-dessus posent les
@@ -2870,6 +2920,10 @@
     $("#btn-chrono-stop").addEventListener("click", chronoArreter);
     $("#btn-chrono-raz").addEventListener("click", chronoRaz);
     $("#param-enregistrer").addEventListener("click", enregistrerParametres);
+    // UNE SEULE FOIS : les conteneurs survivent aux reconstructions de pilules,
+    // les attacher depuis construirePilules empilerait un jeu par bascule de langue.
+    activerAppuiLong($("#f-diagnostic"));
+    activerAppuiLong($("#f-descripteurs"));
     $("#param-molette").addEventListener("input", majDetailMolette);
     $("#conv-slider").addEventListener("input", () => {
       $("#conv-dial").value = GRIND.dialDepuisCrans(Number($("#conv-slider").value));
@@ -3156,8 +3210,8 @@
     $("#btn-lang").textContent = I18N.lang() === "fr" ? "EN" : "FR";
     $("#btn-lang").title = I18N.lang() === "fr" ? "Switch to English" : "Passer en français";
     construirePilules();
-    $$("#f-diagnostic .pilule").forEach(x => x.classList.toggle("actif", saisie.diagnostics.has(x.dataset.diag)));
-    $$("#f-descripteurs .tag").forEach(x => x.classList.toggle("actif", saisie.descripteurs.has(x.dataset.tag)));
+    $$("#f-diagnostic .pilule").forEach(x => basculerEtat(x, saisie.diagnostics.has(x.dataset.diag)));
+    $$("#f-descripteurs .tag").forEach(x => basculerEtat(x, saisie.descripteurs.has(x.dataset.tag)));
     majCorrectionDiagnostic();
     majBoutonsChrono();
     majEtapesChrono(false);

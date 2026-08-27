@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.51,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.52,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -755,6 +755,37 @@ extractions dans les vraies données.
 - L'ordre des lignes dans un tableau n'est PAS significatif (l'interface trie ce
   qu'elle affiche). La fusion est commutative sur le CONTENU. En production le
   document serveur est toujours le premier opérande, donc l'ordre converge aussi.
+
+## 8 decies. Les bascules annoncent leur état, et s'ouvrent au doigt
+
+70 boutons, zéro `aria-pressed`. Les pilules de diagnostic, les descripteurs et
+le choix de machine sont des BASCULES : l'état se voyait au fond coloré, mais rien
+ne l'annonçait. Un lecteur d'écran lisait "bouton chocolat noir" sans jamais dire
+s'il était coché.
+
+`aria-pressed` et pas `aria-checked` : ce sont des boutons à deux états, pas des
+cases à cocher dans un formulaire. Les onglets de navigation, eux, prennent
+`aria-current="page"` : ce sont des liens déguisés en boutons, pas des bascules.
+
+Point à tenir : `basculerEtat()` change la classe ET l'attribut d'un SEUL geste.
+Les séparer serait la garantie qu'ils divergent un jour, la classe suivant et
+l'attribut restant figé. Un test compte les `classList.toggle("actif")` restants
+et refuse qu'ils se multiplient.
+
+## L'appui long, pour les définitions
+
+Les bulles d'aide s'ouvraient au survol et au clavier. Sur téléphone le survol
+n'existe pas, et un tap ne déclenche pas `:focus-visible` : la moitié du
+vocabulaire des descripteurs était donc inatteignable dans le seul contexte où
+Chris utilise vraiment le site, la PWA en cuisine.
+
+Un appui de 450 ms ouvre la bulle, l'appui court garde son rôle de bascule, et un
+mouvement du doigt annule pour ne pas la déclencher pendant un défilement.
+
+À NE PAS DÉPLACER : `activerAppuiLong()` s'attache au CONTENEUR, une seule fois,
+depuis `cabler()`. `construirePilules()` réécrit le contenu mais pas le
+conteneur : appeler depuis là empilerait un jeu d'écouteurs à chaque bascule de
+langue. Un test vérifie l'ordre.
 
 ## 8 nonies. Supprimer, puis pouvoir revenir en arrière
 
@@ -1744,6 +1775,8 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.52 : les bascules annoncent enfin leur état, et les définitions s'ouvrent
+  au doigt par appui long (section 8 decies).
 - v7.51 : supprimer une extraction propose un retour arrière de cinq secondes,
   et le confirm() natif disparaît (section 8 nonies).
 - v7.50 : coût par tasse sur la fiche de chaque café, avec le coût en café RÉEL

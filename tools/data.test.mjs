@@ -1079,5 +1079,49 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("le message de retablissement aussi", /t_restauree:.*fr:.*en:/.test(i18n));
 }
 
+/* ACCESSIBILITE DES BASCULES. 70 boutons et zero aria-pressed : l'etat se voyait
+   au fond colore mais rien ne l'ANNONCAIT. Un lecteur d'ecran lisait "bouton
+   chocolat noir" sans jamais dire s'il etait coche. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+
+  // Le choix de machine, dans le HTML statique.
+  const methodes = [...html.matchAll(/<button[^>]*class="btn-methode[^"]*"[^>]*>/g)].map(m => m[0]);
+  check("les deux boutons de machine existent", methodes.length === 2, String(methodes.length));
+  check("et ils annoncent leur etat", methodes.every(m => m.includes("aria-pressed")),
+    methodes.join(" | "));
+
+  // Les pilules et tags, generes en JS.
+  check("les pilules de diagnostic naissent avec un etat annonce",
+    /class="pilule" aria-pressed=/.test(app));
+  check("les descripteurs aussi", /class="tag" aria-pressed=/.test(app));
+
+  /* Le point qui compte sur la duree : classe et attribut basculent d'un SEUL
+     geste. Les separer serait la garantie qu'ils divergent un jour. */
+  check("un helper unique bascule le visuel et l'annonce",
+    app.includes("function basculerEtat") &&
+    /function basculerEtat[\s\S]{0,220}classList\.toggle[\s\S]{0,120}aria-pressed/.test(app));
+  const restes = [...app.matchAll(/classList\.toggle\("actif"/g)].length;
+  /* Il en reste pour les elements qui ne sont PAS des bascules : lignes de
+     comparaison, boutons de ligne, onglets de navigation. */
+  check("les bascules passent toutes par le helper", restes <= 4, String(restes));
+
+  // La navigation s'annonce comme page courante, pas comme bascule.
+  check("l'ecran courant utilise aria-current", app.includes('aria-current", "page"'));
+
+  /* Les bulles au survol etaient inatteignables au doigt : sur telephone le
+     survol n'existe pas et un tap ne declenche pas :focus-visible. */
+  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  check("les bulles s'ouvrent aussi sans survol", css.includes(".info-ouverte::after"));
+  check("un appui long les declenche", app.includes("APPUI_LONG_MS"));
+  /* Attache UNE FOIS : les conteneurs survivent aux reconstructions de pilules,
+     l'attacher depuis construirePilules empilerait un jeu d'ecouteurs par
+     bascule de langue. */
+  check("les ecouteurs d'appui long sont poses au cablage, pas a chaque rendu",
+    app.indexOf("activerAppuiLong($(\"#f-diagnostic\"))") > app.indexOf("function cabler"),
+    "attache avant le cablage");
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);
