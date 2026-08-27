@@ -36,6 +36,98 @@ function moyenneGlissante(extractions, fenetre) {
   });
 }
 
+/* Leviers examinés, dans l'ordre où on les préfère à écart égal : d'abord ce que
+   Chris règle vraiment au moment de faire la tasse, ensuite ce qu'il subit.
+   La fonction valeur renvoie null quand le levier n'est pas renseigné, la tasse est alors
+   ignorée POUR CE LEVIER seulement. */
+const LEVIERS = [
+  { cle: "feu", valeur: e => (e.methode !== "Brikka" || e.puissance_feu === "" || e.puissance_feu === undefined
+      ? null : String(e.puissance_feu)) },
+  { cle: "prechauffage", valeur: e => (e.methode !== "Brikka" ? null
+      : Number(e.eau_prechauffee) === 1 ? "oui" : "non") },
+  { cle: "recette", valeur: e => e.recette || null },
+  { cle: "dose", valeur: e => (Number(e.dose_g) > 0 ? String(Math.round(Number(e.dose_g))) : null) },
+  { cle: "mouture", valeur: e => e.mouture_dial || null },
+  { cle: "paquet", valeur: e => {
+      const j = e._c && e._c.jours_ouvert;
+      if (j === "" || j === undefined || j === null) return null;
+      return j <= 7 ? "frais" : j <= 21 ? "median" : "vieux";
+    } },
+];
+
+/* Cherche, dans un lot de tasses homogène, le levier dont le meilleur groupe se
+   détache le plus du reste. Renvoie null si aucun ne passe les garde-fous.
+
+   Les garde-fous sont les mêmes que les insights du tableau de bord et ils ne
+   sont pas négociables : au moins minParGroupe tasses de chaque côté, et au
+   moins minEcart point de différence. En dessous, n'importe quelle corrélation
+   est du bruit et une phrase affirmative serait un mensonge. */
+function meilleurLevier(tasses, minParGroupe, minEcart) {
+  const minN = minParGroupe || 3;
+  const minE = minEcart || 0.4;
+  let meilleur = null;
+
+  for (const levier of LEVIERS) {
+    const groupes = new Map();
+    tasses.forEach(e => {
+      const v = levier.valeur(e);
+      if (v === null) return;
+      if (!groupes.has(v)) groupes.set(v, []);
+      groupes.get(v).push(Number(e.note_sur_10));
+    });
+    const eligibles = [...groupes.entries()].filter(([, n]) => n.length >= minN);
+    // Il faut au moins DEUX groupes : un levier qui n'a jamais varié ne peut
+    // rien expliquer, même si ses tasses sont excellentes.
+    if (eligibles.length < 2) continue;
+
+    const moy = n => n.reduce((s, x) => s + x, 0) / n.length;
+    const classes = eligibles.map(([v, n]) => ({ valeur: v, moy: moy(n), n: n.length }))
+      .sort((a, b) => b.moy - a.moy);
+    // Le gagnant contre TOUT LE RESTE mis en commun, pas contre le deuxième : à
+    // trois valeurs ou plus, l'écart au deuxième est toujours minuscule.
+    const reste = eligibles.filter(([v]) => v !== classes[0].valeur).flatMap(([, n]) => n);
+    if (!reste.length) continue;
+    const ecart = classes[0].moy - moy(reste);
+    if (ecart < minE) continue;
+
+    if (!meilleur || ecart > meilleur.ecart) {
+      meilleur = {
+        levier: levier.cle, valeur: classes[0].valeur, ecart,
+        haut: classes[0].moy, bas: moy(reste), n: classes[0].n, nReste: reste.length,
+      };
+    }
+  }
+  return meilleur;
+}
+
+/* Un constat par couple (café, machine), du plus documenté au moins documenté.
+   Isoler la machine n'est pas un détail : la même puissance de feu ne veut rien
+   dire d'un Switch, et mélanger les deux produirait une moyenne qui ne décrit
+   aucune tasse réelle. */
+function constatsParCafe(cafes, extractions, options) {
+  const o = options || {};
+  const minLot = o.minLot || 6;
+  const notees = extractions.filter(e => e.note_sur_10 !== "" && e.note_sur_10 !== undefined);
+  const lots = new Map();
+  notees.forEach(e => {
+    const k = e.cafe_id + "|" + e.methode;
+    if (!lots.has(k)) lots.set(k, []);
+    lots.get(k).push(e);
+  });
+
+  return [...lots.entries()]
+    .filter(([, tasses]) => tasses.length >= minLot)
+    .sort((a, b) => b[1].length - a[1].length)
+    .map(([k, tasses]) => {
+      const [cafeId, methode] = k.split("|");
+      const trouve = meilleurLevier(tasses, o.minParGroupe, o.minEcart);
+      if (!trouve) return null;
+      const cafe = cafes.find(c => c.id === cafeId);
+      return { cafe: cafe || null, cafeId, methode, total: tasses.length, ...trouve };
+    })
+    .filter(Boolean);
+}
+
 const REGLAGES = (() => {
   // Même seuil que les insights : sous trois tasses, une moyenne est du hasard.
   const MIN_TASSES = 3;
@@ -127,5 +219,5 @@ const REGLAGES = (() => {
       });
   }
 
-  return { MIN_TASSES, signature, pourCafe, tous, moyenneGlissante };
+  return { MIN_TASSES, signature, pourCafe, tous, moyenneGlissante, meilleurLevier, constatsParCafe, LEVIERS };
 })();

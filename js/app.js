@@ -223,19 +223,30 @@
     });
   }
 
-  function insightMouture(notees, methode) {
-    const groupes = {};
-    notees
-      .filter(e => e.methode === methode && e.mouture_dial)
-      .forEach(e => (groupes[e.mouture_dial] = groupes[e.mouture_dial] || []).push(e.note_sur_10));
-    const res = bestOfGroups(groupes);
-    if (!res) return null;
-    return I18N.t("ins_mouture", {
-      machine: methode,
-      dial: res.gagnant.cle,
-      haut: note1(res.gagnant.moy),
-      bas: note1(res.moyReste),
-    });
+  /* LE CONSTAT PAR CAFÉ ET PAR MACHINE, la phrase la plus utile du lot.
+
+     Les autres règles comparent des groupes sur TOUT l'historique. Mélanger un
+     Sáng Tạo en Brikka et un Liberica en Switch pour conclure sur la puissance de
+     feu ne décrit aucune tasse réelle. Celle-ci isole donc chaque couple (café,
+     machine) et cherche, parmi six leviers, celui qui sépare le mieux SES tasses.
+
+     Les garde-fous sont les mêmes que partout : trois tasses de chaque côté et
+     0,4 point d'écart. Sur les données actuelles de Chris, aucun ne passe encore,
+     et c'est le bon comportement : le meilleur écart par café tombe à 0,17. */
+  function insightsParCafe(exts) {
+    return REGLAGES.constatsParCafe(DATA.state.cafes, exts, {
+      minLot: MIN_SAMPLE * 2,
+      minParGroupe: MIN_SAMPLE,
+      minEcart: MIN_GAP,
+    }).slice(0, 2).map(c => I18N.t("ins_cafe_levier", {
+      cafe: c.cafe ? c.cafe.nom : "",
+      machine: I18N.machine(c.methode),
+      levier: I18N.t("lev_" + c.levier),
+      valeur: I18N.tr(String(c.valeur)),
+      haut: note1(c.haut),
+      bas: note1(c.bas),
+      n: c.n,
+    }));
   }
 
   // Duel entre recettes d'une même famille : c'est la comparaison qui a du sens
@@ -308,14 +319,15 @@
 
   function computeInsights(exts) {
     const notees = exts.filter(e => e.note_sur_10 !== "");
-    const phrases = [
+    /* Les constats PAR CAFÉ d'abord : ils sont plus précis, donc plus
+       actionnables. Les règles globales ensuite, et elles annoncent elles mêmes
+       qu'elles mélangent les cafés : c'est leur limite, autant la dire. */
+    const phrases = insightsParCafe(exts).concat([
       insightAgePaquet(notees),
-      insightMouture(notees, "Brikka"),
-      insightMouture(notees, "Switch"),
       insightRecettes(notees),
       insightMoment(notees),
       insightPuissance(notees),
-    ].filter(Boolean);
+    ].filter(Boolean).map(p => I18N.t("ins_global", { p })));
 
     if (phrases.length) return phrases;
 
@@ -694,7 +706,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.48";
+  const VERSION = "7.49";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le

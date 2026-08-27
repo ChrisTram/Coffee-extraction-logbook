@@ -963,5 +963,61 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("aucune tasse, aucun point", REGLAGES.moyenneGlissante([], 5).length === 0);
 }
 
+/* LE LEVIER QUI COMPTE, PAR CAFE ET PAR MACHINE. Comparer des groupes sur tout
+   l'historique melange un Sang Tao en Brikka et un Liberica en Switch : la
+   moyenne obtenue ne decrit aucune tasse reelle. */
+{
+  const t = (cafe, methode, feu, note) => ({
+    id: cafe + methode + feu + note + Math.round(note * 10),
+    cafe_id: cafe, methode, puissance_feu: feu, note_sur_10: note,
+    date_heure: "2026-08-01T12:00", recette: "R", dose_g: 15,
+  });
+  const cafes = [{ id: "c1", nom: "Cafe un" }, { id: "c2", nom: "Cafe deux" }];
+
+  // Un lot franc : feu 3 nettement au dessus de feu 2, sur le meme cafe.
+  const net = [
+    t("c1", "Brikka", 3, 8), t("c1", "Brikka", 3, 8), t("c1", "Brikka", 3, 8),
+    t("c1", "Brikka", 2, 5), t("c1", "Brikka", 2, 5), t("c1", "Brikka", 2, 5),
+  ];
+  const r = REGLAGES.constatsParCafe(cafes, net, { minLot: 6, minParGroupe: 3, minEcart: 0.4 });
+  check("un ecart franc est rapporte", r.length === 1, String(r.length));
+  check("le bon levier est designe", r[0] && r[0].levier === "feu", r[0] && r[0].levier);
+  check("la bonne valeur gagne", r[0] && r[0].valeur === "3", r[0] && r[0].valeur);
+  check("les deux moyennes sont justes", r[0] && r[0].haut === 8 && r[0].bas === 5,
+    r[0] && r[0].haut + " / " + r[0].bas);
+  check("le cafe et la machine sont nommes",
+    r[0] && r[0].cafe.nom === "Cafe un" && r[0].methode === "Brikka");
+
+  /* LE POINT CENTRAL : les memes tasses reparties sur DEUX cafes ne doivent plus
+     rien conclure. C'est exactement le piege des regles globales. */
+  const melange = [
+    t("c1", "Brikka", 3, 8), t("c1", "Brikka", 3, 8), t("c1", "Brikka", 3, 8),
+    t("c2", "Brikka", 2, 5), t("c2", "Brikka", 2, 5), t("c2", "Brikka", 2, 5),
+  ];
+  check("deux cafes differents ne se comparent pas entre eux",
+    REGLAGES.constatsParCafe(cafes, melange, { minLot: 6, minParGroupe: 3, minEcart: 0.4 }).length === 0);
+
+  // Meme cafe, machines differentes : on ne melange pas non plus.
+  const deuxMachines = net.map((e, i) => i < 3 ? e : { ...e, methode: "Switch" });
+  check("deux machines ne se comparent pas entre elles",
+    REGLAGES.constatsParCafe(cafes, deuxMachines, { minLot: 6, minParGroupe: 3, minEcart: 0.4 }).length === 0);
+
+  // Les garde-fous : sous le seuil d'ecart, on se tait.
+  const faible = net.map(e => e.puissance_feu === 2 ? { ...e, note_sur_10: 7.8 } : e);
+  check("un ecart de 0,2 point ne dit rien",
+    REGLAGES.constatsParCafe(cafes, faible, { minLot: 6, minParGroupe: 3, minEcart: 0.4 }).length === 0);
+  // Et sous le seuil d'effectif aussi.
+  check("deux tasses par groupe ne suffisent pas",
+    REGLAGES.meilleurLevier(net.slice(0, 2).concat(net.slice(3, 5)), 3, 0.4) === null);
+  // Un levier qui n'a jamais varie ne peut rien expliquer.
+  const constant = net.map(e => ({ ...e, puissance_feu: 3 }));
+  check("un levier constant ne conclut rien", REGLAGES.meilleurLevier(constant, 3, 0.4) === null);
+
+  // Les tasses non notees ne comptent pas.
+  check("les tasses sans note sont ignorees",
+    REGLAGES.constatsParCafe(cafes, net.concat([{ id: "z", cafe_id: "c1", methode: "Brikka", note_sur_10: "" }]),
+      { minLot: 6, minParGroupe: 3, minEcart: 0.4 })[0].total === 6);
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

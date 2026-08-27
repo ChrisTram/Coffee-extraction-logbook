@@ -595,14 +595,18 @@ const I18N = (() => {
     // Insights automatiques du tableau de bord. Phrases construites en JS, donc
     // gabarits T et pas entrées UI. Éviter les pluriels variables dans les
     // formulations : les nombres arrivent déjà formatés.
+    ins_cafe_levier: { fr: "Sur ton {cafe} en {machine} : {levier} {valeur} donne {haut} de moyenne sur {n} tasses, contre {bas} pour le reste.", en: "On your {cafe} in the {machine}: {levier} {valeur} averages {haut} over {n} cups, against {bas} for the rest." },
+    ins_global: { fr: "Toutes tasses confondues : {p}", en: "All cups together: {p}" },
+    lev_feu: { fr: "puissance de feu", en: "flame power" },
+    lev_prechauffage: { fr: "eau préchauffée", en: "preheated water" },
+    lev_recette: { fr: "recette", en: "recipe" },
+    lev_dose: { fr: "dose", en: "dose" },
+    lev_mouture: { fr: "mouture", en: "grind" },
+    lev_paquet: { fr: "âge du paquet", en: "bag age" },
     ins_paquet_frais: { fr: "dans la première semaine après ouverture", en: "in the first week after opening" },
     ins_paquet_median: { fr: "entre 1 et 3 semaines après ouverture", en: "between 1 and 3 weeks after opening" },
     ins_paquet_vieux: { fr: "au delà de 3 semaines après ouverture", en: "beyond 3 weeks after opening" },
     ins_paquet: { fr: "Tes tasses sont meilleures {quand} : {haut} de moyenne contre {bas} le reste du temps.", en: "Your cups are better {quand}: {haut} on average against {bas} the rest of the time." },
-    ins_mouture: {
-      fr: "Sur la {machine}, {dial} est ton meilleur réglage : {haut} de moyenne contre {bas} pour tes autres réglages.",
-      en: "On the {machine}, {dial} is your best setting: {haut} average against {bas} for your other settings.",
-    },
     ins_recettes: {
       fr: "{gagnante} passe devant {perdante} : {haut} de moyenne contre {bas}.",
       en: "{gagnante} beats {perdante}: {haut} average against {bas}.",

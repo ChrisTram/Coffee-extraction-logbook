@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.48,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.49,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -383,6 +383,32 @@ Deux détails qui comptent :
 
 Un test vérifie qu'une note vide reste vide jusque dans le CSV. Elle ne doit
 JAMAIS devenir 0, qui serait la pire des notes.
+
+## 6 quaterdecies. Le levier qui compte, par café ET par machine
+
+Les règles d'insight comparaient des groupes sur TOUT l'historique. C'est
+trompeur : mélanger un Sáng Tạo en Brikka et un Liberica en Switch pour conclure
+sur la puissance de feu produit une moyenne qui ne décrit aucune tasse réelle.
+
+`REGLAGES.constatsParCafe()` isole chaque couple (café, machine), puis cherche
+parmi six leviers (feu, préchauffage, recette, dose, mouture, âge du paquet) celui
+qui sépare le mieux SES tasses. Un seul constat par lot, le plus franc : trois
+phrases sur le même café se contrediraient à moitié.
+
+Les garde-fous sont les mêmes que partout et ne sont pas négociables : trois
+tasses de chaque côté, 0,4 point d'écart, et au moins DEUX valeurs pour le levier.
+Un levier qui n'a jamais varié ne peut rien expliquer, même si ses tasses sont
+excellentes.
+
+Sur les 29 tasses actuelles de Chris, AUCUN constat ne passe : le meilleur écart
+par couple tombe à 0,17 point. C'est le bon comportement, pas un défaut de la
+fonctionnalité. Les règles globales prennent le relais, et elles annoncent
+désormais leur propre limite en commençant par "Toutes tasses confondues".
+
+La règle mouture est retirée dans le même mouvement : le champ n'a qu'une valeur
+chez Chris (1.5.0, son réglage unique) et 21 % de remplissage, donc deux groupes
+de trois ne pouvaient jamais exister. La mouture reste examinée, mais PARMI les
+autres leviers, ce qui la fait se taire proprement quand elle ne varie pas.
 
 ## 6 terdecies. La courbe de tendance
 
@@ -1689,6 +1715,8 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.49 : constat PAR CAFÉ et PAR MACHINE dans les insights, à la place de la
+  règle mouture qui ne pouvait pas se déclencher (section 6 quaterdecies).
 - v7.48 : courbe de tendance sur le graphe des 30 jours, moyenne glissante sur
   les 5 dernières tasses notées.
 - v7.47 : jours depuis l ouverture du paquet, sur le SACHET et pas sur le café.
