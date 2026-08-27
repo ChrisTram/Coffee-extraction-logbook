@@ -792,8 +792,8 @@ const I18N = (() => {
 
     a_adapte: { fr: "versements adaptés à {e} g", en: "pours scaled to {e} g" },
 
-    rt_tasse: { fr: "Ratio EN TASSE : {v} ml extraits divisés par {d} g de café. Sur la Brikka c est ce qui compte, une partie de la chaudière reste en vapeur et n arrive jamais dans la tasse.", en: "CUP ratio: {v} ml out divided by {d} g of coffee. On the Brikka this is what matters, part of the boiler stays as steam and never reaches the cup." },
-    rt_chaudiere: { fr: "Ratio de CHAUDIÈRE : {e} g d eau divisés par {d} g de café. Ce n est pas ce que tu bois. Renseigne le volume extrait pour avoir le vrai ratio en tasse.", en: "BOILER ratio: {e} g of water divided by {d} g of coffee. This is not what you drink. Fill in the volume out to get the real cup ratio." },
+    rt_tasse_court: { fr: "en tasse", en: "in the cup" },
+    rt_chaudiere: { fr: "{e} g d eau pour {d} g de café. C est la convention universelle du café, celle qui se compare à n importe quelle recette. Sur la Brikka, l eau comptée est celle de la chaudière.", en: "{e} g of water for {d} g of coffee. The universal coffee convention, the one that compares with any recipe. On the Brikka, the water counted is the boiler's." },
     rt_infusion: { fr: "Ratio d infusion : {e} g d eau divisés par {d} g de café. Sur le Switch l eau versée traverse le café, donc c est le bon calcul.", en: "Brew ratio: {e} g of water divided by {d} g of coffee. On the Switch the poured water goes through the coffee, so this is the right measure." },
     rt_boisson_court: { fr: "boisson", en: "drink" },
     rt_rien: { fr: "Renseigne la dose et l eau, ou le volume extrait, pour voir le ratio.", en: "Fill in the dose and the water, or the volume out, to see the ratio." },

@@ -352,29 +352,35 @@ const classe = REGLAGES.tous(
 check("les cafes avec resultat passent devant", classe[0].cafe.id === "c1", classe.map(x => x.cafe.id).join());
 check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif === 0);
 
-// Ratio : deux logiques distinctes, une par machine. Sur la Brikka l'eau saisie
-// est celle de la CHAUDIERE, dont une partie part en vapeur : la rapporter a la
-// dose donne un nombre qui ne bouge jamais (la chaudiere est toujours remplie
-// pareil) et qui ne dit rien de la concentration en tasse.
+/* Le ratio principal est EAU sur DOSE sur les DEUX machines : c'est la
+   convention universelle du cafe, la seule comparable a une recette ou a un autre
+   buveur. Le ratio en tasse dependait du volume extrait, rempli sur 1 extraction
+   sur 29 : il ne s'affichait presque jamais et donnait un nombre incomparable au
+   reste. Il reste, en second, quand il est mesure. */
 {
   const brikka = DATA.calculs({ methode: "Brikka", dose_g: 16, eau_g: 150, volume_extrait_ml: 90 });
-  check("Brikka : le ratio se base sur le volume en tasse", brikka.ratioTexte === "1:5.6", brikka.ratioTexte);
-  check("Brikka : la base est nommee", brikka.ratioBase === "tasse", brikka.ratioBase);
+  check("Brikka : le ratio principal est eau sur dose", brikka.ratioTexte === "1:9.4", brikka.ratioTexte);
+  check("Brikka : sa base est nommee chaudiere", brikka.ratioBase === "chaudiere", brikka.ratioBase);
+  check("le volume mesure donne un ratio en tasse SECONDAIRE",
+    brikka.ratioTasseTexte === "1:5.6", brikka.ratioTasseTexte);
 
   const sansVolume = DATA.calculs({ methode: "Brikka", dose_g: 16, eau_g: 150, volume_extrait_ml: "" });
-  check("Brikka sans volume : repli chaudiere, et il est nomme",
-    sansVolume.ratioTexte === "1:9.4" && sansVolume.ratioBase === "chaudiere",
-    sansVolume.ratioTexte + " / " + sansVolume.ratioBase);
+  check("sans volume, le ratio principal ne change pas", sansVolume.ratioTexte === "1:9.4", sansVolume.ratioTexte);
+  check("sans volume, aucun ratio en tasse invente", sansVolume.ratioTasseTexte === "", sansVolume.ratioTasseTexte);
 
   const sw = DATA.calculs({ methode: "Switch", dose_g: 15, eau_g: 225, volume_extrait_ml: 190 });
-  check("Switch : ratio d'infusion, inchange", sw.ratioTexte === "1:15.0", sw.ratioTexte);
-  check("Switch : le volume extrait ne detourne pas le calcul", sw.ratioBase === "infusion", sw.ratioBase);
+  check("Switch : meme convention, eau sur dose", sw.ratioTexte === "1:15.0", sw.ratioTexte);
+  check("Switch : sa base est nommee infusion", sw.ratioBase === "infusion", sw.ratioBase);
 
   const allonge = DATA.calculs({ methode: "Brikka", dose_g: 16, eau_g: 150, volume_extrait_ml: 90, eau_ajoutee_ml: 40 });
-  check("allonger a l'eau ne touche pas au ratio d'extraction", allonge.ratioTexte === "1:5.6", allonge.ratioTexte);
+  check("allonger a l'eau ne touche pas au ratio d'extraction", allonge.ratioTexte === "1:9.4", allonge.ratioTexte);
   check("allonger a l'eau donne un ratio boisson en plus", allonge.ratioBoisson === "1:8.1", allonge.ratioBoisson);
   check("sans allongement, pas de ratio boisson",
     DATA.calculs({ methode: "Brikka", dose_g: 16, eau_g: 150, volume_extrait_ml: 90 }).ratioBoisson === "");
+
+  // Sans eau, plus rien : le ratio ne doit pas se rabattre sur le volume.
+  check("sans eau saisie, pas de ratio principal",
+    DATA.calculs({ methode: "Brikka", dose_g: 16, eau_g: "", volume_extrait_ml: 90 }).ratioTexte === "");
 }
 
 // Valeurs par defaut d'une recette : "" veut dire AUCUNE cible, ce qui n'est pas

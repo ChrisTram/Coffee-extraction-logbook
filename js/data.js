@@ -603,15 +603,15 @@ const DATA = (() => {
        le dit clairement au lieu de faire passer un chiffre pour l'autre. */
     let ratio = "", ratioBase = "";
     const estBrikka = ext.methode === "Brikka";
-    if (ext.dose_g > 0) {
-      if (estBrikka && ext.volume_extrait_ml !== "" && Number(ext.volume_extrait_ml) > 0) {
-        ratio = Number(ext.volume_extrait_ml) / ext.dose_g;
-        ratioBase = "tasse";
-      } else if (ext.eau_g) {
-        ratio = ext.eau_g / ext.dose_g;
-        ratioBase = estBrikka ? "chaudiere" : "infusion";
-      }
+    if (ext.dose_g > 0 && ext.eau_g) {
+      ratio = ext.eau_g / ext.dose_g;
+      ratioBase = estBrikka ? "chaudiere" : "infusion";
     }
+    /* Ratio en TASSE, secondaire et seulement s'il est mesuré. Il décrit ce qui
+       sort vraiment de la Brikka, mais il ne se compare à aucune recette. */
+    const ratioTasse = ext.dose_g > 0 && ext.volume_extrait_ml !== "" && Number(ext.volume_extrait_ml) > 0
+      ? Number(ext.volume_extrait_ml) / ext.dose_g
+      : "";
     let age = "";
     if (cafe && cafe.date_torrefaction && ext.date_heure) {
       const d1 = new Date(cafe.date_torrefaction + "T00:00");
@@ -637,6 +637,8 @@ const DATA = (() => {
       ratio,
       ratioTexte: ratio === "" ? "" : "1:" + ratio.toFixed(1),
       ratioBase,
+      ratioTasse,
+      ratioTasseTexte: ratioTasse === "" ? "" : "1:" + ratioTasse.toFixed(1),
       // Ratio de la BOISSON servie : inclut l'eau d'allongement et le lait. Sur
       // une Brikka allongée, c'est lui qui décrit ce qu'on boit vraiment.
       ratioBoisson: (() => {

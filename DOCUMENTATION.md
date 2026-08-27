@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.43,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.44,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -1059,39 +1059,29 @@ pas un design qui monterait à des centaines de milliers d'extractions.
 - `#acc-demo` et toute l'app marchent à l'identique en https : les tests
   Playwright peuvent pointer l'URL déployée aussi bien que le file:// local.
 
-## 6 nonies. Le ratio, DEUX logiques et pas une
+## 6 nonies. Le ratio : eau sur dose, sur les deux machines
 
-Il y avait une seule formule, `eau / dose`, appliquée aux deux machines. C'est
-juste pour le Switch et faux pour la Brikka, où le champ eau décrit la
-CHAUDIÈRE : une partie part en vapeur et n'atteint jamais la tasse. À 16 g pour
-150 g de chaudière l'écran annonçait 1:9,4 alors que la tasse faisait 1:5,6. Pire,
-la chaudière se remplit toujours au même niveau, donc le nombre ne bougeait
-jamais : il ne pouvait rien dire du problème de concentration que Chris essayait
-de résoudre.
+Le ratio principal est `eau_g / dose_g`, quelle que soit la machine. C est la
+convention universelle du café, la seule qui se compare à une recette, à une
+source ou à un autre buveur.
 
-`DATA.calculs()` renvoie maintenant, en plus de `ratioTexte` :
+Il y a eu une parenthèse en v7.29 où la Brikka basculait sur le volume EXTRAIT
+divisé par la dose, au motif que la chaudière ne décrit pas la concentration en
+tasse. Le raisonnement tenait, la pratique non : le volume extrait est rempli sur
+UNE extraction sur 29. Le ratio en tasse ne s affichait donc presque jamais, et
+quand il s affichait il donnait un nombre incomparable à tout le reste.
 
-- `ratioBase`, qui NOMME la formule employée : `tasse`, `chaudiere` ou
-  `infusion`. C'est ce champ qui alimente l'explication au survol.
-- `ratioBoisson`, le ratio de ce qui est réellement bu, eau d'allongement et lait
-  compris. Vide quand on n'a rien ajouté, pour ne pas afficher deux fois le même
-  nombre.
+`DATA.calculs()` renvoie donc :
 
-L'ordre de décision, à ne pas inverser :
+- `ratioTexte` et `ratioBase`, toujours eau sur dose. La base vaut `chaudiere`
+  en Brikka et `infusion` en Switch : le mot sert à l explication au survol, pas
+  à changer le calcul.
+- `ratioTasseTexte`, SECONDAIRE et seulement s il est mesuré. Affiché entre
+  parenthèses derrière le principal.
+- `ratioBoisson`, également secondaire, quand on allonge à l eau ou au lait.
 
-1. Brikka AVEC volume extrait renseigné : `volume / dose`, base `tasse`. C'est le
-   vrai ratio.
-2. Brikka SANS volume : repli sur `eau / dose`, base `chaudiere`. On le calcule
-   quand même, mais l'infobulle dit explicitement que ce n'est pas ce qu'on boit
-   et invite à saisir le volume.
-3. Switch : toujours `eau / dose`, base `infusion`. Le volume extrait ne doit PAS
-   détourner ce calcul : l'eau versée traverse le café, la convention percolation
-   est la bonne, et changer de dénominateur rendrait l'historique incomparable.
-
-L'explication est construite une seule fois par `detailRatio()` (app.js) et
-servie aux deux endroits : la ligne live de la saisie (`.aide-ratio`, bulle CSS
-au survol et au clavier) et la cellule ratio de l'historique (attribut `title`).
-Ne pas dupliquer le texte : il existe en FR et EN sous les clés `rt_*`.
+À ne pas refaire : promouvoir une statistique qui dépend d un champ que personne
+ne remplit. Vérifier le taux de remplissage AVANT de construire dessus.
 
 ## 6 decies. Écran Paramètres
 
@@ -1624,6 +1614,8 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.44 : le ratio principal redevient eau sur dose sur les deux machines
+  (section 6 nonies). Le ratio en tasse passe en mention secondaire.
 - v7.43 : la note devient facultative, plus de 7 imposé par défaut (section
   7 decies). Le badge de stock annonce les tasses RESTANTES, estimées à la dose
   moyenne du café (section 6 undecies).

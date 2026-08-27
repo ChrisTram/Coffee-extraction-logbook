@@ -672,7 +672,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.43";
+  const VERSION = "7.44";
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -1142,8 +1142,7 @@
   /* Explique le ratio affiché : quelle formule a servi, et pourquoi. Le calcul
      diffère selon la machine et personne ne peut le deviner en regardant un
      "1:5,6". Voir DATA.calculs pour la logique. */
-  function detailRatio(base, dose, eau, volume) {
-    if (base === "tasse") return I18N.t("rt_tasse", { d: dose, v: volume });
+  function detailRatio(base, dose, eau) {
     if (base === "chaudiere") return I18N.t("rt_chaudiere", { d: dose, e: eau });
     if (base === "infusion") return I18N.t("rt_infusion", { d: dose, e: eau });
     return "";
@@ -1171,18 +1170,21 @@
   function majLive() {
     const dose = parseFloat($("#f-dose").value);
     const eau = parseFloat($("#f-eau").value);
-    // Même logique que DATA.calculs : sur la Brikka le volume extrait prime,
-    // la chaudière ne dit rien de la concentration en tasse.
+    /* Même logique que DATA.calculs : le ratio principal est EAU sur DOSE sur les
+       deux machines, c'est la convention universelle et la seule comparable à une
+       recette. Le ratio en tasse suit en second, et seulement s'il est mesuré. */
     const volume = parseFloat($("#f-volume").value);
     const brikka = saisie.methode === "Brikka";
     let ratio = "…", base = "";
-    if (dose > 0) {
-      if (brikka && volume > 0) { ratio = "1:" + (volume / dose).toFixed(1); base = "tasse"; }
-      else if (eau > 0) { ratio = "1:" + (eau / dose).toFixed(1); base = brikka ? "chaudiere" : "infusion"; }
+    if (dose > 0 && eau > 0) {
+      ratio = "1:" + (eau / dose).toFixed(1);
+      base = brikka ? "chaudiere" : "infusion";
     }
-    const explication = base ? detailRatio(base, dose, eau, volume) : I18N.t("rt_rien");
+    const enTasse = dose > 0 && volume > 0 ? "1:" + (volume / dose).toFixed(1) : "";
+    const explication = base ? detailRatio(base, dose, eau) : I18N.t("rt_rien");
     $("#live-ratio").innerHTML = I18N.t("lv_ratio") +
-      ' <b class="aide-ratio" tabindex="0" data-info="' + attrTitre(explication) + '">' + ratio + "</b>";
+      ' <b class="aide-ratio" tabindex="0" data-info="' + attrTitre(explication) + '">' + ratio + "</b>" +
+      (enTasse ? ' <small>(' + I18N.t("rt_tasse_court") + " " + enTasse + ")</small>" : "");
 
     // Café déjà moulu : la molette ne s'applique pas, mouture par défaut du paquet.
     const moulu = cafeCourantMoulu();
@@ -1722,8 +1724,10 @@
       '<td><span class="chip-methode ' + e.methode.toLowerCase() + '">' + e.methode + "</span></td>" +
       '<td title="' + attrTitre(e.recette) + '">' + (e.recette || "") + "</td>" +
       "<td>" + (e.mouture_dial ? e.mouture_dial + " <small>(" + e._c.microns + " µm)</small>" : e._c.moulu ? "<small>" + I18N.t("paquet") + "</small>" : "") + "</td>" +
-      '<td title="' + attrTitre(detailRatio(e._c.ratioBase, e.dose_g, e.eau_g, e.volume_extrait_ml)) + '">' +
-      e._c.ratioTexte + (e._c.ratioBoisson ? ' <small>(' + I18N.t("rt_boisson_court") + " " + e._c.ratioBoisson + ")</small>" : "") + "</td>" +
+      '<td title="' + attrTitre(detailRatio(e._c.ratioBase, e.dose_g, e.eau_g)) + '">' +
+      e._c.ratioTexte +
+      (e._c.ratioTasseTexte ? ' <small>(' + I18N.t("rt_tasse_court") + " " + e._c.ratioTasseTexte + ")</small>" : "") +
+      (e._c.ratioBoisson ? ' <small>(' + I18N.t("rt_boisson_court") + " " + e._c.ratioBoisson + ")</small>" : "") + "</td>" +
       '<td class="note-cellule">' + (e.note_sur_10 !== "" ? e.note_sur_10 : "") + "</td>" +
       '<td class="chip-diagnostic" title="' + attrTitre(e.diagnostic ? diagsAffiches(e.diagnostic) : "") + '">' +
       (e.diagnostic ? diagsAffiches(e.diagnostic) : "") + "</td>" +
