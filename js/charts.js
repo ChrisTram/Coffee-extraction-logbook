@@ -1,6 +1,10 @@
 // Graphiques : Chart.js embarqué localement, plus heatmap et réglette en SVG maison.
 // Couleurs de données validées pour le daltonisme, ne pas les changer :
 // Brikka #2a78d6, Switch #eb6834, les deux machines #1baf7a.
+// Ces trois-là décrivent une MACHINE. Deux séries du graphique principal, la
+// tendance et les grammes, empruntaient le vert des deux machines faute d'avoir
+// leur propre couleur : elles étaient donc identiques entre elles et vertes sans
+// raison. Elles ont maintenant --tendance et --grammes, qui suivent le thème.
 "use strict";
 
 const CHARTS = (() => {
@@ -121,7 +125,7 @@ const CHARTS = (() => {
           },
           {
             type: "line", label: I18N.t("l_cafe_g"), data: grammes, yAxisID: "y3",
-            borderColor: C_DEUX, backgroundColor: C_DEUX,
+            borderColor: cssVar("--grammes"), backgroundColor: cssVar("--grammes"),
             borderDash: [5, 4], borderWidth: 1.5, pointRadius: 2, pointHoverRadius: 4,
             spanGaps: false, tension: 0.3,
           },
@@ -129,9 +133,11 @@ const CHARTS = (() => {
             /* Tendance : même axe de note que les points bruts, sinon on
                comparerait deux échelles différentes sans le voir. Trait épais et
                sans point, pour qu'on la lise comme un fond et pas comme une
-               mesure de plus. */
+               mesure de plus. La COULEUR sert la même intention : celle de la
+               note qu'elle lisse, en translucide. Une teinte étrangère la
+               faisait passer pour une troisième donnée, ce qu'elle n'est pas. */
             type: "line", label: I18N.t("l_tendance"), data: tendance || [], yAxisID: "y2",
-            borderColor: C_DEUX, backgroundColor: C_DEUX,
+            borderColor: cssVar("--tendance"), backgroundColor: cssVar("--tendance"),
             spanGaps: true, tension: 0.4, pointRadius: 0, pointHoverRadius: 4, borderWidth: 3,
             fill: false,
           },

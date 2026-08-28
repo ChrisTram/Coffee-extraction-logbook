@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.62,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.63,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -710,6 +710,37 @@ attributs du cookie, le rejet d'une signature falsifiée ou signée avec une
 autre clé, l'expiration à 30 jours, la redirection ouverte, le logout et la
 fermeture par défaut quand les secrets manquent. À relancer à CHAQUE
 modification de `worker/index.js`.
+
+## 6 quinquies. Une couleur, une série
+
+Le graphique principal empilait QUATRE séries et n'avait que trois couleurs. La
+ligne des grammes de café et la courbe de tendance des notes portaient toutes
+deux `#1baf7a`, le vert réservé aux « deux machines » : indistinguables l'une de
+l'autre, et vertes sans rien vouloir dire, sur une palette entièrement chaude.
+
+Les trois couleurs protégées décrivent une MACHINE (Brikka bleu, Switch orange,
+les deux vert). Une série qui ne parle pas d'une machine ne doit pas les
+emprunter, même quand la teinte est libre à cet endroit du graphique.
+
+- **La tendance** prend la teinte de ce qu'elle lisse, l'accent, en translucide
+  (`--tendance`). C'est la même mesure que la ligne des notes, sur le même axe :
+  une teinte étrangère la faisait passer pour une troisième donnée. Son
+  commentaire disait déjà qu'on doit « la lire comme un fond » ; un vert émeraude
+  de 3 px disait le contraire. Même teinte que la note, donc la distinction ne
+  repose pas sur la couleur et le daltonisme n'entre pas en jeu.
+- **Les grammes** prennent un gris ardoise désaturé (`--grammes`). Sur une
+  palette entièrement chaude, une quatrième série a besoin d'une teinte froide
+  pour se détacher, désaturée pour ne pas crier. Le bleu vif, l'orange et le vert
+  appartiennent aux machines ; le violet, les deux bleus, le jaune et le rose
+  sont pris par l'anneau des diagnostics. L'ardoise ne collisionne avec rien.
+
+**Pas de rouge sur ce graphique**, malgré la tentation : ici le rouge est
+`--danger`, il annonce une mauvaise nouvelle. Une tendance de notes qui monte est
+une bonne nouvelle, la peindre en rouge dirait le contraire de ce qu'elle montre.
+
+Les deux teintes vivent dans `css/styles.css`, une ligne par thème : c'est là
+qu'il faut aller pour les ajuster, pas dans `charts.js`. Un test vérifie que les
+trois courbes tirent leur couleur de trois jetons différents.
 
 ## 6 ter. Calendrier d'activité, échelle ABSOLUE
 
@@ -1879,6 +1910,9 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.63 : la tendance et les grammes du graphique principal ont enfin chacune
+  leur couleur. Elles partageaient le vert des deux machines, criard sur une
+  palette chaude et surtout identique pour deux séries sans rapport.
 - v7.62 : la réglette du moulin construit son squelette une seule fois. Déplacer
   le curseur ne bouge plus que deux attributs, et le curseur redevient donc
   immédiat : son anti-rebond de 90 ms n'avait plus rien à couvrir.

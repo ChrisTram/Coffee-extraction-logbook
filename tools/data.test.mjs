@@ -1405,5 +1405,50 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("aucun ne promet un envoi qui n'existe pas", !html.includes('enterkeyhint="send"'));
 }
 
+/* UNE COULEUR, UNE SERIE.
+
+   Le graphique principal empilait quatre series et n'avait que trois couleurs :
+   la ligne des grammes de cafe et la courbe de tendance des notes portaient
+   toutes deux #1baf7a, le vert reserve aux "deux machines". Elles etaient donc
+   indistinguables l'une de l'autre, et vertes sans aucune raison, sur une
+   palette entierement chaude.
+
+   Le vert garde son role ailleurs : le comparatif des machines, et "Equilibre"
+   dans l'anneau des diagnostics. Ce qu'on verrouille ici, c'est qu'il ne
+   reparte pas colorer une serie a laquelle il ne veut rien dire. */
+{
+  const charts = readFileSync(join(ROOT, "js/charts.js"), "utf8");
+  const bloc30j = charts.slice(charts.indexOf("function barresEtLigne30j"),
+    charts.indexOf("function barresHorizontales"));
+
+  check("le graphique principal n'emprunte plus le vert des machines",
+    !bloc30j.includes("C_DEUX"), "C_DEUX y est encore");
+
+  // Chaque serie tire sa couleur d'un jeton different.
+  const teintes = [...bloc30j.matchAll(/borderColor: cssVar\("(--[\w-]+)"\)/g)].map(m => m[1]);
+  check("chaque courbe a sa propre couleur",
+    teintes.length === 3 && new Set(teintes).size === 3, teintes.join(", "));
+
+  /* La tendance LISSE la ligne des notes : meme mesure, meme axe. Elle doit
+     porter la teinte de l'accent, sinon elle se lit comme une donnee de plus.
+     C'est ce que disait deja son commentaire, et que sa couleur contredisait. */
+  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  const tendances = [...css.matchAll(/--tendance: ([^;]+);/g)].map(m => m[1].trim());
+  check("la tendance existe dans les deux themes", tendances.length === 2, tendances.join(" | "));
+  check("et elle est translucide, pour se lire comme un fond",
+    tendances.every(t => {
+      const m = t.match(/^rgba\([^)]*,\s*([\d.]+)\s*\)$/);
+      return !!m && Number(m[1]) < 0.6;
+    }),
+    tendances.join(" | "));
+  check("les grammes aussi ont leur teinte dans les deux themes",
+    [...css.matchAll(/--grammes: ([^;]+);/g)].length === 2);
+
+  /* Pas de rouge : dans ce site le rouge est --danger, il annonce une mauvaise
+     nouvelle. Une tendance de notes qui monte est une bonne nouvelle. */
+  check("aucune serie du graphique principal n'emprunte la couleur de danger",
+    !bloc30j.includes("--danger"));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

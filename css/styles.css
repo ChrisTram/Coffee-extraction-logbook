@@ -39,6 +39,13 @@ html[data-theme="sombre"] {
   --avert-bord: rgba(217, 135, 65, 0.45);
   --danger: #e06c5a;
   --ok: #1baf7a;
+  /* Graphique principal. La tendance lisse la ligne des notes : même teinte que
+     l'accent, en translucide, pour se lire comme un fond. Les grammes sont une
+     quatrième série sur une palette chaude, d'où l'ardoise froide et désaturée,
+     assez présente pour se détacher, assez terne pour ne pas crier. */
+  --tendance: rgba(217, 135, 65, 0.40);
+  --grammes: #7fa0ad;
+
   --hm0: #2b1d10;
   --hm1: #54371c;
   --hm2: #7d4f22;
@@ -69,6 +76,9 @@ html[data-theme="clair"] {
   --avert-bord: rgba(143, 95, 51, 0.4);
   --danger: #b3402e;
   --ok: #157a57;
+  --tendance: rgba(143, 95, 51, 0.34);
+  --grammes: #5f8492;
+
   --hm0: #efe6d3;
   --hm1: #e7d3ae;
   --hm2: #d3b077;
