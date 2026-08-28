@@ -358,5 +358,63 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
   }
 }
 
+/* LA REGLETTE NE SE REDESSINE PAS QUAND LE CURSEUR BOUGE.
+
+   Chris traverse le curseur du convertisseur cran par cran. Chaque cran
+   redessinait 151 tirets de graduation, 15 boites de methodes, les bandes, l'axe
+   des microns et les marqueurs, puis reattachait les infobulles sur chaque
+   noeud. Un anti-rebond masquait le cout ; il ne l'enlevait pas.
+
+   Le faux DOM du harnais est trop sommaire pour observer ca, alors on fabrique
+   un element temoin qui compte ses ecritures. C'est le seul point du fichier ou
+   on ne se sert pas du faux DOM commun, et c'est assume : sans compteur, ce test
+   ne pourrait rien affirmer. */
+{
+  const noeud = () => ({
+    attrs: {}, classes: new Set(), textContent: "",
+    setAttribute(k, v) { this.attrs[k] = String(v); },
+    removeAttribute(k) { delete this.attrs[k]; },
+    classList: { toggle(c, on) { if (on) this.p.classes.add(c); else this.p.classes.delete(c); } },
+  });
+  const lier = n => { n.classList.p = n; return n; };
+  const trait = lier(noeud()), etiquette = lier(noeud());
+  const boites = new Map();
+  let reconstructions = 0;
+  const temoin = {
+    firstChild: null,
+    set innerHTML(v) { reconstructions++; this.firstChild = { v }; },
+    get innerHTML() { return ""; },
+    querySelector(sel) {
+      if (sel === "[data-curseur]") return trait;
+      if (sel === "[data-curseur-label]") return etiquette;
+      if (!boites.has(sel)) boites.set(sel, lier(noeud()));
+      return boites.get(sel);
+    },
+    querySelectorAll: () => [],
+  };
+
+  api.CHARTS.diagramme(temoin, "1.5.0", "1.5.0");
+  check("la reglette se construit au premier appel", reconstructions === 1, String(reconstructions));
+  const x1 = trait.attrs.x1;
+  check("et le curseur est place", x1 !== undefined && trait.attrs.display === undefined,
+    JSON.stringify(trait.attrs));
+
+  api.CHARTS.diagramme(temoin, "1.6.0", "1.5.0");
+  check("deplacer le curseur ne redessine rien", reconstructions === 1, String(reconstructions));
+  check("mais le curseur a bien bouge", trait.attrs.x1 !== x1,
+    x1 + " puis " + trait.attrs.x1);
+  check("et son etiquette suit", etiquette.textContent.includes("1.6.0"), etiquette.textContent);
+
+  /* Le squelette porte le reglage par defaut et les libelles traduits : si l'un
+     des deux change, il DOIT etre refait, sinon la reglette montre l'ancien. */
+  api.CHARTS.diagramme(temoin, "1.6.0", "2.0.0");
+  check("changer le reglage par defaut le redessine", reconstructions === 2, String(reconstructions));
+
+  api.CHARTS.diagramme(temoin, "", "2.0.0");
+  check("sans dial, le curseur se masque au lieu de disparaitre",
+    trait.attrs.display === "none" && reconstructions === 2,
+    JSON.stringify(trait.attrs) + " apres " + reconstructions + " constructions");
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

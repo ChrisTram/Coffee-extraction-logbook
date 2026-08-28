@@ -348,9 +348,24 @@ const CHARTS = (() => {
     ["cupping"],
   ];
 
+  /* Squelette de la reglette, garde par conteneur. Il ne depend que du reglage
+     par defaut et de la langue : tant que ces deux la ne bougent pas, deplacer
+     le curseur ne doit rien redessiner d'autre que le curseur. */
+  const reglettes = new WeakMap();
+
   function diagramme(conteneur, dialCourant, dialDefaut) {
     const el = typeof conteneur === "string" ? document.getElementById(conteneur) : conteneur;
     if (!el) return;
+    let cache = reglettes.get(el);
+    // La langue compte : les noms de methodes et les infobulles sont dans le SVG.
+    if (!cache || cache.defaut !== dialDefaut || cache.lang !== I18N.lang() || !el.firstChild) {
+      cache = construireReglette(el, dialDefaut);
+      reglettes.set(el, cache);
+    }
+    placerCurseur(cache, dialCourant);
+  }
+
+  function construireReglette(el, dialDefaut) {
     const maxU = 1400;
     const largeur = 900, gauche = 14, droite = 14;
     const zone = largeur - gauche - droite;
@@ -363,7 +378,6 @@ const CHARTS = (() => {
     const hauteur = yBandes + hBandes + 34;
     const x = u => gauche + Math.max(0, Math.min(maxU, u)) / maxU * zone;
     const uCran = GRIND.MICRONS_PAR_CRAN;
-    const p = dialCourant ? GRIND.parseDial(dialCourant) : null;
 
     let svg = '<svg viewBox="0 0 ' + largeur + " " + hauteur + '" class="diagramme-svg" role="img" aria-label="' + I18N.t("rg_aria") + '">';
     svg += '<defs><pattern id="hachures" width="9" height="9" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">' +
@@ -385,7 +399,10 @@ const CHARTS = (() => {
     }
     svg += '<line x1="' + gauche + '" y1="' + hautAxe + '" x2="' + x(GRIND.MICRONS_BUTEE) + '" y2="' + hautAxe + '" class="dg-ligne"></line>';
 
-    // Boîtes de méthodes.
+    /* Boîtes de méthodes. Les classes de compatibilité ne sont PAS posées ici :
+       elles dépendent du curseur, donc elles changent à chaque cran. On garde
+       les bornes de chaque boîte pour pouvoir les rejouer sans tout relire. */
+    const boites = [];
     DIAG_RANGEES.forEach((rangee, i) => {
       const y = debutBoites + i * ligneH;
       rangee.forEach(id => {
@@ -393,8 +410,8 @@ const CHARTS = (() => {
         if (!m) return;
         const x1 = x(m.minU), x2 = x(Math.min(m.maxU, maxU));
         const estSaisie = id === "brikka" || id === "switch";
-        const compatible = p && p.microns >= m.minU && p.microns <= m.maxU;
-        svg += '<g class="dg-boite' + (estSaisie ? " dg-boite-perso" : "") + (compatible ? " dg-boite-compatible" : "") + (p && !compatible ? " dg-boite-eteinte" : "") + '" data-tip="' +
+        boites.push({ id, minU: m.minU, maxU: m.maxU });
+        svg += '<g class="dg-boite' + (estSaisie ? " dg-boite-perso" : "") + '" data-boite="' + id + '" data-tip="' +
           I18N.methode(m.nom) + " : " + I18N.t("rg_tip_court", { min: m.minU, max: m.maxU, minC: m.minC, maxC: m.maxC, mol: I18N.mol(m.molette) }) + '">' +
           '<rect x="' + x1 + '" y="' + y + '" width="' + Math.max(4, x2 - x1) + '" height="' + hBoite + '" rx="4"' +
           (estSaisie ? ' style="stroke:' + (id === "brikka" ? C_BRIKKA : C_SWITCH) + '"' : "") + "></rect>" +
@@ -404,8 +421,8 @@ const CHARTS = (() => {
 
     // Bandes de granulométrie et axe des microns.
     GRIND.BANDES.forEach(b => {
-      const fin = b.max === Infinity ? maxU : b.max;
-      const x1 = x(b.min), x2 = x(fin);
+      const finB = b.max === Infinity ? maxU : b.max;
+      const x1 = x(b.min), x2 = x(finB);
       svg += '<rect x="' + x1 + '" y="' + yBandes + '" width="' + (x2 - x1) + '" height="' + hBandes + '" class="dg-bande"></rect>' +
         '<text x="' + ((x1 + x2) / 2) + '" y="' + (yBandes + hBandes / 2 + 4) + '" text-anchor="middle" class="dg-bande-nom">' + b.nom + "</text>";
     });
@@ -431,16 +448,52 @@ const CHARTS = (() => {
       svg += '<line x1="' + dx + '" y1="' + (hautAxe - 4) + '" x2="' + dx + '" y2="' + (yBandes + hBandes) + '" class="dg-defaut"></line>';
     }
 
-    // Curseur du convertisseur.
-    if (p) {
-      const gx = x(p.microns);
-      svg += '<line x1="' + gx + '" y1="' + (hautAxe - 10) + '" x2="' + gx + '" y2="' + (yBandes + hBandes) + '" class="dg-curseur"></line>' +
-        '<text x="' + gx + '" y="' + (hauteur - 2) + '" text-anchor="middle" class="dg-curseur-label">▲ ' + dialCourant + "</text>";
-    }
+    /* Curseur du convertisseur. Il est TOUJOURS dans le squelette, masqué par display, l attribut SVG, quand
+       il n'y a rien à montrer : le créer et le détruire au fil des mouvements
+       reviendrait à refaire à la main ce qu'on essaie justement d'éviter. */
+    svg += '<line x1="0" y1="' + (hautAxe - 10) + '" x2="0" y2="' + (yBandes + hBandes) + '" class="dg-curseur" data-curseur display="none"></line>' +
+      '<text x="0" y="' + (hauteur - 2) + '" text-anchor="middle" class="dg-curseur-label" data-curseur-label display="none"></text>';
 
     svg += "</svg>";
     el.innerHTML = svg;
     attacherTooltips(el);
+
+    return {
+      defaut: dialDefaut, lang: I18N.lang(), x, boites,
+      trait: el.querySelector("[data-curseur]"),
+      etiquette: el.querySelector("[data-curseur-label]"),
+      noeuds: new Map(boites.map(b => [b.id, el.querySelector('[data-boite="' + b.id + '"]')])),
+    };
+  }
+
+  /* Le seul travail refait a chaque cran : deplacer deux noeuds et rejouer deux
+     classes par boite. Sans commune mesure avec le redessin complet. */
+  function placerCurseur(cache, dialCourant) {
+    const p = dialCourant ? GRIND.parseDial(dialCourant) : null;
+    const { trait, etiquette } = cache;
+    if (!p) {
+      if (trait) trait.setAttribute("display", "none");
+      if (etiquette) etiquette.setAttribute("display", "none");
+    } else {
+      const gx = cache.x(p.microns);
+      if (trait) {
+        trait.setAttribute("x1", gx);
+        trait.setAttribute("x2", gx);
+        trait.removeAttribute("display");
+      }
+      if (etiquette) {
+        etiquette.setAttribute("x", gx);
+        etiquette.textContent = "▲ " + dialCourant;
+        etiquette.removeAttribute("display");
+      }
+    }
+    for (const b of cache.boites) {
+      const n = cache.noeuds.get(b.id);
+      if (!n) continue;
+      const compatible = !!p && p.microns >= b.minU && p.microns <= b.maxU;
+      n.classList.toggle("dg-boite-compatible", compatible);
+      n.classList.toggle("dg-boite-eteinte", !!p && !compatible);
+    }
   }
 
   // ---------- Tooltip maison pour les SVG ----------

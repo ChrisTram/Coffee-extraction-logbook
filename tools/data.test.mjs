@@ -1277,10 +1277,13 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     app.includes('addEventListener("input", UI.rendreHistoriqueDifferee)'));
   check("le convertisseur du moulin aussi",
     app.includes('addEventListener("input", UI.rendreConvertisseurDifferee)'));
-  /* Le curseur envoie un evenement par cran : sans anti-rebond, le traverser
-     redessine 150 fois un SVG de 151 traits. */
-  check("et le curseur du moulin egalement",
-    /conv-slider[\s\S]{0,400}rendreConvertisseurDifferee\(\)/.test(app));
+  /* Le curseur du moulin, LUI, est redevenu immediat en v7.61. Son anti-rebond
+     couvrait un redessin complet du SVG a chaque cran ; le squelette de la
+     reglette n'etant plus reconstruit, il ne restait que l'attente. Le controle
+     est inverse a dessein : il empeche de le remettre par reflexe. */
+  check("le curseur du moulin repond immediatement",
+    /conv-slider[\s\S]{0,600}UI\.rendreConvertisseur\(\)/.test(app) &&
+    !/conv-slider[\s\S]{0,600}rendreConvertisseurDifferee/.test(app));
 
   /* Les autres appels a rendreHistorique restent IMMEDIATS : suppression, tri,
      retour d'edition suivent un geste unique, il n'y a rien a regrouper. */

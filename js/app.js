@@ -153,9 +153,13 @@
     $("#param-molette").addEventListener("input", UI.majDetailMolette);
     $("#conv-slider").addEventListener("input", () => {
       $("#conv-dial").value = GRIND.dialDepuisCrans(Number($("#conv-slider").value));
-      /* Le curseur envoie un événement par cran : sans anti-rebond, glisser d'un
-         bout à l'autre redessine 150 fois un SVG de 151 traits. */
-      UI.rendreConvertisseurDifferee();
+      /* IMMÉDIAT, et c'est un changement assumé. L'anti-rebond posé en v7.57
+         couvrait un redessin complet du SVG à chaque cran ; depuis que le
+         squelette de la réglette est construit une seule fois, il ne reste que
+         deux attributs à déplacer. Garder les 90 ms d'attente reviendrait à
+         payer le défaut sans le bénéfice, sur le seul contrôle du site qu'on
+         manipule en continu. Le champ texte, lui, garde son anti-rebond. */
+      UI.rendreConvertisseur();
     });
     /* Le seul chemin qui change vraiment un réglage depuis cet écran. Il écrit
        le même repli que l'écran Paramètres, il n'y a donc qu'une source. */
@@ -488,7 +492,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.61";
+  const VERSION = "7.62";
 
   async function demarrer() {
     /* AVANT tout rendu : si Chris avait laissé le site en anglais, le paquet de

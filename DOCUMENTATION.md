@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.61,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.62,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -674,6 +674,14 @@ node tools/modules.test.mjs  frontieres entre les sept fichiers d'interface
 node worker/sync.test.mjs    fusion entre appareils, 23 assertions
 node worker/index.test.mjs   porte d'entree, 32 assertions
 ```
+
+Un anti-rebond est un PANSEMENT, pas une solution : il masque un coût, il ne
+l'enlève pas. Celui du curseur du moulin couvrait un redessin complet d'un SVG de
+151 traits à chaque cran ; depuis que le squelette de la réglette est construit
+une seule fois, il ne restait que ses 90 ms d'attente sur le seul contrôle du
+site qu'on manipule en continu. Il a donc été retiré, et un test empêche de le
+remettre par réflexe. Le champ texte du convertisseur, lui, garde le sien :
+personne ne regarde la réglette en tapant.
 
 `tools/modules.test.mjs` lit les fichiers d'interface sans les exécuter et
 vérifie les frontières que le découpage a créées : aucun nom libre inconnu,
@@ -1871,6 +1879,9 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.62 : la réglette du moulin construit son squelette une seule fois. Déplacer
+  le curseur ne bouge plus que deux attributs, et le curseur redevient donc
+  immédiat : son anti-rebond de 90 ms n'avait plus rien à couvrir.
 - v7.61 : le thème s'applique avant le premier rendu, suit le système tant qu'on
   n'a rien choisi, et la barre d'état de la PWA ne reste plus sombre en clair.
 - v7.60 : l'interface est découpée en sept fichiers (section 1 bis), avec une
