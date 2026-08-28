@@ -475,7 +475,12 @@ const I18N = (() => {
   // ---------- Moteur ----------
 
   const registre = []; // { node, fr, en, prefixe, suffixe }
+  const placeholders = []; // { el, fr, en }
   let scanFait = false;
+  /* Le scan a-t-il eu un dictionnaire sous la main ? En français il n'y en a
+     pas, et un scan à vide n'enregistre rien : il devra être refait quand le
+     paquet anglais arrivera. Voir fusionnerPaquet(). */
+  let scanAvecDico = false;
 
   const ZONES_JS = "#grille-recettes,#h-corps,#kpis,#dernieres-liste,#recettes-liste,#cafes-liste," +
     "#conv-resultat,#table-plages,#avertissements,#aside-recette,#aside-cafe,#duel-machines," +
@@ -507,7 +512,19 @@ const I18N = (() => {
       const fin = /\s$/.test(brut) ? " " : "";
       registre.push({ node: n, fr: brut, en: debut + UI[cle] + fin });
     }
+
+    /* Les placeholders suivent la MÊME règle que le texte : enregistrés
+       seulement s'ils ont une entrée au dictionnaire. Ce filtre est ce qui rend
+       le passage sûr : celui de la molette vaut "1.5.0" ou "du paquet" selon le
+       café, il n'a pas d'entrée, il n'est donc jamais capturé ni réécrit ici.
+       Avant, un cas codé en dur ne traduisait qu'un seul champ, et la traduction
+       de la recherche dormait dans le dictionnaire sans jamais s'afficher. */
+    document.querySelectorAll("[placeholder]").forEach(el => {
+      const fr = el.getAttribute("placeholder");
+      if (fr && UI[fr]) placeholders.push({ el, fr, en: UI[fr] });
+    });
     scanFait = true;
+    scanAvecDico = Object.keys(UI).length > 0;
   }
 
   function appliquerStatique() {
@@ -518,11 +535,9 @@ const I18N = (() => {
     document.documentElement.setAttribute("data-lang", lang);
     document.documentElement.setAttribute("lang", lang);
     document.title = t("doc_title");
-    // Placeholders
-    const commentaire = document.getElementById("f-commentaire");
-    if (commentaire) commentaire.placeholder = lang === "en"
-      ? "Free text, for example: superb cup, round and sweet"
-      : "Libre, par exemple : superbe tasse, ronde et sucrée";
+    placeholders.forEach(p => {
+      try { p.el.setAttribute("placeholder", lang === "en" ? p.en : p.fr); } catch (e) { /* noeud disparu */ }
+    });
   }
 
   function t(cle, vars) {
@@ -568,6 +583,12 @@ const I18N = (() => {
 
   function fusionnerPaquet(p) {
     if (!p) return false;
+    /* Le scan précédent s'est fait sans dictionnaire, donc il n'a rien
+       enregistré : il faut le refaire maintenant que le paquet est là. La
+       condition compte. Rescanner après une traduction déjà appliquée
+       enregistrerait l'anglais affiché comme étant le texte français, et le
+       retour au français rendrait de l'anglais. */
+    if (!scanAvecDico) { scanFait = false; registre.length = 0; placeholders.length = 0; }
     Object.entries(p.T || {}).forEach(([k, v]) => { if (T[k]) T[k].en = v; });
     Object.entries(p.TAGS_INFO || {}).forEach(([k, v]) => {
       if (TAGS_INFO[k] !== undefined) TAGS_INFO[k] = { fr: TAGS_INFO[k], en: v };

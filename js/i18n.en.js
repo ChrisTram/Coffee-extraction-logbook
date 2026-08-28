@@ -313,6 +313,8 @@ const I18N_EN = {
   UI: {
     "Chargement de ton carnet…": "Loading your logbook…",
     "Chercher dans les commentaires et les goûts": "Search comments and flavours",
+    "Recherche": "Search",
+    "Libre, par exemple : superbe tasse, ronde et sucrée": "Free text, for example: superb cup, round and sweet",
       "Extractions, note et tendance, 30 derniers jours": "Extractions, rating and trend, last 30 days",
       "Date d'ouverture": "Opening date",
       "Le jour où tu as ouvert le sachet. Laisse vide tant qu'il dort.": "The day you opened the bag. Leave empty while it sits unopened.",

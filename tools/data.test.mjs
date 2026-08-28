@@ -1450,5 +1450,48 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     !bloc30j.includes("--danger"));
 }
 
+/* INTEGRITE DU DOCUMENT.
+
+   Le champ de recherche de l'historique s'est retrouve ecrit DEUX FOIS, avec le
+   meme id, range dans le groupe "Cafe" sous le label de la liste des cafes. Rien
+   ne le signale : le navigateur affiche les deux champs sans broncher,
+   querySelector prend le premier, aucun test ne leve quoi que ce soit, et le
+   site a simplement l'air bizarre. C'est Chris qui l'a vu, pas les tests.
+
+   Ces controles sont bon marche et attrapent toute la famille. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]);
+  const doubles = [...new Set(ids.filter((x, i) => ids.indexOf(x) !== i))];
+  check("aucun identifiant en double dans la page", doubles.length === 0, doubles.join(", "));
+
+  // Deux lignes de balisage identiques et collees : la signature d'un doublon.
+  const lignes = html.split("\n");
+  const collees = lignes
+    .map((x, i) => (x.trim().length > 20 && x === lignes[i - 1] ? i + 1 : 0))
+    .filter(Boolean);
+  check("aucune ligne de balisage dupliquee a l'identique",
+    collees.length === 0, "lignes " + collees.join(", "));
+
+  const connus = new Set(ids);
+  const perdus = [...html.matchAll(/<label[^>]*\bfor="([^"]+)"/g)]
+    .map(m => m[1]).filter(f => !connus.has(f));
+  check("chaque label pointe sur un champ qui existe", perdus.length === 0, perdus.join(", "));
+
+  /* Un .champ ne doit pas contenir plusieurs controles ETIQUETABLES sous une
+     seule etiquette. Les paires legitimes (minutes et secondes, valeur et
+     preselection) sont listees : elles forment un seul controle aux yeux de
+     l'utilisateur, et partagent donc une etiquette a juste titre. */
+  const PAIRES = ["f-temp-preset", "f-total-sec", "f-ecoulement-sec", "f-note-vide"];
+  const melanges = [];
+  for (const m of html.matchAll(/<div class="champ[^"]*">([\s\S]*?)<\/div>/g)) {
+    const controles = [...m[1].matchAll(/<(?:input|select|textarea)\b[^>]*\bid="([^"]+)"/g)]
+      .map(x => x[1]).filter(id => !PAIRES.includes(id));
+    if (controles.length > 1) melanges.push(controles.join(" + "));
+  }
+  check("aucun groupe de champ ne melange deux controles sans rapport",
+    melanges.length === 0, melanges.join(" ; "));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

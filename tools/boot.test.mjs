@@ -79,6 +79,40 @@ const parSelecteur = sel => {
   return cache.get(sel);
 };
 
+/* Faux champs porteurs d'un placeholder, pour que le registre de l'i18n ait
+   quelque chose a traduire. Sans eux querySelectorAll rend un tableau vide, le
+   mecanisme n'est jamais exerce, et une traduction peut dormir dans le
+   dictionnaire sans que personne le voie. C'est exactement ce qui est arrive au
+   champ de recherche de l'historique. */
+function champPlaceholder(fr) {
+  return {
+    ...faireElement("input"),
+    _attrs: { placeholder: fr },
+    getAttribute(k) { return k in this._attrs ? this._attrs[k] : null; },
+    setAttribute(k, v) { this._attrs[k] = String(v); },
+    get placeholder() { return this._attrs.placeholder; },
+  };
+}
+/* Noeuds de TEXTE pour le parcours de l'i18n. Le harnais rendait un TreeWalker
+   vide, si bien que le registre de traduction y etait toujours vide : aucun test
+   ne pouvait distinguer "vide a cause d'un bug" de "vide parce que c'est un faux
+   DOM". C'est ce trou qui a laisse passer la panne du bouton EN, ou demarrer en
+   francais laissait tout le texte statique de la page en francais.
+
+   Les chaines sont tirees de vraies etiquettes d'index.html, pour que le test
+   reste ancre sur le site et pas sur un exemple invente. */
+const TEXTES = ["Recette", "Café", "Historique", "Diagnostic"].map(t => ({
+  nodeValue: t, _fr: t, parentElement: null,
+}));
+
+const PLACEHOLDERS = [
+  champPlaceholder("Chercher dans les commentaires et les goûts"),
+  champPlaceholder("Libre, par exemple : superbe tasse, ronde et sucrée"),
+  // Sans entrée au dictionnaire : il ne doit JAMAIS être touché, c'est le champ
+  // molette dont le code de saisie réécrit lui-même le fond.
+  champPlaceholder("1.5.0"),
+];
+
 const document = {
   documentElement: { ...faireElement("html"), setAttribute() {}, lang: "fr" },
   body: faireElement("body"),
@@ -87,13 +121,20 @@ const document = {
   visibilityState: "visible",
   _handlers: {},
   querySelector: parSelecteur,
-  // Volontairement vide : le rendu du contenu n'est pas l'objet du test, seule
-  // compte l'absence d'exception. Un tableau reste itérable.
-  querySelectorAll: () => [],
+  /* Volontairement vide : le rendu du contenu n'est pas l'objet du test, seule
+     compte l'absence d'exception. Un tableau reste itérable. Seul [placeholder]
+     rend quelque chose, pour exercer le registre de traduction ci-dessus. */
+  querySelectorAll: sel => (sel === "[placeholder]" ? PLACEHOLDERS : []),
   getElementById: id => parSelecteur("#" + id),
   createElement: faireElement,
   addEventListener(nom, fn) { this._handlers[nom] = fn; },
-  createTreeWalker: () => ({ nextNode: () => null }),
+  /* Un compteur NEUF à chaque appel. Un compteur partagé ferait qu'un second
+     scan ne verrait plus rien, et le test vérifierait le compteur au lieu du
+     mécanisme qu'il croit vérifier. */
+  createTreeWalker: () => {
+    let i = 0;
+    return { nextNode: () => (i < TEXTES.length ? TEXTES[i++] : null) };
+  },
 };
 
 const magasin = new Map();
@@ -271,9 +312,45 @@ check("bascule EN sans exception", api.I18N.lang() === "en", api.I18N.lang());
    page qui se declare anglaise en rendant du francais serait pire que rien. */
 check("le paquet anglais est bien fusionne", api.I18N.tr("Recette") === "Recipe", api.I18N.tr("Recette"));
 check("les gabarits aussi", api.I18N.t("btn_modifier") !== api.I18N.t("btn_modifier").toLowerCase() || true);
+
+/* LE TEXTE STATIQUE DE LA PAGE, pas seulement les zones générées.
+
+   Depuis que le paquet anglais se charge à la demande, démarrer en français
+   laisse les dictionnaires vides. Le scan des nœuds de texte tournait donc à
+   vide au démarrage, son drapeau passait à true, et il ne recommençait jamais :
+   cliquer sur EN ne traduisait plus que ce que le JS régénère. La page devenait
+   moitié française, moitié anglaise, et rien ne levait la moindre erreur. */
+check("le texte statique de la page se traduit",
+  TEXTES[0].nodeValue === "Recipe", TEXTES.map(n => n.nodeValue).join(" | "));
+check("et pas seulement le premier nœud",
+  TEXTES.every(n => n.nodeValue !== n._fr), TEXTES.map(n => n.nodeValue).join(" | "));
+
+/* LES PLACEHOLDERS AUSSI. La traduction du champ de recherche existait dans le
+   dictionnaire depuis la v7.58 sans jamais s'afficher : les placeholders
+   passaient par un cas codé en dur qui ne couvrait qu'un seul champ. Une
+   traduction qui dort ne lève rien et ne se voit qu'en lisant l'anglais. */
+check("le fond du champ de recherche se traduit",
+  PLACEHOLDERS[0].placeholder === "Search comments and flavours", PLACEHOLDERS[0].placeholder);
+check("celui du commentaire aussi, sans cas particulier",
+  PLACEHOLDERS[1].placeholder.startsWith("Free text"), PLACEHOLDERS[1].placeholder);
+/* Le filtre du dictionnaire est ce qui rend le passage sûr : un fond sans
+   traduction n'est pas capturé, donc jamais réécrit. Le champ molette vaut
+   "1.5.0" ou "du paquet" selon le café, et c'est le code de saisie qui décide. */
+check("un fond sans traduction reste intact",
+  PLACEHOLDERS[2].placeholder === "1.5.0", PLACEHOLDERS[2].placeholder);
+
 await api.I18N.basculer();
 await new Promise(r => setTimeout(r, 150));
 check("retour FR sans exception", api.I18N.lang() === "fr", api.I18N.lang());
+check("et les fonds de champ repassent en français",
+  PLACEHOLDERS[0].placeholder === "Chercher dans les commentaires et les goûts",
+  PLACEHOLDERS[0].placeholder);
+/* Le retour au français doit rendre le TEXTE D'ORIGINE. C'est le risque du
+   correctif : un second scan lancé alors que l'anglais est déjà affiché
+   enregistrerait l'anglais comme s'il était le français, et le bouton FR
+   rendrait de l'anglais. */
+check("et le texte statique aussi, dans sa version d'origine",
+  TEXTES.every(n => n.nodeValue === n._fr), TEXTES.map(n => n.nodeValue).join(" | "));
 
 /* Le formulaire vierge doit porter les valeurs par defaut de la RECETTE.
    Tombe deux fois : d'abord parce que le formulaire ignorait la recette, ensuite

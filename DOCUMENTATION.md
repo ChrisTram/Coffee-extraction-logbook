@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.63,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.64,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -388,6 +388,21 @@ Switch" à quatre et six, et le récapitulatif de mouture par recette a disparu
 puisque les dix portent 1.5.0. Des tests comparent maintenant ces affirmations aux
 données réelles plutôt que de les laisser vieillir toutes seules.
 
+## 4 bis. Les fonds de champ passent par le dictionnaire
+
+Les `placeholder` étaient traduits par un cas codé en dur qui ne couvrait qu'un
+seul champ, celui du commentaire. La traduction anglaise du champ de recherche
+avait bien été ajoutée au dictionnaire et n'a jamais pu s'afficher.
+
+Ils suivent maintenant la même règle que le texte : `scanner()` les enregistre,
+mais SEULEMENT s'ils ont une entrée au dictionnaire. Ce filtre est ce qui rend le
+passage sûr. Le fond du champ molette vaut « 1.5.0 » ou « du paquet » selon que
+le café est déjà moulu, et c'est le code de saisie qui en décide : sans entrée au
+dictionnaire, il n'est jamais capturé, donc jamais réécrit par l'i18n.
+
+Ajouter une traduction de fond de champ ne demande donc plus de toucher au
+moteur, juste une entrée dans `js/i18n.en.js`.
+
 ## 5. Le moulin (js/grind.js)
 
 Base officielle Timemore : 8,32 µm par cran, 50 crans par rotation, butée
@@ -599,6 +614,31 @@ leur `border: 1px solid var(--lignes)`.
   `split().join()` plutôt que `replace()` sur tout code ou texte porteur de
   dollars, et
   lancer `node tools/boot.test.mjs` après toute modification de l'interface.
+- UN SCAN QUI TOURNE AVANT SON DICTIONNAIRE NE SERT À RIEN. `scanner()`
+  n'enregistre un nœud de texte que s'il a DÉJÀ une traduction, et
+  `appliquerStatique()` est appelée au démarrage. Depuis que le paquet anglais se
+  charge à la demande (v7.55), démarrer en français laisse les dictionnaires
+  vides : le scan tournait donc à vide, son drapeau passait à true, et il ne
+  recommençait jamais. Cliquer sur EN ne traduisait plus que les zones que le JS
+  régénère, et la page devenait moitié française, moitié anglaise. Aucune erreur,
+  aucun test en échec. Le paquet remet donc le drapeau à zéro en arrivant, mais
+  SEULEMENT si le scan précédent s'était fait sans dictionnaire : rescanner
+  pendant que l'anglais est affiché enregistrerait l'anglais comme étant le
+  français, et le bouton FR rendrait de l'anglais.
+- LE FAUX DOM PEUT CACHER LE BUG QU'IL DEVRAIT MONTRER. Le harnais rendait un
+  TreeWalker vide et un `querySelectorAll` vide : le registre de traduction y
+  était donc toujours vide, et aucun test ne pouvait distinguer « vide à cause
+  d'un bug » de « vide parce que c'est un faux DOM ». C'est ce trou qui a laissé
+  passer le bug ci-dessus. Le harnais fournit maintenant de vrais nœuds de texte
+  et de vrais champs à placeholder. Quand un test ne peut pas échouer, il ne
+  teste rien.
+- UN SCRIPT D'ÉDITION LANCÉ DEUX FOIS DOUBLE SA LIGNE. Le champ de recherche de
+  l'historique est arrivé en v7.58 écrit DEUX FOIS, même identifiant, rangé sous
+  le label d'un autre champ. Le navigateur affiche les deux sans broncher,
+  `querySelector` prend le premier, et le site a juste l'air bizarre. Quatre
+  contrôles couvrent maintenant la famille dans `tools/data.test.mjs` :
+  identifiants en double, lignes de balisage dupliquées à l'identique, `label
+  for` orphelin, et groupe de champ mélangeant deux contrôles sans rapport.
 - UN SCRIPT DIFFÉRÉ NE PEUT PAS DÉCIDER DE L'APPARENCE. `defer` veut dire "après
   l'analyse du document", donc après le premier rendu. Le thème était restauré
   depuis `ui-noyau.js`, différé comme tout le reste : le thème clair clignotait
@@ -1910,6 +1950,10 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.64 : trois corrections. Le champ de recherche de l'historique était écrit
+  deux fois avec le même identifiant ; le bouton EN ne traduisait plus le texte
+  statique de la page quand on démarrait en français ; les fonds de champ
+  traduits ne s'affichaient pas.
 - v7.63 : la tendance et les grammes du graphique principal ont enfin chacune
   leur couleur. Elles partageaient le vert des deux machines, criard sur une
   palette chaude et surtout identique pour deux séries sans rapport.

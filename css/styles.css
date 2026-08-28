@@ -1079,6 +1079,11 @@ input:focus, select:focus, textarea:focus {
   align-items: end;
 }
 .historique-filtres .champ { margin-bottom: 0; }
+/* La recherche prend sa propre ligne, sur toute la largeur. Elle ne filtre pas
+   sur une colonne comme les autres, elle cherche dans le texte libre : lui
+   donner la taille d'un menu déroulant de 150 px la ferait passer pour un
+   filtre de plus, et on n'y taperait pas une phrase confortablement. */
+.historique-filtres .champ-recherche { grid-column: 1 / -1; }
 .historique-filtres-actions { display: flex; gap: 8px; align-items: end; }
 
 .historique-compte { color: var(--attenue); font-size: 0.85rem; margin: 0 0 10px 4px; }
