@@ -540,6 +540,38 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("aucun n'est en async : defer preserve l'ordre, async non",
     balises.every(m => !m[0].includes(" async")),
     balises.filter(m => m[0].includes(" async")).map(m => m[1]).join(", "));
+  /* EXCEPTION ASSUMEE : le theme s'applique par un script EN LIGNE dans le
+     <head>, et il ne doit surtout pas etre differe. L'attribut data-theme etait
+     code en dur a "sombre" et la restauration du choix vivait dans un differe,
+     qui ne tourne qu'apres le premier rendu : le theme clair clignotait donc en
+     sombre a chaque ouverture. Un clignotement ne fait echouer aucun test, d'ou
+     ce verrou. */
+  {
+    const tete = html.slice(0, html.indexOf("</head>"));
+    const enLigne = [...tete.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)];
+    const theme = enLigne.find(m => m[1].includes('data-theme'));
+    check("le theme s'applique par un script en ligne dans le head", !!theme);
+    if (theme) {
+      check("et ce script n'est ni differe ni asynchrone",
+        !theme[0].includes(" defer") && !theme[0].includes(" async"), theme[0].slice(0, 60));
+      check("il lit le choix enregistre", theme[1].includes('localStorage.getItem("theme")'));
+      check("et retombe sur la preference du systeme sans choix",
+        theme[1].includes("prefers-color-scheme"));
+    }
+    /* Plus de theme code en dur : l'absence d'attribut veut dire "pas encore
+       decide", et c'est ce qui permet de suivre le systeme. */
+    check("le HTML n'impose plus de theme de depart",
+      /<html\b[^>]*>/.test(html) && !html.match(/<html\b[^>]*>/)[0].includes("data-theme"),
+      (html.match(/<html\b[^>]*>/) || [""])[0]);
+    // La barre d'etat de la PWA suivait le theme sombre en toutes circonstances.
+    const teintes = [...html.matchAll(/<meta name="theme-color"[^>]*>/g)].map(m => m[0]);
+    check("la barre d'etat a une teinte par preference systeme",
+      teintes.length === 2 && teintes.every(t => t.includes("prefers-color-scheme")),
+      teintes.join(" "));
+    check("et le choix explicite les met a jour toutes les deux",
+      /querySelectorAll\('meta\[name="theme-color"\]'\)[\s\S]{0,80}setAttribute/.test(SOURCE_UI));
+  }
+
   const manquants = scripts.filter(s => !sw.includes('"./' + s + '"'));
   check("tous les scripts d'index.html sont precaches", manquants.length === 0, manquants.join(", "));
   /* Le compte baisse a mesure qu on sort des fichiers du chemin critique :

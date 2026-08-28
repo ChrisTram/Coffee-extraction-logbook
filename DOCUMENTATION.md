@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.60,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.61,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -599,6 +599,15 @@ leur `border: 1px solid var(--lignes)`.
   `split().join()` plutôt que `replace()` sur tout code ou texte porteur de
   dollars, et
   lancer `node tools/boot.test.mjs` après toute modification de l'interface.
+- UN SCRIPT DIFFÉRÉ NE PEUT PAS DÉCIDER DE L'APPARENCE. `defer` veut dire "après
+  l'analyse du document", donc après le premier rendu. Le thème était restauré
+  depuis `ui-noyau.js`, différé comme tout le reste : le thème clair clignotait
+  en sombre à chaque ouverture. Rien ne le signalait, aucun test ne peut voir un
+  clignotement, et il était visible à chaque fois. Le thème s'applique maintenant
+  par un script EN LIGNE dans le `<head>`, le seul de la page, et c'est une
+  exception assumée : elle ne contredit pas le passage de tous les scripts en
+  `defer`, puisque celui-ci ne demande rien au réseau. Un test le verrouille,
+  sinon quelqu'un le différera un jour par souci de cohérence.
 - NOTIFIER AVALE LES ERREURS : `DATA.notifier()` enveloppe chaque abonné dans un
   try/catch qui se contente d'un `console.error`. Une exception de rendu ne
   remonte donc PAS : l'écran reste vide et rien ne s'affiche. C'est ce qui rend ce
@@ -1862,6 +1871,8 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.61 : le thème s'applique avant le premier rendu, suit le système tant qu'on
+  n'a rien choisi, et la barre d'état de la PWA ne reste plus sombre en clair.
 - v7.60 : l'interface est découpée en sept fichiers (section 1 bis), avec une
   suite de tests dédiée aux frontières. Elle a trouvé du premier coup un bug réel :
   le bouton d'enregistrement du panneau rapide ne marchait pas.

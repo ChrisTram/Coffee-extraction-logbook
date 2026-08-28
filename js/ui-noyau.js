@@ -346,16 +346,22 @@ const UI = (() => {
   function appliquerTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
     try { localStorage.setItem("theme", theme); } catch (e) { /* indisponible, tant pis */ }
+    /* La barre d'état de la PWA installée suit le thème. Les deux balises du
+       <head> ne connaissent que la préférence du système, et le navigateur
+       retient celle dont le media correspond : on écrit donc la couleur choisie
+       dans les DEUX, sinon celle qu'il retient contredirait le choix. */
+    const teinte = theme === "sombre" ? "#171009" : "#f8f2e9";
+    document.querySelectorAll('meta[name="theme-color"]')
+      .forEach(m => m.setAttribute("content", teinte));
     if (typeof Chart !== "undefined") {
       CHARTS.appliquerDefauts();
       rendreEcranCourant(true);
     }
   }
 
-  try {
-    const t = localStorage.getItem("theme");
-    if (t) document.documentElement.setAttribute("data-theme", t);
-  } catch (e) { /* indisponible */ }
+  /* La restauration au chargement vit dans le <head> d'index.html, pas ici : un
+     script différé n'agit qu'après le premier rendu, et le thème clair
+     clignotait donc en sombre à chaque ouverture. */
 
   // ---------- Navigation ----------
 
