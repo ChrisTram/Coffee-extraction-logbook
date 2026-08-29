@@ -84,13 +84,14 @@ const parSelecteur = sel => {
    mecanisme n'est jamais exerce, et une traduction peut dormir dans le
    dictionnaire sans que personne le voie. C'est exactement ce qui est arrive au
    champ de recherche de l'historique. */
-function champPlaceholder(fr) {
+function champAttribut(attr, fr) {
   return {
     ...faireElement("input"),
-    _attrs: { placeholder: fr },
+    _attr: attr,
+    _attrs: { [attr]: fr },
     getAttribute(k) { return k in this._attrs ? this._attrs[k] : null; },
     setAttribute(k, v) { this._attrs[k] = String(v); },
-    get placeholder() { return this._attrs.placeholder; },
+    get valeur() { return this._attrs[this._attr]; },
   };
 }
 /* Noeuds de TEXTE pour le parcours de l'i18n. Le harnais rendait un TreeWalker
@@ -106,12 +107,18 @@ const TEXTES = ["Recette", "Café", "Historique", "Diagnostic"].map(t => ({
 }));
 
 const PLACEHOLDERS = [
-  champPlaceholder("Chercher dans les commentaires et les goûts"),
-  champPlaceholder("Libre, par exemple : superbe tasse, ronde et sucrée"),
+  champAttribut("placeholder", "Chercher dans les commentaires et les goûts"),
+  champAttribut("placeholder", "Libre, par exemple : superbe tasse, ronde et sucrée"),
   // Sans entrée au dictionnaire : il ne doit JAMAIS être touché, c'est le champ
   // molette dont le code de saisie réécrit lui-même le fond.
-  champPlaceholder("1.5.0"),
+  champAttribut("placeholder", "1.5.0"),
 ];
+/* Infobulles et étiquettes de lecteur d'écran : ce sont des ATTRIBUTS, donc
+   invisibles au parcours de texte. Quatorze restaient en français en mode
+   anglais, dont celle que le lecteur d'écran annonce en tout premier. */
+const TITRES = [champAttribut("title", "Gérer mes cafés")];
+const ARIAS = [champAttribut("aria-label", "Navigation principale")];
+const PAR_ATTRIBUT = { "[placeholder]": PLACEHOLDERS, "[title]": TITRES, "[aria-label]": ARIAS };
 
 const document = {
   documentElement: { ...faireElement("html"), setAttribute() {}, lang: "fr" },
@@ -124,7 +131,7 @@ const document = {
   /* Volontairement vide : le rendu du contenu n'est pas l'objet du test, seule
      compte l'absence d'exception. Un tableau reste itérable. Seul [placeholder]
      rend quelque chose, pour exercer le registre de traduction ci-dessus. */
-  querySelectorAll: sel => (sel === "[placeholder]" ? PLACEHOLDERS : []),
+  querySelectorAll: sel => PAR_ATTRIBUT[sel] || [],
   getElementById: id => parSelecteur("#" + id),
   createElement: faireElement,
   addEventListener(nom, fn) { this._handlers[nom] = fn; },
@@ -330,21 +337,30 @@ check("et pas seulement le premier nœud",
    passaient par un cas codé en dur qui ne couvrait qu'un seul champ. Une
    traduction qui dort ne lève rien et ne se voit qu'en lisant l'anglais. */
 check("le fond du champ de recherche se traduit",
-  PLACEHOLDERS[0].placeholder === "Search comments and flavours", PLACEHOLDERS[0].placeholder);
+  PLACEHOLDERS[0].valeur === "Search comments and flavours", PLACEHOLDERS[0].valeur);
 check("celui du commentaire aussi, sans cas particulier",
-  PLACEHOLDERS[1].placeholder.startsWith("Free text"), PLACEHOLDERS[1].placeholder);
+  PLACEHOLDERS[1].valeur.startsWith("Free text"), PLACEHOLDERS[1].valeur);
 /* Le filtre du dictionnaire est ce qui rend le passage sûr : un fond sans
    traduction n'est pas capturé, donc jamais réécrit. Le champ molette vaut
    "1.5.0" ou "du paquet" selon le café, et c'est le code de saisie qui décide. */
 check("un fond sans traduction reste intact",
-  PLACEHOLDERS[2].placeholder === "1.5.0", PLACEHOLDERS[2].placeholder);
+  PLACEHOLDERS[2].valeur === "1.5.0", PLACEHOLDERS[2].valeur);
+
+/* LES INFOBULLES ET LES ÉTIQUETTES DE LECTEUR D'ÉCRAN. Ce sont des attributs,
+   invisibles au parcours de texte : quatorze restaient en français en mode
+   anglais, dont "Navigation principale", c'est-à-dire la toute première chose
+   qu'un lecteur d'écran annonce. */
+check("les infobulles se traduisent",
+  TITRES[0].valeur === "Manage my coffees", TITRES[0].valeur);
+check("les étiquettes de lecteur d'écran aussi",
+  ARIAS[0].valeur === "Main navigation", ARIAS[0].valeur);
 
 await api.I18N.basculer();
 await new Promise(r => setTimeout(r, 150));
 check("retour FR sans exception", api.I18N.lang() === "fr", api.I18N.lang());
 check("et les fonds de champ repassent en français",
-  PLACEHOLDERS[0].placeholder === "Chercher dans les commentaires et les goûts",
-  PLACEHOLDERS[0].placeholder);
+  PLACEHOLDERS[0].valeur === "Chercher dans les commentaires et les goûts",
+  PLACEHOLDERS[0].valeur);
 /* Le retour au français doit rendre le TEXTE D'ORIGINE. C'est le risque du
    correctif : un second scan lancé alors que l'anglais est déjà affiché
    enregistrerait l'anglais comme s'il était le français, et le bouton FR

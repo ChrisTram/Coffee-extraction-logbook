@@ -475,7 +475,7 @@ const I18N = (() => {
   // ---------- Moteur ----------
 
   const registre = []; // { node, fr, en, prefixe, suffixe }
-  const placeholders = []; // { el, fr, en }
+  const attributs = []; // { el, attr, fr, en } : placeholder, title, aria-label
   let scanFait = false;
   /* Le scan a-t-il eu un dictionnaire sous la main ? En français il n'y en a
      pas, et un scan à vide n'enregistre rien : il devra être refait quand le
@@ -513,15 +513,25 @@ const I18N = (() => {
       registre.push({ node: n, fr: brut, en: debut + UI[cle] + fin });
     }
 
-    /* Les placeholders suivent la MÊME règle que le texte : enregistrés
-       seulement s'ils ont une entrée au dictionnaire. Ce filtre est ce qui rend
-       le passage sûr : celui de la molette vaut "1.5.0" ou "du paquet" selon le
-       café, il n'a pas d'entrée, il n'est donc jamais capturé ni réécrit ici.
-       Avant, un cas codé en dur ne traduisait qu'un seul champ, et la traduction
-       de la recherche dormait dans le dictionnaire sans jamais s'afficher. */
-    document.querySelectorAll("[placeholder]").forEach(el => {
-      const fr = el.getAttribute("placeholder");
-      if (fr && UI[fr]) placeholders.push({ el, fr, en: UI[fr] });
+    /* LES ATTRIBUTS DE TEXTE. Le parcours ci-dessus ne voit que des nœuds de
+       texte : les fonds de champ, les infobulles et les étiquettes pour lecteurs
+       d'écran lui échappent, et restaient donc en français en mode anglais.
+
+       Même règle que le texte, et c'est ce qui rend le passage sûr : enregistrés
+       SEULEMENT s'ils ont une entrée au dictionnaire. Le fond du champ molette
+       vaut "1.5.0" ou "du paquet" selon que le café est déjà moulu, et c'est le
+       code de saisie qui en décide : sans entrée, il n'est jamais capturé, donc
+       jamais réécrit ici.
+
+       Les zones régénérées par le JS sont exclues comme pour le texte. Y garder
+       une référence serait pire qu'inutile : le nœud est remplacé à chaque
+       rendu, et le code qui le régénère traduit déjà ce qu'il écrit. */
+    ["placeholder", "title", "aria-label"].forEach(attr => {
+      document.querySelectorAll("[" + attr + "]").forEach(el => {
+        if (el.closest && el.closest(ZONES_JS)) return;
+        const fr = el.getAttribute(attr);
+        if (fr && UI[fr]) attributs.push({ el, attr, fr, en: UI[fr] });
+      });
     });
     scanFait = true;
     scanAvecDico = Object.keys(UI).length > 0;
@@ -535,8 +545,8 @@ const I18N = (() => {
     document.documentElement.setAttribute("data-lang", lang);
     document.documentElement.setAttribute("lang", lang);
     document.title = t("doc_title");
-    placeholders.forEach(p => {
-      try { p.el.setAttribute("placeholder", lang === "en" ? p.en : p.fr); } catch (e) { /* noeud disparu */ }
+    attributs.forEach(a => {
+      try { a.el.setAttribute(a.attr, lang === "en" ? a.en : a.fr); } catch (e) { /* noeud disparu */ }
     });
   }
 
@@ -588,7 +598,7 @@ const I18N = (() => {
        condition compte. Rescanner après une traduction déjà appliquée
        enregistrerait l'anglais affiché comme étant le texte français, et le
        retour au français rendrait de l'anglais. */
-    if (!scanAvecDico) { scanFait = false; registre.length = 0; placeholders.length = 0; }
+    if (!scanAvecDico) { scanFait = false; registre.length = 0; attributs.length = 0; }
     Object.entries(p.T || {}).forEach(([k, v]) => { if (T[k]) T[k].en = v; });
     Object.entries(p.TAGS_INFO || {}).forEach(([k, v]) => {
       if (TAGS_INFO[k] !== undefined) TAGS_INFO[k] = { fr: TAGS_INFO[k], en: v };

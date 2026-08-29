@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.64,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.65,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -388,7 +388,7 @@ Switch" à quatre et six, et le récapitulatif de mouture par recette a disparu
 puisque les dix portent 1.5.0. Des tests comparent maintenant ces affirmations aux
 données réelles plutôt que de les laisser vieillir toutes seules.
 
-## 4 bis. Les fonds de champ passent par le dictionnaire
+## 4 bis. Les attributs de texte passent par le dictionnaire
 
 Les `placeholder` étaient traduits par un cas codé en dur qui ne couvrait qu'un
 seul champ, celui du commentaire. La traduction anglaise du champ de recherche
@@ -400,8 +400,20 @@ passage sûr. Le fond du champ molette vaut « 1.5.0 » ou « du paquet » selon
 le café est déjà moulu, et c'est le code de saisie qui en décide : sans entrée au
 dictionnaire, il n'est jamais capturé, donc jamais réécrit par l'i18n.
 
-Ajouter une traduction de fond de champ ne demande donc plus de toucher au
-moteur, juste une entrée dans `js/i18n.en.js`.
+Le même registre couvre les TROIS attributs porteurs de texte : `placeholder`,
+`title` et `aria-label`. Le parcours ne voit que des nœuds de texte, donc les
+infobulles et les étiquettes de lecteur d'écran lui échappaient complètement :
+quatorze restaient en français en mode anglais, dont « Navigation principale »,
+c'est-à-dire la toute première chose qu'un lecteur d'écran annonce.
+
+Les zones régénérées par le JS (`ZONES_JS`) sont exclues du registre, comme pour
+le texte. Y garder une référence serait pire qu'inutile : le nœud est remplacé à
+chaque rendu, et le code qui le régénère traduit déjà ce qu'il écrit.
+
+Ajouter une traduction ne demande donc plus de toucher au moteur, juste une
+entrée dans `js/i18n.en.js`. Et un test de `tools/data.test.mjs` échoue tant
+qu'un attribut français de `index.html` n'a pas la sienne : l'anglais est soit
+complet, soit menteur.
 
 ## 5. Le moulin (js/grind.js)
 
@@ -1950,6 +1962,9 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.65 : le mode anglais devient complet. Les infobulles, les étiquettes de
+  lecteur d'écran et six fonds de champ restaient en français ; ils passent
+  maintenant par le dictionnaire, et un test refuse tout attribut sans traduction.
 - v7.64 : trois corrections. Le champ de recherche de l'historique était écrit
   deux fois avec le même identifiant ; le bouton EN ne traduisait plus le texte
   statique de la page quand on démarrait en français ; les fonds de champ

@@ -1493,5 +1493,45 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     melanges.length === 0, melanges.join(" ; "));
 }
 
+/* COUVERTURE DE L'ANGLAIS SUR LES ATTRIBUTS DE TEXTE.
+
+   Le parcours de traduction ne voit que des noeuds de TEXTE. Les fonds de champ,
+   les infobulles et les etiquettes de lecteur d'ecran sont des attributs :
+   quatorze restaient en francais en mode anglais, dont celle que le lecteur
+   d'ecran annonce en tout premier. Ils passent maintenant par le dictionnaire,
+   mais rien n'empeche d'ajouter demain un title francais sans sa traduction, et
+   personne ne s'en apercevrait avant de basculer la langue.
+
+   Ce controle echoue tant qu'un attribut francais n'a pas son entree. C'est
+   volontairement strict : l'anglais est soit complet, soit menteur. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  const en = readFileSync(join(ROOT, "js/i18n.en.js"), "utf8");
+  const paquet = new Function("return " + en.slice(en.indexOf("{"), en.lastIndexOf("}") + 1))();
+
+  /* getAttribute rend le texte DECODE, le dictionnaire doit donc porter la
+     version decodee. Le fond du champ etapes ecrit ses fins de ligne en &#10;. */
+  const decode = s => s
+    .replace(/&#10;/g, "\n").replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+
+  const manquants = [...html.matchAll(/(?:placeholder|title|aria-label)="([^"]+)"/g)]
+    .map(m => decode(m[1]))
+    // Un fond purement numerique ("0", "1.5.0", "00") n'a rien a traduire.
+    .filter(v => /[a-zA-ZÀ-ÿ]{4}/.test(v))
+    .filter(v => !paquet.UI[v]);
+
+  check("chaque infobulle et fond de champ a sa traduction",
+    manquants.length === 0, [...new Set(manquants)].join(" | "));
+
+  /* Le moteur doit vraiment couvrir les trois attributs. Un test de couverture
+     qui verifie le dictionnaire sans verifier qui le lit ne prouve rien. */
+  const i18n = readFileSync(join(ROOT, "js/i18n.js"), "utf8");
+  check("le moteur traduit les trois attributs de texte",
+    /\["placeholder", "title", "aria-label"\]/.test(i18n));
+  check("et il ignore les zones que le JS regenere",
+    /\[" \+ attr \+ "\][\s\S]{0,220}closest\(ZONES_JS\)/.test(i18n));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);
