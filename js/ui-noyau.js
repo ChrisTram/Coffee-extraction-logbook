@@ -377,12 +377,8 @@ const UI = (() => {
   /* État de navigation, en un seul objet muté en place plutôt qu'en variables
      séparées. La forme compte : plusieurs fichiers le lisent et l'écrivent, et
      un objet partagé se lit partout à jour, là où une variable empruntée serait
-     figée sur sa valeur du chargement.
-
-     Le drapeau d'ouverture est vrai UNIQUEMENT pendant que
-     chargerExtractionDansSaisie ouvre l'écran, pour que l'abandon d'édition ne
-     casse pas la modification qu'on vient justement de demander. */
-  const nav = { ecran: "tableau", ouvertureEdition: false };
+     figée sur sa valeur du chargement. */
+  const nav = { ecran: "tableau" };
 
   /* Enveloppe un changement d'écran dans une transition de vue quand le moteur
      sait le faire. Sinon on appelle directement : le repli est le comportement
@@ -397,13 +393,22 @@ const UI = (() => {
     document.startViewTransition(fn);
   }
 
-  function activerEcran(nom) {
+  /* pourEdition : vrai UNIQUEMENT quand c'est chargerExtractionDansSaisie qui
+     ouvre l'écran. C'était un drapeau partagé, posé avant un corps de quarante
+     lignes et remis à zéro après, sans finally : une exception au milieu le
+     laissait à true pour toujours et l'abandon d'édition ci-dessous ne se
+     déclenchait plus jamais. Chris rouvrait alors une ancienne extraction en
+     croyant en saisir une nouvelle, et la modifiait sans le vouloir.
+
+     En paramètre, il n'y a plus d'état à laisser coincé : l'information
+     appartient à l'appel, elle vit le temps de l'appel. */
+  function activerEcran(nom, pourEdition) {
     /* Arriver sur Saisie par la navigation veut dire "je veux noter une tasse",
        jamais "reprends la modification d'il y a dix minutes". On abandonne donc
        l'edition en cours, et on le DIT : sans le message, l'abandon serait aussi
        silencieux que le bug qu'il corrige. Rien n'est perdu en base, l'extraction
        modifiee n'avait pas ete enregistree et reste ouvrable depuis l'historique. */
-    if (nom === "saisie" && UI.saisie.editId && !nav.ouvertureEdition) {
+    if (nom === "saisie" && UI.saisie.editId && !pourEdition) {
       UI.reinitialiserSaisie();
       toast(I18N.t("t_edition_abandonnee"));
     }

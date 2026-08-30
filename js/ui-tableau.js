@@ -408,7 +408,7 @@
     rendreInsights(exts);
 
     // 30 derniers jours : barres, note, grammes, caféine dans le tooltip
-    const labels = [], comptes = [], moyennes = [], grammes = [], details = [], tendance = [];
+    const labels = [], comptes = [], moyennes = [], details = [], tendance = [];
     /* La tendance se calcule sur TOUT l'historique noté, pas sur les 30 jours :
        une moyenne glissante qui redémarrerait au bord de la fenêtre serait vide
        les quatre premiers jours affichés. On la projette ensuite jour par jour,
@@ -424,12 +424,12 @@
       comptes.push(duJour.length);
       const nJour = duJour.filter(e => e.note_sur_10 !== "").map(e => e.note_sur_10);
       moyennes.push(nJour.length ? +moyenne(nJour).toFixed(1) : null);
-      const g = duJour.reduce((a, e) => a + (e.dose_g || 0), 0);
-      grammes.push(duJour.length ? Math.round(g * 10) / 10 : null);
       if (!duJour.length) { details.push(""); continue; }
+      const g = duJour.reduce((a, e) => a + (e.dose_g || 0), 0);
       const mg = duJour.reduce((a, e) => a + mgCafeine(e), 0);
       const nomsCafes = [...new Set(duJour.map(e => (DATA.cafeDe(e) || {}).nom).filter(Boolean))];
-      details.push(I18N.t("tip_cafeine", { mg }) + "\n" + nomsCafes.join(", "));
+      details.push(I18N.t("tip_cafe_g", { g: Math.round(g * 10) / 10 }) + "\n" +
+        I18N.t("tip_cafeine", { mg }) + "\n" + nomsCafes.join(", "));
     }
     // Second passage : la tendance suit les mêmes libellés que les barres.
     for (let i = 29; i >= 0; i--) {
@@ -441,7 +441,7 @@
       }
       tendance.push(derniere);
     }
-    CHARTS.barresEtLigne30j("g-30jours", labels, comptes, moyennes, grammes, details, tendance);
+    CHARTS.barresEtLigne30j("g-30jours", labels, comptes, moyennes, details, tendance);
 
     // Heatmap
     const parJour = {}, infoParJour = {};

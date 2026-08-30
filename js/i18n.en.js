@@ -19,6 +19,7 @@ const I18N_EN = {
     l_tendance: "Trend, average of the last 5 cups",
     l_note_jour: "Daily average score",
     l_cafe_g: "Coffee used (g)",
+    tip_cafe_g: "{g} g of coffee",
     l_extractions: "Brews",
     axe_note: "Score out of 10",
     axe_note_moy: "Average score",

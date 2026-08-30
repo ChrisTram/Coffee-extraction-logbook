@@ -315,7 +315,7 @@ const noyau = infos["js/ui-noyau.js"];
   /* L'etat de navigation, lui, est un objet PARTAGE et doit le rester : c'est
      precisement la forme qui a corrige la faute ci-dessus. */
   check("l'état de navigation est un objet partagé, pas des variables",
-    noyau.src.includes('const nav = { ecran: "tableau", ouvertureEdition: false }'));
+    noyau.src.includes('const nav = { ecran: "tableau" }'));
 }
 
 /* 4. LE NOYAU RESTE UN NOYAU.

@@ -41,6 +41,7 @@ const I18N = (() => {
     l_tendance: { fr: "Tendance, moyenne des 5 dernières tasses" },
     l_note_jour: { fr: "Note moyenne du jour" },
     l_cafe_g: { fr: "Café consommé (g)" },
+    tip_cafe_g: { fr: "{g} g de café" },
     l_extractions: { fr: "Extractions" },
     axe_note: { fr: "Note sur 10" },
     axe_note_moy: { fr: "Note moyenne" },

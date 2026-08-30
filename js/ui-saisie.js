@@ -852,7 +852,6 @@
   }
 
   function chargerExtractionDansSaisie(ext, duplication) {
-    nav.ouvertureEdition = true;
     remplirSelectCafes(ext.cafe_id);
     saisie.editId = duplication ? null : ext.id;
     $("#f-date").value = duplication ? maintenantLocal() : ext.date_heure;
@@ -893,8 +892,9 @@
     $("#btn-annuler-edition").hidden = duplication;
     majAvertissements();
     majLive();
-    activerEcran("saisie");
-    nav.ouvertureEdition = false;
+    // Le second argument dit à l'écran Saisie que cette bascule EST l'ouverture
+    // d'une édition, et qu'il ne doit donc pas l'abandonner en arrivant.
+    activerEcran("saisie", true);
   }
 
   async function enregistrerSaisie(ev) {

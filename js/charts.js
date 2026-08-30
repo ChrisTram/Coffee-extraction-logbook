@@ -113,7 +113,11 @@ const CHARTS = (() => {
 
   // Barres du nombre d'extractions par jour, note moyenne du jour en ligne,
   // grammes de café en ligne pointillée, caféine et détail dans le tooltip.
-  function barresEtLigne30j(idCanvas, labels, comptes, moyennes, grammes, details, tendance) {
+  /* Trois séries visibles et pas quatre. La courbe des grammes de café était une
+     quatrième ligne sur un graphique qui en portait déjà trois, sur un axe caché
+     de surcroît : elle chargeait la vue sans être lisible. Le chiffre est passé
+     dans l'infobulle, où il se consulte quand on le cherche. */
+  function barresEtLigne30j(idCanvas, labels, comptes, moyennes, details, tendance) {
     creer(idCanvas, {
       data: {
         labels,
@@ -122,12 +126,6 @@ const CHARTS = (() => {
             type: "line", label: I18N.t("l_note_jour"), data: moyennes, yAxisID: "y2",
             borderColor: cssVar("--accent"), backgroundColor: cssVar("--accent"),
             spanGaps: true, tension: 0.35, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2,
-          },
-          {
-            type: "line", label: I18N.t("l_cafe_g"), data: grammes, yAxisID: "y3",
-            borderColor: cssVar("--grammes"), backgroundColor: cssVar("--grammes"),
-            borderDash: [5, 4], borderWidth: 1.5, pointRadius: 2, pointHoverRadius: 4,
-            spanGaps: false, tension: 0.3,
           },
           {
             /* Tendance : même axe de note que les points bruts, sinon on
@@ -164,7 +162,6 @@ const CHARTS = (() => {
           x: { grid: { display: false }, ticks: { maxTicksLimit: 10 } },
           y: { beginAtZero: true, ticks: { stepSize: 1 }, title: { display: true, text: I18N.t("l_extractions") } },
           y2: { position: "right", min: 0, max: 10, grid: { drawOnChartArea: false }, title: { display: true, text: I18N.t("axe_note") } },
-          y3: { display: false, beginAtZero: true },
         },
       },
     });

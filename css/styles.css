@@ -621,8 +621,11 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
 }
 .label-inline { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--texte); }
 
+/* "search" manquait à cette liste, et un champ de recherche tombait donc sur le
+   rendu par défaut du navigateur, sans fond, sans bordure et sans rayon, au
+   milieu de champs habillés. */
 input[type="text"], input[type="number"], input[type="date"], input[type="datetime-local"],
-select, textarea {
+input[type="search"], select, textarea {
   background: var(--panneau);
   border: 1px solid var(--lignes);
   color: var(--encre);
@@ -1084,7 +1087,37 @@ input:focus, select:focus, textarea:focus {
    donner la taille d'un menu déroulant de 150 px la ferait passer pour un
    filtre de plus, et on n'y taperait pas une phrase confortablement. */
 .historique-filtres .champ-recherche { grid-column: 1 / -1; }
-.historique-filtres-actions { display: flex; gap: 8px; align-items: end; }
+/* Les actions prennent leur propre ligne, alignées à droite. Elles étaient une
+   cellule de la grille comme les autres, large de 150 px : les deux boutons
+   passaient à la ligne et le libellé "Exporter le filtre en CSV" se coupait
+   dedans, d'où un bloc haut et étroit. Ce ne sont pas des filtres, ils n'ont
+   rien à faire dans le rythme des filtres. */
+.historique-filtres-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
+}
+.historique-filtres-actions .btn { white-space: nowrap; }
+
+/* Chrome dessine la croix d'effacement en sombre fixe : illisible sur le thème
+   sombre. On la reprend à la main dans la couleur du texte atténué. */
+.champ-recherche input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 15px;
+  width: 15px;
+  cursor: pointer;
+  background: var(--attenue);
+  /* Le préfixe webkit est là pour une raison, pas par habitude : sans lui, un
+     moteur qui ignore `mask` afficherait un rectangle plein de la couleur du
+     fond, donc pire que la croix d'origine. Les deux couvrent Chrome quel que
+     soit son âge. */
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 4l8 8M12 4l-8 8' stroke='%23000' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 4l8 8M12 4l-8 8' stroke='%23000' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3C/svg%3E") center / contain no-repeat;
+}
 
 .historique-compte { color: var(--attenue); font-size: 0.85rem; margin: 0 0 10px 4px; }
 

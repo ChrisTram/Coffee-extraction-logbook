@@ -509,5 +509,51 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
     JSON.stringify(trait.attrs) + " apres " + reconstructions + " constructions");
 }
 
+/* CLIQUER SUR SAISIE OUVRE UNE SAISIE, JAMAIS UNE ÉDITION D'IL Y A DIX MINUTES.
+
+   Chris ouvrait une extraction depuis l'historique, allait ailleurs, revenait par
+   l'onglet Saisie, et le formulaire tenait toujours la MODIFICATION : il croyait
+   noter une nouvelle tasse et il en écrasait une ancienne. Perte de données
+   silencieuse.
+
+   Une garde existait. Elle reposait sur un drapeau partagé, posé avant un corps
+   de quarante lignes et remis à zéro après, sans finally : une exception au
+   milieu le laissait à true pour toujours, et la garde ne se déclenchait plus
+   jamais. « Parfois », puis tout le temps. L'information passe maintenant en
+   paramètre, elle meurt donc avec l'appel.
+
+   Les contrôles qui cherchaient ces lignes dans le source passaient au vert
+   pendant tout ce temps : ils vérifiaient que le mécanisme était ÉCRIT, pas
+   qu'il marchait. D'où ce test, qui rejoue le geste. */
+{
+  const ext = api.DATA.state.extractions[0];
+  check("une extraction existe pour le test d'edition", !!ext);
+  if (ext) {
+    api.UI.chargerExtractionDansSaisie(ext);
+    check("ouvrir une extraction depuis l'historique met bien en edition",
+      api.UI.saisie.editId === ext.id, JSON.stringify(api.UI.saisie.editId));
+
+    // Le geste de Chris : il part ailleurs, puis revient par l'onglet Saisie.
+    api.UI.activerEcran("historique");
+    api.UI.activerEcran("saisie");
+    check("revenir par l'onglet Saisie abandonne l'edition",
+      api.UI.saisie.editId === null, JSON.stringify(api.UI.saisie.editId));
+
+    /* Sans detour non plus : rouvrir l'ecran ou l'on est deja doit compter. */
+    api.UI.chargerExtractionDansSaisie(ext);
+    api.UI.activerEcran("saisie");
+    check("et sans meme changer d'ecran entre les deux",
+      api.UI.saisie.editId === null, JSON.stringify(api.UI.saisie.editId));
+
+    /* L'ouverture LEGITIME, elle, doit survivre : chargerExtractionDansSaisie
+       bascule sur l'ecran Saisie, et cette bascule-la ne doit surtout pas
+       annuler l'edition qu'on vient de demander. */
+    api.UI.chargerExtractionDansSaisie(ext);
+    check("mais ouvrir une edition ne s'annule pas elle-meme",
+      api.UI.saisie.editId === ext.id, JSON.stringify(api.UI.saisie.editId));
+    api.UI.reinitialiserSaisie();
+  }
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

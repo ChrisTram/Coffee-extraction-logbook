@@ -757,11 +757,21 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
 {
   const app = SOURCE_UI;
   check("arriver sur Saisie par la navigation abandonne l'edition",
-    app.includes('if (nom === "saisie" && UI.saisie.editId && !nav.ouvertureEdition)'));
+    app.includes('if (nom === "saisie" && UI.saisie.editId && !pourEdition)'));
   check("l'abandon est annonce, il n'est pas silencieux",
     app.includes('t_edition_abandonnee'));
-  check("le drapeau protege l'ouverture legitime d'une edition",
-    app.includes("nav.ouvertureEdition = true") && app.includes("nav.ouvertureEdition = false"));
+  /* L'exception legitime passe par un PARAMETRE, plus par un drapeau partage.
+     Le drapeau etait pose avant quarante lignes et retire apres, sans finally :
+     une exception au milieu le laissait a true pour toujours, et l'abandon
+     d'edition ne se declenchait plus jamais. Chris rouvrait alors une ancienne
+     extraction en croyant en saisir une nouvelle. Un parametre ne peut pas
+     rester coince, il meurt avec l'appel. */
+  check("l'exception passe par un parametre, pas par un etat partage",
+    !app.includes("ouvertureEdition"), "ouvertureEdition existe encore");
+  check("et seule l'ouverture d'une edition la demande",
+    app.includes('activerEcran("saisie", true)') &&
+    (app.match(/activerEcran\([^)]*,\s*true\)/g) || []).length === 1,
+    (app.match(/activerEcran\([^)]*,\s*true\)/g) || []).join(", "));
 
   /* Les appels a activerEcran qui SUIVAIENT chargerExtractionDansSaisie sont
      partis : la fonction ouvre deja l'ecran, et le rappel reinitialisait
@@ -1427,12 +1437,21 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   // Chaque serie tire sa couleur d'un jeton different.
   const teintes = [...bloc30j.matchAll(/borderColor: cssVar\("(--[\w-]+)"\)/g)].map(m => m[1]);
   check("chaque courbe a sa propre couleur",
-    teintes.length === 3 && new Set(teintes).size === 3, teintes.join(", "));
+    teintes.length === 2 && new Set(teintes).size === 2, teintes.join(", "));
+  /* La courbe des grammes est partie : quatrieme serie sur un graphique qui en
+     portait deja trois, sur un axe cache de surcroit, elle chargeait la vue sans
+     etre lisible. Le chiffre vit maintenant dans l'infobulle. */
+  check("la courbe des grammes ne surcharge plus le graphique",
+    !bloc30j.includes("l_cafe_g") && !bloc30j.includes("y3:"));
+  check("mais le chiffre reste consultable dans l'infobulle",
+    SOURCE_UI.includes("tip_cafe_g"));
 
   /* La tendance LISSE la ligne des notes : meme mesure, meme axe. Elle doit
      porter la teinte de l'accent, sinon elle se lit comme une donnee de plus.
      C'est ce que disait deja son commentaire, et que sa couleur contredisait. */
   const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  check("et la reglette du convertisseur garde sa couleur de defaut",
+    css.includes("--tendance"));
   const tendances = [...css.matchAll(/--tendance: ([^;]+);/g)].map(m => m[1].trim());
   check("la tendance existe dans les deux themes", tendances.length === 2, tendances.join(" | "));
   check("et elle est translucide, pour se lire comme un fond",
@@ -1531,6 +1550,49 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     /\["placeholder", "title", "aria-label"\]/.test(i18n));
   check("et il ignore les zones que le JS regenere",
     /\[" \+ attr \+ "\][\s\S]{0,220}closest\(ZONES_JS\)/.test(i18n));
+}
+
+/* TOUT CHAMP DE TEXTE EST HABILLE.
+
+   La barre de recherche de l'historique n'avait aucun style : la longue liste de
+   selecteurs qui habille les champs enumere input[type="text"], number, date,
+   datetime-local... et personne n'y avait ajoute "search" en creant le champ. Le
+   navigateur rendait donc son controle par defaut, sans fond, sans bordure et
+   sans rayon, au milieu de champs habilles. Rien ne le signale : le CSS est
+   valide, la page se charge, c'est juste laid.
+
+   Les types qui ne sont PAS du texte ont leur propre habillage ailleurs et n'ont
+   rien a faire dans cette liste. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  const APART = ["button", "submit", "checkbox", "radio", "range", "file", "hidden"];
+
+  const utilises = [...new Set([...html.matchAll(/<input\b[^>]*\btype="([a-z-]+)"/g)].map(m => m[1]))]
+    .filter(t => !APART.includes(t));
+
+  /* On regarde LA liste qui habille les champs, celle qui se termine par
+     "select, textarea {", et pas le fichier entier : un type peut apparaitre
+     ailleurs dans une regle de detail, ce qui suffirait a faire passer le test
+     alors que le champ est nu. C'est arrive en ecrivant ce test meme. */
+  const finListe = css.indexOf("select, textarea {");
+  /* La liste tient sur plusieurs lignes : on remonte jusqu'a la fin de la regle
+     ou du commentaire precedent, sinon on n'attrape que sa derniere ligne et
+     tous les types des lignes du dessus passent pour absents. */
+  const debutListe = Math.max(css.lastIndexOf("}", finListe), css.lastIndexOf("*/", finListe));
+  const liste = css.slice(debutListe, finListe);
+  const nus = utilises.filter(t => !liste.includes('input[type="' + t + '"]'));
+  check("chaque type de champ texte de la page est habille par le CSS",
+    nus.length === 0, nus.join(", "));
+
+  /* Le bloc des actions de l'historique prend sa propre ligne. Il etait une
+     cellule de la grille des filtres, large de 150 px : les deux boutons
+     passaient a la ligne et "Exporter le filtre en CSV" se coupait dedans, d'ou
+     un bloc haut et etroit. Ce ne sont pas des filtres. */
+  check("les actions de l'historique ne sont plus une colonne de filtre",
+    /\.historique-filtres-actions \{[^}]*grid-column: 1 \/ -1/.test(css));
+  check("et leurs libelles ne se coupent plus",
+    /\.historique-filtres-actions \.btn \{[^}]*white-space: nowrap/.test(css));
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);

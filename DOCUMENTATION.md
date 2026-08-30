@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.65,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.66,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -626,6 +626,31 @@ leur `border: 1px solid var(--lignes)`.
   `split().join()` plutôt que `replace()` sur tout code ou texte porteur de
   dollars, et
   lancer `node tools/boot.test.mjs` après toute modification de l'interface.
+- UN DRAPEAU PARTAGÉ POSÉ AVANT UN LONG CORPS FINIT PAR RESTER COINCÉ. Ouvrir
+  une extraction pour la modifier basculait sur l'écran Saisie, et cette bascule
+  ne devait pas déclencher l'abandon d'édition qui protège justement contre la
+  perte de données. La distinction se faisait par un drapeau global posé avant
+  quarante lignes de remplissage de formulaire et remis à zéro après, SANS
+  `finally` : une seule exception au milieu le laissait à true pour toujours, et
+  l'abandon ne se déclenchait plus jamais. Chris rouvrait alors une ancienne
+  tasse en croyant en saisir une nouvelle, et la modifiait. « Parfois », puis
+  tout le temps. L'information passe maintenant en PARAMÈTRE de `activerEcran` :
+  elle appartient à l'appel, elle meurt avec lui, il n'y a plus rien à laisser
+  coincé. Règle générale : un drapeau qui doit être remis à zéro plus loin est
+  une dette, un paramètre n'en est pas une.
+- UN TEST QUI LIT LE SOURCE NE PROUVE PAS QUE LE MÉCANISME MARCHE. Deux contrôles
+  vérifiaient que la garde d'abandon était bien ÉCRITE dans `activerEcran`, et
+  ils sont restés au vert pendant tout le temps où elle ne se déclenchait plus.
+  Le geste est maintenant rejoué pour de vrai dans `tools/boot.test.mjs` :
+  ouvrir une extraction, partir ailleurs, revenir par l'onglet, et vérifier que
+  le formulaire est redevenu vierge.
+- UN NOUVEAU TYPE DE CHAMP N'HÉRITE DE RIEN. La longue liste de sélecteurs qui
+  habille les champs énumère `input[type="text"]`, `number`, `date`,
+  `datetime-local`... et rien n'oblige à y ajouter un type nouveau. Le champ de
+  recherche de l'historique est resté au rendu par défaut du navigateur, sans
+  fond ni bordure, au milieu de champs habillés. Le CSS est valide, la page se
+  charge, c'est juste laid, donc rien ne le signale. Un test compare maintenant
+  les types utilisés dans `index.html` à cette liste.
 - UN SCAN QUI TOURNE AVANT SON DICTIONNAIRE NE SERT À RIEN. `scanner()`
   n'enregistre un nœud de texte que s'il a DÉJÀ une traduction, et
   `appliquerStatique()` est appelée au démarrage. Depuis que le paquet anglais se
@@ -785,6 +810,12 @@ emprunter, même quand la teinte est libre à cet endroit du graphique.
   pour se détacher, désaturée pour ne pas crier. Le bleu vif, l'orange et le vert
   appartiennent aux machines ; le violet, les deux bleus, le jaune et le rose
   sont pris par l'anneau des diagnostics. L'ardoise ne collisionne avec rien.
+
+**Trois séries visibles, pas quatre.** La courbe des grammes de café a quitté le
+graphique en v7.66 : quatrième ligne sur un graphique qui en portait déjà trois,
+tracée sur un axe caché, elle chargeait la vue sans être lisible. Le chiffre est
+passé dans l'infobulle, où il se consulte quand on le cherche. Une donnée qu'on
+ne lit qu'occasionnellement n'a pas besoin d'une courbe permanente.
 
 **Pas de rouge sur ce graphique**, malgré la tentation : ici le rouge est
 `--danger`, il annonce une mauvaise nouvelle. Une tendance de notes qui monte est
@@ -1962,6 +1993,10 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.66 : cliquer sur Saisie n'ouvre plus jamais une ancienne extraction. La
+  barre de recherche de l'historique est enfin habillée, ses boutons d'action
+  prennent leur propre ligne, et la courbe des grammes quitte le graphique
+  principal pour l'infobulle.
 - v7.65 : le mode anglais devient complet. Les infobulles, les étiquettes de
   lecteur d'écran et six fonds de champ restaient en français ; ils passent
   maintenant par le dictionnaire, et un test refuse tout attribut sans traduction.
