@@ -566,6 +566,24 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
   font-variant-numeric: tabular-nums;
 }
 .derniere-infos { font-size: 0.8rem; color: var(--attenue); }
+/* Les mesures sur leur propre ligne, plus lisibles que le contexte au-dessus :
+   ce sont elles qu'on compare d'une tasse à l'autre. Chiffres à chasse fixe pour
+   qu'ils s'alignent d'une ligne sur l'autre, et séparateurs en flex plutôt qu'en
+   texte pour que le retour à la ligne sur téléphone ne laisse pas un point
+   médian orphelin en début de ligne. */
+.derniere-mesures {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 7px;
+  margin-top: 2px;
+  font-size: 0.82rem;
+  color: var(--texte);
+  font-variant-numeric: tabular-nums;
+}
+.derniere-mesures b { color: var(--encre); font-weight: 600; }
+.derniere-mesures small { color: var(--attenue); }
+.derniere-mesures > span { color: var(--lignes-graphe); }
 .derniere-cafe { color: var(--encre); font-weight: 600; }
 
 /* ---------- États vides ---------- */

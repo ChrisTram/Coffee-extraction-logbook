@@ -9,8 +9,8 @@
 (() => {
 
   // Emprunté au noyau, chargé avant nous.
-  const { $, $$, animerCompteur, attrTitre, cleLocale, diagsAffiches, ecartMoyen, extAvecCalculs,
-    fmtDateHeure, fmtDecimal, moyenne, trouverRecette } = UI;
+  const { $, $$, animerCompteur, attrTitre, cleLocale, detailRatio, diagsAffiches, ecartMoyen,
+    extAvecCalculs, fmtDateHeure, fmtDecimal, fmtTemps, moyenne, trouverRecette } = UI;
 
   // ---------- Insights automatiques ----------
   // Des phrases calculées, pas des graphiques en plus. Les règles sont
@@ -543,10 +543,39 @@
       "<span class=\"pastille-methode " + e.methode.toLowerCase() + "\"></span>" +
       "<div><span class=\"derniere-cafe\">" + I18N.tr(e._c.cafe_nom) + "</span>" +
       "<div class=\"derniere-infos\">" + fmtDateHeure(e.date_heure) + " · " + e.methode +
-      (e.recette ? " · " + e.recette : "") + (e.mouture_dial ? " · " + I18N.t("molette") + " " + e.mouture_dial : "") +
-      (e.diagnostic ? " · " + diagsAffiches(e.diagnostic) : "") + "</div></div>" +
+      (e.recette ? " · " + e.recette : "") +
+      (e.diagnostic ? " · " + diagsAffiches(e.diagnostic) : "") + "</div>" +
+      mesuresDerniere(e) + "</div>" +
       "<span class=\"derniere-note\">" + (e.note_sur_10 !== "" ? e.note_sur_10 + "<small>/10</small>" : "") + "</span></li>"
     ).join("");
+  }
+
+  /* La ligne de MESURES d'une extraction : ce que Chris a réellement réglé.
+     Chaque élément n'apparaît que s'il est renseigné, sinon la ligne se
+     remplirait de trous pour les champs qu'il ne remplit pas.
+
+     Le ratio porte son infobulle, comme dans l'historique. Sur la Brikka, "eau"
+     désigne la CHAUDIÈRE et pas ce qui tombe dans la tasse : afficher le chiffre
+     sans dire de quoi il parle en ferait un piège. Le ratio en tasse, lui,
+     n'apparaît que s'il a été mesuré. */
+  function mesuresDerniere(e) {
+    const bouts = [];
+    if (e.dose_g > 0 && e.eau_g) bouts.push(e.dose_g + " → " + e.eau_g + " g");
+    if (e._c.ratioTexte) {
+      bouts.push('<b title="' + attrTitre(detailRatio(e._c.ratioBase, e.dose_g, e.eau_g)) + '">' +
+        e._c.ratioTexte + "</b>" +
+        (e._c.ratioTasseTexte ? ' <small>(' + I18N.t("rt_tasse_court") + " " + e._c.ratioTasseTexte + ")</small>" : ""));
+    }
+    const total = fmtTemps(e.temps_total_s);
+    if (total) bouts.push(total);
+    if (e.mouture_dial) bouts.push(I18N.t("molette") + " " + e.mouture_dial);
+    if (e.temperature_c !== "" && e.temperature_c !== undefined) bouts.push(e.temperature_c + " °C");
+    // La puissance de feu ne veut rien dire hors Brikka : le Switch n'a pas de feu.
+    if (e.methode === "Brikka" && e.puissance_feu !== "" && e.puissance_feu !== undefined) {
+      bouts.push(I18N.t("rg_feu", { f: e.puissance_feu }));
+    }
+    if (!bouts.length) return "";
+    return '<div class="derniere-mesures">' + bouts.join("<span>·</span>") + "</div>";
   }
 
   // Mis à disposition des autres écrans.

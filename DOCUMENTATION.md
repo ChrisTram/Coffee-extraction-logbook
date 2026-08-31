@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.67,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.68,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -2010,6 +2010,8 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.68 : les cinq dernières extractions montrent leurs MESURES, ratio en tête,
+  sur une deuxième ligne.
 - v7.67 : une nouvelle saisie porte l'heure qu'il est, et plus celle de la tasse
   précédente.
 - v7.66 : cliquer sur Saisie n'ouvre plus jamais une ancienne extraction. La
