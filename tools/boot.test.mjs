@@ -555,5 +555,33 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
   }
 }
 
+/* LA DATE D'UNE NOUVELLE SAISIE EST L'HEURE QU'IL EST.
+
+   Elle n'était posée que par reinitialiserSaisie(), qui ne tourne qu'au démarrage
+   et après un enregistrement. Sur un téléphone où la page reste ouverte toute la
+   journée, arriver sur Saisie à 16 h affichait l'heure de la tasse précédente. */
+{
+  const champ = document.querySelector("#f-date");
+  champ.value = "2020-01-01T08:00";
+  api.UI.activerEcran("historique");
+  api.UI.activerEcran("saisie");
+  check("arriver sur Saisie remet la date a l'heure qu'il est",
+    champ.value.slice(0, 4) !== "2020", champ.value);
+
+  /* Mais une date REGLEE A LA MAIN lui appartient : Chris note parfois une tasse
+     d'hier soir, et la lui reprendre serait pire que le bug qu'on corrige. */
+  champ.value = "2020-01-01T08:00";
+  api.UI.marquerDateTouchee();
+  api.UI.activerEcran("historique");
+  api.UI.activerEcran("saisie");
+  check("mais une date choisie a la main est respectee",
+    champ.value === "2020-01-01T08:00", champ.value);
+
+  // La remise a zero du formulaire rend la date au systeme.
+  api.UI.reinitialiserSaisie();
+  check("et la remise a zero la rend au systeme",
+    champ.value.slice(0, 4) !== "2020", champ.value);
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.66,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.67,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -626,6 +626,23 @@ leur `border: 1px solid var(--lignes)`.
   `split().join()` plutôt que `replace()` sur tout code ou texte porteur de
   dollars, et
   lancer `node tools/boot.test.mjs` après toute modification de l'interface.
+- UNE VALEUR POSÉE À L'INITIALISATION VIEILLIT AVEC LA PAGE. La date d'une
+  nouvelle saisie n'était écrite que par `reinitialiserSaisie()`, qui ne tourne
+  qu'au démarrage et après un enregistrement. C'est correct sur un site qu'on
+  recharge ; sur une PWA installée dont la page reste ouverte toute la journée,
+  arriver sur Saisie à 16 h affichait l'heure de la tasse précédente. La date est
+  maintenant rafraîchie à chaque ARRIVÉE sur l'écran, et un drapeau
+  `saisie.dateTouchee` protège une date réglée à la main : Chris note parfois une
+  tasse d'hier soir, et la lui reprendre serait pire que le bug corrigé. Le
+  rafraîchissement est dans `activerEcran` et pas dans `rendreEcranCourant`, qui
+  se rejoue à chaque notification de données : la date sauterait pendant qu'on
+  remplit le formulaire.
+- UN BROUILLON DE 24 HEURES NE DOIT PAS RESSUSCITER UN HORODATAGE. `f-date` fait
+  partie des champs sauvegardés, et le brouillon vit 24 h. C'est la bonne durée
+  pour un commentaire et une absurdité pour une date : celle de la veille
+  revenait par-dessus l'heure fraîche. La date a donc sa propre fenêtre,
+  `DATE_BROUILLON_MAX_MS`, de deux heures. Le brouillon existe pour survivre au
+  déchargement de la page pendant une extraction, ce qui se compte en minutes.
 - UN DRAPEAU PARTAGÉ POSÉ AVANT UN LONG CORPS FINIT PAR RESTER COINCÉ. Ouvrir
   une extraction pour la modifier basculait sur l'écran Saisie, et cette bascule
   ne devait pas déclencher l'abandon d'édition qui protège justement contre la
@@ -1993,6 +2010,8 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.67 : une nouvelle saisie porte l'heure qu'il est, et plus celle de la tasse
+  précédente.
 - v7.66 : cliquer sur Saisie n'ouvre plus jamais une ancienne extraction. La
   barre de recherche de l'historique est enfin habillée, ses boutons d'action
   prennent leur propre ligne, et la courbe des grammes quitte le graphique

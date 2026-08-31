@@ -27,6 +27,12 @@
      apparaître une saisie fantôme sur l'autre. */
   const CLE_BROUILLON = "brouillon-saisie";
   const BROUILLON_MAX_MS = 24 * 60 * 60 * 1000;
+  /* La DATE du brouillon a sa propre durée de validité, bien plus courte. Le
+     brouillon existe pour survivre au déchargement de la page pendant une
+     extraction, ce qui se compte en minutes ; garder son horodatage 24 h faisait
+     réapparaître la date de la veille sur une saisie neuve. Deux heures couvrent
+     largement une séance, interruptions comprises. */
+  const DATE_BROUILLON_MAX_MS = 2 * 60 * 60 * 1000;
   const CHAMPS_BROUILLON = [
     "f-date", "f-cafe", "f-recette", "f-dose", "f-eau", "f-mouture", "f-temp",
     "f-volume", "f-eau-ajoutee", "f-lait", "f-agitation", "f-tasse", "f-note",
@@ -83,10 +89,16 @@
     if (!brouillonUtile(b)) return false;
 
     if (b.methode) choisirMethode(b.methode, true);
+    const dateFraiche = Date.now() - (b.le || 0) <= DATE_BROUILLON_MAX_MS;
     Object.entries(b.valeurs).forEach(([id, valeur]) => {
+      // Une date périmée ne remplace pas l'heure qu'il est.
+      if (id === "f-date" && !dateFraiche) return;
       const el = $("#" + id);
       if (el && valeur !== undefined && valeur !== null) el.value = valeur;
     });
+    /* Une date reprise d'un brouillon frais vient de Chris, pas d'un défaut :
+       l'arrivée sur l'écran ne doit donc pas la remplacer. */
+    if (dateFraiche && b.valeurs["f-date"]) saisie.dateTouchee = true;
     CASES_BROUILLON.forEach(id => { const el = $("#" + id); if (el) el.checked = !!b.valeurs[id]; });
 
     saisie.diagnostics = new Set(b.diagnostics || []);
@@ -133,6 +145,10 @@
     descripteurs: new Set(),
     diagnostics: new Set(),
     editId: null,
+    /* Vrai dès que la date vient de Chris plutôt que d'un défaut. Sans lui,
+       rafraîchir la date à l'arrivée sur l'écran écraserait la tasse d'hier soir
+       qu'il est justement en train de noter. */
+    dateTouchee: false,
   };
 
   function cafesSelectionnables() {
@@ -810,8 +826,21 @@
 
   }
 
+  /* Appelée à CHAQUE arrivée sur l'écran Saisie pour une nouvelle tasse. La date
+     n'était posée qu'à la remise à zéro du formulaire, c'est-à-dire au démarrage
+     et après un enregistrement : sur un téléphone où la page reste ouverte, elle
+     affichait donc l'heure de la tasse précédente. */
+  function rafraichirDateSaisie() {
+    if (saisie.dateTouchee) return;
+    $("#f-date").value = maintenantLocal();
+  }
+
+  // La date vient de Chris dès qu'il y touche, et plus d'un défaut.
+  function marquerDateTouchee() { saisie.dateTouchee = true; }
+
   function reinitialiserSaisie(garderCafe) {
     saisie.editId = null;
+    saisie.dateTouchee = false;
     saisie.diagnostics.clear();
     saisie.descripteurs.clear();
     $("#saisie-titre").textContent = I18N.t("s_nouvelle");
@@ -855,6 +884,8 @@
     remplirSelectCafes(ext.cafe_id);
     saisie.editId = duplication ? null : ext.id;
     $("#f-date").value = duplication ? maintenantLocal() : ext.date_heure;
+    // Elle vient de l'extraction ouverte, pas d'un défaut : on n'y retouche pas.
+    saisie.dateTouchee = !duplication;
     $("#f-cafe").value = ext.cafe_id;
     choisirMethode(ext.methode || "Brikka", true);
     remplirSelectRecettes();
@@ -1034,6 +1065,7 @@
     majAsideSaisie, majAvertRapide, majAvertissements, majBoutonsChrono, majChampPrechauffe,
     majCorrectionDiagnostic, majEtapesChrono, majLait, majLive, majPanneauRapide,
     majRecettesRapide, noteSaisie, paliersCourants, planifierBrouillon, prefillDepuisRecette,
+    marquerDateTouchee, rafraichirDateSaisie,
     rapideEstOuvert, rapideOuvert, razPresetTemp, reinitialiserSaisie, releaseWakeLock,
     remplirSelectCafes, remplirSelectRecettes, remplirSelectTasses, rendreTassesEditeur,
     restaurerBrouillon, saisie, screenWakeLock, surChoixCafe, surChoixCafeRapide,

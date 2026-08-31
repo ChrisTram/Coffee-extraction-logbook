@@ -115,6 +115,11 @@
       UI.prefillDepuisRecette($("#f-recette").value);
     }));
     $("#f-cafe").addEventListener("change", UI.surChoixCafe);
+    /* Dès que Chris touche la date, elle est SIENNE : l'arrivée sur l'écran ne
+       la remplacera plus. Il note parfois une tasse d'hier soir. "input" autant
+       que "change" : sur un champ datetime-local, chaque partie modifiée émet
+       "input", et "change" n'arrive qu'à la validation. */
+    ["input", "change"].forEach(ev => $("#f-date").addEventListener(ev, UI.marquerDateTouchee));
     $("#f-date").addEventListener("change", UI.majAgePaquet);
     $("#f-recette").addEventListener("change", () => { UI.prefillDepuisRecette($("#f-recette").value); UI.majAvertissements(); });
     ["f-dose", "f-eau", "f-mouture", "f-volume"].forEach(id =>
@@ -492,7 +497,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.66";
+  const VERSION = "7.67";
 
   async function demarrer() {
     /* AVANT tout rendu : si Chris avait laissé le site en anglais, le paquet de

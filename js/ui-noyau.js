@@ -412,6 +412,11 @@ const UI = (() => {
       UI.reinitialiserSaisie();
       toast(I18N.t("t_edition_abandonnee"));
     }
+    /* Arriver sur Saisie pour une NOUVELLE tasse doit montrer l'heure qu'il est.
+       Ici et pas dans rendreEcranCourant : celui-ci se rejoue à chaque
+       notification de données, et la date sauterait pendant qu'on remplit le
+       formulaire. À l'arrivée, une fois, c'est ce qu'on veut. */
+    if (nom === "saisie" && !UI.saisie.editId) UI.rafraichirDateSaisie();
     nav.ecran = nom;
     // Seule la bascule VISUELLE entre dans la transition. L'abandon d'édition
     // ci-dessus est de la logique métier : il se produit dans tous les cas.
