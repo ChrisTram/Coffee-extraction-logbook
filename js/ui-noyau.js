@@ -30,6 +30,8 @@ const UI = (() => {
 
   function activerAppuiLong(racine) {
     let minuteur = null, cible = null;
+    // Vrai entre l'ouverture d'une bulle par appui long et le clic qui la suit.
+    let bulleOuverteALInstant = false;
     const fermer = () => {
       racine.querySelectorAll(".info-ouverte").forEach(x => x.classList.remove("info-ouverte"));
     };
@@ -39,9 +41,11 @@ const UI = (() => {
       const el = ev.target.closest("[data-info]");
       if (!el) return;
       cible = el;
+      bulleOuverteALInstant = false;
       minuteur = setTimeout(() => {
         fermer();
         el.classList.add("info-ouverte");
+        bulleOuverteALInstant = true;
         minuteur = null;
       }, APPUI_LONG_MS);
     });
@@ -55,6 +59,21 @@ const UI = (() => {
       annuler();
     });
     racine.addEventListener("pointercancel", () => { annuler(); fermer(); });
+
+    /* Le clic qui SUIT un appui long ne doit rien faire de plus : la bulle est
+       déjà ouverte, c'était tout ce qu'on demandait. Sans ça, lire la définition
+       d'un descripteur le sélectionnait au passage, et l'appui long est le seul
+       moyen d'ouvrir la bulle sans souris.
+
+       En phase de CAPTURE sur le conteneur, donc avant la cible et avant la
+       remontée : c'est ce qui permet à stopPropagation() d'empêcher le
+       gestionnaire délégué, posé sur ce même conteneur, de voir l'événement. */
+    racine.addEventListener("click", ev => {
+      if (!bulleOuverteALInstant) return;
+      bulleOuverteALInstant = false;
+      ev.stopPropagation();
+      ev.preventDefault();
+    }, true);
   }
 
   /* Retarde un appel jusqu'à ce que les frappes s'arrêtent. Une fonction par

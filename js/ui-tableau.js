@@ -537,9 +537,19 @@
     // Chaque ligne ouvre l'édition de son extraction. role et tabindex plutôt
     // qu'un vrai bouton : le contenu est structuré (div, span) et un bouton n'a
     // pas le droit d'en contenir.
+    /* Le commentaire au SURVOL, quand il y en a un. C'est le seul champ qui dit
+       pourquoi une tasse était bonne, et il fallait ouvrir l'extraction pour le
+       lire. Bulle maison plutôt que title natif : instantanée, fidèle au thème,
+       et l'appui long la donne aussi au téléphone.
+
+       Le title natif n'est gardé que sur les lignes SANS commentaire : les deux
+       ensemble feraient apparaître deux infobulles au même endroit. */
     $("#dernieres-liste").innerHTML = dernieres.map(e =>
-      '<li class="derniere-cliquable" data-ext="' + e.id + '" tabindex="0" role="button" title="' +
-      attrTitre(I18N.t("h_editer")) + '">' +
+      '<li class="derniere-cliquable' + (e.commentaire ? " info-dessous" : "") +
+      '" data-ext="' + e.id + '" tabindex="0" role="button"' +
+      (e.commentaire
+        ? ' data-info="' + attrTitre(e.commentaire) + '"'
+        : ' title="' + attrTitre(I18N.t("h_editer")) + '"') + ">" +
       "<span class=\"pastille-methode " + e.methode.toLowerCase() + "\"></span>" +
       "<div><span class=\"derniere-cafe\">" + I18N.tr(e._c.cafe_nom) + "</span>" +
       "<div class=\"derniere-infos\">" + fmtDateHeure(e.date_heure) + " · " + e.methode +

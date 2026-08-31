@@ -1595,5 +1595,56 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     /\.historique-filtres-actions \.btn \{[^}]*white-space: nowrap/.test(css));
 }
 
+/* L'INFOBULLE MAISON, DEFINIE UNE SEULE FOIS.
+
+   Elle etait ecrite DEUX fois dans la feuille de style, aux selecteurs pres :
+   une pour les pilules et les tags, une pour le ratio de la ligne live. Ajouter
+   le commentaire des dernieres extractions aurait fait une troisieme copie, donc
+   trois endroits a corriger le jour ou la bulle change. La regle porte
+   maintenant sur l'ATTRIBUT data-info, et tout element qui le porte l'obtient. */
+{
+  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  const copies = (css.match(/content: attr\(data-info\)/g) || []).length;
+  check("l'infobulle n'est definie qu'une fois", copies === 1, copies + " copies");
+  check("et elle porte sur l'attribut, pas sur des classes",
+    /\[data-info\]:hover::after/.test(css));
+  // Un data-info vide ne doit pas ouvrir une bulle vide.
+  check("un data-info vide n'ouvre rien", /\[data-info=""\]:hover::after/.test(css));
+  /* Sous l'element dans une LISTE : au-dessus, la bulle recouvrirait la ligne
+     precedente, et celle de la premiere ligne recouvrirait le titre de la carte. */
+  check("une variante ouvre la bulle sous l'element",
+    /\[data-info\]\.info-dessous:hover::after/.test(css));
+
+  /* Le commentaire est le seul champ qui dit POURQUOI une tasse etait bonne, et
+     il fallait ouvrir l'extraction pour le lire. */
+  const tableau = readFileSync(join(ROOT, "js/ui-tableau.js"), "utf8");
+  check("les dernieres extractions portent le commentaire au survol",
+    /data-info="' \+ attrTitre\(e\.commentaire\)/.test(tableau));
+  /* Pas de title natif EN PLUS sur ces lignes : deux infobulles au meme endroit
+     se superposeraient. */
+  check("et le title natif ne s'y ajoute pas",
+    /e\.commentaire[\s\S]{0,160}title="/.test(tableau) &&
+    !/role="button" title="/.test(tableau));
+}
+
+/* L'APPUI LONG N'AGIT PLUS EN PLUS D'EXPLIQUER.
+
+   Sur telephone, l'appui long est le SEUL moyen d'ouvrir la bulle de definition
+   d'un descripteur. Il ouvrait la bulle puis laissait partir le clic, qui
+   selectionnait le descripteur : lire une definition la cochait. Le commentaire
+   du code affirmait deja que ca ne devait pas arriver, sans que rien ne
+   l'empeche. */
+{
+  const noyau = readFileSync(join(ROOT, "js/ui-noyau.js"), "utf8");
+  const f = noyau.slice(noyau.indexOf("function activerAppuiLong"),
+    noyau.indexOf("function", noyau.indexOf("function activerAppuiLong") + 10));
+  check("l'appui long avale le clic qui le suit",
+    /addEventListener\("click"[\s\S]{0,320}stopPropagation\(\)/.test(f));
+  /* En CAPTURE : la capture precede la cible et la remontee, c'est ce qui permet
+     d'empecher le gestionnaire delegue pose sur le meme conteneur. */
+  check("en phase de capture, sinon le gestionnaire delegue passe avant",
+    /addEventListener\("click",[\s\S]{0,400}\}, true\)/.test(f));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

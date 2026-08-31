@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.68,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.69,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -1007,6 +1007,26 @@ Les séparer serait la garantie qu'ils divergent un jour, la classe suivant et
 l'attribut restant figé. Un test compte les `classList.toggle("actif")` restants
 et refuse qu'ils se multiplient.
 
+## L'infobulle maison, définie une seule fois
+
+Les `title` natifs attendent une seconde, ignorent le thème et écrasent les
+sauts de ligne. Le site a donc sa propre bulle : un `::after` alimenté par
+l'attribut `data-info`, visible au survol, au focus clavier, et sur
+`.info-ouverte` que l'appui long pose au téléphone.
+
+Elle était écrite DEUX fois dans la feuille de style, aux sélecteurs près : une
+pour les pilules et les tags, une pour le ratio de la ligne live. Ajouter le
+commentaire des dernières extractions en aurait fait une troisième, donc trois
+endroits à corriger le jour où la bulle change. La règle porte maintenant sur
+l'ATTRIBUT : tout élément qui pose `data-info` obtient la bulle, aujourd'hui et
+demain. Un test vérifie qu'il n'en existe qu'une seule définition.
+
+Deux détails qui comptent. Un `data-info` VIDE n'ouvre rien, sinon une bulle
+vide apparaîtrait sur les descripteurs sans définition. Et la variante
+`.info-dessous` ouvre la bulle SOUS l'élément, indispensable dans une liste où
+une bulle au-dessus recouvrirait la ligne précédente, et où celle de la
+première ligne recouvrirait le titre de la carte.
+
 ## L'appui long, pour les définitions
 
 Les bulles d'aide s'ouvraient au survol et au clavier. Sur téléphone le survol
@@ -2010,6 +2030,9 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.69 : le commentaire d'une tasse s'affiche au survol de sa ligne dans les
+  cinq dernières. Et l'appui long ne sélectionne plus ce qu'il devait seulement
+  expliquer.
 - v7.68 : les cinq dernières extractions montrent leurs MESURES, ratio en tête,
   sur une deuxième ligne.
 - v7.67 : une nouvelle saisie porte l'heure qu'il est, et plus celle de la tasse

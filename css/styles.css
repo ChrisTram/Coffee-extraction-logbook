@@ -189,18 +189,9 @@ button { font-family: inherit; }
 }
 .param-sans { color: var(--attenue); }
 
-/* Le ratio de la ligne live porte son explication au survol, meme bulle que les
-   pilules de diagnostic. */
-.aide-ratio { position: relative; cursor: help; border-bottom: 1px dotted var(--attenue); }
-.aide-ratio[data-info]:hover::after, .aide-ratio[data-info]:focus-visible::after,
-.aide-ratio[data-info].info-ouverte::after {
-  content: attr(data-info);
-  position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
-  width: max-content; max-width: 300px; padding: 8px 11px; border-radius: 9px;
-  border: 1px solid var(--lignes); background: var(--tooltip-fond); color: var(--tooltip-texte);
-  font-size: 0.76rem; font-weight: 400; line-height: 1.4; text-align: left;
-  white-space: pre-line; box-shadow: 0 5px 16px rgba(30, 18, 8, 0.25); z-index: 60;
-}
+/* Le ratio de la ligne live porte son explication au survol. La bulle est
+   commune, voir [data-info] ; il ne reste ici que son propre soulignement. */
+.aide-ratio { cursor: help; border-bottom: 1px dotted var(--attenue); }
 
 /* Alerte de contradiction sous les pilules de diagnostic. */
 .diag-alerte { display: block; color: var(--accent-fort); margin-bottom: 4px; }
@@ -1051,15 +1042,20 @@ input:focus, select:focus, textarea:focus {
   color: var(--accent-fort);
 }
 
-/* Infobulle de définition au survol (ou au focus clavier) des pilules de
-   diagnostic et des tags descripteurs, juste au dessus du bouton. */
-.pilule, .tag { position: relative; }
-.pilule[data-info]:hover::after,
-.pilule[data-info]:focus-visible::after,
-.pilule[data-info].info-ouverte::after,
-.tag[data-info]:hover::after,
-.tag[data-info]:focus-visible::after,
-.tag[data-info].info-ouverte::after {
+/* ---------- L'infobulle maison, definie UNE fois ----------
+
+   Tout element portant data-info l'obtient : pilules de diagnostic, tags
+   descripteurs, ratio de la ligne live, lignes des dernieres extractions. Elle
+   etait ecrite deux fois, aux selecteurs pres ; une troisieme copie aurait
+   garanti la derive, donc la regle porte sur l'ATTRIBUT et non sur des classes.
+
+   Preferee a l'infobulle native : instantanee la ou le title attend une seconde,
+   fidele au theme, et elle respecte les sauts de ligne. Sur telephone, l'appui
+   long pose .info-ouverte, voir activerAppuiLong(). */
+[data-info] { position: relative; }
+[data-info]:hover::after,
+[data-info]:focus-visible::after,
+[data-info].info-ouverte::after {
   content: attr(data-info);
   position: absolute;
   bottom: calc(100% + 8px);
@@ -1077,16 +1073,28 @@ input:focus, select:focus, textarea:focus {
   line-height: 1.4;
   text-align: left;
   /* pre-line : la bulle des diagnostics tient sur deux lignes, quand cocher
-     puis quoi faire. */
+     puis quoi faire. Un commentaire d'extraction peut aussi en compter. */
   white-space: pre-line;
   box-shadow: 0 5px 16px rgba(30, 18, 8, 0.25);
   z-index: 60;
   pointer-events: none;
 }
-.pilule[data-info=""]:hover::after,
-.pilule[data-info=""]:focus-visible::after,
-.tag[data-info=""]:hover::after,
-.tag[data-info=""]:focus-visible::after { content: none; }
+/* Un data-info VIDE ne doit pas ouvrir une bulle vide. */
+[data-info=""]:hover::after,
+[data-info=""]:focus-visible::after,
+[data-info=""].info-ouverte::after { content: none; }
+/* Sous l'element plutot qu'au-dessus. Dans une LISTE, une bulle au-dessus
+   recouvre la ligne precedente, et celle de la premiere ligne recouvre le titre
+   de la carte. */
+[data-info].info-dessous:hover::after,
+[data-info].info-dessous:focus-visible::after,
+[data-info].info-dessous.info-ouverte::after {
+  bottom: auto;
+  top: calc(100% + 6px);
+}
+
+/* Les pilules et les tags gardent leur reperage pour la bulle commune. */
+.pilule, .tag { position: relative; }
 
 .saisie-actions { display: flex; gap: 12px; align-items: center; margin-top: 20px; flex-wrap: wrap; }
 
