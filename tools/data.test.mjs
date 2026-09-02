@@ -1460,8 +1460,10 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
       return !!m && Number(m[1]) < 0.6;
     }),
     tendances.join(" | "));
-  check("les grammes aussi ont leur teinte dans les deux themes",
-    [...css.matchAll(/--grammes: ([^;]+);/g)].length === 2);
+  /* --grammes est mort avec la courbe des grammes en v7.68. Une variable morte
+     dans une palette est un piege pour la prochaine lecture. */
+  check("la teinte des grammes est partie avec la courbe",
+    !css.includes("--grammes"), "elle traine encore dans la palette");
 
   /* Pas de rouge : dans ce site le rouge est --danger, il annonce une mauvaise
      nouvelle. Une tendance de notes qui monte est une bonne nouvelle. */
@@ -1644,6 +1646,38 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
      d'empecher le gestionnaire delegue pose sur le meme conteneur. */
   check("en phase de capture, sinon le gestionnaire delegue passe avant",
     /addEventListener\("click",[\s\S]{0,400}\}, true\)/.test(f));
+}
+
+/* LES COULEURS DE MACHINE.
+
+   Elles decrivent une MACHINE et rien d'autre. Le trio vient de la palette
+   Okabe-Ito, la reference des couleurs sures pour le daltonisme : bleu,
+   vermillon, rose-violet. "Les deux machines" portait un vert emeraude #1baf7a,
+   sur lui aussi mais criard sur une palette entierement chaude, au point que
+   Chris a demande a ne plus le voir.
+
+   Ce controle empeche surtout le retour discret de l'emeraude par une couleur
+   ecrite en dur quelque part. */
+{
+  const charts = readFileSync(join(ROOT, "js/charts.js"), "utf8");
+  const grind = readFileSync(join(ROOT, "js/grind.js"), "utf8");
+  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+
+  /* On cherche la couleur ECRITE, pas citee : les deux commentaires qui
+     expliquent pourquoi elle est partie ont le droit de la nommer. */
+  const enDur = [["js/charts.js", charts], ["js/grind.js", grind],
+    ["css/styles.css", css], ["index.html", html]]
+    .flatMap(([nom, src]) => src.split("\n")
+      .filter(l => /#1baf7a/i.test(l) && !/^\s*(\/\/|\*|\/\*)/.test(l) && !/piquait|criard/.test(l))
+      .map(l => nom + " : " + l.trim().slice(0, 60)));
+  check("l'emeraude n'est plus utilisee nulle part", enDur.length === 0, enDur.join(" | "));
+
+  const trio = [...charts.matchAll(/const C_(?:BRIKKA|SWITCH|DEUX) = "(#[0-9a-f]{6})"/gi)].map(m => m[1]);
+  check("les trois machines gardent trois couleurs distinctes",
+    trio.length === 3 && new Set(trio).size === 3, trio.join(", "));
+  check("et le repere du moulin suit la couleur des deux machines",
+    grind.includes(trio[2] || "?"), trio[2]);
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);

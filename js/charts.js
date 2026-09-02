@@ -1,17 +1,20 @@
 // Graphiques : Chart.js embarqué localement, plus heatmap et réglette en SVG maison.
-// Couleurs de données validées pour le daltonisme, ne pas les changer :
-// Brikka #2a78d6, Switch #eb6834, les deux machines #1baf7a.
-// Ces trois-là décrivent une MACHINE. Deux séries du graphique principal, la
-// tendance et les grammes, empruntaient le vert des deux machines faute d'avoir
-// leur propre couleur : elles étaient donc identiques entre elles et vertes sans
-// raison. Elles ont maintenant --tendance et --grammes, qui suivent le thème.
+// Couleurs de données validées pour le daltonisme, ne pas les changer à la
+// légère : Brikka #2a78d6, Switch #eb6834, les deux machines #cc79a7.
+// Ces trois-là décrivent une MACHINE, et rien d'autre ne doit les emprunter.
+//
+// Le trio vient de la palette Okabe-Ito, la référence des couleurs sûres pour le
+// daltonisme : bleu, vermillon, rose-violet. Les deux machines portaient un vert
+// émeraude #1baf7a, sûr lui aussi mais criard sur une palette entièrement chaude
+// et impossible à regarder longtemps. Le rose poudré garde la propriété et perd
+// le cri.
 "use strict";
 
 const CHARTS = (() => {
 
   const C_BRIKKA = "#2a78d6";
   const C_SWITCH = "#eb6834";
-  const C_DEUX = "#1baf7a";
+  const C_DEUX = "#cc79a7";
 
   const C_DIAG = {
     "Équilibré": C_DEUX,

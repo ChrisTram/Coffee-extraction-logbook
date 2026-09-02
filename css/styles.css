@@ -1,14 +1,17 @@
 /* Carnet d'extraction : styles.
    Palette tons café, mode sombre par défaut, bascule clair.
-   Couleurs de données (ne pas changer, validées daltonisme) :
-   Brikka #2a78d6, Switch #eb6834, les deux machines #1baf7a. */
+   Couleurs de données (validées daltonisme, palette Okabe-Ito) :
+   Brikka #2a78d6, Switch #eb6834, les deux machines #cc79a7. */
 
 /* ---------- Variables ---------- */
 
 :root {
   --brikka: #2a78d6;
   --switch: #eb6834;
-  --deux: #1baf7a;
+  /* Rose poudré et non plus vert émeraude. Le trio bleu / vermillon / rose-violet
+     est celui d'Okabe-Ito, sûr pour le daltonisme ; l'émeraude l'était aussi mais
+     criait sur une palette entièrement chaude. */
+  --deux: #cc79a7;
 
   --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -38,13 +41,12 @@ html[data-theme="sombre"] {
   --avert-fond: rgba(217, 135, 65, 0.12);
   --avert-bord: rgba(217, 135, 65, 0.45);
   --danger: #e06c5a;
-  --ok: #1baf7a;
+  /* Vert SAUGE et non plus émeraude. Vert égale bon est une convention trop
+     utile pour y renoncer, mais #1baf7a piquait les yeux sur le fond brun. */
+  --ok: #6fa98a;
   /* Graphique principal. La tendance lisse la ligne des notes : même teinte que
-     l'accent, en translucide, pour se lire comme un fond. Les grammes sont une
-     quatrième série sur une palette chaude, d'où l'ardoise froide et désaturée,
-     assez présente pour se détacher, assez terne pour ne pas crier. */
+     l'accent, en translucide, pour se lire comme un fond. */
   --tendance: rgba(217, 135, 65, 0.40);
-  --grammes: #7fa0ad;
 
   --hm0: #2b1d10;
   --hm1: #54371c;
@@ -77,7 +79,6 @@ html[data-theme="clair"] {
   --danger: #b3402e;
   --ok: #157a57;
   --tendance: rgba(143, 95, 51, 0.34);
-  --grammes: #5f8492;
 
   --hm0: #efe6d3;
   --hm1: #e7d3ae;
@@ -902,9 +903,9 @@ input:focus, select:focus, textarea:focus {
 }
 .badge-reference {
   font-size: 0.68rem;
-  background: color-mix(in srgb, #1baf7a 15%, var(--panneau));
-  color: #1baf7a;
-  border: 1px solid color-mix(in srgb, #1baf7a 45%, transparent);
+  background: color-mix(in srgb, var(--deux) 15%, var(--panneau));
+  color: var(--deux);
+  border: 1px solid color-mix(in srgb, var(--deux) 45%, transparent);
   border-radius: 999px;
   padding: 2px 8px;
   font-weight: 700;
@@ -1348,7 +1349,9 @@ input:focus, select:focus, textarea:focus {
 .badge-defaut {
   font-size: 0.7rem;
   background: var(--deux);
-  color: #fff;
+  /* Texte SOMBRE sur ce fond : du blanc n'y atteignait que 2,6:1, et n'atteignait
+     pas mieux sur l'ancien vert. Sur un rose poudré, le sombre monte à 7:1. */
+  color: #2e211a;
   border-radius: 999px;
   padding: 2px 9px;
   font-weight: 700;
@@ -1414,7 +1417,7 @@ input:focus, select:focus, textarea:focus {
 .dg-boite-perso rect { stroke-width: 2; }
 .dg-boite-eteinte { opacity: 0.35; }
 .dg-boite-compatible { opacity: 1; }
-.dg-boite-compatible rect { stroke: var(--ok); stroke-width: 2; fill: color-mix(in srgb, #1baf7a 12%, var(--panneau-2)); }
+.dg-boite-compatible rect { stroke: var(--ok); stroke-width: 2; fill: color-mix(in srgb, var(--ok) 12%, var(--panneau-2)); }
 .dg-bande { fill: var(--panneau-2); stroke: var(--lignes); }
 .dg-bande-nom { font-size: 9.5px; fill: var(--attenue); font-family: var(--sans); }
 .dg-ref { stroke-width: 1.6; stroke-dasharray: 4 3; opacity: 0.9; }

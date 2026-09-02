@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.69,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.70,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -806,6 +806,41 @@ fermeture par défaut quand les secrets manquent. À relancer à CHAQUE
 modification de `worker/index.js`.
 
 ## 6 quinquies. Une couleur, une série
+
+### Le vert émeraude, et pourquoi il portait deux casquettes
+
+`#1baf7a` se croisait partout, et pour cause : il servait à DEUX choses sans
+rapport.
+
+- Une CATÉGORIE : « les deux machines » dans le comparatif, le repère « réglage
+  commun » de la réglette, le badge d'une recette par défaut, celui d'un café de
+  référence.
+- Un SENS : « bon, compatible », pour les barres de goûts au-dessus de la
+  moyenne, le trait du réglage par défaut, les boîtes de méthodes compatibles.
+
+Les deux sont séparés depuis la v7.70.
+
+**La catégorie prend `#cc79a7`**, le rose-violet de la palette Okabe-Ito. Ce
+n'est pas un choix de goût : cette palette est la référence des couleurs sûres
+pour le daltonisme, et son trio bleu / vermillon / rose-violet est exactement la
+situation ici, où le bleu Brikka et l'orange Switch étaient déjà posés.
+L'émeraude était sûre elle aussi, mais elle criait sur une palette entièrement
+chaude. On garde la propriété, on perd le cri.
+
+**Le sens garde un vert**, en sauge (`#6fa98a` en thème sombre). Vert égale bon
+est une convention trop utile pour y renoncer ; c'était la saturation qui posait
+problème, pas la teinte. Le thème clair était déjà sur un vert profond et n'a
+pas bougé.
+
+Le badge d'une recette par défaut est passé au texte SOMBRE au passage : du
+blanc n'atteignait que 2,6:1 sur ce rose, et n'atteignait pas mieux sur
+l'ancien vert. Sur un rose poudré, le sombre monte à 7:1.
+
+**Reste un point ouvert.** Les barres de goûts opposent `--ok` et `--danger`,
+donc vert et rouge, qui est la paire que le daltonisme confond le plus. Les
+barres portent leur libellé et leur valeur, donc l'information n'est pas
+perdue, mais le codage couleur n'y apporte rien pour un daltonien. À reprendre
+le jour où ça compte.
 
 Le graphique principal empilait QUATRE séries et n'avait que trois couleurs. La
 ligne des grammes de café et la courbe de tendance des notes portaient toutes
@@ -2030,6 +2065,8 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.70 : le vert émeraude quitte les graphiques. « Les deux machines » passe au
+  rose-violet d'Okabe-Ito, et le vert de « bon » devient une sauge.
 - v7.69 : le commentaire d'une tasse s'affiche au survol de sa ligne dans les
   cinq dernières. Et l'appui long ne sélectionne plus ce qu'il devait seulement
   expliquer.

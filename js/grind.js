@@ -56,10 +56,10 @@ const GRIND = (() => {
   ];
 
   // Reglages de reference de Chris. Couleurs du diagramme :
-  // Brikka #2a78d6, commun #1baf7a, Switch #eb6834.
+  // Brikka #2a78d6, commun #cc79a7, Switch #eb6834.
   const REFERENCES = [
     { dial: "1.2.0", crans: 60,  usage: "Brikka", couleur: "#2a78d6" },
-    { dial: "1.5.0", crans: 75,  usage: "Réglage commun aux deux machines", couleur: "#1baf7a" },
+    { dial: "1.5.0", crans: 75,  usage: "Réglage commun aux deux machines", couleur: "#cc79a7" },
     { dial: "1.6.0", crans: 80,  usage: "Switch recettes 1 et 2", couleur: "#eb6834" },
     { dial: "2.0.0", crans: 100, usage: "Switch recettes 5 et 6", couleur: "#eb6834" },
   ];
