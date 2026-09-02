@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.70,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.71,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -1269,6 +1269,40 @@ ligne vide des deux côtés n'est pas affichée du tout.
 
 ## 8 ter. Tableau de l'historique, largeurs figées
 
+### Treize colonnes, et les mêmes infos que la carte d'accueil
+
+Le tableau montrait la date, le café, la machine, la recette, la mouture, le
+ratio, la note et le diagnostic. Donc tout SAUF quatre des paramètres que Chris
+change le plus d'une tasse à l'autre : la dose et l'eau, le temps, la
+température et le feu. Ils vivaient dans le détail dépliable, invisibles tant
+qu'on ne dépliait pas ligne par ligne, ce qui interdit précisément de comparer,
+seule raison d'ouvrir un historique.
+
+Les colonnes ajoutées en v7.71 sont exactement celles de la carte « les 5
+dernières extractions ». Deux vues du même objet doivent dire la même chose.
+
+Le détail dépliable ne les répète plus : son rôle est de montrer ce que la
+ligne ne montre PAS, sinon on lit deux fois la même valeur.
+
+L'écran déborde de la colonne de lecture. `main` est calibré à 1180 px pour du
+TEXTE ; un tableau de treize colonnes n'y tient pas. Il s'élargit jusqu'à
+1560 px par une marge négative valant la moitié du débordement, ce qui le
+recentre sur la fenêtre. Sans `transform`, qui perturberait la transition de
+vue entre écrans. Sur écran étroit la marge redevient positive et tout se
+comporte comme avant.
+
+### Le piège des largeurs figées
+
+Les largeurs sont posées en pourcentages PAR POSITION (`nth-child`). Ajouter
+une colonne demande donc de toucher QUATRE endroits : le `<th>` dans
+`index.html`, le `<td>` dans le rendu, la largeur en CSS, et le `colspan` de la
+ligne de détail. En oublier un ne lève rien du tout : le tableau se décale, les
+largeurs glissent d'une colonne, et le détail déborde ou rétrécit.
+
+`tools/boot.test.mjs` compare donc ce qui est RÉELLEMENT rendu à ce que la page
+déclare : autant de cellules que d'en-têtes, un `colspan` égal, une largeur par
+colonne, et une somme de 100 %. Vérifié en ajoutant un `<th>` seul.
+
 `table-layout: fixed` avec neuf largeurs en pourcentage qui totalisent exactement
 100. Sans ça les colonnes s'élargissaient avec leur contenu (un nom de café long,
 un diagnostic multiple) et poussaient la table au delà du conteneur : d'où un
@@ -2065,6 +2099,9 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.71 : l'historique gagne quatre colonnes, dose et eau, temps, température et
+  feu, et s'élargit pour les recevoir. Les mêmes informations que la carte des
+  cinq dernières extractions.
 - v7.70 : le vert émeraude quitte les graphiques. « Les deux machines » passe au
   rose-violet d'Okabe-Ito, et le vert de « bon » devient une sauge.
 - v7.69 : le commentaire d'une tasse s'affiche au survol de sa ligne dans les

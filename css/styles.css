@@ -1155,9 +1155,19 @@ input:focus, select:focus, textarea:focus {
    texte trop long est tronque avec des points de suspension.
    min-width : en dessous (telephone), on defile plutot que d'ecraser neuf
    colonnes en bouillie. */
+/* L'écran d'historique déborde de la colonne de lecture. main est calibré à
+   1180 px pour du TEXTE ; un tableau de treize colonnes n'y tient pas. La marge
+   négative vaut la moitié du débordement, ce qui le recentre sur la fenêtre sans
+   transform, qui perturberait la transition de vue. Sur un écran étroit la marge
+   redevient positive et tout se comporte comme avant. */
+#ecran-historique {
+  width: min(96vw, 1560px);
+  margin-left: calc((100% - min(96vw, 1560px)) / 2);
+}
+
 .table-historique {
   width: 100%;
-  min-width: 900px;
+  min-width: 1180px;
   table-layout: fixed;
   border-collapse: collapse;
   font-size: 0.88rem;
@@ -1165,15 +1175,19 @@ input:focus, select:focus, textarea:focus {
 /* Somme exacte de 100 pour cent. Les colonnes de texte libre (cafe, recette,
    diagnostic) sont les seules a pouvoir deborder, ce sont donc elles qui
    tronquent; les colonnes calculees ont juste la place qu'il leur faut. */
-.table-historique th:nth-child(1), .table-historique td:nth-child(1) { width: 14%; }
-.table-historique th:nth-child(2), .table-historique td:nth-child(2) { width: 15%; }
-.table-historique th:nth-child(3), .table-historique td:nth-child(3) { width: 9%; }
-.table-historique th:nth-child(4), .table-historique td:nth-child(4) { width: 13%; }
-.table-historique th:nth-child(5), .table-historique td:nth-child(5) { width: 12%; }
-.table-historique th:nth-child(6), .table-historique td:nth-child(6) { width: 7%; }
-.table-historique th:nth-child(7), .table-historique td:nth-child(7) { width: 7%; }
-.table-historique th:nth-child(8), .table-historique td:nth-child(8) { width: 12%; }
-.table-historique th:nth-child(9), .table-historique td:nth-child(9) { width: 11%; }
+.table-historique th:nth-child(1),  .table-historique td:nth-child(1)  { width: 12%; }  /* date */
+.table-historique th:nth-child(2),  .table-historique td:nth-child(2)  { width: 11%; }  /* café */
+.table-historique th:nth-child(3),  .table-historique td:nth-child(3)  { width: 6%; }   /* méthode */
+.table-historique th:nth-child(4),  .table-historique td:nth-child(4)  { width: 10%; }  /* recette */
+.table-historique th:nth-child(5),  .table-historique td:nth-child(5)  { width: 8%; }   /* dose et eau */
+.table-historique th:nth-child(6),  .table-historique td:nth-child(6)  { width: 9%; }   /* mouture */
+.table-historique th:nth-child(7),  .table-historique td:nth-child(7)  { width: 8%; }   /* ratio */
+.table-historique th:nth-child(8),  .table-historique td:nth-child(8)  { width: 6%; }   /* temps */
+.table-historique th:nth-child(9),  .table-historique td:nth-child(9)  { width: 5%; }   /* °C */
+.table-historique th:nth-child(10), .table-historique td:nth-child(10) { width: 5%; }   /* feu */
+.table-historique th:nth-child(11), .table-historique td:nth-child(11) { width: 5%; }   /* note */
+.table-historique th:nth-child(12), .table-historique td:nth-child(12) { width: 9%; }   /* diagnostic */
+.table-historique th:nth-child(13), .table-historique td:nth-child(13) { width: 6%; }   /* actions */
 .table-historique th {
   text-align: left;
   padding: 12px 12px;

@@ -56,6 +56,12 @@
 
   function valeurTri(e, col) {
     if (col === "cafe_nom") return e._c.cafe_nom;
+    /* Les colonnes numériques vides doivent finir en BAS quel que soit le sens,
+       d'où -1 plutôt que "" : une chaîne vide se comparerait comme du texte et
+       remonterait en tête au tri croissant. */
+    if (col === "dose_g" || col === "temps_total_s" || col === "temperature_c" || col === "puissance_feu") {
+      return e[col] === "" || e[col] === undefined ? -1 : Number(e[col]);
+    }
     if (col === "ratio") return e._c.ratio === "" ? -1 : e._c.ratio;
     if (col === "mouture") return e._c.crans === "" ? -1 : e._c.crans;
     if (col === "note_sur_10") return e.note_sur_10 === "" ? -1 : e.note_sur_10;
@@ -88,8 +94,8 @@
   }
 
   /* Détail dépliable : le carnet stocke 22 champs par extraction et le tableau
-     n'en montre que 8. Tout le reste (commentaire, descripteurs, temps, tasse,
-     puissance de feu, volume) disparaissait à l'enregistrement. Le détail se
+     en montre 12. Le reste (commentaire, descripteurs, écoulement, tasse,
+     volume, lait, agitation, coût) disparaissait à l'enregistrement. Le détail se
      rend dans une ligne en colspan, donc sans toucher aux largeurs de colonnes
      qui viennent d'être figées. */
   const detailsOuverts = new Set();
@@ -98,12 +104,10 @@
   function ligneDetail(e) {
     const item = (cle, valeur) => valeur === "" || valeur === undefined || valeur === null
       ? "" : '<div class="detail-item"><span>' + I18N.t(cle) + "</span><b>" + valeur + "</b></div>";
+    /* La dose, l'eau, la température, le feu et le temps total sont devenus des
+       COLONNES en v7.71 : les répéter ici ferait lire deux fois la même chose. Le
+       détail garde son rôle, montrer ce que la ligne ne montre pas. */
     const cases = [
-      item("d_dose", e.dose_g !== "" ? e.dose_g + " g" : ""),
-      item("d_eau", e.eau_g !== "" ? e.eau_g + " g" : ""),
-      item("d_temp", e.temperature_c !== "" ? e.temperature_c + " °C" : ""),
-      item("d_puissance", e.puissance_feu !== "" ? e.puissance_feu + " / 10" : ""),
-      item("d_total", e.temps_total_s !== "" ? fmtTemps(e.temps_total_s) : ""),
       item("d_ecoulement", e.temps_ecoulement_s !== "" ? fmtTemps(e.temps_ecoulement_s) : ""),
       item("d_volume", e.volume_extrait_ml !== "" ? e.volume_extrait_ml + " ml" : ""),
       item("d_eau_ajoutee", e.eau_ajoutee_ml !== "" ? e.eau_ajoutee_ml + " ml" : ""),
@@ -118,7 +122,7 @@
     const tags = (e.descripteurs || "").split("|").filter(Boolean)
       .map(t => '<span class="detail-tag">' + I18N.tag(t) + "</span>").join("");
 
-    return '<tr class="ligne-detail" data-detail="' + e.id + '"><td colspan="9">' +
+    return '<tr class="ligne-detail" data-detail="' + e.id + '"><td colspan="13">' +
       (cases ? '<div class="detail-grille">' + cases + "</div>" : "") +
       (tags ? '<div class="detail-tags">' + tags + "</div>" : "") +
       (e.commentaire ? '<p class="detail-commentaire">' + e.commentaire + "</p>" : "") +
@@ -137,11 +141,19 @@
       '<td title="' + attrTitre(I18N.tr(e._c.cafe_nom)) + '">' + I18N.tr(e._c.cafe_nom) + "</td>" +
       '<td><span class="chip-methode ' + e.methode.toLowerCase() + '">' + e.methode + "</span></td>" +
       '<td title="' + attrTitre(e.recette) + '">' + (e.recette || "") + "</td>" +
+      /* Dose et eau ensemble, comme sur la carte des cinq dernières : ce sont
+         deux moitiés d'un même geste, et les séparer en deux colonnes aurait
+         coûté de la largeur sans rien apprendre. */
+      "<td>" + (e.dose_g !== "" && e.eau_g !== "" ? e.dose_g + " → " + e.eau_g + " <small>g</small>" : "") + "</td>" +
       "<td>" + (e.mouture_dial ? e.mouture_dial + " <small>(" + e._c.microns + " µm)</small>" : e._c.moulu ? "<small>" + I18N.t("paquet") + "</small>" : "") + "</td>" +
       '<td title="' + attrTitre(detailRatio(e._c.ratioBase, e.dose_g, e.eau_g)) + '">' +
       e._c.ratioTexte +
       (e._c.ratioTasseTexte ? ' <small>(' + I18N.t("rt_tasse_court") + " " + e._c.ratioTasseTexte + ")</small>" : "") +
       (e._c.ratioBoisson ? ' <small>(' + I18N.t("rt_boisson_court") + " " + e._c.ratioBoisson + ")</small>" : "") + "</td>" +
+      "<td>" + (e.temps_total_s !== "" ? fmtTemps(e.temps_total_s) : "") + "</td>" +
+      "<td>" + (e.temperature_c !== "" ? e.temperature_c : "") + "</td>" +
+      // Le feu ne veut rien dire hors Brikka : le Switch n'a pas de flamme.
+      "<td>" + (e.methode === "Brikka" && e.puissance_feu !== "" ? e.puissance_feu : "") + "</td>" +
       '<td class="note-cellule">' + (e.note_sur_10 !== "" ? e.note_sur_10 : "") + "</td>" +
       '<td class="chip-diagnostic" title="' + attrTitre(e.diagnostic ? diagsAffiches(e.diagnostic) : "") + '">' +
       (e.diagnostic ? diagsAffiches(e.diagnostic) : "") + "</td>" +

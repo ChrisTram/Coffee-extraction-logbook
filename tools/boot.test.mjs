@@ -583,5 +583,48 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
     champ.value.slice(0, 4) !== "2020", champ.value);
 }
 
+/* LE TABLEAU D'HISTORIQUE A AUTANT DE CELLULES QUE D'EN-TETES.
+
+   Les largeurs de colonnes sont FIGEES en pourcentages dans la feuille de style,
+   par position. Ajouter une colonne demande donc de toucher quatre endroits : le
+   <th> dans index.html, le <td> dans le rendu, la largeur en CSS, et le colspan
+   de la ligne de detail. En oublier un ne leve rien : le tableau se decale, les
+   largeurs glissent d'une colonne, et le detail deborde ou retrecit.
+
+   On compare donc ce qui est REELLEMENT rendu a ce que la page declare. */
+{
+  const htmlPage = readFileSync(join(ROOT, "index.html"), "utf8");
+  /* Borne au thead de CE tableau : l'écran Guide en contient d'autres, et
+     compter les <th> de la page entière donnait 43 colonnes. */
+  const debutTable = htmlPage.indexOf('id="h-table"');
+  const theadHisto = htmlPage.slice(debutTable, htmlPage.indexOf("</thead>", debutTable));
+  const entetes = (theadHisto.match(/<th\b[^>]*>/g) || []).length;
+
+  api.UI.rendreHistorique();
+  const premiere = document.querySelector("#h-corps").innerHTML.split("</tr>")[0];
+  const cellules = (premiere.match(/<td/g) || []).length;
+
+  check("le tableau d'historique rend une ligne", cellules > 0, String(cellules));
+  check("autant de cellules que d'en-tetes",
+    cellules === entetes, cellules + " cellules pour " + entetes + " en-tetes");
+
+  /* Le detail depliable s'etale sur TOUTE la largeur : son colspan doit suivre.
+     Trop court, il laisse des colonnes vides a droite ; trop long, il elargit le
+     tableau d'une colonne fantome. */
+  const histo = readFileSync(join(ROOT, "js/ui-historique.js"), "utf8");
+  const colspan = Number((histo.match(/colspan="(\d+)"/) || [])[1]);
+  check("et le detail deplie couvre exactement ces colonnes",
+    colspan === entetes, colspan + " contre " + entetes);
+
+  /* Les largeurs sont posees par position : il en faut une par colonne, et leur
+     somme doit faire 100, sinon le navigateur redistribue a sa facon. */
+  const cssPage = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  const largeurs = [...cssPage.matchAll(/\.table-historique th:nth-child\((\d+)\)[^{]*\{ width: (\d+)%/g)];
+  check("chaque colonne a sa largeur", largeurs.length === entetes,
+    largeurs.length + " largeurs pour " + entetes + " colonnes");
+  const somme = largeurs.reduce((a, m) => a + Number(m[2]), 0);
+  check("et leur somme fait exactement 100", somme === 100, somme + " %");
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

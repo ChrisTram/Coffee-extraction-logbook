@@ -385,6 +385,8 @@ const I18N_EN = {
       "Température (°C)": "Temperature (°C)",
       "Feu": "Flame",
       "Mouture": "Grind",
+      "Dose et eau": "Dose and water",
+      "Temps": "Time",
       "Enregistrer les valeurs par défaut": "Save the default values",
       "Annuler mes changements": "Discard my changes",
       "Repli quand la recette ne dit rien": "Fallback when the recipe says nothing",
