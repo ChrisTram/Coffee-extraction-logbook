@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.72,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.73,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -415,6 +415,50 @@ entrée dans `js/i18n.en.js`. Et un test de `tools/data.test.mjs` échoue tant
 qu'un attribut français de `index.html` n'a pas la sienne : l'anglais est soit
 complet, soit menteur.
 
+## 5 ter. Eau froide, eau chaude, et le sens d'un conseil de mouture
+
+Trois corrections de données passées en v7.73, avec un pas de schéma pour que
+les recettes déjà enregistrées les reçoivent aussi.
+
+**La Brikka se remplit à l'EAU FROIDE.** C'est la consigne Bialetti pour ce
+modèle : sa soupape lestée est calibrée sur la montée en pression que produit
+l'eau froide, et la remplir chaud fait lâcher la soupape trop tôt. L'eau
+préchauffée est la méthode de la Moka Express, et c'est de là que vient le
+conseil qu'on lit partout. La recette dite « classique » prescrivait 80 à 90
+degrés, donc ni ce que Chris fait, ni ce que le fabricant recommande. La
+variante « eau préchauffée » garde sa méthode mais annonce désormais qu'elle
+applique volontairement celle de l'autre machine, sans quoi la comparaison
+entre les deux serait faussée par un malentendu.
+
+Conséquence à retenir : sur une Brikka, **un temps total de 6 à 8 minutes est
+normal**. La mouture ne cuit pas pendant tout ce temps, elle reste tiède tant
+que l'eau du dessous n'est pas près de bouillir. Le temps qui compte est celui
+qui sépare les premières gouttes des premiers gargouillis.
+
+**Un conseil de mouture doit aller dans le sens du défaut constaté.** La
+variante disait « si l'écoulement dure moins de 10 secondes, la mouture est
+trop fine : passer à 1.4.0 ». Or 1.4.0 vaut 582 µm et 1.5.0 en vaut 624 : le
+remède envoyait vers PLUS FIN alors que le diagnostic disait déjà trop fin.
+Rien ne pouvait le signaler, un dial reste un dial, et suivre le conseil
+aggravait exactement le problème constaté. `tools/data.test.mjs` vérifie
+maintenant la RÈGLE et pas ce cas : partout où un texte diagnostique une
+mouture trop fine et prescrit un dial, ce dial doit être plus grossier que
+celui de la recette, et symétriquement.
+
+**Une recette ne promet pas une mouture qu'elle ne porte pas.** Le Costaud
+(Bloom) annonçait « plus chaud, plus fin, plus long » alors que le pas v5 a
+aligné les dix recettes sur 1.5.0. Le texte dit maintenant que le plus fin est
+un geste à faire à la main.
+
+### Le fixture qui ne pouvait pas échouer
+
+La première version du pas de schéma ciblait `!rec.variante` pour distinguer la
+classique de sa variante. Or la classique porte `variante: "Standard"`, pas une
+chaîne vide : la condition n'aurait JAMAIS été vraie. Le test de migration
+passait quand même, parce que la recette simulée portait une variante vide,
+c'est-à-dire un cas que la vraie donnée ne produit jamais. Un fixture qui
+s'écarte du réel transforme un test en décoration. Il porte maintenant les
+vrais identifiants.
 ## 5. Le moulin (js/grind.js)
 
 Base officielle Timemore : 8,32 µm par cran, 50 crans par rotation, butée
@@ -2122,6 +2166,9 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.73 : la Brikka se remplit à l'eau froide, et un conseil de mouture ne
+  renvoie plus dans le sens du défaut. Deux fiches de guide sur la torréfaction à
+  l'extraction et sur l'eau des deux machines.
 - v7.72 : une nouvelle saisie arrive avec un café déjà choisi, le premier actif
   de la liste. Le panneau rapide aussi.
 - v7.71 : l'historique gagne quatre colonnes, dose et eau, temps, température et

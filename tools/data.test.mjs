@@ -520,9 +520,18 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   const data = readFileSync(join(ROOT, "js/data.js"), "utf8");
   const bloc = data.slice(data.indexOf("const PAS_DE_SCHEMA"), data.indexOf("function migrerDonnees"));
   check("les pas ne dependent plus du stockage local", !bloc.includes("localStorage"));
+  /* Les numeros doivent se suivre de 1 a SCHEMA_ACTUEL, sans trou ni doublon.
+     La borne est LUE dans la source au lieu d'etre ecrite ici : le vrai
+     invariant est que la liste et le compteur restent d'accord, et une liste
+     figee dans le test obligeait a le retoucher a chaque pas ajoute, ce qui est
+     exactement le moment ou on ne veut pas d'un test a modifier. */
+  const pas = [...bloc.matchAll(/\{ v: (\d+)/g)].map(m => Number(m[1]));
+  const actuel = Number((data.match(/const SCHEMA_ACTUEL = (\d+)/) || [])[1]);
   check("les numeros de pas se suivent sans trou",
-    [...bloc.matchAll(/\{ v: (\d+)/g)].map(m => Number(m[1])).join() === "1,2,3,4,5,6",
-    [...bloc.matchAll(/\{ v: (\d+)/g)].map(m => Number(m[1])).join());
+    pas.join() === pas.map((_, i) => i + 1).join(), pas.join());
+  check("et le dernier pas est la version courante du schema",
+    pas.length === actuel && pas[pas.length - 1] === actuel,
+    pas.length + " pas pour SCHEMA_ACTUEL = " + actuel);
 }
 
 /* Le service worker doit precacher TOUS les scripts charges par index.html.
@@ -1678,6 +1687,89 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     trio.length === 3 && new Set(trio).size === 3, trio.join(", "));
   check("et le repere du moulin suit la couleur des deux machines",
     grind.includes(trio[2] || "?"), trio[2]);
+}
+
+/* LES CONSEILS DE MOUTURE VONT DANS LE BON SENS.
+
+   La recette "Brikka classique (eau prechauffee)" disait : "si l'ecoulement dure
+   moins de 10 secondes, la mouture est trop fine : passer a 1.4.0". Or 1.4.0
+   vaut 582 um et 1.5.0 en vaut 624 : le remede envoyait vers PLUS FIN alors que
+   le diagnostic disait deja trop fin. Rien ne pouvait le signaler, un dial reste
+   un dial, et suivre le conseil aggravait exactement le probleme constate.
+
+   Ce controle est GENERAL : partout ou un texte diagnostique une mouture trop
+   fine et prescrit un dial, ce dial doit etre plus GROSSIER que la reference, et
+   inversement. */
+{
+  const recettes = new Function(readFileSync(join(ROOT, "js/recettes.js"), "utf8") +
+    "\nreturn RECETTES_DEPART;")();
+  // rotation.numero.cran, 5 crans par numero, 10 numeros par rotation.
+  const crans = dial => {
+    const p = String(dial).split(".").map(Number);
+    return p.length === 3 && p.every(n => !isNaN(n)) ? p[0] * 50 + p[1] * 5 + p[2] : null;
+  };
+
+  const fautes = [];
+  for (const r of recettes) {
+    for (const champ of ["note", "pourQui", "ratioTexte", "totalTexte"]) {
+      const txt = String(r[champ] || "");
+      // "trop fine ... passer a X.Y.Z" et sa symetrie.
+      for (const m of txt.matchAll(/trop (fine|grossi[eè]re)[^.]{0,120}?(\d+\.\d+\.\d+)/g)) {
+        const vise = crans(m[2]), ref = crans(r.dial);
+        if (vise === null || ref === null) continue;
+        const plusGrossier = vise > ref;
+        if (m[1] === "fine" && !plusGrossier) fautes.push(r.nom + " : trop fine mais renvoie vers " + m[2]);
+        if (m[1] !== "fine" && plusGrossier) fautes.push(r.nom + " : trop grossiere mais renvoie vers " + m[2]);
+      }
+    }
+  }
+  check("un conseil de mouture ne renvoie jamais dans le sens du defaut",
+    fautes.length === 0, fautes.join(" | "));
+
+  /* La Brikka se remplit a l'EAU FROIDE, consigne Bialetti pour ce modele : sa
+     soupape lestee est calibree sur cette montee en pression. L'eau prechauffee
+     est la methode de la Moka Express, et la recette dite "classique"
+     prescrivait 80 a 90 degres. */
+  const classique = recettes.find(r => r.famille === "brikka-classique" && r.variante === "Standard");
+  const etapes = (classique.etapes || []).map(e => e.texte).join(" ");
+  check("la Brikka classique part a l'eau froide",
+    /eau FROIDE/.test(etapes), etapes.slice(0, 90));
+  check("et elle dit pourquoi, sinon le conseil se perd au premier doute",
+    /Bialetti/.test(etapes) && /Moka Express/.test(etapes));
+
+  /* La variante eau prechauffee applique VOLONTAIREMENT l'autre methode : sans
+     le dire, la comparaison entre les deux serait faussee par un malentendu. */
+  const variante = recettes.find(r => r.variante === "Eau préchauffée");
+  check("la variante annonce qu'elle applique l'autre methode",
+    /Moka Express/.test(String(variante.pourQui || "")));
+
+  /* Le pas v5 a aligne les dix recettes sur 1.5.0 : un texte ne peut plus
+     promettre "plus fin" sans dire que c'est un geste a faire a la main. */
+  const promesses = recettes.filter(r => {
+    const t = String(r.pourQui || "");
+    /* Promettre "plus fin" est legitime SI le texte dit que c est un geste a
+       faire a la main : ce qui ne l est pas, c est de le promettre comme si la
+       fiche le portait, alors qu elle affiche 1.5.0 comme les neuf autres. */
+    return /plus fin/.test(t) && !/à la main/.test(t) && r.dial === "1.5.0";
+  });
+  check("aucune recette ne promet une mouture qu'elle ne porte pas",
+    promesses.length === 0, promesses.map(r => r.nom).join(", "));
+}
+
+/* LE GUIDE DIT CE QUE LES RECETTES FONT.
+
+   Il expliquait ce QU'EST la torrefaction sans une ligne sur ce qu'il faut
+   changer pour extraire, et ne mentionnait nulle part la difference d'eau entre
+   la Brikka et la Moka Express, qui est pourtant la plus consequente a l'usage. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  check("le guide traite le niveau de torrefaction a l'extraction",
+    html.includes("Clair, medium, foncé, quoi changer"));
+  check("et la difference d'eau entre les deux machines",
+    html.includes("Eau froide ou eau chaude, ça dépend de la machine"));
+  // Les deux fiches doivent porter la meme consigne que les recettes.
+  check("le guide et les recettes disent la meme chose sur l'eau",
+    /La Brikka se remplit à l'EAU FROIDE/.test(html) && /Moka Express/.test(html));
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);

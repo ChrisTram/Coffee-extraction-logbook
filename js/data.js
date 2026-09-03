@@ -459,7 +459,7 @@ const DATA = (() => {
 
      Chaque pas ne touche QUE la valeur semée d'avant. Un pas qui écraserait un
      réglage choisi volontairement serait un bug, pas une migration. */
-  const SCHEMA_ACTUEL = 6;
+  const SCHEMA_ACTUEL = 7;
 
   // Rattrapage de la puissance de feu des recettes Brikka : l'échelle de Chris a
   // bougé deux fois, 3 puis 4 puis 2.
@@ -523,6 +523,55 @@ const DATA = (() => {
         rec.note = String(rec.note || "").split("225 g").join("240 g").split("affiche 225").join("affiche 240");
         estampiller(rec);
         touche = true;
+      });
+      return touche;
+    } },
+
+    /* Trois corrections de TEXTE, vérifiées le 3 septembre 2026.
+
+       1. La Brikka se remplit à l'EAU FROIDE. C'est la consigne Bialetti pour ce
+          modèle précisément : sa soupape lestée est calibrée sur la montée en
+          pression que produit l'eau froide, et l'eau préchauffée est la méthode
+          de la Moka Express. La recette dite "classique" prescrivait 80 à 90
+          degrés, donc ni ce que Chris fait ni ce que le fabricant recommande.
+
+       2. "Écoulement sous 10 secondes, la mouture est trop fine : passer à
+          1.4.0" envoyait dans le mauvais sens. 1.4.0 vaut 582 µm, soit PLUS FIN
+          que 1.5.0 qui vaut 624. Le diagnostic est juste, un lit trop serré fait
+          lâcher la soupape d'un coup ; le remède doit être plus GROSSIER.
+
+       3. Le Costaud (Bloom) promettait "plus fin" alors que le pas v5 a aligné
+          les dix recettes sur 1.5.0. Le texte décrivait un réglage que la fiche
+          ne porte plus.
+
+       Chaque remplacement est CIBLÉ sur l'ancien texte : une recette que Chris
+       aurait déjà réécrite à la main n'est pas touchée. */
+    { v: 7, nom: "eau froide Brikka et sens de la mouture", appliquer: () => {
+      let touche = false;
+      const remplacer = (rec, champ, avant, apres) => {
+        if (String(rec[champ] || "").indexOf(avant) < 0) return false;
+        rec[champ] = String(rec[champ]).split(avant).join(apres);
+        return true;
+      };
+      state.recettes.forEach(rec => {
+        let bouge = false;
+        // La classique porte variante "Standard", pas une chaine vide.
+        if (rec.famille === "brikka-classique" && rec.variante !== "Eau préchauffée") {
+          const etapes = (rec.etapes || []).map(e => {
+            if (String(e.texte).indexOf("Préchauffer l'eau à 80 ou 90 degrés") < 0) return e;
+            bouge = true;
+            return { ...e, texte: "Remplir la chaudière à l'eau FROIDE : c'est la consigne Bialetti pour la Brikka, dont la soupape lestée est calibrée sur cette montée en pression. L'eau préchauffée est la méthode de la Moka Express, pas celle-ci." };
+          });
+          if (bouge) rec.etapes = etapes;
+        }
+        if (remplacer(rec, "note", "la mouture est trop fine : passer à 1.4.0.",
+          "la mouture est trop fine et la soupape lâche d'un coup : passer à 1.6.0, plus grossier.")) bouge = true;
+        if (remplacer(rec, "pourQui",
+          "seuls la température de départ, la flamme et la mouture changent.",
+          "seuls la température de départ, la flamme et la mouture changent. À savoir avant de comparer : Bialetti recommande l'eau FROIDE pour la Brikka, l'eau préchauffée étant la méthode de la Moka Express. Cette recette applique donc volontairement l'autre méthode.")) bouge = true;
+        if (remplacer(rec, "pourQui", "Plus chaud, plus fin, plus long.",
+          "Plus chaud et plus long. Pour le plus fin, descendre d'un cran à la main : les dix recettes portent 1.5.0 depuis que je ne recompte plus les crans à chaque changement de machine.")) bouge = true;
+        if (bouge) { estampiller(rec); touche = true; }
       });
       return touche;
     } },
