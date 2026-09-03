@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.73,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.74,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -584,6 +584,69 @@ chez Chris (1.5.0, son réglage unique) et 21 % de remplissage, donc deux groupe
 de trois ne pouvaient jamais exister. La mouture reste examinée, mais PARMI les
 autres leviers, ce qui la fait se taire proprement quand elle ne varie pas.
 
+## 6 quaterdecies. Les extractions ratées
+
+Une tasse ratée décrit un GESTE MANQUÉ, pas un réglage. La garder dans les
+analyses fait condamner un réglage correct : c'est du bruit qui se fait passer
+pour du signal. Le drapeau `ratee` la met de côté.
+
+### La ligne de partage, et elle tient en une phrase
+
+**Ce qui décrit CE QUI S'EST PASSÉ compte tout. Ce qui conseille CE QU'IL FAUT
+FAIRE écarte les ratées.**
+
+| Compte tout | Écarte les ratées |
+| --- | --- |
+| nombre de tasses, aujourd'hui, semaine, total | note moyenne et note 7 jours |
+| grammes consommés, coût, stock des sachets | insights et constats par café |
+| caféine | tendance et note quotidienne du graphe 30 jours |
+| calendrier d'activité et heatmap | duel des machines, nuage de mouture |
+| les cinq dernières extractions | goûts, anneau des diagnostics, note par recette |
+| l'historique et son export | l'écran Mes meilleurs réglages |
+
+Le café a bien été utilisé : une erreur de geste n'efface ni la dépense ni la
+journée. Mais elle n'apprend rien sur un réglage.
+
+Un seul endroit décide, `extAnalysables()` dans le noyau, à côté de
+`extAvecCalculs()`. Si chaque écran filtrait à sa façon, les chiffres
+finiraient par ne plus se recouper d'une carte à l'autre.
+
+### Trois états, une seule case
+
+La colonne vaut 1 ou vide. **Vide veut dire « pas dit », pas « réussie »**, et
+c'est la valeur de toutes les tasses antérieures au drapeau. Marquer ce qui est
+raté est un geste rare ; certifier chaque réussite serait une corvée
+quotidienne. Aucune migration n'a donc été nécessaire : une colonne absente
+d'un vieux CSV relit vide, ce qui est exactement le bon défaut.
+
+La case est TOUJOURS visible dans le formulaire, à la différence des trois
+autres options qui apparaissent selon la machine ou la recette : rater une
+extraction n'est propre à aucune machine, et une case cachée ne se coche pas.
+Elle est en dernier, parce que c'est un jugement porté après coup.
+
+Le panneau rapide ne la porte pas : il sert à noter une tasse en trois gestes,
+et on ne sait pas encore si elle est ratée au moment où on la note.
+
+### Réintégrer d'un clic
+
+Un bandeau sur le tableau de bord annonce combien de tasses sont écartées et
+permet de les remettre. Il est placé AVANT les chiffres : il dit ce qu'ils
+valent, et le lire après serait apprendre trop tard que la moyenne ne portait
+pas sur tout. Il reste masqué tant qu'aucune tasse n'est marquée.
+
+La bascule existe parce que « j'ai merdé » et « ce réglage ne marche pas » ne
+se distinguent pas toujours de l'extérieur. C'est une préférence de LECTURE,
+donc locale comme le thème : elle change ce que les chiffres racontent, pas les
+données, et il n'y a rien à synchroniser.
+
+### Le faux localStorage qui ne stockait rien
+
+Le harnais de démarrage acceptait les écritures et renvoyait toujours `null`.
+Toute préférence passant par `localStorage` était donc intestable, et un test
+qui la manipulait passait au vert sans rien vérifier. C'est ce qui a fait
+échouer le premier essai de ce test, et c'est la troisième fois de la session
+qu'un faux trop pauvre cache le comportement qu'il devrait montrer. Le harnais
+a maintenant un vrai stockage en mémoire.
 ## 6 terdecies. La courbe de tendance
 
 Les notes brutes sautent trop pour se lire : chez Chris elles font 8, puis 4, puis
@@ -2166,6 +2229,8 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.74 : une extraction peut être marquée RATÉE. Badge, filtre dans
+  l'historique, et exclusion des analyses avec un bandeau pour les réintégrer.
 - v7.73 : la Brikka se remplit à l'eau froide, et un conseil de mouture ne
   renvoie plus dans le sens du défaut. Deux fiches de guide sur la torréfaction à
   l'extraction et sur l'eau des deux machines.

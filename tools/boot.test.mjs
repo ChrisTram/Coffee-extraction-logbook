@@ -173,7 +173,17 @@ const indexedDB = {
   },
 };
 
-const localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
+/* Un VRAI stockage en mémoire, pas un puits sans fond. L'ancien faux acceptait
+   les écritures et renvoyait toujours null : toute préférence qui passe par
+   localStorage était donc intestable, et un test qui la manipulait passait au
+   vert sans rien vérifier. C'est le cas de l'inclusion des ratées dans les
+   analyses, du thème et des bips. */
+const magasinLocal = new Map();
+const localStorage = {
+  getItem: k => (magasinLocal.has(k) ? magasinLocal.get(k) : null),
+  setItem(k, v) { magasinLocal.set(k, String(v)); },
+  removeItem(k) { magasinLocal.delete(k); },
+};
 const window = {
   _handlers: {},
   addEventListener(nom, fn) { this._handlers[nom] = fn; },
@@ -654,6 +664,60 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
     largeurs.length + " largeurs pour " + entetes + " colonnes");
   const somme = largeurs.reduce((a, m) => a + Number(m[2]), 0);
   check("et leur somme fait exactement 100", somme === 100, somme + " %");
+}
+
+/* LES EXTRACTIONS RATEES : ecartees des CONSEILS, gardees dans les COMPTAGES.
+
+   Une tasse ratee decrit un geste manque, pas un reglage. La garder dans les
+   analyses peut faire condamner un reglage correct. Mais Chris a bien utilise le
+   cafe, donc les comptages la gardent : tasses, grammes, cout, calendrier.
+
+   C'est toute la regle, et elle tient dans les deux premiers controles. */
+{
+  const total = api.DATA.state.extractions.length;
+  const cible = api.DATA.state.extractions[0];
+  cible.ratee = 1;
+
+  check("une tasse marquee est reconnue comme ratee", api.UI.estRatee(cible));
+  check("et les autres ne le sont pas", !api.UI.estRatee(api.DATA.state.extractions[1]));
+
+  api.UI.basculerRatees(false);
+  check("les analyses l'ecartent par defaut",
+    api.UI.extAnalysables().length === total - 1,
+    api.UI.extAnalysables().length + " sur " + total);
+  check("mais les comptages la gardent, le cafe a bien ete utilise",
+    api.UI.extAvecCalculs().length === total, String(api.UI.extAvecCalculs().length));
+
+  /* "J'ai merde" et "ce reglage ne marche pas" ne se distinguent pas toujours de
+     l'exterieur : Chris doit pouvoir les reintegrer d'un clic. */
+  api.UI.basculerRatees(true);
+  check("et il peut les reintegrer", api.UI.extAnalysables().length === total,
+    String(api.UI.extAnalysables().length));
+  api.UI.basculerRatees(false);
+
+  // Le badge, la ou il doit se voir.
+  api.UI.rendreTableau();
+  check("le badge apparait sur les cinq dernieres",
+    document.querySelector("#dernieres-liste").innerHTML.includes("badge-ratee"));
+
+  /* L'historique est le JOURNAL : il montre tout par defaut, et c'est le filtre
+     qui trie. Une tasse ratee doit y rester visible, c'est justement la que
+     Chris veut la retrouver. */
+  document.querySelector("#h-ratee").value = "";
+  check("l'historique les garde par defaut",
+    api.UI.filtrerHistorique().length === total, String(api.UI.filtrerHistorique().length));
+  document.querySelector("#h-ratee").value = "ratee";
+  check("le filtre isole les ratees",
+    api.UI.filtrerHistorique().length === 1, String(api.UI.filtrerHistorique().length));
+  document.querySelector("#h-ratee").value = "ok";
+  check("et sait aussi les mettre de cote",
+    api.UI.filtrerHistorique().length === total - 1, String(api.UI.filtrerHistorique().length));
+  document.querySelector("#h-ratee").value = "";
+
+  // La colonne doit survivre a un aller-retour CSV, sinon le drapeau se perd.
+  check("la colonne ratee est dans le format d'echange",
+    readFileSync(join(ROOT, "js/data.js"), "utf8").includes('"puissance_feu", "ratee"'));
+  cible.ratee = "";
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);

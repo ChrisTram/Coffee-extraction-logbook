@@ -871,6 +871,7 @@
     $("#f-temp").value = "";
     $("#f-puissance").value = replis.feu;
     $("#f-prechauffe").checked = false;
+    $("#f-ratee").checked = false;
     $("#f-ajout-eau-oui").checked = false;
     $("#f-eau-ajoutee").hidden = true;
     $("#f-eau-ajoutee").value = "";
@@ -909,6 +910,7 @@
     $("#f-eau-ajoutee").hidden = !$("#f-ajout-eau-oui").checked;
     $("#f-eau-ajoutee").value = ext.eau_ajoutee_ml !== undefined ? ext.eau_ajoutee_ml : "";
     $("#f-prechauffe").checked = Number(ext.eau_prechauffee) === 1;
+    $("#f-ratee").checked = Number(ext.ratee) === 1;
     majChampPrechauffe();
     $("#f-puissance").value = ext.puissance_feu || "";
     $("#f-agitation-oui").checked = ext.agitation_nb !== "" && ext.agitation_nb !== undefined;
@@ -958,6 +960,7 @@
       agitation_nb: saisie.methode === "Switch" && $("#f-agitation-oui").checked ? ($("#f-agitation").value || 1) : "",
       tasse: $("#f-tasse").value,
       eau_prechauffee: saisie.methode === "Brikka" && $("#f-prechauffe").checked ? 1 : "",
+      ratee: $("#f-ratee").checked ? 1 : "",
       puissance_feu: saisie.methode === "Brikka" ? $("#f-puissance").value : "",
       note_sur_10: noteSaisie(),
       diagnostic: DIAGNOSTICS.filter(d => saisie.diagnostics.has(d)).join("|"),

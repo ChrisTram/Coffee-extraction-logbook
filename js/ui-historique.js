@@ -8,7 +8,8 @@
 (() => {
 
   // Emprunté au noyau, chargé avant nous.
-  const { $, $$, antiRebond, attrTitre, detailRatio, diagsAffiches, extAvecCalculs, fmtDateHeure,
+  const { $, $$, antiRebond, attrTitre, detailRatio, diagsAffiches, estRatee, extAnalysables,
+    extAvecCalculs, fmtDateHeure,
     fmtDecimal, fmtTemps, fmtVND, toast } = UI;
 
   // ---------- Historique ----------
@@ -43,7 +44,12 @@
        "brûlé". normalize + suppression des diacritiques, c'est la seule façon
        correcte de le faire en français sans table de correspondance. */
     const q = sansAccents($("#h-recherche").value.trim().toLowerCase());
+    /* "" toutes, "ok" les réussies, "ratee" les ratées. Le filtre vit ici et pas
+       dans extAnalysables() : l'historique est le journal, il montre tout par
+       défaut, et c'est Chris qui demande à ne voir qu'un camp. */
+    const fRatee = $("#h-ratee").value;
     return exts.filter(e =>
+      (!fRatee || (fRatee === "ratee" ? estRatee(e) : !estRatee(e))) &&
       (!q || texteCherchable(e).includes(q)) &&
       (!fCafe || e.cafe_id === fCafe) &&
       (!fMethode || e.methode === fMethode) &&
@@ -154,7 +160,9 @@
       "<td>" + (e.temperature_c !== "" ? e.temperature_c : "") + "</td>" +
       // Le feu ne veut rien dire hors Brikka : le Switch n'a pas de flamme.
       "<td>" + (e.methode === "Brikka" && e.puissance_feu !== "" ? e.puissance_feu : "") + "</td>" +
-      '<td class="note-cellule">' + (e.note_sur_10 !== "" ? e.note_sur_10 : "") + "</td>" +
+      '<td class="note-cellule">' + (estRatee(e)
+        ? '<span class="badge-ratee" title="' + attrTitre(I18N.t("rt_badge_titre")) + '">' + I18N.t("rt_badge") + "</span>"
+        : "") + (e.note_sur_10 !== "" ? e.note_sur_10 : "") + "</td>" +
       '<td class="chip-diagnostic" title="' + attrTitre(e.diagnostic ? diagsAffiches(e.diagnostic) : "") + '">' +
       (e.diagnostic ? diagsAffiches(e.diagnostic) : "") + "</td>" +
       '<td><div class="actions-ligne">' +
@@ -286,7 +294,9 @@
   }
 
   function rendreReglages() {
-    const exts = DATA.state.extractions;
+    /* Un conseil, donc le jeu analysable : une tasse ratée décrit un geste
+       manqué et ferait condamner un réglage correct. */
+    const exts = extAnalysables();
     const bilans = REGLAGES.tous(DATA.state.cafes, exts);
     $("#reglages-liste").innerHTML = bilans.length
       ? bilans.map(carteReglage).join("")

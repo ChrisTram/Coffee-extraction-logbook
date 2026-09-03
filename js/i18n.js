@@ -93,6 +93,9 @@ const I18N = (() => {
     d_ext_switch: { fr: "extractions Switch" },
     d_note: { fr: "note moyenne" },
     molette: { fr: "molette" },
+    rt_badge: { fr: "ratée" },
+    rt_badge_titre: { fr: "Geste manqué, écartée des analyses. Elle reste comptée dans les tasses, les grammes et le coût." },
+    rt_exclues: { fr: "{n} tasse(s) ratée(s) écartée(s) des analyses." },
 
     hm_aria: { fr: "Extractions par jour" },
     hm_aucune: { fr: "aucune extraction" },

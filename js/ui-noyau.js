@@ -290,6 +290,35 @@ const UI = (() => {
     return "";
   }
 
+  /* Vrai quand la tasse a été marquée ratée. Une colonne vide veut dire "pas
+     dit", donc non ratée : c'est le cas de tout ce qui précède le drapeau. */
+  function estRatee(e) { return Number(e.ratee) === 1; }
+
+  const CLE_INCLURE_RATEES = "inclure-ratees";
+  /* Préférence de LECTURE, donc locale comme le thème et les bips : elle change
+     ce que les chiffres racontent, pas les données. Rien à synchroniser. */
+  function inclureRatees() {
+    try { return localStorage.getItem(CLE_INCLURE_RATEES) === "1"; } catch (e) { return false; }
+  }
+
+  function basculerRatees(inclure) {
+    try { localStorage.setItem(CLE_INCLURE_RATEES, inclure ? "1" : "0"); } catch (e) { /* tant pis */ }
+  }
+
+  /* Les extractions dont on tire des CONSEILS : insights, meilleurs réglages,
+     goûts, duel des machines, tendance. Une tasse ratée décrit un geste manqué,
+     pas un réglage, et la garder peut faire condamner un réglage correct.
+
+     Les COMPTAGES gardent tout, toujours : tasses bues, grammes consommés, coût,
+     calendrier d'activité, stock des sachets. Le café a bien été utilisé, et une
+     erreur de geste n'efface pas la dépense. C'est la ligne de partage, et elle
+     tient en une phrase : ce qui décrit CE QUI S'EST PASSÉ compte tout, ce qui
+     conseille CE QU'IL FAUT FAIRE écarte les ratées. */
+  function extAnalysables() {
+    const tout = extAvecCalculs();
+    return inclureRatees() ? tout : tout.filter(e => !estRatee(e));
+  }
+
   function extAvecCalculs() {
     return DATA.state.extractions.map(e => ({ ...e, _c: DATA.calculs(e) }));
   }
@@ -468,7 +497,8 @@ const UI = (() => {
     $, $$, $f, APPUI_LONG_MS, CLE_REPLIS, DOSE_REPLI_USINE, ECRANS, ECRANS_RENOMMES,
     FEU_REPLI_USINE, MOLETTE_REPLI_USINE, activerAppuiLong, activerEcran, animerCompteur,
     antiRebond, appliquerTheme, attrTitre, avecTransition, basculerEtat, cacheChamps,
-    chargerReplis, cleLocale, detailRatio, diagsAffiches, ecartMoyen, ecrireReplis,
+    basculerRatees, chargerReplis, cleLocale, detailRatio, diagsAffiches, ecartMoyen,
+    ecrireReplis, estRatee, extAnalysables, inclureRatees,
     extAvecCalculs, fmtDateCourte, fmtDateHeure, fmtDecimal, fmtTemps, fmtVND,
     maintenantLocal, moyenne, nav, normaliserEcran, oublierSignatures, poser, poserTexte,
     recetteAvecVariantes, recettesDeMethode, recettesVivantes, rendreEcranCourant, replis,

@@ -11,7 +11,7 @@ const DATA = (() => {
   const EXT_COLS = ["id", "date_heure", "cafe_id", "methode", "recette", "dose_g", "eau_g",
     "mouture_dial", "temperature_c", "temps_total_s", "temps_ecoulement_s",
     "volume_extrait_ml", "eau_ajoutee_ml", "lait_ml", "agitation_nb", "tasse", "eau_prechauffee",
-    "note_sur_10", "diagnostic", "descripteurs", "commentaire", "puissance_feu"];
+    "note_sur_10", "diagnostic", "descripteurs", "commentaire", "puissance_feu", "ratee"];
 
   /* Réglages du matériel de Chris. UNE seule ligne, d'id fixe, parce que c'est
      un utilisateur unique : voir normaliserReglages pour le pourquoi de la
@@ -211,6 +211,11 @@ const DATA = (() => {
       diagnostic: r.diagnostic || "",
       descripteurs: r.descripteurs || "",
       commentaire: r.commentaire || "",
+      /* Ratée : 1 ou vide. Vide veut dire "pas dit", pas "réussie", et c'est la
+         valeur de toutes les tasses antérieures au drapeau. Aucune migration
+         n'est nécessaire pour autant : une colonne absente d'un vieux CSV relit
+         vide, ce qui est exactement le bon défaut. */
+      ratee: Number(r.ratee) === 1 ? 1 : "",
     };
   }
 

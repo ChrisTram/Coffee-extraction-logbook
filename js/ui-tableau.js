@@ -10,7 +10,8 @@
 
   // Emprunté au noyau, chargé avant nous.
   const { $, $$, animerCompteur, attrTitre, cleLocale, detailRatio, diagsAffiches, ecartMoyen,
-    extAvecCalculs, fmtDateHeure, fmtDecimal, fmtTemps, moyenne, trouverRecette } = UI;
+    estRatee, extAnalysables, extAvecCalculs, fmtDateHeure, fmtDecimal, fmtTemps, inclureRatees,
+    moyenne, trouverRecette } = UI;
 
   // ---------- Insights automatiques ----------
   // Des phrases calculées, pas des graphiques en plus. Les règles sont
@@ -364,7 +365,18 @@
   }
 
   function rendreTableau() {
+    /* DEUX jeux, et savoir lequel on prend est la seule question qui compte ici.
+       exts compte CE QUI S'EST PASSÉ, analysables conseille CE QU'IL FAUT FAIRE.
+       Voir extAnalysables() dans le noyau pour la règle. */
     const exts = extAvecCalculs();
+    const analysables = extAnalysables();
+    const exclues = exts.length - analysables.length;
+    const zoneRatees = $("#bandeau-ratees");
+    if (zoneRatees) {
+      zoneRatees.hidden = exclues === 0 && !inclureRatees();
+      $("#compte-ratees").textContent = I18N.t("rt_exclues", { n: exclues });
+      $("#bascule-ratees").checked = inclureRatees();
+    }
     const vide = exts.length === 0;
     $("#tableau-vide").hidden = !vide;
     $("#tableau-contenu").hidden = vide;
@@ -378,8 +390,8 @@
     const moisCourant = auj.slice(0, 7);
     const il7j = new Date(maintenant); il7j.setDate(il7j.getDate() - 7);
 
-    const notes = exts.filter(e => e.note_sur_10 !== "").map(e => e.note_sur_10);
-    const notes7j = exts.filter(e => e.note_sur_10 !== "" && new Date(e.date_heure) >= il7j).map(e => e.note_sur_10);
+    const notes = analysables.filter(e => e.note_sur_10 !== "").map(e => e.note_sur_10);
+    const notes7j = analysables.filter(e => e.note_sur_10 !== "" && new Date(e.date_heure) >= il7j).map(e => e.note_sur_10);
 
     // Caféine estimée par jour sur les 7 derniers jours.
     const mgCafeine = e => {
@@ -405,7 +417,7 @@
     $$("#kpis .kpi-nombre").forEach((el, i) =>
       animerCompteur(el, kpis[i].valeur, kpis[i].dec, "", kpis[i].plusMoins ? "± " : ""));
 
-    rendreInsights(exts);
+    rendreInsights(analysables);
 
     // 30 derniers jours : barres, note, grammes, caféine dans le tooltip
     const labels = [], comptes = [], moyennes = [], details = [], tendance = [];
@@ -414,7 +426,7 @@
        les quatre premiers jours affichés. On la projette ensuite jour par jour,
        en gardant la dernière valeur connue, pour qu'elle ne se coupe pas les
        jours sans tasse. */
-    const glissante = REGLAGES.moyenneGlissante(DATA.state.extractions, 5);
+    const glissante = REGLAGES.moyenneGlissante(analysables, 5);
     let iGliss = 0, derniere = null;
     for (let i = 29; i >= 0; i--) {
       const d = new Date(); d.setDate(d.getDate() - i);
@@ -450,7 +462,7 @@
       parJour[cle] = (parJour[cle] || 0) + 1;
     });
     Object.keys(parJour).forEach(cle => {
-      const nJour = exts.filter(e => e.date_heure.slice(0, 10) === cle && e.note_sur_10 !== "").map(e => e.note_sur_10);
+      const nJour = analysables.filter(e => e.date_heure.slice(0, 10) === cle && e.note_sur_10 !== "").map(e => e.note_sur_10);
       if (nJour.length) infoParJour[cle] = "note moyenne " + moyenne(nJour).toFixed(1);
     });
     CHARTS.heatmap("g-heatmap", parJour, infoParJour, SEMAINES_HEATMAP);
@@ -474,8 +486,8 @@
     CHARTS.barresHorizontales("g-cafes", itemsCafes, accentCafes, I18N.t("axe_note_moy"), 10);
 
     // Duel Brikka contre Switch
-    const brikka = exts.filter(e => e.methode === "Brikka");
-    const swtch = exts.filter(e => e.methode === "Switch");
+    const brikka = analysables.filter(e => e.methode === "Brikka");
+    const swtch = analysables.filter(e => e.methode === "Switch");
     const nB = brikka.filter(e => e.note_sur_10 !== "").map(e => e.note_sur_10);
     const nS = swtch.filter(e => e.note_sur_10 !== "").map(e => e.note_sur_10);
     $("#duel-machines").innerHTML =
@@ -486,22 +498,22 @@
 
     // Cafés passés dans les deux machines
     const cafesDeux = DATA.state.cafes.filter(c => {
-      const eb = exts.some(e => e.cafe_id === c.id && e.methode === "Brikka" && e.note_sur_10 !== "");
-      const es = exts.some(e => e.cafe_id === c.id && e.methode === "Switch" && e.note_sur_10 !== "");
+      const eb = analysables.some(e => e.cafe_id === c.id && e.methode === "Brikka" && e.note_sur_10 !== "");
+      const es = analysables.some(e => e.cafe_id === c.id && e.methode === "Switch" && e.note_sur_10 !== "");
       return eb && es;
     });
     CHARTS.comparatifMachines("g-duel",
       cafesDeux.map(c => c.nom),
-      cafesDeux.map(c => +moyenne(exts.filter(e => e.cafe_id === c.id && e.methode === "Brikka" && e.note_sur_10 !== "").map(e => e.note_sur_10)).toFixed(1)),
-      cafesDeux.map(c => +moyenne(exts.filter(e => e.cafe_id === c.id && e.methode === "Switch" && e.note_sur_10 !== "").map(e => e.note_sur_10)).toFixed(1)));
+      cafesDeux.map(c => +moyenne(analysables.filter(e => e.cafe_id === c.id && e.methode === "Brikka" && e.note_sur_10 !== "").map(e => e.note_sur_10)).toFixed(1)),
+      cafesDeux.map(c => +moyenne(analysables.filter(e => e.cafe_id === c.id && e.methode === "Switch" && e.note_sur_10 !== "").map(e => e.note_sur_10)).toFixed(1)));
 
     // Nuages
-    const pts = m => exts
+    const pts = m => analysables
       .filter(e => e.methode === m && e.note_sur_10 !== "" && e._c.microns !== "")
       .map(e => ({ x: e._c.microns, y: e.note_sur_10, nom: e._c.cafe_nom + ", " + e.mouture_dial }));
     CHARTS.nuage("g-mouture", pts("Brikka"), pts("Switch"), I18N.t("axe_mouture"), "µm");
 
-    const notees = exts.filter(e => e.note_sur_10 !== "");
+    const notees = analysables.filter(e => e.note_sur_10 !== "");
     const gouts = rendreGouts(notees);
 
     // Les trois cartes qui peuvent rester vides avec des données valides.
@@ -511,7 +523,7 @@
 
     // Diagnostics
     const parDiag = {};
-    exts.forEach(e => (e.diagnostic || "").split("|").filter(Boolean).forEach(d => {
+    analysables.forEach(e => (e.diagnostic || "").split("|").filter(Boolean).forEach(d => {
       parDiag[d] = (parDiag[d] || 0) + 1;
     }));
     const diagLabels = DIAGNOSTICS.filter(d => parDiag[d]);
@@ -519,7 +531,7 @@
 
     // Note par recette
     const parRecette = {};
-    exts.forEach(e => {
+    analysables.forEach(e => {
       if (e.note_sur_10 === "" || !e.recette) return;
       (parRecette[e.recette] = parRecette[e.recette] || []).push(e.note_sur_10);
     });
@@ -556,6 +568,7 @@
       (e.recette ? " · " + e.recette : "") +
       (e.diagnostic ? " · " + diagsAffiches(e.diagnostic) : "") + "</div>" +
       mesuresDerniere(e) + "</div>" +
+      (estRatee(e) ? '<span class="badge-ratee" title="' + attrTitre(I18N.t("rt_badge_titre")) + '">' + I18N.t("rt_badge") + "</span>" : "") +
       "<span class=\"derniere-note\">" + (e.note_sur_10 !== "" ? e.note_sur_10 + "<small>/10</small>" : "") + "</span></li>"
     ).join("");
   }

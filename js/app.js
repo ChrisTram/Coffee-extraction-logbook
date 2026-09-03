@@ -99,6 +99,16 @@
       if (ECRANS.includes(cible) && cible !== nav.ecran) activerEcran(cible);
     });
 
+    /* Inclure ou exclure les ratées des analyses. Un rendu complet suit, parce
+       que la bascule change ce que TOUS les chiffres de l'écran racontent. */
+    const basculeRatees = $("#bascule-ratees");
+    if (basculeRatees) {
+      basculeRatees.addEventListener("change", () => {
+        UI.basculerRatees(basculeRatees.checked);
+        UI.rendreTableau();
+      });
+    }
+
     // Thème
     $("#btn-theme").addEventListener("click", () => {
       const courant = document.documentElement.getAttribute("data-theme");
@@ -235,7 +245,7 @@
     });
 
     // Historique
-    ["h-recherche", "h-cafe", "h-methode", "h-diagnostic", "h-note-min", "h-du", "h-au"].forEach(id =>
+    ["h-recherche", "h-cafe", "h-methode", "h-diagnostic", "h-note-min", "h-du", "h-au", "h-ratee"].forEach(id =>
       $("#" + id).addEventListener("input", UI.rendreHistoriqueDifferee));
     /* REPRISE QUAND LE RÉSEAU REVIENT. Une synchro ratée attendait le prochain
        geste de Chris : en cuisine, il enregistre sa tasse, range son téléphone, et
@@ -262,7 +272,7 @@
     });
 
     $("#h-reinitialiser").addEventListener("click", () => {
-      ["h-recherche", "h-cafe", "h-methode", "h-diagnostic", "h-note-min", "h-du", "h-au"].forEach(id => $("#" + id).value = "");
+      ["h-recherche", "h-cafe", "h-methode", "h-diagnostic", "h-note-min", "h-du", "h-au", "h-ratee"].forEach(id => $("#" + id).value = "");
       UI.rendreHistorique();
     });
     $("#h-exporter").addEventListener("click", () => {
@@ -497,7 +507,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.73";
+  const VERSION = "7.74";
 
   async function demarrer() {
     /* AVANT tout rendu : si Chris avait laissé le site en anglais, le paquet de

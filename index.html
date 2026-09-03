@@ -90,6 +90,15 @@
   </div>
 
   <div id="tableau-contenu">
+
+    <!-- Annonce combien de tasses sont écartées et permet de les réintégrer.
+         Placé AVANT les chiffres : il dit ce qu'ils valent, le lire après serait
+         apprendre trop tard que la moyenne ne portait pas sur tout. Masqué tant
+         qu'aucune tasse n'est marquée, pour ne pas parler dans le vide. -->
+    <div class="bandeau-ratees" id="bandeau-ratees" hidden>
+      <span id="compte-ratees"></span>
+      <label class="label-inline"><input type="checkbox" id="bascule-ratees"> Inclure les ratées dans les analyses</label>
+    </div>
     <div class="kpis" id="kpis"></div>
 
     <div class="grille-graphes">
@@ -271,6 +280,13 @@
         <input type="number" id="f-eau-ajoutee" enterkeyhint="next" step="1" min="0" max="500" inputmode="decimal" placeholder="ml" hidden>
         <span class="champ-hint">Pour allonger la boisson. N'entre pas dans le ratio.</span>
       </div>
+      <!-- Toujours visible, à la différence des trois autres : rater une
+           extraction n'est propre à aucune machine, et une case cachée ne se
+           coche pas. En dernier, parce que c'est un jugement porté après coup. -->
+      <div class="option-saisie option-ratee">
+        <label class="label-inline"><input type="checkbox" id="f-ratee"> Extraction ratée</label>
+        <span class="champ-hint">Un geste manqué, pas un réglage. Exclue des analyses, gardée dans les comptages.</span>
+      </div>
       <div class="option-saisie" id="champ-agitation" hidden>
         <label class="label-inline"><input type="checkbox" id="f-agitation-oui"> Agitation</label>
         <input type="number" id="f-agitation" enterkeyhint="next" step="1" min="1" max="20" inputmode="numeric" value="1" hidden>
@@ -388,6 +404,14 @@
     <div class="champ">
       <label for="h-diagnostic">Diagnostic</label>
       <select id="h-diagnostic"><option value="">Tous</option></select>
+    </div>
+    <div class="champ">
+      <label for="h-ratee">Ratées</label>
+      <select id="h-ratee">
+        <option value="">Toutes</option>
+        <option value="ok">Sans les ratées</option>
+        <option value="ratee">Ratées seulement</option>
+      </select>
     </div>
     <div class="champ">
       <label for="h-note-min">Note minimum</label>
