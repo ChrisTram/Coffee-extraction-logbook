@@ -848,7 +848,17 @@
     $("#btn-annuler-edition").hidden = true;
     $("#f-date").value = maintenantLocal();
     $("#f-dose").value = replis.dose;
-    if (!garderCafe) $("#f-cafe").value = "";
+    /* Le café n'est plus laissé vide. Chris n'a en général qu'un seul café actif
+       à la fois, et le choisir à chaque tasse est un clic pour rien. On prend le
+       premier de la liste, celui que le menu propose déjà en tête.
+
+       Volontairement SANS surChoixCafe() : choisir un café à la main applique
+       aussi sa machine et sa recette recommandées, et faire basculer la machine
+       à chaque nouvelle saisie serait bien plus qu'un champ prérempli. */
+    if (!garderCafe) {
+      const premierCafe = cafesSelectionnables()[0];
+      $("#f-cafe").value = premierCafe ? premierCafe.id : "";
+    }
     $("#f-commentaire").value = "";
     // Milieu de course et case cochée : le curseur ne doit suggérer aucune note.
     $("#f-note").value = 5;
@@ -990,6 +1000,14 @@
     selCafe.innerHTML = '<option value="">' + I18N.t("choisir_cafe") + "</option>" +
       cafesSelectionnables().map(c => '<option value="' + c.id + '">' + c.nom + "</option>").join("");
     if (v && cafesSelectionnables().some(c => c.id === v)) selCafe.value = v;
+    /* Même défaut que le formulaire complet : le panneau rapide REFUSE
+       d'enregistrer sans café, donc l'ouvrir sur un champ vide garantissait un
+       aller-retour. On ne préremplit que si rien n'est déjà choisi, pour ne pas
+       écraser une sélection en cours. */
+    if (!selCafe.value) {
+      const premierCafe = cafesSelectionnables()[0];
+      if (premierCafe) selCafe.value = premierCafe.id;
+    }
     majRecettesRapide();
   }
 

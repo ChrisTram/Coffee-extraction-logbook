@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.71,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.72,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -467,6 +467,29 @@ re-créés.
   2 g/g).
 - Caféine estimée : dose x pourcentage café réel x pourcentage caféine de
   l'espèce (arabica 1,2, robusta 2,4, blend 1,8, liberica 1,4) x 0,9.
+
+## 7 undecies. Le café est prérempli, la machine non
+
+Chris n'a en général qu'un seul café actif à la fois. Laisser le champ vide sur
+une nouvelle saisie était donc un clic pour rien, et un champ vide en tête de
+formulaire donne l'impression qu'il manque quelque chose. Il prend le premier
+café sélectionnable, celui que le menu propose déjà en tête.
+
+**Le point délicat est ce qu'on ne fait PAS.** Choisir un café À LA MAIN déclenche
+`surChoixCafe()`, qui applique aussi la machine et la recette recommandées du
+café. Le Là Việt Balanced recommande la Chronicler, donc le Switch : déclencher
+cette cascade au préremplissage ferait basculer la machine à chaque nouvelle
+saisie, ce qui déborde largement de « remplis ce champ ». Le préremplissage pose
+donc la valeur et rien d'autre.
+
+Rien à rebrancher pour autant : `prefillDepuisRecette()`, appelée juste après,
+lit déjà le café pour le cas du déjà moulu, et se termine par
+`majAvertissements()` qui rafraîchit l'âge du paquet et le panneau latéral.
+
+Le panneau rapide suit la même règle, et pour une raison plus dure : il REFUSE
+d'enregistrer sans café. L'ouvrir sur un champ vide garantissait un aller-retour.
+Il ne préremplit que si rien n'est déjà choisi, pour ne pas écraser une sélection
+en cours.
 
 ## 7 decies. La note est FACULTATIVE
 
@@ -2099,6 +2122,8 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.72 : une nouvelle saisie arrive avec un café déjà choisi, le premier actif
+  de la liste. Le panneau rapide aussi.
 - v7.71 : l'historique gagne quatre colonnes, dose et eau, temps, température et
   feu, et s'élargit pour les recevoir. Les mêmes informations que la carte des
   cinq dernières extractions.

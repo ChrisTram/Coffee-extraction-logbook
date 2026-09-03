@@ -555,6 +555,36 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
   }
 }
 
+/* UNE NOUVELLE SAISIE ARRIVE AVEC UN CAFE DEJA CHOISI.
+
+   Chris n'a en general qu'un seul cafe actif a la fois : le choisir a chaque
+   tasse etait un clic pour rien, et un champ vide en tete de formulaire donne
+   l'impression qu'il manque quelque chose.
+
+   Le point delicat est ce qu'on ne fait PAS. Choisir un cafe A LA MAIN applique
+   aussi sa machine et sa recette recommandees ; declencher cette cascade au
+   preremplissage ferait basculer la machine a chaque nouvelle saisie, ce qui
+   deborde largement de "remplis ce champ". */
+{
+  api.UI.choisirMethode("Brikka");
+  api.UI.reinitialiserSaisie();
+  const actifs = api.DATA.state.cafes.filter(c => c.actif !== 0);
+  const champCafe = document.querySelector("#f-cafe");
+  check("le formulaire vierge propose un cafe",
+    actifs.length > 0 && champCafe.value === actifs[0].id,
+    JSON.stringify(champCafe.value) + " pour " + JSON.stringify(actifs[0] && actifs[0].id));
+  check("et la machine ne bascule pas toute seule",
+    api.UI.saisie.methode === "Brikka", api.UI.saisie.methode);
+
+  /* Le panneau rapide REFUSE d'enregistrer sans cafe : l'ouvrir sur un champ
+     vide garantissait un aller-retour. */
+  document.querySelector("#q-cafe").value = "";
+  api.UI.majPanneauRapide();
+  check("le panneau rapide aussi",
+    document.querySelector("#q-cafe").value === actifs[0].id,
+    JSON.stringify(document.querySelector("#q-cafe").value));
+}
+
 /* LA DATE D'UNE NOUVELLE SAISIE EST L'HEURE QU'IL EST.
 
    Elle n'était posée que par reinitialiserSaisie(), qui ne tourne qu'au démarrage
