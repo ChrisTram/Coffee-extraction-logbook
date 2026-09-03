@@ -714,6 +714,27 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
     api.UI.filtrerHistorique().length === total - 1, String(api.UI.filtrerHistorique().length));
   document.querySelector("#h-ratee").value = "";
 
+  /* LA BASCULE DANS LA LIGNE D'HISTORIQUE. La premiere version n'offrait que la
+     case du formulaire de saisie : marquer une tasse DEJA enregistree demandait
+     de l'ouvrir en modification, cocher, enregistrer. Quatre gestes pour un
+     jugement binaire, et sur une tasse passee c'est le cas courant, puisqu'on
+     sait qu'on a foire APRES avoir bu. */
+  api.UI.rendreHistorique();
+  {
+    const h = document.querySelector("#h-corps").innerHTML;
+    const lignes = api.UI.filtrerHistorique().length;
+    check("chaque ligne d'historique porte la bascule",
+      (h.match(/data-action="ratee"/g) || []).length === lignes,
+      (h.match(/data-action="ratee"/g) || []).length + " pour " + lignes + " lignes");
+    /* Son etat se lit sans survol, sinon reperer les lignes ecartees demanderait
+       de passer sur chacune. */
+    check("et seule la tasse ratee l'affiche allumee",
+      (h.match(/aria-pressed="true"/g) || []).length === 1 &&
+      (h.match(/actif-ratee/g) || []).length === 1,
+      h.match(/aria-pressed="true"/g) + " / " + h.match(/actif-ratee/g));
+    check("le badge la signale aussi", (h.match(/badge-ratee/g) || []).length === 1);
+  }
+
   // La colonne doit survivre a un aller-retour CSV, sinon le drapeau se perd.
   check("la colonne ratee est dans le format d'echange",
     readFileSync(join(ROOT, "js/data.js"), "utf8").includes('"puissance_feu", "ratee"'));

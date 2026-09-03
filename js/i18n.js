@@ -94,6 +94,10 @@ const I18N = (() => {
     d_note: { fr: "note moyenne" },
     molette: { fr: "molette" },
     rt_badge: { fr: "ratée" },
+    h_rater: { fr: "Marquer comme ratée, pour l'écarter des analyses" },
+    h_derater: { fr: "Ne plus la compter comme ratée" },
+    t_ratee: { fr: "Marquée ratée, écartée des analyses." },
+    t_deratee: { fr: "Rendue aux analyses." },
     rt_badge_titre: { fr: "Geste manqué, écartée des analyses. Elle reste comptée dans les tasses, les grammes et le coût." },
     rt_exclues: { fr: "{n} tasse(s) ratée(s) écartée(s) des analyses." },
 

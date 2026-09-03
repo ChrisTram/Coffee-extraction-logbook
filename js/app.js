@@ -306,6 +306,12 @@
         UI.rendreHistorique();
       } else if (btn.dataset.action === "comparer") {
         UI.basculerComparaison(id);
+      } else if (btn.dataset.action === "ratee") {
+        /* Un clic écrit. Pas de confirmation : le geste est réversible du même
+           bouton, et demander confirmation pour une bascule serait plus lourd
+           que la bascule elle-même. */
+        await DATA.modifierExtraction(id, { ...ext, ratee: Number(ext.ratee) === 1 ? "" : 1 });
+        toast(I18N.t(Number(ext.ratee) === 1 ? "t_deratee" : "t_ratee"));
       }
     });
 
@@ -507,7 +513,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.74";
+  const VERSION = "7.75";
 
   async function demarrer() {
     /* AVANT tout rendu : si Chris avait laissé le site en anglais, le paquet de

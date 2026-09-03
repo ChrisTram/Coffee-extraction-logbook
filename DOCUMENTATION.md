@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.74,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.75,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -626,6 +626,19 @@ Elle est en dernier, parce que c'est un jugement porté après coup.
 
 Le panneau rapide ne la porte pas : il sert à noter une tasse en trois gestes,
 et on ne sait pas encore si elle est ratée au moment où on la note.
+
+### Deux endroits pour marquer, et pourquoi
+
+La case du formulaire de saisie sert à la tasse qu'on est en train de noter. Elle
+ne suffit pas : on sait qu'on a raté APRÈS avoir bu, donc le cas courant est de
+marquer une tasse DÉJÀ enregistrée. Il fallait alors l'ouvrir en modification,
+cocher, enregistrer, soit quatre gestes pour un jugement binaire.
+
+D'où la bascule dans la ligne d'historique, à côté des autres actions. Un clic
+écrit et rafraîchit, sans confirmation : le geste est réversible depuis le même
+bouton, et demander confirmation pour une bascule serait plus lourd que la
+bascule. Son état est visible sans survol, sinon repérer les lignes écartées
+demanderait de passer sur chacune.
 
 ### Réintégrer d'un clic
 
@@ -2229,6 +2242,8 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.75 : la bascule ratée passe dans la ligne d'historique, un clic. La case du
+  formulaire ne servait qu'à la saisie du jour.
 - v7.74 : une extraction peut être marquée RATÉE. Badge, filtre dans
   l'historique, et exclusion des analyses avec un bandeau pour les réintégrer.
 - v7.73 : la Brikka se remplit à l'eau froide, et un conseil de mouture ne

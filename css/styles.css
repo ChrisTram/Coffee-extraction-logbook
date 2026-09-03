@@ -1148,6 +1148,14 @@ input:focus, select:focus, textarea:focus {
 
 /* Badge d'une extraction ratée. Rouge assumé : ici le rouge dit bien "mauvaise
    nouvelle", ce qui est exactement son sens dans le reste du site. */
+/* Bouton de bascule allumé : même rouge que le badge, pour qu'on lise du premier
+   coup d'oeil quelles lignes sont écartées sans avoir à survoler. */
+.btn-ligne.actif-ratee {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+}
+
 .badge-ratee {
   display: inline-block;
   font-size: 0.66rem;

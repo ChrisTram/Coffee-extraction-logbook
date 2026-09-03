@@ -168,6 +168,10 @@
       '<td><div class="actions-ligne">' +
       '<button class="btn-ligne' + (compare ? " actif" : "") + '" data-action="comparer" title="' +
       attrTitre(I18N.t("h_comparer")) + '">⇄</button>' +
+      /* La bascule ratée, en PREMIER des actions d'écriture : c'est celle qui se
+         clique le plus souvent après coup, et son état est visible sans survol. */
+      '<button class="btn-ligne' + (estRatee(e) ? " actif-ratee" : "") + '" data-action="ratee" aria-pressed="' +
+      estRatee(e) + '" title="' + attrTitre(I18N.t(estRatee(e) ? "h_derater" : "h_rater")) + '">⚠</button>' +
       '<button class="btn-ligne" data-action="dupliquer" title="Dupliquer pour refaire la même">⧉</button>' +
       '<button class="btn-ligne" data-action="modifier" title="Modifier">✎</button>' +
       '<button class="btn-ligne danger" data-action="supprimer" title="Supprimer">🗑</button>' +
