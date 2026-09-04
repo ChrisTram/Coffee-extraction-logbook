@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.75,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.76,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -628,6 +628,14 @@ Le panneau rapide ne la porte pas : il sert à noter une tasse en trois gestes,
 et on ne sait pas encore si elle est ratée au moment où on la note.
 
 ### Deux endroits pour marquer, et pourquoi
+
+La case du formulaire est rangée AVEC LA NOTE, juste sous « Pas encore notée ».
+Elle a d'abord été placée dans le bloc des options d'extraction, entre « Eau
+préchauffée » et « Ajout d'eau ». Elle y était bien, et Chris ne l'a pas trouvée,
+deux fois. Le rangement était le bug : ces options décrivent COMMENT on extrait,
+alors que « ratée » juge le RÉSULTAT, exactement comme la note au-dessus. Un
+liseré rouge la distingue des autres cases du formulaire, parce que c'est la
+seule qui retire la tasse des analyses.
 
 La case du formulaire de saisie sert à la tasse qu'on est en train de noter. Elle
 ne suffit pas : on sait qu'on a raté APRÈS avoir bu, donc le cas courant est de
@@ -2242,6 +2250,8 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.76 : la case ratée rejoint la NOTE. Rangée parmi les options d'extraction,
+  elle était introuvable.
 - v7.75 : la bascule ratée passe dans la ligne d'historique, un clic. La case du
   formulaire ne servait qu'à la saisie du jour.
 - v7.74 : une extraction peut être marquée RATÉE. Badge, filtre dans

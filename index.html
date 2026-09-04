@@ -280,13 +280,6 @@
         <input type="number" id="f-eau-ajoutee" enterkeyhint="next" step="1" min="0" max="500" inputmode="decimal" placeholder="ml" hidden>
         <span class="champ-hint">Pour allonger la boisson. N'entre pas dans le ratio.</span>
       </div>
-      <!-- Toujours visible, à la différence des trois autres : rater une
-           extraction n'est propre à aucune machine, et une case cachée ne se
-           coche pas. En dernier, parce que c'est un jugement porté après coup. -->
-      <div class="option-saisie option-ratee">
-        <label class="label-inline"><input type="checkbox" id="f-ratee"> Extraction ratée</label>
-        <span class="champ-hint">Un geste manqué, pas un réglage. Exclue des analyses, gardée dans les comptages.</span>
-      </div>
       <div class="option-saisie" id="champ-agitation" hidden>
         <label class="label-inline"><input type="checkbox" id="f-agitation-oui"> Agitation</label>
         <input type="number" id="f-agitation" enterkeyhint="next" step="1" min="1" max="20" inputmode="numeric" value="1" hidden>
@@ -351,6 +344,14 @@
       <label for="f-note">Note : <b id="note-affichee">pas encore notée</b></label>
       <input type="range" id="f-note" min="0" max="10" step="0.5" value="5" class="curseur-note">
       <label class="label-inline"><input type="checkbox" id="f-note-vide" checked> Pas encore notée, je reviendrai</label>
+    </div>
+
+    <!-- Avec la NOTE, pas avec les options d'extraction. Celles-ci décrivent
+         comment on extrait ; "ratée" juge le résultat, exactement comme la note
+         juste au-dessus. Rangée ailleurs, elle ne se trouvait pas. -->
+    <div class="champ champ-ratee">
+      <label class="label-inline"><input type="checkbox" id="f-ratee"> Extraction ratée, je me suis planté</label>
+      <span class="champ-hint">Un geste manqué, pas un réglage. Écartée des analyses, gardée dans les comptages.</span>
     </div>
 
     <div class="champ">

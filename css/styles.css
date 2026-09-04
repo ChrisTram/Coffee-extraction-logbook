@@ -1146,6 +1146,16 @@ input:focus, select:focus, textarea:focus {
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 4l8 8M12 4l-8 8' stroke='%23000' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 
+/* La case "ratée", sous la note. Le liseré rouge la distingue des autres
+   cases à cocher du formulaire : c'est la seule qui retire la tasse des
+   analyses, donc la seule qui mérite qu'on la remarque avant de la cocher. */
+.champ-ratee {
+  border-left: 3px solid color-mix(in srgb, var(--danger) 55%, transparent);
+  padding-left: 12px;
+  margin-top: -4px;
+}
+.champ-ratee .label-inline { color: var(--texte); }
+
 /* Badge d'une extraction ratée. Rouge assumé : ici le rouge dit bien "mauvaise
    nouvelle", ce qui est exactement son sens dans le reste du site. */
 /* Bouton de bascule allumé : même rouge que le badge, pour qu'on lise du premier
