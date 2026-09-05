@@ -2341,6 +2341,11 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.81 : les fonctions pures partagées (moyenne, clé de jour locale) quittent
+  leurs trois copies pour `js/outils.js`, premier script de la page ; la moyenne
+  d'une liste vide renvoie null partout au lieu de NaN dans un fichier sur deux.
+  Le cache local de wrangler (identifiant de compte) sort du dépôt et des assets,
+  un test le verrouille. README remis à jour sur la structure des fichiers.
 - v7.78 : les deux recettes Brikka au lait fusionnent, et le lait s'affiche en
   chiffres pour le flat white ET le cappuccino.
 - v7.77 : cliquer une ligne d'historique ouvre l'extraction, et cinq champs de

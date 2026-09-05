@@ -111,17 +111,35 @@ Le diagnostic répond à "qu'est ce que je corrige" (un seul choix, avec la corr
 
 ```
 tracker/
-  index.html          la page unique
-  css/styles.css      styles, thèmes sombre et clair
-  js/grind.js         conversions du moulin (dial, crans, microns, plages)
-  js/recettes.js      recettes et cafés de départ, règles d'avertissement
-  js/data.js          CSV, IndexedDB, File System Access
-  js/charts.js        graphiques Chart.js, heatmap et réglette SVG
-  js/app.js           l'application (écrans, saisie, historique, gestion)
-  js/demo-data.js     la démo embarquée
+  index.html            la page unique, tout le HTML statique
+  css/styles.css        styles, thèmes sombre et clair
+  js/outils.js          fonctions pures partagées (moyenne, dates, version)
+  js/i18n.js            traduction, moitié française et mécanisme
+  js/i18n.en.js         paquet anglais, chargé à la demande
+  js/grind.js           conversions du moulin (dial, crans, microns, plages)
+  js/recettes.js        recettes et cafés de départ, règles d'avertissement
+  js/sync.js            synchronisation entre appareils, côté client
+  js/data*.js           CSV, IndexedDB, File System Access, migrations, calculs
+  js/reglages.js        meilleurs réglages par café, calcul pur
+  js/charts.js          graphiques Chart.js (à la demande), heatmap et réglette SVG
+  js/ui-noyau.js        outils d'interface partagés, thème, navigation
+  js/ui-tableau.js      tableau de bord et insights
+  js/ui-saisie.js       formulaire, chrono, brouillon
+  js/ui-rapide.js       saisie rapide flottante
+  js/ui-historique.js   historique, filtres, comparateur, meilleurs réglages
+  js/ui-guide.js        recettes, moulin, pas à pas
+  js/ui-catalogue.js    cafés, sachets, recettes éditables, paramètres
+  js/app.js             démarrage et câblage global
+  js/demo-data.js       la démo embarquée, chargée à la demande
   js/vendor/chart.umd.js   Chart.js 4.4.4, local, aucune dépendance réseau
-  demo/               les mêmes données de démo en CSV éditables
-  tools/gen_demo.py   le générateur de la démo, pour la refaire un jour
+  sw.js, manifest.json, icons/   PWA installable, hors ligne
+  worker/               porte d'entrée et synchronisation Cloudflare (en ligne seulement)
+  demo/                 les mêmes données de démo en CSV éditables
+  tools/                tests et générateurs
 ```
+
+La documentation technique complète est dans `DOCUMENTATION.md`, les décisions
+et leur raisonnement dans `DECISIONS.md`, l'historique des versions dans
+`CHANGELOG.md`.
 
 Sauvegarde : le dossier de données lié contient tout ce qui t'appartient. Le copier, c'est sauvegarder.

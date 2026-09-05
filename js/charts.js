@@ -263,12 +263,8 @@ const CHARTS = (() => {
 
   // ---------- Heatmap calendaire en SVG ----------
 
-  // Clé de date en heure LOCALE (toISOString serait en UTC et décalerait d'un jour).
-  function cleLocale(d) {
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const j = String(d.getDate()).padStart(2, "0");
-    return d.getFullYear() + "-" + m + "-" + j;
-  }
+  // Clé de date en heure locale, définie une seule fois dans outils.js.
+  const cleLocale = OUTILS.cleLocale;
 
   function heatmap(conteneur, parJour, infoParJour, nbSemaines) {
     const el = typeof conteneur === "string" ? document.getElementById(conteneur) : conteneur;

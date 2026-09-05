@@ -17,3 +17,6 @@ desktop.ini
 # Outils
 __pycache__/
 node_modules/
+
+# Cache local de wrangler : identifiant de compte, jamais dans le depot.
+.wrangler/

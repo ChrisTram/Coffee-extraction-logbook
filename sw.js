@@ -29,6 +29,7 @@ const PRECACHE_URLS = [
   // Plus chargée par une balise script depuis la v7.54, mais toujours précachée :
   // le chargement à la demande doit fonctionner hors ligne.
   "./js/vendor/chart.umd.js",
+  "./js/outils.js",
   "./js/i18n.js",
   // Chargé à la demande depuis la v7.55, mais précaché pour que la bascule de
   // langue fonctionne aussi hors ligne.

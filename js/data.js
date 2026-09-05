@@ -167,11 +167,10 @@ const DATA = (() => {
     };
   }
 
-  // Date du jour en LOCAL (jamais toISOString, décalage à UTC+7).
+  // Date du jour en LOCAL (jamais toISOString, décalage à UTC+7). Même
+  // définition que partout ailleurs : outils.js.
   function dateLocaleAujourdhui() {
-    const d = new Date();
-    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") +
-      "-" + String(d.getDate()).padStart(2, "0");
+    return OUTILS.cleLocale(new Date());
   }
 
   function normaliserExtraction(r) {

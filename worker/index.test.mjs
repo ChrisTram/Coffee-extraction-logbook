@@ -139,5 +139,19 @@ const oldCookie = (oldLogin.headers.get("Set-Cookie") || "").split(";")[0];
 const expired = await call("/", { headers: { Cookie: oldCookie } });
 check("session expiree rejetee", expired.status === 302, `status ${expired.status}`);
 
+// 13. Le cache local de wrangler ne part ni dans le depot ni dans les assets.
+//     Il contient l'identifiant et le nom du compte Cloudflare, et il a ete
+//     versionne puis servi pendant trois semaines avant qu'un audit le voie.
+{
+  const { readFileSync } = await import("node:fs");
+  const { dirname, join } = await import("node:path");
+  const { fileURLToPath } = await import("node:url");
+  const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+  const gitignore = readFileSync(join(root, ".gitignore"), "utf8");
+  const assetsignore = readFileSync(join(root, ".assetsignore"), "utf8");
+  check("le cache wrangler est ignore par git", /^\.wrangler\/?$/m.test(gitignore));
+  check("le cache wrangler n'est pas televerse comme asset", /^\.wrangler\/?$/m.test(assetsignore));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

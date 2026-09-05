@@ -145,7 +145,7 @@ const MOTS_CLES = new Set(["if","else","for","while","do","return","function","c
    lister ici : recettes.js à lui seul publie une trentaine de constantes, et une
    liste écrite à la main aurait divergé au premier ajout, transformant ce test
    en source de fausses alertes. Ce qui revient à le désactiver. */
-const AUTRES_COUCHES = ["js/i18n.js", "js/grind.js", "js/recettes.js", "js/sync.js",
+const AUTRES_COUCHES = ["js/outils.js", "js/i18n.js", "js/grind.js", "js/recettes.js", "js/sync.js",
   "js/data.js", "js/reglages.js", "js/charts.js", "js/demo-data.js"];
 const GLOBAUX = new Set(["Chart",
   "UI","document","window","location","history","navigator","localStorage","sessionStorage",

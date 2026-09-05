@@ -205,11 +205,8 @@ const UI = (() => {
     return Math.round(n).toLocaleString("fr-FR") + " ₫";
   }
 
-  function cleLocale(d) {
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const j = String(d.getDate()).padStart(2, "0");
-    return d.getFullYear() + "-" + m + "-" + j;
-  }
+  // Une seule définition, dans outils.js : voir l'en-tête de ce fichier là.
+  const { moyenne, cleLocale } = OUTILS;
 
   function maintenantLocal() {
     const d = new Date();
@@ -260,11 +257,6 @@ const UI = (() => {
     if (liste.length < 2) return null;
     const m = liste.reduce((a, b) => a + b, 0) / liste.length;
     return liste.reduce((a, n) => a + Math.abs(n - m), 0) / liste.length;
-  }
-
-  function moyenne(liste) {
-    if (!liste.length) return null;
-    return liste.reduce((a, b) => a + b, 0) / liste.length;
   }
 
   // Recettes vivantes (éditables, stockées avec les données).

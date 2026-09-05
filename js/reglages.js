@@ -145,9 +145,9 @@ const REGLAGES = (() => {
     ].join("|");
   }
 
-  function moyenne(liste) {
-    return liste.reduce((a, b) => a + b, 0) / liste.length;
-  }
+  // Définie une seule fois, dans outils.js. Renvoie null sur une liste vide,
+  // là où la copie locale renvoyait NaN et laissait "NaN" atteindre l'écran.
+  const moyenne = OUTILS.moyenne;
 
   /* Retourne le bilan d'un café : sa moyenne toutes tasses confondues, et la
      meilleure combinaison si elle atteint le seuil.
