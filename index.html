@@ -7,8 +7,8 @@
 <!-- Version du site, source unique : le pied de page la lit, et les fichiers
      chargés à la demande la mettent dans leur URL. Se pose avec
      node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="7.83">
-<link rel="stylesheet" href="css/styles.css?v=7.83">
+<meta name="app-version" content="7.84">
+<link rel="stylesheet" href="css/styles.css?v=7.84">
 <!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
      SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
      parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
@@ -293,14 +293,14 @@
       </div>
       <div class="option-saisie" id="champ-ajout-eau" hidden>
         <label class="label-inline"><input type="checkbox" id="f-ajout-eau-oui"> Ajout d'eau après extraction</label>
-        <input type="number" id="f-eau-ajoutee" enterkeyhint="next" step="1" min="0" max="500" inputmode="decimal" placeholder="ml" hidden>
+        <input type="number" id="f-eau-ajoutee" enterkeyhint="next" step="1" min="0" max="500" inputmode="decimal" placeholder="ml" aria-label="Eau ajoutée après extraction (ml)" hidden>
         <span class="champ-hint">Pour allonger la boisson. N'entre pas dans le ratio.</span>
       </div>
       <div class="option-saisie" id="champ-agitation" hidden>
         <label class="label-inline" id="lbl-agitation"><input type="checkbox" id="f-agitation-oui"> Agitation</label>
         <div class="ligne-curseur" id="ligne-agitation" hidden>
         <input type="range" id="f-agitation-curseur" class="curseur-champ" min="1" max="20" step="1" value="1" aria-labelledby="lbl-agitation">
-        <input type="number" id="f-agitation" enterkeyhint="next" step="1" min="1" max="20" inputmode="numeric" value="1">
+        <input type="number" id="f-agitation" enterkeyhint="next" step="1" min="1" max="20" inputmode="numeric" value="1" aria-label="Nombre d'agitations">
         </div>
         <span class="champ-hint">Nombre de remuages, 1 par défaut.</span>
       </div>
@@ -309,8 +309,8 @@
     <div id="tasses-editeur" class="carte tasses-editeur" hidden>
       <div id="tasses-liste"></div>
       <div class="tasses-ajout">
-        <input type="text" id="tasse-nom" placeholder="Nom de la tasse">
-        <input type="number" id="tasse-ml" min="10" max="1000" step="1" placeholder="ml">
+        <input type="text" id="tasse-nom" placeholder="Nom de la tasse" aria-label="Nom de la tasse">
+        <input type="number" id="tasse-ml" min="10" max="1000" step="1" placeholder="ml" aria-label="Contenance de la tasse (ml)">
         <button type="button" class="btn btn-petit" id="tasse-ajouter">Ajouter</button>
       </div>
     </div>
@@ -342,15 +342,15 @@
         <div class="champ">
           <label for="f-total-min">Temps total</label>
           <div class="duree">
-            <input type="number" id="f-total-min" step="1" min="0" max="59" inputmode="numeric" placeholder="0"><span>min</span>
-            <input type="number" id="f-total-sec" step="1" min="0" max="59" inputmode="numeric" placeholder="00"><span>s</span>
+            <input type="number" id="f-total-min" step="1" min="0" max="59" inputmode="numeric" placeholder="0" aria-label="Temps total, minutes"><span>min</span>
+            <input type="number" id="f-total-sec" step="1" min="0" max="59" inputmode="numeric" placeholder="00" aria-label="Temps total, secondes"><span>s</span>
           </div>
         </div>
         <div class="champ">
           <label for="f-ecoulement-min">Écoulement</label>
           <div class="duree">
-            <input type="number" id="f-ecoulement-min" step="1" min="0" max="59" inputmode="numeric" placeholder="0"><span>min</span>
-            <input type="number" id="f-ecoulement-sec" step="1" min="0" max="59" inputmode="numeric" placeholder="00"><span>s</span>
+            <input type="number" id="f-ecoulement-min" step="1" min="0" max="59" inputmode="numeric" placeholder="0" aria-label="Écoulement, minutes"><span>min</span>
+            <input type="number" id="f-ecoulement-sec" step="1" min="0" max="59" inputmode="numeric" placeholder="00" aria-label="Écoulement, secondes"><span>s</span>
           </div>
           <span class="champ-hint">Déduit tout seul : du palier "ouvrir" à l'arrêt du chrono.</span>
         </div>
@@ -538,14 +538,14 @@
     <p class="carte-note">Le diagramme officiel du C5 ESP : rotations en haut, microns en bas, une boîte par méthode, les repères de référence marqués en couleur, la zone hachurée est hors de portée du moulin. Le trait noir suit le curseur, le trait vert épais marque ton réglage par défaut. Survole ou touche une boîte pour le détail.</p>
 
     <div class="encadre encadre-zero">
-      <h4>Attention, le zéro de MON moulin n'est pas le zéro imprimé</h4>
+      <h3>Attention, le zéro de MON moulin n'est pas le zéro imprimé</h3>
       <p>Sur mon C5, les meules se touchent déjà vers <code>0.0.2</code> : à 2 crans du zéro imprimé la manivelle ne tourne plus. Mon vrai point de contact est donc environ <b>2 crans après le 0 du cadran</b>.</p>
       <p>Toute l'échelle en microns de cette page part du point de contact des meules. Chez moi, tout est donc surestimé de 2 × 8,32 = <b>environ 17 microns</b>, soit 2,7 % à 1.5.0 : 624 affichés pour à peu près 607 réels.</p>
       <p><b>Ce qui compte quand même plus que ça :</b> enregistrer toujours ce que le cadran affiche. La valeur absolue en microns est indicative, la reproductibilité est ce qui rend mes comparaisons valables. 2,7 % est en dessous de la dispersion normale d'un jeu de meules et de l'imprécision du 8,32 µm par cran, qui est une valeur nominale.</p>
       <p>Et ne jamais forcer la manivelle. Si ça bloque, les meules se touchent : on cherche le zéro à vide, doucement, puis on recule.</p>
     </div>
 
-    <h4>Plages par méthode, en crans depuis le point de contact des meules</h4>
+    <h3>Plages par méthode, en crans depuis le point de contact des meules</h3>
     <div class="table-conteneur">
       <table class="table-ref">
         <thead><tr><th>Méthode</th><th>Microns</th><th>Crans</th><th>Molette</th></tr></thead>
@@ -553,7 +553,7 @@
       </table>
     </div>
 
-    <h4>Réglages de référence</h4>
+    <h3>Réglages de référence</h3>
     <div class="table-conteneur">
       <table class="table-ref">
         <thead><tr><th>Usage</th><th>Molette</th><th>Crans</th><th>Microns</th></tr></thead>
@@ -573,46 +573,46 @@
   <h2 id="ref-diagnostic" class="ref-titre">Diagnostic du goût</h2>
   <div class="grille-diagnostic">
     <article class="carte diag-carte">
-      <h4>Acidité</h4>
+      <h3>Acidité</h3>
       <p>Arrive tout de suite, sur les côtés et l'avant de la langue, fait saliver, pincement sous les oreilles, disparaît vite.</p>
       <p class="diag-action">Signifie sous-extraction. Moudre plus fin, plus chaud, plus longtemps.</p>
     </article>
     <article class="carte diag-carte">
-      <h4>Amertume</h4>
+      <h3>Amertume</h3>
       <p>Arrive après avoir avalé, au fond de la langue et dans la gorge, assèche, la langue devient râpeuse, elle reste.</p>
       <p class="diag-action">Signifie sur-extraction. Moudre plus grossier, moins chaud, moins longtemps.</p>
     </article>
     <article class="carte diag-carte">
-      <h4>Astringence</h4>
+      <h3>Astringence</h3>
       <p>Sensation tactile et non gustative, bouche qui se resserre, comme un kaki pas mûr.</p>
       <p class="diag-action">Signal de sur-extraction le plus fiable de tous.</p>
     </article>
     <article class="carte diag-carte">
-      <h4>Acide ET amer dans la même gorgée</h4>
+      <h3>Acide ET amer dans la même gorgée</h3>
       <p>Extraction inégale. Ce n'est ni la mouture ni le temps, c'est la distribution.</p>
       <p class="diag-action">Aplanir le lit, remuer, verser en spirale.</p>
     </article>
     <article class="carte diag-carte">
-      <h4>Goût de brûlé, cendre, fumée</h4>
+      <h3>Goût de brûlé, cendre, fumée</h3>
       <p>Ce n'est pas la méthode, c'est le sachet. Torréfaction trop foncée.</p>
       <p class="diag-action">Aucun réglage ne l'enlèvera.</p>
     </article>
     <article class="carte diag-carte diag-calibration">
-      <h4>Calibration maison</h4>
+      <h3>Calibration maison</h3>
       <p>Trois verres d'eau : un avec du jus de citron (acidité pure), un avec un sachet de thé noir infusé 10 minutes (amertume et astringence), un avec une pincée de sel (la sensation creuse de la sous-extraction).</p>
     </article>
   </div>
 
   <h2 id="ref-regles" class="ref-titre">Règles d'exécution</h2>
   <div class="carte ref-bloc">
-    <h4>Valables partout</h4>
+    <h3>Valables partout</h3>
     <p>Pour une ouverture partielle, regarder le <b>niveau d'eau</b> et non le chronomètre. Le débit dépend de la mouture, de la dose et du café. Un chrono n'est pas reproductible, un niveau l'est.</p>
     <p>Remuer pendant la première infusion seulement, jamais pendant la seconde. Sur un lit déjà tassé, remuer déplace les fines vers le bas et bouche l'écoulement.</p>
 
-    <h4>Ce qui passe mal dans le Switch</h4>
+    <h3>Ce qui passe mal dans le Switch</h3>
     <p>Bana Cofe G4 (rang bơ, le papier retiendrait le beurre qui fait tout l'intérêt), Fine Robusta Honey (Every Half), Midnight Chocolate (Every Half), Proud of Việt Nam (Every Half), Robusta Honey (The Married Beans), Signature Blend (Ritachi), et tout café en wet hulled ou en torréfaction foncée. Le site t'avertit si tu tentes la combinaison.</p>
 
-    <h4>La question de la double infusion, tranchée</h4>
+    <h3>La question de la double infusion, tranchée</h3>
     <p>Fractionner l'infusion augmente l'extraction et l'intensité, <b>pas le corps</b>. Le corps vient des huiles et des fines, et le papier les retient quel que soit le nombre de cycles. Ce que les recettes 4 et 5 apportent, c'est de la clarté avec de la puissance. Dans le Switch, les trois vrais leviers de corps sont, dans l'ordre : resserrer le ratio vers 1:14, moudre plus fin, remuer davantage.</p>
   </div>
 
@@ -626,14 +626,14 @@
   <div class="grille-recettes" id="grille-recettes"></div>
 
   <div class="carte ref-bloc encadre-costaud">
-    <h4>Choisir son Costaud : le test</h4>
+    <h3>Choisir son Costaud : le test</h3>
     <p>Y a-t-il du sucré et du corps <b>derrière</b> l'acidité ?</p>
     <p><b>Non</b>, c'est acide et creux, ça s'arrête court : sous-extraction, prends <b>Bloom</b>.</p>
     <p><b>Oui</b>, mais c'est trop vif pour moi : extraction correcte, prends <b>Immersion</b>.</p>
   </div>
 
   <div class="carte ref-bloc">
-    <h4>Une seule mouture pour tout</h4>
+    <h3>Une seule mouture pour tout</h3>
     <p>Les dix recettes portent <code>1.5.0</code>, mon réglage unique. Chacune avait la cible de sa source, entre 1.4.0 et 2.0.0, mais je ne recompte pas les crans à chaque changement de machine : une cible par recette décrivait un geste que je ne fais jamais.</p>
     <p class="carte-note">Les recommandations d'origine restent dans la note de chaque recette, par exemple 600 à 700 microns pour la Chronicler. Pour changer de réglage, le curseur du moulin plus haut, ou l'écran Paramètres.</p>
   </div>
@@ -763,62 +763,62 @@
 
   <div class="grille-boutiques">
     <article class="carte boutique">
-      <h4>Là Việt <a href="https://shopee.vn/product/254908605/18380543598" target="_blank" rel="noopener">laviet.coffee ↗</a></h4>
+      <h3>Là Việt <a href="https://shopee.vn/product/254908605/18380543598" target="_blank" rel="noopener">laviet.coffee ↗</a></h3>
       <p class="boutique-meta">Đà Lạt · gamme lisible : Balanced, Rich, Strong</p>
       <p>Le meilleur rapport qualité prix de toute la liste, deux à deux fois et demie moins cher que le reste, chez le torréfacteur dont j'aime déjà le Balanced. Premier choix : Serie 2 Datanla, honey light medium, nougat et chocolat noir, 165 000 ₫ les 250 g, recette imprimée sur la fiche.</p>
     </article>
     <article class="carte boutique">
-      <h4>Soul Specialty Coffee <a href="https://beans.voicaphe.com/product/anaerobic-fine-robusta-soul-coffee-250g-/145" target="_blank" rel="noopener">fiche ↗</a></h4>
+      <h3>Soul Specialty Coffee <a href="https://beans.voicaphe.com/product/anaerobic-fine-robusta-soul-coffee-250g-/145" target="_blank" rel="noopener">fiche ↗</a></h3>
       <p class="boutique-meta">Buôn Ma Thuột · deux soeurs Q-Grader CQI et SCA</p>
       <p>Spécialiste du fine robusta à double fermentation. La gamme Ngọt Brewing est explicitement calibrée pour le filtre. Leur Anaerobic Fine Robusta medium (cannelle, raisin sec, zeste d'orange) est une perle rare qui va vers le sucré, pas vers l'acide.</p>
     </article>
     <article class="carte boutique">
-      <h4>The Married Beans <a href="https://www.themarriedbeans.com/en/collections/ca-phe-dac-san-specialty-coffee" target="_blank" rel="noopener">themarriedbeans.com ↗</a></h4>
+      <h3>The Married Beans <a href="https://www.themarriedbeans.com/en/collections/ca-phe-dac-san-specialty-coffee" target="_blank" rel="noopener">themarriedbeans.com ↗</a></h3>
       <p class="boutique-meta">Đà Lạt · travail direct avec les fermes de Cầu Đất</p>
       <p>Prix affichés en clair, de 150 000 à 275 000 ₫ les 250 g, grains avec mouture à la demande. Leur Cầu Đất lavé à 200 000 ₫ est mon étalon : c'est lui qui dit ce que la fermentation ajoute aux autres. Le Robusta Honey à 150 000 ₫ est le meilleur corps sur prix du guide.</p>
     </article>
     <article class="carte boutique">
-      <h4>Bosgaurus <a href="https://beans.voicaphe.com/product/proud-bosgaurus-coffee-roasters-250g-/171" target="_blank" rel="noopener">fiche Proud ↗</a></h4>
+      <h3>Bosgaurus <a href="https://beans.voicaphe.com/product/proud-bosgaurus-coffee-roasters-250g-/171" target="_blank" rel="noopener">fiche Proud ↗</a></h3>
       <p class="boutique-meta">Hô Chi Minh · sourcing à Xuân Thọ, 1350 m</p>
       <p>Le seul du relevé à publier ses recettes complètes : méthode, température, TDS de l'eau, temps. Leur Proud (50 % lavé, 50 % natural) a gagné le championnat national barista 2022 : acidité douce, corps soyeux, finale chocolat, la seule fiche du guide qui annonce les trois ensemble.</p>
     </article>
     <article class="carte boutique">
-      <h4>Every Half <a href="https://shopee.vn/everyhalf" target="_blank" rel="noopener">Shopee Mall ↗</a></h4>
+      <h3>Every Half <a href="https://shopee.vn/everyhalf" target="_blank" rel="noopener">Shopee Mall ↗</a></h3>
       <p class="boutique-meta">Hô Chi Minh · gamme entièrement en 200 g</p>
       <p>Attention : leurs prix Shopee sont 36 à 70 pour cent au dessus de leur propre site everyhalf.vn, même en promo. Une promo Shopee n'est intéressante que si elle passe sous leur prix site. Le Fine Robusta Cư M'Gar (goyave rose, chocolat au lait) est leur meilleur café pour moi.</p>
     </article>
     <article class="carte boutique">
-      <h4>Ritachi <a href="https://ritachi.com/ca-phe-rang-xay/" target="_blank" rel="noopener">ritachi.com ↗</a></h4>
+      <h3>Ritachi <a href="https://ritachi.com/ca-phe-rang-xay/" target="_blank" rel="noopener">ritachi.com ↗</a></h3>
       <p class="boutique-meta">Bảo Lộc · exportateur, vitrine secondaire</p>
       <p>Port gratuit à partir de 500 000 ₫, aucune option de mouture affichée : écrire avant toute commande pour sécuriser le nguyên hạt. Anaerobic plus Cầu Đất fait 370 000 ₫ : ajouter le Signature Blend met à 520 000 ₫ et rend le port gratuit.</p>
     </article>
     <article class="carte boutique">
-      <h4>Bana Cafe <a href="https://shopee.vn/banacafegl" target="_blank" rel="noopener">Shopee Mall ↗</a></h4>
+      <h3>Bana Cafe <a href="https://shopee.vn/banacafegl" target="_blank" rel="noopener">Shopee Mall ↗</a></h3>
       <p class="boutique-meta">Gia Lai · créneau traditionnel, gamme G1 à G12</p>
       <p>Un seul rang bơ dans la gamme, le G4 que je bois déjà. Tous les autres sont en rang mộc et disponibles en grains.</p>
     </article>
     <article class="carte boutique">
-      <h4>Greenfields <a href="https://shopee.vn/caphedongxanh" target="_blank" rel="noopener">Shopee ↗</a></h4>
+      <h3>Greenfields <a href="https://shopee.vn/caphedongxanh" target="_blank" rel="noopener">Shopee ↗</a></h3>
       <p class="boutique-meta">Huế · micro-lots importés en 100 g</p>
       <p>Cà phê Đồng Xanh. Petits formats parfaits pour tester sans risque, dont le Guji Uraga lavé d'Éthiopie, l'archétype de ce que la Brikka détruit et que le Switch révèle. Prix Shopee 25 à 45 pour cent au dessus de leur site.</p>
     </article>
     <article class="carte boutique">
-      <h4>Blagu <a href="https://shopee.vn/sieuthicafe.vn" target="_blank" rel="noopener">sieuthicafe.vn ↗</a></h4>
+      <h3>Blagu <a href="https://shopee.vn/sieuthicafe.vn" target="_blank" rel="noopener">sieuthicafe.vn ↗</a></h3>
       <p class="boutique-meta">Hô Chi Minh · importateur torréfacteur, 508 produits</p>
       <p>Littéralement supermarché du café. Huit ans, 4,9 sur 6 100 avis. Seul vendeur du relevé à proposer une mouture nommée moka pot, et pièces génériques Brikka à port mutualisé avec le café.</p>
     </article>
     <article class="carte boutique">
-      <h4>Home Roast Coffee VN</h4>
+      <h3>Home Roast Coffee VN</h3>
       <p class="boutique-meta">Torréfaction à la commande, profil piloté sous Artisan</p>
       <p>Le plus rigoureux techniquement du relevé : tri des défauts avant et après torréfaction, 100 pour cent de taux de réponse, 21 produits seulement. Leur Fine Robusta Whisky est mon entrée fermentation côté Brikka.</p>
     </article>
     <article class="carte boutique">
-      <h4>Father Coffee</h4>
+      <h3>Father Coffee</h3>
       <p class="boutique-meta">Quảng Trị · le meilleur pedigree du relevé</p>
       <p>Seul torréfacteur du relevé à afficher un score CQI vérifié, 85,21, pour son Mít Liberica Khe Sanh : jacquier, fumé, acidité fraise vive. Jamais en Brikka, l'acidité fraise deviendrait pointue.</p>
     </article>
     <article class="carte boutique">
-      <h4>43 Factory <a href="https://43factory.coffee/en/" target="_blank" rel="noopener">43factory.coffee ↗</a></h4>
+      <h3>43 Factory <a href="https://43factory.coffee/en/" target="_blank" rel="noopener">43factory.coffee ↗</a></h3>
       <p class="boutique-meta">Đà Nẵng · le sommet vietnamien, pour situer l'échelle</p>
       <p>Geisha et pink bourbon importés, 1 000 000 à 1 500 000 ₫ le sachet, environ 4 000 ₫ le gramme. Hors budget et registre floral qui n'est pas le mien. Cité pour savoir où s'arrête l'échelle.</p>
     </article>
@@ -826,12 +826,12 @@
 
   <h2 id="gd-acheter" class="ref-titre">Quoi acheter</h2>
   <div class="carte ref-bloc">
-    <h4>Si je ne devais retenir que trois lignes</h4>
+    <h3>Si je ne devais retenir que trois lignes</h3>
     <p><b>Là Việt Serie 2 Datanla, 165 000 ₫</b> : honey, light medium, nougat et chocolat noir, chez le torréfacteur que j'aime déjà, recette imprimée sur la fiche. Le meilleur rapport plaisir sur risque sur prix.</p>
     <p><b>Soul Anaerobic Fine Robusta</b> : anaerobic en medium, cannelle et raisin sec. La combinaison la plus rare du Vietnam, et elle va vers le sucré.</p>
     <p><b>Married Beans Cầu Đất, 200 000 ₫</b> : l'étalon lavé. Pas pour le plaisir, pour la mesure.</p>
 
-    <h4>Le matériel, stocks tendus, à faire en premier</h4>
+    <h3>Le matériel, stocks tendus, à faire en premier</h3>
     <div class="table-conteneur">
       <table class="table-ref table-achats">
         <thead><tr><th>Pour quoi</th><th>Article</th><th>Prix</th><th>Lien</th></tr></thead>
@@ -844,7 +844,7 @@
       </table>
     </div>
 
-    <h4>Les cafés Brikka</h4>
+    <h3>Les cafés Brikka</h3>
     <div class="table-conteneur">
       <table class="table-ref table-achats">
         <thead><tr><th>Pour quoi</th><th>Café</th><th>Prix</th><th>Lien</th></tr></thead>
@@ -857,7 +857,7 @@
       </table>
     </div>
 
-    <h4>Les cafés Switch</h4>
+    <h3>Les cafés Switch</h3>
     <div class="table-conteneur">
       <table class="table-ref table-achats">
         <thead><tr><th>Pour quoi</th><th>Café</th><th>Prix</th><th>Lien</th></tr></thead>
@@ -871,7 +871,7 @@
       </table>
     </div>
 
-    <h4>Chez Ritachi, en direct, si j'y vais</h4>
+    <h3>Chez Ritachi, en direct, si j'y vais</h3>
     <div class="table-conteneur">
       <table class="table-ref table-achats">
         <thead><tr><th>Pour quoi</th><th>Café</th><th>Prix</th><th>Lien</th></tr></thead>
@@ -887,42 +887,42 @@
   <h2 id="gd-regles" class="ref-titre">Règles d'achat</h2>
   <div class="grille-diagnostic">
     <article class="carte diag-carte">
-      <h4>Un seul light roast à la fois</h4>
+      <h3>Un seul light roast à la fois</h3>
       <p>C'est un registre entièrement neuf, et il y a une vraie chance de ne pas accrocher du tout. Petit format quand il existe.</p>
     </article>
     <article class="carte diag-carte">
-      <h4>Le site officiel avant Shopee</h4>
+      <h3>Le site officiel avant Shopee</h3>
       <p>L'écart mesuré chez Every Half est de 36 pour cent, même pendant les promos. Là Việt, Soul, The Married Beans et Ritachi ne vendent quasiment que sur leur propre site.</p>
     </article>
     <article class="carte diag-carte">
-      <h4>La hiérarchie réelle</h4>
+      <h3>La hiérarchie réelle</h3>
       <p>Le procédé décide, la torréfaction arbitre, le pays d'origine arrive loin derrière. Un anaerobic medium du Đắk Lắk me plaira plus qu'un lavé light d'Éthiopie.</p>
     </article>
     <article class="carte diag-carte">
-      <h4>Commander hors Shopee</h4>
+      <h3>Commander hors Shopee</h3>
       <p>On perd l'escrow (préférer le paiement à la livraison, COD), les vouchers et la messagerie de l'app. On gagne des prix 25 à 36 pour cent plus bas, le choix de la mouture et la date de torréfaction. Le canal de contact réel au Vietnam est Zalo.</p>
     </article>
     <article class="carte diag-carte">
-      <h4>Regrouper par boutique</h4>
+      <h3>Regrouper par boutique</h3>
       <p>Shopee facture le port par boutique. Regrouper quand deux cafés sont chez le même vendeur, et cliquer tous les vouchers de la boutique avant de valider.</p>
     </article>
     <article class="carte diag-carte">
-      <h4>L'ordre à suivre</h4>
+      <h3>L'ordre à suivre</h3>
       <p>Maintenant : la balance, le seul achat qui améliore toutes les tasses. Ensuite le test croisé, un même café dans les deux machines le même jour. Ensuite seulement, un café Brikka et un café Switch selon ce que le test a appris.</p>
     </article>
   </div>
 
   <h2 id="gd-materiel" class="ref-titre">Matériel et entretien</h2>
   <div class="carte ref-bloc">
-    <h4>Le joint Brikka, confirmé</h4>
+    <h3>Le joint Brikka, confirmé</h3>
     <p>La Brikka 2 tasses partage le joint du Moka Express 3 et 4 tasses : <b>50 mm intérieur, 65 mm extérieur</b>. Chez Procaffe, prendre la variante « Ron Brikka 2 cup ». C'est du caoutchouc, pas du silicone, malgré la mention sur la boîte. À changer tous les six mois.</p>
-    <h4>Entretien</h4>
+    <h3>Entretien</h3>
     <p><b>Brikka</b> : rinçage à l'eau très chaude après chaque usage, brosse souple sur la plaque filtre. Jamais de lave-vaisselle, les détergents alcalins attaquent l'aluminium. Ne jamais laisser refroidir avec le marc dedans.</p>
     <p><b>Switch</b> : le papier et le marc à la poubelle, rinçage du cône. Démonter la valve en silicone une fois par semaine et rincer la bille, c'est là que ça s'encrasse.</p>
     <p><b>C5 ESP</b> : brossage à sec des meules toutes les deux ou trois semaines. Jamais d'eau.</p>
-    <h4>Les filtres du Switch</h4>
+    <h3>Les filtres du Switch</h3>
     <p>Le Switch SSD-200-B prend les papiers coniques <b>V60 taille 02</b>, Hario ou compatibles (CAFEC, Timemore). C'est le format le plus répandu du Vietnam. Sur Shopee, taper <code>giấy lọc V60 02</code>, ou <code>Hario VCF-02</code> pour la boîte officielle de 100 (VCF-02-100W en blanc). Le blanc est plus neutre au goût que le brun, mais rincer le papier dans les deux cas. <a href="https://shopee.vn/search?keyword=gi%E1%BA%A5y%20l%E1%BB%8Dc%20v60%2002" target="_blank" rel="noopener">Lancer la recherche sur Shopee ↗</a></p>
-    <h4>Bouilloire</h4>
+    <h3>Bouilloire</h3>
     <p>Si le modèle a un thermostat variable, cibler 92 à 94 °C pour les medium. Sinon, faire bouillir puis attendre 45 secondes à 1 minute couvercle ouvert : l'eau retombe vers 94 à 95, ce qui est la valeur par défaut du champ température en saisie.</p>
   </div>
 
@@ -930,7 +930,7 @@
   <p class="ref-intro">À envoyer avant toute commande. La qualité de la réponse dit déjà tout sur le sérieux du vendeur.</p>
   <div class="messages-vn">
     <article class="carte message-carte">
-      <div class="message-entete"><h4>Question universelle avant tout achat</h4><button class="btn btn-petit" data-copier="msg-universel">Copier</button></div>
+      <div class="message-entete"><h3>Question universelle avant tout achat</h3><button class="btn btn-petit" data-copier="msg-universel">Copier</button></div>
       <pre class="message-vn-texte" id="msg-universel">Chào shop, cho mình hỏi:
 1. Ngày rang của lô hàng hiện tại là ngày nào ạ?
 2. Có bán loại nguyên hạt không ạ?
@@ -939,16 +939,16 @@ Mình pha moka pot và pour over. Cảm ơn shop.</pre>
       <p class="carte-note">Les trois questions qui comptent : date de torréfaction, grains entiers, niveau de torréfaction.</p>
     </article>
     <article class="carte message-carte">
-      <div class="message-entete"><h4>Fine Coffee Agency, sécuriser les grains entiers</h4><button class="btn btn-petit" data-copier="msg-fca">Copier</button></div>
+      <div class="message-entete"><h3>Fine Coffee Agency, sécuriser les grains entiers</h3><button class="btn btn-petit" data-copier="msg-fca">Copier</button></div>
       <pre class="message-vn-texte" id="msg-fca">Chào shop, mình đặt loại 200g Nguyên Hạt nhé, mình tự xay ở nhà bằng máy xay tay. Nhờ shop đừng xay giúp. Cảm ơn shop.</pre>
     </article>
     <article class="carte message-carte">
-      <div class="message-entete"><h4>Bana Cafe, recevoir le G4 bien moulu</h4><button class="btn btn-petit" data-copier="msg-bana">Copier</button></div>
+      <div class="message-entete"><h3>Bana Cafe, recevoir le G4 bien moulu</h3><button class="btn btn-petit" data-copier="msg-bana">Copier</button></div>
       <pre class="message-vn-texte" id="msg-bana">Chào shop, mình đặt Bana Cofe G4 loại 250Gr. Mình cần loại XAY BỘT (pha phin), không phải nguyên hạt, shop lưu ý giúp mình nhé. Cảm ơn shop.</pre>
       <p class="carte-note">Le rang bơ ne passe jamais au moulin : il faut le recevoir déjà moulu.</p>
     </article>
     <article class="carte message-carte">
-      <div class="message-entete"><h4>Ritachi, deux questions en une</h4><button class="btn btn-petit" data-copier="msg-ritachi">Copier</button></div>
+      <div class="message-entete"><h3>Ritachi, deux questions en une</h3><button class="btn btn-petit" data-copier="msg-ritachi">Copier</button></div>
       <pre class="message-vn-texte" id="msg-ritachi">Chào shop,
 Mình muốn đặt |250G| FINE ROBUSTA (SKU RTCFR4250). Cho mình hỏi 2 điều ạ:
 1. Lô hàng hiện tại là Anaerobic Natural hay Red Honey ạ? Trên bao bì mình thấy có 2 ô đánh dấu, mình muốn loại lên men yếm khí.
@@ -956,11 +956,11 @@ Mình muốn đặt |250G| FINE ROBUSTA (SKU RTCFR4250). Cho mình hỏi 2 đi�
 Cảm ơn shop.</pre>
     </article>
     <article class="carte message-carte">
-      <div class="message-entete"><h4>Procaffe, confirmer la référence du joint</h4><button class="btn btn-petit" data-copier="msg-procaffe">Copier</button></div>
+      <div class="message-entete"><h3>Procaffe, confirmer la référence du joint</h3><button class="btn btn-petit" data-copier="msg-procaffe">Copier</button></div>
       <pre class="message-vn-texte" id="msg-procaffe">Chào shop, ấm của mình là Bialetti Brikka 2 cup mẫu mới (bản thiết kế lại từ 2020, có van đối trọng). Mình lấy variant « Ron Brikka 2 cup » là đúng phải không ạ? Trong hộp có kèm phin lọc (piastrina) luôn không ạ? Cảm ơn shop.</pre>
     </article>
     <article class="carte message-carte">
-      <div class="message-entete"><h4>Demander le niveau de torréfaction</h4><button class="btn btn-petit" data-copier="msg-torrefaction">Copier</button></div>
+      <div class="message-entete"><h3>Demander le niveau de torréfaction</h3><button class="btn btn-petit" data-copier="msg-torrefaction">Copier</button></div>
       <pre class="message-vn-texte" id="msg-torrefaction">Chào shop, cho mình hỏi cà phê này rang ở mức nào ạ (light, medium hay dark)? Mình pha bằng moka pot và pour over nên muốn biết trước. Cảm ơn shop.</pre>
     </article>
   </div>
@@ -1275,21 +1275,21 @@ Cảm ơn shop.</pre>
 <!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
      et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
      desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=7.83"></script>
-<script defer src="js/i18n.js?v=7.83"></script>
-<script defer src="js/grind.js?v=7.83"></script>
-<script defer src="js/recettes.js?v=7.83"></script>
+<script defer src="js/outils.js?v=7.84"></script>
+<script defer src="js/i18n.js?v=7.84"></script>
+<script defer src="js/grind.js?v=7.84"></script>
+<script defer src="js/recettes.js?v=7.84"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=7.83"></script>
-<script defer src="js/data.js?v=7.83"></script>
-<script defer src="js/reglages.js?v=7.83"></script>
-<script defer src="js/charts.js?v=7.83"></script>
-<script defer src="js/ui-noyau.js?v=7.83"></script>
-<script defer src="js/ui-tableau.js?v=7.83"></script>
-<script defer src="js/ui-saisie.js?v=7.83"></script>
-<script defer src="js/ui-historique.js?v=7.83"></script>
-<script defer src="js/ui-guide.js?v=7.83"></script>
-<script defer src="js/ui-catalogue.js?v=7.83"></script>
-<script defer src="js/app.js?v=7.83"></script>
+<script defer src="js/sync.js?v=7.84"></script>
+<script defer src="js/data.js?v=7.84"></script>
+<script defer src="js/reglages.js?v=7.84"></script>
+<script defer src="js/charts.js?v=7.84"></script>
+<script defer src="js/ui-noyau.js?v=7.84"></script>
+<script defer src="js/ui-tableau.js?v=7.84"></script>
+<script defer src="js/ui-saisie.js?v=7.84"></script>
+<script defer src="js/ui-historique.js?v=7.84"></script>
+<script defer src="js/ui-guide.js?v=7.84"></script>
+<script defer src="js/ui-catalogue.js?v=7.84"></script>
+<script defer src="js/app.js?v=7.84"></script>
 </body>
 </html>

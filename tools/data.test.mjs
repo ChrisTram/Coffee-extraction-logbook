@@ -621,6 +621,57 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     check("precache : " + f, sw.includes('"' + f + '"')));
 }
 
+/* LE MANIFESTE. Un `id` stable : sans lui l'identite de l'application installee
+   depend de start_url, et changer celui-ci un jour ferait apparaitre une seconde
+   application a cote de la premiere. Et des raccourcis d'appui long sur l'icone,
+   qui doivent viser des ecrans qui existent. */
+{
+  let manifest = null;
+  try { manifest = JSON.parse(readFileSync(join(ROOT, "manifest.json"), "utf8")); } catch (e) { /* invalide */ }
+  check("le manifeste est un JSON valide", !!manifest);
+  if (manifest) {
+    check("le manifeste porte un id", manifest.id === "./", String(manifest.id));
+    const app = SOURCE_UI;
+    const liste = app.slice(app.indexOf("const ECRANS = ["), app.indexOf("]", app.indexOf("const ECRANS = [")));
+    const raccourcis = Array.isArray(manifest.shortcuts) ? manifest.shortcuts : [];
+    check("au moins un raccourci d'appui long", raccourcis.length >= 1);
+    const morts = raccourcis.filter(r => !liste.includes('"' + String(r.url).replace("./#", "") + '"'));
+    check("chaque raccourci vise un ecran existant", morts.length === 0, morts.map(r => r.url).join(", "));
+    check("chaque raccourci a une icone", raccourcis.every(r => Array.isArray(r.icons) && r.icons.length));
+  }
+}
+
+/* ACCESSIBILITE DES CHAMPS. Chaque champ visible doit avoir un nom : une
+   etiquette <label for>, une etiquette qui l'enveloppe, ou un aria-label. Sept
+   seconds champs de paires (minutes puis secondes, case puis quantite) n'en
+   avaient aucun. Et le Guide sautait de h2 a h4, ce qui casse la navigation par
+   titres d'un lecteur d'ecran. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  const pourLabel = new Set([...html.matchAll(/<label[^>]*\bfor="([^"]+)"/g)].map(m => m[1]));
+  const sansNom = [];
+  for (const m of html.matchAll(/<(input|select|textarea)\b([^>]*)>/g)) {
+    const attrs = m[2];
+    if (/type="(hidden|file)"/.test(attrs)) continue;
+    const id = (attrs.match(/\bid="([^"]+)"/) || [])[1];
+    if (/aria-label(ledby)?=/.test(attrs) || (id && pourLabel.has(id))) continue;
+    const avant = html.lastIndexOf("<label", m.index), fermeAvant = html.lastIndexOf("</label>", m.index);
+    if (avant > fermeAvant) continue; // enveloppe par un <label>
+    sansNom.push(id || attrs.trim().slice(0, 40));
+  }
+  check("chaque champ de la page porte un nom accessible", sansNom.length === 0, sansNom.join(", "));
+
+  const niveaux = [...html.matchAll(/<h([1-6])\b/g)].map(m => Number(m[1]));
+  const sauts = niveaux.filter((n, i) => i > 0 && n - niveaux[i - 1] > 1).length;
+  check("aucun titre ne saute un niveau", sauts === 0, String(sauts));
+
+  // Les nouvelles etiquettes doivent exister en anglais, comme toute chaine visible.
+  const en = readFileSync(join(ROOT, "js/i18n.en.js"), "utf8");
+  const arias = [...html.matchAll(/aria-label="([^"]+)"/g)].map(m => m[1]);
+  const nonTraduits = [...new Set(arias)].filter(a => !en.includes('"' + a + '"'));
+  check("chaque aria-label statique a sa traduction", nonTraduits.length === 0, nonTraduits.join(", "));
+}
+
 /* La barre de navigation ne doit plus jamais passer a la ligne : trois onglets a
    texte, tout le reste en icone a droite. C'est le 7e onglet Parametres qui avait
    casse la mise en page. */

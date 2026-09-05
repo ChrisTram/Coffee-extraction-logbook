@@ -97,6 +97,20 @@ html[data-theme="clair"] {
 
 html { scroll-behavior: smooth; }
 
+/* Au doigt : pas de zoom au double appui sur un bouton ni de halo gris au tap,
+   les deux font "page web" la ou on veut "application". */
+button, .pilule, .tag, .nav-btn, input[type="range"] { touch-action: manipulation; }
+button, a, .pilule, .tag { -webkit-tap-highlight-color: transparent; }
+
+/* CONTRASTE FORCE (Windows). Les couleurs de fond disparaissent : un etat actif
+   qui ne tenait qu'a sa couleur devient invisible. On lui rend un trait. */
+@media (forced-colors: active) {
+  [aria-pressed="true"], [aria-current="page"], .btn-methode.actif, .nav-btn.actif {
+    outline: 2px solid CanvasText;
+    outline-offset: 2px;
+  }
+}
+
 body {
   margin: 0;
   font-family: var(--sans);
@@ -411,6 +425,18 @@ button { font-family: inherit; }
 }
 .entete-actions { flex-wrap: wrap; }
 .btn-icone:hover { border-color: var(--accent); }
+
+/* ZONE D'APPUI de 44 px sans changer le dessin. Les icones d'entete font 30 a
+   34 px de haut, ce qui passe le minimum WCAG (24) mais pas le confort (44), et
+   ce sont les boutons qu'on tape plusieurs fois par jour les doigts mouilles.
+   Le pseudo-element deborde surtout en hauteur : sur les cotes, deux pixels
+   suffisent pour que deux voisins ne se marchent pas dessus (l'espace entre eux
+   fait 4 a 5 px). */
+.btn-icone { position: relative; }
+.btn-icone::after { content: ""; position: absolute; inset: -6px -2px; }
+@media (max-width: 480px) {
+  .nav-icone::after { inset: -8px -2px; }
+}
 
 /* Parametres : un 7e onglet faisait passer la nav a la ligne sous le reste.
    Il vit donc avec les outils d'entete, en engrenage, mais garde la classe
@@ -745,7 +771,7 @@ input:focus, select:focus, textarea:focus {
 
 /* Le zéro du moulin de Chris : un encadré, pas une note en passant. */
 .encadre-zero { border-left: 3px solid var(--accent); }
-.encadre-zero h4 { margin-top: 0; }
+.encadre-zero h3 { margin-top: 0; }
 
 /* Trait du réglage enregistré sur le diagramme, distinct du curseur noir. */
 .dg-defaut { stroke: var(--ok); stroke-width: 3; opacity: 0.75; }
@@ -1359,8 +1385,8 @@ input:focus, select:focus, textarea:focus {
 }
 .ref-intro { color: var(--attenue); max-width: 760px; margin-top: 0; }
 .ref-bloc { margin-bottom: 16px; }
-.ref-bloc h4 { margin: 20px 0 8px; font-size: 1rem; }
-.ref-bloc h4:first-child { margin-top: 0; }
+.ref-bloc h3 { margin: 20px 0 8px; font-size: 1rem; }
+.ref-bloc h3:first-child { margin-top: 0; }
 
 .liste-simple { margin: 8px 0; padding-left: 20px; }
 .liste-simple li { margin-bottom: 3px; }
@@ -1529,7 +1555,7 @@ input:focus, select:focus, textarea:focus {
   gap: 14px;
   margin-bottom: 10px;
 }
-.diag-carte h4 { margin: 0 0 8px; }
+.diag-carte h3 { margin: 0 0 8px; }
 .diag-carte p { font-size: 0.88rem; margin: 0 0 8px; }
 .diag-action {
   color: var(--accent-fort);
@@ -1661,9 +1687,9 @@ input:focus, select:focus, textarea:focus {
   gap: 14px;
   margin-bottom: 10px;
 }
-.boutique h4 { margin: 0 0 2px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.boutique h4 a { font-size: 0.78rem; font-family: var(--sans); font-weight: 400; text-decoration: none; }
-.boutique h4 a:hover { text-decoration: underline; }
+.boutique h3 { margin: 0 0 2px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.boutique h3 a { font-size: 0.78rem; font-family: var(--sans); font-weight: 400; text-decoration: none; }
+.boutique h3 a:hover { text-decoration: underline; }
 .boutique-meta { font-size: 0.78rem; color: var(--attenue); margin: 0 0 8px; }
 .boutique p { font-size: 0.88rem; margin: 0; }
 
@@ -1673,7 +1699,7 @@ input:focus, select:focus, textarea:focus {
 
 .messages-vn { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 14px; margin-bottom: 10px; }
 .message-entete { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-.message-entete h4 { margin: 0; }
+.message-entete h3 { margin: 0; }
 .message-vn-texte {
   background: var(--panneau-2);
   border-radius: var(--rayon-petit);

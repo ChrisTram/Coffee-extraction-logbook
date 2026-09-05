@@ -2341,6 +2341,15 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.84 : accessibilité et confort au doigt. Les 47 titres du Guide passent de
+  h4 à h3 (plus de saut de niveau après un h2), six seconds champs de paires
+  (minutes et secondes, agitation, eau ajoutée, tasse) reçoivent une étiquette de
+  lecteur d'écran traduite, les icônes d'entête gagnent une zone d'appui de 44 px
+  sans changer de taille, le mode contraste forcé garde un trait sur les états
+  actifs, et les boutons ne déclenchent plus ni zoom au double appui ni halo
+  gris au tap. Manifeste PWA : un `id` stable et deux raccourcis d'appui long
+  (Saisie, Historique). Trois tests : champs nommés, titres sans saut,
+  manifeste valide et raccourcis qui visent des écrans existants.
 - v7.83 : les quatre `confirm()` natifs restants (démo par dessus des données,
   repartir de zéro, rétablir une recette, supprimer une recette) passent par
   `UI.confirmer`, un `<dialog>` de la page : traduit, au thème, le choix sûr a le

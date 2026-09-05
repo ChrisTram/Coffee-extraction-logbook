@@ -1,4 +1,5 @@
 {
+  "id": "./",
   "name": "Carnet d'extraction",
   "short_name": "Carnet",
   "description": "Suivi des extractions Bialetti Brikka et Hario Switch, moulin Timemore C5 ESP.",
@@ -13,5 +14,21 @@
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nouvelle extraction",
+      "short_name": "Saisie",
+      "description": "Ouvrir directement la saisie d'une tasse",
+      "url": "./#saisie",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Historique",
+      "short_name": "Historique",
+      "description": "Retrouver les dernières extractions",
+      "url": "./#historique",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
   ]
 }
