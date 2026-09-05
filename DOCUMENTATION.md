@@ -2341,6 +2341,12 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.82 : les fichiers de code portent leur version dans l'URL (`?v=7.82`), le
+  Worker les sert avec un cache d'un an, et seule `index.html` se revalide encore
+  à chaque ouverture : une ouverture à chaud ne fait plus qu'une requête au lieu
+  de seize. La version vit dans `<meta name="app-version">`, `app.js` la lit, le
+  service worker la porte et jette les anciennes URL à l'activation.
+  `node tools/bump_version.mjs X` écrit tout, un test refuse toute divergence.
 - v7.81 : les fonctions pures partagées (moyenne, clé de jour locale) quittent
   leurs trois copies pour `js/outils.js`, premier script de la page ; la moyenne
   d'une liste vide renvoie null partout au lieu de NaN dans un fichier sur deux.

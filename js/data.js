@@ -1064,7 +1064,7 @@ const DATA = (() => {
     if (typeof DEMO_CAFES_CSV !== "undefined") return Promise.resolve(true);
     return new Promise(resolve => {
       const s = document.createElement("script");
-      s.src = "js/demo-data.js";
+      s.src = OUTILS.urlVersionnee("js/demo-data.js");
       s.onload = () => resolve(typeof DEMO_CAFES_CSV !== "undefined");
       s.onerror = () => resolve(false);
       document.head.appendChild(s);

@@ -139,6 +139,23 @@ const oldCookie = (oldLogin.headers.get("Set-Cookie") || "").split(";")[0];
 const expired = await call("/", { headers: { Cookie: oldCookie } });
 check("session expiree rejetee", expired.status === 302, `status ${expired.status}`);
 
+// 12 bis. Cache HTTP : un fichier de code VERSIONNE se garde un an, tout le
+//     reste se revalide a chaque fois. La version dans l'URL est ce qui rend
+//     la promesse tenable : un nouveau deploiement change l'URL.
+{
+  const versioned = await call("/js/app.js?v=7.82", { headers: { Cookie: cookie } });
+  check("un script versionne est immutable", (versioned.headers.get("Cache-Control") || "").includes("immutable"));
+  check("et toujours prive", (versioned.headers.get("Cache-Control") || "").includes("private"));
+  const css = await call("/css/styles.css?v=7.82", { headers: { Cookie: cookie } });
+  check("la feuille de style versionnee aussi", (css.headers.get("Cache-Control") || "").includes("immutable"));
+  const bare = await call("/js/app.js", { headers: { Cookie: cookie } });
+  check("sans version, un script se revalide", (bare.headers.get("Cache-Control") || "").includes("no-cache"));
+  const page = await call("/index.html?v=7.82", { headers: { Cookie: cookie } });
+  check("la page ne devient jamais immutable, meme avec ?v", (page.headers.get("Cache-Control") || "").includes("no-cache"));
+  const manifest = await call("/manifest.json", { headers: { Cookie: cookie } });
+  check("le manifeste non plus", (manifest.headers.get("Cache-Control") || "").includes("no-cache"));
+}
+
 // 13. Le cache local de wrangler ne part ni dans le depot ni dans les assets.
 //     Il contient l'identifiant et le nom du compte Cloudflare, et il a ete
 //     versionne puis servi pendant trois semaines avant qu'un audit le voie.

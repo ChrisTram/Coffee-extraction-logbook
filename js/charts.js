@@ -75,7 +75,7 @@ const CHARTS = (() => {
     if (!chargementChart) {
       chargementChart = new Promise(resolve => {
         const s = document.createElement("script");
-        s.src = "js/vendor/chart.umd.js";
+        s.src = OUTILS.urlVersionnee("js/vendor/chart.umd.js");
         s.onload = () => {
           chartPret = true;
           appliquerDefauts();

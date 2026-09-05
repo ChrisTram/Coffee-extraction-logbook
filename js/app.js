@@ -522,12 +522,13 @@
 
   // ---------- Démarrage ----------
 
-  // Version affichée dans le pied de page. À INCRÉMENTER en même temps que le
-  // changelog de DOCUMENTATION.md. Sert à savoir d'un coup d'oeil quelle version
-  // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
-  // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
-  // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.81";
+  /* Version affichée dans le pied de page. Elle vit dans index.html, balise
+     <meta name="app-version">, et se pose avec `node tools/bump_version.mjs X`
+     en même temps que la ligne de changelog. Sert à savoir d'un coup d'oeil
+     quelle version tourne sur un appareil donné, ce qui devient indispensable
+     depuis qu'un service worker met des fichiers en cache : sans elle, "mon
+     téléphone affiche l'ancienne version" n'est pas diagnosticable. */
+  const VERSION = OUTILS.versionSite() || "dev";
 
   async function demarrer() {
     /* AVANT tout rendu : si Chris avait laissé le site en anglais, le paquet de

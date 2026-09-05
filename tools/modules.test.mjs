@@ -345,7 +345,8 @@ const noyau = infos["js/ui-noyau.js"];
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
   const boot = readFileSync(join(ROOT, "tools/boot.test.mjs"), "utf8");
-  const dansPage = [...html.matchAll(/<script\b[^>]*src="(js\/[^"]+)"/g)].map(m => m[1]);
+  // Sans le ?v= : la version fait partie de l'URL, pas du nom de fichier.
+  const dansPage = [...html.matchAll(/<script\b[^>]*src="(js\/[^"?]+)/g)].map(m => m[1]);
   const oublies = dansPage.filter(s => !boot.includes('"' + s + '"'));
   check("le harnais de démarrage charge tous les scripts de la page",
     oublies.length === 0, oublies.join(", "));

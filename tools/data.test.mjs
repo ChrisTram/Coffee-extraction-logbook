@@ -585,8 +585,30 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
       /querySelectorAll\('meta\[name="theme-color"\]'\)[\s\S]{0,80}setAttribute/.test(SOURCE_UI));
   }
 
-  const manquants = scripts.filter(s => !sw.includes('"./' + s + '"'));
+  // Le nom de fichier, sans son ?v= : le service worker ajoute la version lui meme.
+  const sansVersion = s => s.split("?")[0];
+  const manquants = scripts.filter(s => !sw.includes('"./' + sansVersion(s) + '"'));
   check("tous les scripts d'index.html sont precaches", manquants.length === 0, manquants.join(", "));
+
+  /* VERSION UNIQUE. Elle est ecrite dans le <meta>, dans chaque ?v= de la page
+     et dans sw.js. Une divergence laisse un appareil avec le nouveau HTML et un
+     vieux script en cache pour un an : c'est le seul vrai risque du versionnage,
+     et il se voit ici avant le deploiement. */
+  const meta = (html.match(/<meta name="app-version" content="([^"]+)">/) || [])[1];
+  check("la page declare sa version dans un meta", /^\d+\.\d+/.test(meta || ""), String(meta));
+  const versions = [...html.matchAll(/(?:src|href)="(?:js|css)\/[^"?]+\?v=([^"]*)"/g)].map(m => m[1]);
+  check("chaque script et la feuille de style portent ?v=", versions.length === scripts.length + 1,
+    versions.length + " sur " + (scripts.length + 1));
+  check("et tous portent la version du meta", versions.every(v => v === meta),
+    [...new Set(versions)].join(", "));
+  const swVersion = (sw.match(/const VERSION = "([^"]+)"/) || [])[1];
+  check("le service worker porte la meme version", swVersion === meta, swVersion + " contre " + meta);
+  check("app.js lit la version au lieu de la recopier", SOURCE_UI.includes("OUTILS.versionSite()"));
+  // Les trois fichiers charges a la demande doivent passer par la meme URL versionnee.
+  ["js/i18n.js", "js/data.js", "js/charts.js"].forEach(f => {
+    const src = readFileSync(join(ROOT, f), "utf8");
+    check(f + " versionne ce qu'il charge a la demande", /s\.src = OUTILS\.urlVersionnee\(/.test(src));
+  });
   /* Le compte baisse a mesure qu on sort des fichiers du chemin critique :
      Chart.js, le paquet anglais et la demo sont desormais charges a la demande.
      Ce qui doit rester vrai, c est que TOUT ce qui est encore une balise script

@@ -624,7 +624,7 @@ const I18N = (() => {
     if (typeof I18N_EN !== "undefined") { fusionnerPaquet(I18N_EN); paquetEn = Promise.resolve(true); return paquetEn; }
     paquetEn = new Promise(resolve => {
       const s = document.createElement("script");
-      s.src = "js/i18n.en.js";
+      s.src = OUTILS.urlVersionnee("js/i18n.en.js");
       s.onload = () => resolve(fusionnerPaquet(typeof I18N_EN !== "undefined" ? I18N_EN : null));
       // Échec de chargement : on reste en français plutôt que d'afficher une
       // moitié de site traduite. paquetEn revient à null pour permettre un retry.

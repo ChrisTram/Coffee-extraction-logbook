@@ -7,6 +7,15 @@
  * toujours. Le site est petit et servi depuis le reseau Cloudflare, donc le
  * cout d'un aller retour reseau est negligeable devant ce risque.
  *
+ * VERSIONNAGE DES ASSETS (v7.82). Les scripts et la feuille de style portent
+ * ?v=VERSION dans leur URL, ici comme dans index.html. Le Worker renvoie ces
+ * URL avec un Cache-Control d'un an : le navigateur ne redemande donc plus les
+ * seize fichiers a chaque ouverture, il ne redemande que index.html, dont
+ * l'URL ne change pas et qui reste en no-cache. Une nouvelle version change
+ * les URL, donc le cache HTTP tombe tout seul. La VERSION ci-dessous doit
+ * etre celle du <meta name="app-version"> d'index.html : tools/bump_version.mjs
+ * ecrit les deux, et un test refuse qu'elles divergent.
+ *
  * DEUX PIEGES traites ici :
  *  - La porte d'entree (worker/index.js) redirige vers /login quand la session
  *    a expire. Une reponse issue d'une redirection ne doit JAMAIS entrer dans
@@ -16,15 +25,22 @@
  *    la deconnexion cessent de fonctionner.
  */
 
+const VERSION = "7.82";
 const CACHE_NAME = "carnet-extraction";
+
+const versionnee = url => url + "?v=" + VERSION;
 
 // Le strict necessaire pour demarrer hors ligne. L'ordre n'importe pas, chaque
 // entree est mise en cache independamment : une seule qui echoue ne fait pas
-// echouer l'installation.
+// echouer l'installation. Les fichiers de code portent la version dans leur
+// URL, les autres (page, manifeste, icones) non : leur URL ne bouge jamais.
 const PRECACHE_URLS = [
   "./",
   "./index.html",
   "./manifest.json",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png",
+].concat([
   "./css/styles.css",
   // Plus chargée par une balise script depuis la v7.54, mais toujours précachée :
   // le chargement à la demande doit fonctionner hors ligne.
@@ -50,9 +66,7 @@ const PRECACHE_URLS = [
   "./js/ui-guide.js",
   "./js/ui-catalogue.js",
   "./js/app.js",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png",
-];
+].map(versionnee));
 
 const NEVER_CACHED = ["/login", "/logout"];
 
@@ -84,6 +98,15 @@ self.addEventListener("activate", event => {
     (async () => {
       const noms = await caches.keys();
       await Promise.all(noms.filter(n => n !== CACHE_NAME).map(n => caches.delete(n)));
+      /* Les fichiers d'une version precedente ont une autre URL : ils ne
+         seront plus jamais demandes, on les jette pour que le cache ne grossisse
+         pas d'un jeu complet a chaque deploiement. */
+      const cache = await caches.open(CACHE_NAME);
+      const cles = await cache.keys();
+      await Promise.all(cles.map(async req => {
+        const v = new URL(req.url).searchParams.get("v");
+        if (v !== null && v !== VERSION) await cache.delete(req);
+      }));
       await self.clients.claim();
     })()
   );
@@ -110,6 +133,10 @@ self.addEventListener("fetch", event => {
         }
         return response;
       } catch (error) {
+        // D'abord l'URL exacte (version comprise), puis sans parametres : hors
+        // ligne, un fichier d'une version voisine vaut mieux qu'un ecran blanc.
+        const exact = await caches.match(request);
+        if (exact) return exact;
         const enCache = await caches.match(request, { ignoreSearch: true });
         if (enCache) return enCache;
         // Navigation hors ligne sans correspondance exacte : on retombe sur la

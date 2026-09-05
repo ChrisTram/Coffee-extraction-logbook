@@ -66,7 +66,7 @@ export default {
       return redirectTo(`${LOGIN_PATH}?next=${wanted}`, url);
     }
 
-    return servePrivately(await env.ASSETS.fetch(request));
+    return servePrivately(await env.ASSETS.fetch(request), url);
   },
 };
 
@@ -247,10 +247,23 @@ function safeTarget(value) {
   return value;
 }
 
-/* Le contenu est prive : jamais de cache partage, jamais d'indexation. */
-function servePrivately(response) {
+/* Le contenu est prive : jamais de cache partage, jamais d'indexation.
+
+   Les fichiers de code portent leur version dans l'URL (js/app.js?v=7.82,
+   voir tools/bump_version.mjs) : une URL donnee ne changera plus jamais de
+   contenu, donc le navigateur peut la garder un an sans revalider. Sans ca,
+   chaque ouverture repartait sur le reseau pour seize fichiers deja presents
+   sur l'appareil. Tout le reste, index.html en tete, reste en no-cache : c'est
+   lui qui porte les nouvelles URL quand la version change. */
+const IMMUTABLE_PATH = /^\/(js|css)\//;
+
+function servePrivately(response, url) {
   const copy = new Response(response.body, response);
-  copy.headers.set("Cache-Control", "private, no-cache, must-revalidate");
+  const versioned = url && IMMUTABLE_PATH.test(url.pathname) && url.searchParams.has("v");
+  copy.headers.set(
+    "Cache-Control",
+    versioned ? "private, max-age=31536000, immutable" : "private, no-cache, must-revalidate"
+  );
   copy.headers.set("X-Robots-Tag", "noindex, nofollow");
   return copy;
 }
