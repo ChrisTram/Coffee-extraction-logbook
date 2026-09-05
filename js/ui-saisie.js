@@ -228,7 +228,7 @@
     if (!r || r.methode !== "Switch") return;
     const remue = UI.etapesPour(r).some(e => /remuer/i.test(e.texte));
     $("#f-agitation-oui").checked = remue;
-    $("#f-agitation").hidden = !remue;
+    $("#ligne-agitation").hidden = !remue;
     if (remue && !$("#f-agitation").value) $("#f-agitation").value = 1;
   }
 
@@ -492,6 +492,7 @@
   }
 
   function majLive() {
+    majCurseurs();
     const dose = parseFloat($f("#f-dose").value);
     const eau = parseFloat($f("#f-eau").value);
     /* Même logique que DATA.calculs : le ratio principal est EAU sur DOSE sur les
@@ -838,6 +839,56 @@
   // La date vient de Chris dès qu'il y touche, et plus d'un défaut.
   function marquerDateTouchee() { saisie.dateTouchee = true; }
 
+  /* Les couples curseur / champ. Le CHAMP reste la source de vérité, le curseur
+     le pilote : tout le reste du code lit le champ, le brouillon l'enregistre,
+     l'édition le remplit. Inverser les rôles aurait demandé de toucher partout.
+
+     La mouture est le seul cas particulier : son champ porte un cadran
+     rotation.numéro.cran, pas un nombre, donc le curseur court sur les CRANS et
+     la conversion passe par le moteur de mouture, comme le convertisseur du
+     guide. */
+  const COUPLES_CURSEUR = [
+    { curseur: "f-dose-curseur", champ: "f-dose" },
+    { curseur: "f-eau-curseur", champ: "f-eau" },
+    { curseur: "f-puissance-curseur", champ: "f-puissance" },
+    { curseur: "f-agitation-curseur", champ: "f-agitation" },
+    {
+      curseur: "f-mouture-curseur", champ: "f-mouture",
+      versChamp: crans => GRIND.dialDepuisCrans(Number(crans)),
+      versCurseur: dial => { const p = GRIND.parseDial(dial); return p ? p.crans : null; },
+    },
+  ];
+
+  function brancherCurseurs() {
+    COUPLES_CURSEUR.forEach(c => {
+      const curseur = $("#" + c.curseur), champ = $("#" + c.champ);
+      if (!curseur || !champ) return;
+      curseur.addEventListener("input", () => {
+        champ.value = c.versChamp ? c.versChamp(curseur.value) : curseur.value;
+        /* On rejoue l'événement du CHAMP : c'est lui que le reste du formulaire
+           écoute, pour la ligne live, le brouillon et les avertissements.
+           L'appeler à la main ici les oublierait un jour ou l'autre. */
+        champ.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    });
+  }
+
+  /* Remet les curseurs en face de leurs champs. Appelée depuis majLive(), donc
+     après chaque remise à zéro, chaque préremplissage de recette et chaque
+     ouverture d'extraction : ce sont les moments où le champ change SANS que le
+     curseur soit touché. */
+  function majCurseurs() {
+    COUPLES_CURSEUR.forEach(c => {
+      const curseur = $("#" + c.curseur), champ = $("#" + c.champ);
+      if (!curseur || !champ) return;
+      const v = c.versCurseur ? c.versCurseur(champ.value) : champ.value;
+      // Une valeur vide ou illisible laisse le curseur où il est : le déplacer
+      // au minimum donnerait à croire à un réglage que Chris n'a pas fait.
+      if (v === null || v === "" || isNaN(Number(v))) return;
+      if (String(curseur.value) !== String(v)) curseur.value = v;
+    });
+  }
+
   function reinitialiserSaisie(garderCafe) {
     saisie.editId = null;
     saisie.dateTouchee = false;
@@ -914,7 +965,7 @@
     majChampPrechauffe();
     $("#f-puissance").value = ext.puissance_feu || "";
     $("#f-agitation-oui").checked = ext.agitation_nb !== "" && ext.agitation_nb !== undefined;
-    $("#f-agitation").hidden = !$("#f-agitation-oui").checked;
+    $("#ligne-agitation").hidden = !$("#f-agitation-oui").checked;
     $("#f-agitation").value = ext.agitation_nb !== undefined && ext.agitation_nb !== "" ? ext.agitation_nb : 1;
     $("#f-tasse").value = ext.tasse || "";
     $("#f-lait").value = ext.lait_ml !== undefined ? ext.lait_ml : "";
@@ -1086,7 +1137,7 @@
     majAsideSaisie, majAvertRapide, majAvertissements, majBoutonsChrono, majChampPrechauffe,
     majCorrectionDiagnostic, majEtapesChrono, majLait, majLive, majPanneauRapide,
     majRecettesRapide, noteSaisie, paliersCourants, planifierBrouillon, prefillDepuisRecette,
-    marquerDateTouchee, rafraichirDateSaisie,
+    brancherCurseurs, majCurseurs, marquerDateTouchee, rafraichirDateSaisie,
     rapideEstOuvert, rapideOuvert, razPresetTemp, reinitialiserSaisie, releaseWakeLock,
     remplirSelectCafes, remplirSelectRecettes, remplirSelectTasses, rendreTassesEditeur,
     restaurerBrouillon, saisie, screenWakeLock, surChoixCafe, surChoixCafeRapide,

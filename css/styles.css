@@ -1166,6 +1166,22 @@ input:focus, select:focus, textarea:focus {
   background: color-mix(in srgb, var(--danger) 14%, transparent);
 }
 
+/* La ligne entière ouvre l'extraction : le curseur doit le dire. Les boutons
+   d'action reprennent le leur, sinon la nuance se perd au survol. */
+.ligne-histo { cursor: pointer; }
+.ligne-histo .btn-ligne, .ligne-histo .btn-deplier { cursor: pointer; }
+.ligne-detail { cursor: auto; }
+
+/* Curseur et nombre sur UNE ligne. Empilés, chaque cellule de la grille
+   chiffrée doublerait de hauteur, exactement le défaut que la cellule
+   Température documente déjà. Le nombre reste étroit : il affiche et permet la
+   frappe précise, le curseur fait le gros du geste. */
+.ligne-curseur { display: flex; align-items: center; gap: 10px; }
+.ligne-curseur .curseur-champ { flex: 1 1 auto; min-width: 0; }
+.ligne-curseur input[type="number"],
+.ligne-curseur input[type="text"] { flex: 0 0 76px; width: 76px; text-align: center; }
+.curseur-champ { accent-color: var(--accent); height: 22px; }
+
 .badge-ratee {
   display: inline-block;
   font-size: 0.66rem;

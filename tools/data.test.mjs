@@ -1513,10 +1513,17 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
      preselection) sont listees : elles forment un seul controle aux yeux de
      l'utilisateur, et partagent donc une etiquette a juste titre. */
   const PAIRES = ["f-temp-preset", "f-total-sec", "f-ecoulement-sec", "f-note-vide"];
+  /* Un curseur nomme "X-curseur" pilote le champ "X" : c'est la MEME valeur
+     montree deux fois, donc une paire legitime par construction. La regle vaut
+     mieux qu'une liste a rallonger a chaque curseur ajoute, puisque c'est le
+     nommage qui garantit l'appartenance. */
+  const estCurseurDeSonChamp = (id, voisins) =>
+    id.endsWith("-curseur") && voisins.includes(id.slice(0, -"-curseur".length));
   const melanges = [];
   for (const m of html.matchAll(/<div class="champ[^"]*">([\s\S]*?)<\/div>/g)) {
-    const controles = [...m[1].matchAll(/<(?:input|select|textarea)\b[^>]*\bid="([^"]+)"/g)]
-      .map(x => x[1]).filter(id => !PAIRES.includes(id));
+    const tous = [...m[1].matchAll(/<(?:input|select|textarea)\b[^>]*\bid="([^"]+)"/g)].map(x => x[1]);
+    const controles = tous
+      .filter(id => !PAIRES.includes(id) && !estCurseurDeSonChamp(id, tous));
     if (controles.length > 1) melanges.push(controles.join(" + "));
   }
   check("aucun groupe de champ ne melange deux controles sans rapport",

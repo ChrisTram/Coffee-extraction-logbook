@@ -206,12 +206,18 @@
          côte laissaient des cellules vides en fin de chacune. -->
     <div class="grille-nombres">
       <div class="champ">
-        <label for="f-dose">Dose (g)<span class="requis" title="Obligatoire">*</span></label>
-        <input type="number" id="f-dose" enterkeyhint="next" step="0.1" min="1" max="60" inputmode="decimal" value="15" required>
+        <label id="lbl-dose" for="f-dose">Dose (g)<span class="requis" title="Obligatoire">*</span></label>
+        <div class="ligne-curseur">
+          <input type="range" id="f-dose-curseur" class="curseur-champ" min="5" max="40" step="0.5" value="15" aria-labelledby="lbl-dose">
+          <input type="number" id="f-dose" enterkeyhint="next" step="0.1" min="1" max="60" inputmode="decimal" value="15" required>
+        </div>
       </div>
       <div class="champ">
-        <label for="f-eau">Eau (g)</label>
-        <input type="number" id="f-eau" enterkeyhint="next" step="1" min="10" max="1000" inputmode="decimal">
+        <label id="lbl-eau" for="f-eau">Eau (g)</label>
+        <div class="ligne-curseur">
+          <input type="range" id="f-eau-curseur" class="curseur-champ" min="50" max="400" step="5" value="150" aria-labelledby="lbl-eau">
+          <input type="number" id="f-eau" enterkeyhint="next" step="1" min="10" max="1000" inputmode="decimal">
+        </div>
       </div>
       <div class="champ">
         <label for="f-temp">Température (°C)</label>
@@ -239,8 +245,11 @@
         <span class="champ-hint">Estimations, sauf le mélange à l'eau froide.</span>
       </div>
       <div class="champ">
-        <label for="f-mouture">Mouture (molette)</label>
-        <input type="text" id="f-mouture" enterkeyhint="next" pattern="[0-3][.,][0-9][.,][0-4]" inputmode="decimal">
+        <label id="lbl-mouture" for="f-mouture">Mouture (molette)</label>
+        <div class="ligne-curseur">
+          <input type="range" id="f-mouture-curseur" class="curseur-champ" min="0" max="150" step="1" value="75" aria-labelledby="lbl-mouture">
+          <input type="text" id="f-mouture" enterkeyhint="next" pattern="[0-3][.,][0-9][.,][0-4]" inputmode="decimal">
+        </div>
         <span class="champ-hint" id="mouture-detail"></span>
       </div>
       <div class="champ">
@@ -249,8 +258,11 @@
         <button type="button" class="champ-hint champ-hint-btn" id="volume-estime" hidden></button>
       </div>
       <div class="champ" id="champ-puissance" hidden>
-        <label for="f-puissance">Puissance de feu</label>
-        <input type="number" id="f-puissance" min="1" max="10" step="1" inputmode="numeric" value="2">
+        <label id="lbl-puissance" for="f-puissance">Puissance de feu</label>
+        <div class="ligne-curseur">
+          <input type="range" id="f-puissance-curseur" class="curseur-champ" min="1" max="10" step="1" value="2" aria-labelledby="lbl-puissance">
+          <input type="number" id="f-puissance" min="1" max="10" step="1" inputmode="numeric" value="2">
+        </div>
         <span class="champ-hint">Ton échelle, de 1 à 10.</span>
       </div>
       <div class="champ" id="champ-lait" hidden>
@@ -281,8 +293,11 @@
         <span class="champ-hint">Pour allonger la boisson. N'entre pas dans le ratio.</span>
       </div>
       <div class="option-saisie" id="champ-agitation" hidden>
-        <label class="label-inline"><input type="checkbox" id="f-agitation-oui"> Agitation</label>
-        <input type="number" id="f-agitation" enterkeyhint="next" step="1" min="1" max="20" inputmode="numeric" value="1" hidden>
+        <label class="label-inline" id="lbl-agitation"><input type="checkbox" id="f-agitation-oui"> Agitation</label>
+        <div class="ligne-curseur" id="ligne-agitation" hidden>
+        <input type="range" id="f-agitation-curseur" class="curseur-champ" min="1" max="20" step="1" value="1" aria-labelledby="lbl-agitation">
+        <input type="number" id="f-agitation" enterkeyhint="next" step="1" min="1" max="20" inputmode="numeric" value="1">
+        </div>
         <span class="champ-hint">Nombre de remuages, 1 par défaut.</span>
       </div>
     </div>

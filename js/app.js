@@ -163,6 +163,7 @@
     // UNE SEULE FOIS : les conteneurs survivent aux reconstructions de pilules,
     // les attacher depuis construirePilules empilerait un jeu par bascule de langue.
     UI.brancherPilules();
+    UI.brancherCurseurs();
     activerAppuiLong($("#f-diagnostic"));
     activerAppuiLong($("#f-descripteurs"));
     $("#param-molette").addEventListener("input", UI.majDetailMolette);
@@ -220,7 +221,7 @@
     });
     $("#f-eau-ajoutee").addEventListener("input", UI.majLive);
     $("#f-agitation-oui").addEventListener("change", () => {
-      $("#f-agitation").hidden = !$("#f-agitation-oui").checked;
+      $("#ligne-agitation").hidden = !$("#f-agitation-oui").checked;
       if ($("#f-agitation-oui").checked && !$("#f-agitation").value) $("#f-agitation").value = 1;
     });
     $("#f-lait").addEventListener("input", UI.majLive);
@@ -286,7 +287,20 @@
     }));
     $("#h-corps").addEventListener("click", async ev => {
       const btn = ev.target.closest("[data-action]");
-      if (!btn) return;
+      if (!btn) {
+        /* Cliquer la LIGNE ouvre l'extraction en édition, comme les cinq
+           dernières du tableau de bord. Sans ça, seul le crayon fonctionnait :
+           une cible de 24 px pour une ligne qui a l'air cliquable entière. */
+        const ligne = ev.target.closest("tr[data-id]");
+        if (!ligne) return;
+        /* Une sélection de texte n'est pas un clic. Sans ce test, copier un
+           commentaire depuis le détail déplié ouvrirait l'édition. */
+        const selection = window.getSelection ? String(window.getSelection()) : "";
+        if (selection.trim()) return;
+        const extLigne = DATA.state.extractions.find(e => e.id === ligne.dataset.id);
+        if (extLigne) UI.chargerExtractionDansSaisie(extLigne, false);
+        return;
+      }
       const id = btn.closest("tr").dataset.id;
       const ext = DATA.state.extractions.find(e => e.id === id);
       if (!ext) return;
@@ -513,7 +527,7 @@
   // tourne sur un appareil donné, ce qui devient indispensable depuis qu'un
   // service worker met des fichiers en cache : sans elle, "mon téléphone affiche
   // l'ancienne version" n'est pas diagnosticable.
-  const VERSION = "7.76";
+  const VERSION = "7.77";
 
   async function demarrer() {
     /* AVANT tout rendu : si Chris avait laissé le site en anglais, le paquet de

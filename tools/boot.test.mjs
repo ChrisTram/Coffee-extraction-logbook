@@ -741,5 +741,63 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
   cible.ratee = "";
 }
 
+/* LES CURSEURS SUIVENT LEURS CHAMPS.
+
+   Le champ nombre reste la SOURCE DE VERITE : tout le code le lit, le brouillon
+   l'enregistre, l'edition le remplit. Le curseur ne fait que le piloter. Il faut
+   donc qu'il se replace quand le champ change sans lui, ce qui arrive a chaque
+   remise a zero, chaque prereplissage de recette et chaque ouverture
+   d'extraction. Un curseur reste sinon sur sa position d'avant et affiche un
+   reglage que Chris n'a pas fait. */
+{
+  const champ = document.querySelector("#f-dose");
+  const curseur = document.querySelector("#f-dose-curseur");
+  champ.value = "18";
+  curseur.value = "9";
+  api.UI.majCurseurs();
+  check("le curseur se replace sur la valeur du champ",
+    String(curseur.value) === "18", curseur.value);
+
+  /* La mouture n'est pas un nombre : le champ porte un cadran
+     rotation.numero.cran et le curseur court sur les CRANS. */
+  const champM = document.querySelector("#f-mouture");
+  const curseurM = document.querySelector("#f-mouture-curseur");
+  champM.value = "1.5.0";
+  curseurM.value = "0";
+  api.UI.majCurseurs();
+  check("celui de la mouture convertit le cadran en crans",
+    String(curseurM.value) === String(api.GRIND.parseDial("1.5.0").crans),
+    curseurM.value + " pour " + api.GRIND.parseDial("1.5.0").crans);
+
+  /* Un champ vide laisse le curseur ou il est. Le ramener au minimum
+     afficherait une dose de 5 g que personne n'a choisie. */
+  champ.value = "";
+  curseur.value = "18";
+  api.UI.majCurseurs();
+  check("un champ vide ne deplace pas son curseur",
+    String(curseur.value) === "18", curseur.value);
+}
+
+/* Chaque curseur pilote un champ qui existe, et emprunte SON etiquette. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  const ids = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]));
+  const curseurs = [...ids].filter(id => id.endsWith("-curseur") && id.startsWith("f-"));
+  check("des curseurs ont bien ete poses", curseurs.length >= 4, String(curseurs.length));
+
+  const orphelins = curseurs.filter(id => !ids.has(id.slice(0, -"-curseur".length)));
+  check("chaque curseur pilote un champ existant", orphelins.length === 0, orphelins.join(", "));
+
+  /* aria-labelledby plutot qu'un aria-label : le curseur reprend le libelle DEJA
+     traduit de son champ. Zero chaine nouvelle, et les deux controles annoncent
+     la meme chose. Encore faut-il que la cible existe. */
+  const sansNom = curseurs.filter(id => {
+    const balise = (html.match(new RegExp('<input[^>]*\\bid="' + id + '"[^>]*>')) || [""])[0];
+    const cible = (balise.match(/aria-labelledby="([^"]+)"/) || [])[1];
+    return !cible || !ids.has(cible);
+  });
+  check("et emprunte une etiquette qui existe", sansNom.length === 0, sansNom.join(", "));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

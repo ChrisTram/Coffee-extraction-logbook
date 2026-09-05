@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.76,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.77,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -512,6 +512,47 @@ re-créés.
 - Caféine estimée : dose x pourcentage café réel x pourcentage caféine de
   l'espèce (arabica 1,2, robusta 2,4, blend 1,8, liberica 1,4) x 0,9.
 
+## 7 duodecies. Des curseurs, et le champ qui reste maître
+
+Chris règle la dose, l'eau, la mouture, le feu et l'agitation par petits pas
+autour d'une valeur connue. Taper un nombre pour passer de 14 à 15 g est le
+mauvais geste, surtout au téléphone en cuisine. Ces cinq champs portent donc un
+curseur.
+
+**Le champ nombre RESTE, et reste la source de vérité.** Tout le code lit
+`$("#f-dose").value`, le brouillon l'enregistre, l'édition le remplit. Le
+curseur le PILOTE, il ne le remplace pas. C'est ce qui rend le changement sûr,
+et ce qui garde la frappe possible quand on veut une valeur précise. Inverser
+les rôles aurait demandé de toucher partout.
+
+Le curseur écrit dans le champ puis **rejoue l'événement `input` du champ**,
+parce que c'est lui que le reste du formulaire écoute : ligne live, brouillon,
+avertissements. Appeler ces trois-là à la main depuis le curseur aurait marché
+un temps, puis on en aurait oublié un.
+
+`majCurseurs()` est appelée depuis `majLive()`, donc après chaque remise à
+zéro, chaque préremplissage de recette et chaque ouverture d'extraction : ce
+sont les moments où le champ change SANS que le curseur soit touché. Un champ
+vide laisse le curseur où il est, parce que le ramener au minimum afficherait
+une dose de 5 g que personne n'a choisie.
+
+**La mouture est le cas particulier.** Son champ porte un cadran
+`rotation.numéro.cran`, pas un nombre : le curseur court donc sur les CRANS et
+la conversion passe par `js/grind.js`, comme le convertisseur du guide.
+
+**Ce qui n'a PAS de curseur, et pourquoi.** La température a déjà son menu
+d'estimation sur la même ligne, un troisième contrôle n'y tiendrait pas. Le
+volume extrait, le lait et l'eau ajoutée sont des valeurs MESURÉES après coup,
+pas des réglages qu'on balaie.
+
+Curseur et nombre tiennent sur UNE ligne. Empilés, chaque cellule de la grille
+chiffrée doublerait de hauteur, exactement le défaut que la cellule Température
+documente déjà.
+
+Les curseurs portent `aria-labelledby` pointant sur le libellé de leur champ,
+plutôt qu'un `aria-label` à eux : zéro chaîne nouvelle à traduire, et les deux
+contrôles annoncent la même chose au lecteur d'écran. Un test vérifie que
+chaque curseur pilote un champ existant et emprunte une étiquette qui existe.
 ## 7 undecies. Le café est prérempli, la machine non
 
 Chris n'a en général qu'un seul café actif à la fois. Laisser le champ vide sur
@@ -2250,6 +2291,8 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.77 : cliquer une ligne d'historique ouvre l'extraction, et cinq champs de
+  la saisie gagnent un curseur.
 - v7.76 : la case ratée rejoint la NOTE. Rangée parmi les options d'extraction,
   elle était introuvable.
 - v7.75 : la bascule ratée passe dans la ligne d'historique, un clic. La case du
