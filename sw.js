@@ -25,7 +25,7 @@
  *    la deconnexion cessent de fonctionner.
  */
 
-const VERSION = "7.88";
+const VERSION = "7.89";
 const CACHE_NAME = "carnet-extraction";
 
 const versionnee = url => url + "?v=" + VERSION;
