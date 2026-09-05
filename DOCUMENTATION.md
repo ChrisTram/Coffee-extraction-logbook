@@ -1,7 +1,7 @@
 # DOCUMENTATION technique : Carnet d'extraction
 
 Doc de référence du projet, maintenue à chaque modification. Commencer par
-`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.77,
+`START-HERE.md` si tu arrives sans contexte. Dernière mise à jour : v7.78,
 2026-08-16.
 
 ## 1. Vue d'ensemble
@@ -625,6 +625,56 @@ chez Chris (1.5.0, son réglage unique) et 21 % de remplissage, donc deux groupe
 de trois ne pouvaient jamais exister. La mouture reste examinée, mais PARMI les
 autres leviers, ce qui la fait se taire proprement quand elle ne varie pas.
 
+## 6 quindecies. Une seule recette au lait, et le lait en chiffres
+
+Le flat white et le cappuccino avaient la MÊME extraction : même dose, même
+eau, même molette, même feu, et leurs étapes disaient toutes les deux
+« extraire exactement comme la Brikka classique ». Seule la texture du lait
+changeait. Le découpage n'avait d'ailleurs jamais été propre : le `pourQui` du
+flat white commençait par « Flat white OU cappuccino maison ».
+
+Deux noms pour une seule extraction coupent les statistiques en deux, note par
+recette et meilleurs réglages, sans rien apprendre : le champ recette décrit
+l'extraction. Elles sont fusionnées en **Brikka au lait** depuis la v7.78.
+
+**L'identifiant `brikka-flatwhite` est conservé.** Le changer aurait orphelinées
+les données déjà enregistrées pour un gain nul, puisque c'est le NOM qui
+s'affiche. Les deux anciens noms passent par `RENOMMAGES_RECETTES`, qui tourne
+à chaque chargement, donc l'historique se recolle tout seul. Le pas de schéma
+v8 retire la recette en trop et renomme la survivante, mais **uniquement si
+elle porte encore son nom d'origine** : renommée, elle est devenue une recette
+personnelle et ne nous appartient plus.
+
+### Le lait se calcule, et pour les deux boissons
+
+Le calcul existait déjà, contenance de la tasse moins volume de café, mais il
+ne donnait jamais de nombre sur une Brikka : `volumeEstime()` y rend 0
+VOLONTAIREMENT, l'ancienne formule annonçait 139 ml là où Chris en mesure 90 à
+115. Sans volume relevé il refusait donc de répondre, et les recettes au lait
+sont précisément des recettes Brikka.
+
+Il se rabat maintenant sur `volumeTypique`, le rendement DÉCLARÉ de la recette.
+Ce n'est pas une estimation calculée mais un chiffre mesuré et écrit, et
+l'interface dit d'où il vient. Un volume relevé prime toujours.
+
+Les deux boissons s'affichent côte à côte : le cappuccino prend environ 20 %
+de lait LIQUIDE en moins, la mousse occupant le volume. C'était écrit en prose
+dans la recette, donc à calculer de tête au moment de verser.
+
+### Une colonne déclarée doit être sérialisée
+
+`volumeTypique` a d'abord été écrit dans la semence seule, et il disparaissait :
+`normaliserRecette` reconstruit un objet champ par champ, ce qui n'y figure pas
+n'existe pas. Il est devenu une vraie colonne, `volume_typique`, ajoutée en fin
+de `RECETTE_COLS` comme `puissance_feu` avant elle.
+
+**Et cela a révélé un bug plus ancien.** `puissance_feu` figurait dans
+`RECETTE_COLS` mais pas dans `recetteVersLigne`. Or `csvSerialiser` lit
+`ligne[colonne]` : la colonne sortait VIDE, donc exporter les recettes puis les
+relire effaçait la cible de feu des dix recettes, sans erreur ni
+avertissement. `tools/data.test.mjs` fait maintenant un ALLER-RETOUR CSV
+complet et compare champ par champ, ce qui couvre toute la classe plutôt que ce
+cas. Vérifié en remettant le bug.
 ## 6 quaterdecies. Les extractions ratées
 
 Une tasse ratée décrit un GESTE MANQUÉ, pas un réglage. La garder dans les
@@ -2291,6 +2341,8 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.78 : les deux recettes Brikka au lait fusionnent, et le lait s'affiche en
+  chiffres pour le flat white ET le cappuccino.
 - v7.77 : cliquer une ligne d'historique ouvre l'extraction, et cinq champs de
   la saisie gagnent un curseur.
 - v7.76 : la case ratée rejoint la NOTE. Rangée parmi les options d'extraction,

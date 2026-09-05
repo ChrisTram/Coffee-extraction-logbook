@@ -21,7 +21,7 @@ const DATA = (() => {
   const RECETTE_COLS = ["id", "nom", "numero", "methode", "famille", "variante", "sous_titre", "dose_g", "eau_g",
     "temperature_c", "temp_texte", "mouture_dial", "ratio_texte", "total_texte", "lait",
     "etapes", "pour_qui", "cafes_associes", "note", "par_defaut", "avancee", "variantes", "actif",
-    "puissance_feu"];
+    "puissance_feu", "volume_typique"];
   const TASSE_COLS = ["id", "nom", "contenance_ml"];
   /* Valeur de RATTRAPAGE des extractions Brikka déjà enregistrées, qui n'avaient
      pas ce champ. Ce n'est PAS le défaut du formulaire (voir DEFAULT_PUISSANCE_FEU
@@ -288,6 +288,15 @@ const DATA = (() => {
       // saisie comme le font la dose et la molette.
       puissance_feu: r.puissance_feu === "" || r.puissance_feu === undefined || r.puissance_feu === null
         ? "" : Math.max(1, Math.min(10, Math.round(Number(r.puissance_feu)) || 1)),
+      /* Rendement TYPIQUE en tasse, déclaré par la recette. Ce n'est pas une
+         estimation calculée : la Brikka n'en a volontairement aucune, l'ancienne
+         formule annonçait 139 ml là où Chris en mesure 90 à 115. C'est un chiffre
+         mesuré, écrit dans la recette, et il sert à calculer le lait quand le
+         volume de la tasse n'a pas été relevé. */
+      volumeTypique: (() => {
+        const v = r.volume_typique !== undefined ? r.volume_typique : r.volumeTypique;
+        return v === "" || v === null || v === undefined ? "" : (Number(v) || "");
+      })(),
       tempTexte: r.temp_texte !== undefined ? r.temp_texte : (r.tempTexte || ""),
       dial: r.mouture_dial !== undefined ? r.mouture_dial : (r.dial || ""),
       ratioTexte: r.ratio_texte !== undefined ? r.ratio_texte : (r.ratioTexte || ""),
@@ -321,6 +330,13 @@ const DATA = (() => {
       avancee: r.avancee ? 1 : 0,
       variantes: r.variantes ? 1 : 0,
       actif: r.actif,
+      /* puissance_feu manquait ici alors qu'elle figure dans RECETTE_COLS depuis
+         qu'elle existe : csvSerialiser lit ligne[colonne], donc la colonne
+         sortait VIDE. Exporter les recettes puis les relire effacait la cible de
+         feu des dix recettes, sans rien signaler. Le controle des colonnes
+         couvertes, dans tools/data.test.mjs, empeche desormais l'oubli. */
+      puissance_feu: r.puissance_feu,
+      volume_typique: r.volumeTypique,
     };
   }
 
@@ -464,7 +480,7 @@ const DATA = (() => {
 
      Chaque pas ne touche QUE la valeur semée d'avant. Un pas qui écraserait un
      réglage choisi volontairement serait un bug, pas une migration. */
-  const SCHEMA_ACTUEL = 7;
+  const SCHEMA_ACTUEL = 8;
 
   // Rattrapage de la puissance de feu des recettes Brikka : l'échelle de Chris a
   // bougé deux fois, 3 puis 4 puis 2.
@@ -577,6 +593,41 @@ const DATA = (() => {
         if (remplacer(rec, "pourQui", "Plus chaud, plus fin, plus long.",
           "Plus chaud et plus long. Pour le plus fin, descendre d'un cran à la main : les dix recettes portent 1.5.0 depuis que je ne recompte plus les crans à chaque changement de machine.")) bouge = true;
         if (bouge) { estampiller(rec); touche = true; }
+      });
+      return touche;
+    } },
+
+    /* Les deux recettes Brikka au lait fusionnent : même dose, même eau, même
+       molette, même feu, et leurs étapes disaient toutes les deux "extraire
+       exactement comme la Brikka classique". Seule la texture du lait changeait.
+       Le renommage recolle l'historique, ce pas retire la recette en trop.
+
+       Uniquement si elle porte encore son nom d'origine : renommée, elle est
+       devenue une recette personnelle et ne nous appartient plus. */
+    { v: 8, nom: "fusion des deux Brikka au lait", appliquer: () => {
+      let touche = false;
+      const avant = state.recettes.length;
+      state.recettes = state.recettes.filter(rec =>
+        !(rec.id === "brikka-cappuccino" && rec.nom === "Brikka cappuccino"));
+      if (state.recettes.length !== avant) {
+        marquerSupprime("recettes", "brikka-cappuccino");
+        touche = true;
+      }
+      /* La SURVIVANTE prend le nom fusionné et le contenu de la semence. Sans
+         ça, l'historique renommé pointerait vers "Brikka au lait" pendant que la
+         recette s'appellerait encore "Brikka flat white" : un nom de recette
+         orphelin, qui casse le panneau latéral et le préremplissage.
+
+         Le nom d'origine encore en place sert de preuve que la recette n'a pas
+         été retouchée à la main. Renommée, elle appartient à Chris et on n'y
+         touche pas. */
+      const fusionnee = RECETTES_DEPART.find(d => d.id === "brikka-flatwhite");
+      state.recettes.forEach(rec => {
+        if (rec.id !== "brikka-flatwhite" || rec.nom !== "Brikka flat white" || !fusionnee) return;
+        ["nom", "sousTitre", "etapes", "pourQui", "note", "volumeTypique", "lait", "cafesAssocies"]
+          .forEach(champ => { rec[champ] = fusionnee[champ]; });
+        estampiller(rec);
+        touche = true;
       });
       return touche;
     } },
@@ -1336,7 +1387,9 @@ const DATA = (() => {
   return {
     state, abonner, notifier, init,
     synchroniser, syncPossible, reporterHorodatage,
-    csvParse, csvSerialiser, CAFE_COLS, EXT_COLS, RECETTE_COLS, ACHAT_COLS,
+    /* csvRecettes est exposee pour que l aller-retour CSV soit testable sur le
+       VRAI chemin d export : c est lui qui perdait puissance_feu. */
+    csvParse, csvSerialiser, csvRecettes, CAFE_COLS, EXT_COLS, RECETTE_COLS, ACHAT_COLS,
     sachetCourant, stockSachet, ajouterAchat, supprimerAchat,
     calculs, cafeDe,
     lierDossier, delierDossier, sauverFichiers,

@@ -799,5 +799,64 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
   check("et emprunte une etiquette qui existe", sansNom.length === 0, sansNom.join(", "));
 }
 
+/* LE LAIT, EN CHIFFRES, POUR LES DEUX BOISSONS.
+
+   Le calcul existait (contenance de la tasse moins volume de cafe) mais ne
+   donnait jamais de nombre sur une Brikka : volumeEstime() y rend 0 VOLONTAIRE-
+   MENT, l'ancienne formule annoncait 139 ml la ou Chris en mesure 90 a 115. Sans
+   volume mesure, il refusait donc de repondre, et les recettes au lait sont
+   precisement des recettes Brikka.
+
+   Il se rabat maintenant sur le rendement DECLARE de la recette, qui est un
+   chiffre mesure et ecrit, pas une formule fausse. Et il donne les DEUX
+   boissons : le cappuccino prend environ 20 % de lait liquide en moins, la
+   mousse occupant le volume. */
+{
+  const laitiere = api.DATA.state.recettes.find(r => r.lait);
+  check("une recette au lait existe", !!laitiere, laitiere && laitiere.nom);
+  check("et elle declare son rendement", laitiere && laitiere.volumeTypique > 0,
+    laitiere && String(laitiere.volumeTypique));
+
+  const tasse = api.DATA.state.tasses.find(t => Number(t.contenance_ml) === 150);
+  check("une tasse de 150 ml existe pour le calcul", !!tasse, tasse && tasse.nom);
+
+  if (laitiere && tasse) {
+    document.querySelector("#f-recette").value = laitiere.nom;
+    document.querySelector("#f-tasse").value = tasse.nom;
+    document.querySelector("#f-volume").value = "";
+    api.UI.majLait();
+
+    /* 150 de tasse moins 90 de cafe = 60 en flat white, 48 en cappuccino. Le
+       champ prend le flat white : c'est le versement, le cappuccino se retire au
+       pichet. */
+    check("le lait se calcule sans volume mesure",
+      String(document.querySelector("#f-lait").value) === "60",
+      document.querySelector("#f-lait").value);
+    const texte = document.querySelector("#lait-hint").textContent;
+    check("et l'aide donne les DEUX boissons",
+      texte.includes("60") && texte.includes("48"), texte);
+    check("en disant que le volume vient de la recette",
+      texte.includes("recette"), texte);
+
+    /* Un volume MESURE prime toujours sur le rendement declare. */
+    document.querySelector("#f-volume").value = "110";
+    api.UI.majLait();
+    check("une mesure prime sur le chiffre de la recette",
+      String(document.querySelector("#f-lait").value) === "40",
+      document.querySelector("#f-lait").value);
+    document.querySelector("#f-volume").value = "";
+  }
+
+  /* La fusion : une seule recette au lait, et aucun historique orphelin. */
+  const laitieres = api.DATA.state.recettes.filter(r => r.lait);
+  check("les deux recettes au lait n'en font plus qu'une",
+    laitieres.length === 1, laitieres.map(r => r.nom).join(", "));
+  const noms = new Set(api.DATA.state.recettes.map(r => r.nom));
+  const orphelines = api.DATA.state.extractions
+    .filter(e => e.recette && !noms.has(e.recette)).map(e => e.recette);
+  check("aucune extraction ne pointe vers une recette disparue",
+    orphelines.length === 0, [...new Set(orphelines)].join(", "));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

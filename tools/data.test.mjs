@@ -227,7 +227,11 @@ check(
 check("puissance_feu dans EXT_COLS", DATA.EXT_COLS.includes("puissance_feu"));
 check("puissance_feu dans RECETTE_COLS", DATA.RECETTE_COLS.includes("puissance_feu"));
 const BRIKKAS = RECETTES_DEPART.filter(r => r.methode === "Brikka");
-check("les 4 recettes Brikka portent une cible a 2", BRIKKAS.length === 4 && BRIKKAS.every(r => r.puissance_feu === 2),
+/* Le compte n'est plus fige : ce qui compte est que TOUTES les Brikka portent
+   une cible, pas qu'il y en ait un nombre precis. Un test qui fige le nombre
+   demande d'etre retouche a chaque fusion, ce qui est exactement le moment ou on
+   ne veut pas d'un test a modifier. */
+check("chaque recette Brikka porte une cible de feu a 2", BRIKKAS.length > 0 && BRIKKAS.every(r => r.puissance_feu === 2),
   BRIKKAS.map(r => r.nom + "=" + r.puissance_feu).join(" | "));
 check("aucune recette Switch n'en porte", RECETTES_DEPART.filter(r => r.methode === "Switch").every(r => r.puissance_feu === undefined));
 
@@ -854,9 +858,13 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
   const nbBrikka = RECETTES_DEPART.filter(r => r.methode === "Brikka").length;
   const nbSwitch = RECETTES_DEPART.filter(r => r.methode === "Switch").length;
+  /* La phrase du guide doit suivre les donnees. On la relit et on compare, au
+     lieu de figer les deux cotes : sinon fusionner deux recettes laisse un guide
+     qui ment, et c'est le genre d'ecart que personne ne va verifier. */
+  const MOTS = ["Zéro", "Une", "Deux", "Trois", "Quatre", "Cinq", "Six", "Sept", "Huit", "Neuf", "Dix"];
+  const annonce = MOTS[nbBrikka] + " recettes Brikka et " + MOTS[nbSwitch].toLowerCase() + " recettes Switch.";
   check("le guide annonce le bon nombre de recettes",
-    html.includes("Quatre recettes Brikka et six recettes Switch") && nbBrikka === 4 && nbSwitch === 6,
-    nbBrikka + " Brikka, " + nbSwitch + " Switch");
+    html.includes(annonce), "attendu : " + annonce);
   check("le vieux recapitulatif de mouture par recette a disparu",
     !html.includes("Récapitulatif mouture des recettes Switch"));
   check("les reperes de reference ne parlent plus de numeros de recette",
@@ -1777,6 +1785,50 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   // Les deux fiches doivent porter la meme consigne que les recettes.
   check("le guide et les recettes disent la meme chose sur l'eau",
     /La Brikka se remplit à l'EAU FROIDE/.test(html) && /Moka Express/.test(html));
+}
+
+/* TOUTE COLONNE DECLAREE DOIT ETRE SERIALISEE.
+
+   csvSerialiser lit ligne[colonne] : une colonne presente dans RECETTE_COLS mais
+   absente de recetteVersLigne sort donc VIDE, sans erreur ni avertissement.
+   C'etait le cas de puissance_feu depuis qu'elle existe : exporter les recettes
+   puis les relire effacait la cible de feu des dix recettes.
+
+   Le controle porte sur la REGLE, pas sur ce cas : on serialise une recette
+   reelle et on verifie qu'aucune colonne ne sort vide alors que la recette porte
+   la valeur. */
+{
+  /* On part des recettes de la SEMENCE, normalisees : l'etat courant porte des
+     fixtures laissees par les controles precedents, dont des objets bruts que la
+     normalisation n'a jamais vus. Le sujet ici est le serialiseur, pas l'etat. */
+  const recettes = RECETTES_DEPART.map(DATA.normaliserRecette);
+  check("des recettes existent pour le controle", recettes.length > 0, String(recettes.length));
+
+  /* On exporte, on relit, et on compare champ par champ. Un aller-retour est le
+     seul test honnete : il traverse exactement le chemin qui perdait la donnee. */
+  const etatAvant = DATA.state.recettes;
+  DATA.state.recettes = recettes;
+  const texte = DATA.csvRecettes ? DATA.csvRecettes() : null;
+  DATA.state.recettes = etatAvant;
+  if (texte) {
+    const relues = DATA.csvParse(texte).map(DATA.normaliserRecette);
+    const pertes = [];
+    recettes.forEach(avant => {
+      const apres = relues.find(x => x.id === avant.id);
+      if (!apres) { pertes.push(avant.id + " disparue"); return; }
+      ["nom", "dose", "eau", "dial", "puissance_feu", "volumeTypique", "lait", "actif"]
+        .forEach(champ => {
+          if (String(avant[champ] === undefined ? "" : avant[champ]) !==
+              String(apres[champ] === undefined ? "" : apres[champ])) {
+            pertes.push(avant.id + "." + champ + " : " + avant[champ] + " devient " + apres[champ]);
+          }
+        });
+    });
+    check("un aller-retour CSV ne perd aucun champ de recette",
+      pertes.length === 0, pertes.slice(0, 4).join(" | "));
+  } else {
+    check("csvRecettes est exposee pour pouvoir etre testee", false, "absente de l'API");
+  }
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);

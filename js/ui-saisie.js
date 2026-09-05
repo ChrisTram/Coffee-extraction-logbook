@@ -242,8 +242,15 @@
     /* Le volume de café MESURÉ, jamais estimé sur une Brikka : c'est la même
        raison que dans volumeEstime, et un lait calculé sur un volume faux est un
        lait faux. Sans mesure on ne préremplit rien et on le dit. */
-    const volCafe = parseFloat($("#f-volume").value) ||
+    const mesure = parseFloat($("#f-volume").value) ||
       volumeEstime(parseFloat($("#f-dose").value), parseFloat($("#f-eau").value));
+    /* Repli sur le rendement DÉCLARÉ de la recette. Ce n'est pas une estimation
+       calculée, c'est un chiffre mesuré et écrit dans la recette : sur une
+       Brikka, volumeEstime() rend 0 exprès, l'ancienne formule annonçait 139 ml
+       là où Chris en mesure 90 à 115. Sans ce repli, le lait ne se calculait
+       jamais sur les recettes Brikka, qui sont précisément celles au lait. */
+    const volCafe = mesure > 0 ? mesure : (r.volumeTypique || 0);
+    const declare = !(mesure > 0) && volCafe > 0;
     if (!tasse) {
       $("#lait-hint").textContent = I18N.t("lait_choisir_tasse");
       return;
@@ -254,9 +261,17 @@
     }
     const lait = Math.max(0, tasse.contenance_ml - volCafe);
     $("#f-lait").value = lait;
-    $("#lait-hint").textContent = lait === 0
-      ? I18N.t("lait_trop_petit")
-      : I18N.t("lait_calc", { l: lait, t: tasse.contenance_ml, v: volCafe });
+    if (lait === 0) {
+      $("#lait-hint").textContent = I18N.t("lait_trop_petit");
+      return;
+    }
+    /* LES DEUX BOISSONS d'un coup. Le cappuccino prend environ 20 % de lait
+       liquide en moins, la mousse occupant le volume. C'était écrit en prose
+       dans la recette, donc à calculer de tête au moment de verser. */
+    const cappu = Math.round(lait * 0.8);
+    $("#lait-hint").textContent =
+      I18N.t("lait_deux", { l: lait, c: cappu, t: tasse.contenance_ml, v: volCafe }) +
+      (declare ? " " + I18N.t("lait_declare") : "");
   }
 
   // Tasses : liste déroulante, avertissement de contenance, mini éditeur.

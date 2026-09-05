@@ -19,6 +19,7 @@ const RECETTES_DEPART = [
     puissance_feu: 2,
     dial: "1.5.0",
     ratioTexte: "environ 1:7, environ 90 ml en tasse",
+    volumeTypique: 90,
     totalTexte: "retrait du feu aux premiers gargouillis",
     lait: false,
     etapes: [
@@ -49,6 +50,7 @@ const RECETTES_DEPART = [
     puissance_feu: 2,
     dial: "1.5.0",
     ratioTexte: "environ 1:7, environ 90 ml en tasse",
+    volumeTypique: 90,
     totalTexte: "montée en pression sous 2 minutes, écoulement de 20 à 45 secondes",
     lait: false,
     etapes: [
@@ -64,52 +66,37 @@ const RECETTES_DEPART = [
     note: "Si l'écoulement dure moins de 10 secondes, la mouture est trop fine et la soupape lâche d'un coup : passer à 1.6.0, plus grossier. Noter le temps total ET le temps d'écoulement, c'est leur écart qui dit combien de temps la mouture a cuit.",
     parDefaut: false, avancee: false, variantes: false, actif: 1,
   },
+  /* UNE seule recette au lait. Le flat white et le cappuccino partageaient la
+     même extraction au gramme près : seule la texture du lait change, et le
+     cappuccino demande environ 20 % de lait liquide en moins parce que la mousse
+     occupe le volume. Deux recettes pour une extraction coupaient les stats en
+     deux sans rien apprendre. */
   {
     id: "brikka-flatwhite",
-    nom: "Brikka flat white",
-    numero: "",
+    numero: 3,
+    nom: "Brikka au lait",
     methode: "Brikka",
-    famille: "brikka-lait",
-    variante: "Flat white",
-    sousTitre: "Extraction classique, complétée au lait jusqu'à la tasse",
+    sousTitre: "Flat white ou cappuccino, même extraction",
     dose: 14, eau: 150, temp: "", tempTexte: "dépend de la puissance du feu",
     puissance_feu: 2,
     dial: "1.5.0",
-    ratioTexte: "environ 90 ml de café, plus le lait",
+    ratioTexte: "environ 1:7, environ 90 ml en tasse",
+    /* Rendement DÉCLARÉ de la recette, pas une estimation calculée. La Brikka
+       n'a volontairement pas de formule d'estimation, elle donnait un chiffre
+       faux ; celui-ci est mesuré et écrit dans la recette. Il sert de repli pour
+       calculer le lait quand le volume n'a pas été mesuré. */
+    volumeTypique: 90,
     totalTexte: "extraction identique à la classique",
     lait: true,
     etapes: [
       { t: null, texte: "Extraire exactement comme la Brikka classique : 14 g, environ 90 ml." },
-      { t: null, texte: "Chauffer le lait pendant l'extraction." },
-      { t: null, texte: "Compléter avec le lait jusqu'à remplir la tasse choisie : lait = contenance de la tasse moins 90 ml de café." },
+      { t: null, texte: "FLAT WHITE : chauffer le lait pendant l'extraction, texture lisse, peu de mousse." },
+      { t: null, texte: "CAPPUCCINO : faire mousser le lait autour de 60 à 65 degrés, viser un tiers de mousse." },
+      { t: null, texte: "Verser le lait, puis coiffer avec la mousse s'il y en a." },
     ],
-    pourQui: "Flat white ou cappuccino maison. Lait à ajouter selon la tasse : Loveramics Espresso Egg 80 ml, pas de lait, la tasse est plus petite que l'extraction, ne pas tout verser. Flat White Egg 150 ml, environ 60 ml de lait. Nutty Tasting Cup 150 ml, environ 60 ml de lait. Classic Mug 330 ml, environ 240 ml de lait, ce sera un latte très allongé.",
-    cafesAssocies: ["Là Việt Balanced", "Trung Nguyên Sáng Tạo 4", "Bana Cofe G4"],
-    note: "Une Brikka n'est pas un espresso : 90 ml à 1:7 sont bien plus dilués qu'un espresso de 30 ml. Le résultat sera un flat white très orienté café, ce qui est voulu.",
-    parDefaut: false, avancee: false, variantes: false, actif: 1,
-  },
-  {
-    id: "brikka-cappuccino",
-    nom: "Brikka cappuccino",
-    numero: "",
-    methode: "Brikka",
-    famille: "brikka-lait",
-    variante: "Cappuccino",
-    sousTitre: "Extraction classique, lait moussé, un tiers de mousse",
-    dose: 14, eau: 150, temp: "", tempTexte: "dépend de la puissance du feu",
-    puissance_feu: 2,
-    dial: "1.5.0",
-    ratioTexte: "environ 90 ml de café, plus le lait moussé",
-    totalTexte: "extraction identique à la classique",
-    lait: true,
-    etapes: [
-      { t: null, texte: "Extraire exactement comme la Brikka classique : 14 g, environ 90 ml." },
-      { t: null, texte: "Faire mousser le lait pendant l'extraction, chauffé autour de 60 à 65 degrés." },
-      { t: null, texte: "Verser le lait chaud, puis coiffer avec la mousse : viser environ un tiers de mousse." },
-    ],
-    pourQui: "Cappuccino maison. Même calcul de lait que le flat white (contenance de la tasse moins 90 ml de café), mais compter environ 20 pour cent de lait liquide en moins : la mousse prend la place.",
-    cafesAssocies: ["Là Việt Balanced", "Trung Nguyên Sáng Tạo 4", "Bana Cofe G4"],
-    note: "Une Brikka n'est pas un espresso : le résultat sera un cappuccino très orienté café, ce qui est voulu.",
+    pourQui: "Flat white ou cappuccino maison. Le site calcule le lait tout seul dès qu'une tasse est choisie : contenance de la tasse moins le volume de café. En cappuccino, compter environ 20 pour cent de lait LIQUIDE en moins, la mousse prend la place.",
+    cafesAssocies: ["Trung Nguyên Sáng Tạo 4", "Bana Cofe G4"],
+    note: "Une Brikka n'est pas un espresso : 90 ml à 1:7 sont bien plus dilués qu'un espresso de 30 ml. Le résultat sera très orienté café, ce qui est voulu.",
     parDefaut: false, avancee: false, variantes: false, actif: 1,
   },
   {
@@ -249,6 +236,8 @@ const RECETTES_DEPART = [
 
 // Anciens noms de recettes : migration automatique de l'historique.
 const RENOMMAGES_RECETTES = {
+  "Brikka flat white": "Brikka au lait",
+  "Brikka cappuccino": "Brikka au lait",
   "Brikka référence": "Brikka classique",
   "Brikka rang bơ": "Brikka classique",
   "Le Fruité": "The Coffee Chronicler's Recipe",
