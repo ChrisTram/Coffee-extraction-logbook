@@ -8,8 +8,8 @@
 (() => {
 
   // Emprunté au noyau, chargé avant nous.
-  const { $, $$, attrTitre, ecrireReplis, fmtDateCourte, fmtDecimal, fmtVND, maintenantLocal,
-    moyenne, recettesDeMethode, replis, toast } = UI;
+  const { $, $$, attrTitre, confirmer, ecrireReplis, fmtDateCourte, fmtDecimal, fmtVND,
+    maintenantLocal, moyenne, recettesDeMethode, replis, toast } = UI;
 
   // ---------- Gestion des cafés ----------
 
@@ -293,7 +293,7 @@
      repasser à DATA, ce qui obligeait la modale à publier son état interne. */
   async function retablirRecetteCourante() {
     if (!recetteEditId) return;
-    if (!confirm(I18N.t("c_retablir"))) return;
+    if (!await confirmer(I18N.t("c_retablir"))) return;
     await DATA.reinitialiserRecette(recetteEditId);
     $("#form-recette").hidden = true;
     rendreListeRecettes();
@@ -302,7 +302,7 @@
 
   async function supprimerRecetteCourante() {
     if (!recetteEditId) return;
-    if (!confirm(I18N.t("c_suppr_recette"))) return;
+    if (!await confirmer(I18N.t("c_suppr_recette"), { danger: true })) return;
     await DATA.supprimerRecette(recetteEditId);
     $("#form-recette").hidden = true;
     rendreListeRecettes();

@@ -432,13 +432,13 @@
       toast(I18N.t("t_export_tout"));
     });
     $("#don-demo").addEventListener("click", async () => {
-      if (DATA.state.extractions.length && !confirm(I18N.t("c_demo"))) return;
+      if (DATA.state.extractions.length && !await UI.confirmer(I18N.t("c_demo"))) return;
       await DATA.chargerDemo();
       majStatutDonnees();
       toast(I18N.t("t_demo"));
     });
     $("#don-vider").addEventListener("click", async () => {
-      if (!confirm(I18N.t("c_vider"))) return;
+      if (!await UI.confirmer(I18N.t("c_vider"), { danger: true })) return;
       await DATA.viderDonnees();
       majStatutDonnees();
       toast(I18N.t("t_reinit"));

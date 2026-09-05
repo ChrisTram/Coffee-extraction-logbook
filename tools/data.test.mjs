@@ -1172,6 +1172,17 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("aucun delai n'entoure la suppression elle meme", !bloc.includes("setTimeout"));
 
   check("le confirm natif de suppression a disparu", !app.includes('confirm(I18N.t("c_suppr"))'));
+  /* Plus AUCUN confirm() natif dans l'interface : les quatre restants (demo,
+     vider, retablir, supprimer une recette) passent par UI.confirmer, un
+     <dialog> de la page. Seul le repli de confirmer() lui-meme, `window.confirm`,
+     a le droit d'exister, et il est precede d'un point. */
+  // Les commentaires expliquent justement ce qu'on a retire : on les ignore.
+  const code = app.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+  const natifs = [...code.matchAll(/(^|[^.\w])confirm\(/g)];
+  check("aucun confirm() natif ne reste dans l'interface", natifs.length === 0, String(natifs.length));
+  check("les quatre questions passent par le dialogue de la page",
+    (code.match(/await (?:UI\.)?confirmer\(/g) || []).length === 4);
+  check("les libelles du dialogue sont bilingues", bilingue("c_titre") && bilingue("c_ok"));
   check("le retour arriere restaure sous l'id d'origine", app.includes("DATA.restaurerExtraction"));
 
   const data = readFileSync(join(ROOT, "js/data.js"), "utf8");

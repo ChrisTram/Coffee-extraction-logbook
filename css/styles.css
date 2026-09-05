@@ -616,6 +616,11 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
 .btn-petit { padding: 6px 11px; font-size: 0.82rem; }
 .btn-discret { border-color: transparent; background: transparent; color: var(--attenue); }
 .btn-discret:hover { color: var(--encre); border-color: var(--lignes); }
+/* Modale de confirmation : courte, boutons a droite, le choix sur en premier. */
+.modale-confirmer { max-width: 440px; }
+.modale-confirmer p { margin: 8px 0 0; line-height: 1.5; }
+.confirmer-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
+
 .btn-danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
 .btn-danger:hover { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, transparent); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }

@@ -2341,6 +2341,10 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.83 : les quatre `confirm()` natifs restants (démo par dessus des données,
+  repartir de zéro, rétablir une recette, supprimer une recette) passent par
+  `UI.confirmer`, un `<dialog>` de la page : traduit, au thème, le choix sûr a le
+  focus, Échap annule. Un test refuse tout `confirm()` natif dans l'interface.
 - v7.82 : les fichiers de code portent leur version dans l'URL (`?v=7.82`), le
   Worker les sert avec un cache d'un an, et seule `index.html` se revalide encore
   à chaque ouverture : une ouverture à chaud ne fait plus qu'une requête au lieu

@@ -7,8 +7,8 @@
 <!-- Version du site, source unique : le pied de page la lit, et les fichiers
      chargés à la demande la mettent dans leur URL. Se pose avec
      node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="7.82">
-<link rel="stylesheet" href="css/styles.css?v=7.82">
+<meta name="app-version" content="7.83">
+<link rel="stylesheet" href="css/styles.css?v=7.83">
 <!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
      SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
      parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
@@ -1253,6 +1253,19 @@ Cảm ơn shop.</pre>
   </div>
 </dialog>
 
+<!-- ================= MODALE CONFIRMATION ================= -->
+<!-- Remplace les confirm() natifs. Sur téléphone c'étaient des boîtes système
+     qui cassaient l'impression d'application installée. Les textes sont posés
+     par UI.confirmer() à chaque ouverture, dans la langue courante. -->
+<dialog id="modale-confirmer" class="modale modale-confirmer" aria-labelledby="confirmer-titre">
+  <h2 id="confirmer-titre"></h2>
+  <p id="confirmer-texte"></p>
+  <div class="confirmer-actions">
+    <button type="button" class="btn btn-discret" id="confirmer-annuler"></button>
+    <button type="button" class="btn" id="confirmer-ok"></button>
+  </div>
+</dialog>
+
 <div id="toast" class="toast" hidden></div>
 
 <footer class="pied-site">
@@ -1262,21 +1275,21 @@ Cảm ơn shop.</pre>
 <!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
      et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
      desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=7.82"></script>
-<script defer src="js/i18n.js?v=7.82"></script>
-<script defer src="js/grind.js?v=7.82"></script>
-<script defer src="js/recettes.js?v=7.82"></script>
+<script defer src="js/outils.js?v=7.83"></script>
+<script defer src="js/i18n.js?v=7.83"></script>
+<script defer src="js/grind.js?v=7.83"></script>
+<script defer src="js/recettes.js?v=7.83"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=7.82"></script>
-<script defer src="js/data.js?v=7.82"></script>
-<script defer src="js/reglages.js?v=7.82"></script>
-<script defer src="js/charts.js?v=7.82"></script>
-<script defer src="js/ui-noyau.js?v=7.82"></script>
-<script defer src="js/ui-tableau.js?v=7.82"></script>
-<script defer src="js/ui-saisie.js?v=7.82"></script>
-<script defer src="js/ui-historique.js?v=7.82"></script>
-<script defer src="js/ui-guide.js?v=7.82"></script>
-<script defer src="js/ui-catalogue.js?v=7.82"></script>
-<script defer src="js/app.js?v=7.82"></script>
+<script defer src="js/sync.js?v=7.83"></script>
+<script defer src="js/data.js?v=7.83"></script>
+<script defer src="js/reglages.js?v=7.83"></script>
+<script defer src="js/charts.js?v=7.83"></script>
+<script defer src="js/ui-noyau.js?v=7.83"></script>
+<script defer src="js/ui-tableau.js?v=7.83"></script>
+<script defer src="js/ui-saisie.js?v=7.83"></script>
+<script defer src="js/ui-historique.js?v=7.83"></script>
+<script defer src="js/ui-guide.js?v=7.83"></script>
+<script defer src="js/ui-catalogue.js?v=7.83"></script>
+<script defer src="js/app.js?v=7.83"></script>
 </body>
 </html>

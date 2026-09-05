@@ -174,6 +174,41 @@ const UI = (() => {
     }, 5000);
   }
 
+  /* Question oui ou non dans un <dialog>, à la place de confirm().
+
+     Sur le téléphone, confirm() est une boîte système : elle sort du thème,
+     ignore la langue de la page (le message passe par I18N mais pas ses
+     boutons) et casse l'impression d'application installée. Ici tout est dans
+     la page. Le choix SÛR reçoit le focus : Entrée annule, il faut viser pour
+     confirmer. Échap ferme le dialogue natif, donc annule aussi.
+
+     Renvoie une promesse de booléen, pour que l'appelant s'écrive comme avant :
+     `if (!await confirmer(texte)) return;`. */
+  function confirmer(message, options) {
+    const d = $("#modale-confirmer");
+    if (!d || typeof d.showModal !== "function") return Promise.resolve(window.confirm(message));
+    const danger = !!(options && options.danger);
+    poserTexte($("#confirmer-titre"), I18N.t("c_titre"));
+    poserTexte($("#confirmer-texte"), message);
+    const ok = $("#confirmer-ok"), non = $("#confirmer-annuler");
+    ok.textContent = (options && options.libelle) || I18N.t("c_ok");
+    non.textContent = I18N.t("t_annuler");
+    ok.classList.toggle("btn-danger", danger);
+    // Réaffectés à chaque ouverture : un seul gestionnaire, jamais empilés.
+    ok.onclick = () => d.close("ok");
+    non.onclick = () => d.close("annuler");
+    return new Promise(resolve => {
+      const surFermeture = () => {
+        d.removeEventListener("close", surFermeture);
+        resolve(d.returnValue === "ok");
+      };
+      d.addEventListener("close", surFermeture);
+      d.returnValue = "";
+      d.showModal();
+      non.focus();
+    });
+  }
+
   /* Supprime pour de vrai, immédiatement, et propose de revenir en arrière.
 
      L'ordre compte et il est délibéré. Retarder la suppression aurait été plus
@@ -489,7 +524,7 @@ const UI = (() => {
     $, $$, $f, APPUI_LONG_MS, CLE_REPLIS, DOSE_REPLI_USINE, ECRANS, ECRANS_RENOMMES,
     FEU_REPLI_USINE, MOLETTE_REPLI_USINE, activerAppuiLong, activerEcran, animerCompteur,
     antiRebond, appliquerTheme, attrTitre, avecTransition, basculerEtat, cacheChamps,
-    basculerRatees, chargerReplis, cleLocale, detailRatio, diagsAffiches, ecartMoyen,
+    basculerRatees, chargerReplis, cleLocale, confirmer, detailRatio, diagsAffiches, ecartMoyen,
     ecrireReplis, estRatee, extAnalysables, inclureRatees,
     extAvecCalculs, fmtDateCourte, fmtDateHeure, fmtDecimal, fmtTemps, fmtVND,
     maintenantLocal, moyenne, nav, normaliserEcran, oublierSignatures, poser, poserTexte,

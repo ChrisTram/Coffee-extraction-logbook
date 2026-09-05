@@ -317,6 +317,8 @@ const I18N_EN = {
     c_vider: "Start over? Brews are erased and the 5 starter coffees restored. (Export first if needed.)",
     c_retablir: "Restore this recipe's original version? Your changes will be lost.",
     c_suppr_recette: "Delete this custom recipe?",
+    c_titre: "Are you sure?",
+    c_ok: "Confirm",
   },
 
   UI: {

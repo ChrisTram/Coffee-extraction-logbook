@@ -382,6 +382,8 @@ const I18N = (() => {
     c_vider: { fr: "Repartir de zéro ? Les extractions sont effacées et les 5 cafés de départ restaurés. (Exporte d'abord si besoin.)" },
     c_retablir: { fr: "Rétablir la version d'origine de cette recette ? Tes modifications seront perdues." },
     c_suppr_recette: { fr: "Supprimer cette recette personnelle ?" },
+    c_titre: { fr: "Tu confirmes ?" },
+    c_ok: { fr: "Confirmer" },
   };
 
   // ---------- 3. Cartes d'affichage pour les valeurs de données ----------
