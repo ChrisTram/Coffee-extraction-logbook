@@ -2341,6 +2341,17 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.87 : `data.js` découpé en six fichiers. La dernière IIFE géante du site
+  (1 417 lignes, six métiers) devient `data-csv.js` (format CSV, pur),
+  `data-schema.js` (colonnes, normalisation, semences, pur), `data-store.js`
+  (IndexedDB, File System Access, téléchargement), `data-calculs.js` (champs
+  dérivés et sachets, lecture seule, lié à l'état par `pour(state)`),
+  `data-migrations.js` (version de schéma et rattrapages, même mécanisme) et un
+  `data.js` de 590 lignes qui possède l'état, les mutations, la synchro et le
+  démarrage. La façade `DATA` expose les mêmes noms qu'avant. Le plafond de
+  1 200 lignes s'applique désormais à toutes les couches, plus seulement à
+  l'interface. Les 374 tests de la couche de données passent sans changement
+  autre que la liste des fichiers chargés.
 - v7.86 : chaque écran câble ses propres contrôles. `cabler()` dans `app.js`
   faisait 401 lignes et posait 95 écouteurs ; il en reste une soixantaine pour
   la navigation, le thème, la langue, les modales d'accueil et de données et les

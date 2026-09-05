@@ -25,7 +25,7 @@
  *    la deconnexion cessent de fonctionner.
  */
 
-const VERSION = "7.86";
+const VERSION = "7.87";
 const CACHE_NAME = "carnet-extraction";
 
 const versionnee = url => url + "?v=" + VERSION;
@@ -56,6 +56,11 @@ const PRECACHE_URLS = [
   // hors ligne comme le reste du site.
   "./js/demo-data.js",
   "./js/sync.js",
+  "./js/data-csv.js",
+  "./js/data-schema.js",
+  "./js/data-store.js",
+  "./js/data-calculs.js",
+  "./js/data-migrations.js",
   "./js/data.js",
   "./js/reglages.js",
   "./js/charts.js",

@@ -27,7 +27,14 @@ const SOURCE_UI = ["js/ui-noyau.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/
   .map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 /* demo-data.js n'est plus une balise script depuis la v7.56, mais le harnais le
    charge quand meme : chargerDemo() en a besoin et il n'y a pas de reseau ici. */
-const SCRIPTS = ["js/outils.js", "js/grind.js", "js/recettes.js", "js/demo-data.js", "js/sync.js", "js/data.js", "js/reglages.js"];
+/* La couche de donnees tient en six fichiers depuis la v7.87 : les controles qui
+   cherchent une chaine "dans data.js" lisent la concatenation, pour la meme
+   raison que SOURCE_UI plus haut. */
+const FICHIERS_DATA = ["js/data-csv.js", "js/data-schema.js", "js/data-store.js", "js/data-calculs.js",
+  "js/data-migrations.js", "js/data.js"];
+const SOURCE_DATA = FICHIERS_DATA.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
+const SCRIPTS = ["js/outils.js", "js/grind.js", "js/recettes.js", "js/demo-data.js", "js/sync.js",
+  ...FICHIERS_DATA, "js/reglages.js"];
 
 const source = SCRIPTS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 const charger = new Function(
@@ -521,7 +528,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     par("b1").puissance_feu === 4, par("b1").puissance_feu);
 
   // Plus aucun drapeau par appareil dans la couche de donnees.
-  const data = readFileSync(join(ROOT, "js/data.js"), "utf8");
+  const data = SOURCE_DATA;
   const bloc = data.slice(data.indexOf("const PAS_DE_SCHEMA"), data.indexOf("function migrerDonnees"));
   check("les pas ne dependent plus du stockage local", !bloc.includes("localStorage"));
   /* Les numeros doivent se suivre de 1 a SCHEMA_ACTUEL, sans trou ni doublon.
@@ -876,7 +883,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     dials.length === 1 && dials[0] === "1.5.0", dials.join(", "));
 
   // Changer la graine ne suffit jamais : les recettes STOCKEES doivent suivre.
-  const data = readFileSync(join(ROOT, "js/data.js"), "utf8");
+  const data = SOURCE_DATA;
   check("un pas de schema rattrape la molette des recettes stockees",
     data.includes("molette unique a 1.5.0"));
   check("elle ne se limite pas a la Brikka, les Switch aussi sont concernees",
@@ -947,7 +954,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
 /* Les recettes STOCKEES ne suivent jamais la graine toutes seules : sans
    migration, Chris aurait continue a lire 225 g sur son site. */
 {
-  const data = readFileSync(join(ROOT, "js/data.js"), "utf8");
+  const data = SOURCE_DATA;
   check("un pas de schema rattrape les Chronicler stockees",
     data.includes("Chronicler a 240 g"));
   check("elle ne vise que la famille concernee et la mauvaise valeur",
@@ -1236,7 +1243,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("les libelles du dialogue sont bilingues", bilingue("c_titre") && bilingue("c_ok"));
   check("le retour arriere restaure sous l'id d'origine", app.includes("DATA.restaurerExtraction"));
 
-  const data = readFileSync(join(ROOT, "js/data.js"), "utf8");
+  const data = SOURCE_DATA;
   const rest = data.slice(data.indexOf("async function restaurerExtraction"),
     data.indexOf("async function ajouterExtraction"));
   /* L'id d'origine compte : les liens d'edition, la selection du comparateur et

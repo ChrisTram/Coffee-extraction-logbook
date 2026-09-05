@@ -146,6 +146,7 @@ const MOTS_CLES = new Set(["if","else","for","while","do","return","function","c
    liste écrite à la main aurait divergé au premier ajout, transformant ce test
    en source de fausses alertes. Ce qui revient à le désactiver. */
 const AUTRES_COUCHES = ["js/outils.js", "js/i18n.js", "js/grind.js", "js/recettes.js", "js/sync.js",
+  "js/data-csv.js", "js/data-schema.js", "js/data-store.js", "js/data-calculs.js", "js/data-migrations.js",
   "js/data.js", "js/reglages.js", "js/charts.js", "js/demo-data.js"];
 const GLOBAUX = new Set(["Chart",
   "UI","document","window","location","history","navigator","localStorage","sessionStorage",
@@ -362,6 +363,13 @@ const noyau = infos["js/ui-noyau.js"];
   const gros = FICHIERS.filter(f => infos[f].src.split("\n").length > 1200);
   check("aucun fichier d'interface ne repasse au-dessus de 1200 lignes",
     gros.length === 0, gros.map(f => f + " " + infos[f].src.split("\n").length).join(", "));
+  /* Le plafond vaut pour TOUTES les couches depuis la v7.87 : data.js etait la
+     derniere IIFE geante, 1 417 lignes et six metiers, et il echappait au
+     controle parce que celui-ci ne regardait que l'interface. */
+  const grosAilleurs = AUTRES_COUCHES.filter(f =>
+    readFileSync(join(ROOT, f), "utf8").split("\n").length > 1200);
+  check("aucune autre couche ne depasse 1200 lignes non plus",
+    grosAilleurs.length === 0, grosAilleurs.join(", "));
 }
 
 /* 7. CHAQUE ECRAN CABLE SES PROPRES CONTROLES.
