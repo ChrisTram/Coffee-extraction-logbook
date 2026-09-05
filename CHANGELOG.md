@@ -5,6 +5,11 @@ de page du site est celui du `<meta name="app-version">` d'`index.html`, posé
 par `node tools/bump_version.mjs X`. Chaque entrée dit CE QUI a changé ; le
 pourquoi est dans `DECISIONS.md`.
 
+- v7.90 : un changement d'écran dans un document caché (onglet en arrière-plan,
+  fenêtre réduite) s'applique tout de suite au lieu d'attendre une occasion de
+  rendu qui ne vient pas, et les promesses d'une transition de vue interrompue
+  sont attrapées : plus de « Uncaught (in promise) » à chaque bascule rapide.
+  Trouvé en pilotant le site depuis une fenêtre masquée.
 - v7.89 : la documentation est découpée en trois. `DOCUMENTATION.md` ne garde
   que ce qui existe et comment ça tient (900 lignes et 55 Ko au lieu de 2 500 et
   146 Ko),

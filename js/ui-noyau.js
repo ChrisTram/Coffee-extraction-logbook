@@ -464,8 +464,18 @@ const UI = (() => {
   function avecTransition(fn) {
     const bouge = typeof matchMedia === "function" &&
       matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (bouge || !document.startViewTransition) { fn(); return; }
-    document.startViewTransition(fn);
+    /* Document CACHÉ (onglet en arrière-plan, fenêtre réduite) : le navigateur
+       n'a aucune occasion de rendu, donc la fonction de mise à jour attendrait
+       indéfiniment et l'écran ne basculerait qu'au retour. On bascule tout de
+       suite, sans animation : personne ne la regarde. */
+    const cache = typeof document.visibilityState === "string" && document.visibilityState === "hidden";
+    if (bouge || cache || !document.startViewTransition) { fn(); return; }
+    const transition = document.startViewTransition(fn);
+    /* Une transition interrompue par la suivante, ou sautée, rejette ses
+       promesses : c'est normal, et sans ce catch chaque bascule rapide d'écran
+       laissait un "Uncaught (in promise)" dans la console. */
+    if (transition && transition.ready) transition.ready.catch(() => {});
+    if (transition && transition.finished) transition.finished.catch(() => {});
   }
 
   /* pourEdition : vrai UNIQUEMENT quand c'est chargerExtractionDansSaisie qui

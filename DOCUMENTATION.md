@@ -7,7 +7,7 @@ choix, les bugs trouvés et le raisonnement qui a mené là vivent dans
 qu'on touche. L'historique des versions est dans `CHANGELOG.md`. Commencer par
 `START-HERE.md` si tu arrives sans contexte.
 
-Dernière mise à jour : v7.89, 2026-09-06.
+Dernière mise à jour : v7.90, 2026-09-06.
 
 ## 1. Vue d'ensemble
 
