@@ -822,7 +822,11 @@ const DATA = (() => {
     }
     let retention = "";
     if (ext.eau_g !== "" && ext.volume_extrait_ml !== "") retention = ext.eau_g - ext.volume_extrait_ml;
-    // Volume de la boisson servie : extraction plus eau ajoutée plus lait.
+    /* Volume LIQUIDE : extraction plus eau ajoutée plus lait froid. Sur un
+       cappuccino la tasse paraîtra plus pleine que ce chiffre, et c'est normal :
+       la mousse est de l'air. Elle occupe du volume sans rien ajouter à boire,
+       et surtout sans diluer quoi que ce soit, donc elle n'entre ni ici ni dans
+       le ratio boisson. */
     let boisson = "";
     if (ext.volume_extrait_ml !== "") {
       boisson = ext.volume_extrait_ml + (ext.eau_ajoutee_ml || 0) + (ext.lait_ml || 0);
@@ -841,8 +845,9 @@ const DATA = (() => {
       ratioBase,
       ratioTasse,
       ratioTasseTexte: ratioTasse === "" ? "" : "1:" + ratioTasse.toFixed(1),
-      // Ratio de la BOISSON servie : inclut l'eau d'allongement et le lait. Sur
-      // une Brikka allongée, c'est lui qui décrit ce qu'on boit vraiment.
+      // Ratio de la boisson : inclut l'eau d'allongement et le lait froid, les
+      // deux seuls liquides ajoutés. Sur une Brikka allongée, c'est lui qui
+      // décrit ce qu'on boit vraiment.
       ratioBoisson: (() => {
         if (!(ext.dose_g > 0) || boisson === "" || !(Number(boisson) > 0)) return "";
         const ajout = (Number(ext.eau_ajoutee_ml) || 0) + (Number(ext.lait_ml) || 0);

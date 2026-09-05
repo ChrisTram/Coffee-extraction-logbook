@@ -69,8 +69,9 @@ const RECETTES_DEPART = [
   /* UNE seule recette au lait. Le flat white et le cappuccino partageaient la
      même extraction au gramme près : seule la texture du lait change. Le
      cappuccino part de MOINS de lait froid que le flat white parce que le lait
-     mousse gonfle : le tiers de mousse remplit la tasse avec moins de liquide. Deux recettes pour une extraction coupaient les stats en
-     deux sans rien apprendre. */
+     mousse gonfle : le tiers de mousse remplit la tasse avec moins de liquide.
+     Deux recettes pour une extraction coupaient les stats en deux sans rien
+     apprendre. */
   {
     id: "brikka-flatwhite",
     numero: 3,
@@ -90,8 +91,8 @@ const RECETTES_DEPART = [
     lait: true,
     etapes: [
       { t: null, texte: "Extraire exactement comme la Brikka classique : 14 g, environ 90 ml." },
-      { t: null, texte: "FLAT WHITE : chauffer le lait pendant l'extraction, texture lisse, peu de mousse." },
-      { t: null, texte: "CAPPUCCINO : faire mousser le lait autour de 60 à 65 degrés, viser un tiers de mousse." },
+      { t: null, texte: "FLAT WHITE : chauffer le lait pendant l'extraction, texture lisse, à peine mousseuse. Mesurer le PLUS GRAND des deux chiffres donnés par la saisie." },
+      { t: null, texte: "CAPPUCCINO : faire mousser le lait autour de 60 à 65 degrés, viser un tiers de mousse. Mesurer le PLUS PETIT des deux : le lait moussé gonfle et remplit la tasse tout seul." },
       { t: null, texte: "Verser le lait, puis coiffer avec la mousse s'il y en a." },
     ],
     pourQui: "Flat white ou cappuccino maison. Le site calcule le lait tout seul dès qu'une tasse est choisie : contenance de la tasse moins le volume de café donne le vide à remplir, et le lait FROID à mesurer est un peu moins que ce vide, puisqu'il gonfle en moussant. Un flat white gonfle à peine, un cappuccino d'environ la moitié : c'est pourquoi un cappuccino part de moins de lait pour une tasse plus garnie.",

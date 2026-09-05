@@ -352,7 +352,6 @@ const I18N = (() => {
     lv_boisson: { fr: "Boisson :" },
     lv_lait: { fr: "lait" },
     a_prix_reel: { fr: "Café réel : {pr} ₫ le gramme." },
-    lait_calc: { fr: "Calcul : {t} ml de tasse moins {v} ml de café = {l} ml de lait." },
     lait_deux: { fr: "{t} ml de tasse moins {v} ml de café : {e} ml à remplir. Verser {l} ml de lait froid en flat white, {c} ml en cappuccino : le lait gonfle en moussant, et plus il mousse moins il en faut." },
     lait_declare: { fr: "Volume de café repris de la recette, faute de mesure." },
     lait_trop_petit: { fr: "Tasse plus petite que l'extraction : pas de lait, et ne pas tout verser." },
