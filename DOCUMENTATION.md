@@ -2341,6 +2341,11 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.85 : garde-fou de taille sur la synchro. Tout l'état vit dans une seule
+  ligne D1, plafonnée à 2 000 000 octets : le serveur renvoie désormais la
+  taille du document et ce plafond à chaque échange, et le panneau Données
+  prévient passé 50 pour cent, assez tôt pour archiver l'historique avant que
+  l'écriture échoue d'un coup. Test de `handleSync` sur une fausse base D1.
 - v7.84 : accessibilité et confort au doigt. Les 47 titres du Guide passent de
   h4 à h3 (plus de saut de niveau après un h2), six seconds champs de paires
   (minutes et secondes, agitation, eau ajoutée, tasse) reçoivent une étiquette de

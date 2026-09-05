@@ -55,6 +55,13 @@
     } else {
       texte = I18N.t(LIBELLES_SYNC[etat] || "sync_jamais");
     }
+    /* Le serveur garde tout l'état dans une seule ligne, et cette ligne a un
+       plafond. On prévient à la moitié : assez tôt pour archiver tranquillement,
+       assez tard pour ne pas alerter pendant des années pour rien. */
+    const { syncTaille: taille, syncPlafond: plafond } = DATA.state;
+    if (plafond > 0 && taille / plafond >= 0.5) {
+      texte += " " + I18N.t("sync_taille", { p: Math.round(100 * taille / plafond) });
+    }
     $("#sync-statut").textContent = texte;
     $("#don-sync").hidden = !DATA.syncPossible();
   }

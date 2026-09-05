@@ -86,6 +86,7 @@ const I18N = (() => {
     sync_nonconf: { fr: "Synchronisation pas encore configurée sur le serveur (base D1 à lier)." },
     sync_erreur: { fr: "Synchronisation en échec. Tes données locales sont intactes." },
     sync_jamais: { fr: "Pas encore synchronisé." },
+    sync_taille: { fr: "Attention : le document synchronisé occupe {p} pour cent de la place que le serveur accepte. Il faudra archiver l'historique avant d'atteindre 100." },
     t_sync_ok: { fr: "Synchronisé" },
     t_sync_ko: { fr: "Synchronisation impossible" },
 

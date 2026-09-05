@@ -1,4 +1,7 @@
-import { mergePayloads, sanitisePayload, emptyPayload, TOMBSTONE_RETENTION_MS, TABLES } from "./sync.js";
+import {
+  mergePayloads, sanitisePayload, emptyPayload, handleSync, documentSize,
+  MAX_DOCUMENT_BYTES, TOMBSTONE_RETENTION_MS, TABLES,
+} from "./sync.js";
 
 let failures = 0;
 function check(label, condition, detail) {
@@ -117,6 +120,44 @@ const complet = sanitisePayload({
 const garde = mergePayloads(emptyPayload(), complet, NOW);
 check("les cafes survivent", garde.tables.cafes.length === 1);
 check("les recettes survivent", garde.tables.recettes.length === 1);
+
+// 12. Taille du document : le serveur la mesure et la renvoie avec son plafond,
+//     pour que le client previenne AVANT que D1 refuse d'ecrire. Une fausse base
+//     d'une ligne suffit a exercer tout handleSync.
+{
+  const fauxDb = () => {
+    let doc = null;
+    return {
+      exec: async () => {},
+      prepare: () => ({
+        bind: (...args) => ({
+          first: async () => (doc === null ? null : { payload: doc }),
+          run: async () => { doc = args[1]; },
+        }),
+      }),
+    };
+  };
+  const env = { DB: fauxDb() };
+  const requete = corps => new Request("https://site.test/api/sync", {
+    method: "POST", body: JSON.stringify(corps), headers: { "Content-Type": "application/json" },
+  });
+
+  const rep = await handleSync(requete({ tables: { extractions: [ext("e1", NOW, 7)] } }), env);
+  const corps = await rep.json();
+  check("la reponse porte la taille du document", Number.isInteger(corps.taille) && corps.taille > 0, String(corps.taille));
+  check("et le plafond que le serveur accepte", corps.plafond === MAX_DOCUMENT_BYTES);
+  check("la taille est celle du document fusionne, en octets",
+    corps.taille === documentSize({ tables: corps.tables, tombes: corps.tombes }));
+  check("le plafond est celui de D1, deux millions d'octets par ligne", MAX_DOCUMENT_BYTES === 2_000_000);
+
+  const lecture = await handleSync(new Request("https://site.test/api/sync"), env);
+  const lu = await lecture.json();
+  check("GET renvoie aussi la taille", Number.isInteger(lu.taille) && lu.taille === corps.taille,
+    lu.taille + " contre " + corps.taille);
+
+  // Les accents comptent en octets, pas en caracteres : c'est l'unite du plafond.
+  check("la mesure est en octets UTF-8", documentSize({ a: "é" }) === JSON.stringify({ a: "é" }).length + 1);
+}
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

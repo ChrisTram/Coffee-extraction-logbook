@@ -52,6 +52,10 @@ const DATA = (() => {
     tombes: typeof SYNC === "undefined" ? {} : SYNC.tombesVides(),
     syncEtat: "inconnu",
     syncLe: null,
+    // Taille du document sur le serveur et plafond qu'il accepte, en octets.
+    // Renvoyés à chaque échange ; le panneau Données prévient passé la moitié.
+    syncTaille: 0,
+    syncPlafond: 0,
   };
 
   /* Estampille une ligne qu'on vient d'écrire, pour que la fusion sache qui est
@@ -1155,6 +1159,8 @@ const DATA = (() => {
       state.achats = (fusion.tables.achats || []).map(normaliserAchat);
       state.reglages = (fusion.tables.reglages || []).map(normaliserReglages).slice(0, 1);
       state.tombes = fusion.tombes || SYNC.tombesVides();
+      state.syncTaille = Number(fusion.taille) || 0;
+      state.syncPlafond = Number(fusion.plafond) || 0;
       if (!state.recettes.length) state.recettes = recettesDefaut();
       if (!state.tasses.length) state.tasses = tassesDefaut();
       migrerDonnees();

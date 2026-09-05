@@ -29,6 +29,19 @@ export const TOMBSTONE_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 // de faire exploser la limite de taille de D1.
 const MAX_ROWS_PER_TABLE = 20000;
 
+/* Tout l'etat tient dans UNE ligne D1, en JSON, et D1 plafonne la taille d'une
+   ligne : 2 000 000 octets d'apres sa documentation (a revalider si Cloudflare
+   la change). Le jour ou le document depasse, l'ecriture echoue d'un coup, sans
+   avertissement, avec les donnees en securite cote client mais plus rien qui
+   converge. A 600 octets par extraction et une tasse et demie par jour, c'est
+   loin, mais c'est le genre de chose qu'on oublie : le serveur renvoie donc la
+   taille du document a chaque echange, et le client previent passe la moitie. */
+export const MAX_DOCUMENT_BYTES = 2_000_000;
+const encoder = new TextEncoder();
+export function documentSize(payload) {
+  return encoder.encode(JSON.stringify(payload)).length;
+}
+
 const timestamp = value => {
   const n = Number(value);
   return Number.isFinite(n) && n > 0 ? n : 0;
@@ -172,7 +185,9 @@ export async function handleSync(request, env) {
   const now = Date.now();
   const stocke = await readDocument(db);
 
-  if (request.method === "GET") return json({ ...stocke, serverTime: now });
+  if (request.method === "GET") {
+    return json({ ...stocke, serverTime: now, taille: documentSize(stocke), plafond: MAX_DOCUMENT_BYTES });
+  }
   if (request.method !== "POST") return json({ erreur: "methode-non-permise" }, 405);
 
   let recu;
@@ -184,5 +199,8 @@ export async function handleSync(request, env) {
 
   const fusion = mergePayloads(stocke, sanitisePayload(recu), now);
   await writeDocument(db, fusion, now);
-  return json({ ...fusion, serverTime: now, compte: counts(fusion) });
+  return json({
+    ...fusion, serverTime: now, compte: counts(fusion),
+    taille: documentSize(fusion), plafond: MAX_DOCUMENT_BYTES,
+  });
 }

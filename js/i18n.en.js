@@ -65,6 +65,7 @@ const I18N_EN = {
     sync_nonconf: "Sync is not configured on the server yet (D1 database to bind).",
     sync_erreur: "Sync failed. Your local data is intact.",
     sync_jamais: "Not synced yet.",
+    sync_taille: "Warning: the synced document uses {p} percent of what the server accepts. Archive the history before it reaches 100.",
     t_sync_ok: "Synced",
     t_sync_ko: "Sync failed",
     d_ext_brikka: "Brikka brews",
