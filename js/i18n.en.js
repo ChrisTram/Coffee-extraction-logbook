@@ -19,7 +19,7 @@ const I18N_EN = {
     l_tendance: "Trend, average of the last 5 cups",
     l_note_jour: "Daily average score",
     l_cafe_g: "Coffee used (g)",
-    lait_deux: "{t} ml cup minus {v} ml coffee: {l} ml milk for a flat white, {c} ml for a cappuccino (the foam takes the rest).",
+    lait_deux: "{t} ml cup minus {v} ml coffee: {e} ml to fill. Pour {l} ml of cold milk for a flat white, {c} ml for a cappuccino: milk swells as it foams, and the more it foams the less you need.",
     lait_declare: "Coffee volume taken from the recipe, for want of a measurement.",
     rt_badge: "botched",
     h_rater: "Mark as botched, to leave it out of the analyses",

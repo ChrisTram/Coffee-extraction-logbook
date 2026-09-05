@@ -826,23 +826,33 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
     document.querySelector("#f-volume").value = "";
     api.UI.majLait();
 
-    /* 150 de tasse moins 90 de cafe = 60 en flat white, 48 en cappuccino. Le
-       champ prend le flat white : c'est le versement, le cappuccino se retire au
-       pichet. */
+    /* 150 de tasse moins 90 de cafe = 60 ml de VIDE a remplir. Les deux
+       nombres affiches sont du lait FROID a mesurer, comptes sur cette meme
+       base : 60/1.1 = 55 en flat white, 60/1.5 = 40 en cappuccino.
+
+       Le cappuccino part de MOINS de lait, ce qui surprend : c'est que le lait
+       mousse gonfle, et le tiers de mousse remplit la tasse avec moins de
+       liquide. L'ancien calcul melangeait deux bases, le flat white recevant le
+       vide tel quel comme si le lait ne gonflait pas.
+
+       Le champ prend le flat white : c'est le versement le plus courant. */
     check("le lait se calcule sans volume mesure",
-      String(document.querySelector("#f-lait").value) === "60",
+      String(document.querySelector("#f-lait").value) === "55",
       document.querySelector("#f-lait").value);
     const texte = document.querySelector("#lait-hint").textContent;
-    check("et l'aide donne les DEUX boissons",
-      texte.includes("60") && texte.includes("48"), texte);
+    check("et l'aide donne les DEUX boissons, sur la meme base",
+      texte.includes("55") && texte.includes("40") && texte.includes("60"), texte);
+    check("le cappuccino demande MOINS de lait froid que le flat white",
+      Math.round(60 / 1.5) < Math.round(60 / 1.1), "40 < 55");
     check("en disant que le volume vient de la recette",
       texte.includes("recette"), texte);
 
-    /* Un volume MESURE prime toujours sur le rendement declare. */
+    /* Un volume MESURE prime toujours sur le rendement declare :
+       150 - 110 = 40 de vide, donc 40/1.1 = 36 de lait froid. */
     document.querySelector("#f-volume").value = "110";
     api.UI.majLait();
     check("une mesure prime sur le chiffre de la recette",
-      String(document.querySelector("#f-lait").value) === "40",
+      String(document.querySelector("#f-lait").value) === "36",
       document.querySelector("#f-lait").value);
     document.querySelector("#f-volume").value = "";
   }

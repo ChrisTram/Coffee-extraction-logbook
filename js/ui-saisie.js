@@ -232,6 +232,14 @@
     if (remue && !$("#f-agitation").value) $("#f-agitation").value = 1;
   }
 
+  /* De combien le lait GONFLE en moussant, selon la texture visée. Le vide à
+     remplir divisé par ce facteur donne le lait FROID à mesurer dans le pot.
+     Un flat white est une texture lisse, à peine aérée. Un cappuccino vise un
+     tiers de mousse, soit environ la moitié de volume en plus : c'est pourquoi
+     il part de moins de lait tout en remplissant la même tasse. */
+  const GONFLE_FLAT = 1.1;
+  const GONFLE_CAPPU = 1.5;
+
   // Champ lait : visible quand la recette le prévoit, prérempli depuis la tasse.
   function majLait() {
     const r = trouverRecette($("#f-recette").value);
@@ -259,18 +267,20 @@
       $("#lait-hint").textContent = I18N.t("lait_sans_volume");
       return;
     }
+    /* Le VIDE à remplir, pas encore le lait à verser : voir plus bas. */
     const lait = Math.max(0, tasse.contenance_ml - volCafe);
-    $("#f-lait").value = lait;
     if (lait === 0) {
       $("#lait-hint").textContent = I18N.t("lait_trop_petit");
       return;
     }
-    /* LES DEUX BOISSONS d'un coup. Le cappuccino prend environ 20 % de lait
-       liquide en moins, la mousse occupant le volume. C'était écrit en prose
-       dans la recette, donc à calculer de tête au moment de verser. */
-    const cappu = Math.round(lait * 0.8);
+    /* LES DEUX BOISSONS d'un coup, comptées sur la MÊME base : du lait froid à
+       verser dans le pot. Le lait gonfle en moussant, donc on en verse moins que
+       le vide à remplir, et d'autant moins qu'on le mousse. */
+    const flat = Math.round(lait / GONFLE_FLAT);
+    const cappu = Math.round(lait / GONFLE_CAPPU);
+    $("#f-lait").value = flat;
     $("#lait-hint").textContent =
-      I18N.t("lait_deux", { l: lait, c: cappu, t: tasse.contenance_ml, v: volCafe }) +
+      I18N.t("lait_deux", { e: lait, l: flat, c: cappu, t: tasse.contenance_ml, v: volCafe }) +
       (declare ? " " + I18N.t("lait_declare") : "");
   }
 

@@ -67,9 +67,9 @@ const RECETTES_DEPART = [
     parDefaut: false, avancee: false, variantes: false, actif: 1,
   },
   /* UNE seule recette au lait. Le flat white et le cappuccino partageaient la
-     même extraction au gramme près : seule la texture du lait change, et le
-     cappuccino demande environ 20 % de lait liquide en moins parce que la mousse
-     occupe le volume. Deux recettes pour une extraction coupaient les stats en
+     même extraction au gramme près : seule la texture du lait change. Le
+     cappuccino part de MOINS de lait froid que le flat white parce que le lait
+     mousse gonfle : le tiers de mousse remplit la tasse avec moins de liquide. Deux recettes pour une extraction coupaient les stats en
      deux sans rien apprendre. */
   {
     id: "brikka-flatwhite",
@@ -94,7 +94,7 @@ const RECETTES_DEPART = [
       { t: null, texte: "CAPPUCCINO : faire mousser le lait autour de 60 à 65 degrés, viser un tiers de mousse." },
       { t: null, texte: "Verser le lait, puis coiffer avec la mousse s'il y en a." },
     ],
-    pourQui: "Flat white ou cappuccino maison. Le site calcule le lait tout seul dès qu'une tasse est choisie : contenance de la tasse moins le volume de café. En cappuccino, compter environ 20 pour cent de lait LIQUIDE en moins, la mousse prend la place.",
+    pourQui: "Flat white ou cappuccino maison. Le site calcule le lait tout seul dès qu'une tasse est choisie : contenance de la tasse moins le volume de café donne le vide à remplir, et le lait FROID à mesurer est un peu moins que ce vide, puisqu'il gonfle en moussant. Un flat white gonfle à peine, un cappuccino d'environ la moitié : c'est pourquoi un cappuccino part de moins de lait pour une tasse plus garnie.",
     cafesAssocies: ["Trung Nguyên Sáng Tạo 4", "Bana Cofe G4"],
     note: "Une Brikka n'est pas un espresso : 90 ml à 1:7 sont bien plus dilués qu'un espresso de 30 ml. Le résultat sera très orienté café, ce qui est voulu.",
     parDefaut: false, avancee: false, variantes: false, actif: 1,
