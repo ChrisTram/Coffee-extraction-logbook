@@ -19,6 +19,23 @@
   --rayon: 14px;
   --rayon-petit: 9px;
   --transition: 220ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Les deux seules couleurs qui ne suivent pas le thème : le texte posé sur un
+     fond accent (boutons pleins, bouton flottant) et le texte sombre posé sur la
+     pastille rose des deux machines. Tout le reste passe par les variables des
+     deux thèmes ci-dessous. */
+  --sur-accent: #fff8ef;
+  --encre-sur-clair: #2e211a;
+
+  /* Échelle des plans, une seule liste lue de bas en haut. Un z-index écrit en
+     dur ailleurs est une régression : c'est ici qu'on décide qui passe devant. */
+  --z-sommaire: 20;
+  --z-entete: 50;
+  --z-tag: 60;
+  --z-panneau-rapide: 149;
+  --z-fab: 150;
+  --z-bulle: 200;
+  --z-toast: 300;
 }
 
 html[data-theme="sombre"] {
@@ -100,6 +117,10 @@ html { scroll-behavior: smooth; }
 /* Au doigt : pas de zoom au double appui sur un bouton ni de halo gris au tap,
    les deux font "page web" la ou on veut "application". */
 button, .pilule, .tag, .nav-btn, input[type="range"] { touch-action: manipulation; }
+/* Application installée : tirer vers le bas en haut de page ne recharge pas le
+   site. Le service worker et le versionnage livrent la nouvelle version à
+   l'ouverture suivante de toute façon. */
+body { overscroll-behavior-y: contain; }
 button, a, .pilule, .tag { -webkit-tap-highlight-color: transparent; }
 
 /* CONTRASTE FORCE (Windows). Les couleurs de fond disparaissent : un etat actif
@@ -150,7 +171,7 @@ button { font-family: inherit; }
 .entete {
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: var(--z-entete);
   background: color-mix(in srgb, var(--fond) 82%, transparent);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--lignes);
@@ -447,7 +468,6 @@ button { font-family: inherit; }
   justify-content: center;
 }
 .nav-icone.actif { background: var(--accent-fond); border-color: var(--accent); color: var(--accent-fort); }
-.btn-icone-texte { font-size: 0.85rem; }
 
 /* ---------- Structure ---------- */
 
@@ -634,7 +654,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
 .btn-primaire {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff8ef;
+  color: var(--sur-accent);
   font-weight: 600;
 }
 .btn-primaire:hover { background: var(--accent-fort); border-color: var(--accent-fort); }
@@ -726,10 +746,10 @@ input:focus, select:focus, textarea:focus {
 
 /* Signale que les paliers affichés ne sont plus ceux de la fiche : ils suivent
    l'eau saisie. Sans marqueur, l'écart serait incompréhensible. */
-.param-chip-adapte {
-  border-color: var(--accent) !important;
-  color: var(--accent-fort) !important;
-  background: var(--accent-fond) !important;
+.param-chip-adapte, .param-chip.param-chip-adapte {
+  border-color: var(--accent);
+  color: var(--accent-fort);
+  background: var(--accent-fond);
 }
 
 /* Curseur de note quand aucune note n'est encore donnée : il reste utilisable,
@@ -919,7 +939,9 @@ input:focus, select:focus, textarea:focus {
 }
 .tasses-ajout { display: flex; gap: 8px; margin-top: 10px; }
 .tasses-ajout input[type="number"] { max-width: 90px; }
-.hint-alerte { color: var(--danger) !important; font-weight: 600; }
+/* Deux classes pour passer devant .champ-hint, défini plus bas : la spécificité
+   fait le travail, pas !important. */
+.hint-alerte, .champ-hint.hint-alerte { color: var(--danger); font-weight: 600; }
 
 /* Pastilles cafés */
 .badge-nonpur {
@@ -952,14 +974,6 @@ input:focus, select:focus, textarea:focus {
   font-weight: 700;
   white-space: nowrap;
 }
-.badge-famille {
-  font-size: 0.68rem;
-  background: var(--panneau-2);
-  color: var(--attenue);
-  border-radius: 999px;
-  padding: 2px 8px;
-  font-weight: 600;
-}
 .encadre-costaud { border-left: 4px solid var(--switch); margin-top: 4px; }
 
 /* Bascule de variante dans une carte recette */
@@ -971,17 +985,19 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* Détails de recette dans le panneau latéral de saisie */
-.aside-pourqui, .aside-cafes {
+/* Préfixés par .aside-carte pour passer devant `.aside-carte p`, qui pose la
+   marge de tous les paragraphes du panneau : la spécificité, pas !important. */
+.aside-pourqui, .aside-cafes, .aside-carte .aside-pourqui, .aside-carte .aside-cafes {
   font-size: 0.8rem;
   color: var(--attenue);
-  margin: 8px 0 0 !important;
+  margin: 8px 0 0;
 }
 .aside-pourqui b, .aside-cafes b { color: var(--encre); }
-.aside-note-recette {
+.aside-note-recette, .aside-carte .aside-note-recette {
   font-size: 0.8rem;
   border-left: 3px solid var(--accent);
   padding-left: 9px;
-  margin: 8px 0 10px !important;
+  margin: 8px 0 10px;
 }
 
 /* Curseur de note */
@@ -1009,7 +1025,7 @@ input:focus, select:focus, textarea:focus {
 .pilule.actif {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff8ef;
+  color: var(--sur-accent);
 }
 
 /* Champ obligatoire */
@@ -1108,7 +1124,7 @@ input:focus, select:focus, textarea:focus {
      puis quoi faire. Un commentaire d'extraction peut aussi en compter. */
   white-space: pre-line;
   box-shadow: 0 5px 16px rgba(30, 18, 8, 0.25);
-  z-index: 60;
+  z-index: var(--z-tag);
   pointer-events: none;
 }
 /* Un data-info VIDE ne doit pas ouvrir une bulle vide. */
@@ -1327,7 +1343,7 @@ input:focus, select:focus, textarea:focus {
   font-size: 0.75rem;
   padding: 3px 9px;
   border-radius: 999px;
-  color: #fff;
+  color: var(--sur-accent);
   font-weight: 600;
 }
 .chip-methode.brikka { background: var(--brikka); }
@@ -1356,7 +1372,7 @@ input:focus, select:focus, textarea:focus {
   flex-wrap: wrap;
   position: sticky;
   top: 62px;
-  z-index: 20;
+  z-index: var(--z-sommaire);
   background: color-mix(in srgb, var(--fond) 88%, transparent);
   backdrop-filter: blur(8px);
   padding: 8px 0;
@@ -1463,7 +1479,7 @@ input:focus, select:focus, textarea:focus {
   background: var(--deux);
   /* Texte SOMBRE sur ce fond : du blanc n'y atteignait que 2,6:1, et n'atteignait
      pas mieux sur l'ancien vert. Sur un rose poudré, le sombre monte à 7:1. */
-  color: #2e211a;
+  color: var(--encre-sur-clair);
   border-radius: 999px;
   padding: 2px 9px;
   font-weight: 700;
@@ -1718,13 +1734,13 @@ input:focus, select:focus, textarea:focus {
   position: fixed;
   right: 18px;
   bottom: 18px;
-  z-index: 150;
+  z-index: var(--z-fab);
   width: 58px;
   height: 58px;
   border-radius: 50%;
   border: none;
   background: var(--accent);
-  color: #fff8ef;
+  color: var(--sur-accent);
   font-size: 1.5rem;
   cursor: pointer;
   box-shadow: 0 8px 26px rgba(0, 0, 0, 0.38);
@@ -1737,7 +1753,7 @@ input:focus, select:focus, textarea:focus {
   position: fixed;
   right: 18px;
   bottom: 88px;
-  z-index: 149;
+  z-index: var(--z-panneau-rapide);
   width: 320px;
   max-width: calc(100vw - 36px);
   background: var(--panneau);
@@ -1765,7 +1781,7 @@ input:focus, select:focus, textarea:focus {
 
 .svg-tooltip {
   position: fixed;
-  z-index: 200;
+  z-index: var(--z-bulle);
   background: var(--tooltip-fond);
   color: var(--tooltip-texte);
   border-radius: 8px;
@@ -1787,7 +1803,7 @@ input:focus, select:focus, textarea:focus {
   border-radius: 999px;
   font-size: 0.9rem;
   font-weight: 600;
-  z-index: 300;
+  z-index: var(--z-toast);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
   animation: toast-in 250ms ease-out;
 }
@@ -1806,11 +1822,13 @@ input:focus, select:focus, textarea:focus {
   /* Les icônes d'écran restent des icônes, elles ne doivent pas s'étirer
      comme les trois onglets à texte au dessus. */
   .nav-icone { flex: 0 0 auto; width: 32px; height: 30px; }
-  .btn-icone-texte { display: none; }
   main { padding: 16px 12px 70px; }
   .kpi-valeur { font-size: 1.4rem; }
-  .chrono-affichage { gap: 20px; }
   .chrono-valeur { font-size: 1.6rem; }
+  /* Sous 16 px, iOS zoome la page à chaque champ qui prend le focus, et il faut
+     dézoomer à la main pour retrouver le formulaire. 16 px est le seuil. */
+  input[type="text"], input[type="number"], input[type="date"], input[type="datetime-local"],
+  input[type="search"], select, textarea { font-size: 1rem; }
   .sommaire { top: 108px; }
   .modale { padding: 20px 16px; }
   .duel { flex-direction: column; }

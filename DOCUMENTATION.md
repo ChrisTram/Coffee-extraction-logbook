@@ -2341,6 +2341,13 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.88 : hygiène CSS et fluidité au doigt. Trois classes mortes retirées, les
+  cinq dernières couleurs en dur passent par deux variables (`--sur-accent`,
+  `--encre-sur-clair`), les sept `z-index` deviennent une échelle nommée, et
+  quatre `!important` disparaissent au profit de la spécificité (ne restent que
+  `[hidden]` et le mouvement réduit, légitimes). Sur téléphone, les champs
+  passent à 16 px pour qu'iOS ne zoome plus à chaque focus, et tirer vers le bas
+  en haut de page ne recharge plus l'application installée.
 - v7.87 : `data.js` découpé en six fichiers. La dernière IIFE géante du site
   (1 417 lignes, six métiers) devient `data-csv.js` (format CSV, pur),
   `data-schema.js` (colonnes, normalisation, semences, pur), `data-store.js`
