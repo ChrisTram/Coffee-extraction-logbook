@@ -9,9 +9,9 @@
 (() => {
 
   // Emprunté au noyau, chargé avant nous.
-  const { $, $$, animerCompteur, attrTitre, cleLocale, detailRatio, diagsAffiches, ecartMoyen,
-    estRatee, extAnalysables, extAvecCalculs, fmtDateHeure, fmtDecimal, fmtTemps, inclureRatees,
-    moyenne, trouverRecette } = UI;
+  const { $, $$, animerCompteur, attrTitre, basculerRatees, cleLocale, detailRatio, diagsAffiches,
+    ecartMoyen, estRatee, extAnalysables, extAvecCalculs, fmtDateHeure, fmtDecimal, fmtTemps,
+    inclureRatees, moyenne, trouverRecette } = UI;
 
   // ---------- Insights automatiques ----------
   // Des phrases calculées, pas des graphiques en plus. Les règles sont
@@ -602,9 +602,38 @@
   }
 
   // Mis à disposition des autres écrans.
+  /* Câblage des contrôles du tableau de bord. Appelé une fois par app.js. */
+  function cablerTableau() {
+    /* Inclure ou exclure les ratées des analyses. Un rendu complet suit, parce
+       que la bascule change ce que TOUS les chiffres de l'écran racontent. */
+    const basculeRatees = $("#bascule-ratees");
+    if (basculeRatees) {
+      basculeRatees.addEventListener("change", () => {
+        basculerRatees(basculeRatees.checked);
+        rendreTableau();
+      });
+    }
+
+    // Délégué sur la liste : son contenu est réécrit à chaque rendu, un handler
+    // par ligne fuirait à chaque rafraîchissement du tableau de bord.
+    const ouvrirDerniere = cible => {
+      const li = cible.closest("[data-ext]");
+      if (!li) return;
+      const ext = DATA.state.extractions.find(x => x.id === li.dataset.ext);
+      if (!ext) return;
+      UI.chargerExtractionDansSaisie(ext, false);
+    };
+    $("#dernieres-liste").addEventListener("click", ev => ouvrirDerniere(ev.target));
+    $("#dernieres-liste").addEventListener("keydown", ev => {
+      if (ev.key !== "Enter" && ev.key !== " ") return;
+      ev.preventDefault();
+      ouvrirDerniere(ev.target);
+    });
+  }
+
   Object.assign(UI, {
     MIN_GAP, MIN_SAMPLE, MIN_TASSES_GOUT, PIRES_GOUTS, SEMAINES_HEATMAP, TOP_GOUTS,
-    bestOfGroups, causeDuelVide, causeGoutsVide, causeMoutureVide, computeInsights,
+    bestOfGroups, cablerTableau, causeDuelVide, causeGoutsVide, causeMoutureVide, computeInsights,
     insightAgePaquet, insightMoment, insightPuissance, insightRecettes, insightsParCafe,
     majCarteVide, note1, rendreGouts, rendreInsights, rendreStatsHeatmap, rendreTableau,
     statsHeatmap,

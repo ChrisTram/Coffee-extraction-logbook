@@ -2341,6 +2341,13 @@ version" n'est pas diagnosticable, ni par Chris ni par un agent.
   ligne, SYNC et REGLAGES n'existaient pas et l'application cassait au démarrage.
   Un test compare désormais la liste du service worker aux balises script.
   Et trois recettes Brikka stockées portaient une puissance de feu vide.
+- v7.86 : chaque écran câble ses propres contrôles. `cabler()` dans `app.js`
+  faisait 401 lignes et posait 95 écouteurs ; il en reste une soixantaine pour
+  la navigation, le thème, la langue, les modales d'accueil et de données et les
+  réflexes globaux, et chaque `ui-*.js` expose son `cablerX()`. Le panneau de
+  saisie rapide quitte `ui-saisie.js` pour `ui-rapide.js` : il n'en partageait
+  ni l'état ni le formulaire. Le test de frontières refuse tout identifiant
+  d'écran dans `app.js` et plafonne le fichier à 450 lignes.
 - v7.85 : garde-fou de taille sur la synchro. Tout l'état vit dans une seule
   ligne D1, plafonnée à 2 000 000 octets : le serveur renvoie désormais la
   taille du document et ce plafond à chaque échange, et le panneau Données

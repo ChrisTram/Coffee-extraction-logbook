@@ -9,8 +9,8 @@
 
   // Emprunté au noyau, chargé avant nous.
   const { $, $$, antiRebond, attrTitre, detailRatio, diagsAffiches, estRatee, extAnalysables,
-    extAvecCalculs, fmtDateHeure,
-    fmtDecimal, fmtTemps, fmtVND, toast } = UI;
+    extAvecCalculs, fmtDateHeure, fmtDecimal, fmtTemps, fmtVND,
+    supprimerExtractionAvecRetour, toast } = UI;
 
   // ---------- Historique ----------
 
@@ -327,8 +327,73 @@
   }
 
   // Mis à disposition des autres écrans.
+  /* Câblage des contrôles de l'historique. Appelé une fois par app.js. */
+  const FILTRES = ["h-recherche", "h-cafe", "h-methode", "h-diagnostic", "h-note-min", "h-du", "h-au", "h-ratee"];
+
+  function cablerHistorique() {
+    FILTRES.forEach(id => $("#" + id).addEventListener("input", rendreHistoriqueDifferee));
+    $("#h-reinitialiser").addEventListener("click", () => {
+      FILTRES.forEach(id => { $("#" + id).value = ""; });
+      rendreHistorique();
+    });
+    $("#h-exporter").addEventListener("click", () => {
+      DATA.exporterExtractions(filtrerHistorique().map(e => { const { _c, ...reste } = e; return reste; }));
+      toast(I18N.t("t_export_filtre"));
+    });
+    $$("#h-table th[data-tri]").forEach(th => th.addEventListener("click", () => {
+      if (tri.colonne === th.dataset.tri) tri.sens = -tri.sens;
+      else { tri.colonne = th.dataset.tri; tri.sens = -1; }
+      rendreHistorique();
+    }));
+    $("#h-corps").addEventListener("click", async ev => {
+      const btn = ev.target.closest("[data-action]");
+      if (!btn) {
+        /* Cliquer la LIGNE ouvre l'extraction en édition, comme les cinq
+           dernières du tableau de bord. Sans ça, seul le crayon fonctionnait :
+           une cible de 24 px pour une ligne qui a l'air cliquable entière. */
+        const ligne = ev.target.closest("tr[data-id]");
+        if (!ligne) return;
+        /* Une sélection de texte n'est pas un clic. Sans ce test, copier un
+           commentaire depuis le détail déplié ouvrirait l'édition. */
+        const selection = window.getSelection ? String(window.getSelection()) : "";
+        if (selection.trim()) return;
+        const extLigne = DATA.state.extractions.find(e => e.id === ligne.dataset.id);
+        if (extLigne) UI.chargerExtractionDansSaisie(extLigne, false);
+        return;
+      }
+      const id = btn.closest("tr").dataset.id;
+      const ext = DATA.state.extractions.find(e => e.id === id);
+      if (!ext) return;
+      if (btn.dataset.action === "supprimer") {
+        // Plus de confirm() natif : le retour arrière remplace la question. Une
+        // boîte système sur téléphone casse l'impression d'application, et elle
+        // ne passe pas par la couche i18n.
+        await supprimerExtractionAvecRetour(ext);
+      } else if (btn.dataset.action === "modifier") {
+        UI.chargerExtractionDansSaisie(ext, false);
+      } else if (btn.dataset.action === "dupliquer") {
+        UI.chargerExtractionDansSaisie(ext, true);
+        toast(I18N.t("t_dupliquee"));
+      } else if (btn.dataset.action === "deplier") {
+        if (detailsOuverts.has(id)) detailsOuverts.delete(id);
+        else detailsOuverts.add(id);
+        rendreHistorique();
+      } else if (btn.dataset.action === "comparer") {
+        basculerComparaison(id);
+      } else if (btn.dataset.action === "ratee") {
+        /* Un clic écrit. Pas de confirmation : le geste est réversible du même
+           bouton, et demander confirmation pour une bascule serait plus lourd
+           que la bascule elle-même. */
+        await DATA.modifierExtraction(id, { ...ext, ratee: Number(ext.ratee) === 1 ? "" : 1 });
+        toast(I18N.t(Number(ext.ratee) === 1 ? "t_deratee" : "t_ratee"));
+      }
+    });
+    $("#comparaison-ouvrir").addEventListener("click", ouvrirComparaison);
+    $("#comparaison-vider").addEventListener("click", () => { comparaison.clear(); rendreHistorique(); });
+  }
+
   Object.assign(UI, {
-    basculerComparaison, carteReglage, champsComparaison, comparaison, detailsOuverts,
+    FILTRES, basculerComparaison, cablerHistorique, carteReglage, champsComparaison, comparaison, detailsOuverts,
     filtrerHistorique, ligneDetail, ligneHistorique, majBarreComparaison, ouvrirComparaison,
     remplirFiltres, rendreHistorique, rendreHistoriqueDifferee, rendreReglages, sansAccents,
     texteCherchable, tri, valeurTri,

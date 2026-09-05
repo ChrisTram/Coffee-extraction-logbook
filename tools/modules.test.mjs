@@ -133,7 +133,7 @@ function lexer(src) {
 const OPS = ["...", "===", "!==", "**=", "&&=", "||=", "??=", "=>", "==", "!=", "<=", ">=",
   "&&", "||", "??", "?.", "++", "--", "+=", "-=", "*=", "/=", "%=", "**", "<<", ">>"];
 
-const FICHIERS = ["js/ui-noyau.js", "js/ui-tableau.js", "js/ui-saisie.js",
+const FICHIERS = ["js/ui-noyau.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-rapide.js",
   "js/ui-historique.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/app.js"];
 
 const MOTS_CLES = new Set(["if","else","for","while","do","return","function","const","let","var",
@@ -362,6 +362,29 @@ const noyau = infos["js/ui-noyau.js"];
   const gros = FICHIERS.filter(f => infos[f].src.split("\n").length > 1200);
   check("aucun fichier d'interface ne repasse au-dessus de 1200 lignes",
     gros.length === 0, gros.map(f => f + " " + infos[f].src.split("\n").length).join(", "));
+}
+
+/* 7. CHAQUE ECRAN CABLE SES PROPRES CONTROLES.
+   cabler() dans app.js faisait 401 lignes et posait 95 ecouteurs sur des champs
+   qu'elle ne connaissait que par leur identifiant. Chaque ecran a maintenant
+   son cablerX(), et app.js ne garde que ce qui n'appartient a aucun ecran. Un
+   identifiant d'ecran qui reapparait dans app.js est une regression. */
+{
+  const app = infos["js/app.js"].src;
+  const prefixes = ['$("#f-', '$("#q-', '$("#h-', '$("#conv-', '$("#param-', '$("#recette-',
+    '$("#cafe-', '$("#pap-', '$("#btn-chrono', '$("#tasse-', '$("#sachet-', '$("#dernieres-'];
+  // $$("#f-...") est une LECTURE du DOM pour redessiner, pas un cablage : on ne
+  // regarde que les $( precedes d'autre chose qu'un dollar.
+  const echapper = s => s.replace(/[$()]/g, c => "\\" + c);
+  const fuites = prefixes.filter(p => new RegExp("(^|[^$])" + echapper(p)).test(app));
+  check("app.js ne câble plus aucun contrôle d'écran", fuites.length === 0, fuites.join(" "));
+  const cableurs = ["cablerTableau", "cablerSaisie", "cablerRapide", "cablerHistorique", "cablerGuide", "cablerCatalogue"];
+  const absents = cableurs.filter(c => !FICHIERS.some(f => f !== "js/app.js" && infos[f].exposes.has(c)));
+  check("chaque écran expose son câbleur", absents.length === 0, absents.join(", "));
+  const oublies = cableurs.filter(c => !app.includes("UI." + c + "()"));
+  check("et app.js les appelle tous", oublies.length === 0, oublies.join(", "));
+  const lignes = app.split("\n").length;
+  check("app.js reste sous 450 lignes", lignes <= 450, String(lignes));
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : "\n" + failures + " ECHEC(S)");

@@ -22,7 +22,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
    contrôles qui cherchent une chaîne dans "l'interface" doivent les lire tous :
    sinon ils repassent au vert dès qu'un bout de code change de fichier, ce qui
    est exactement le moment où on aimerait qu'ils regardent. */
-const SOURCE_UI = ["js/ui-noyau.js", "js/ui-tableau.js", "js/ui-saisie.js",
+const SOURCE_UI = ["js/ui-noyau.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-rapide.js",
   "js/ui-historique.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/app.js"]
   .map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 /* demo-data.js n'est plus une balise script depuis la v7.56, mais le harnais le
@@ -1384,16 +1384,18 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   const app = SOURCE_UI;
 
   check("un anti-rebond existe", app.includes("function antiRebond"));
+  // Depuis que chaque ecran cable ses propres controles (v7.86), l'appel est
+  // local au fichier de l'ecran : plus de prefixe UI.
   check("les filtres de l'historique passent par lui",
-    app.includes('addEventListener("input", UI.rendreHistoriqueDifferee)'));
+    /addEventListener\("input", (UI\.)?rendreHistoriqueDifferee\)/.test(app));
   check("le convertisseur du moulin aussi",
-    app.includes('addEventListener("input", UI.rendreConvertisseurDifferee)'));
+    /addEventListener\("input", (UI\.)?rendreConvertisseurDifferee\)/.test(app));
   /* Le curseur du moulin, LUI, est redevenu immediat en v7.61. Son anti-rebond
      couvrait un redessin complet du SVG a chaque cran ; le squelette de la
      reglette n'etant plus reconstruit, il ne restait que l'attente. Le controle
      est inverse a dessein : il empeche de le remettre par reflexe. */
   check("le curseur du moulin repond immediatement",
-    /conv-slider[\s\S]{0,600}UI\.rendreConvertisseur\(\)/.test(app) &&
+    /conv-slider[\s\S]{0,600}(UI\.)?rendreConvertisseur\(\)/.test(app) &&
     !/conv-slider[\s\S]{0,600}rendreConvertisseurDifferee/.test(app));
 
   /* Les autres appels a rendreHistorique restent IMMEDIATS : suppression, tri,
@@ -1457,7 +1459,8 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("elle cherche dans ce que Chris a ecrit",
     /function texteCherchable[\s\S]{0,260}commentaire[\s\S]{0,120}descripteurs/.test(app));
   check("elle se reinitialise avec les autres filtres",
-    /h-reinitialiser[\s\S]{0,200}"h-recherche"/.test(app));
+    /h-reinitialiser[\s\S]{0,200}FILTRES\.forEach/.test(app) &&
+    /const FILTRES = \[[^\]]*"h-recherche"/.test(app));
 
   // Reprise reseau et Echap.
   check("la synchro repart quand le reseau revient", /addEventListener\("online"/.test(app));

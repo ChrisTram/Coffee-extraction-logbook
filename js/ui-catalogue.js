@@ -410,8 +410,40 @@
   }
 
   // Mis à disposition des autres écrans.
+  /* Câblage des modales cafés, sachets, recettes et de l'écran Paramètres.
+     Appelé une fois par app.js. */
+  function cablerCatalogue() {
+    // Boutons d'entête qui ouvrent les modales
+    $("#btn-cafes-entete").addEventListener("click", ouvrirModaleCafes);
+    $("#btn-recettes-entete").addEventListener("click", ouvrirModaleRecettes);
+
+    // Café : formulaire, et sachets
+    $("#cafe-nouveau").addEventListener("click", () => ouvrirFormCafe(null));
+    $("#cafe-annuler").addEventListener("click", () => { $("#form-cafe").hidden = true; });
+    $("#form-cafe").addEventListener("submit", enregistrerCafe);
+    $("#form-sachet").addEventListener("submit", enregistrerSachet);
+    $("#sachet-annuler").addEventListener("click", fermerFormSachet);
+
+    // Recettes : formulaire
+    $("#recette-nouvelle").addEventListener("click", () => ouvrirFormRecette(null));
+    $("#recette-annuler").addEventListener("click", () => { $("#form-recette").hidden = true; });
+    $("#form-recette").addEventListener("submit", enregistrerRecette);
+    $("#recette-retablir").addEventListener("click", retablirRecetteCourante);
+    $("#recette-supprimer").addEventListener("click", supprimerRecetteCourante);
+
+    // Paramètres
+    $("#param-enregistrer").addEventListener("click", enregistrerParametres);
+    $("#param-annuler").addEventListener("click", rendreParametres);
+    $("#param-molette").addEventListener("input", majDetailMolette);
+    // La case de l'écran Paramètres et celle du chrono pilotent le même réglage.
+    $("#param-bips").addEventListener("change", () => {
+      $("#chrono-bip").checked = $("#param-bips").checked;
+      $("#chrono-bip").dispatchEvent(new Event("change"));
+    });
+  }
+
   Object.assign(UI, {
-    cafeEditId, coutParTasse, enregistrerCafe, enregistrerParametres, enregistrerRecette,
+    cablerCatalogue, cafeEditId, coutParTasse, enregistrerCafe, enregistrerParametres, enregistrerRecette,
     enregistrerSachet, fermerFormSachet, lireFormRecette, majDetailMolette, ouvrirFormCafe,
     ouvrirFormRecette, ouvrirFormSachet, ouvrirModaleCafes, ouvrirModaleRecettes,
     recetteEditId, rendreListeCafes, rendreListeRecettes, rendreParametres,

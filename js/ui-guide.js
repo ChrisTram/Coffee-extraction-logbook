@@ -9,7 +9,8 @@
 (() => {
 
   // Emprunté au noyau, chargé avant nous.
-  const { $, $$, antiRebond, attrTitre, fmtTemps, recetteAvecVariantes, recettesVivantes, replis } = UI;
+  const { $, $$, antiRebond, attrTitre, ecrireReplis, fmtTemps, recetteAvecVariantes, recettesVivantes,
+    replis, toast } = UI;
 
   // ---------- Référence : recettes ----------
 
@@ -297,8 +298,57 @@
   }
 
   // Mis à disposition des autres écrans.
+  /* Câblage des contrôles du Guide : moulin, pas à pas, boutons de copie.
+     Appelé une fois par app.js. */
+  function cablerGuide() {
+    $("#conv-dial").addEventListener("input", rendreConvertisseurDifferee);
+    $("#conv-slider").addEventListener("input", () => {
+      $("#conv-dial").value = GRIND.dialDepuisCrans(Number($("#conv-slider").value));
+      /* IMMÉDIAT, et c'est un changement assumé. L'anti-rebond posé en v7.57
+         couvrait un redessin complet du SVG à chaque cran ; depuis que le
+         squelette de la réglette est construit une seule fois, il ne reste que
+         deux attributs à déplacer. Garder les 90 ms d'attente reviendrait à
+         payer le défaut sans le bénéfice, sur le seul contrôle du site qu'on
+         manipule en continu. Le champ texte, lui, garde son anti-rebond. */
+      rendreConvertisseur();
+    });
+    /* Le seul chemin qui change vraiment un réglage depuis cet écran. Il écrit
+       le même repli que l'écran Paramètres, il n'y a donc qu'une source. */
+    $("#conv-appliquer").addEventListener("click", async () => {
+      const dial = $("#conv-dial").value.trim().replace(/,/g, ".");
+      if (!GRIND.parseDial(dial)) { toast(I18N.t("t_mouture_invalide")); return; }
+      replis.molette = dial;
+      await ecrireReplis();
+      rendreConvertisseur();
+      if ($("#param-molette")) $("#param-molette").value = dial;
+      toast(I18N.t("t_molette_appliquee", { m: dial }));
+    });
+    $("#pap-demarrer").addEventListener("click", papDemarrer);
+    $("#pap-suivant").addEventListener("click", papSuivant);
+    $("#modale-pas-a-pas").addEventListener("close", () => clearInterval(pap.interval));
+    $("#btn-gerer-recettes").addEventListener("click", () => UI.ouvrirModaleRecettes());
+
+    // Boutons de copie des messages vietnamiens
+    $$("[data-copier]").forEach(b => b.addEventListener("click", async () => {
+      const bloc = document.getElementById(b.dataset.copier);
+      const texte = bloc ? bloc.textContent.trim() : "";
+      try {
+        await navigator.clipboard.writeText(texte);
+        toast(I18N.t("t_copie"));
+      } catch (e) {
+        const ta = document.createElement("textarea");
+        ta.value = texte;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+        toast(I18N.t("t_copie"));
+      }
+    }));
+  }
+
   Object.assign(UI, {
-    carteRecette, conseilMouture, etapesPour, facteurEau, familleSelection, ouvrirPasAPas,
+    cablerGuide, carteRecette, conseilMouture, etapesPour, facteurEau, familleSelection, ouvrirPasAPas,
     pap, papDemarrer, papSuivant, papTic, rendreConvertisseur, rendreConvertisseurDifferee,
     rendrePapEtapes, rendreRecettes, rendreReperesMouture, rendreTablePlages, rendreTetsu,
     tetsuChoix, versementsTetsu,

@@ -222,7 +222,7 @@ Chart.defaults = creuse();
 
 const SCRIPTS = ["js/outils.js", "js/i18n.en.js", "js/i18n.js", "js/grind.js", "js/recettes.js", "js/demo-data.js",
   "js/sync.js", "js/data.js", "js/reglages.js", "js/charts.js",
-  "js/ui-noyau.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-historique.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/app.js"];
+  "js/ui-noyau.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-rapide.js", "js/ui-historique.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/app.js"];
 const source = SCRIPTS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 
 // console.error interceptée : c'est par là que sortent les erreurs de rendu.

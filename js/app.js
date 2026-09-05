@@ -106,16 +106,6 @@
       if (ECRANS.includes(cible) && cible !== nav.ecran) activerEcran(cible);
     });
 
-    /* Inclure ou exclure les ratées des analyses. Un rendu complet suit, parce
-       que la bascule change ce que TOUS les chiffres de l'écran racontent. */
-    const basculeRatees = $("#bascule-ratees");
-    if (basculeRatees) {
-      basculeRatees.addEventListener("change", () => {
-        UI.basculerRatees(basculeRatees.checked);
-        UI.rendreTableau();
-      });
-    }
-
     // Thème
     $("#btn-theme").addEventListener("click", () => {
       const courant = document.documentElement.getAttribute("data-theme");
@@ -126,135 +116,19 @@
     $("#btn-lang").addEventListener("click", () => I18N.basculer());
     I18N.abonner(rafraichirLangue);
 
-    // Saisie
-    $$(".btn-methode").forEach(b => b.addEventListener("click", () => {
-      UI.choisirMethode(b.dataset.methode);
-      UI.prefillDepuisRecette($("#f-recette").value);
-    }));
-    $("#f-cafe").addEventListener("change", UI.surChoixCafe);
-    /* Dès que Chris touche la date, elle est SIENNE : l'arrivée sur l'écran ne
-       la remplacera plus. Il note parfois une tasse d'hier soir. "input" autant
-       que "change" : sur un champ datetime-local, chaque partie modifiée émet
-       "input", et "change" n'arrive qu'à la validation. */
-    ["input", "change"].forEach(ev => $("#f-date").addEventListener(ev, UI.marquerDateTouchee));
-    $("#f-date").addEventListener("change", UI.majAgePaquet);
-    $("#f-recette").addEventListener("change", () => { UI.prefillDepuisRecette($("#f-recette").value); UI.majAvertissements(); });
-    ["f-dose", "f-eau", "f-mouture", "f-volume"].forEach(id =>
-      $("#" + id).addEventListener("input", () => { UI.majLive(); UI.majAvertissements(); }));
-    // majAvertissements redessine le panneau latéral, le chrono a besoin d'un
-    // rappel explicite : ses paliers sont mis à l'échelle de l'eau saisie.
-    $("#f-eau").addEventListener("input", () => UI.majEtapesChrono(false));
-    // Le volume extrait pilote le préremplissage du lait, il doit le rafraîchir.
-    $("#f-volume").addEventListener("input", UI.majLait);
-    $("#f-temp-preset").addEventListener("change", () => {
-      const v = $("#f-temp-preset").value;
-      if (!v) return;
-      $("#f-temp").value = v;
-      UI.razPresetTemp();
-      UI.majAvertissements();
-    });
-    // Une saisie manuelle a toujours le dernier mot sur l'estimation.
-    $("#f-temp").addEventListener("input", UI.razPresetTemp);
-    /* pointerdown en plus d'input : poser le doigt sur le curseur là où il est
-       déjà ne déclenche aucun input, la note serait restée vide sans le savoir. */
-    ["input", "pointerdown", "keydown"].forEach(ev =>
-      $("#f-note").addEventListener(ev, () => {
-        $("#f-note-vide").checked = false;
-        UI.majAffichageNote();
-      }));
-    $("#f-note-vide").addEventListener("change", UI.majAffichageNote);
-    $("#btn-chrono").addEventListener("click", UI.chronoPrincipal);
-    $("#btn-chrono-stop").addEventListener("click", UI.chronoArreter);
-    $("#btn-chrono-raz").addEventListener("click", UI.chronoRaz);
-    $("#param-enregistrer").addEventListener("click", UI.enregistrerParametres);
-    // UNE SEULE FOIS : les conteneurs survivent aux reconstructions de pilules,
-    // les attacher depuis construirePilules empilerait un jeu par bascule de langue.
-    UI.brancherPilules();
-    UI.brancherCurseurs();
-    activerAppuiLong($("#f-diagnostic"));
-    activerAppuiLong($("#f-descripteurs"));
-    $("#param-molette").addEventListener("input", UI.majDetailMolette);
-    $("#conv-slider").addEventListener("input", () => {
-      $("#conv-dial").value = GRIND.dialDepuisCrans(Number($("#conv-slider").value));
-      /* IMMÉDIAT, et c'est un changement assumé. L'anti-rebond posé en v7.57
-         couvrait un redessin complet du SVG à chaque cran ; depuis que le
-         squelette de la réglette est construit une seule fois, il ne reste que
-         deux attributs à déplacer. Garder les 90 ms d'attente reviendrait à
-         payer le défaut sans le bénéfice, sur le seul contrôle du site qu'on
-         manipule en continu. Le champ texte, lui, garde son anti-rebond. */
-      UI.rendreConvertisseur();
-    });
-    /* Le seul chemin qui change vraiment un réglage depuis cet écran. Il écrit
-       le même repli que l'écran Paramètres, il n'y a donc qu'une source. */
-    $("#conv-appliquer").addEventListener("click", async () => {
-      const dial = $("#conv-dial").value.trim().replace(/,/g, ".");
-      if (!GRIND.parseDial(dial)) { toast(I18N.t("t_mouture_invalide")); return; }
-      replis.molette = dial;
-      await ecrireReplis();
-      UI.rendreConvertisseur();
-      if ($("#param-molette")) $("#param-molette").value = dial;
-      toast(I18N.t("t_molette_appliquee", { m: dial }));
-    });
-    $("#param-annuler").addEventListener("click", UI.rendreParametres);
-    // La case de l'écran Paramètres et celle du chrono pilotent le même réglage.
-    $("#param-bips").addEventListener("change", () => {
-      $("#chrono-bip").checked = $("#param-bips").checked;
-      $("#chrono-bip").dispatchEvent(new Event("change"));
-    });
-    $("#chrono-bip").addEventListener("change", () => {
-      try { localStorage.setItem("bips", $("#chrono-bip").checked ? "1" : "0"); } catch (e) { /* tant pis */ }
-    });
-    $("#form-saisie").addEventListener("submit", UI.enregistrerSaisie);
-    $("#form-saisie").addEventListener("input", UI.planifierBrouillon);
-    $("#form-saisie").addEventListener("change", UI.planifierBrouillon);
-    // visibilitychange est le dernier evenement fiable avant qu'un navigateur
-    // mobile decharge la page : on ecrit tout de suite, sans attendre le debounce.
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "hidden") UI.ecrireBrouillon();
-    });
-    $("#btn-annuler-edition").addEventListener("click", () => { UI.reinitialiserSaisie(); activerEcran("historique"); });
-    $("#btn-gerer-cafes").addEventListener("click", UI.ouvrirModaleCafes);
-    $("#btn-cafes-entete").addEventListener("click", UI.ouvrirModaleCafes);
-    $("#btn-recettes-entete").addEventListener("click", UI.ouvrirModaleRecettes);
-    $("#volume-estime").addEventListener("click", () => {
-      const v = $("#volume-estime").dataset.valeur;
-      if (v !== undefined) { $("#f-volume").value = v; UI.majLive(); }
-    });
+    /* CHAQUE ÉCRAN CÂBLE SES PROPRES CONTRÔLES. Cette fonction faisait 401
+       lignes et posait 95 écouteurs sur des champs qu'elle ne connaissait que
+       par leur identifiant ; chaque bouton nouveau l'allongeait, et un écran
+       dépendait d'un fichier tiers pour réagir à ses propres clics. Il ne reste
+       ici que ce qui n'appartient à aucun écran : la navigation, le thème, la
+       langue, les modales d'accueil et de données, et les réflexes globaux. */
+    UI.cablerTableau();
+    UI.cablerSaisie();
+    UI.cablerRapide();
+    UI.cablerHistorique();
+    UI.cablerGuide();
+    UI.cablerCatalogue();
 
-    // Ajout d'eau, agitation, lait, tasse
-    $("#f-ajout-eau-oui").addEventListener("change", () => {
-      $("#f-eau-ajoutee").hidden = !$("#f-ajout-eau-oui").checked;
-      UI.majLive();
-    });
-    $("#f-eau-ajoutee").addEventListener("input", UI.majLive);
-    $("#f-agitation-oui").addEventListener("change", () => {
-      $("#ligne-agitation").hidden = !$("#f-agitation-oui").checked;
-      if ($("#f-agitation-oui").checked && !$("#f-agitation").value) $("#f-agitation").value = 1;
-    });
-    $("#f-lait").addEventListener("input", UI.majLive);
-    $("#f-tasse").addEventListener("change", () => { UI.majLait(); UI.majLive(); });
-    $("#btn-tasses").addEventListener("click", () => {
-      const ed = $("#tasses-editeur");
-      ed.hidden = !ed.hidden;
-      if (!ed.hidden) UI.rendreTassesEditeur();
-    });
-    $("#tasse-ajouter").addEventListener("click", async () => {
-      const nom = $("#tasse-nom").value.trim();
-      const ml = parseFloat($("#tasse-ml").value);
-      if (!nom || !(ml > 0)) { toast(I18N.t("t_tasse_invalide")); return; }
-      await DATA.ajouterTasse(nom, ml);
-      $("#tasse-nom").value = "";
-      $("#tasse-ml").value = "";
-      UI.rendreTassesEditeur();
-      UI.remplirSelectTasses();
-      $("#f-tasse").value = nom;
-      UI.majLait();
-      UI.majLive();
-    });
-
-    // Historique
-    ["h-recherche", "h-cafe", "h-methode", "h-diagnostic", "h-note-min", "h-du", "h-au", "h-ratee"].forEach(id =>
-      $("#" + id).addEventListener("input", UI.rendreHistoriqueDifferee));
     /* REPRISE QUAND LE RÉSEAU REVIENT. Une synchro ratée attendait le prochain
        geste de Chris : en cuisine, il enregistre sa tasse, range son téléphone, et
        la synchro ne repartait qu'à l'ouverture suivante. Le navigateur sait dire
@@ -279,125 +153,8 @@
       $$(".info-ouverte").forEach(x => x.classList.remove("info-ouverte"));
     });
 
-    $("#h-reinitialiser").addEventListener("click", () => {
-      ["h-recherche", "h-cafe", "h-methode", "h-diagnostic", "h-note-min", "h-du", "h-au", "h-ratee"].forEach(id => $("#" + id).value = "");
-      UI.rendreHistorique();
-    });
-    $("#h-exporter").addEventListener("click", () => {
-      DATA.exporterExtractions(UI.filtrerHistorique().map(e => { const { _c, ...reste } = e; return reste; }));
-      toast(I18N.t("t_export_filtre"));
-    });
-    $$("#h-table th[data-tri]").forEach(th => th.addEventListener("click", () => {
-      if (UI.tri.colonne === th.dataset.tri) UI.tri.sens = -UI.tri.sens;
-      else { UI.tri.colonne = th.dataset.tri; UI.tri.sens = -1; }
-      UI.rendreHistorique();
-    }));
-    $("#h-corps").addEventListener("click", async ev => {
-      const btn = ev.target.closest("[data-action]");
-      if (!btn) {
-        /* Cliquer la LIGNE ouvre l'extraction en édition, comme les cinq
-           dernières du tableau de bord. Sans ça, seul le crayon fonctionnait :
-           une cible de 24 px pour une ligne qui a l'air cliquable entière. */
-        const ligne = ev.target.closest("tr[data-id]");
-        if (!ligne) return;
-        /* Une sélection de texte n'est pas un clic. Sans ce test, copier un
-           commentaire depuis le détail déplié ouvrirait l'édition. */
-        const selection = window.getSelection ? String(window.getSelection()) : "";
-        if (selection.trim()) return;
-        const extLigne = DATA.state.extractions.find(e => e.id === ligne.dataset.id);
-        if (extLigne) UI.chargerExtractionDansSaisie(extLigne, false);
-        return;
-      }
-      const id = btn.closest("tr").dataset.id;
-      const ext = DATA.state.extractions.find(e => e.id === id);
-      if (!ext) return;
-      if (btn.dataset.action === "supprimer") {
-        // Plus de confirm() natif : le retour arrière remplace la question. Une
-        // boîte système sur téléphone casse l'impression d'application, et elle
-        // ne passe pas par la couche i18n.
-        await supprimerExtractionAvecRetour(ext);
-      } else if (btn.dataset.action === "modifier") {
-        UI.chargerExtractionDansSaisie(ext, false);
-      } else if (btn.dataset.action === "dupliquer") {
-        UI.chargerExtractionDansSaisie(ext, true);
-        toast(I18N.t("t_dupliquee"));
-      } else if (btn.dataset.action === "deplier") {
-        if (UI.detailsOuverts.has(id)) UI.detailsOuverts.delete(id);
-        else UI.detailsOuverts.add(id);
-        UI.rendreHistorique();
-      } else if (btn.dataset.action === "comparer") {
-        UI.basculerComparaison(id);
-      } else if (btn.dataset.action === "ratee") {
-        /* Un clic écrit. Pas de confirmation : le geste est réversible du même
-           bouton, et demander confirmation pour une bascule serait plus lourd
-           que la bascule elle-même. */
-        await DATA.modifierExtraction(id, { ...ext, ratee: Number(ext.ratee) === 1 ? "" : 1 });
-        toast(I18N.t(Number(ext.ratee) === 1 ? "t_deratee" : "t_ratee"));
-      }
-    });
-
-    // Délégué sur la liste : son contenu est réécrit à chaque rendu, un handler
-    // par ligne fuirait à chaque rafraîchissement du tableau de bord.
-    const ouvrirDerniere = cible => {
-      const li = cible.closest("[data-ext]");
-      if (!li) return;
-      const ext = DATA.state.extractions.find(x => x.id === li.dataset.ext);
-      if (!ext) return;
-      UI.chargerExtractionDansSaisie(ext, false);
-    };
-    $("#dernieres-liste").addEventListener("click", ev => ouvrirDerniere(ev.target));
-    $("#dernieres-liste").addEventListener("keydown", ev => {
-      if (ev.key !== "Enter" && ev.key !== " ") return;
-      ev.preventDefault();
-      ouvrirDerniere(ev.target);
-    });
-
-    $("#comparaison-ouvrir").addEventListener("click", UI.ouvrirComparaison);
-    $("#comparaison-vider").addEventListener("click", () => { UI.comparaison.clear(); UI.rendreHistorique(); });
-
-    // Référence
-    $("#conv-dial").addEventListener("input", UI.rendreConvertisseurDifferee);
-    $("#pap-demarrer").addEventListener("click", UI.papDemarrer);
-    $("#pap-suivant").addEventListener("click", UI.papSuivant);
-    $("#btn-gerer-recettes").addEventListener("click", UI.ouvrirModaleRecettes);
-
-    // Recettes : formulaire
-    $("#recette-nouvelle").addEventListener("click", () => UI.ouvrirFormRecette(null));
-    $("#recette-annuler").addEventListener("click", () => $("#form-recette").hidden = true);
-    $("#form-recette").addEventListener("submit", UI.enregistrerRecette);
-    $("#recette-retablir").addEventListener("click", UI.retablirRecetteCourante);
-    $("#recette-supprimer").addEventListener("click", UI.supprimerRecetteCourante);
-
-    // Saisie rapide flottante
-    $("#fab-rapide").addEventListener("click", () => UI.basculerRapide());
-    $("#q-fermer").addEventListener("click", () => UI.basculerRapide(false));
-    $("#q-cafe").addEventListener("change", UI.surChoixCafeRapide);
-    $("#q-recette").addEventListener("change", UI.majAvertRapide);
-    $("#q-note").addEventListener("input", () => $("#q-note-affichee").textContent = $("#q-note").value);
-    $("#q-enregistrer").addEventListener("click", UI.enregistrerRapide);
-    $("#q-complet").addEventListener("click", () => { UI.basculerRapide(false); activerEcran("saisie"); });
-
-    // Guide : boutons de copie des messages
-    $$("[data-copier]").forEach(b => b.addEventListener("click", async () => {
-      const bloc = document.getElementById(b.dataset.copier);
-      const texte = bloc ? bloc.textContent.trim() : "";
-      try {
-        await navigator.clipboard.writeText(texte);
-        toast(I18N.t("t_copie"));
-      } catch (e) {
-        const ta = document.createElement("textarea");
-        ta.value = texte;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        ta.remove();
-        toast(I18N.t("t_copie"));
-      }
-    }));
-
     // Modales génériques
     $$(".modale-fermer[data-ferme]").forEach(b => b.addEventListener("click", () => $("#" + b.dataset.ferme).close()));
-    $("#modale-pas-a-pas").addEventListener("close", () => clearInterval(UI.pap.interval));
 
     // Accueil
     $("#acc-creer").addEventListener("click", () => actionLier(true));
@@ -450,21 +207,12 @@
       majStatutDonnees();
       toast(I18N.t("t_reinit"));
     });
-
-    // Café : formulaire
-    $("#cafe-nouveau").addEventListener("click", () => UI.ouvrirFormCafe(null));
-    $("#cafe-annuler").addEventListener("click", () => $("#form-cafe").hidden = true);
-    $("#form-cafe").addEventListener("submit", UI.enregistrerCafe);
-
-    // Les changements de données rafraîchissent l'interface.
-    $("#form-sachet").addEventListener("submit", UI.enregistrerSachet);
-    $("#sachet-annuler").addEventListener("click", UI.fermerFormSachet);
-
     $("#don-sync").addEventListener("click", async () => {
       const etat = await DATA.synchroniser(true);
       toast(I18N.t(etat === "ok" ? "t_sync_ok" : "t_sync_ko"));
     });
 
+    // Les changements de données rafraîchissent l'interface.
     DATA.abonner(() => {
       // Les réglages peuvent arriver d'un autre appareil : on relit avant de rendre.
       chargerReplis();

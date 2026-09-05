@@ -1,5 +1,5 @@
-/* Écran de saisie : le formulaire, le chronomètre, le brouillon, et le panneau
- * rapide qui flotte par-dessus.
+/* Écran de saisie : le formulaire, le chronomètre et le brouillon. Le panneau
+ * rapide qui flotte par-dessus vit dans ui-rapide.js.
  *
  * C'est le fichier le plus long, et pour une bonne raison : c'est là que Chris
  * passe son temps, souvent d'une main, au téléphone, pendant une extraction. Le
@@ -10,8 +10,8 @@
 (() => {
 
   // Emprunté au noyau, chargé avant nous.
-  const { $, $$, $f, activerEcran, attrTitre, basculerEtat, detailRatio, fmtTemps, fmtVND,
-    maintenantLocal, nav, poser, poserTexte, recettesDeMethode, replis, toast,
+  const { $, $$, $f, activerAppuiLong, activerEcran, attrTitre, basculerEtat, detailRatio, fmtTemps,
+    fmtVND, maintenantLocal, nav, poser, poserTexte, recettesDeMethode, replis, toast,
     trouverRecette } = UI;
 
   // ---------- Saisie ----------
@@ -1058,114 +1058,122 @@
     }
   }
 
-  // ---------- Saisie rapide flottante ----------
-
-  let rapideOuvert = false;
-
-  // Le câblage a besoin de savoir si le panneau est ouvert, pas de pouvoir
-  // l'ouvrir en écrivant dans une variable.
-  function rapideEstOuvert() { return rapideOuvert; }
-
-  function basculerRapide(forcer) {
-    rapideOuvert = forcer !== undefined ? forcer : !rapideOuvert;
-    $("#panneau-rapide").classList.toggle("ouvert", rapideOuvert);
-    $("#fab-rapide").classList.toggle("ouvert", rapideOuvert);
-    if (rapideEstOuvert()) majPanneauRapide();
-  }
-
-  function majPanneauRapide() {
-    const selCafe = $("#q-cafe");
-    const v = selCafe.value;
-    selCafe.innerHTML = '<option value="">' + I18N.t("choisir_cafe") + "</option>" +
-      cafesSelectionnables().map(c => '<option value="' + c.id + '">' + c.nom + "</option>").join("");
-    if (v && cafesSelectionnables().some(c => c.id === v)) selCafe.value = v;
-    /* Même défaut que le formulaire complet : le panneau rapide REFUSE
-       d'enregistrer sans café, donc l'ouvrir sur un champ vide garantissait un
-       aller-retour. On ne préremplit que si rien n'est déjà choisi, pour ne pas
-       écraser une sélection en cours. */
-    if (!selCafe.value) {
-      const premierCafe = cafesSelectionnables()[0];
-      if (premierCafe) selCafe.value = premierCafe.id;
-    }
-    majRecettesRapide();
-  }
-
-  function majRecettesRapide() {
-    const sel = $("#q-recette");
-    const v = sel.value;
-    const groupes = ["Brikka", "Switch"].map(m => {
-      const liste = recettesDeMethode(m);
-      if (!liste.length) return "";
-      return '<optgroup label="' + m + '">' +
-        liste.map(r => "<option>" + r.nom + "</option>").join("") + "</optgroup>";
-    }).join("");
-    sel.innerHTML = groupes;
-    if (v && trouverRecette(v)) sel.value = v;
-    majAvertRapide();
-  }
-
-  function surChoixCafeRapide() {
-    const cafe = DATA.state.cafes.find(c => c.id === $("#q-cafe").value);
-    if (cafe) {
-      const r = trouverRecette(cafe.recette_recommandee);
-      if (r && r.actif !== 0) $("#q-recette").value = r.nom;
-    }
-    majAvertRapide();
-  }
-
-  function majAvertRapide() {
-    const cafe = DATA.state.cafes.find(c => c.id === $("#q-cafe").value);
-    const r = trouverRecette($("#q-recette").value);
-    const av = r ? avertissementsCombinaison(cafe, r.methode, r.nom, DATA.state.recettes) : { msgs: [] };
-    $("#q-avert").textContent = av.msgs.length ? "⚠ " + av.msgs[0] : "";
-  }
-
-  async function enregistrerRapide() {
-    const cafeId = $("#q-cafe").value;
-    const r = trouverRecette($("#q-recette").value);
-    if (!cafeId) { toast(I18N.t("t_choisis_cafe")); return; }
-    if (!r) { toast(I18N.t("t_choisis_recette")); return; }
-    // Le café choisi dans le panneau. Un café déjà moulu n'a pas de réglage de
-    // molette à enregistrer : la valeur de la recette serait une invention.
-    const cafeQ = DATA.state.cafes.find(c => c.id === cafeId);
-    await DATA.ajouterExtraction({
-      date_heure: maintenantLocal(),
-      cafe_id: cafeId,
-      methode: r.methode,
-      recette: r.nom,
-      dose_g: r.dose || replis.dose,
-      eau_g: r.eau,
-      mouture_dial: cafeQ && Number(cafeQ.deja_moulu) === 1 ? "" : r.dial,
-      temperature_c: r.temp,
-      temps_total_s: "",
-      temps_ecoulement_s: "",
-      volume_extrait_ml: "",
-      tasse: (DATA.state.tasses.find(t => t.nom === (r.methode === "Brikka" ? "Loveramics Flat White Egg" : "Classic Mug")) || { nom: "" }).nom,
-      note_sur_10: $("#q-note").value,
-      diagnostic: "",
-      descripteurs: "",
-      commentaire: "",
+  /* Câblage des contrôles de l'écran. Appelé une fois par app.js, au démarrage.
+     Chaque écran câble ce qui lui appartient : le formulaire, le chrono, les
+     options et l'éditeur de tasses vivent ici, et une fonction de câblage de
+     quatre cents lignes dans app.js n'existe plus. */
+  function cablerSaisie() {
+    $$(".btn-methode").forEach(b => b.addEventListener("click", () => {
+      choisirMethode(b.dataset.methode);
+      prefillDepuisRecette($("#f-recette").value);
+    }));
+    $("#f-cafe").addEventListener("change", surChoixCafe);
+    /* Dès que Chris touche la date, elle est SIENNE : l'arrivée sur l'écran ne
+       la remplacera plus. Il note parfois une tasse d'hier soir. "input" autant
+       que "change" : sur un champ datetime-local, chaque partie modifiée émet
+       "input", et "change" n'arrive qu'à la validation. */
+    ["input", "change"].forEach(ev => $("#f-date").addEventListener(ev, marquerDateTouchee));
+    $("#f-date").addEventListener("change", majAgePaquet);
+    $("#f-recette").addEventListener("change", () => { prefillDepuisRecette($("#f-recette").value); majAvertissements(); });
+    ["f-dose", "f-eau", "f-mouture", "f-volume"].forEach(id =>
+      $("#" + id).addEventListener("input", () => { majLive(); majAvertissements(); }));
+    // majAvertissements redessine le panneau latéral, le chrono a besoin d'un
+    // rappel explicite : ses paliers sont mis à l'échelle de l'eau saisie.
+    $("#f-eau").addEventListener("input", () => majEtapesChrono(false));
+    // Le volume extrait pilote le préremplissage du lait, il doit le rafraîchir.
+    $("#f-volume").addEventListener("input", majLait);
+    $("#f-temp-preset").addEventListener("change", () => {
+      const v = $("#f-temp-preset").value;
+      if (!v) return;
+      $("#f-temp").value = v;
+      razPresetTemp();
+      majAvertissements();
     });
-    toast(I18N.t("t_rapide", { r: r.nom, n: $("#q-note").value }));
-    basculerRapide(false);
+    // Une saisie manuelle a toujours le dernier mot sur l'estimation.
+    $("#f-temp").addEventListener("input", razPresetTemp);
+    /* pointerdown en plus d'input : poser le doigt sur le curseur là où il est
+       déjà ne déclenche aucun input, la note serait restée vide sans le savoir. */
+    ["input", "pointerdown", "keydown"].forEach(ev =>
+      $("#f-note").addEventListener(ev, () => {
+        $("#f-note-vide").checked = false;
+        majAffichageNote();
+      }));
+    $("#f-note-vide").addEventListener("change", majAffichageNote);
+    $("#btn-chrono").addEventListener("click", chronoPrincipal);
+    $("#btn-chrono-stop").addEventListener("click", chronoArreter);
+    $("#btn-chrono-raz").addEventListener("click", chronoRaz);
+    // UNE SEULE FOIS : les conteneurs survivent aux reconstructions de pilules,
+    // les attacher depuis construirePilules empilerait un jeu par bascule de langue.
+    brancherPilules();
+    brancherCurseurs();
+    activerAppuiLong($("#f-diagnostic"));
+    activerAppuiLong($("#f-descripteurs"));
+    $("#chrono-bip").addEventListener("change", () => {
+      try { localStorage.setItem("bips", $("#chrono-bip").checked ? "1" : "0"); } catch (e) { /* tant pis */ }
+    });
+    $("#form-saisie").addEventListener("submit", enregistrerSaisie);
+    $("#form-saisie").addEventListener("input", planifierBrouillon);
+    $("#form-saisie").addEventListener("change", planifierBrouillon);
+    // visibilitychange est le dernier evenement fiable avant qu'un navigateur
+    // mobile decharge la page : on ecrit tout de suite, sans attendre le debounce.
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") ecrireBrouillon();
+    });
+    $("#btn-annuler-edition").addEventListener("click", () => { reinitialiserSaisie(); activerEcran("historique"); });
+    $("#btn-gerer-cafes").addEventListener("click", () => UI.ouvrirModaleCafes());
+    $("#volume-estime").addEventListener("click", () => {
+      const v = $("#volume-estime").dataset.valeur;
+      if (v !== undefined) { $("#f-volume").value = v; majLive(); }
+    });
+
+    // Ajout d'eau, agitation, lait, tasse
+    $("#f-ajout-eau-oui").addEventListener("change", () => {
+      $("#f-eau-ajoutee").hidden = !$("#f-ajout-eau-oui").checked;
+      majLive();
+    });
+    $("#f-eau-ajoutee").addEventListener("input", majLive);
+    $("#f-agitation-oui").addEventListener("change", () => {
+      $("#ligne-agitation").hidden = !$("#f-agitation-oui").checked;
+      if ($("#f-agitation-oui").checked && !$("#f-agitation").value) $("#f-agitation").value = 1;
+    });
+    $("#f-lait").addEventListener("input", majLive);
+    $("#f-tasse").addEventListener("change", () => { majLait(); majLive(); });
+    $("#btn-tasses").addEventListener("click", () => {
+      const ed = $("#tasses-editeur");
+      ed.hidden = !ed.hidden;
+      if (!ed.hidden) rendreTassesEditeur();
+    });
+    $("#tasse-ajouter").addEventListener("click", async () => {
+      const nom = $("#tasse-nom").value.trim();
+      const ml = parseFloat($("#tasse-ml").value);
+      if (!nom || !(ml > 0)) { toast(I18N.t("t_tasse_invalide")); return; }
+      await DATA.ajouterTasse(nom, ml);
+      $("#tasse-nom").value = "";
+      $("#tasse-ml").value = "";
+      rendreTassesEditeur();
+      remplirSelectTasses();
+      $("#f-tasse").value = nom;
+      majLait();
+      majLive();
+    });
   }
 
   // Mis à disposition des autres écrans.
   Object.assign(UI, {
     BROUILLON_MAX_MS, CASES_BROUILLON, CHAMPS_BROUILLON, CLE_BROUILLON, DIAGS_SOUS_EXTRAIT,
-    DIAGS_SUR_EXTRAIT, DIAG_INEGALE, acquireWakeLock, audioCtx, basculerRapide,
-    brancherPilules, brouillonMinuteur, brouillonUtile, cafeCourantMoulu,
+    DIAGS_SUR_EXTRAIT, DIAG_INEGALE, acquireWakeLock, audioCtx,
+    brancherPilules, brouillonMinuteur, brouillonUtile, cablerSaisie, cafeCourantMoulu,
     cafesSelectionnables, chargerExtractionDansSaisie, choisirMethode, chrono, chronoArreter,
     chronoEcoule, chronoPrincipal, chronoRaz, chronoTic, construirePilules, ecrireBrouillon,
-    ecrireDuree, effacerBrouillon, enregistrerRapide, enregistrerSaisie, infoDiagnostic,
+    ecrireDuree, effacerBrouillon, enregistrerSaisie, infoDiagnostic,
     jouerBip, lireDuree, majAffichageNote, majAgePaquet, majAgitationDepuisRecette,
-    majAsideSaisie, majAvertRapide, majAvertissements, majBoutonsChrono, majChampPrechauffe,
-    majCorrectionDiagnostic, majEtapesChrono, majLait, majLive, majPanneauRapide,
-    majRecettesRapide, noteSaisie, paliersCourants, planifierBrouillon, prefillDepuisRecette,
+    majAsideSaisie, majAvertissements, majBoutonsChrono, majChampPrechauffe,
+    majCorrectionDiagnostic, majEtapesChrono, majLait, majLive,
+    noteSaisie, paliersCourants, planifierBrouillon, prefillDepuisRecette,
     brancherCurseurs, majCurseurs, marquerDateTouchee, rafraichirDateSaisie,
-    rapideEstOuvert, rapideOuvert, razPresetTemp, reinitialiserSaisie, releaseWakeLock,
+    razPresetTemp, reinitialiserSaisie, releaseWakeLock,
     remplirSelectCafes, remplirSelectRecettes, remplirSelectTasses, rendreTassesEditeur,
-    restaurerBrouillon, saisie, screenWakeLock, surChoixCafe, surChoixCafeRapide,
+    restaurerBrouillon, saisie, screenWakeLock, surChoixCafe,
     syncWakeLock, tOuverture, volumeEstime,
   });
 })();
