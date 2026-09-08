@@ -36,7 +36,22 @@
        aller-retour. On ne préremplit que si rien n'est déjà choisi, pour ne pas
        écraser une sélection en cours. */
     if (!selCafe.value && cafes[0]) selCafe.value = cafes[0].id;
+    // Chaque ouverture repart SANS note : on note après avoir bu.
+    $("#q-note-vide").checked = true;
+    majAffichageNoteRapide();
     majRecettesRapide();
+  }
+
+  /* Même règle que le formulaire complet : une note vide s'affiche comme telle,
+     et le curseur se grise pour ne pas avoir l'air de proposer une valeur. */
+  function majAffichageNoteRapide() {
+    const vide = $("#q-note-vide").checked;
+    $("#q-note-affichee").textContent = vide ? I18N.t("n_pas_notee") : $("#q-note").value;
+    $("#q-note").classList.toggle("curseur-inactif", vide);
+  }
+
+  function noteRapide() {
+    return $("#q-note-vide").checked ? "" : $("#q-note").value;
   }
 
   function majRecettesRapide() {
@@ -90,12 +105,13 @@
       temps_ecoulement_s: "",
       volume_extrait_ml: "",
       tasse: (DATA.state.tasses.find(t => t.nom === (r.methode === "Brikka" ? "Loveramics Flat White Egg" : "Classic Mug")) || { nom: "" }).nom,
-      note_sur_10: $("#q-note").value,
+      note_sur_10: noteRapide(),
       diagnostic: "",
       descripteurs: "",
       commentaire: "",
     });
-    toast(I18N.t("t_rapide", { r: r.nom, n: $("#q-note").value }));
+    const note = noteRapide();
+    toast(note === "" ? I18N.t("t_rapide_sans_note", { r: r.nom }) : I18N.t("t_rapide", { r: r.nom, n: note }));
     basculerRapide(false);
   }
 
@@ -105,14 +121,21 @@
     $("#q-fermer").addEventListener("click", () => basculerRapide(false));
     $("#q-cafe").addEventListener("change", surChoixCafeRapide);
     $("#q-recette").addEventListener("change", majAvertRapide);
-    $("#q-note").addEventListener("input", () => { $("#q-note-affichee").textContent = $("#q-note").value; });
+    /* pointerdown en plus d'input, comme sur le formulaire complet : poser le
+       doigt sur le curseur là où il est déjà ne déclenche aucun input. */
+    ["input", "pointerdown", "keydown"].forEach(ev =>
+      $("#q-note").addEventListener(ev, () => {
+        $("#q-note-vide").checked = false;
+        majAffichageNoteRapide();
+      }));
+    $("#q-note-vide").addEventListener("change", majAffichageNoteRapide);
     $("#q-enregistrer").addEventListener("click", enregistrerRapide);
     $("#q-complet").addEventListener("click", () => { basculerRapide(false); activerEcran("saisie"); });
   }
 
   // Mis à disposition des autres écrans.
   Object.assign(UI, {
-    basculerRapide, cablerRapide, enregistrerRapide, majAvertRapide, majPanneauRapide,
-    majRecettesRapide, rapideEstOuvert, surChoixCafeRapide,
+    basculerRapide, cablerRapide, enregistrerRapide, majAffichageNoteRapide, majAvertRapide,
+    majPanneauRapide, majRecettesRapide, noteRapide, rapideEstOuvert, surChoixCafeRapide,
   });
 })();

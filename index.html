@@ -7,8 +7,8 @@
 <!-- Version du site, source unique : le pied de page la lit, et les fichiers
      chargés à la demande la mettent dans leur URL. Se pose avec
      node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="7.90">
-<link rel="stylesheet" href="css/styles.css?v=7.90">
+<meta name="app-version" content="7.91">
+<link rel="stylesheet" href="css/styles.css?v=7.91">
 <!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
      SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
      parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
@@ -95,14 +95,6 @@
 
   <div id="tableau-contenu">
 
-    <!-- Annonce combien de tasses sont écartées et permet de les réintégrer.
-         Placé AVANT les chiffres : il dit ce qu'ils valent, le lire après serait
-         apprendre trop tard que la moyenne ne portait pas sur tout. Masqué tant
-         qu'aucune tasse n'est marquée, pour ne pas parler dans le vide. -->
-    <div class="bandeau-ratees" id="bandeau-ratees" hidden>
-      <span id="compte-ratees"></span>
-      <label class="label-inline"><input type="checkbox" id="bascule-ratees"> Inclure les ratées dans les analyses</label>
-    </div>
     <div class="kpis" id="kpis"></div>
 
     <div class="grille-graphes">
@@ -1144,9 +1136,17 @@ Cảm ơn shop.</pre>
 
   <article class="carte">
     <h3>Cet appareil</h3>
-    <p class="param-aide">Ces trois-là restent locaux et ne se synchronisent pas : un téléphone et un ordinateur n'ont pas les mêmes besoins.</p>
+    <p class="param-aide">Ces réglages restent locaux et ne se synchronisent pas : un téléphone et un ordinateur n'ont pas les mêmes besoins.</p>
     <div class="grille-nombres">
       <div class="champ"><label class="label-inline"><input type="checkbox" id="param-bips"> Bip du chronomètre à chaque palier</label></div>
+      <!-- Préférence de LECTURE : elle change ce que les chiffres du tableau de
+           bord racontent, pas les données. Elle vivait en bandeau au-dessus des
+           chiffres ; un réglage qu'on change une fois par mois n'a rien à faire
+           en tête de l'écran qu'on ouvre dix fois par jour. -->
+      <div class="champ">
+        <label class="label-inline"><input type="checkbox" id="param-ratees"> Inclure les ratées dans les analyses</label>
+        <span class="champ-hint" id="compte-ratees"></span>
+      </div>
     </div>
     <p class="param-aide">Le thème et la langue se règlent depuis l'en-tête, en haut à droite.</p>
   </article>
@@ -1213,8 +1213,12 @@ Cảm ơn shop.</pre>
     <select id="q-recette"></select>
   </div>
   <div class="champ">
-    <label for="q-note">Note : <b id="q-note-affichee">7</b> / 10</label>
-    <input type="range" id="q-note" min="0" max="10" step="0.5" value="7" class="curseur-note">
+    <label for="q-note">Note : <b id="q-note-affichee">5</b> / 10</label>
+    <input type="range" id="q-note" min="0" max="10" step="0.5" value="5" class="curseur-note">
+    <!-- Même règle que le formulaire complet : pas de note inventée. On note
+         souvent APRÈS avoir bu, et la saisie rapide sert justement à enregistrer
+         la tasse en la sortant. Toucher le curseur décoche la case. -->
+    <label class="label-inline"><input type="checkbox" id="q-note-vide" checked> Pas encore notée, je reviendrai</label>
   </div>
   <p class="rapide-avert" id="q-avert" aria-live="polite"></p>
   <div class="rapide-actions">
@@ -1275,27 +1279,27 @@ Cảm ơn shop.</pre>
 <!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
      et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
      desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=7.90"></script>
-<script defer src="js/i18n.js?v=7.90"></script>
-<script defer src="js/grind.js?v=7.90"></script>
-<script defer src="js/recettes.js?v=7.90"></script>
+<script defer src="js/outils.js?v=7.91"></script>
+<script defer src="js/i18n.js?v=7.91"></script>
+<script defer src="js/grind.js?v=7.91"></script>
+<script defer src="js/recettes.js?v=7.91"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=7.90"></script>
-<script defer src="js/data-csv.js?v=7.90"></script>
-<script defer src="js/data-schema.js?v=7.90"></script>
-<script defer src="js/data-store.js?v=7.90"></script>
-<script defer src="js/data-calculs.js?v=7.90"></script>
-<script defer src="js/data-migrations.js?v=7.90"></script>
-<script defer src="js/data.js?v=7.90"></script>
-<script defer src="js/reglages.js?v=7.90"></script>
-<script defer src="js/charts.js?v=7.90"></script>
-<script defer src="js/ui-noyau.js?v=7.90"></script>
-<script defer src="js/ui-tableau.js?v=7.90"></script>
-<script defer src="js/ui-saisie.js?v=7.90"></script>
-<script defer src="js/ui-rapide.js?v=7.90"></script>
-<script defer src="js/ui-historique.js?v=7.90"></script>
-<script defer src="js/ui-guide.js?v=7.90"></script>
-<script defer src="js/ui-catalogue.js?v=7.90"></script>
-<script defer src="js/app.js?v=7.90"></script>
+<script defer src="js/sync.js?v=7.91"></script>
+<script defer src="js/data-csv.js?v=7.91"></script>
+<script defer src="js/data-schema.js?v=7.91"></script>
+<script defer src="js/data-store.js?v=7.91"></script>
+<script defer src="js/data-calculs.js?v=7.91"></script>
+<script defer src="js/data-migrations.js?v=7.91"></script>
+<script defer src="js/data.js?v=7.91"></script>
+<script defer src="js/reglages.js?v=7.91"></script>
+<script defer src="js/charts.js?v=7.91"></script>
+<script defer src="js/ui-noyau.js?v=7.91"></script>
+<script defer src="js/ui-tableau.js?v=7.91"></script>
+<script defer src="js/ui-saisie.js?v=7.91"></script>
+<script defer src="js/ui-rapide.js?v=7.91"></script>
+<script defer src="js/ui-historique.js?v=7.91"></script>
+<script defer src="js/ui-guide.js?v=7.91"></script>
+<script defer src="js/ui-catalogue.js?v=7.91"></script>
+<script defer src="js/app.js?v=7.91"></script>
 </body>
 </html>

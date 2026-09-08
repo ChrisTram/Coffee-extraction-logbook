@@ -1614,7 +1614,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
      seule etiquette. Les paires legitimes (minutes et secondes, valeur et
      preselection) sont listees : elles forment un seul controle aux yeux de
      l'utilisateur, et partagent donc une etiquette a juste titre. */
-  const PAIRES = ["f-temp-preset", "f-total-sec", "f-ecoulement-sec", "f-note-vide"];
+  const PAIRES = ["f-temp-preset", "f-total-sec", "f-ecoulement-sec", "f-note-vide", "q-note-vide"];
   /* Un curseur nomme "X-curseur" pilote le champ "X" : c'est la MEME valeur
      montree deux fois, donc une paire legitime par construction. La regle vaut
      mieux qu'une liste a rallonger a chaque curseur ajoute, puisque c'est le

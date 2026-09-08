@@ -310,6 +310,12 @@ Deux détails qui comptent :
 Un test vérifie qu'une note vide reste vide jusque dans le CSV. Elle ne doit
 JAMAIS devenir 0, qui serait la pire des notes.
 
+**La saisie rapide suit la même règle depuis la v7.91.** Elle imposait encore
+un 7 : c'était l'endroit où il était le plus faux, puisque le panneau sert à
+enregistrer la tasse en la sortant, avant de l'avoir bue. Case « pas encore
+notée » cochée à chaque ouverture, curseur à 5 et grisé, toucher le curseur
+décoche, et le toast dit « pas encore notée » au lieu d'un chiffre.
+
 ### Durées en minutes et secondes, et brouillon de saisie
 
 **Durées.** `temps_total_s` et `temps_ecoulement_s` restent stockés EN SECONDES,
@@ -977,6 +983,13 @@ La bascule existe parce que « j'ai merdé » et « ce réglage ne marche pas »
 se distinguent pas toujours de l'extérieur. C'est une préférence de LECTURE,
 donc locale comme le thème : elle change ce que les chiffres racontent, pas les
 données, et il n'y a rien à synchroniser.
+
+**Déplacée dans Paramètres en v7.91**, à la demande de Chris. Le raisonnement
+« le lire avant les chiffres » était juste, mais il payait un bandeau en tête de
+l'écran ouvert dix fois par jour pour un réglage changé une fois par mois. La
+bascule vit avec les bips, dans « Cet appareil », avec le compte des tasses
+écartées à côté ; le tableau de bord ne dit plus rien, et ses chiffres sont ceux
+du réglage en vigueur.
 
 #### Le faux localStorage qui ne stockait rien
 

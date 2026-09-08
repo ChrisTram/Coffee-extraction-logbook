@@ -373,6 +373,7 @@ const I18N = (() => {
     t_nom_recette: { fr: "Donne un nom à la recette" },
     t_mouture_invalide: { fr: "Mouture invalide, format attendu : 1.5.0" },
     t_rapide: { fr: "Extraction enregistrée : {r}, note {n}" },
+    t_rapide_sans_note: { fr: "Extraction enregistrée : {r}, pas encore notée" },
     t_liaison: { fr: "Liaison impossible" },
     tbl_cafes: { fr: "cafés" },
     tbl_extractions: { fr: "extractions" },

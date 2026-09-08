@@ -7,7 +7,7 @@ choix, les bugs trouvés et le raisonnement qui a mené là vivent dans
 qu'on touche. L'historique des versions est dans `CHANGELOG.md`. Commencer par
 `START-HERE.md` si tu arrives sans contexte.
 
-Dernière mise à jour : v7.90, 2026-09-06.
+Dernière mise à jour : v7.91, 2026-09-08.
 
 ## 1. Vue d'ensemble
 
@@ -415,7 +415,10 @@ Points fixés depuis, chacun expliqué dans `DECISIONS.md` :
 - Arriver sur Saisie par la navigation abandonne toute édition en cours, avec un
   toast.
 - Une extraction peut être marquée RATÉE : elle compte dans ce qui décrit ce qui
-  s'est passé, pas dans ce qui conseille (`extAnalysables()`).
+  s'est passé, pas dans ce qui conseille (`extAnalysables()`). La bascule qui
+  les réintègre vit dans Paramètres, section Cet appareil (préférence locale).
+- La saisie rapide enregistre SANS note par défaut, comme le formulaire complet
+  (`#q-note-vide`, coché à chaque ouverture) ; toucher le curseur décoche.
 
 ## 9. Synchronisation entre appareils
 

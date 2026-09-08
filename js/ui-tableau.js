@@ -9,7 +9,7 @@
 (() => {
 
   // Emprunté au noyau, chargé avant nous.
-  const { $, $$, animerCompteur, attrTitre, basculerRatees, cleLocale, detailRatio, diagsAffiches,
+  const { $, $$, animerCompteur, attrTitre, cleLocale, detailRatio, diagsAffiches,
     ecartMoyen, estRatee, extAnalysables, extAvecCalculs, fmtDateHeure, fmtDecimal, fmtTemps,
     inclureRatees, moyenne, trouverRecette } = UI;
 
@@ -370,13 +370,9 @@
        Voir extAnalysables() dans le noyau pour la règle. */
     const exts = extAvecCalculs();
     const analysables = extAnalysables();
-    const exclues = exts.length - analysables.length;
-    const zoneRatees = $("#bandeau-ratees");
-    if (zoneRatees) {
-      zoneRatees.hidden = exclues === 0 && !inclureRatees();
-      $("#compte-ratees").textContent = I18N.t("rt_exclues", { n: exclues });
-      $("#bascule-ratees").checked = inclureRatees();
-    }
+    /* La bascule « inclure les ratées » vit dans l'écran Paramètres depuis la
+       v7.91 : en bandeau ici, elle prenait la place du premier chiffre à chaque
+       ouverture pour un réglage qu'on change une fois par mois. */
     const vide = exts.length === 0;
     $("#tableau-vide").hidden = !vide;
     $("#tableau-contenu").hidden = vide;
@@ -604,16 +600,6 @@
   // Mis à disposition des autres écrans.
   /* Câblage des contrôles du tableau de bord. Appelé une fois par app.js. */
   function cablerTableau() {
-    /* Inclure ou exclure les ratées des analyses. Un rendu complet suit, parce
-       que la bascule change ce que TOUS les chiffres de l'écran racontent. */
-    const basculeRatees = $("#bascule-ratees");
-    if (basculeRatees) {
-      basculeRatees.addEventListener("change", () => {
-        basculerRatees(basculeRatees.checked);
-        rendreTableau();
-      });
-    }
-
     // Délégué sur la liste : son contenu est réécrit à chaque rendu, un handler
     // par ligne fuirait à chaque rafraîchissement du tableau de bord.
     const ouvrirDerniere = cible => {

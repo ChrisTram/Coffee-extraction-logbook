@@ -8,8 +8,9 @@
 (() => {
 
   // Emprunté au noyau, chargé avant nous.
-  const { $, $$, attrTitre, confirmer, ecrireReplis, fmtDateCourte, fmtDecimal, fmtVND,
-    maintenantLocal, moyenne, recettesDeMethode, replis, toast } = UI;
+  const { $, $$, attrTitre, basculerRatees, confirmer, ecrireReplis, extAnalysables, extAvecCalculs,
+    fmtDateCourte, fmtDecimal, fmtVND, inclureRatees, maintenantLocal, moyenne, recettesDeMethode,
+    replis, toast } = UI;
 
   // ---------- Gestion des cafés ----------
 
@@ -352,6 +353,15 @@
     $("#param-molette").value = replis.molette;
     majDetailMolette();
     $("#param-bips").checked = $("#chrono-bip").checked;
+    majRatees();
+  }
+
+  /* La bascule d'inclusion des tasses ratées, et le compte de ce qu'elle
+     écarte aujourd'hui. Préférence de lecture, locale comme les bips. */
+  function majRatees() {
+    const exclues = extAvecCalculs().length - extAnalysables().length;
+    $("#param-ratees").checked = inclureRatees();
+    $("#compte-ratees").textContent = I18N.t("rt_exclues", { n: exclues });
   }
 
   // Crans et microns sous le champ, pour vérifier qu'on a tapé le bon réglage.
@@ -440,10 +450,17 @@
       $("#chrono-bip").checked = $("#param-bips").checked;
       $("#chrono-bip").dispatchEvent(new Event("change"));
     });
+    /* Le tableau de bord se redessine de lui-même à la prochaine arrivée sur
+       l'écran : c'est là que la bascule change ce que les chiffres racontent. */
+    $("#param-ratees").addEventListener("change", () => {
+      basculerRatees($("#param-ratees").checked);
+      majRatees();
+    });
   }
 
   Object.assign(UI, {
     cablerCatalogue, cafeEditId, coutParTasse, enregistrerCafe, enregistrerParametres, enregistrerRecette,
+    majRatees,
     enregistrerSachet, fermerFormSachet, lireFormRecette, majDetailMolette, ouvrirFormCafe,
     ouvrirFormRecette, ouvrirFormSachet, ouvrirModaleCafes, ouvrirModaleRecettes,
     recetteEditId, rendreListeCafes, rendreListeRecettes, rendreParametres,

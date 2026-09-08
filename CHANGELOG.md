@@ -5,6 +5,11 @@ de page du site est celui du `<meta name="app-version">` d'`index.html`, posé
 par `node tools/bump_version.mjs X`. Chaque entrée dit CE QUI a changé ; le
 pourquoi est dans `DECISIONS.md`.
 
+- v7.91 : la bascule « inclure les ratées dans les analyses » quitte le bandeau
+  du tableau de bord pour l'écran Paramètres, section Cet appareil, avec le
+  compte des tasses écartées. Et la saisie rapide enregistre SANS note par défaut,
+  comme le formulaire complet : case « pas encore notée » cochée à chaque
+  ouverture, curseur à 5 et grisé, toucher le curseur décoche.
 - v7.90 : un changement d'écran dans un document caché (onglet en arrière-plan,
   fenêtre réduite) s'applique tout de suite au lieu d'attendre une occasion de
   rendu qui ne vient pas, et les promesses d'une transition de vue interrompue
