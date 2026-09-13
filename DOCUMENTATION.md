@@ -14,7 +14,8 @@ Dernière mise à jour : v7.98, 2026-09-13.
 Site mono-dossier, ouvert en `file://` dans Chrome, aussi déployé sur Cloudflare
 Workers derrière une porte d'entrée à mot de passe (section 13). Aucune
 dépendance réseau : Chart.js 4.4.4 est embarqué dans `js/vendor/chart.umd.js`
-et chargé à la demande. Les scripts sont des scripts classiques (pas de modules
+et chargé à la demande, les deux polices de la direction artistique sont dans
+`css/fonts/` (jamais un CDN, voir section 10). Les scripts sont des scripts classiques (pas de modules
 ES, ils ne marchent pas en `file://`), tous en `defer`, dans l'ordre de
 `index.html`. Chaque fichier expose un objet global (`OUTILS`, `I18N`, `GRIND`,
 `DATA_*`, `DATA`, `SYNC`, `REGLAGES`, `CHARTS`, `UI`) ou des constantes globales
@@ -59,6 +60,7 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/ui-guide.js` | recettes de référence, pas à pas, moulin interactif |
 | `js/ui-catalogue.js` | modales cafés, sachets, recettes, écran Paramètres |
 | `js/app.js` | démarrage, navigation, thème, langue, modales d'accueil et de données, abonnement aux données |
+| `css/fonts/` | les deux polices de la DA, embarquées en woff2, sous OFL (section 10) |
 | `sw.js`, `manifest.json`, `icons/` | PWA et hors ligne (section 10) |
 | `worker/index.js`, `worker/sync.js` | porte d'entrée et fusion D1, Cloudflare seulement (section 13) |
 | `tools/` | tests, générateurs, montée de version |
@@ -541,6 +543,16 @@ double clic sur `index.html` marche exactement comme avant.
   l'antialiasing). Le dessin est en coordonnées relatives dans `sample()`. La
   version `maskable` réduit le dessin à 72 pour cent et va au bord, l'OS
   découpe la forme qu'il veut. Régénérer si le dessin change, pas autrement.
+- `css/fonts/` : Instrument Serif (titres, chiffres) et Manrope (tout le
+  reste), en woff2, sous licence OFL, déclarées en `@font-face` dans
+  `css/styles.css` et précachées. Sous-ensembles latin et latin étendu pour les
+  deux, plus le VIETNAMIEN pour Manrope (les cafés s'appellent « Trung Nguyên
+  Sáng Tạo », « Là Việt »). Elles n'ont pas de `?v=` et n'en auront pas : elles
+  sont immuables PAR CONTRAT, on ne réécrit jamais un `.woff2` sous le même
+  nom, on en publie un autre. `worker/index.js` les sert donc avec le cache
+  d'un an sur la seule foi de l'extension. Quatre tests tiennent la chaîne :
+  police déclarée présente sur le disque, présente au précache, aucune police
+  orpheline, aucun CDN. Détails dans `css/fonts/LICENCE.md`.
 - `sw.js`, stratégie RÉSEAU D'ABORD, cache en secours. Le choix inverse (cache
   d'abord) obligerait à incrémenter `CACHE_NAME` à chaque déploiement, et un
   oubli figerait une vieille version sur le téléphone pour toujours. Le site

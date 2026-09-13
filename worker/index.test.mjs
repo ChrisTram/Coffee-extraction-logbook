@@ -154,6 +154,23 @@ check("session expiree rejetee", expired.status === 302, `status ${expired.statu
   check("la page ne devient jamais immutable, meme avec ?v", (page.headers.get("Cache-Control") || "").includes("no-cache"));
   const manifest = await call("/manifest.json", { headers: { Cookie: cookie } });
   check("le manifeste non plus", (manifest.headers.get("Cache-Control") || "").includes("no-cache"));
+
+  /* Les polices n'ont pas de ?v= et n'en auront pas : la version vit dans
+     index.html et sw.js, pas dans la feuille de style. Elles sont immuables par
+     contrat (on publie un nouveau nom, on ne reecrit jamais un .woff2). Sans
+     cette regle, les cinq polices repartaient revalider a chaque ouverture. */
+  const police = await call("/css/fonts/manrope-latin.woff2", { headers: { Cookie: cookie } });
+  check("une police est immutable sans porter de version",
+    (police.headers.get("Cache-Control") || "").includes("immutable"),
+    police.headers.get("Cache-Control"));
+  check("et elle reste privee comme le reste",
+    (police.headers.get("Cache-Control") || "").includes("private"));
+  /* La regle porte sur l'extension, pas sur le dossier : une police posee
+     ailleurs sous /css doit se comporter pareil. */
+  const ailleurs = await call("/css/autre.woff2", { headers: { Cookie: cookie } });
+  check("la regle suit l'extension et non le dossier",
+    (ailleurs.headers.get("Cache-Control") || "").includes("immutable"),
+    ailleurs.headers.get("Cache-Control"));
 }
 
 // 13. Le cache local de wrangler ne part ni dans le depot ni dans les assets.

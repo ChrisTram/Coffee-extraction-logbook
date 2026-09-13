@@ -454,3 +454,12 @@ pourquoi est dans `DECISIONS.md`.
   Guide (boutiques, achats, messages vietnamiens), correction du bug
   d'avertissement au préremplissage.
 - v1 : site initial, 4 écrans, 2 CSV, démo, Chart.js local, thèmes.
+## 8.0
+
+Refonte « Comptoir », étape 1 sur 8 : les fondations. Instrument Serif et Manrope
+embarquées en woff2 dans `css/fonts/` (jamais un CDN, le site doit marcher hors
+ligne), précachées, et servies avec un cache d'un an. Nouveaux jetons de couleur
+dans les deux thèmes, cinq valeurs assombries par rapport à la maquette pour
+tenir 4,5:1. Plus aucune teinte verte, y compris pour dire « bon ». Rayons et
+espaces de la DA. Le layout ne bouge pas encore.
+

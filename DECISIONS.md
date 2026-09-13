@@ -13,6 +13,73 @@ introduit est dans le changelog.
 
 ## Architecture et code
 
+### La refonte « Comptoir » : la peau, et ce qu'elle a coûté
+
+Direction artistique validée sur maquette le 13 septembre 2026 : papier chaud,
+encre espresso, un seul accent terre cuite. Livrée par étapes, une version par
+étape. Ce qui suit est ce qu'on ne redevine pas en lisant le CSS.
+
+**Aucune teinte verte, nulle part, y compris pour dire « bon ».** C'est une
+demande explicite de Chris, deux fois. Le jeton `--ok` existe toujours, pour ne
+pas réécrire les trente règles qui l'utilisent, mais il vaut désormais l'accent.
+Le « mauvais » garde `--danger`. Un test refuse maintenant la BANDE verte du
+cercle des teintes (75 à 165 degrés, saturation et luminosité franches) et non
+plus le seul `#1baf7a` : un test écrit sur une couleur laisse passer la
+suivante, et c'est exactement ce qui était arrivé avec le vert sauge qui avait
+remplacé l'émeraude. Première version de ce test, d'ailleurs, ratée : elle
+exemptait toute ligne contenant le mot « vert », si bien qu'une règle nommée
+`.essai-vert` passait sans bruit. Il retire maintenant les commentaires avant
+de chercher, plutôt que de filtrer sur des mots.
+
+**Cinq couleurs de la maquette ont été assombries.** Le brief demandait lui-même
+un contraste d'au moins 4,5:1 pour le texte atténué, et sa propre palette ne le
+tenait pas : onze paires sous le seuil. La correction porte sur la luminosité
+seule, la teinte de la DA est conservée, et le calcul se fait sur la plus sombre
+des quatre surfaces où la couleur peut se poser (`--panneau`, `--fond`,
+`--panneau-2`, `--rail`) et non sur la seule qui arrangeait.
+
+| Jeton | Maquette | Retenu | Pire ratio |
+|---|---|---|---|
+| `--attenue` clair | `#8a7462` | `#746152` | 3,42 devient 4,55 |
+| `--accent` clair | `#a85a1e` | `#9a521c` | 4,00 devient 4,52 |
+| `--danger` clair | `#c4503b` | `#aa4533` | 3,57 devient 4,50 |
+| diagnostic « un peu acide » | `#b0651f` | `#95551a` | 3,44 devient 4,52 |
+| `--danger` sombre | `#e06c5a` | `#e37867` | 4,07 devient 4,50 |
+
+Les couleurs de DONNÉES (`#2a78d6`, `#eb6834`, `#cc79a7`) échappent à la règle
+et n'ont pas bougé : ce sont des aplats et des traits, leur seuil est celui des
+objets graphiques, 3:1, et elles le tiennent.
+
+**`--sur-accent` a dû devenir une couleur de THÈME.** Elle était commune aux
+deux, un blanc crème. Posée sur l'accent du thème sombre, qui est un orange
+clair, elle ne donnait que 2,66:1 : le texte des boutons pleins était illisible
+en thème sombre, et l'était déjà avant la refonte. Le thème sombre prend
+maintenant l'encre (6,10:1), le thème clair garde le crème (5,02:1).
+
+**Les polices sont dans le dépôt, pas sur un CDN.** La règle « aucune dépendance
+réseau » n'est pas négociable : le site s'ouvre en `file://` et doit marcher
+hors ligne. Un lien vers `fonts.googleapis.com` afficherait le repli à la
+première ouverture sans réseau et ferait clignoter la page ensuite. Cinq
+fichiers woff2, 92 Ko en tout, sous licence OFL qui autorise explicitement la
+redistribution.
+
+**Instrument Serif ne couvre pas le vietnamien**, et ça se voit. Google Fonts
+n'en publie pas de sous-ensemble vietnamien : les caractères comme ạ, ế, ữ
+retombent glyphe par glyphe sur Georgia. Un nom de café vietnamien affiché en
+serif, et la maquette en affiche un en 30 px sur la carte « Dernière tasse »,
+est donc typographiquement mixte sur deux ou trois lettres. La DA ayant été
+validée sur maquette, la police n'a pas été changée unilatéralement ; Manrope,
+lui, embarque bien le vietnamien, donc tout le texte courant est propre. À
+revoir avec Chris s'il trouve ça laid.
+
+**Les polices n'ont pas de `?v=`.** La version vit à trois endroits déjà
+(`index.html`, `sw.js`, et le `?v=` de chaque script) ; en ajouter un
+quatrième dans la feuille de style serait un oubli de plus à chaque montée.
+`worker/index.js` leur accorde donc le cache d'un an sur la seule foi de
+l'extension `.woff2`, ce qui suppose un contrat : on ne réécrit jamais un
+fichier de police sous le même nom. Sans cette ligne, les cinq polices
+repartaient revalider à chaque ouverture.
+
 ### Le découpage de l'interface : le piège silencieux, et ce qu'il a trouvé
 
 #### Le piège, et il est silencieux

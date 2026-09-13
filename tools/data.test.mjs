@@ -12,7 +12,7 @@
  * et une colonne technique en plus casserait la promesse du format.
  */
 
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -1816,6 +1816,72 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
       .filter(l => /#1baf7a/i.test(l) && !/^\s*(\/\/|\*|\/\*)/.test(l) && !/piquait|criard/.test(l))
       .map(l => nom + " : " + l.trim().slice(0, 60)));
   check("l'emeraude n'est plus utilisee nulle part", enDur.length === 0, enDur.join(" | "));
+  /* LA REGLE, et non le seul #1baf7a : la refonte Comptoir interdit TOUTE
+     teinte verte, y compris pour dire "bon". Un test ecrit sur une couleur
+     laisse passer la suivante ; celui-ci refuse la bande verte du cercle des
+     teintes, quel que soit le code choisi.
+
+     On RETIRE les commentaires avant de chercher, plutot que d'exempter les
+     lignes contenant certains mots : la premiere version de ce test exemptait
+     toute ligne ou figurait "vert", si bien qu'une regle .essai-vert passait
+     sans bruit. Un commentaire a le droit de nommer une couleur, le code non. */
+  const sansCommentaires = source => source
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .split("\n").map(l => l.replace(/\/\/.*$/, "")).join("\n");
+  const estVert = n => {
+    const [r, g, b] = [0, 2, 4].map(k => parseInt(n.slice(k, k + 2), 16) / 255);
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+    const L = (mx + mn) / 2;
+    if (!d) return false;
+    const S = L > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+    let h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    h *= 60;
+    /* Bande verte franche. Le gris sort par la saturation, les extremes clairs
+       ou sombres par la luminosite : la, la teinte ne se voit plus. */
+    return h >= 75 && h <= 165 && S > 0.15 && L > 0.15 && L < 0.85;
+  };
+  const vert = [["js/charts.js", charts], ["css/styles.css", css], ["index.html", html]]
+    .flatMap(([nom, source]) => sansCommentaires(source).split("\n")
+      .flatMap((l, i) => [...l.matchAll(/#([0-9a-f]{6})\b/gi)]
+        .filter(m => estVert(m[1]))
+        .map(m => nom + " ligne " + (i + 1) + " : #" + m[1])));
+  check("aucune teinte verte nulle part, la DA Comptoir l'interdit",
+    vert.length === 0, vert.slice(0, 5).join(" | "));
+
+  /* LES POLICES SONT EMBARQUEES, ET COMPLETES.
+
+     Trois oublis possibles, chacun silencieux : declarer une @font-face vers un
+     fichier absent (le navigateur retombe sur Georgia sans rien dire), ajouter
+     un fichier sans le precacher (la premiere ouverture hors ligne clignote),
+     ou reintroduire un CDN (le site casse en file:// et hors ligne). */
+  {
+    const sw = readFileSync(join(ROOT, "sw.js"), "utf8");
+    const declarees = [...css.matchAll(/url\("fonts\/([^"]+)"\)/g)].map(m => m[1]);
+    check("la feuille declare des polices embarquees", declarees.length > 0, String(declarees.length));
+
+    const manquantes = declarees.filter(f => !existsSync(join(ROOT, "css/fonts", f)));
+    check("chaque police declaree existe sur le disque",
+      manquantes.length === 0, manquantes.join(" | "));
+
+    const nonPrecachees = declarees.filter(f => !sw.includes("css/fonts/" + f));
+    check("chaque police declaree est precachee par sw.js",
+      nonPrecachees.length === 0, nonPrecachees.join(" | "));
+
+    const surLeDisque = readdirSync(join(ROOT, "css/fonts")).filter(f => /\.woff2?$/.test(f));
+    const orphelines = surLeDisque.filter(f => !declarees.includes(f));
+    check("aucune police ne traine sans etre declaree",
+      orphelines.length === 0, orphelines.join(" | "));
+
+    const cdn = [["css/styles.css", css], ["index.html", html]]
+      .filter(([, source]) => /fonts\.googleapis\.com|fonts\.gstatic\.com/.test(source))
+      .map(([nom]) => nom);
+    check("aucune police n'est chargee depuis un CDN", cdn.length === 0, cdn.join(" | "));
+
+    /* Le vietnamien est la raison d'etre du troisieme fichier Manrope : les
+       cafes de Chris s'appellent Trung Nguyen Sang Tao et La Viet. */
+    check("Manrope embarque le vietnamien, les cafes en ont besoin",
+      declarees.some(f => /vietnamese/.test(f)), declarees.join(", "));
+  }
 
   const trio = [...charts.matchAll(/const C_(?:BRIKKA|SWITCH|DEUX) = "(#[0-9a-f]{6})"/gi)].map(m => m[1]);
   check("les trois machines gardent trois couleurs distinctes",

@@ -1,7 +1,77 @@
 /* Carnet d'extraction : styles.
-   Palette tons café, mode sombre par défaut, bascule clair.
+   Direction « Comptoir » : papier chaud, encre espresso, un seul accent en
+   terre cuite. Aucune teinte verte nulle part, y compris pour le « bon ».
    Couleurs de données (validées daltonisme, palette Okabe-Ito) :
-   Brikka #2a78d6, Switch #eb6834, les deux machines #cc79a7. */
+   Brikka #2a78d6, Switch #eb6834, les deux machines #cc79a7.
+
+   CONTRASTES. Toute couleur de TEXTE tient au moins 4,5:1 sur les quatre
+   surfaces où elle peut se poser (--panneau, --fond, --panneau-2, --rail) et
+   non sur la seule qui arrangeait. Plusieurs valeurs de la maquette ont dû
+   être assombries pour ça, de très peu, la teinte est conservée : le détail et
+   les ratios sont dans DECISIONS.md, « La refonte Comptoir ». Les couleurs de
+   DONNÉES échappent à la règle : ce sont des aplats et des traits, pas du
+   texte, et leur seuil est celui des objets graphiques, 3:1. */
+
+/* ---------- Polices embarquées ----------
+
+   Instrument Serif et Manrope, toutes deux sous licence OFL (voir
+   css/fonts/LICENCE.md). Elles sont DANS le dépôt et jamais chargées depuis un
+   CDN : le site doit s'ouvrir en file:// et hors ligne, une dépendance réseau
+   afficherait le repli à la première ouverture et ferait clignoter la page.
+
+   Sous-ensembles retenus : latin et latin étendu pour les deux, plus le
+   VIETNAMIEN pour Manrope, parce que les cafés de Chris s'appellent « Trung
+   Nguyên Sáng Tạo » et « Là Việt ». Cyrillique et grec écartés, ils ne servent
+   à rien ici et pèsent pour rien.
+
+   Instrument Serif n'a PAS de sous-ensemble vietnamien chez Google Fonts : les
+   caractères comme ạ, ế, ữ retombent glyphe par glyphe sur Georgia. Un nom de
+   café vietnamien affiché en serif est donc typographiquement mixte. C'est
+   assumé, documenté dans DECISIONS.md, et ça ne concerne que les titres.
+
+   Manrope est une police VARIABLE : un seul fichier par sous-ensemble couvre
+   les graisses 400 à 700, d'où le font-weight en plage. */
+
+@font-face {
+  font-family: "Instrument Serif";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/instrument-serif-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Instrument Serif";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/instrument-serif-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Manrope";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("fonts/manrope-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Manrope";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("fonts/manrope-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Manrope";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("fonts/manrope-vietnamese.woff2") format("woff2");
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
 
 /* ---------- Variables ---------- */
 
@@ -13,18 +83,27 @@
      criait sur une palette entièrement chaude. */
   --deux: #cc79a7;
 
-  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
-  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --sans: Manrope, "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
 
-  --rayon: 14px;
-  --rayon-petit: 9px;
+  /* Rayons de la DA Comptoir : cartes 18, contrôles 12, pastilles rondes. Les
+     deux premiers noms existaient déjà et gardent leur nom, c'est la valeur qui
+     change, donc tout le site suit sans qu'on touche aux règles. */
+  --rayon: 18px;
+  --rayon-petit: 12px;
+  --rayon-pastille: 999px;
+
+  /* Espaces et hauteurs de la DA, pour cesser de les réécrire à chaque bloc. */
+  --ecart-cartes: 18px;
+  --carte-padding: 22px 26px;
+  --hauteur-controle: 46px;
+
   --transition: 220ms cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Les deux seules couleurs qui ne suivent pas le thème : le texte posé sur un
-     fond accent (boutons pleins, bouton flottant) et le texte sombre posé sur la
-     pastille rose des deux machines. Tout le reste passe par les variables des
-     deux thèmes ci-dessous. */
-  --sur-accent: #fff8ef;
+  /* Seule couleur qui ne suit pas le thème : le texte sombre posé sur la
+     pastille rose des deux machines, dont le fond est le même dans les deux.
+     --sur-accent, lui, a dû devenir une couleur de thème : le crème du thème
+     clair posé sur l'accent du thème sombre ne donnait que 2,66:1. */
   --encre-sur-clair: #2e211a;
 
   /* Échelle des plans, une seule liste lue de bas en haut. Un z-index écrit en
@@ -45,6 +124,7 @@
    texte un peu moins blanc pour ne pas éblouir par contraste. */
 html[data-theme="sombre"] {
   --fond: #241a10;
+  --rail: #2b2016;
   --fond-degrade: radial-gradient(1200px 600px at 80% -10%, #3a2818 0%, #241a10 55%);
   --panneau: #31241a;
   --panneau-2: #3c2d20;
@@ -54,7 +134,10 @@ html[data-theme="sombre"] {
   --accent: #d98741;
   --accent-fort: #eb9a52;
   --accent-fond: rgba(217, 135, 65, 0.16);
+  /* Encre sombre sur l'accent clair : 6,10:1. Le crème donnait 2,66:1. */
+  --sur-accent: #26190f;
   --lignes: #4f3b28;
+  --lignes-douces: #402f21;
   --lignes-graphe: rgba(180, 154, 131, 0.18);
   --barre-neutre: #7a6249;
   --ombre: 0 6px 24px rgba(0, 0, 0, 0.30);
@@ -62,10 +145,13 @@ html[data-theme="sombre"] {
   --tooltip-texte: #2e211a;
   --avert-fond: rgba(217, 135, 65, 0.12);
   --avert-bord: rgba(217, 135, 65, 0.45);
-  --danger: #e06c5a;
-  /* Vert SAUGE et non plus émeraude. Vert égale bon est une convention trop
-     utile pour y renoncer, mais #1baf7a piquait les yeux sur le fond brun. */
-  --ok: #6fa98a;
+  /* Éclairci de #e06c5a : sur --panneau-2 il ne tenait que 4,07:1. */
+  --danger: #e37867;
+  /* PLUS DE VERT, nulle part, y compris pour dire « bon » : c'est une demande
+     explicite de Chris. Le statut favorable prend donc l'accent terre cuite, le
+     défavorable garde le rouge. Le nom --ok est conservé pour ne pas réécrire
+     les trente règles qui l'utilisent. */
+  --ok: #d98741;
   /* Graphique principal. La tendance lisse la ligne des notes : même teinte que
      l'accent, en translucide, pour se lire comme un fond. */
   --tendance: rgba(217, 135, 65, 0.40);
@@ -78,35 +164,50 @@ html[data-theme="sombre"] {
   color-scheme: dark;
 }
 
+/* Thème clair « Comptoir ». Papier chaud, encre espresso, accent terre cuite.
+   Les valeurs suivies d'un ratio ont été assombries par rapport à la maquette
+   pour tenir 4,5:1 sur la plus sombre des surfaces où elles se posent. */
 html[data-theme="clair"] {
-  /* Blanc crème et marrons chauds, sans dérive rouge. */
-  --fond: #f8f2e9;
-  --fond-degrade: radial-gradient(1200px 600px at 80% -10%, #fdf7ec 0%, #f8f2e9 55%);
-  --panneau: #fffdf8;
-  --panneau-2: #f3ead9;
-  --encre: #33241a;
-  --texte: #4a382a;
-  --attenue: #857057;
-  --accent: #8f5f33;
-  --accent-fort: #6e4a24;
-  --accent-fond: rgba(143, 95, 51, 0.10);
-  --lignes: #e7dbc7;
-  --lignes-graphe: rgba(133, 112, 87, 0.18);
-  --barre-neutre: #c9b190;
-  --ombre: 0 6px 20px rgba(74, 56, 34, 0.09);
-  --tooltip-fond: #33241a;
-  --tooltip-texte: #fffdf8;
-  --avert-fond: rgba(143, 95, 51, 0.09);
-  --avert-bord: rgba(143, 95, 51, 0.4);
-  --danger: #b3402e;
-  --ok: #157a57;
-  --tendance: rgba(143, 95, 51, 0.34);
+  --fond: #f4ede3;
+  --fond-degrade: radial-gradient(1200px 600px at 80% -10%, #faf4ea 0%, #f4ede3 55%);
+  --panneau: #fcf8f2;
+  --panneau-2: #ebe1d4;
+  --rail: #f0e7db;
+  --encre: #26190f;
+  --texte: #5e4b3c;
+  /* Maquette #8a7462 : 3,42:1 sur --panneau-2, sous le seuil. 4,55:1 ici. */
+  --attenue: #746152;
+  /* Maquette #a85a1e : 4,00:1 sur --accent-fond. 4,52:1 ici. */
+  --accent: #9a521c;
+  --accent-fort: #8a4716;
+  --accent-fond: #f2e2d2;
+  /* Crème sur l'accent : 5,02:1. */
+  --sur-accent: #f4ede3;
+  --lignes: #dccdbb;
+  --lignes-douces: #ede4d8;
+  --lignes-graphe: rgba(116, 97, 82, 0.18);
+  --barre-neutre: #cbb8a2;
+  /* Aucune ombre sur les cartes du thème clair : la DA les pose à plat, sur
+     bordure. --ombre ne sert plus qu'au bouton flottant et à la feuille. */
+  --ombre: 0 10px 30px rgba(38, 25, 15, 0.14);
+  --tooltip-fond: #26190f;
+  --tooltip-texte: #f4ede3;
+  --avert-fond: #f2e2d2;
+  --avert-bord: rgba(154, 82, 28, 0.42);
+  /* Maquette #c4503b : 3,57:1 sur --panneau-2. 4,50:1 ici. */
+  --danger: #aa4533;
+  /* Pas de vert : « bon » prend l'accent. Voir le thème sombre. */
+  --ok: #9a521c;
+  --tendance: rgba(154, 82, 28, 0.34);
 
-  --hm0: #efe6d3;
-  --hm1: #e7d3ae;
-  --hm2: #d3b077;
-  --hm3: #b3854a;
-  --hm4: #8f5f33;
+  /* Rampe caramel du calendrier, du vide au plus actif. La DA en donne quatre
+     pour cinq niveaux : le pas manquant est interpolé entre les deux derniers.
+     Ce sont des aplats, pas du texte, aucun seuil de contraste ne s'y applique. */
+  --hm0: #ebe1d4;
+  --hm1: #ecd3b5;
+  --hm2: #cf9a5f;
+  --hm3: #bc7a3e;
+  --hm4: #9a521c;
   color-scheme: light;
 }
 

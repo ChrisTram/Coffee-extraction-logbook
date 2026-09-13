@@ -25,7 +25,7 @@
  *    la deconnexion cessent de fonctionner.
  */
 
-const VERSION = "7.98";
+const VERSION = "8.0";
 const CACHE_NAME = "carnet-extraction";
 
 const versionnee = url => url + "?v=" + VERSION;
@@ -42,6 +42,15 @@ const PRECACHE_URLS = [
   "./icons/icon-512.png",
 ].concat([
   "./css/styles.css",
+  /* Les polices. Sans elles dans le precache, la premiere ouverture hors ligne
+     affiche le repli puis saute a la vraie police des que le reseau revient.
+     Leur URL ne porte pas de version : un fichier de police ne change jamais
+     sous le meme nom, on en publie un nouveau (voir worker/index.js). */
+  "./css/fonts/instrument-serif-latin.woff2",
+  "./css/fonts/instrument-serif-latin-ext.woff2",
+  "./css/fonts/manrope-latin.woff2",
+  "./css/fonts/manrope-latin-ext.woff2",
+  "./css/fonts/manrope-vietnamese.woff2",
   // Plus chargée par une balise script depuis la v7.54, mais toujours précachée :
   // le chargement à la demande doit fonctionner hors ligne.
   "./js/vendor/chart.umd.js",

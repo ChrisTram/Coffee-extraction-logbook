@@ -257,9 +257,18 @@ function safeTarget(value) {
    lui qui porte les nouvelles URL quand la version change. */
 const IMMUTABLE_PATH = /^\/(js|css)\//;
 
+/* Les polices n'ont pas de ?v= et n'en auront pas : la version vit dans
+   index.html et sw.js, pas dans la feuille de style, et ajouter un troisieme
+   endroit ou l'ecrire serait un oubli de plus a chaque montee. Un fichier de
+   police est immuable par CONTRAT : on ne remplace jamais le contenu d'un
+   .woff2 sous le meme nom, on en publie un autre. Sans cette ligne, les cinq
+   polices repartaient revalider a chaque ouverture. */
+const FONT_PATH = /\.woff2?$/;
+
 function servePrivately(response, url) {
   const copy = new Response(response.body, response);
-  const versioned = url && IMMUTABLE_PATH.test(url.pathname) && url.searchParams.has("v");
+  const versioned = url && IMMUTABLE_PATH.test(url.pathname) &&
+    (url.searchParams.has("v") || FONT_PATH.test(url.pathname));
   copy.headers.set(
     "Cache-Control",
     versioned ? "private, max-age=31536000, immutable" : "private, no-cache, must-revalidate"
