@@ -7,8 +7,8 @@
 <!-- Version du site, source unique : le pied de page la lit, et les fichiers
      chargés à la demande la mettent dans leur URL. Se pose avec
      node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="8.4">
-<link rel="stylesheet" href="css/styles.css?v=8.4">
+<meta name="app-version" content="8.5">
+<link rel="stylesheet" href="css/styles.css?v=8.5">
 <!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
      SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
      parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
@@ -490,11 +490,25 @@
 
 <!-- ================= ECRAN 3 : HISTORIQUE ================= -->
 <section id="ecran-historique" class="ecran">
-  <div class="historique-filtres carte">
-    <div class="champ champ-recherche">
-      <label for="h-recherche">Recherche</label>
-      <input type="search" id="h-recherche" placeholder="Chercher dans les commentaires et les goûts" enterkeyhint="search" autocomplete="off">
+
+  <div class="tete-page">
+    <div class="tete-titres">
+      <p class="surligne" id="h-surligne"></p>
+      <h2 class="titre-page">Historique</h2>
     </div>
+    <div class="tete-actions">
+      <div class="champ champ-recherche">
+      <label for="h-recherche">Recherche</label>
+        <input type="search" id="h-recherche" placeholder="Chercher dans les commentaires et les goûts" enterkeyhint="search" autocomplete="off">
+      </div>
+      <button class="btn btn-petit" id="h-exporter">Exporter le filtre en CSV</button>
+    </div>
+  </div>
+
+  <!-- Les filtres, en pastilles. Ce sont des <select> natifs habilles : ils
+       ouvrent deja un menu, savent le clavier, la frappe et la roue du
+       telephone, ce qu'un menu ecrit a la main aurait tout a reapprendre. -->
+  <div class="historique-filtres">
     <div class="champ">
       <label for="h-cafe">Café</label>
       <select id="h-cafe"><option value="">Tous</option></select>
@@ -532,11 +546,14 @@
       <input type="date" id="h-au">
     </div>
     <div class="historique-filtres-actions">
-      <button class="btn btn-discret" id="h-reinitialiser">Réinitialiser</button>
-      <button class="btn" id="h-exporter">Exporter le filtre en CSV</button>
+      <button class="btn btn-discret btn-petit" id="h-reinitialiser">Réinitialiser</button>
     </div>
   </div>
 
+  <!-- Le bandeau resume : ce que le filtre courant raconte, en quatre chiffres.
+       Le compte seul disait « 12 sur 62 » sans jamais dire si ces douze etaient
+       bonnes. -->
+  <div class="historique-resume" id="h-resume"></div>
   <p class="historique-compte" id="h-compte"></p>
   <div class="barre-comparaison" id="barre-comparaison" hidden>
     <span id="comparaison-compte"></span>
@@ -1402,28 +1419,28 @@ Cảm ơn shop.</pre>
 <!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
      et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
      desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=8.4"></script>
-<script defer src="js/i18n.js?v=8.4"></script>
-<script defer src="js/grind.js?v=8.4"></script>
-<script defer src="js/recettes.js?v=8.4"></script>
+<script defer src="js/outils.js?v=8.5"></script>
+<script defer src="js/i18n.js?v=8.5"></script>
+<script defer src="js/grind.js?v=8.5"></script>
+<script defer src="js/recettes.js?v=8.5"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=8.4"></script>
-<script defer src="js/data-csv.js?v=8.4"></script>
-<script defer src="js/data-schema.js?v=8.4"></script>
-<script defer src="js/data-store.js?v=8.4"></script>
-<script defer src="js/data-calculs.js?v=8.4"></script>
-<script defer src="js/data-migrations.js?v=8.4"></script>
-<script defer src="js/data.js?v=8.4"></script>
-<script defer src="js/reglages.js?v=8.4"></script>
-<script defer src="js/charts.js?v=8.4"></script>
-<script defer src="js/ui-noyau.js?v=8.4"></script>
-<script defer src="js/ui-tableau.js?v=8.4"></script>
-<script defer src="js/ui-saisie.js?v=8.4"></script>
-<script defer src="js/ui-brouillon.js?v=8.4"></script>
-<script defer src="js/ui-rapide.js?v=8.4"></script>
-<script defer src="js/ui-historique.js?v=8.4"></script>
-<script defer src="js/ui-guide.js?v=8.4"></script>
-<script defer src="js/ui-catalogue.js?v=8.4"></script>
-<script defer src="js/app.js?v=8.4"></script>
+<script defer src="js/sync.js?v=8.5"></script>
+<script defer src="js/data-csv.js?v=8.5"></script>
+<script defer src="js/data-schema.js?v=8.5"></script>
+<script defer src="js/data-store.js?v=8.5"></script>
+<script defer src="js/data-calculs.js?v=8.5"></script>
+<script defer src="js/data-migrations.js?v=8.5"></script>
+<script defer src="js/data.js?v=8.5"></script>
+<script defer src="js/reglages.js?v=8.5"></script>
+<script defer src="js/charts.js?v=8.5"></script>
+<script defer src="js/ui-noyau.js?v=8.5"></script>
+<script defer src="js/ui-tableau.js?v=8.5"></script>
+<script defer src="js/ui-saisie.js?v=8.5"></script>
+<script defer src="js/ui-brouillon.js?v=8.5"></script>
+<script defer src="js/ui-rapide.js?v=8.5"></script>
+<script defer src="js/ui-historique.js?v=8.5"></script>
+<script defer src="js/ui-guide.js?v=8.5"></script>
+<script defer src="js/ui-catalogue.js?v=8.5"></script>
+<script defer src="js/app.js?v=8.5"></script>
 </body>
 </html>

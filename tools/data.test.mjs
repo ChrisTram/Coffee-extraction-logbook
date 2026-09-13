@@ -667,7 +667,11 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
    avaient aucun. Et le Guide sautait de h2 a h4, ce qui casse la navigation par
    titres d'un lecteur d'ecran. */
 {
-  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  /* Les COMMENTAIRES sont retires d'abord : un commentaire qui cite <select>
+     ou <input> se faisait compter comme un champ sans nom, ce qui accusait le
+     commentaire au lieu du HTML. */
+  const html = readFileSync(join(ROOT, "index.html"), "utf8")
+    .replace(/<!--[\s\S]*?-->/g, "");
   const pourLabel = new Set([...html.matchAll(/<label[^>]*\bfor="([^"]+)"/g)].map(m => m[1]));
   const sansNom = [];
   for (const m of html.matchAll(/<(input|select|textarea)\b([^>]*)>/g)) {

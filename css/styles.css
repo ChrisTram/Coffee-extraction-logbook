@@ -2803,3 +2803,127 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   .saisie-bloc .grille-nombres { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .stepper-note { max-width: none; }
 }
+
+/* ==================================================================
+   REFONTE COMPTOIR, ETAPE 6 : L'HISTORIQUE
+   ================================================================== */
+
+/* L'ancien elargissement par marge negative n'a plus lieu d'etre : depuis que le
+   rail decale le contenu, .ecran porte deja son propre plafond de 1560 px et
+   main n'est plus cale sur une colonne de texte de 1180. */
+#ecran-historique { width: auto; margin-left: 0; }
+
+/* La recherche vit dans la tete de page, a droite du titre. */
+#ecran-historique .champ-recherche { width: 260px; max-width: 100%; margin: 0; }
+#ecran-historique .champ-recherche label { display: none; }
+
+/* ---------- Les filtres, en pastilles ----------
+   Ce sont des <select> natifs habilles. Un select OUVRE deja un menu, sait le
+   clavier, la frappe et la roue du telephone ; un menu ecrit a la main aurait
+   tout cela a reapprendre pour le meme dessin. */
+.historique-filtres {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  background: none;
+  border: none;
+  padding: 0;
+}
+.historique-filtres .champ {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 5px 6px 5px 12px;
+  border: 1px solid var(--lignes);
+  border-radius: var(--rayon-pastille);
+  background: var(--panneau);
+}
+.historique-filtres .champ label {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--attenue);
+  white-space: nowrap;
+}
+.historique-filtres .champ select,
+.historique-filtres .champ input {
+  border: none;
+  background: none;
+  padding: 2px 4px;
+  min-height: 0;
+  font-size: 0.82rem;
+  color: var(--encre);
+  max-width: 170px;
+}
+.historique-filtres .champ select:focus-visible,
+.historique-filtres .champ input:focus-visible { outline: 2px solid var(--accent); border-radius: 6px; }
+.historique-filtres-actions { display: flex; gap: 8px; margin-left: auto; }
+
+/* ---------- Le bandeau resume ---------- */
+.historique-resume {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 40px;
+  padding: 14px 20px;
+  margin-bottom: 14px;
+  background: var(--panneau-2);
+  border-radius: var(--rayon);
+}
+.resume-item { display: flex; flex-direction: column; min-width: 0; }
+.resume-valeur {
+  font-family: var(--serif);
+  font-size: 1.4rem;
+  line-height: 1.1;
+  color: var(--encre);
+  font-variant-numeric: tabular-nums;
+}
+.resume-libelle { font-size: 0.72rem; color: var(--attenue); }
+.resume-note {
+  font-size: 0.72rem;
+  color: var(--texte);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+}
+
+/* ---------- Intertitres de jour ---------- */
+.ligne-jour td {
+  padding: 20px 10px 7px;
+  border: none;
+  background: none;
+}
+.ligne-jour:first-child td { padding-top: 6px; }
+.jour-titre {
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  color: var(--encre);
+  margin-right: 10px;
+}
+.jour-detail { font-size: 0.74rem; color: var(--attenue); }
+
+/* Gouts et diagnostic partagent une cellule. */
+.h-diag { display: block; color: var(--accent-fort); }
+.h-gouts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+
+/* ---------- Le detail deplie ---------- */
+.ligne-detail > td { padding: 0 10px 14px; border-top: none; }
+.detail-bloc,
+.ligne-detail .detail-grille {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px 22px;
+  padding: 16px 20px;
+  background: var(--panneau-2);
+  border-radius: var(--rayon-petit);
+}
+.detail-item { display: flex; flex-direction: column; min-width: 0; }
+.detail-item span { font-size: 0.7rem; color: var(--attenue); }
+.detail-item b { font-weight: 600; color: var(--encre); }
+
+@media (max-width: 900px) {
+  .detail-bloc, .ligne-detail .detail-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .historique-filtres-actions { margin-left: 0; }
+}

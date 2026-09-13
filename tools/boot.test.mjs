@@ -664,7 +664,11 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
   const entetes = (theadHisto.match(/<th\b[^>]*>/g) || []).length;
 
   api.UI.rendreHistorique();
-  const premiere = document.querySelector("#h-corps").innerHTML.split("</tr>")[0];
+  /* La premiere ligne du corps est un INTERTITRE de jour depuis que l'historique
+     est groupe : un <td> en colspan, pas une extraction. On cherche la premiere
+     ligne de donnees, ce que ce controle a toujours voulu dire. */
+  const lignes = document.querySelector("#h-corps").innerHTML.split("</tr>");
+  const premiere = lignes.find(l => l.includes("ligne-histo")) || "";
   const cellules = (premiere.match(/<td/g) || []).length;
 
   check("le tableau d'historique rend une ligne", cellules > 0, String(cellules));

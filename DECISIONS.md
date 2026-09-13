@@ -72,6 +72,29 @@ validée sur maquette, la police n'a pas été changée unilatéralement ; Manro
 lui, embarque bien le vietnamien, donc tout le texte courant est propre. À
 revoir avec Chris s'il trouve ça laid.
 
+**Les filtres de l’historique restent des `<select>`, habillés en pastilles.** Le
+brief demande « cliquer une pastille ouvre le menu correspondant » : c’est
+exactement ce que fait un select natif, et il le fait mieux qu’un menu écrit à la
+main, qui devrait réapprendre le clavier, la frappe au début d’un mot et la roue
+du téléphone. Le dessin s’obtient en CSS, la logique de filtrage n’a pas bougé.
+
+**Le groupement par jour ne s’applique QUE si le tri est par date.** Grouper par
+jour un tableau trié par note ferait réapparaître « Aujourd’hui » à trois
+endroits différents : deux ordres se disputeraient la même liste. Les autres tris
+rendent donc une liste plate, comme avant.
+
+**Les goûts partagent la cellule Diagnostic au lieu de prendre une colonne.**
+Une colonne de plus demande quatre retouches coordonnées (voir « Le piège des
+largeurs figées ») et se décale en silence si on en oublie une. Le brief les
+décrit d’ailleurs comme une seule colonne.
+
+**Deux contrôles ont dû être corrigés, pas contournés.** Celui qui compare les
+cellules aux en-têtes tombait sur un intertitre de jour, qui est un `colspan` et
+non une extraction : il cherche maintenant la première ligne de DONNÉES, ce
+qu’il a toujours voulu dire. Celui qui vérifie les noms accessibles lisait les
+COMMENTAIRES : un commentaire citant `<select>` devenait un champ sans nom. Il
+retire les commentaires d’abord, comme la chasse au vert le fait déjà.
+
 **La saisie rapide dit enfin ce qu’elle enregistre.** Sa note de bas de panneau
 annonçait « Dose, eau, température et mouture reprennent la recette » sans jamais
 dire LESQUELLES : il fallait connaître la recette par coeur pour savoir ce qu’on

@@ -8,9 +8,9 @@
 (() => {
 
   // Emprunté au noyau, chargé avant nous.
-  const { $, $$, antiRebond, attrTitre, detailRatio, diagsAffiches, estRatee, extAnalysables,
-    extAvecCalculs, fmtDateHeure, fmtDecimal, fmtTemps, fmtVND,
-    supprimerExtractionAvecRetour, toast } = UI;
+  const { $, $$, antiRebond, attrTitre, cleLocale, detailRatio, diagsAffiches, estRatee,
+    extAnalysables, extAvecCalculs, fmtDateCourte, fmtDateHeure, fmtDecimal, fmtTemps, fmtVND,
+    moyenne, supprimerExtractionAvecRetour, toast } = UI;
 
   // ---------- Historique ----------
 
@@ -91,12 +91,102 @@
     });
     $("#h-vide").hidden = liste.length > 0;
 
+    /* La surligne dit le TOTAL et depuis quand, pas le filtre : c'est
+       l'identite de l'ecran, le filtre a son propre bandeau juste dessous. */
+    const toutes = extAvecCalculs();
+    const premiere = toutes.length
+      ? toutes.reduce((a, e) => (a && a.date_heure < e.date_heure ? a : e)).date_heure : "";
+    $("#h-surligne").textContent = toutes.length
+      ? I18N.t("h_surligne", { n: toutes.length, s: toutes.length > 1 ? "s" : "",
+          d: fmtDateCourte(String(premiere).slice(0, 10)) })
+      : "";
+
     $$("#h-table th .tri").forEach(s => s.textContent = "");
     const th = $('#h-table th[data-tri="' + tri.colonne + '"] .tri');
     if (th) th.textContent = tri.sens > 0 ? "▲" : "▼";
 
-    $("#h-corps").innerHTML = liste.map(e => ligneHistorique(e)).join("");
+    rendreResume(liste);
+
+    /* GROUPEMENT PAR JOUR, mais seulement quand le tri est par date. Grouper un
+       tableau trie par note ferait reapparaitre « Aujourd'hui » a trois endroits
+       differents : deux ordres se disputeraient la meme liste. */
+    if (tri.colonne !== "date_heure") {
+      $("#h-corps").innerHTML = liste.map(e => ligneHistorique(e)).join("");
+    } else {
+      let jourCourant = null;
+      $("#h-corps").innerHTML = liste.map(e => {
+        const jour = String(e.date_heure).slice(0, 10);
+        let tete = "";
+        if (jour !== jourCourant) {
+          jourCourant = jour;
+          const duJour = liste.filter(x => String(x.date_heure).slice(0, 10) === jour).length;
+          /* La date complete n'apparait que quand le titre ne la dit pas.
+             « Aujourd'hui » et « Hier » ont besoin qu'on precise quel jour ;
+             « dimanche 9 » suivi de « 9 aout 2026 » repetait le quantieme. */
+          const nomme = titreDeJour(jour);
+          const dateDite = nomme === I18N.t("h_aujourdhui") || nomme === I18N.t("h_hier");
+          tete = '<tr class="ligne-jour"><td colspan="13">' +
+            '<span class="jour-titre">' + nomme + "</span>" +
+            '<span class="jour-detail">' +
+            (dateDite ? fmtDateCourte(jour) + " · " : "") +
+            I18N.t("h_jour_tasses", { n: duJour, s: duJour > 1 ? "s" : "" }) + "</span></td></tr>";
+        }
+        return tete + ligneHistorique(e);
+      }).join("");
+    }
     majBarreComparaison();
+  }
+
+  /* « Aujourd'hui », « Hier », puis le jour de la semaine. Un nom vaut mieux
+     qu'une date quand la date est recente : on sait tout de suite si c'est la
+     tasse de ce matin. */
+  function titreDeJour(jour) {
+    if (jour === cleLocale(new Date())) return I18N.t("h_aujourdhui");
+    const hier = new Date();
+    hier.setDate(hier.getDate() - 1);
+    if (jour === cleLocale(hier)) return I18N.t("h_hier");
+    return new Date(jour + "T12:00").toLocaleDateString(I18N.locale(),
+      { weekday: "long", day: "numeric" });
+  }
+
+  /* LE BANDEAU RESUME : ce que le filtre courant raconte.
+
+     Le compte seul disait « 12 sur 62 » sans jamais dire si ces douze etaient
+     bonnes, ce qui est la question qu'on se pose en filtrant. Les ratees sont
+     comptees a part : ce sont elles qui expliquent une moyenne basse, et la
+     moyenne les ecarte pour la meme raison que les analyses le font. */
+  function rendreResume(liste) {
+    const cible = $("#h-resume");
+    if (!liste.length) { cible.innerHTML = ""; cible.hidden = true; return; }
+    cible.hidden = false;
+    const notees = liste.filter(e => e.note_sur_10 !== "" && !estRatee(e));
+    const meilleure = notees.slice().sort((a, b) => b.note_sur_10 - a.note_sur_10)[0];
+    const ratees = liste.filter(estRatee).length;
+    const bloc = (valeur, libelle, note) =>
+      '<div class="resume-item"><span class="resume-valeur">' + valeur + "</span>" +
+      '<span class="resume-libelle">' + libelle + "</span>" +
+      (note ? '<span class="resume-note">' + note + "</span>" : "") + "</div>";
+    cible.innerHTML =
+      bloc(liste.length, I18N.t("h_res_tasses")) +
+      bloc(notees.length ? fmtDecimal(moyenne(notees.map(e => e.note_sur_10)), 1) : I18N.t("h_res_aucune"),
+        I18N.t("h_res_moyenne")) +
+      (meilleure
+        ? bloc(meilleure.note_sur_10, I18N.t("h_res_meilleure"),
+            I18N.tr(meilleure._c.cafe_nom) + " · " + meilleure.methode)
+        : bloc(I18N.t("h_res_aucune"), I18N.t("h_res_meilleure"))) +
+      bloc(ratees, I18N.t("h_res_ratees"));
+  }
+
+  /* Les gouts de la ligne, trois au plus puis « +n », comme sur la carte des
+     cinq dernieres : deux vues du meme objet doivent dire la meme chose. */
+  const MAX_GOUTS_HISTO = 3;
+  function goutsHistorique(e) {
+    const tags = String(e.descripteurs || "").split("|").filter(Boolean);
+    if (!tags.length) return "";
+    const vus = tags.slice(0, MAX_GOUTS_HISTO).map(t => '<span class="derniere-tag">' + I18N.tag(t) + "</span>");
+    const reste = tags.length - vus.length;
+    return '<span class="h-gouts">' + vus.join("") +
+      (reste > 0 ? '<span class="derniere-tag derniere-tag-plus">+' + reste + "</span>" : "") + "</span>";
   }
 
   /* Détail dépliable : le carnet stocke 22 champs par extraction et le tableau
@@ -164,8 +254,13 @@
       '<td class="note-cellule">' + (estRatee(e)
         ? '<span class="badge-ratee" title="' + attrTitre(I18N.t("rt_badge_titre")) + '">' + I18N.t("rt_badge") + "</span>"
         : "") + (e.note_sur_10 !== "" ? e.note_sur_10 : "") + "</td>" +
+      /* GOUTS ET DIAGNOSTIC dans la meme cellule, pas dans deux colonnes : une
+         colonne de plus demande quatre retouches coordonnees (voir DECISIONS,
+         « Le piege des largeurs figees ») et se decale en silence si on en
+         oublie une. */
       '<td class="chip-diagnostic" title="' + attrTitre(e.diagnostic ? diagsAffiches(e.diagnostic) : "") + '">' +
-      (e.diagnostic ? diagsAffiches(e.diagnostic) : "") + "</td>" +
+      (e.diagnostic ? '<span class="h-diag">' + diagsAffiches(e.diagnostic) + "</span>" : "") +
+      goutsHistorique(e) + "</td>" +
       '<td><div class="actions-ligne">' +
       '<button class="btn-ligne' + (compare ? " actif" : "") + '" data-action="comparer" title="' +
       attrTitre(I18N.t("h_comparer")) + '">⇄</button>' +
@@ -396,7 +491,7 @@
   Object.assign(UI, {
     FILTRES, basculerComparaison, cablerHistorique, carteReglage, champsComparaison, comparaison, detailsOuverts,
     filtrerHistorique, ligneDetail, ligneHistorique, majBarreComparaison, ouvrirComparaison,
-    remplirFiltres, rendreHistorique, rendreHistoriqueDifferee, rendreReglages, sansAccents,
-    texteCherchable, tri, valeurTri,
+    goutsHistorique, remplirFiltres, rendreHistorique, rendreHistoriqueDifferee, rendreReglages,
+    rendreResume, sansAccents, texteCherchable, titreDeJour, tri, valeurTri,
   });
 })();

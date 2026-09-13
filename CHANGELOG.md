@@ -454,6 +454,13 @@ pourquoi est dans `DECISIONS.md`.
   Guide (boutiques, achats, messages vietnamiens), correction du bug
   d'avertissement au préremplissage.
 - v1 : site initial, 4 écrans, 2 CSV, démo, Chart.js local, thèmes.
+## 8.5
+
+Refonte « Comptoir », étape 6 sur 8 : l’historique. Tête de page avec le total et
+la recherche, filtres en pastilles, bandeau résumé du filtre courant en quatre
+chiffres, tableau groupé par jour quand le tri est par date, goûts visibles sur
+chaque ligne, détail déplié en quatre colonnes.
+
 ## 8.4
 
 Refonte « Comptoir », étape 5 sur 8 : la saisie rapide devient une feuille qui
