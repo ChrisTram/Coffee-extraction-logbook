@@ -72,6 +72,37 @@ validée sur maquette, la police n'a pas été changée unilatéralement ; Manro
 lui, embarque bien le vietnamien, donc tout le texte courant est propre. À
 revoir avec Chris s'il trouve ça laid.
 
+**Le tableau de bord garde deux cartes que le brief avait oubliées.** « Note
+contre mouture » et « Note moyenne par recette » ne figurent dans aucune des
+quatre rangées décrites. Ce sont des oublis de rédaction, pas des suppressions
+demandées : la consigne « toutes les fonctionnalités actuelles restent, sans
+exception » l'emporte sur le silence d'une liste. La rangée des analyses en
+compte donc six et non quatre.
+
+**Quatre tuiles de chiffres au lieu de sept.** Sept chiffres alignés se comptent
+au lieu de se lire : on cherche celui qu'on voulait. Les quatre qui restent sont
+ceux qui bougent d'un jour à l'autre. Le total, la note globale et la caféine
+passent en une ligne de texte sous la grille, où ils se lisent quand on les
+cherche sans occuper le coup d'oeil.
+
+**Un bouton était mort depuis la v7.3.** « Charger la démonstration », sur le
+tableau de bord vide, portait un identifiant que personne n'écoutait. Son voisin
+marche par `data-va` ; lui attendait un gestionnaire qui n'a jamais existé.
+C'est le premier bouton que voit quelqu'un qui ouvre le carnet sans données. Un
+bouton mort ne lève rien et ne s'écrit nulle part : il fallait cliquer dessus au
+bon moment pour le voir. Un test refuse maintenant tout bouton porteur d'un
+identifiant que le JS ne mentionne nulle part, les boutons délégués par attribut
+(`data-va`, `data-ferme`, `data-ecran`) étant écartés. Première version de ce
+test fausse, d'ailleurs : elle cherchait les identifiants dans `SCRIPTS`, qui ne
+porte que la couche de données, donc les quarante-six boutons du site
+ressortaient morts d'un coup. Un test qui accuse tout le monde n'accuse
+personne.
+
+**Le test du badge « ratée » vérifiait un nom de classe.** Il a cassé dès que les
+cinq dernières sont passées en table, où la marque s'appelle autrement. Il
+vérifie maintenant la règle : le mot que Chris lit est présent, et la ligne porte
+un état distinct, quel que soit le nom donné à l'un ou à l'autre.
+
 **Le rail et la feuille « Plus » sont le même élément.** C'est le point qui
 surprend en lisant le HTML. La raison est prosaïque : `app.js` câble
 `#btn-lang`, `#btn-theme` et `#btn-donnees` par identifiant. Un rail et une

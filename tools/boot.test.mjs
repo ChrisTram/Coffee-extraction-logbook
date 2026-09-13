@@ -718,10 +718,33 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
     String(api.UI.extAnalysables().length));
   api.UI.basculerRatees(false);
 
-  // Le badge, la ou il doit se voir.
+  /* UNE TASSE RATEE SE VOIT, sur les deux surfaces qui la montrent.
+
+     L'ancienne version cherchait la classe "badge-ratee" : elle a casse des que
+     les cinq dernieres sont passees en table, ou la marque s'appelle autrement.
+     Un test ecrit sur un nom de classe verifie le nom de classe. Celui-ci
+     verifie la REGLE : le mot que Chris lit est la, et la ligne porte un etat
+     distinct, quel que soit le nom qu'on donne a l'un ou a l'autre. */
   api.UI.rendreTableau();
-  check("le badge apparait sur les cinq dernieres",
-    document.querySelector("#dernieres-liste").innerHTML.includes("badge-ratee"));
+  const mot = api.I18N.t("rt_badge");
+  const table = document.querySelector("#dernieres-liste").innerHTML;
+  check("une tasse ratee est nommee dans les cinq dernieres", table.includes(mot), mot);
+  check("et sa ligne porte un etat distinct, pas seulement un mot",
+    /class="[^"]*ratee/.test(table));
+  /* La grande carte montre LA DERNIERE tasse, qui n'est pas forcement celle
+     qu'on vient de marquer. On marque donc la plus recente, le temps du
+     controle, et on la remet comme elle etait. */
+  const recente = [...api.DATA.state.extractions]
+    .sort((x, y) => y.date_heure.localeCompare(x.date_heure))[0];
+  const avant = recente.ratee;
+  recente.ratee = 1;
+  api.UI.rendreTableau();
+  check("la carte de la derniere tasse le dit aussi",
+    document.querySelector("#carte-derniere").innerHTML.includes(mot));
+  recente.ratee = avant;
+  api.UI.rendreTableau();
+  check("et ne le dit plus quand la tasse ne l'est pas",
+    !document.querySelector("#carte-derniere").innerHTML.includes(mot));
 
   /* L'historique est le JOURNAL : il montre tout par defaut, et c'est le filtre
      qui trie. Une tasse ratee doit y rester visible, c'est justement la que

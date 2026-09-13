@@ -692,6 +692,34 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("chaque aria-label statique a sa traduction", nonTraduits.length === 0, nonTraduits.join(", "));
 }
 
+/* AUCUN BOUTON MORT.
+
+   "Charger la demonstration", sur le tableau de bord vide, ne faisait rien
+   depuis la v7.3 : il portait un identifiant et aucun code ne l'ecoutait. Un
+   bouton qui ne repond pas ne leve rien, n'ecrit rien dans la console et ne
+   se voit que si quelqu'un clique dessus au bon moment.
+
+   La regle : tout bouton porteur d'un identifiant doit etre mentionne quelque
+   part dans le JS. Les boutons pilotes par ATTRIBUT (data-va, data-ferme,
+   data-ecran) sont delegues et n'ont pas besoin de leur identifiant ; les
+   boutons de soumission sont geres par le submit de leur formulaire. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  /* SOURCE_UI porte les huit fichiers d interface plus app.js : c est la que
+     vivent tous les gestionnaires de boutons. SCRIPTS, lui, ne contient que la
+     couche de donnees, et cherchait donc les identifiants la ou ils ne sont
+     jamais. */
+  const tousLesJs = SOURCE_UI;
+  const morts = [];
+  for (const m of html.matchAll(/<button[^>]*>/g)) {
+    const b = m[0];
+    const id = (b.match(/id="([^"]+)"/) || [])[1];
+    if (!id) continue;
+    if (/data-va=|data-ferme=|data-ecran=|type="submit"/.test(b)) continue;
+    if (!tousLesJs.includes('"' + id + '"') && !tousLesJs.includes("#" + id)) morts.push(id);
+  }
+  check("aucun bouton a identifiant n'est laisse sans code", morts.length === 0, morts.join(", "));
+}
 /* LA NAVIGATION : un rail sur ordinateur, une barre du bas sur telephone.
 
    L'ancienne version de ce bloc visait <nav class="nav">, disparu avec

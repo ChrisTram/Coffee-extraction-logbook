@@ -187,11 +187,17 @@
     // Accueil
     $("#acc-creer").addEventListener("click", () => actionLier(true));
     $("#acc-ouvrir").addEventListener("click", () => actionLier(false));
-    $("#acc-demo").addEventListener("click", async () => {
+    /* TROIS boutons chargent la demonstration : celui de l'accueil, celui du
+       panneau Donnees, et celui de l'etat vide du tableau de bord. Ce dernier ne
+       faisait rien depuis la v7.3, il portait un identifiant que personne
+       n'ecoutait. Une seule fonction pour les trois, maintenant. */
+    const chargerLaDemo = async () => {
       await DATA.chargerDemo();
       $("#modale-accueil").close();
       toast(I18N.t("t_demo"));
-    });
+    };
+    $("#acc-demo").addEventListener("click", chargerLaDemo);
+    $("#btn-demo-vide").addEventListener("click", chargerLaDemo);
     $("#acc-plus-tard").addEventListener("click", () => $("#modale-accueil").close());
 
     // Données

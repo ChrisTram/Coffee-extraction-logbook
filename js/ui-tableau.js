@@ -396,13 +396,15 @@
     };
     const cafeine7j = exts.filter(e => new Date(e.date_heure) >= il7j).reduce((a, e) => a + mgCafeine(e), 0);
 
+    /* QUATRE tuiles, pas sept. Sept chiffres alignes se COMPTENT au lieu de se
+       lire : on cherche celui qu'on voulait. Les quatre qui restent sont ceux
+       qui bougent d'un jour a l'autre. Les trois autres, total, note globale et
+       cafeine, n'ont pas disparu : ils passent en ligne sous la grille, ou ils
+       se lisent quand on les cherche sans occuper le coup d'oeil. */
     const kpis = [
       { valeur: exts.filter(e => e.date_heure.slice(0, 10) === auj).length, label: I18N.t("kpi_auj"), dec: 0 },
       { valeur: exts.filter(e => e.date_heure.slice(0, 10) >= cleLundi).length, label: I18N.t("kpi_semaine"), dec: 0 },
-      { valeur: exts.length, label: I18N.t("kpi_total"), dec: 0 },
-      { valeur: moyenne(notes) || 0, label: I18N.t("kpi_note"), dec: 1, sur10: true },
       { valeur: moyenne(notes7j) || 0, label: I18N.t("kpi_note7"), dec: 1, sur10: true },
-      { valeur: Math.round(cafeine7j / 7), label: I18N.t("kpi_cafeine"), dec: 0, mg: true },
       { valeur: ecartMoyen(notes) || 0, label: I18N.t("kpi_regularite"), dec: 1, plusMoins: true },
     ];
     $("#kpis").innerHTML = kpis.map(k =>
@@ -412,6 +414,20 @@
     ).join("");
     $$("#kpis .kpi-nombre").forEach((el, i) =>
       animerCompteur(el, kpis[i].valeur, kpis[i].dec, "", kpis[i].plusMoins ? "± " : ""));
+
+    /* Les trois chiffres sortis des tuiles. Ils restent lisibles, en clair, et
+       ne sont plus sur le chemin du regard. */
+    $("#kpis-secondaires").textContent = I18N.t("kpi_secondaires", {
+      n: exts.length,
+      g: fmtDecimal(moyenne(notes) || 0, 1),
+      c: Math.round(cafeine7j / 7),
+    });
+
+    /* La surligne de la tete de page : la date du jour, comme dans la maquette. */
+    $("#tableau-surligne").textContent = maintenant.toLocaleDateString(I18N.locale(),
+      { weekday: "long", day: "numeric", month: "long" });
+
+    rendreDerniereTasse(exts);
 
     rendreInsights(analysables);
 
@@ -552,27 +568,99 @@
 
        Le title natif n'est gardé que sur les lignes SANS commentaire : les deux
        ensemble feraient apparaître deux infobulles au même endroit. */
+    /* UNE VRAIE TABLE, et non plus une liste de blocs : les colonnes alignent
+       les memes grandeurs d'une ligne a l'autre, ce qu'une liste ne fait pas.
+
+       Le COMMENTAIRE reste a deux endroits, en clair sous le nom du cafe et au
+       survol : c'est le seul champ qui dit pourquoi une tasse etait bonne, et
+       Chris a demande les deux. Bulle maison plutot que title natif, elle suit
+       le theme et l'appui long la donne au doigt ; le title natif ne sert que
+       sur les lignes SANS commentaire, sinon deux bulles se superposeraient. */
     $("#dernieres-liste").innerHTML = dernieres.map(e =>
-      '<li class="derniere-cliquable' + (e.commentaire ? " info-dessous" : "") +
+      '<tr class="derniere-cliquable' + (estRatee(e) ? " ligne-ratee" : "") +
+      (e.commentaire ? " info-dessous" : "") +
       '" data-ext="' + e.id + '" tabindex="0" role="button"' +
       (e.commentaire
         ? ' data-info="' + attrTitre(e.commentaire) + '"'
         : ' title="' + attrTitre(I18N.t("h_editer")) + '"') + ">" +
-      /* Trois colonnes : la pastille, le corps qui prend TOUTE la largeur
-         disponible (nom et contexte sur une ligne, puis mesures, goûts,
-         commentaire), et la note à droite. Le corps était un bloc qui ne
-         s'étirait pas : la ligne restait vide entre le texte et la note. */
-      "<span class=\"pastille-methode " + e.methode.toLowerCase() + "\"></span>" +
-      "<div class=\"derniere-corps\">" +
-      "<div class=\"derniere-tete\"><span class=\"derniere-cafe\">" + I18N.tr(e._c.cafe_nom) + "</span>" +
-      "<span class=\"derniere-infos\">" + fmtDateHeure(e.date_heure) + " · " + e.methode +
-      (e.recette ? " · " + e.recette : "") +
-      (e.diagnostic ? " · " + diagsAffiches(e.diagnostic) : "") + "</span></div>" +
-      mesuresDerniere(e) + goutsDerniere(e) + commentaireDerniere(e) + "</div>" +
-      "<div class=\"derniere-droite\">" +
-      (estRatee(e) ? '<span class="badge-ratee" title="' + attrTitre(I18N.t("rt_badge_titre")) + '">' + I18N.t("rt_badge") + "</span>" : "") +
-      "<span class=\"derniere-note\">" + (e.note_sur_10 !== "" ? e.note_sur_10 + "<small>/10</small>" : "") + "</span></div></li>"
+      '<td class="d-quand">' + fmtDateHeure(e.date_heure) + "</td>" +
+      '<td class="d-machine"><span class="pastille-methode ' + e.methode.toLowerCase() +
+        '" title="' + attrTitre(e.methode) + '"></span></td>' +
+      '<td class="d-cafe"><b>' + I18N.tr(e._c.cafe_nom) + "</b>" +
+        (estRatee(e) ? '<span class="mention-ratee">' + I18N.t("rt_badge") + "</span>" : "") +
+        commentaireDerniere(e) + "</td>" +
+      '<td class="d-mesures">' +
+        (e.recette ? '<span class="d-recette">' + I18N.tr(e.recette) + "</span>" : "") +
+        mesuresDerniere(e) +
+        (e.diagnostic ? '<span class="d-diag">' + diagsAffiches(e.diagnostic) + "</span>" : "") +
+      "</td>" +
+      '<td class="d-gouts">' + goutsDerniere(e) + "</td>" +
+      '<td class="d-note">' + (e.note_sur_10 !== "" ? e.note_sur_10 : "") + "</td></tr>"
     ).join("");
+  }
+
+  /* LA DERNIERE TASSE, en grand.
+
+     C'est la carte que Chris regarde en ouvrant le site : ce qu'il vient de
+     boire, et ce qu'il en a pense. Elle reprend les memes briques que les cinq
+     dernieres (mesures, gouts, commentaire) pour que les deux disent la meme
+     chose, et cliquer dessus ouvre l'extraction, comme une ligne de la table.
+
+     Elle se cache quand il n'y a rien : une carte vide qui annonce "pas de
+     derniere tasse" n'apprend rien a quelqu'un qui voit deja un carnet vide. */
+  function rendreDerniereTasse(exts) {
+    const carte = $("#carte-derniere");
+    const e = [...exts].sort((a, b) => b.date_heure.localeCompare(a.date_heure))[0];
+    carte.hidden = !e;
+    if (!e) return;
+
+    const contexte = [];
+    if (e.recette) contexte.push(I18N.tr(e.recette));
+    if (e.dose_g > 0 && e.eau_g) contexte.push(e.dose_g + " → " + e.eau_g + " g");
+    const t = fmtTemps(e.temps_total_s);
+    if (t) contexte.push(t);
+    if (e.temperature_c !== "" && e.temperature_c !== undefined) contexte.push(e.temperature_c + " °C");
+    if (e.methode === "Brikka" && e.puissance_feu !== "" && e.puissance_feu !== undefined) {
+      contexte.push(I18N.t("rg_feu", { f: e.puissance_feu }));
+    }
+
+    carte.dataset.ext = e.id;
+    carte.setAttribute("role", "button");
+    carte.setAttribute("tabindex", "0");
+    carte.innerHTML =
+      '<div class="derniere-grande-corps">' +
+        '<p class="surligne">' + I18N.t("tb_derniere", { q: depuisQuand(e.date_heure) }) + "</p>" +
+        '<p class="derniere-grande-cafe">' + I18N.tr(e._c.cafe_nom) + "</p>" +
+        '<p class="derniere-grande-contexte">' +
+          '<span class="pastille-methode ' + e.methode.toLowerCase() + '"></span>' +
+          '<span class="derniere-grande-machine">' + e.methode + "</span>" +
+          contexte.map(x => '<span class="sep" aria-hidden="true">|</span><span>' + x + "</span>").join("") +
+        "</p>" +
+        goutsDerniere(e) +
+        (e.commentaire ? '<p class="derniere-grande-commentaire">' + attrTitre(e.commentaire) + "</p>" : "") +
+      "</div>" +
+      '<div class="derniere-grande-note">' +
+        (estRatee(e) ? '<span class="badge-ratee">' + I18N.t("rt_badge") + "</span>" : "") +
+        /* Sans note, on ecrit "pas encore notee" au lieu d un tiret : un tiret
+           dans un grand chiffre se lit comme un moins, et la regle du projet
+           interdit de toute facon le cadratin. */
+        (e.note_sur_10 !== ""
+          ? '<span class="grande-note">' + e.note_sur_10 + "</span>" +
+            '<span class="grande-note-sur">' + I18N.t("tb_sur10") + "</span>"
+          : '<span class="grande-note-sans">' + I18N.t("n_pas_notee") + "</span>") +
+        (e.diagnostic ? '<span class="pastille-diag">' + diagsAffiches(e.diagnostic) + "</span>" : "") +
+      "</div>";
+  }
+
+  /* « il y a 2 h ». Assez precis pour situer la tasse, jamais a la minute : on
+     veut savoir si c'est ce matin ou avant hier, pas l'heure exacte, qui est
+     deja dans la table juste dessous. */
+  function depuisQuand(dh) {
+    const min = Math.max(0, Math.round((Date.now() - new Date(dh)) / 60000));
+    if (min < 60) return I18N.t("tb_min", { n: min });
+    const h = Math.round(min / 60);
+    if (h < 24) return I18N.t("tb_heures", { n: h });
+    return I18N.t("tb_jours", { n: Math.round(h / 24) });
   }
 
   /* La ligne de MESURES d'une extraction : ce que Chris a réellement réglé.
@@ -640,15 +728,21 @@
       if (!ext) return;
       UI.chargerExtractionDansSaisie(ext, false);
     };
-    $("#dernieres-liste").addEventListener("click", ev => ouvrirDerniere(ev.target));
-    $("#dernieres-liste").addEventListener("keydown", ev => {
-      if (ev.key !== "Enter" && ev.key !== " ") return;
-      ev.preventDefault();
-      ouvrirDerniere(ev.target);
+    /* La table ET la grande carte ouvrent l'extraction. Deleguer sur les deux
+       plutot que sur document : un gestionnaire global attraperait les clics de
+       tout le tableau de bord pour ne servir que deux zones. */
+    [$("#dernieres-liste"), $("#carte-derniere")].forEach(zone => {
+      zone.addEventListener("click", ev => ouvrirDerniere(ev.target));
+      zone.addEventListener("keydown", ev => {
+        if (ev.key !== "Enter" && ev.key !== " ") return;
+        ev.preventDefault();
+        ouvrirDerniere(ev.target);
+      });
     });
   }
 
   Object.assign(UI, {
+    rendreDerniereTasse,
     MIN_GAP, MIN_SAMPLE, MIN_TASSES_GOUT, PIRES_GOUTS, SEMAINES_HEATMAP, TOP_GOUTS,
     bestOfGroups, cablerTableau, causeDuelVide, causeGoutsVide, causeMoutureVide, computeInsights,
     insightAgePaquet, insightMoment, insightPuissance, insightRecettes, insightsParCafe,

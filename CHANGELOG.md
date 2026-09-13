@@ -454,6 +454,15 @@ pourquoi est dans `DECISIONS.md`.
   Guide (boutiques, achats, messages vietnamiens), correction du bug
   d'avertissement au préremplissage.
 - v1 : site initial, 4 écrans, 2 CSV, démo, Chart.js local, thèmes.
+## 8.2
+
+Refonte « Comptoir », étape 3 sur 8 : le tableau de bord. Quatre rangées sur
+trois colonnes, une grande carte « Dernière tasse », quatre tuiles de chiffres au
+lieu de sept, les cinq dernières en vraie table, carte sombre pour les insights.
+Le graphe 30 jours est inchangé. Deux cartes que le brief avait oubliées sont
+gardées. Le bouton « Charger la démonstration » de l'état vide, mort depuis la
+v7.3, fonctionne enfin.
+
 ## 8.1
 
 Refonte « Comptoir », étape 2 sur 8 : la navigation. Rail fixe à gauche sur

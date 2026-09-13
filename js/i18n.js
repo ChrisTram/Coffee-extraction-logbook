@@ -228,6 +228,13 @@ const I18N = (() => {
     rt_rien: { fr: "Renseigne la dose et l eau, ou le volume extrait, pour voir le ratio." },
 
     kpi_regularite: { fr: "régularité, écart moyen à ta moyenne" },
+    /* Les trois chiffres sortis des tuiles : ils se lisent en ligne. */
+    kpi_secondaires: { fr: "{n} tasses en tout, {g} sur 10 de moyenne, environ {c} mg de caféine par jour." },
+    tb_derniere: { fr: "Dernière tasse, {q}" },
+    tb_sur10: { fr: "sur 10" },
+    tb_min: { fr: "il y a {n} min" },
+    tb_heures: { fr: "il y a {n} h" },
+    tb_jours: { fr: "il y a {n} j" },
 
     hm_st_tasses: { fr: "tasses" },
     hm_st_jours: { fr: "jours actifs" },

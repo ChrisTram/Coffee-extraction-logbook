@@ -7,8 +7,8 @@
 <!-- Version du site, source unique : le pied de page la lit, et les fichiers
      chargés à la demande la mettent dans leur URL. Se pose avec
      node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="8.1">
-<link rel="stylesheet" href="css/styles.css?v=8.1">
+<meta name="app-version" content="8.2">
+<link rel="stylesheet" href="css/styles.css?v=8.2">
 <!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
      SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
      parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
@@ -121,31 +121,64 @@
 
   <div id="tableau-contenu">
 
-    <div class="kpis" id="kpis"></div>
+    <!-- TETE DE PAGE. La surligne et le titre remplacent l'ancienne entete :
+         c'est maintenant l'ecran qui dit son nom. -->
+    <div class="tete-page">
+      <div class="tete-titres">
+        <p class="surligne" id="tableau-surligne"></p>
+        <h2 class="titre-page">Tableau de bord</h2>
+      </div>
+    </div>
 
-    <div class="grille-graphes">
-      <article class="carte carte-large">
+    <div class="grille-tableau">
+
+      <!-- RANGEE 1 : la derniere tasse, et les chiffres cles -->
+      <article class="carte carte-derniere col-2" id="carte-derniere" hidden></article>
+
+      <article class="carte carte-chiffres">
+        <h3>Chiffres clés</h3>
+        <div class="kpis" id="kpis"></div>
+        <!-- Total, note globale et cafeine n'ont plus de tuile : quatre chiffres
+             se lisent d'un coup d'oeil, sept se comptent. Ils restent ici. -->
+        <p class="carte-note" id="kpis-secondaires"></p>
+      </article>
+
+      <!-- RANGEE 2 : le graphe 30 jours, INCHANGE, et les insights -->
+      <article class="carte col-2">
         <h3>Extractions, note et tendance, 30 derniers jours</h3>
         <div class="canvas-h240"><canvas id="g-30jours"></canvas></div>
       </article>
 
-      <article class="carte carte-large">
+      <article class="carte carte-sombre">
         <h3>Ce que tes données disent</h3>
         <ul class="insights" id="insights"></ul>
+        <button type="button" class="lien-carte" data-va="reglages">Voir mes meilleurs réglages</button>
       </article>
 
-      <article class="carte carte-large">
+      <!-- RANGEE 3 : les cinq dernieres en vraie table, et le calendrier -->
+      <article class="carte col-2">
         <h3>Les 5 dernières extractions</h3>
-        <ul class="dernieres" id="dernieres-liste"></ul>
+        <div class="table-enveloppe">
+          <table class="table-dernieres">
+            <!-- En-tetes caches a l'oeil, lus par les lecteurs d'ecran : une
+                 table sans en-tetes est une grille d'inconnues a l'oreille. -->
+            <thead class="hors-ecran">
+              <tr><th scope="col">Date</th><th scope="col">Machine</th><th scope="col">Café</th>
+                <th scope="col">Recette et mesures</th><th scope="col">Goûts</th><th scope="col">Note</th></tr>
+            </thead>
+            <tbody id="dernieres-liste"></tbody>
+          </table>
+        </div>
+        <button type="button" class="lien-carte" data-va="historique">Tout l'historique</button>
       </article>
 
-      <article class="carte carte-large">
-        <h3>Calendrier d'activité</h3>
+      <article class="carte">
+        <h3>Dix-huit semaines</h3>
         <div id="g-heatmap" class="heatmap-conteneur"></div>
-        <p class="legende-heatmap"><span>Aucune</span><i class="hm-i hm-n0"></i><i class="hm-i hm-n1"></i><i class="hm-i hm-n2"></i><i class="hm-i hm-n3"></i><i class="hm-i hm-n4"></i><span>4 et plus</span></p>
         <div class="mini-stats" id="heatmap-stats"></div>
       </article>
 
+      <!-- RANGEE 4 : les analyses -->
       <article class="carte">
         <h3>Note moyenne par café</h3>
         <div class="canvas-h240"><canvas id="g-cafes"></canvas></div>
@@ -156,14 +189,6 @@
         <div class="duel" id="duel-machines"></div>
         <div class="canvas-h200" id="boite-duel"><canvas id="g-duel"></canvas></div>
         <p class="carte-vide" id="vide-duel" hidden></p>
-        <p class="carte-note">Notes moyennes sur les cafés passés dans les deux machines.</p>
-      </article>
-
-      <article class="carte">
-        <h3>Note contre mouture</h3>
-        <div class="canvas-h240" id="boite-mouture"><canvas id="g-mouture"></canvas></div>
-        <p class="carte-vide" id="vide-mouture" hidden></p>
-        <p class="carte-note">Le nuage qui montre ton réglage optimal, en microns.</p>
       </article>
 
       <article class="carte">
@@ -178,10 +203,19 @@
         <div class="canvas-h240"><canvas id="g-diagnostics"></canvas></div>
       </article>
 
+      <!-- Ces deux la ne figurent dans aucune rangee du brief. Ce sont des
+           oublis, pas des suppressions : rien ne se perd. -->
+      <article class="carte">
+        <h3>Note contre mouture</h3>
+        <div class="canvas-h240" id="boite-mouture"><canvas id="g-mouture"></canvas></div>
+        <p class="carte-vide" id="vide-mouture" hidden></p>
+      </article>
+
       <article class="carte">
         <h3>Note moyenne par recette</h3>
         <div class="canvas-h240"><canvas id="g-recettes"></canvas></div>
       </article>
+
     </div>
   </div>
 </section>
@@ -1341,28 +1375,28 @@ Cảm ơn shop.</pre>
 <!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
      et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
      desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=8.1"></script>
-<script defer src="js/i18n.js?v=8.1"></script>
-<script defer src="js/grind.js?v=8.1"></script>
-<script defer src="js/recettes.js?v=8.1"></script>
+<script defer src="js/outils.js?v=8.2"></script>
+<script defer src="js/i18n.js?v=8.2"></script>
+<script defer src="js/grind.js?v=8.2"></script>
+<script defer src="js/recettes.js?v=8.2"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=8.1"></script>
-<script defer src="js/data-csv.js?v=8.1"></script>
-<script defer src="js/data-schema.js?v=8.1"></script>
-<script defer src="js/data-store.js?v=8.1"></script>
-<script defer src="js/data-calculs.js?v=8.1"></script>
-<script defer src="js/data-migrations.js?v=8.1"></script>
-<script defer src="js/data.js?v=8.1"></script>
-<script defer src="js/reglages.js?v=8.1"></script>
-<script defer src="js/charts.js?v=8.1"></script>
-<script defer src="js/ui-noyau.js?v=8.1"></script>
-<script defer src="js/ui-tableau.js?v=8.1"></script>
-<script defer src="js/ui-saisie.js?v=8.1"></script>
-<script defer src="js/ui-brouillon.js?v=8.1"></script>
-<script defer src="js/ui-rapide.js?v=8.1"></script>
-<script defer src="js/ui-historique.js?v=8.1"></script>
-<script defer src="js/ui-guide.js?v=8.1"></script>
-<script defer src="js/ui-catalogue.js?v=8.1"></script>
-<script defer src="js/app.js?v=8.1"></script>
+<script defer src="js/sync.js?v=8.2"></script>
+<script defer src="js/data-csv.js?v=8.2"></script>
+<script defer src="js/data-schema.js?v=8.2"></script>
+<script defer src="js/data-store.js?v=8.2"></script>
+<script defer src="js/data-calculs.js?v=8.2"></script>
+<script defer src="js/data-migrations.js?v=8.2"></script>
+<script defer src="js/data.js?v=8.2"></script>
+<script defer src="js/reglages.js?v=8.2"></script>
+<script defer src="js/charts.js?v=8.2"></script>
+<script defer src="js/ui-noyau.js?v=8.2"></script>
+<script defer src="js/ui-tableau.js?v=8.2"></script>
+<script defer src="js/ui-saisie.js?v=8.2"></script>
+<script defer src="js/ui-brouillon.js?v=8.2"></script>
+<script defer src="js/ui-rapide.js?v=8.2"></script>
+<script defer src="js/ui-historique.js?v=8.2"></script>
+<script defer src="js/ui-guide.js?v=8.2"></script>
+<script defer src="js/ui-catalogue.js?v=8.2"></script>
+<script defer src="js/app.js?v=8.2"></script>
 </body>
 </html>
