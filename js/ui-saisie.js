@@ -332,7 +332,34 @@
     $("#note-affichee").textContent = vide
       ? I18N.t("n_pas_notee")
       : $("#f-note").value + " / 10";
-    $("#f-note").classList.toggle("curseur-inactif", vide);
+    /* Le stepper porte l'etat inactif depuis la refonte Comptoir : le range est
+       cache, une classe posee dessus ne se verrait plus. */
+    const st = $(".stepper-note");
+    if (st) st.classList.toggle("stepper-inactif", vide);
+  }
+
+  /* LE STEPPER DE NOTE.
+
+     Le curseur demandait de viser un demi point sur une piste de dix, au doigt
+     et sur un telephone. Deux boutons et un chiffre font la meme chose sans
+     viser. Le range EXISTE toujours, cache : c'est lui la valeur, et le
+     brouillon, le chargement d'une extraction et l'enregistrement continuent de
+     le lire sans rien savoir du stepper.
+
+     Toucher un bouton decoche « pas encore notee », comme toucher le curseur le
+     faisait : on ne monte pas la note d'une tasse qu'on ne veut pas noter. */
+  const PAS_NOTE = 0.5;
+  function bougerNote(delta) {
+    const champ = $("#f-note");
+    const vide = $("#f-note-vide").checked;
+    /* Depuis « pas encore notee », le premier appui pose la valeur affichee
+       telle quelle plutot que de la decaler : sinon un plus donnerait 5,5 alors
+       que l'ecran montrait 5. */
+    const brut = vide ? Number(champ.value) : Number(champ.value) + delta * PAS_NOTE;
+    champ.value = Math.min(10, Math.max(0, Math.round(brut / PAS_NOTE) * PAS_NOTE));
+    $("#f-note-vide").checked = false;
+    majAffichageNote();
+    UI.majLive();
   }
 
   function noteSaisie() {
@@ -1050,11 +1077,8 @@
     $("#f-temp").addEventListener("input", majTempHint);
     /* pointerdown en plus d'input : poser le doigt sur le curseur là où il est
        déjà ne déclenche aucun input, la note serait restée vide sans le savoir. */
-    ["input", "pointerdown", "keydown"].forEach(ev =>
-      $("#f-note").addEventListener(ev, () => {
-        $("#f-note-vide").checked = false;
-        majAffichageNote();
-      }));
+    $("#note-moins").addEventListener("click", () => bougerNote(-1));
+    $("#note-plus").addEventListener("click", () => bougerNote(1));
     $("#f-note-vide").addEventListener("change", majAffichageNote);
     $("#btn-chrono").addEventListener("click", chronoPrincipal);
     $("#btn-chrono-stop").addEventListener("click", chronoArreter);

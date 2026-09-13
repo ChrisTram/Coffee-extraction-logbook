@@ -72,6 +72,43 @@ validée sur maquette, la police n'a pas été changée unilatéralement ; Manro
 lui, embarque bien le vietnamien, donc tout le texte courant est propre. À
 revoir avec Chris s'il trouve ça laid.
 
+**Le chrono a quitté le formulaire.** Il vit maintenant dans la colonne fixe de
+droite, avec la fiche recette et la fiche café : ce sont des choses qu'on LIT
+pendant qu'on remplit, pas des champs. Le déménagement est sans risque parce que
+`$f()` est un `querySelector` mis en cache et non une recherche dans le
+formulaire, et parce que l'enregistrement lit les champs par identifiant. Sur
+téléphone il redevient un bandeau collant en haut de l'écran : pendant une
+extraction c'est la seule chose qui compte, et elle était en bas de page.
+
+**La note est un stepper, mais `#f-note` existe toujours.** Le curseur demandait
+de viser un demi point sur une piste de dix, au doigt. Deux boutons et un chiffre
+font la même chose sans viser. Le `range` est devenu un `input` caché qui porte
+la valeur : le brouillon, le chargement d'une extraction et l'enregistrement
+continuent de le lire, et n'ont rien appris du stepper. Depuis « pas encore
+notée », le premier appui pose la valeur affichée telle quelle au lieu de la
+décaler, sinon un plus donnerait 5,5 sur un écran qui montrait 5.
+
+**La reprise de brouillon mentait sur la note.** `restaurerBrouillon` écrivait
+`#note-affichee` à la main avec la valeur brute du champ, en ignorant « pas
+encore notée ». Après la reprise d'un brouillon non noté, l'écran annonçait « 5 »
+alors que l'enregistrement allait ranger la tasse comme NON NOTÉE, donc hors des
+moyennes, des insights et des meilleurs réglages. Le curseur étant lui aussi posé
+sur 5, rien ne trahissait l'écart. Un test impose maintenant qu'un seul fichier
+écrive cet élément, et à un seul endroit : tout autre code qui y touche est un
+second avis sur la même question, et c'est ainsi qu'ils divergent.
+
+**`#saisie-titre` est passé sur la surligne.** Le JS y écrit « Nouvelle
+extraction », « Modifier l'extraction » ou « Extraction dupliquée », c'est donc
+lui qui dit ce qu'on est en train de faire. Le titre de page, « Une tasse de
+plus », ne bouge pas. Garder l'identifiant sur la surligne évitait de toucher aux
+trois endroits qui l'écrivent.
+
+**Le contrôle de machine n'était décrit qu'une fois de trop.** Les nouvelles
+règles, posées en fin de feuille, ne gagnaient pas : `.btn-methode.brikka.actif`
+compte trois classes contre deux, la spécificité l'emportait sur l'ordre.
+L'ancien bloc a été retiré plutôt que le nouveau gonflé, sinon deux descriptions
+du même bouton cohabitent pour toujours.
+
 **Le tableau de bord garde deux cartes que le brief avait oubliées.** « Note
 contre mouture » et « Note moyenne par recette » ne figurent dans aucune des
 quatre rangées décrites. Ce sont des oublis de rédaction, pas des suppressions

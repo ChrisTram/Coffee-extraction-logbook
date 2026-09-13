@@ -1310,12 +1310,11 @@ input:focus, select:focus, textarea:focus {
    les contrôles soient à la même hauteur malgré des libellés différents. */
 .saisie-tete {
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1.3fr);
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.2fr);
   gap: 14px;
   align-items: end;
 }
 .saisie-tete .champ { margin-bottom: 14px; }
-.saisie-tete .btn-methode { padding: 10px 8px; font-size: 1rem; }
 @media (max-width: 860px) {
   .saisie-tete { grid-template-columns: 1fr; }
 }
@@ -1498,31 +1497,8 @@ input:focus, select:focus, textarea:focus {
 .options-saisie:not(:has(.option-saisie:not([hidden]))) { display: none; }
 
 /* Méthode : deux gros boutons */
-.choix-methode { display: flex; gap: 10px; }
-.btn-methode {
-  flex: 1;
-  padding: 16px 10px;
-  font-size: 1.05rem;
-  font-weight: 700;
-  font-family: var(--serif);
-  border-radius: 12px;
-  border: 2px solid var(--lignes);
-  background: var(--panneau);
-  color: var(--attenue);
-  cursor: pointer;
-  transition: all var(--transition);
-}
-.btn-methode.brikka.actif {
-  border-color: var(--brikka);
-  color: var(--brikka);
-  background: color-mix(in srgb, var(--brikka) 12%, var(--panneau));
-}
-.btn-methode.switch.actif {
-  border-color: var(--switch);
-  color: var(--switch);
-  background: color-mix(in srgb, var(--switch) 12%, var(--panneau));
-}
-.btn-methode:hover { border-color: var(--attenue); }
+/* Le controle de machine est decrit UNE SEULE FOIS, avec le reste de la saisie
+   en fin de fichier (refonte Comptoir, etape 4). */
 
 /* Avertissements non bloquants */
 .avertissements { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
@@ -2560,4 +2536,237 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 }
 @keyframes chargement-tourne {
   to { transform: rotate(360deg); }
+}
+
+
+/* ==================================================================
+   REFONTE COMPTOIR, ETAPE 4 : LA SAISIE
+   ================================================================== */
+
+/* Deux colonnes : le formulaire, puis une colonne FIXE de 360 px qui suit le
+   defilement. C'est la que vivent le chrono, la fiche recette et la fiche cafe,
+   parce qu'on les LIT pendant qu'on remplit le formulaire, on ne les remplit pas. */
+#ecran-saisie {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: var(--ecart-cartes);
+  align-items: start;
+}
+#ecran-saisie > form { min-width: 0; }
+.saisie-aside {
+  position: sticky;
+  top: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ecart-cartes);
+  min-width: 0;
+}
+
+/* La tete de page de la saisie : le titre a gauche, la date et l'heure a droite. */
+#ecran-saisie .tete-page { grid-column: 1 / -1; }
+
+/* ---------- Les blocs numerotes ---------- */
+.saisie-bloc {
+  background: var(--panneau);
+  border: 1px solid var(--lignes);
+  border-radius: var(--rayon);
+  padding: var(--carte-padding);
+  margin-bottom: var(--ecart-cartes);
+}
+.saisie-bloc-titre {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: 0 0 18px;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 1.35rem;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--encre);
+}
+/* Le numero du bloc : un rond d'encre. Il dit l'ORDRE, ce qu'un titre seul ne
+   fait pas, et c'est un formulaire qu'on remplit de haut en bas. */
+.bloc-num {
+  flex: none;
+  width: 30px; height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--encre);
+  color: var(--fond);
+  font-family: var(--sans);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+/* ---------- Bloc 1 : cafe, machine, recette sur une rangee ----------
+   La grille elle-meme est .saisie-tete, plus haut dans ce fichier. */
+
+/* Le controle segmente de la machine : deux positions, la retenue posee sur le
+   panneau clair avec une legere ombre, comme une touche enfoncee a l'envers. */
+.choix-methode {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--panneau-2);
+  border-radius: var(--rayon-petit);
+}
+.btn-methode {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: calc(var(--hauteur-controle) - 6px);
+  border: none;
+  border-radius: calc(var(--rayon-petit) - 2px);
+  background: transparent;
+  color: var(--attenue);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.btn-methode::before {
+  content: "";
+  width: 9px; height: 9px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.45;
+}
+.btn-methode.brikka::before { background: var(--brikka); opacity: 1; }
+.btn-methode.switch::before { background: var(--switch); opacity: 1; }
+.btn-methode[aria-pressed="true"] {
+  background: var(--panneau);
+  color: var(--encre);
+  box-shadow: 0 1px 3px rgba(38, 25, 15, 0.13);
+}
+
+/* ---------- Bloc 2 : trois colonnes, et un pied de bloc ---------- */
+.saisie-bloc .grille-nombres {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px 18px;
+}
+.saisie-bloc .grille-nombres > * { min-width: 0; }
+
+/* Les options a cocher sur une ligne en pointilles : elles ne sont pas des
+   champs, elles ne doivent pas ressembler a des champs. */
+.option-saisie {
+  border-top: 1px dashed var(--lignes);
+  padding-top: 10px;
+  margin-top: 4px;
+}
+
+/* Le pied de bloc : ratio, microns, cout, cafeine. Filet en haut, fond
+   transparent : c'est un RESULTAT, pas une carte de plus. */
+.bandeau-live {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 26px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--lignes);
+  background: none;
+  font-size: 0.78rem;
+  color: var(--attenue);
+}
+.bandeau-live b {
+  display: block;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 1.25rem;
+  color: var(--encre);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Bloc 3 : la note en stepper ---------- */
+.stepper-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  max-width: 230px;
+  height: 64px;
+  padding: 0 8px;
+  border: 1px solid var(--lignes);
+  border-radius: var(--rayon-petit);
+  background: var(--panneau-2);
+}
+.stepper-btn {
+  width: 42px; height: 42px;
+  flex: none;
+  border: 1px solid var(--lignes);
+  border-radius: var(--rayon-petit);
+  background: var(--panneau);
+  color: var(--encre);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+}
+.stepper-btn:hover { border-color: var(--accent); color: var(--accent); }
+.stepper-valeur {
+  flex: 1;
+  text-align: center;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 1.75rem;
+  color: var(--encre);
+  font-variant-numeric: tabular-nums;
+}
+/* Tant que « pas encore notee » est cochee, le chiffre s'efface. Les boutons
+   restent actifs : c'est en appuyant qu'on decide de noter. */
+.stepper-inactif .stepper-valeur { font-size: 0.86rem; color: var(--attenue); font-family: var(--sans); }
+
+/* ---------- Le chrono, dans la colonne de droite ---------- */
+.chrono-bloc { margin-bottom: 0; }
+.chrono-bloc .chrono-grand {
+  font-family: var(--serif);
+  font-size: 3.6rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- La barre d'action ---------- */
+.saisie-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.btn-grand { min-height: 52px; padding-inline: 26px; }
+.saisie-rappel { font-size: 0.78rem; color: var(--attenue); }
+
+/* ---------- Telephone ---------- */
+@media (max-width: 1023px) {
+  #ecran-saisie { grid-template-columns: 1fr; }
+  .saisie-aside { position: static; }
+  /* Le chrono remonte EN HAUT et reste visible au defilement : pendant une
+     extraction c'est la seule chose qui compte, et elle etait en bas de page. */
+  .saisie-aside .chrono-bloc {
+    order: -1;
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sommaire);
+  }
+  .chrono-bloc .chrono-grand { font-size: 2.5rem; }
+  .saisie-bloc .grille-nombres { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  /* La barre d'action reste sous la main, au dessus de la barre de navigation. */
+  .saisie-actions {
+    position: sticky;
+    bottom: calc(var(--barre-basse) + 8px);
+    padding: 12px;
+    margin: 0 -12px;
+    background: color-mix(in srgb, var(--fond) 92%, transparent);
+    backdrop-filter: blur(8px);
+    border-radius: var(--rayon);
+  }
+  .btn-grand { min-height: 54px; flex: 1; }
+}
+@media (max-width: 560px) {
+  .saisie-bloc .grille-nombres { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stepper-note { max-width: none; }
 }

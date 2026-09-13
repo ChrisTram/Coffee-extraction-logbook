@@ -692,6 +692,30 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("chaque aria-label statique a sa traduction", nonTraduits.length === 0, nonTraduits.join(", "));
 }
 
+/* L'AFFICHAGE DE LA NOTE PASSE PAR UNE SEULE FONCTION.
+
+   La reprise de brouillon ecrivait #note-affichee a la main, avec la valeur
+   brute du champ. Elle ignorait donc « pas encore notee » : apres reprise d'un
+   brouillon non note, l'ecran annoncait « 5 » alors que l'enregistrement allait
+   ranger la tasse comme NON NOTEE. Le curseur etant lui aussi pose sur 5, rien
+   ne trahissait l'ecart, et ce sont les moyennes qui en dependaient.
+
+   La regle : un seul endroit ecrit cet element. Tout autre code qui y touche
+   est un second avis sur la meme question, et c'est comme ca qu'ils divergent. */
+{
+  const saisie = readFileSync(join(ROOT, "js/ui-saisie.js"), "utf8");
+  const autres = ["js/ui-brouillon.js", "js/app.js", "js/ui-historique.js", "js/ui-tableau.js"]
+    .filter(f => /\$\("#note-affichee"\)\s*\.\s*textContent\s*=/.test(readFileSync(join(ROOT, f), "utf8")));
+  check("un seul fichier ecrit #note-affichee, et c'est celui de la saisie",
+    autres.length === 0, autres.join(", "));
+  const ecritures = (saisie.match(/\$\("#note-affichee"\)\s*\.\s*textContent\s*=/g) || []).length;
+  check("et il ne l'ecrit qu'a un seul endroit", ecritures === 1, String(ecritures));
+
+  /* Et cet endroit doit regarder la case, sinon la fonction officielle ment
+     autant que la ligne qu'elle remplace. */
+  check("l'affichage de la note tient compte de « pas encore notee »",
+    /function majAffichageNote\(\)[\s\S]{0,400}f-note-vide/.test(saisie));
+}
 /* AUCUN BOUTON MORT.
 
    "Charger la demonstration", sur le tableau de bord vide, ne faisait rien

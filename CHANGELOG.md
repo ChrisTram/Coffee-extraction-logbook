@@ -454,6 +454,15 @@ pourquoi est dans `DECISIONS.md`.
   Guide (boutiques, achats, messages vietnamiens), correction du bug
   d'avertissement au préremplissage.
 - v1 : site initial, 4 écrans, 2 CSV, démo, Chart.js local, thèmes.
+## 8.3
+
+Refonte « Comptoir », étape 4 sur 8 : la saisie. Deux colonnes, trois blocs
+numérotés, contrôle segmenté pour la machine, pied de bloc pour ratio, microns,
+coût et caféine. Le chrono passe dans la colonne fixe de droite, et devient un
+bandeau collant sur téléphone. La note passe du curseur au stepper par demi
+points. Un bug trouvé au passage : la reprise de brouillon affichait une note
+sur une tasse enregistrée comme non notée.
+
 ## 8.2
 
 Refonte « Comptoir », étape 3 sur 8 : le tableau de bord. Quatre rangées sur

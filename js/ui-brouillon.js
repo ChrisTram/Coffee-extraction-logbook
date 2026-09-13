@@ -103,7 +103,13 @@
     $$("#f-diagnostic .pilule").forEach(x => basculerEtat(x, saisie.diagnostics.has(x.dataset.diag)));
     $$("#f-descripteurs .tag").forEach(x => basculerEtat(x, saisie.descripteurs.has(x.dataset.tag)));
 
-    $("#note-affichee").textContent = $("#f-note").value;
+    /* PAR LA FONCTION OFFICIELLE, pas a la main. Cette ligne ecrivait
+        directement la valeur du champ, en ignorant « pas encore notee » : apres
+        la reprise d'un brouillon non note, l'ecran annoncait « 5 » sur une tasse
+        que l'enregistrement allait ranger comme NON NOTEE. Le curseur etant lui
+        aussi pose sur 5, rien ne trahissait l'ecart. Elle oubliait aussi le
+        « / 10 » et l'etat inactif du stepper. */
+     UI.majAffichageNote();
     $("#f-eau-ajoutee").hidden = !$("#f-ajout-eau-oui").checked;
     UI.majCorrectionDiagnostic();
     UI.majAvertissements();

@@ -7,8 +7,8 @@
 <!-- Version du site, source unique : le pied de page la lit, et les fichiers
      chargés à la demande la mettent dans leur URL. Se pose avec
      node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="8.2">
-<link rel="stylesheet" href="css/styles.css?v=8.2">
+<meta name="app-version" content="8.3">
+<link rel="stylesheet" href="css/styles.css?v=8.3">
 <!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
      SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
      parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
@@ -225,8 +225,14 @@
   <div class="saisie-layout">
   <form id="form-saisie" autocomplete="off">
     <div class="saisie-entete">
-      <h2 id="saisie-titre">Nouvelle extraction</h2>
-      <div class="champ champ-datetime">
+      <div class="tete-titres">
+        <!-- #saisie-titre reste l'identifiant que le JS ecrit : « Nouvelle
+             extraction », « Modifier l'extraction », « Extraction dupliquée ».
+             C'est la surligne qui dit ce qu'on fait, le titre ne bouge pas. -->
+        <p class="surligne" id="saisie-titre">Nouvelle extraction</p>
+        <h2 class="titre-page">Une tasse de plus</h2>
+      </div>
+      <div class="champ champ-datetime tete-actions">
         <label for="f-date">Date et heure</label>
         <input type="datetime-local" id="f-date">
       </div>
@@ -238,7 +244,7 @@
          puis ce qu'on a en bouche. Avant, dix-huit champs se suivaient sans
          respiration et Chris ne savait plus où poser les yeux. -->
     <section class="saisie-bloc">
-    <h3 class="saisie-bloc-titre">Le café et la recette</h3>
+    <h3 class="saisie-bloc-titre"><span class="bloc-num" aria-hidden="true">1</span>Le café et la recette</h3>
     <div class="saisie-tete">
     <div class="champ">
       <label for="f-cafe">Café</label>
@@ -271,8 +277,21 @@
 
     <!-- UNE seule grille pour tous les champs chiffrés : deux grilles côte à
          côte laissaient des cellules vides en fin de chacune. -->
-    <section class="saisie-bloc">
-    <h3 class="saisie-bloc-titre">Les réglages</h3>
+
+
+    <div class="saisie-actions">
+      <button type="submit" class="btn btn-primaire btn-grand" id="btn-enregistrer">Enregistrer la tasse</button>
+      <span class="saisie-rappel">Brouillon gardé si tu quittes l'onglet.</span>
+      <button type="button" class="btn btn-discret" id="btn-annuler-edition" hidden>Annuler la modification</button>
+    </div>
+  </form>
+
+  <aside class="saisie-aside" aria-label="Chrono, recette et café sélectionnés">
+    <!-- Le chrono vit ICI depuis la refonte Comptoir : c'est ce qu'on regarde
+         pendant que l'extraction coule, pas un champ a remplir. Sur telephone il
+         redevient un bandeau fixe en haut de l'ecran. -->
+    <section class="carte carte-sombre chrono-bloc">
+    <h3 class="saisie-bloc-titre"><span class="bloc-num" aria-hidden="true">2</span>Les réglages</h3>
     <div class="grille-nombres">
       <div class="champ">
         <label id="lbl-dose" for="f-dose">Dose (g)<span class="requis" title="Obligatoire">*</span></label>
@@ -421,12 +440,20 @@
     </div>
 
     <section class="saisie-bloc">
-    <h3 class="saisie-bloc-titre">En bouche</h3>
+    <h3 class="saisie-bloc-titre"><span class="bloc-num" aria-hidden="true">3</span>En bouche</h3>
     <div class="champ">
       <!-- La note est FACULTATIVE : Chris enregistre souvent l'extraction en
            sortant la tasse et revient noter après l'avoir bue. -->
-      <label for="f-note">Note : <b id="note-affichee">pas encore notée</b></label>
-      <input type="range" id="f-note" min="0" max="10" step="0.5" value="5" class="curseur-note">
+      <span class="label" id="lbl-note">Note</span>
+      <div class="stepper-note" role="group" aria-labelledby="lbl-note">
+        <button type="button" class="stepper-btn" id="note-moins" aria-label="Baisser la note d'un demi point">&minus;</button>
+        <b class="stepper-valeur" id="note-affichee">pas encore notée</b>
+        <button type="button" class="stepper-btn" id="note-plus" aria-label="Monter la note d'un demi point">+</button>
+      </div>
+      <!-- Le range reste, cache : c'est lui la valeur. Le brouillon, le
+           chargement d'une extraction et l'enregistrement le lisent tous, et
+           n'ont donc rien a apprendre du stepper. -->
+      <input type="hidden" id="f-note" value="5">
       <label class="label-inline"><input type="checkbox" id="f-note-vide" checked> Pas encore notée, je reviendrai</label>
     </div>
 
@@ -455,14 +482,6 @@
     </div>
 
     </section>
-
-    <div class="saisie-actions">
-      <button type="submit" class="btn btn-primaire btn-grand" id="btn-enregistrer">Enregistrer l'extraction</button>
-      <button type="button" class="btn" id="btn-annuler-edition" hidden>Annuler la modification</button>
-    </div>
-  </form>
-
-  <aside class="saisie-aside" aria-label="Recette et café sélectionnés">
     <div class="carte aside-carte" id="aside-recette"></div>
     <div class="carte aside-carte" id="aside-cafe"></div>
   </aside>
@@ -1375,28 +1394,28 @@ Cảm ơn shop.</pre>
 <!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
      et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
      desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=8.2"></script>
-<script defer src="js/i18n.js?v=8.2"></script>
-<script defer src="js/grind.js?v=8.2"></script>
-<script defer src="js/recettes.js?v=8.2"></script>
+<script defer src="js/outils.js?v=8.3"></script>
+<script defer src="js/i18n.js?v=8.3"></script>
+<script defer src="js/grind.js?v=8.3"></script>
+<script defer src="js/recettes.js?v=8.3"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=8.2"></script>
-<script defer src="js/data-csv.js?v=8.2"></script>
-<script defer src="js/data-schema.js?v=8.2"></script>
-<script defer src="js/data-store.js?v=8.2"></script>
-<script defer src="js/data-calculs.js?v=8.2"></script>
-<script defer src="js/data-migrations.js?v=8.2"></script>
-<script defer src="js/data.js?v=8.2"></script>
-<script defer src="js/reglages.js?v=8.2"></script>
-<script defer src="js/charts.js?v=8.2"></script>
-<script defer src="js/ui-noyau.js?v=8.2"></script>
-<script defer src="js/ui-tableau.js?v=8.2"></script>
-<script defer src="js/ui-saisie.js?v=8.2"></script>
-<script defer src="js/ui-brouillon.js?v=8.2"></script>
-<script defer src="js/ui-rapide.js?v=8.2"></script>
-<script defer src="js/ui-historique.js?v=8.2"></script>
-<script defer src="js/ui-guide.js?v=8.2"></script>
-<script defer src="js/ui-catalogue.js?v=8.2"></script>
-<script defer src="js/app.js?v=8.2"></script>
+<script defer src="js/sync.js?v=8.3"></script>
+<script defer src="js/data-csv.js?v=8.3"></script>
+<script defer src="js/data-schema.js?v=8.3"></script>
+<script defer src="js/data-store.js?v=8.3"></script>
+<script defer src="js/data-calculs.js?v=8.3"></script>
+<script defer src="js/data-migrations.js?v=8.3"></script>
+<script defer src="js/data.js?v=8.3"></script>
+<script defer src="js/reglages.js?v=8.3"></script>
+<script defer src="js/charts.js?v=8.3"></script>
+<script defer src="js/ui-noyau.js?v=8.3"></script>
+<script defer src="js/ui-tableau.js?v=8.3"></script>
+<script defer src="js/ui-saisie.js?v=8.3"></script>
+<script defer src="js/ui-brouillon.js?v=8.3"></script>
+<script defer src="js/ui-rapide.js?v=8.3"></script>
+<script defer src="js/ui-historique.js?v=8.3"></script>
+<script defer src="js/ui-guide.js?v=8.3"></script>
+<script defer src="js/ui-catalogue.js?v=8.3"></script>
+<script defer src="js/app.js?v=8.3"></script>
 </body>
 </html>
