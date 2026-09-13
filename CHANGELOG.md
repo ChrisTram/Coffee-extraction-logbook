@@ -5,6 +5,11 @@ de page du site est celui du `<meta name="app-version">` d'`index.html`, posé
 par `node tools/bump_version.mjs X`. Chaque entrée dit CE QUI a changé ; le
 pourquoi est dans `DECISIONS.md`.
 
+- v7.96 : le pied du bloc des réglages est allégé. Les options à cocher
+  (agitation, ajout d'eau, eau préchauffée) deviennent une ligne discrète, case,
+  libellé et aide grise sous un simple filet, au lieu d'une carte pleine ; la
+  ligne live (ratio, mouture, coût) devient un vrai pied de carte, fond
+  transparent, filet en haut, valeurs en serif comme les chiffres clés.
 - v7.95 : la case « eau préchauffée » est toujours visible sur la Brikka ; sur la
   famille Brikka classique, la cocher bascule sur la variante à l'eau préchauffée
   et la décocher revient à la Standard, et choisir la recette coche la case : une

@@ -777,10 +777,36 @@ input:focus, select:focus, textarea:focus {
 /* La ligne live devient le PIED du bloc des réglages : c'est le résumé de ce
    qu'on vient de régler, à sa place juste dessous. */
 .saisie-bloc .bandeau-live {
-  margin: 4px -18px 0;
-  border-radius: 0 0 var(--rayon) var(--rayon);
+  margin: 12px -18px 0;
+  padding: 12px 18px;
+  /* Un pied de carte, pas un second bandeau : fond transparent, un filet en
+     haut, les libellés discrets et les valeurs en serif comme les chiffres clés
+     du tableau de bord. */
+  background: transparent;
+  border-radius: 0;
   border-top: 1px solid var(--lignes);
+  gap: 8px 30px;
+  font-size: 0.82rem;
 }
+.saisie-bloc .bandeau-live b {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-left: 2px;
+}
+/* Les options à cocher, sur UNE ligne discrète : case, libellé, aide grise, au
+   lieu d'une carte pleine qui pesait autant que la grille au-dessus. */
+.saisie-bloc .option-saisie {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px dashed var(--lignes);
+}
+.saisie-bloc .option-saisie .label-inline { font-weight: 600; }
+.saisie-bloc .option-saisie .champ-hint { flex: 1 1 200px; }
 .saisie-bloc .grille-nombres { margin-bottom: 14px; }
 .saisie-bloc .options-saisie { margin-bottom: 4px; }
 .saisie-bloc .tasses-editeur { margin-bottom: 14px; }
