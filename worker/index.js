@@ -336,14 +336,14 @@ function loginPage(target, error) {
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%98%95%3C/text%3E%3C/svg%3E">
 <style>
   :root {
-    --fond: #171009;
-    --panneau: #221709;
+    --fond: #241a10;
+    --panneau: #31241a;
     --encre: #f3e8d8;
-    --texte: #ddcdb9;
-    --attenue: #a3876f;
+    --texte: #dfd1bf;
+    --attenue: #b49a83;
     --accent: #d98741;
     --accent-fort: #eb9a52;
-    --lignes: #3c2a18;
+    --lignes: #4f3b28;
     --danger: #e06c5a;
     --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
     --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -358,7 +358,7 @@ function loginPage(target, error) {
     padding: 24px;
     font-family: var(--sans);
     color: var(--texte);
-    background: var(--fond) radial-gradient(1200px 600px at 80% -10%, #2a1c10 0%, #171009 55%);
+    background: var(--fond) radial-gradient(1200px 600px at 80% -10%, #3a2818 0%, #241a10 55%);
   }
   .carte {
     width: 100%;
@@ -390,7 +390,7 @@ function loginPage(target, error) {
     margin-bottom: 16px;
     font: inherit;
     color: var(--encre);
-    background: #1b1208;
+    background: #2a1e14;
     border: 1px solid var(--lignes);
     border-radius: 9px;
   }

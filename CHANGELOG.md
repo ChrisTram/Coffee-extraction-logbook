@@ -5,6 +5,11 @@ de page du site est celui du `<meta name="app-version">` d'`index.html`, posé
 par `node tools/bump_version.mjs X`. Chaque entrée dit CE QUI a changé ; le
 pourquoi est dans `DECISIONS.md`.
 
+- v7.97 : thème sombre éclairci. Le fond passe d'un brun presque noir à un brun
+  chaud, les panneaux se détachent de trois pas au lieu d'un, les filets et le
+  texte atténué gagnent en lisibilité, le texte principal est un peu moins blanc
+  pour ne pas éblouir. Barre d'état de la PWA, manifeste et page de connexion
+  suivent la même couleur de fond.
 - v7.96 : le pied du bloc des réglages est allégé. Les options à cocher
   (agitation, ajout d'eau, eau préchauffée) deviennent une ligne discrète, case,
   libellé et aide grise sous un simple filet, au lieu d'une carte pleine ; la

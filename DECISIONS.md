@@ -815,6 +815,19 @@ de Chris ajoutaient : le détail du lavé, les trois teintes de honey, les risqu
 du natural, l'anaerobic en tasse, le co-ferment, le décaféiné, et une
 correspondance procédé vers recette.
 
+### Le thème sombre n'est pas noir
+
+Le fond sombre était #171009, presque noir, et les panneaux #221709, à peine plus
+clairs : tout tirait vers le noir et Chris avait mal aux yeux. Depuis la v7.97 la
+palette monte d'un cran, fond #241a10, panneau #31241a, panneau secondaire
+#3c2d20, avec trois pas nets entre les trois pour que les cartes se lisent comme
+des cartes. Le texte principal descend d'un poil (#dfd1bf) parce qu'un blanc
+franc sur un fond plus clair éblouit par contraste, et le texte atténué monte
+(#b49a83) pour rester lisible sur les nouveaux panneaux, autour de 5,5:1. Les
+couleurs de données ne bougent pas. La même couleur de fond est recopiée dans le
+meta theme-color, le manifeste et la page de connexion du Worker : quatre
+endroits pour une couleur, à changer ensemble.
+
 ### Le formulaire de saisie en trois blocs
 
 Dix-huit champs se suivaient dans une seule colonne, café, deux gros boutons,
