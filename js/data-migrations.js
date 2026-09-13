@@ -37,7 +37,7 @@ const DATA_MIGRATIONS = (() => {
 
        Chaque pas ne touche QUE la valeur semée d'avant. Un pas qui écraserait un
        réglage choisi volontairement serait un bug, pas une migration. */
-    const SCHEMA_ACTUEL = 10;
+    const SCHEMA_ACTUEL = 11;
 
     // Rattrapage de la puissance de feu des recettes Brikka : l'échelle de Chris a
     // bougé deux fois, 3 puis 4 puis 2.
@@ -222,6 +222,20 @@ const DATA_MIGRATIONS = (() => {
         touche = true;
       });
       return touche;
+    } },
+
+    /* Le 4:00 d'usine des premières versions s'était ÉCRIT dans les réglages
+       synchronisés, donc le passage du défaut à zéro (v7.95) ne l'a jamais
+       effacé : Chris voyait toujours « elle bout en 4:00 ». Sa bouilloire fait
+       beaucoup de petites bulles au fond, dont quelques-unes remontent, vers
+       1:30 : c'est 85 à 90 degrés, et le gros bouillon suit d'une trentaine de
+       secondes, soit 2:00. Ciblé sur la valeur inventée uniquement : une
+       durée chronométrée à la main n'est pas touchée. */
+    { v: 11, nom: "bouilloire recalée de 4:00 a 2:00", appliquer: () => {
+      const r = reglagesCourants();
+      if (Number(r.ebullition_s) !== 240) return false;
+      state.reglages = [estampiller(normaliserReglages({ ...r, ebullition_s: 120 }))];
+      return true;
     } },
     ];
 

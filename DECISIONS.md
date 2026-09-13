@@ -408,6 +408,21 @@ premières petites bulles vers 1:45 ne sont pas l'ébullition : c'est l'air
 dissous qui sort de l'eau vers 60 ou 70 degrés. Le frémissement vient plus tard,
 et le bouillon franc après. C'est ce dernier repère qui cale le modèle linéaire.
 
+Suite, v7.98 : le 4:00 restait affiché, parce que la première version l'avait
+ÉCRIT dans la ligne `reglages` synchronisée ; changer le défaut ne change pas
+une valeur stockée. Chris a précisé son observation : vers 1:30, beaucoup de
+petites bulles au fond et quelques-unes qui remontent nettement. Ce n'est plus
+l'air dissous, c'est le début de l'ébullition sur le fond, avec une eau à 85 ou
+90 degrés en masse ; sur une petite bouilloire le gros bouillon suit d'une
+trentaine de secondes. Le linéaire depuis 28 degrés donne 100 vers 1:50, et la
+montée ralentit près de l'ébullition, donc 2:00. Un pas de schéma (v11) remplace
+240 par 120, et seulement 240 : une durée chronométrée à la main n'est jamais
+écrasée. La parenthèse « elle bout en 4:00 » disparaît de l'aide sous le champ :
+le temps d'ébullition se lit dans Paramètres, le répéter à chaque tasse ne
+servait qu'à afficher un chiffre douteux. L'aide de la carte Ma bouilloire
+donne désormais le repère intermédiaire (petites bulles, 85 à 90 degrés) plutôt
+que la phrase sur l'air dissous, qui décrivait un autre stade.
+
 ### La température du Switch par le temps de chauffe
 
 Chris n'a pas de thermomètre, et il a toujours la même bouilloire sur le même
@@ -419,8 +434,8 @@ dépend pas de l'observateur. Remplacé en v7.93.
 
 Le modèle est le plus simple possible et il est écrit tel quel dans
 `recettes.js` : montée linéaire de l'eau du robinet, 28 °C au Vietnam, à 100 °C
-au temps d'ébullition de la bouilloire, réglé dans Paramètres (4:00 par défaut,
-à chronométrer une fois). Une vraie bouilloire monte un peu moins vite près de
+au temps d'ébullition de la bouilloire, réglé dans Paramètres (zéro tant qu'il
+n'est pas chronométré, 2:00 chez Chris). Une vraie bouilloire monte un peu moins vite près de
 l'ébullition à cause des pertes, donc le linéaire surestime de deux ou trois
 degrés vers 90 : c'est en dessous de ce que Chris peut goûter, et surtout c'est
 la même erreur à chaque tasse, ce qui est tout ce qu'on demande à une mesure de

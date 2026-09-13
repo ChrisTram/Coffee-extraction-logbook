@@ -7,7 +7,7 @@ choix, les bugs trouvés et le raisonnement qui a mené là vivent dans
 qu'on touche. L'historique des versions est dans `CHANGELOG.md`. Commencer par
 `START-HERE.md` si tu arrives sans contexte.
 
-Dernière mise à jour : v7.97, 2026-09-13.
+Dernière mise à jour : v7.98, 2026-09-13.
 
 ## 1. Vue d'ensemble
 
@@ -429,7 +429,8 @@ Points fixés depuis, chacun expliqué dans `DECISIONS.md` :
 - La température du SWITCH se déduit du temps passé par la bouilloire sur le
   feu (`f-chauffe-min` et `-sec`, stocké dans `chauffe_s`) : montée linéaire de
   28 à 100 °C au temps d'ébullition de la bouilloire (`reglages.ebullition_s`,
-  Paramètres, carte Ma bouilloire, 4:00 par défaut). Fonctions pures
+  Paramètres, carte Ma bouilloire, zéro par défaut ; le pas de schéma v11 recale
+  le 4:00 inventé des premières versions sur 2:00). Fonctions pures
   `temperatureDepuisChauffe` et `chauffePourTemperature` dans `recettes.js`. Le
   degré estimé s'écrit dans `f-temp`, reste modifiable et reste la valeur
   stockée ; l'aide sous le champ dit combien de temps viser pour la cible de la

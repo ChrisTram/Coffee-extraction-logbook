@@ -527,6 +527,19 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("mais seulement les pas manquants : le feu de b1 avait deja ete traite",
     par("b1").puissance_feu === 4, par("b1").puissance_feu);
 
+  /* Pas v11 : le 4:00 d'usine ecrit dans les reglages synchronises passe a 2:00.
+     Une duree chronometree a la main (300) n'est pas touchee. */
+  avant();
+  DATA.state.reglages = [DATA.normaliserReglages({ schema_version: 10, ebullition_s: 240 })];
+  DATA.migrerDonnees();
+  check("le 4:00 invente passe a 2:00", Number(DATA.reglagesCourants().ebullition_s) === 120,
+    String(DATA.reglagesCourants().ebullition_s));
+  avant();
+  DATA.state.reglages = [DATA.normaliserReglages({ schema_version: 10, ebullition_s: 300 })];
+  DATA.migrerDonnees();
+  check("une bouilloire chronometree a la main n'est pas ecrasee", Number(DATA.reglagesCourants().ebullition_s) === 300,
+    String(DATA.reglagesCourants().ebullition_s));
+
   // Plus aucun drapeau par appareil dans la couche de donnees.
   const data = SOURCE_DATA;
   const bloc = data.slice(data.indexOf("const PAS_DE_SCHEMA"), data.indexOf("function migrerDonnees"));

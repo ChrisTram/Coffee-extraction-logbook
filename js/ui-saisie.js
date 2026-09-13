@@ -314,9 +314,9 @@
     // Bouilloire jamais chronométrée : on le dit, on n'invente pas de degrés.
     if (!(e > 0)) { poserTexte(hint, I18N.t("temp_sans_bouilloire")); return; }
     if (s !== "") {
-      poserTexte(hint, I18N.t("temp_estimee", { d: fmtTemps(s), t: temperatureDepuisChauffe(s, e), e: fmtTemps(e) }));
+      poserTexte(hint, I18N.t("temp_estimee", { d: fmtTemps(s), t: temperatureDepuisChauffe(s, e) }));
     } else if (t !== "") {
-      poserTexte(hint, I18N.t("temp_conseil", { t, d: fmtTemps(chauffePourTemperature(t, e)), e: fmtTemps(e) }));
+      poserTexte(hint, I18N.t("temp_conseil", { t, d: fmtTemps(chauffePourTemperature(t, e)) }));
     } else {
       poserTexte(hint, "");
     }
