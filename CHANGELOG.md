@@ -454,6 +454,14 @@ pourquoi est dans `DECISIONS.md`.
   Guide (boutiques, achats, messages vietnamiens), correction du bug
   d'avertissement au préremplissage.
 - v1 : site initial, 4 écrans, 2 CSV, démo, Chart.js local, thèmes.
+## 8.8
+
+Corrige la navigation : l'écran de saisie restait affiché en permanence et les
+autres s'empilaient dessous au lieu de le remplacer. Sa mise en page en grille
+visait `#ecran-saisie` sans `.actif`, et un sélecteur d'identifiant bat la
+classe qui masque les écrans inactifs. Un test refuse désormais ce genre de
+règle.
+
 ## 8.7
 
 Refonte « Comptoir », étape 8 sur 8 : les deux thèmes vérifiés écran par écran.

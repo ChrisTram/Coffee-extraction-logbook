@@ -72,6 +72,22 @@ validée sur maquette, la police n'a pas été changée unilatéralement ; Manro
 lui, embarque bien le vietnamien, donc tout le texte courant est propre. À
 revoir avec Chris s'il trouve ça laid.
 
+**Le basculement d'écran ne tient qu'à la spécificité, et ça a cassé.** Toute la
+navigation repose sur deux lignes : `.ecran { display: none }` puis
+`.ecran.actif { display: block }`. La mise en page de la saisie a été écrite
+`#ecran-saisie { display: grid }`, et un sélecteur d'identifiant bat une classe :
+le `display: none` ne s'appliquait plus, la saisie restait affichée en permanence
+et les autres écrans s'empilaient dessous au lieu de la remplacer.
+
+Les cinq suites étaient vertes et l'audit de contraste aussi, parce qu'aucun des
+deux ne regarde QUEL écran est visible. Le harnais de `boot.test.mjs` n'a pas de
+CSS du tout, et l'audit mesurait chaque écran après l'avoir activé, sans jamais
+vérifier que le précédent avait disparu.
+
+Un test refuse maintenant toute règle qui pose un `display` sur un `#ecran-*`
+sans exiger `.actif`. La règle, pas le cas : n'importe quel écran referait la
+même panne demain.
+
 **La carte sombre redéfinit ses JETONS, elle n'habille pas ses descendants.**
 Première version fausse, et pas qu'un peu : en thème clair, `.carte-sombre` pose
 un fond `--encre` mais tout son contenu continuait d'écrire en `--encre`. Encre

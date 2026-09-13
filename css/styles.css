@@ -2628,7 +2628,11 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 /* Deux colonnes : le formulaire, puis une colonne FIXE de 360 px qui suit le
    defilement. C'est la que vivent le chrono, la fiche recette et la fiche cafe,
    parce qu'on les LIT pendant qu'on remplit le formulaire, on ne les remplit pas. */
-#ecran-saisie {
+/* .actif EST OBLIGATOIRE ICI. Sans lui, ce selecteur d identifiant (1,0,0)
+   battait .ecran { display: none } (0,1,0) : la saisie restait affichee en
+   permanence et les autres ecrans s empilaient dessous. Toute regle qui pose un
+   display sur un #ecran-* doit porter .actif. */
+#ecran-saisie.actif {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
   gap: var(--ecart-cartes);
@@ -2824,7 +2828,7 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 
 /* ---------- Telephone ---------- */
 @media (max-width: 1023px) {
-  #ecran-saisie { grid-template-columns: 1fr; }
+  #ecran-saisie.actif { grid-template-columns: 1fr; }
   .saisie-aside { position: static; }
   /* Le chrono remonte EN HAUT et reste visible au defilement : pendant une
      extraction c'est la seule chose qui compte, et elle etait en bas de page. */

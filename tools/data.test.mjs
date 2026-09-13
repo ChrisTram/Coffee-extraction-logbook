@@ -720,6 +720,37 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("l'affichage de la note tient compte de « pas encore notee »",
     /function majAffichageNote\(\)[\s\S]{0,400}f-note-vide/.test(saisie));
 }
+/* LE BASCULEMENT D'ECRAN NE TIENT QU'A LA SPECIFICITE.
+
+   Deux lignes font toute la navigation :
+     .ecran { display: none }   puis   .ecran.actif { display: block }
+   Un selecteur d'IDENTIFIANT vaut plus qu'une classe. Une regle qui pose un
+   display sur un #ecran-* sans exiger .actif bat donc le display:none, et cet
+   ecran reste affiche pour toujours : les suivants s'empilent dessous au lieu
+   de le remplacer. C'est exactement ce qu'a fait #ecran-saisie { display: grid }
+   a la refonte Comptoir, et rien dans les cinq suites ne le voyait.
+
+   Le controle porte sur la REGLE : n'importe quel ecran referait la panne. */
+{
+  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, " ");
+  const fautifs = [];
+  /* Chaque bloc du fichier : son selecteur, puis ses declarations. */
+  for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const selecteur = m[1].trim(), corps = m[2];
+    if (!/(^|[\s,])display\s*:/.test(corps)) continue;
+    for (const part of selecteur.split(",")) {
+      const sel = part.trim();
+      if (!/#ecran-[\w-]+/.test(sel)) continue;
+      /* Le display peut viser un DESCENDANT de l ecran sans souci : seul le
+         selecteur qui se termine sur l ecran lui-meme fait la panne. */
+      if (!/#ecran-[\w-]+[\w.:\[\]="-]*$/.test(sel)) continue;
+      if (!/\.actif\b/.test(sel)) fautifs.push(sel + " { display }");
+    }
+  }
+  check("aucune regle ne force l'affichage d'un ecran sans .actif",
+    fautifs.length === 0, fautifs.join(" | "));
+}
 /* AUCUN BOUTON MORT.
 
    "Charger la demonstration", sur le tableau de bord vide, ne faisait rien
