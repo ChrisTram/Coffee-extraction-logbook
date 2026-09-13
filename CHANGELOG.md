@@ -454,6 +454,14 @@ pourquoi est dans `DECISIONS.md`.
   Guide (boutiques, achats, messages vietnamiens), correction du bug
   d'avertissement au préremplissage.
 - v1 : site initial, 4 écrans, 2 CSV, démo, Chart.js local, thèmes.
+## 8.4
+
+Refonte « Comptoir », étape 5 sur 8 : la saisie rapide devient une feuille qui
+monte du bas, sur un voile qui la referme d’un appui n’importe où. Elle affiche
+l’heure d’enregistrement et les chiffres repris de la recette, qu’elle se
+contentait d’annoncer sans les dire. Le bouton flottant passe en icônes en trait
+et change de dessin au lieu de pivoter.
+
 ## 8.3
 
 Refonte « Comptoir », étape 4 sur 8 : la saisie. Deux colonnes, trois blocs

@@ -7,8 +7,8 @@
 <!-- Version du site, source unique : le pied de page la lit, et les fichiers
      chargés à la demande la mettent dans leur URL. Se pose avec
      node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="8.3">
-<link rel="stylesheet" href="css/styles.css?v=8.3">
+<meta name="app-version" content="8.4">
+<link rel="stylesheet" href="css/styles.css?v=8.4">
 <!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
      SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
      parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
@@ -1313,10 +1313,15 @@ Cảm ơn shop.</pre>
 </dialog>
 
 <!-- ================= SAISIE RAPIDE FLOTTANTE ================= -->
-<button id="fab-rapide" class="fab" title="Saisie rapide" aria-label="Saisie rapide">☕</button>
+<button id="fab-rapide" class="fab" title="Saisie rapide" aria-label="Saisie rapide"><svg class="fab-tasse" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 9.5h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M7 3.5v2M11 3.5v2"/></svg><svg class="fab-croix" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg></button>
+<div id="voile-rapide" class="voile-nav" hidden></div>
 <div id="panneau-rapide" class="panneau-rapide" role="dialog" aria-label="Saisie rapide">
+  <div class="feuille-poignee" aria-hidden="true"></div>
   <div class="rapide-entete">
-    <h3>Saisie rapide</h3>
+    <div>
+      <h3>Saisie rapide</h3>
+      <p class="rapide-quand" id="q-quand"></p>
+    </div>
     <button class="btn-icone" id="q-fermer" aria-label="Fermer">✕</button>
   </div>
   <div class="champ">
@@ -1326,6 +1331,9 @@ Cảm ơn shop.</pre>
   <div class="champ">
     <label for="q-recette">Recette</label>
     <select id="q-recette"></select>
+    <!-- Ce que la recette impose, en clair. La note de bas de panneau annoncait
+         que dose, eau et mouture etaient reprises sans jamais dire lesquelles. -->
+    <p class="rapide-repris" id="q-repris"></p>
   </div>
   <div class="champ">
     <label for="q-note">Note : <b id="q-note-affichee">5</b> / 10</label>
@@ -1340,7 +1348,7 @@ Cảm ơn shop.</pre>
     <button class="btn btn-primaire" id="q-enregistrer">Enregistrer</button>
     <button class="btn btn-discret" id="q-complet">Saisie complète</button>
   </div>
-  <p class="carte-note">Date : maintenant. Dose, eau, température et mouture reprennent la recette.</p>
+
 </div>
 
 <!-- ================= MODE PAS A PAS ================= -->
@@ -1394,28 +1402,28 @@ Cảm ơn shop.</pre>
 <!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
      et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
      desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=8.3"></script>
-<script defer src="js/i18n.js?v=8.3"></script>
-<script defer src="js/grind.js?v=8.3"></script>
-<script defer src="js/recettes.js?v=8.3"></script>
+<script defer src="js/outils.js?v=8.4"></script>
+<script defer src="js/i18n.js?v=8.4"></script>
+<script defer src="js/grind.js?v=8.4"></script>
+<script defer src="js/recettes.js?v=8.4"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=8.3"></script>
-<script defer src="js/data-csv.js?v=8.3"></script>
-<script defer src="js/data-schema.js?v=8.3"></script>
-<script defer src="js/data-store.js?v=8.3"></script>
-<script defer src="js/data-calculs.js?v=8.3"></script>
-<script defer src="js/data-migrations.js?v=8.3"></script>
-<script defer src="js/data.js?v=8.3"></script>
-<script defer src="js/reglages.js?v=8.3"></script>
-<script defer src="js/charts.js?v=8.3"></script>
-<script defer src="js/ui-noyau.js?v=8.3"></script>
-<script defer src="js/ui-tableau.js?v=8.3"></script>
-<script defer src="js/ui-saisie.js?v=8.3"></script>
-<script defer src="js/ui-brouillon.js?v=8.3"></script>
-<script defer src="js/ui-rapide.js?v=8.3"></script>
-<script defer src="js/ui-historique.js?v=8.3"></script>
-<script defer src="js/ui-guide.js?v=8.3"></script>
-<script defer src="js/ui-catalogue.js?v=8.3"></script>
-<script defer src="js/app.js?v=8.3"></script>
+<script defer src="js/sync.js?v=8.4"></script>
+<script defer src="js/data-csv.js?v=8.4"></script>
+<script defer src="js/data-schema.js?v=8.4"></script>
+<script defer src="js/data-store.js?v=8.4"></script>
+<script defer src="js/data-calculs.js?v=8.4"></script>
+<script defer src="js/data-migrations.js?v=8.4"></script>
+<script defer src="js/data.js?v=8.4"></script>
+<script defer src="js/reglages.js?v=8.4"></script>
+<script defer src="js/charts.js?v=8.4"></script>
+<script defer src="js/ui-noyau.js?v=8.4"></script>
+<script defer src="js/ui-tableau.js?v=8.4"></script>
+<script defer src="js/ui-saisie.js?v=8.4"></script>
+<script defer src="js/ui-brouillon.js?v=8.4"></script>
+<script defer src="js/ui-rapide.js?v=8.4"></script>
+<script defer src="js/ui-historique.js?v=8.4"></script>
+<script defer src="js/ui-guide.js?v=8.4"></script>
+<script defer src="js/ui-catalogue.js?v=8.4"></script>
+<script defer src="js/app.js?v=8.4"></script>
 </body>
 </html>

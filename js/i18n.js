@@ -232,6 +232,8 @@ const I18N = (() => {
     kpi_secondaires: { fr: "{n} tasses en tout, {g} sur 10 de moyenne, environ {c} mg de caféine par jour." },
     tb_derniere: { fr: "Dernière tasse, {q}" },
     tb_sur10: { fr: "sur 10" },
+    q_maintenant: { fr: "maintenant, {h}" },
+    q_repris: { fr: "{v} : repris de la recette" },
     tb_min: { fr: "il y a {n} min" },
     tb_heures: { fr: "il y a {n} h" },
     tb_jours: { fr: "il y a {n} j" },

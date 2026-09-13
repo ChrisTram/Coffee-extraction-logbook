@@ -72,6 +72,18 @@ validée sur maquette, la police n'a pas été changée unilatéralement ; Manro
 lui, embarque bien le vietnamien, donc tout le texte courant est propre. À
 revoir avec Chris s'il trouve ça laid.
 
+**La saisie rapide dit enfin ce qu’elle enregistre.** Sa note de bas de panneau
+annonçait « Dose, eau, température et mouture reprennent la recette » sans jamais
+dire LESQUELLES : il fallait connaître la recette par coeur pour savoir ce qu’on
+venait d’écrire en trois clics. Elle affiche maintenant les chiffres, avec la
+pastille de machine, qui était la seule information de méthode absente de cette
+feuille.
+
+**Le bouton flottant change de dessin, il ne tourne plus.** Une tasse pivotée de
+90 degrés ne dit pas « fermer », elle dit « tasse de travers ». Les deux icônes
+cohabitent dans le bouton et le CSS en cache une ; elles sont en trait, comme
+toute la navigation, l’emoji est parti.
+
 **Le chrono a quitté le formulaire.** Il vit maintenant dans la colonne fixe de
 droite, avec la fiche recette et la fiche café : ce sont des choses qu'on LIT
 pendant qu'on remplit, pas des champs. Le déménagement est sans risque parce que

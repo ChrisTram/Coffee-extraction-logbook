@@ -182,6 +182,8 @@ const I18N_EN = {
     kpi_secondaires: "{n} cups in all, {g} out of 10 on average, about {c} mg of caffeine a day.",
     tb_derniere: "Last cup, {q}",
     tb_sur10: "out of 10",
+    q_maintenant: "now, {h}",
+    q_repris: "{v}: taken from the recipe",
     tb_min: "{n} min ago",
     tb_heures: "{n} h ago",
     tb_jours: "{n} d ago",
