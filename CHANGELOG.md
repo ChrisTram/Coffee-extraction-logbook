@@ -454,6 +454,13 @@ pourquoi est dans `DECISIONS.md`.
   Guide (boutiques, achats, messages vietnamiens), correction du bug
   d'avertissement au préremplissage.
 - v1 : site initial, 4 écrans, 2 CSV, démo, Chart.js local, thèmes.
+## 8.6
+
+Refonte « Comptoir », étape 7 sur 8 : les écrans secondaires. Tête de page sur Mes
+meilleurs réglages, le Guide et les Paramètres, sommaire du guide en pastilles,
+titres de modale en serif sur le voile de la DA, et une hauteur de contrôle
+unique de 46 px posée sur la ligne de base des champs plutôt qu’écran par écran.
+
 ## 8.5
 
 Refonte « Comptoir », étape 6 sur 8 : l’historique. Tête de page avec le total et

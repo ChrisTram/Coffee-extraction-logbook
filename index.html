@@ -7,8 +7,8 @@
 <!-- Version du site, source unique : le pied de page la lit, et les fichiers
      chargés à la demande la mettent dans leur URL. Se pose avec
      node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="8.5">
-<link rel="stylesheet" href="css/styles.css?v=8.5">
+<meta name="app-version" content="8.6">
+<link rel="stylesheet" href="css/styles.css?v=8.6">
 <!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
      SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
      parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
@@ -589,13 +589,24 @@
 
 <!-- ================= ECRAN : MES REGLAGES ================= -->
 <section id="ecran-reglages" class="ecran">
-  <h2>Mes meilleurs réglages</h2>
+  <div class="tete-page">
+    <div class="tete-titres">
+      <p class="surligne">Ce qui marche le mieux</p>
+      <h2 class="titre-page">Mes meilleurs réglages</h2>
+    </div>
+  </div>
   <p class="ecran-intro">Pour chaque café, la combinaison qui a le mieux marché chez toi. Par café et pas en général : le meilleur réglage d'un café déjà moulu n'a rien à voir avec celui d'un café en grains.</p>
   <div id="reglages-liste"></div>
 </section>
 
 <!-- ================= ECRAN 4 : GUIDE (référence + achats) ================= -->
 <section id="ecran-guide" class="ecran">
+  <div class="tete-page">
+    <div class="tete-titres">
+      <p class="surligne">Recettes, moulin, diagnostic, boutiques</p>
+      <h2 class="titre-page">Guide</h2>
+    </div>
+  </div>
   <nav class="sommaire" aria-label="Sommaire du guide">
     <a href="#ref-moulin">Moulin</a>
     <a href="#ref-diagnostic">Diagnostic du goût</a>
@@ -1204,7 +1215,12 @@ Cảm ơn shop.</pre>
 
 <!-- ================= ECRAN 7 : PARAMETRES ================= -->
 <section id="ecran-parametres" class="ecran">
-  <h2>Paramètres</h2>
+  <div class="tete-page">
+    <div class="tete-titres">
+      <p class="surligne">Valeurs par défaut et préférences</p>
+      <h2 class="titre-page">Paramètres</h2>
+    </div>
+  </div>
   <p class="ecran-intro">Les valeurs pré-remplies quand tu ouvres une saisie. Elles appartiennent à la recette : c'est la même fiche que dans « Gérer les recettes », donc une seule vérité, et elle se synchronise entre tes appareils.</p>
 
   <article class="carte">
@@ -1419,28 +1435,28 @@ Cảm ơn shop.</pre>
 <!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
      et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
      desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=8.5"></script>
-<script defer src="js/i18n.js?v=8.5"></script>
-<script defer src="js/grind.js?v=8.5"></script>
-<script defer src="js/recettes.js?v=8.5"></script>
+<script defer src="js/outils.js?v=8.6"></script>
+<script defer src="js/i18n.js?v=8.6"></script>
+<script defer src="js/grind.js?v=8.6"></script>
+<script defer src="js/recettes.js?v=8.6"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=8.5"></script>
-<script defer src="js/data-csv.js?v=8.5"></script>
-<script defer src="js/data-schema.js?v=8.5"></script>
-<script defer src="js/data-store.js?v=8.5"></script>
-<script defer src="js/data-calculs.js?v=8.5"></script>
-<script defer src="js/data-migrations.js?v=8.5"></script>
-<script defer src="js/data.js?v=8.5"></script>
-<script defer src="js/reglages.js?v=8.5"></script>
-<script defer src="js/charts.js?v=8.5"></script>
-<script defer src="js/ui-noyau.js?v=8.5"></script>
-<script defer src="js/ui-tableau.js?v=8.5"></script>
-<script defer src="js/ui-saisie.js?v=8.5"></script>
-<script defer src="js/ui-brouillon.js?v=8.5"></script>
-<script defer src="js/ui-rapide.js?v=8.5"></script>
-<script defer src="js/ui-historique.js?v=8.5"></script>
-<script defer src="js/ui-guide.js?v=8.5"></script>
-<script defer src="js/ui-catalogue.js?v=8.5"></script>
-<script defer src="js/app.js?v=8.5"></script>
+<script defer src="js/sync.js?v=8.6"></script>
+<script defer src="js/data-csv.js?v=8.6"></script>
+<script defer src="js/data-schema.js?v=8.6"></script>
+<script defer src="js/data-store.js?v=8.6"></script>
+<script defer src="js/data-calculs.js?v=8.6"></script>
+<script defer src="js/data-migrations.js?v=8.6"></script>
+<script defer src="js/data.js?v=8.6"></script>
+<script defer src="js/reglages.js?v=8.6"></script>
+<script defer src="js/charts.js?v=8.6"></script>
+<script defer src="js/ui-noyau.js?v=8.6"></script>
+<script defer src="js/ui-tableau.js?v=8.6"></script>
+<script defer src="js/ui-saisie.js?v=8.6"></script>
+<script defer src="js/ui-brouillon.js?v=8.6"></script>
+<script defer src="js/ui-rapide.js?v=8.6"></script>
+<script defer src="js/ui-historique.js?v=8.6"></script>
+<script defer src="js/ui-guide.js?v=8.6"></script>
+<script defer src="js/ui-catalogue.js?v=8.6"></script>
+<script defer src="js/app.js?v=8.6"></script>
 </body>
 </html>

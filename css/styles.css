@@ -1264,12 +1264,18 @@ input[type="search"], select, textarea {
   border: 1px solid var(--lignes);
   color: var(--encre);
   border-radius: var(--rayon-petit);
-  padding: 10px 12px;
+  /* Hauteur de la DA : 46 px, 48 au doigt. Elle se pose ICI, sur la ligne de
+     base des champs, et non ecran par ecran : un controle plus court qu'un
+     autre a cote de lui est la premiere chose qu'on voit. textarea garde sa
+     hauteur propre, elle se mesure en lignes. */
+  min-height: var(--hauteur-controle);
+  padding: 10px 13px;
   font-size: 0.95rem;
   font-family: inherit;
   transition: border-color var(--transition), box-shadow var(--transition);
   width: 100%;
 }
+textarea { min-height: 56px; }
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--accent);
@@ -2927,3 +2933,75 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   .detail-bloc, .ligne-detail .detail-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .historique-filtres-actions { margin-left: 0; }
 }
+
+
+/* ==================================================================
+   REFONTE COMPTOIR, ETAPE 7 : LES ECRANS SECONDAIRES
+   ================================================================== */
+
+/* Les boutons suivent la hauteur des champs : cote a cote dans une meme ligne,
+   deux hauteurs differentes se voient immediatement. */
+.btn { min-height: var(--hauteur-controle); display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+.btn-petit { min-height: 34px; }
+.btn-grand { min-height: 52px; border-radius: var(--rayon-petit); }
+
+/* Les titres de modale en serif, comme les titres de page : une modale est un
+   ecran de plus, pas une boite de dialogue systeme. */
+.modale {
+  border-radius: var(--rayon);
+  padding: 26px 28px;
+  box-shadow: var(--ombre);
+}
+.modale h2 {
+  margin: 0 0 18px;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 1.65rem;
+  letter-spacing: -0.01em;
+  color: var(--encre);
+}
+.modale h3 {
+  font-size: 0.69rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--attenue);
+}
+/* Le voile de la DA, le meme que celui des feuilles. */
+.modale::backdrop { background: rgba(38, 25, 15, 0.35); backdrop-filter: blur(3px); }
+
+/* Le sommaire du guide, en pastilles comme les filtres de l'historique. */
+.sommaire {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 22px;
+  padding: 0;
+  background: none;
+  border: none;
+}
+.sommaire a {
+  padding: 7px 14px;
+  border: 1px solid var(--lignes);
+  border-radius: var(--rayon-pastille);
+  background: var(--panneau);
+  color: var(--texte);
+  text-decoration: none;
+  font-size: 0.84rem;
+}
+.sommaire a:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Les titres de section du guide et des parametres passent en serif : ce sont
+   des titres de contenu, pas des intertitres de bloc. */
+#ecran-guide h3,
+#ecran-parametres h3 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 1.3rem;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--encre);
+}
+
+/* Mes meilleurs reglages : une carte par cafe, au meme ecart que partout. */
+#reglages-liste { gap: var(--ecart-cartes); }
