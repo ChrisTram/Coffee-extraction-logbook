@@ -98,7 +98,10 @@
     $("#champ-ajout-eau").hidden = m !== "Brikka";
     $("#champ-puissance").hidden = m !== "Brikka";
     $("#champ-agitation").hidden = m !== "Switch";
-    // Le temps de chauffe n'a de sens qu'avec une bouilloire : jamais sur la Brikka.
+    /* La température entière est un champ du SWITCH. Sur la Brikka l'eau chauffe
+       dans la chaudière, il n'y a rien à mesurer avant : la seule question est
+       la case « eau préchauffée », et elle a son propre champ. */
+    $("#champ-temp").hidden = m !== "Switch";
     if ($("#ligne-chauffe")) $("#ligne-chauffe").hidden = m !== "Switch";
     majTempHint();
     // Tasse par défaut : Flat White Egg en Brikka, Classic Mug en Switch.
@@ -961,7 +964,8 @@
       dose_g: $("#f-dose").value,
       eau_g: $("#f-eau").value,
       mouture_dial: $("#f-mouture").value.trim().replace(/,/g, "."),
-      temperature_c: $("#f-temp").value,
+      // Brikka : ni température ni temps de chauffe, l'eau chauffe dans la chaudière.
+      temperature_c: saisie.methode === "Switch" ? $("#f-temp").value : "",
       chauffe_s: saisie.methode === "Switch" ? lireDuree("f-chauffe") : "",
       temps_total_s: lireDuree("f-total"),
       temps_ecoulement_s: lireDuree("f-ecoulement"),

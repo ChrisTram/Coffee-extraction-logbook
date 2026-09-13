@@ -563,7 +563,7 @@
       "<div class=\"derniere-infos\">" + fmtDateHeure(e.date_heure) + " · " + e.methode +
       (e.recette ? " · " + e.recette : "") +
       (e.diagnostic ? " · " + diagsAffiches(e.diagnostic) : "") + "</div>" +
-      mesuresDerniere(e) + "</div>" +
+      mesuresDerniere(e) + goutsDerniere(e) + commentaireDerniere(e) + "</div>" +
       (estRatee(e) ? '<span class="badge-ratee" title="' + attrTitre(I18N.t("rt_badge_titre")) + '">' + I18N.t("rt_badge") + "</span>" : "") +
       "<span class=\"derniere-note\">" + (e.note_sur_10 !== "" ? e.note_sur_10 + "<small>/10</small>" : "") + "</span></li>"
     ).join("");
@@ -595,6 +595,31 @@
     }
     if (!bouts.length) return "";
     return '<div class="derniere-mesures">' + bouts.join("<span>·</span>") + "</div>";
+  }
+
+  /* Les GOÛTS cochés, en petites pastilles, quatre au plus puis « +n ». La carte
+     avait la place et ne disait rien de ce que la tasse avait en bouche, alors que
+     c'est le sujet du carnet. Les valeurs stockées sont françaises, l'affichage
+     passe par I18N.tag. */
+  const MAX_GOUTS_DERNIERE = 4;
+  function goutsDerniere(e) {
+    const tags = String(e.descripteurs || "").split("|").filter(Boolean);
+    if (!tags.length) return "";
+    const visibles = tags.slice(0, MAX_GOUTS_DERNIERE).map(t => '<span class="derniere-tag">' + I18N.tag(t) + "</span>");
+    const reste = tags.length - visibles.length;
+    return '<div class="derniere-gouts">' + visibles.join("") +
+      (reste > 0 ? '<span class="derniere-tag derniere-tag-plus">+' + reste + "</span>" : "") + "</div>";
+  }
+
+  /* Le commentaire, en clair et tronqué, au lieu d'attendre le survol : c'est le
+     seul champ qui dit POURQUOI une tasse était bonne, et il fallait poser la
+     souris dessus pour le lire. Le survol garde le texte complet. */
+  const MAX_COMMENTAIRE_DERNIERE = 110;
+  function commentaireDerniere(e) {
+    const c = String(e.commentaire || "").trim();
+    if (!c) return "";
+    const court = c.length > MAX_COMMENTAIRE_DERNIERE ? c.slice(0, MAX_COMMENTAIRE_DERNIERE).replace(/\s+\S*$/, "") + "…" : c;
+    return '<div class="derniere-commentaire">' + attrTitre(court) + "</div>";
   }
 
   // Mis à disposition des autres écrans.

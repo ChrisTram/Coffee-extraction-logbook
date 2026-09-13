@@ -5,6 +5,12 @@ de page du site est celui du `<meta name="app-version">` d'`index.html`, posé
 par `node tools/bump_version.mjs X`. Chaque entrée dit CE QUI a changé ; le
 pourquoi est dans `DECISIONS.md`.
 
+- v7.94 : sur la Brikka le champ Température disparaît entièrement, rien n'est
+  enregistré, l'eau chauffe dans la chaudière et seule la case « eau
+  préchauffée » reste. Les cinq dernières extractions montrent leurs goûts cochés
+  et leur commentaire en clair, la carte restait à moitié vide. Le badge
+  « ratée » passe en sans-serif minuscules, il se lisait mal en petites capitales.
+  Première mise en ligne depuis la v7.80 : tout ce qui précède part avec.
 - v7.93 : la température du Switch se déduit du temps passé par la bouilloire
   sur le feu, saisi en minutes et secondes à la place du menu « petites bulles,
   frémissement » : montée linéaire de 28 à 100 °C au temps d'ébullition de la

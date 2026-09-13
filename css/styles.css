@@ -604,6 +604,25 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
   font-variant-numeric: tabular-nums;
 }
 .derniere-infos { font-size: 0.8rem; color: var(--attenue); }
+/* Goûts cochés et commentaire, sous les mesures : la carte avait la place et ne
+   disait rien de la tasse en bouche. */
+.derniere-gouts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.derniere-tag {
+  font-size: 0.7rem; line-height: 1.2;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--lignes);
+  background: var(--panneau-2);
+  color: var(--texte);
+}
+.derniere-tag-plus { color: var(--attenue); border-style: dashed; }
+.derniere-commentaire {
+  margin-top: 5px;
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--attenue);
+  line-height: 1.4;
+}
 /* Les mesures sur leur propre ligne, plus lisibles que le contexte au-dessus :
    ce sont elles qu'on compare d'une tasse à l'autre. Chiffres à chasse fixe pour
    qu'ils s'alignent d'une ligne sur l'autre, et séparateurs en flex plutôt qu'en
@@ -1233,10 +1252,13 @@ input:focus, select:focus, textarea:focus {
 
 .badge-ratee {
   display: inline-block;
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  /* Sans-serif, minuscules, sans espacement : en petites capitales serif avec
+     espacement, l'accent du E se lisait comme des points à côté du mot. */
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
   padding: 2px 7px;
   margin-right: 6px;
   border-radius: 999px;
