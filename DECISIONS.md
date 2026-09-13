@@ -316,6 +316,16 @@ enregistrer la tasse en la sortant, avant de l'avoir bue. Case « pas encore
 notée » cochée à chaque ouverture, curseur à 5 et grisé, toucher le curseur
 décoche, et le toast dit « pas encore notée » au lieu d'un chiffre.
 
+### Le brouillon a son fichier
+
+`ui-saisie.js` a repassé le plafond de 1 200 lignes en v7.93 avec le temps de
+chauffe. Plutôt que de relever le plafond, le brouillon (écriture, planification,
+restauration) est sorti dans `ui-brouillon.js`, chargé juste après : il ne
+partage avec l'écran que l'objet `saisie`, un objet muté en place donc sûr à
+emprunter, et les identifiants des champs. Il appelle l'écran par `UI.` et
+l'écran l'appelle par `UI.`, comme entre deux écrans. Un plafond qu'on relève à
+la première gêne n'est plus un plafond.
+
 ### Durées en minutes et secondes, et brouillon de saisie
 
 **Durées.** `temps_total_s` et `temps_ecoulement_s` restent stockés EN SECONDES,
@@ -373,7 +383,38 @@ doublon avec le choix de recette et permettrait d'enregistrer une contradiction.
 La valeur stockée se déduit alors de la recette, ce qui garde `eau_prechauffee`
 juste sur toute l'histoire. Elle reste visible sur les autres recettes Brikka.
 
-### Le select de température, aide de saisie et rien d'autre
+### La température du Switch par le temps de chauffe
+
+Chris n'a pas de thermomètre, et il a toujours la même bouilloire sur le même
+feu. Le menu de méthodes de chauffe (« petites bulles », « frémissement, 30 s de
+repos ») lui demandait un jugement à l'oeil à chaque tasse ; le TEMPS passé sur
+le feu, lui, se lit sur le chrono et se reproduit. C'est sa demande du
+13 septembre, et elle est juste : entre deux estimations, on prend celle qui ne
+dépend pas de l'observateur. Remplacé en v7.93.
+
+Le modèle est le plus simple possible et il est écrit tel quel dans
+`recettes.js` : montée linéaire de l'eau du robinet, 28 °C au Vietnam, à 100 °C
+au temps d'ébullition de la bouilloire, réglé dans Paramètres (4:00 par défaut,
+à chronométrer une fois). Une vraie bouilloire monte un peu moins vite près de
+l'ébullition à cause des pertes, donc le linéaire surestime de deux ou trois
+degrés vers 90 : c'est en dessous de ce que Chris peut goûter, et surtout c'est
+la même erreur à chaque tasse, ce qui est tout ce qu'on demande à une mesure de
+carnet. Le degré estimé s'écrit dans le champ température, qui reste modifiable
+et reste la valeur stockée ; le temps est stocké aussi (`chauffe_s`), c'est la
+mesure d'origine, et l'aide sous le champ fait l'inverse : « pour 92 °C, laisse
+la bouilloire 3:35 ».
+
+**Rien pour la Brikka**, et c'est Chris qui l'a précisé : elle part à l'eau
+froide, la seule option est la case « eau préchauffée », décochée par défaut.
+La ligne de chauffe est masquée dès qu'on choisit la Brikka, et la saisie
+n'enregistre un `chauffe_s` qu'en Switch. Le temps d'ébullition décrit le
+MATÉRIEL, donc il rejoint la table `reglages`, synchronisée, comme la molette.
+
+La section suivante décrit le menu remplacé ; elle reste parce que ses trois
+choix de conception (rien de stocké au-delà du degré, aide qui se remet à zéro,
+valeurs explicites) ont guidé celui-ci.
+
+### Le select de température, aide de saisie et rien d'autre (remplacé en v7.93)
 
 `#f-temp-preset` propose six méthodes de chauffe et écrit le degré correspondant
 dans `#f-temp`. La liste en comptait neuf en v7.34 : trop pour un champ qu'on

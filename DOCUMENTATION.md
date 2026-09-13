@@ -7,7 +7,7 @@ choix, les bugs trouvés et le raisonnement qui a mené là vivent dans
 qu'on touche. L'historique des versions est dans `CHANGELOG.md`. Commencer par
 `START-HERE.md` si tu arrives sans contexte.
 
-Dernière mise à jour : v7.92, 2026-09-13.
+Dernière mise à jour : v7.93, 2026-09-13.
 
 ## 1. Vue d'ensemble
 
@@ -52,7 +52,8 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/charts.js` | graphiques Chart.js (chargée à la demande), heatmap et réglette en SVG maison |
 | `js/ui-noyau.js` | outils d'interface partagés, thème, navigation. Définit `UI`. |
 | `js/ui-tableau.js` | tableau de bord, insights, calendrier |
-| `js/ui-saisie.js` | formulaire, chronomètre, brouillon |
+| `js/ui-saisie.js` | formulaire, chronomètre |
+| `js/ui-brouillon.js` | brouillon de saisie en localStorage, chargé après ui-saisie.js |
 | `js/ui-rapide.js` | panneau de saisie rapide |
 | `js/ui-historique.js` | tableau, filtres, tri, comparateur, écran Mes meilleurs réglages |
 | `js/ui-guide.js` | recettes de référence, pas à pas, moulin interactif |
@@ -137,7 +138,7 @@ actif`
 `id, date_heure, cafe_id, methode, recette, dose_g, eau_g, mouture_dial,
 temperature_c, temps_total_s, temps_ecoulement_s, volume_extrait_ml,
 eau_ajoutee_ml, lait_ml, agitation_nb, tasse, eau_prechauffee, note_sur_10,
-diagnostic, descripteurs, commentaire`
+diagnostic, descripteurs, commentaire, puissance_feu, ratee, chauffe_s`
 
 - Seule la dose est obligatoire en saisie (étoile rouge). Date auto si vide.
 - `volume_extrait_ml` : ancien nom `volume_tasse_ml`, accepté en lecture
@@ -147,6 +148,10 @@ diagnostic, descripteurs, commentaire`
   `volume_boisson_ml` = extrait + eau ajoutée + lait.
 - `agitation_nb` : Switch, vide si pas d'agitation, défaut 1 quand coché.
 - `eau_prechauffee` : Brikka, 1 ou vide. Décoché par défaut.
+- `chauffe_s` : Switch seulement, secondes passées par la bouilloire sur le feu.
+  La température stockée en est l'estimation (section 8), corrigeable. Vide pour
+  la Brikka et pour tout l'historique antérieur à la v7.93, sans migration.
+- `ratee` : 1 ou vide, vide veut dire « pas dit ». Voir section 8.
 - VOCABULAIRE DE DÉGUSTATION : le groupe "Acidité" (v7.26) existe parce que
   l'acidité manquait comme AXE, seul "agrume" était présent et c'est un arôme.
   Distinction à ne pas perdre, c'est la confusion la plus coûteuse en dégustation :
@@ -421,6 +426,16 @@ Points fixés depuis, chacun expliqué dans `DECISIONS.md` :
 - Une extraction peut être marquée RATÉE : elle compte dans ce qui décrit ce qui
   s'est passé, pas dans ce qui conseille (`extAnalysables()`). La bascule qui
   les réintègre vit dans Paramètres, section Cet appareil (préférence locale).
+- La température du SWITCH se déduit du temps passé par la bouilloire sur le
+  feu (`f-chauffe-min` et `-sec`, stocké dans `chauffe_s`) : montée linéaire de
+  28 à 100 °C au temps d'ébullition de la bouilloire (`reglages.ebullition_s`,
+  Paramètres, carte Ma bouilloire, 4:00 par défaut). Fonctions pures
+  `temperatureDepuisChauffe` et `chauffePourTemperature` dans `recettes.js`. Le
+  degré estimé s'écrit dans `f-temp`, reste modifiable et reste la valeur
+  stockée ; l'aide sous le champ dit combien de temps viser pour la cible de la
+  recette. Rien de tout ça pour la Brikka : la ligne est masquée, elle part à
+  l'eau froide, seule la case « eau préchauffée » (décochée par défaut) la
+  concerne. L'ancien menu de méthodes de chauffe a disparu en v7.93.
 - La saisie rapide enregistre SANS note par défaut, comme le formulaire complet
   (`#q-note-vide`, coché à chaque ouverture) ; toucher le curseur décoche.
 
@@ -497,8 +512,9 @@ conflit, non résurrection, purge, formes invalides).
 moment il faudra archiver l'historique ; rien n'est prévu pour ça, c'est le
 signal qui déclenchera la décision.
 
-Les réglages du matériel (dose de repli, puissance de feu, molette) sont une
-TABLE `reglages` d'une ligne, d'id `moi`, synchronisée comme les autres. Le thème
+Les réglages du matériel (dose de repli, puissance de feu, molette, temps
+d'ébullition de la bouilloire) sont une TABLE `reglages` d'une ligne, d'id
+`moi`, synchronisée comme les autres. Le thème
 et les bips restent locaux.
 
 ## 10. PWA, hors ligne, versionnage des assets

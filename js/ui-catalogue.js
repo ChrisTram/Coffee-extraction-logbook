@@ -351,6 +351,7 @@
     $("#param-dose-defaut").value = replis.dose;
     $("#param-feu-defaut").value = replis.feu;
     $("#param-molette").value = replis.molette;
+    UI.ecrireDuree("param-ebullition", replis.ebullition);
     majDetailMolette();
     $("#param-bips").checked = $("#chrono-bip").checked;
     majRatees();
@@ -379,9 +380,12 @@
     if (!(dose > 0)) { toast(I18N.t("t_param_dose")); return; }
     if (!(feu >= 1 && feu <= 10)) { toast(I18N.t("t_param_feu")); return; }
     if (!GRIND.parseDial(molette)) { toast(I18N.t("t_mouture_invalide")); return; }
+    const ebullition = UI.lireDuree("param-ebullition");
+    if (ebullition === "" || !(ebullition >= 30 && ebullition <= 1800)) { toast(I18N.t("t_param_ebullition")); return; }
     replis.dose = dose;
     replis.feu = Math.round(feu);
     replis.molette = molette;
+    replis.ebullition = ebullition;
     await ecrireReplis();
 
     /* On ne réécrit que les recettes réellement touchées : chaque écriture

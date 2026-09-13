@@ -16,14 +16,14 @@ const DATA_SCHEMA = (() => {
   const EXT_COLS = ["id", "date_heure", "cafe_id", "methode", "recette", "dose_g", "eau_g",
     "mouture_dial", "temperature_c", "temps_total_s", "temps_ecoulement_s",
     "volume_extrait_ml", "eau_ajoutee_ml", "lait_ml", "agitation_nb", "tasse", "eau_prechauffee",
-    "note_sur_10", "diagnostic", "descripteurs", "commentaire", "puissance_feu", "ratee"];
+    "note_sur_10", "diagnostic", "descripteurs", "commentaire", "puissance_feu", "ratee", "chauffe_s"];
 
   /* Réglages du matériel de Chris. UNE seule ligne, d'id fixe, parce que c'est
      un utilisateur unique : voir normaliserReglages pour le pourquoi de la
      table. maj_le n'est pas dans les colonnes, comme partout ailleurs. */
   const REGLAGE_ID = "moi";
 
-  const REGLAGE_COLS = ["id", "dose_g", "puissance_feu", "mouture_dial", "schema_version"];
+  const REGLAGE_COLS = ["id", "dose_g", "puissance_feu", "mouture_dial", "schema_version", "ebullition_s"];
 
   const RECETTE_COLS = ["id", "nom", "numero", "methode", "famille", "variante", "sous_titre", "dose_g", "eau_g",
     "temperature_c", "temp_texte", "mouture_dial", "ratio_texte", "total_texte", "lait",
@@ -146,6 +146,12 @@ const DATA_SCHEMA = (() => {
          n'est nécessaire pour autant : une colonne absente d'un vieux CSV relit
          vide, ce qui est exactement le bon défaut. */
       ratee: Number(r.ratee) === 1 ? 1 : "",
+      /* Temps passé par la bouilloire sur le feu, en secondes, Switch seulement.
+         C'est la mesure de Chris ; la température stockée en est l'estimation,
+         corrigeable à la main. Vide pour la Brikka et pour tout l'historique
+         antérieur : une colonne absente relit vide, aucune migration. */
+      chauffe_s: r.chauffe_s === "" || r.chauffe_s === undefined || r.chauffe_s === null
+        ? "" : Math.max(0, Math.round(Number(r.chauffe_s)) || 0),
     };
   }
 
@@ -173,6 +179,10 @@ const DATA_SCHEMA = (() => {
       // cette ligne est le seul endroit synchronisé qui ne soit pas une donnée
       // de café : la version doit voyager avec les données qu'elle décrit.
       schema_version: nombre(r && r.schema_version, 0, 999, 0),
+      /* Temps que met la bouilloire de Chris à bouillir depuis l'eau du robinet,
+         en secondes. Décrit son MATÉRIEL, donc synchronisé comme la molette. Sert
+         à estimer la température du Switch depuis le temps de chauffe. */
+      ebullition_s: nombre(r && r.ebullition_s, 30, 1800, 240),
     };
   }
 

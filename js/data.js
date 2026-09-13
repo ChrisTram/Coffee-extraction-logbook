@@ -577,7 +577,7 @@ const DATA = (() => {
     // Exposée pour les tests : c'est elle qui décide qu'une température vide
     // reste vide au lieu de tomber à 0, et qu'une puissance de feu survit.
     sachetALaDate,
-    normaliserRecette, normaliserReglages,
+    normaliserRecette, normaliserReglages, normaliserExtraction,
     reglagesCourants, majReglages, REGLAGE_COLS, REGLAGE_ID,
     // Exposée pour les tests : c'est elle qui rattrape les recettes STOCKÉES
     // quand les valeurs semées changent, et ce rattrapage est marqué une fois.

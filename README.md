@@ -125,6 +125,7 @@ tracker/
   js/ui-noyau.js        outils d'interface partagés, thème, navigation
   js/ui-tableau.js      tableau de bord et insights
   js/ui-saisie.js       formulaire, chrono, brouillon
+  js/ui-brouillon.js    brouillon de saisie (localStorage)
   js/ui-rapide.js       saisie rapide flottante
   js/ui-historique.js   historique, filtres, comparateur, meilleurs réglages
   js/ui-guide.js        recettes, moulin, pas à pas

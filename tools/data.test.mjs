@@ -22,7 +22,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
    contrôles qui cherchent une chaîne dans "l'interface" doivent les lire tous :
    sinon ils repassent au vert dès qu'un bout de code change de fichier, ce qui
    est exactement le moment où on aimerait qu'ils regardent. */
-const SOURCE_UI = ["js/ui-noyau.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-rapide.js",
+const SOURCE_UI = ["js/ui-noyau.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-brouillon.js", "js/ui-rapide.js",
   "js/ui-historique.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/app.js"]
   .map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 /* demo-data.js n'est plus une balise script depuis la v7.56, mais le harnais le
@@ -42,10 +42,10 @@ const charger = new Function(
   "location",
   "indexedDB",
   "console",
-  source + "\nreturn { DATA, SYNC, GRIND, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND, REGLAGES, echelleVersements, SEUIL_VERSEMENT_G };"
+  source + "\nreturn { DATA, SYNC, GRIND, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND, REGLAGES, echelleVersements, SEUIL_VERSEMENT_G, temperatureDepuisChauffe, chauffePourTemperature };"
 );
 const { DATA, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND, REGLAGES,
-  echelleVersements, SEUIL_VERSEMENT_G } =
+  echelleVersements, SEUIL_VERSEMENT_G, temperatureDepuisChauffe, chauffePourTemperature } =
   charger(undefined, { protocol: "file:" }, undefined, console);
 
 let failures = 0;
@@ -724,20 +724,47 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("l'avertissement cafe non pur existe toujours", i18n.includes("w_aromatise"));
 }
 
-/* Le select de temperature est une aide de saisie et rien d'autre : il ecrit dans
-   le champ nombre, aucune colonne nouvelle, donc aucune migration. */
+/* TEMPERATURE PAR LE TEMPS DE CHAUFFE (v7.93). Le select de methodes de chauffe
+   ("petites bulles", "frémissement") a disparu : Chris a toujours la meme
+   bouilloire sur le meme feu, donc le TEMPS sur le feu est la mesure
+   reproductible, et le degre s'en deduit par un modele lineaire de 28 a 100 °C
+   au temps d'ebullition regle dans Parametres. Le degre reste stocke et
+   modifiable ; le temps est stocke aussi. Rien pour la Brikka. */
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
-  const debut = html.indexOf('<select id="f-temp-preset"');
-  const sel = html.slice(debut, html.indexOf("</select>", debut));
-  const options = [...sel.matchAll(/<option value="([0-9]*)"/g)].map(m => m[1]);
-  check("le select de temperature propose au moins 6 methodes", options.length >= 6, String(options.length));
-  check("la premiere option est neutre", options[0] === "", JSON.stringify(options[0]));
-  const nombres = options.filter(Boolean).map(Number);
-  check("les temperatures proposees tiennent dans les bornes du champ",
-    nombres.every(n => n >= 60 && n <= 100), nombres.join(", "));
-  check("aucune colonne n'a ete ajoutee pour la methode de chauffe",
-    !DATA.EXT_COLS.includes("temp_methode") && DATA.EXT_COLS.includes("temperature_c"));
+  check("le select de methodes de chauffe a disparu", !html.includes('id="f-temp-preset"'));
+  check("le temps de chauffe se saisit en minutes et secondes",
+    html.includes('id="f-chauffe-min"') && html.includes('id="f-chauffe-sec"'));
+  check("chauffe_s est une colonne, en fin de ligne, apres ratee",
+    DATA.EXT_COLS.indexOf("chauffe_s") === DATA.EXT_COLS.length - 1 && DATA.EXT_COLS.includes("temperature_c"));
+  check("le temps d'ebullition de la bouilloire est un reglage synchronise",
+    DATA.REGLAGE_COLS.includes("ebullition_s") && DATA.normaliserReglages({}).ebullition_s === 240);
+  check("un temps d'ebullition absurde retombe sur l'usine",
+    DATA.normaliserReglages({ ebullition_s: 5 }).ebullition_s === 240 &&
+    DATA.normaliserReglages({ ebullition_s: 300 }).ebullition_s === 300);
+
+  // Le modele : lineaire de l'eau du robinet (28) a l'ebullition (100).
+  check("zero seconde sur le feu, c'est l'eau du robinet", temperatureDepuisChauffe(0, 240) === 28);
+  check("le temps d'ebullition donne 100", temperatureDepuisChauffe(240, 240) === 100);
+  check("au dela, l'eau ne depasse pas 100", temperatureDepuisChauffe(600, 240) === 100);
+  check("a mi chemin, 64 degres", temperatureDepuisChauffe(120, 240) === 64);
+  check("sans temps, pas d'estimation", temperatureDepuisChauffe("", 240) === "");
+  check("l'inverse retombe sur le temps, aux 5 secondes pres",
+    Math.abs(chauffePourTemperature(92, 240) - 213) <= 5 &&
+    Math.abs(temperatureDepuisChauffe(chauffePourTemperature(92, 240), 240) - 92) <= 2,
+    String(chauffePourTemperature(92, 240)));
+  check("100 degres, c'est tout le temps d'ebullition", chauffePourTemperature(100, 240) === 240);
+
+  // Une extraction normalisee garde le temps, et une Brikka n'en a jamais.
+  const n = DATA.normaliserExtraction({ chauffe_s: "215.4" });
+  check("le temps de chauffe est arrondi a la seconde et garde", n.chauffe_s === 215);
+  check("vide reste vide, jamais zero", DATA.normaliserExtraction({}).chauffe_s === "");
+  const app = SOURCE_UI;
+  check("la saisie n'enregistre un temps de chauffe qu'en Switch",
+    /chauffe_s: saisie\.methode === "Switch" \? lireDuree\("f-chauffe"\) : ""/.test(app));
+  check("la ligne de chauffe est masquee sur la Brikka", /ligne-chauffe"\)\.hidden = m !== "Switch"/.test(app));
+  check("les textes de l'aide sont bilingues",
+    bilingue("temp_estimee") && bilingue("temp_conseil") && bilingue("d_chauffe") && bilingue("t_param_ebullition"));
 }
 
 /* Mise a l'echelle des versements. Une recette ecrit ses paliers en grammes
@@ -961,22 +988,6 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     /Chronicler a 240 g[\s\S]{0,300}famille !== "chronicler"[\s\S]{0,80}225/.test(data));
 }
 
-/* Le trou de temperature entre 85 et 97 : les recettes visent 92 a 95, il n'y
-   avait aucun palier pour les atteindre. */
-{
-  const html = readFileSync(join(ROOT, "index.html"), "utf8");
-  const debut = html.indexOf('<select id="f-temp-preset"');
-  const sel = html.slice(debut, html.indexOf("</select>", debut));
-  const temps = [...sel.matchAll(/<option value="([0-9]+)"/g)].map(m => Number(m[1])).sort((a, b) => a - b);
-  check("les paliers couvrent la zone des recettes Switch, 92 a 95",
-    temps.some(t => t >= 90 && t <= 96), temps.join(", "));
-  // Aucun ecart de plus de 6 degres entre deux paliers consecutifs au dessus de 80.
-  const hauts = temps.filter(t => t >= 80);
-  const trous = hauts.slice(1).map((t, i) => t - hauts[i]).filter(e => e > 6);
-  check("aucun trou de plus de 6 degres dans la liste", trous.length === 0,
-    hauts.join(", ") + " -> trous de " + trous.join(", "));
-}
-
 /* Un etat selectionne ne doit changer QUE des couleurs. Toute propriete qui
    touche a la largeur du texte reorganise la ligne au clic : cocher un
    descripteur envoyait le groupe suivant a la ligne, sous les doigts. */
@@ -1049,7 +1060,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
 
   // Et surtout : maj_le ne doit pas fuir dans le CSV.
   const csv = DATA.csvSerialiser([{ id: "moi", maj_le: 1699999999999, dose_g: 16 }], DATA.REGLAGE_COLS);
-  check("entete reglages.csv", csv.split("\n")[0] === "id,dose_g,puissance_feu,mouture_dial,schema_version",
+  check("entete reglages.csv", csv.split("\n")[0] === "id,dose_g,puissance_feu,mouture_dial,schema_version,ebullition_s",
     csv.split("\n")[0]);
   check("maj_le absent du CSV reglages", !csv.includes("1699999999999"));
 }
@@ -1614,7 +1625,8 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
      seule etiquette. Les paires legitimes (minutes et secondes, valeur et
      preselection) sont listees : elles forment un seul controle aux yeux de
      l'utilisateur, et partagent donc une etiquette a juste titre. */
-  const PAIRES = ["f-temp-preset", "f-total-sec", "f-ecoulement-sec", "f-note-vide", "q-note-vide"];
+  const PAIRES = ["f-chauffe-min", "f-chauffe-sec", "f-total-sec", "f-ecoulement-sec", "f-note-vide", "q-note-vide",
+    "param-ebullition-sec"];
   /* Un curseur nomme "X-curseur" pilote le champ "X" : c'est la MEME valeur
      montree deux fois, donc une paire legitime par construction. La regle vaut
      mieux qu'une liste a rallonger a chaque curseur ajoute, puisque c'est le

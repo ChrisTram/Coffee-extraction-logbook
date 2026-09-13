@@ -7,8 +7,8 @@
 <!-- Version du site, source unique : le pied de page la lit, et les fichiers
      chargés à la demande la mettent dans leur URL. Se pose avec
      node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="7.92">
-<link rel="stylesheet" href="css/styles.css?v=7.92">
+<meta name="app-version" content="7.93">
+<link rel="stylesheet" href="css/styles.css?v=7.93">
 <!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
      SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
      parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
@@ -217,28 +217,23 @@
       </div>
       <div class="champ">
         <label for="f-temp">Température (°C)</label>
-        <!-- Aide de saisie, PAS une donnée : le select remplit le champ nombre et
-             rien de plus. Rien n'est stocké de ce choix, la mesure reste le degré.
-             Les value sont explicites pour que la traduction du libellé ne
-             corrompe pas la valeur. -->
-        <!-- Le select et le degré tiennent sur UNE ligne : empilés, la cellule
-             Température devenait deux fois plus haute que ses voisines et creusait
-             un trou au milieu de la grille. -->
+        <!-- Switch : la température se déduit du TEMPS passé par la bouilloire
+             sur le feu. Même bouilloire et même feu à chaque fois, donc une mesure
+             reproductible, là où « petites bulles » était un jugement à l'oeil.
+             Le temps est stocké (chauffe_s) ET le degré estimé, corrigeable à la
+             main, reste la température de l'extraction. La Brikka n'est pas
+             concernée, elle part à l'eau froide : la ligne est masquée. -->
+        <!-- Temps et degré tiennent sur UNE ligne : empilés, la cellule Température
+             devenait deux fois plus haute que ses voisines et creusait un trou au
+             milieu de la grille. -->
         <div class="ligne-temp">
-          <select id="f-temp-preset" aria-label="Estimer la température depuis la méthode">
-            <option value="">Estimer…</option>
-            <option value="85">Petites bulles, pas encore frétillante</option>
-            <option value="82">Petites bulles, 30 s de repos</option>
-            <option value="80">Petites bulles, 1 min de repos</option>
-            <option value="100">Bouillante</option>
-            <option value="97">Bouillante, 30 s de repos</option>
-            <option value="95">Bouillante, 1 min de repos</option>
-            <option value="91">Bouillante, 2 min de repos</option>
-            <option value="83">3 volumes bouillante + 1 froide</option>
-          </select>
-          <input type="number" id="f-temp" enterkeyhint="next" step="1" min="60" max="100" inputmode="decimal">
+          <div class="duree" id="ligne-chauffe">
+            <input type="number" id="f-chauffe-min" step="1" min="0" max="30" inputmode="numeric" placeholder="0" aria-label="Bouilloire sur le feu, minutes"><span>min</span>
+            <input type="number" id="f-chauffe-sec" step="1" min="0" max="59" inputmode="numeric" placeholder="00" aria-label="Bouilloire sur le feu, secondes"><span>s</span>
+          </div>
+          <input type="number" id="f-temp" enterkeyhint="next" step="1" min="60" max="100" inputmode="decimal" aria-label="Température estimée ou mesurée (°C)">
         </div>
-        <span class="champ-hint">Estimations, sauf le mélange à l'eau froide.</span>
+        <span class="champ-hint" id="temp-hint"></span>
       </div>
       <div class="champ">
         <label id="lbl-mouture" for="f-mouture">Mouture (molette)</label>
@@ -1142,6 +1137,20 @@ Cảm ơn shop.</pre>
   </article>
 
   <article class="carte">
+    <h3>Ma bouilloire</h3>
+    <p class="param-aide">Le temps qu'elle met à bouillir depuis l'eau du robinet, sur le feu habituel. En saisie Switch, le temps passé sur le feu donne la température estimée, en montée linéaire de 28 à 100 degrés. Une estimation, pas une mesure : le degré reste modifiable.</p>
+    <div class="grille-nombres">
+      <div class="champ">
+        <label for="param-ebullition-min">Temps pour bouillir</label>
+        <div class="duree">
+          <input type="number" id="param-ebullition-min" step="1" min="0" max="30" inputmode="numeric" placeholder="4" aria-label="Temps pour bouillir, minutes"><span>min</span>
+          <input type="number" id="param-ebullition-sec" step="1" min="0" max="59" inputmode="numeric" placeholder="00" aria-label="Temps pour bouillir, secondes"><span>s</span>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="carte">
     <h3>Cet appareil</h3>
     <p class="param-aide">Ces réglages restent locaux et ne se synchronisent pas : un téléphone et un ordinateur n'ont pas les mêmes besoins.</p>
     <div class="grille-nombres">
@@ -1286,27 +1295,28 @@ Cảm ơn shop.</pre>
 <!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
      et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
      desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=7.92"></script>
-<script defer src="js/i18n.js?v=7.92"></script>
-<script defer src="js/grind.js?v=7.92"></script>
-<script defer src="js/recettes.js?v=7.92"></script>
+<script defer src="js/outils.js?v=7.93"></script>
+<script defer src="js/i18n.js?v=7.93"></script>
+<script defer src="js/grind.js?v=7.93"></script>
+<script defer src="js/recettes.js?v=7.93"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=7.92"></script>
-<script defer src="js/data-csv.js?v=7.92"></script>
-<script defer src="js/data-schema.js?v=7.92"></script>
-<script defer src="js/data-store.js?v=7.92"></script>
-<script defer src="js/data-calculs.js?v=7.92"></script>
-<script defer src="js/data-migrations.js?v=7.92"></script>
-<script defer src="js/data.js?v=7.92"></script>
-<script defer src="js/reglages.js?v=7.92"></script>
-<script defer src="js/charts.js?v=7.92"></script>
-<script defer src="js/ui-noyau.js?v=7.92"></script>
-<script defer src="js/ui-tableau.js?v=7.92"></script>
-<script defer src="js/ui-saisie.js?v=7.92"></script>
-<script defer src="js/ui-rapide.js?v=7.92"></script>
-<script defer src="js/ui-historique.js?v=7.92"></script>
-<script defer src="js/ui-guide.js?v=7.92"></script>
-<script defer src="js/ui-catalogue.js?v=7.92"></script>
-<script defer src="js/app.js?v=7.92"></script>
+<script defer src="js/sync.js?v=7.93"></script>
+<script defer src="js/data-csv.js?v=7.93"></script>
+<script defer src="js/data-schema.js?v=7.93"></script>
+<script defer src="js/data-store.js?v=7.93"></script>
+<script defer src="js/data-calculs.js?v=7.93"></script>
+<script defer src="js/data-migrations.js?v=7.93"></script>
+<script defer src="js/data.js?v=7.93"></script>
+<script defer src="js/reglages.js?v=7.93"></script>
+<script defer src="js/charts.js?v=7.93"></script>
+<script defer src="js/ui-noyau.js?v=7.93"></script>
+<script defer src="js/ui-tableau.js?v=7.93"></script>
+<script defer src="js/ui-saisie.js?v=7.93"></script>
+<script defer src="js/ui-brouillon.js?v=7.93"></script>
+<script defer src="js/ui-rapide.js?v=7.93"></script>
+<script defer src="js/ui-historique.js?v=7.93"></script>
+<script defer src="js/ui-guide.js?v=7.93"></script>
+<script defer src="js/ui-catalogue.js?v=7.93"></script>
+<script defer src="js/app.js?v=7.93"></script>
 </body>
 </html>

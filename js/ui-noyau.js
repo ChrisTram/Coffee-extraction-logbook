@@ -379,13 +379,18 @@ const UI = (() => {
      `replis` reste un objet simple parce qu'il est lu partout dans le code de
      rendu ; il est juste rafraîchi depuis DATA à chaque notification. */
   const CLE_REPLIS = "replis-saisie";
-  const replis = { dose: DOSE_REPLI_USINE, feu: FEU_REPLI_USINE, molette: MOLETTE_REPLI_USINE };
+  /* Temps d'ébullition de la bouilloire, en secondes, depuis l'eau du robinet.
+     Quatre minutes tant que Chris ne l'a pas chronométrée : c'est l'ordre de
+     grandeur d'une bouilloire d'un demi litre sur un feu de cuisine. */
+  const EBULLITION_USINE = 240;
+  const replis = { dose: DOSE_REPLI_USINE, feu: FEU_REPLI_USINE, molette: MOLETTE_REPLI_USINE, ebullition: EBULLITION_USINE };
 
   function chargerReplis() {
     const r = DATA.reglagesCourants();
     replis.dose = r.dose_g;
     replis.feu = r.puissance_feu;
     replis.molette = r.mouture_dial;
+    replis.ebullition = r.ebullition_s;
   }
 
   /* Reprise unique des réglages posés avant la synchro. Sans elle, Chris
@@ -413,6 +418,7 @@ const UI = (() => {
       dose_g: replis.dose,
       puissance_feu: replis.feu,
       mouture_dial: replis.molette,
+      ebullition_s: replis.ebullition,
     });
   }
 
@@ -531,7 +537,7 @@ const UI = (() => {
   }
 
   return {
-    $, $$, $f, APPUI_LONG_MS, CLE_REPLIS, DOSE_REPLI_USINE, ECRANS, ECRANS_RENOMMES,
+    $, $$, $f, APPUI_LONG_MS, CLE_REPLIS, DOSE_REPLI_USINE, EBULLITION_USINE, ECRANS, ECRANS_RENOMMES,
     FEU_REPLI_USINE, MOLETTE_REPLI_USINE, activerAppuiLong, activerEcran, animerCompteur,
     antiRebond, appliquerTheme, attrTitre, avecTransition, basculerEtat, cacheChamps,
     basculerRatees, chargerReplis, cleLocale, confirmer, detailRatio, diagsAffiches, ecartMoyen,

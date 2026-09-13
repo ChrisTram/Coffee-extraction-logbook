@@ -5,6 +5,16 @@ de page du site est celui du `<meta name="app-version">` d'`index.html`, posé
 par `node tools/bump_version.mjs X`. Chaque entrée dit CE QUI a changé ; le
 pourquoi est dans `DECISIONS.md`.
 
+- v7.93 : la température du Switch se déduit du temps passé par la bouilloire
+  sur le feu, saisi en minutes et secondes à la place du menu « petites bulles,
+  frémissement » : montée linéaire de 28 à 100 °C au temps d'ébullition de la
+  bouilloire, nouveau réglage synchronisé (Paramètres, carte Ma bouilloire, 4:00
+  par défaut). Le degré estimé reste modifiable et reste la valeur stockée ; le
+  temps est stocké aussi (colonne `chauffe_s`, visible dans le détail de
+  l'historique), et l'aide dit combien de temps viser pour la cible de la
+  recette. Rien ne change pour la Brikka, qui part à l'eau froide. Au passage
+  le brouillon de saisie sort dans `ui-brouillon.js` : `ui-saisie.js` repassait
+  le plafond de 1 200 lignes.
 - v7.92 : deux recettes Switch de percolation pure, en deuxième et troisième
   positions : Better 1 Cup (James Hoffmann, 15 g / 250 g, cinq versements) et
   One and Done (Lance Hedrick, 15 g / 225 g, deux blooms puis un versement).

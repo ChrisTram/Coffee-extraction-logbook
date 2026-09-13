@@ -115,6 +115,7 @@
        détail garde son rôle, montrer ce que la ligne ne montre pas. */
     const cases = [
       item("d_ecoulement", e.temps_ecoulement_s !== "" ? fmtTemps(e.temps_ecoulement_s) : ""),
+      item("d_chauffe", e.chauffe_s !== "" && e.chauffe_s !== undefined ? fmtTemps(e.chauffe_s) : ""),
       item("d_volume", e.volume_extrait_ml !== "" ? e.volume_extrait_ml + " ml" : ""),
       item("d_eau_ajoutee", e.eau_ajoutee_ml !== "" ? e.eau_ajoutee_ml + " ml" : ""),
       item("d_lait", e.lait_ml !== "" ? e.lait_ml + " ml" : ""),

@@ -514,6 +514,33 @@ function cafeineMg(dose, espece, pctCafeReel) {
 }
 
 // Cafés qui ne vont jamais dans le Switch, par nom exact ou partiel.
+/* TEMPÉRATURE DE L'EAU DU SWITCH PAR LE TEMPS DE CHAUFFE.
+
+   Chris n'a pas de thermomètre et utilise toujours la même bouilloire sur le
+   même feu. Le temps passé sur le feu est donc une mesure REPRODUCTIBLE, là où
+   « petites bulles » ou « frémissement » sont des jugements à l'oeil. Le modèle
+   est volontairement le plus simple : montée linéaire depuis l'eau du robinet
+   (28 °C, l'eau ambiante au Vietnam) jusqu'à 100 °C au temps d'ébullition de la
+   bouilloire, réglé dans Paramètres. C'est une estimation, pas une mesure ; le
+   degré reste modifiable à la main et c'est lui qui est stocké comme
+   température. La Brikka n'est pas concernée : elle part à l'eau froide. */
+const EAU_AMBIANTE_C = 28;
+
+function temperatureDepuisChauffe(secondes, ebullitionS) {
+  const s = Number(secondes), e = Number(ebullitionS);
+  if (secondes === "" || !Number.isFinite(s) || s < 0 || !(e > 0)) return "";
+  return Math.round(EAU_AMBIANTE_C + (100 - EAU_AMBIANTE_C) * Math.min(1, s / e));
+}
+
+/* L'inverse, arrondi aux 5 secondes : « pour 92 °C, laisse la bouilloire 3:35 ». */
+function chauffePourTemperature(tempC, ebullitionS) {
+  const t = Number(tempC), e = Number(ebullitionS);
+  if (tempC === "" || !Number.isFinite(t) || !(e > 0)) return "";
+  if (t >= 100) return Math.round(e);
+  if (t <= EAU_AMBIANTE_C) return 0;
+  return Math.round((t - EAU_AMBIANTE_C) / (100 - EAU_AMBIANTE_C) * e / 5) * 5;
+}
+
 const JAMAIS_SWITCH_NOMS = [
   "Fine Robusta Honey",
   "Midnight Chocolate",

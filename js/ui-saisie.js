@@ -1,5 +1,5 @@
-/* Écran de saisie : le formulaire, le chronomètre et le brouillon. Le panneau
- * rapide qui flotte par-dessus vit dans ui-rapide.js.
+/* Écran de saisie : le formulaire et le chronomètre. Le brouillon vit dans
+ * ui-brouillon.js, le panneau rapide qui flotte par-dessus dans ui-rapide.js.
  *
  * C'est le fichier le plus long, et pour une bonne raison : c'est là que Chris
  * passe son temps, souvent d'une main, au téléphone, pendant une extraction. Le
@@ -15,105 +15,6 @@
     trouverRecette } = UI;
 
   // ---------- Saisie ----------
-
-  /* ---------- Brouillon de saisie ----------
-     Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
-     navigateur décharge la page pour récupérer de la mémoire. Sans brouillon,
-     tout ce qui était tapé disparaît, et c'est justement pendant l'extraction
-     qu'on sort de l'appli.
-
-     Volontairement en localStorage et PAS dans les données synchronisées : un
-     brouillon est propre à un appareil, l'envoyer sur le serveur ferait
-     apparaître une saisie fantôme sur l'autre. */
-  const CLE_BROUILLON = "brouillon-saisie";
-  const BROUILLON_MAX_MS = 24 * 60 * 60 * 1000;
-  /* La DATE du brouillon a sa propre durée de validité, bien plus courte. Le
-     brouillon existe pour survivre au déchargement de la page pendant une
-     extraction, ce qui se compte en minutes ; garder son horodatage 24 h faisait
-     réapparaître la date de la veille sur une saisie neuve. Deux heures couvrent
-     largement une séance, interruptions comprises. */
-  const DATE_BROUILLON_MAX_MS = 2 * 60 * 60 * 1000;
-  const CHAMPS_BROUILLON = [
-    "f-date", "f-cafe", "f-recette", "f-dose", "f-eau", "f-mouture", "f-temp",
-    "f-volume", "f-eau-ajoutee", "f-lait", "f-agitation", "f-tasse", "f-note",
-    "f-commentaire", "f-total-min", "f-total-sec", "f-ecoulement-min", "f-ecoulement-sec",
-    "f-puissance",
-  ];
-  const CASES_BROUILLON = ["f-prechauffe", "f-ajout-eau-oui"];
-  let brouillonMinuteur = null;
-
-  function ecrireBrouillon() {
-    // On ne sauvegarde JAMAIS pendant l'édition d'une extraction existante :
-    // le brouillon écraserait le formulaire au prochain démarrage avec des
-    // valeurs qui appartiennent à une ligne déjà enregistrée.
-    if (saisie.editId) return;
-    const valeurs = {};
-    CHAMPS_BROUILLON.forEach(id => { const el = $("#" + id); if (el) valeurs[id] = el.value; });
-    CASES_BROUILLON.forEach(id => { const el = $("#" + id); if (el) valeurs[id] = el.checked; });
-    try {
-      localStorage.setItem(CLE_BROUILLON, JSON.stringify({
-        le: Date.now(),
-        methode: saisie.methode,
-        diagnostics: [...saisie.diagnostics],
-        descripteurs: [...saisie.descripteurs],
-        valeurs,
-      }));
-    } catch (e) { /* stockage plein ou refusé, tant pis */ }
-  }
-
-  function planifierBrouillon() {
-    clearTimeout(brouillonMinuteur);
-    brouillonMinuteur = setTimeout(ecrireBrouillon, 400);
-  }
-
-  function effacerBrouillon() {
-    clearTimeout(brouillonMinuteur);
-    try { localStorage.removeItem(CLE_BROUILLON); } catch (e) { /* tant pis */ }
-  }
-
-  /* Ne restaure que si le brouillon dit quelque chose : sans ce test, le
-     formulaire vierge sauvegardé au premier chargement déclencherait un message
-     "brouillon repris" à chaque ouverture, ce qui serait absurde. */
-  function brouillonUtile(b) {
-    const v = b.valeurs || {};
-    return Boolean(v["f-cafe"] || (v["f-commentaire"] || "").trim() ||
-      b.diagnostics.length || b.descripteurs.length ||
-      v["f-total-min"] || v["f-total-sec"] || v["f-volume"] || v["f-eau"]);
-  }
-
-  function restaurerBrouillon() {
-    let b;
-    try { b = JSON.parse(localStorage.getItem(CLE_BROUILLON) || "null"); } catch (e) { return false; }
-    if (!b || !b.valeurs) return false;
-    if (Date.now() - (b.le || 0) > BROUILLON_MAX_MS) { effacerBrouillon(); return false; }
-    if (!brouillonUtile(b)) return false;
-
-    if (b.methode) choisirMethode(b.methode, true);
-    const dateFraiche = Date.now() - (b.le || 0) <= DATE_BROUILLON_MAX_MS;
-    Object.entries(b.valeurs).forEach(([id, valeur]) => {
-      // Une date périmée ne remplace pas l'heure qu'il est.
-      if (id === "f-date" && !dateFraiche) return;
-      const el = $("#" + id);
-      if (el && valeur !== undefined && valeur !== null) el.value = valeur;
-    });
-    /* Une date reprise d'un brouillon frais vient de Chris, pas d'un défaut :
-       l'arrivée sur l'écran ne doit donc pas la remplacer. */
-    if (dateFraiche && b.valeurs["f-date"]) saisie.dateTouchee = true;
-    CASES_BROUILLON.forEach(id => { const el = $("#" + id); if (el) el.checked = !!b.valeurs[id]; });
-
-    saisie.diagnostics = new Set(b.diagnostics || []);
-    saisie.descripteurs = new Set(b.descripteurs || []);
-    $$("#f-diagnostic .pilule").forEach(x => basculerEtat(x, saisie.diagnostics.has(x.dataset.diag)));
-    $$("#f-descripteurs .tag").forEach(x => basculerEtat(x, saisie.descripteurs.has(x.dataset.tag)));
-
-    $("#note-affichee").textContent = $("#f-note").value;
-    $("#f-eau-ajoutee").hidden = !$("#f-ajout-eau-oui").checked;
-    majCorrectionDiagnostic();
-    majAvertissements();
-    majLive();
-    majAsideSaisie();
-    return true;
-  }
 
   /* Durées saisies en minutes ET secondes, stockées en secondes.
      Taper "4 min 18" est plus rapide et moins risqué que convertir 258 de tête,
@@ -197,6 +98,9 @@
     $("#champ-ajout-eau").hidden = m !== "Brikka";
     $("#champ-puissance").hidden = m !== "Brikka";
     $("#champ-agitation").hidden = m !== "Switch";
+    // Le temps de chauffe n'a de sens qu'avec une bouilloire : jamais sur la Brikka.
+    if ($("#ligne-chauffe")) $("#ligne-chauffe").hidden = m !== "Switch";
+    majTempHint();
     // Tasse par défaut : Flat White Egg en Brikka, Classic Mug en Switch.
     const defauts = { "Brikka": "Loveramics Flat White Egg", "Switch": "Classic Mug" };
     const tasseActuelle = $("#f-tasse").value;
@@ -326,7 +230,10 @@
     $("#f-dose").value = r.dose || replis.dose;
     $("#f-eau").value = r.eau || "";
     $("#f-temp").value = r.temp === "" || r.temp === undefined ? "" : r.temp;
-    razPresetTemp();
+    // Une nouvelle recette repart sans temps de chauffe : c'est une mesure de la
+    // tasse en cours, pas une valeur de la recette. L'aide dit combien viser.
+    ecrireDuree("f-chauffe", "");
+    majTempHint();
     // Le RÉGLAGE du broyeur, pas la cible de la recette : voir MOLETTE_REPLI_USINE.
     $("#f-mouture").value = cafeCourantMoulu() ? "" : replis.molette;
     if (r.methode === "Brikka") $("#f-puissance").value = r.puissance_feu || replis.feu;
@@ -357,12 +264,36 @@
     majLive();
   }
 
-  /* Le select de température est une aide de saisie : il écrit dans le champ
-     nombre puis se remet à zéro. Il ne doit JAMAIS rester sur un choix qui ne
-     correspond plus au nombre affiché, sinon il ment. */
-  function razPresetTemp() {
-    const sel = $("#f-temp-preset");
-    if (sel) sel.value = "";
+  /* TEMPÉRATURE PAR LE TEMPS DE CHAUFFE, Switch seulement. Chris tape le temps
+     que la bouilloire a passé sur le feu ; le degré s'en déduit (modèle dans
+     recettes.js, temps d'ébullition dans Paramètres) et s'écrit dans le champ
+     température, qui reste modifiable à la main et reste la valeur stockée.
+     Sans temps saisi mais avec une cible de recette, l'aide dit combien de temps
+     viser. La Brikka ne voit rien de tout ça : sa ligne est masquée. */
+  function surChauffe() {
+    const s = lireDuree("f-chauffe");
+    if (s !== "") {
+      const t = temperatureDepuisChauffe(s, replis.ebullition);
+      if (t !== "") $("#f-temp").value = t;
+    }
+    majTempHint();
+    majAvertissements();
+  }
+
+  function majTempHint() {
+    const hint = $("#temp-hint");
+    if (!hint) return;
+    if (saisie.methode !== "Switch") { poserTexte(hint, ""); return; }
+    const e = replis.ebullition;
+    const s = lireDuree("f-chauffe");
+    const t = $("#f-temp").value;
+    if (s !== "") {
+      poserTexte(hint, I18N.t("temp_estimee", { d: fmtTemps(s), t: temperatureDepuisChauffe(s, e), e: fmtTemps(e) }));
+    } else if (t !== "") {
+      poserTexte(hint, I18N.t("temp_conseil", { t, d: fmtTemps(chauffePourTemperature(t, e)), e: fmtTemps(e) }));
+    } else {
+      poserTexte(hint, "");
+    }
   }
 
   /* La note est facultative. Le curseur ne peut pas être vide, donc l'absence de
@@ -814,7 +745,7 @@
       if (saisie.diagnostics.has(d)) saisie.diagnostics.delete(d);
       else saisie.diagnostics.add(d);
       basculerEtat(b, saisie.diagnostics.has(d));
-      planifierBrouillon();
+      UI.planifierBrouillon();
       majCorrectionDiagnostic();
     });
     $("#f-descripteurs").addEventListener("click", ev => {
@@ -945,6 +876,7 @@
     $("#f-volume").value = "";
     $("#f-eau").value = "";
     $("#f-temp").value = "";
+    ecrireDuree("f-chauffe", "");
     $("#f-puissance").value = replis.feu;
     $("#f-prechauffe").checked = false;
     $("#f-ratee").checked = false;
@@ -980,6 +912,8 @@
     $("#f-dose").value = ext.dose_g;
     $("#f-eau").value = ext.eau_g;
     $("#f-temp").value = ext.temperature_c;
+    ecrireDuree("f-chauffe", ext.chauffe_s === undefined ? "" : ext.chauffe_s);
+    majTempHint();
     $("#f-mouture").value = ext.mouture_dial;
     $("#f-volume").value = ext.volume_extrait_ml;
     $("#f-ajout-eau-oui").checked = ext.eau_ajoutee_ml !== "" && ext.eau_ajoutee_ml !== undefined;
@@ -1028,6 +962,7 @@
       eau_g: $("#f-eau").value,
       mouture_dial: $("#f-mouture").value.trim().replace(/,/g, "."),
       temperature_c: $("#f-temp").value,
+      chauffe_s: saisie.methode === "Switch" ? lireDuree("f-chauffe") : "",
       temps_total_s: lireDuree("f-total"),
       temps_ecoulement_s: lireDuree("f-ecoulement"),
       volume_extrait_ml: $("#f-volume").value,
@@ -1045,13 +980,13 @@
     };
     if (saisie.editId) {
       await DATA.modifierExtraction(saisie.editId, ext);
-      effacerBrouillon();
+      UI.effacerBrouillon();
       toast(I18N.t("t_modifiee"));
       reinitialiserSaisie();
       activerEcran("historique");
     } else {
       await DATA.ajouterExtraction(ext);
-      effacerBrouillon();
+      UI.effacerBrouillon();
       toast(I18N.t("t_enregistree"));
       reinitialiserSaisie(true);
       activerEcran("tableau");
@@ -1082,15 +1017,9 @@
     $("#f-eau").addEventListener("input", () => majEtapesChrono(false));
     // Le volume extrait pilote le préremplissage du lait, il doit le rafraîchir.
     $("#f-volume").addEventListener("input", majLait);
-    $("#f-temp-preset").addEventListener("change", () => {
-      const v = $("#f-temp-preset").value;
-      if (!v) return;
-      $("#f-temp").value = v;
-      razPresetTemp();
-      majAvertissements();
-    });
-    // Une saisie manuelle a toujours le dernier mot sur l'estimation.
-    $("#f-temp").addEventListener("input", razPresetTemp);
+    ["f-chauffe-min", "f-chauffe-sec"].forEach(id => $("#" + id).addEventListener("input", surChauffe));
+    // Une saisie manuelle du degré a toujours le dernier mot ; l'aide suit.
+    $("#f-temp").addEventListener("input", majTempHint);
     /* pointerdown en plus d'input : poser le doigt sur le curseur là où il est
        déjà ne déclenche aucun input, la note serait restée vide sans le savoir. */
     ["input", "pointerdown", "keydown"].forEach(ev =>
@@ -1112,12 +1041,12 @@
       try { localStorage.setItem("bips", $("#chrono-bip").checked ? "1" : "0"); } catch (e) { /* tant pis */ }
     });
     $("#form-saisie").addEventListener("submit", enregistrerSaisie);
-    $("#form-saisie").addEventListener("input", planifierBrouillon);
-    $("#form-saisie").addEventListener("change", planifierBrouillon);
+    $("#form-saisie").addEventListener("input", UI.planifierBrouillon);
+    $("#form-saisie").addEventListener("change", UI.planifierBrouillon);
     // visibilitychange est le dernier evenement fiable avant qu'un navigateur
     // mobile decharge la page : on ecrit tout de suite, sans attendre le debounce.
     document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "hidden") ecrireBrouillon();
+      if (document.visibilityState === "hidden") UI.ecrireBrouillon();
     });
     $("#btn-annuler-edition").addEventListener("click", () => { reinitialiserSaisie(); activerEcran("historique"); });
     $("#btn-gerer-cafes").addEventListener("click", () => UI.ouvrirModaleCafes());
@@ -1160,20 +1089,19 @@
 
   // Mis à disposition des autres écrans.
   Object.assign(UI, {
-    BROUILLON_MAX_MS, CASES_BROUILLON, CHAMPS_BROUILLON, CLE_BROUILLON, DIAGS_SOUS_EXTRAIT,
+    DIAGS_SOUS_EXTRAIT,
     DIAGS_SUR_EXTRAIT, DIAG_INEGALE, acquireWakeLock, audioCtx,
-    brancherPilules, brouillonMinuteur, brouillonUtile, cablerSaisie, cafeCourantMoulu,
+    brancherPilules, cablerSaisie, cafeCourantMoulu,
     cafesSelectionnables, chargerExtractionDansSaisie, choisirMethode, chrono, chronoArreter,
-    chronoEcoule, chronoPrincipal, chronoRaz, chronoTic, construirePilules, ecrireBrouillon,
-    ecrireDuree, effacerBrouillon, enregistrerSaisie, infoDiagnostic,
+    chronoEcoule, chronoPrincipal, chronoRaz, chronoTic, construirePilules, ecrireDuree, enregistrerSaisie, infoDiagnostic,
     jouerBip, lireDuree, majAffichageNote, majAgePaquet, majAgitationDepuisRecette,
     majAsideSaisie, majAvertissements, majBoutonsChrono, majChampPrechauffe,
     majCorrectionDiagnostic, majEtapesChrono, majLait, majLive,
-    noteSaisie, paliersCourants, planifierBrouillon, prefillDepuisRecette,
+    noteSaisie, paliersCourants, prefillDepuisRecette,
     brancherCurseurs, majCurseurs, marquerDateTouchee, rafraichirDateSaisie,
-    razPresetTemp, reinitialiserSaisie, releaseWakeLock,
+    majTempHint, reinitialiserSaisie, releaseWakeLock, surChauffe,
     remplirSelectCafes, remplirSelectRecettes, remplirSelectTasses, rendreTassesEditeur,
-    restaurerBrouillon, saisie, screenWakeLock, surChoixCafe,
+    saisie, screenWakeLock, surChoixCafe,
     syncWakeLock, tOuverture, volumeEstime,
   });
 })();
