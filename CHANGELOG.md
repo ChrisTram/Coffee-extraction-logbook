@@ -5,6 +5,15 @@ de page du site est celui du `<meta name="app-version">` d'`index.html`, posé
 par `node tools/bump_version.mjs X`. Chaque entrée dit CE QUI a changé ; le
 pourquoi est dans `DECISIONS.md`.
 
+- v7.92 : deux recettes Switch de percolation pure, en deuxième et troisième
+  positions : Better 1 Cup (James Hoffmann, 15 g / 250 g, cinq versements) et
+  One and Done (Lance Hedrick, 15 g / 225 g, deux blooms puis un versement).
+  Les étiquettes des recettes suivantes se décalent (pas de schéma v9), et
+  l'ordre d'affichage des recettes d'origine suit désormais la graine à chaque
+  chargement. La fiche des procédés du Guide gagne le détail du lavé, les trois
+  teintes de honey, les risques du natural, l'anaerobic en tasse, le co-ferment,
+  le décaféiné et une correspondance procédé vers recette, en français et en
+  anglais.
 - v7.91 : la bascule « inclure les ratées dans les analyses » quitte le bandeau
   du tableau de bord pour l'écran Paramètres, section Cet appareil, avec le
   compte des tasses écartées. Et la saisie rapide enregistre SANS note par défaut,

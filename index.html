@@ -7,8 +7,8 @@
 <!-- Version du site, source unique : le pied de page la lit, et les fichiers
      chargés à la demande la mettent dans leur URL. Se pose avec
      node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="7.91">
-<link rel="stylesheet" href="css/styles.css?v=7.91">
+<meta name="app-version" content="7.92">
+<link rel="stylesheet" href="css/styles.css?v=7.92">
 <!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
      SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
      parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
@@ -614,7 +614,7 @@
     <h2 id="ref-recettes" class="ref-titre">Recettes</h2>
     <button class="btn btn-petit" id="btn-gerer-recettes">Gérer les recettes</button>
   </div>
-  <p class="ref-intro">Trois recettes Brikka et six recettes Switch. Le principe qui les gouverne toutes : le Switch ne doit pas refaire ce que la Brikka fait mieux. Toutes portent maintenant ma molette unique, 1.5.0, et chaque recette garde dans sa note la mouture que sa source recommandait. Chaque recette est éditable, et les recettes d'origine restent restaurables à tout moment.</p>
+  <p class="ref-intro">Trois recettes Brikka et huit recettes Switch. Le principe qui les gouverne toutes : le Switch ne doit pas refaire ce que la Brikka fait mieux. Toutes portent maintenant ma molette unique, 1.5.0, et chaque recette garde dans sa note la mouture que sa source recommandait. Chaque recette est éditable, et les recettes d'origine restent restaurables à tout moment.</p>
   <div class="grille-recettes" id="grille-recettes"></div>
 
   <div class="carte ref-bloc encadre-costaud">
@@ -655,6 +655,13 @@
         <p><b>Carbonic maceration</b> : cuve saturée en CO2, technique empruntée au beaujolais.</p>
         <p><b>Mosto</b> : fermentation dans le jus de sa propre pulpe. Sucré et délicat.</p>
         <p><b>Wet hulled (giling basah)</b> : parche retirée humide, séchage écourté, spécialité de Sumatra. Corps très épais, terreux, acidité écrasée.</p>
+        <p><b>Lavé, en détail</b> : fermentation du grain dans l'eau 12 à 72 heures pour dissoudre le mucilage, puis lavage et séchage. Le plus lisible, le plus facile à brasser. Éthiopie lavé : floral et thé. Kenya : cassis et tomate. Colombie : caramel et pomme.</p>
+        <p><b>Honey, les trois teintes</b> : yellow garde peu de mucilage, proche du lavé. Red en garde la moitié. Black garde tout le mucilage, séché lentement à l'ombre, proche du natural. Sucre de canne, fruits à noyau, corps rond : le compromis quand je veux du sucre sans l'excès des naturals.</p>
+        <p><b>Natural, les risques</b> : fraise, myrtille, fruits tropicaux, parfois vineux. Plus de corps, moins d'acidité, plus variable d'un lot à l'autre, et un goût de ferment ou de moisi si le séchage est mal fait.</p>
+        <p><b>Anaerobic, en tasse</b> : cannelle, bubble gum, banane, rhum. Certains adorent, d'autres trouvent ça artificiel. Cher.</p>
+        <p><b>Co-ferment ou infusé</b> : fruits, levures ou épices ajoutés dans la cuve. Goût de mangue ou de fraise très marqué, et un débat dans le milieu sur ce qui est encore du café.</p>
+        <p><b>Décaféiné</b> : un retrait de caféine, pas une fermentation. Swiss Water, sucre de canne (EA) et CO2 supercritique sont les plus propres. Plus poreux, il se brasse un peu plus chaud et un peu plus fin.</p>
+        <p><b>Ce que ça change pour mes recettes</b> : un lavé va vers la percolation pure, Better 1 Cup ou One and Done, eau chaude, je cherche la clarté. Un honey va vers la Chronicler, sucre et corps sans perdre le détail. Un natural aussi, ou en immersion, à 90 ou 92 degrés, sinon le ferment et l'amertume ressortent, et un numéro plus gros à la molette, il est moins dense. Un anaerobic : Chronicler à 88 ou 90 degrés, ses arômes sont volatils et ça vire vite au sucré écœurant.</p>
         <p><b>Rang bơ ou tẩm bơ</b> : beurre, souvent avec sucre et sel, incorporés à la torréfaction. Tradition vietnamienne. Jamais en filtre papier, jamais au moulin.</p>
         <p><b>Rang mộc</b> : torréfaction nue, rien d'ajouté. C'est un gage de pureté, pas un niveau de torréfaction.</p>
       </div>
@@ -1279,27 +1286,27 @@ Cảm ơn shop.</pre>
 <!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
      et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
      desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=7.91"></script>
-<script defer src="js/i18n.js?v=7.91"></script>
-<script defer src="js/grind.js?v=7.91"></script>
-<script defer src="js/recettes.js?v=7.91"></script>
+<script defer src="js/outils.js?v=7.92"></script>
+<script defer src="js/i18n.js?v=7.92"></script>
+<script defer src="js/grind.js?v=7.92"></script>
+<script defer src="js/recettes.js?v=7.92"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=7.91"></script>
-<script defer src="js/data-csv.js?v=7.91"></script>
-<script defer src="js/data-schema.js?v=7.91"></script>
-<script defer src="js/data-store.js?v=7.91"></script>
-<script defer src="js/data-calculs.js?v=7.91"></script>
-<script defer src="js/data-migrations.js?v=7.91"></script>
-<script defer src="js/data.js?v=7.91"></script>
-<script defer src="js/reglages.js?v=7.91"></script>
-<script defer src="js/charts.js?v=7.91"></script>
-<script defer src="js/ui-noyau.js?v=7.91"></script>
-<script defer src="js/ui-tableau.js?v=7.91"></script>
-<script defer src="js/ui-saisie.js?v=7.91"></script>
-<script defer src="js/ui-rapide.js?v=7.91"></script>
-<script defer src="js/ui-historique.js?v=7.91"></script>
-<script defer src="js/ui-guide.js?v=7.91"></script>
-<script defer src="js/ui-catalogue.js?v=7.91"></script>
-<script defer src="js/app.js?v=7.91"></script>
+<script defer src="js/sync.js?v=7.92"></script>
+<script defer src="js/data-csv.js?v=7.92"></script>
+<script defer src="js/data-schema.js?v=7.92"></script>
+<script defer src="js/data-store.js?v=7.92"></script>
+<script defer src="js/data-calculs.js?v=7.92"></script>
+<script defer src="js/data-migrations.js?v=7.92"></script>
+<script defer src="js/data.js?v=7.92"></script>
+<script defer src="js/reglages.js?v=7.92"></script>
+<script defer src="js/charts.js?v=7.92"></script>
+<script defer src="js/ui-noyau.js?v=7.92"></script>
+<script defer src="js/ui-tableau.js?v=7.92"></script>
+<script defer src="js/ui-saisie.js?v=7.92"></script>
+<script defer src="js/ui-rapide.js?v=7.92"></script>
+<script defer src="js/ui-historique.js?v=7.92"></script>
+<script defer src="js/ui-guide.js?v=7.92"></script>
+<script defer src="js/ui-catalogue.js?v=7.92"></script>
+<script defer src="js/app.js?v=7.92"></script>
 </body>
 </html>

@@ -710,6 +710,45 @@ c'est-à-dire un cas que la vraie donnée ne produit jamais. Un fixture qui
 s'écarte du réel transforme un test en décoration. Il porte maintenant les
 vrais identifiants.
 
+### Deux percolations pures de plus : Better 1 Cup et One and Done
+
+Ajoutées en v7.92 sur les notes de Chris, en deuxième et troisième positions
+des Switch, juste derrière la Chronicler. Jusque là le Tetsu Devil était la
+seule percolation pure, et c'est une recette avancée ; il manquait une V60
+simple pour les lavés propres, à commencer par le Là Việt Balanced.
+
+- **Better 1 Cup (James Hoffmann, novembre 2022)** : 15 g / 250 g, cinq
+  versements de 50 g, dix secondes de verse puis dix de pause, tourbillon doux
+  et aucune cuillère. Plus de clarté et d'acidité que la Chronicler, qui garde le
+  sucre et le corps. Elle remplace l'Ultimate 500 ml pour une tasse ; pour deux
+  tasses l'ancienne reste meilleure.
+- **One and Done (Lance Hedrick)** : 15 g / 225 g, deux blooms de 45 g sans
+  tourbillon puis les 135 g restants d'un coup. Le second bloom chasse le CO2,
+  donc la grosse verse ne creuse pas de canaux : c'est ce qui la rend tolérante.
+  La mouture se règle sur le temps total, 2:00 à 2:30.
+
+Trois choix d'intégration :
+
+1. **La molette reste 1.5.0** comme partout, et les conseils de mouture des
+   sources vivent dans la `note`, sous la forme « un numéro plus gros » ou « plus
+   fin », toujours dans le sens du défaut constaté. Les textes évitent de
+   promettre « plus fin » dans `pourQui` : le test qui protège cette règle a
+   attrapé la première version.
+2. **Les étiquettes « Recette N » se décalent** (Costaud 4 et 5, Tetsu 6,
+   Sherrycipe 7) par le pas de schéma v9, ciblé sur l'ancienne étiquette pour
+   respecter une étiquette réécrite à la main. La Sweet reprend « Recette 1 »,
+   celle de sa famille : elle partage la carte de la Chronicler.
+3. **L'ordre d'affichage est rétabli à chaque chargement** : recettes d'origine
+   dans l'ordre de la graine, personnelles ensuite. Sans ça, une recette ajoutée
+   à la graine arrivait en dernier chez qui avait déjà des données, quelle que
+   soit sa position dans `RECETTES_DEPART`. Idempotent, donc dans la partie
+   idempotente de `migrerDonnees` plutôt qu'en pas de schéma.
+
+La fiche des procédés du Guide reçoit dans le même mouvement ce que les notes
+de Chris ajoutaient : le détail du lavé, les trois teintes de honey, les risques
+du natural, l'anaerobic en tasse, le co-ferment, le décaféiné, et une
+correspondance procédé vers recette.
+
 ### Le moulin dans l'écran Guide : un réglage, pas un convertisseur
 
 Le bloc était un champ texte et un diagramme figé. C'est devenu l'endroit où Chris

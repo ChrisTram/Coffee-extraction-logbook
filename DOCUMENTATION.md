@@ -7,7 +7,7 @@ choix, les bugs trouvés et le raisonnement qui a mené là vivent dans
 qu'on touche. L'historique des versions est dans `CHANGELOG.md`. Commencer par
 `START-HERE.md` si tu arrives sans contexte.
 
-Dernière mise à jour : v7.91, 2026-09-08.
+Dernière mise à jour : v7.92, 2026-09-13.
 
 ## 1. Vue d'ensemble
 
@@ -224,15 +224,19 @@ etapes, pour_qui, cafes_associes, note, par_defaut, avancee, variantes, actif`
   tasse moins volume de café estimé.
 - `variantes` 0/1 : active le bloc Tetsu (versements pilotables) : réservé au
   Tetsu Devil, préservé à l'édition.
-- Les 9 recettes d'origine (RECETTES_DEPART dans recettes.js) sont
+- Les 11 recettes d'origine (RECETTES_DEPART dans recettes.js) sont
   restaurables une par une via "Rétablir la version d'origine".
 
-Recettes d'origine v7 : Brikka classique (1.2.0), Brikka flat white et
-Brikka cappuccino (famille brikka-lait, lait), The Coffee Chronicler's Recipe
-et (Sweet) (famille chronicler, 1.6.0), Le Costaud (Bloom) 1.4.0 et
-(Immersion) 1.5.0 (famille costaud), The Tetsu Devil (2.0.0, variantes),
-La Sherrycipe (2.0.0, paliers 0:00/0:30/1:00/1:30). Toutes les Switch à
-15 g / 225 g, ratio 1:15, environ 195 ml.
+Recettes d'origine (v7.92) : trois Brikka, Brikka classique et sa variante
+(eau préchauffée), famille brikka-classique, et Brikka au lait ; huit Switch,
+dans l'ordre d'affichage : The Coffee Chronicler's Recipe et (Sweet), famille
+chronicler, 15 g / 240 g ; Better 1 Cup (Hoffmann), 15 g / 250 g, percolation
+pure en cinq versements ; One and Done (Lance Hedrick), 15 g / 225 g, deux
+blooms puis un versement ; Le Costaud (Bloom) et (Immersion), famille costaud ;
+The Tetsu Devil (variantes) ; La Sherrycipe. Toutes portent la molette 1.5.0,
+la mouture que leur source recommandait est dans leur `note`. L'ordre
+d'affichage suit `RECETTES_DEPART` pour les recettes d'origine, les personnelles
+viennent après : `migrerDonnees` le rétablit à chaque chargement.
 
 ### tasses.csv
 `id, nom, contenance_ml`. Quatre par défaut (TASSES_DEPART) : Flat White Egg

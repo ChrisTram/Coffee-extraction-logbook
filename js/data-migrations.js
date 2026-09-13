@@ -37,7 +37,7 @@ const DATA_MIGRATIONS = (() => {
 
        Chaque pas ne touche QUE la valeur semée d'avant. Un pas qui écraserait un
        réglage choisi volontairement serait un bug, pas une migration. */
-    const SCHEMA_ACTUEL = 8;
+    const SCHEMA_ACTUEL = 9;
 
     // Rattrapage de la puissance de feu des recettes Brikka : l'échelle de Chris a
     // bougé deux fois, 3 puis 4 puis 2.
@@ -188,6 +188,28 @@ const DATA_MIGRATIONS = (() => {
         });
         return touche;
       } },
+
+    /* Deux recettes de percolation pure rejoignent la graine en v7.92, en
+       deuxième et troisième positions : Better 1 Cup (Hoffmann) et One and Done
+       (Lance Hedrick). Les étiquettes « Recette N » des recettes d'origine
+       suivantes se décalent, et la Sweet, variante de la Chronicler affichée sur
+       la même carte, reprend l'étiquette de sa famille. Ciblé sur l'ancienne
+       étiquette : une étiquette réécrite à la main n'est pas touchée. L'ORDRE
+       d'affichage, lui, est rétabli à chaque chargement par migrerDonnees. */
+    { v: 9, nom: "numéros des recettes après Hoffmann et One and Done", appliquer: () => {
+      const nouveaux = { "sweet": ["Recette 2", "Recette 1"], "costaud-bloom": ["Recette 3", "Recette 4"],
+        "costaud-immersion": ["Recette 4", "Recette 5"], "tetsu-devil": ["Recette 5", "Recette 6"],
+        "sherrycipe": ["Recette 6", "Recette 7"] };
+      let touche = false;
+      state.recettes.forEach(rec => {
+        const n = nouveaux[rec.id];
+        if (!n || rec.numero !== n[0]) return;
+        rec.numero = n[1];
+        estampiller(rec);
+        touche = true;
+      });
+      return touche;
+    } },
     ];
 
     /* Applique les pas manquants et écrit la nouvelle version. Renvoie vrai si
@@ -238,6 +260,15 @@ const DATA_MIGRATIONS = (() => {
           }
         });
       }
+      // 2 bis. ORDRE d'affichage : les recettes d'origine dans l'ordre de la
+      //    graine, les personnelles ensuite dans leur ordre. Idempotent. Sans ça,
+      //    une recette ajoutée à la graine arrivait en fin de liste chez qui avait
+      //    déjà des données, quelle que soit sa position dans RECETTES_DEPART.
+      const rang = new Map(RECETTES_DEPART.map((d, i) => [d.id, i]));
+      state.recettes = state.recettes
+        .map((r, i) => ({ r, cle: rang.has(r.id) ? rang.get(r.id) : RECETTES_DEPART.length + i }))
+        .sort((x, y) => x.cle - y.cle)
+        .map(x => x.r);
       // 3. Met à jour les fiches Sáng Tạo 4 et Balanced si elles n'ont pas
       //    encore reçu leurs corrections (marquées par le tag).
       const c1 = state.cafes.find(c => c.id === "c1" && (c.nom || "").includes("Sáng Tạo"));
