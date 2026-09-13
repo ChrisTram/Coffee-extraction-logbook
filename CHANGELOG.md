@@ -454,6 +454,15 @@ pourquoi est dans `DECISIONS.md`.
   Guide (boutiques, achats, messages vietnamiens), correction du bug
   d'avertissement au préremplissage.
 - v1 : site initial, 4 écrans, 2 CSV, démo, Chart.js local, thèmes.
+## 8.1
+
+Refonte « Comptoir », étape 2 sur 8 : la navigation. Rail fixe à gauche sur
+ordinateur, barre du bas plus feuille « Plus » sur téléphone, fin de l'entête. Le
+bouton flottant de saisie rapide est désormais réservé au téléphone. Le rail et
+la feuille sont le même élément, pour que les bascules restent uniques. Deux
+bugs trouvés au passage : le câblage des boutons d'entête supprimés plantait le
+démarrage, et le faux DOM des tests ne pouvait pas le voir.
+
 ## 8.0
 
 Refonte « Comptoir », étape 1 sur 8 : les fondations. Instrument Serif et Manrope

@@ -23,11 +23,27 @@ ES, ils ne marchent pas en `file://`), tous en `defer`, dans l'ordre de
 
 SIX écrans dans une page unique, bascule par nav et hash. La liste fait foi dans
 `ECRANS` (`js/ui-noyau.js`) : tableau, saisie, historique, reglages, guide,
-parametres. La barre de navigation ne porte que TROIS onglets à texte (tableau,
-saisie, historique) ; les trois écrans consultatifs sont des icônes dans les
-outils d'entête, avec la classe `nav-btn nav-icone`. Les anciens liens
-`#reference` restent valides grâce à `ECRANS_RENOMMES`. Un bouton flottant en bas
-à droite ouvre la saisie rapide (café, recette, note).
+parametres. Les anciens liens `#reference` restent valides grâce à
+`ECRANS_RENOMMES`.
+
+NAVIGATION (refonte Comptoir, v8.1). **Un seul élément `.rail` dans le DOM, deux
+mises en page.** À partir de 1024 px c'est un rail fixe à gauche de 232 px qui
+porte les six écrans, la marque, le bouton « Nouvelle tasse », l'état de synchro,
+les bascules langue et thème et le bouton Données. En dessous, le même élément
+devient la feuille « Plus » qui monte du bas, et `.barre-bas` prend les trois
+écrans quotidiens plus l'entrée « Plus ». Le CSS masque alors les entrées en
+double, la marque et « Nouvelle tasse ».
+
+Le rail et la feuille sont le MÊME élément parce que `app.js` adresse
+`#btn-lang`, `#btn-theme` et `#btn-donnees` par identifiant : deux exemplaires
+et le second serait muet. Un test refuse que ces identifiants apparaissent deux
+fois.
+
+Toutes les entrées portent `.nav-btn` et `data-ecran` : `activerEcran()` et le
+câblage d'`app.js` les traitent déjà toutes, la navigation n'a rien appris de
+nouveau. Les icônes sont des SVG en trait de 1,8 px, jamais des emoji, et un
+test le vérifie. Le bouton flottant de saisie rapide n'existe QUE sur téléphone :
+sur ordinateur « Nouvelle tasse » ouvre la saisie complète.
 
 Les cinq règles non négociables sont dans `START-HERE.md`. En résumé : jamais de
 tiret cadratin ni demi-cadratin, interface bilingue complète, couleurs de données

@@ -72,6 +72,29 @@ validée sur maquette, la police n'a pas été changée unilatéralement ; Manro
 lui, embarque bien le vietnamien, donc tout le texte courant est propre. À
 revoir avec Chris s'il trouve ça laid.
 
+**Le rail et la feuille « Plus » sont le même élément.** C'est le point qui
+surprend en lisant le HTML. La raison est prosaïque : `app.js` câble
+`#btn-lang`, `#btn-theme` et `#btn-donnees` par identifiant. Un rail et une
+feuille séparés auraient dupliqué ces trois boutons, et le second exemplaire
+n'aurait jamais répondu, en silence. Un test refuse maintenant qu'un de ces
+identifiants apparaisse deux fois dans la page.
+
+**Le faux DOM des tests inventait n'importe quel élément, et ça a mordu.**
+`parSelecteur`, dans `tools/boot.test.mjs`, fabriquait un élément pour tout
+sélecteur qu'on lui donnait. Le harnais ne pouvait donc PAS voir un élément
+supprimé : en retirant l'entête, `#btn-cafes-entete` et `#btn-recettes-entete`
+ont perdu leur bouton, leur `addEventListener` est resté, les cinq suites sont
+restées vertes, et le site plantait au premier chargement dans le navigateur,
+avant même d'afficher le tableau de bord. Un sélecteur d'identifiant SIMPLE rend
+maintenant `null` quand l'identifiant n'est pas dans `index.html`, comme un vrai
+navigateur ; les sélecteurs de classe restent permissifs, le harnais ne modélise
+pas le CSS. Une liste `IDS_DYNAMIQUES`, vide aujourd'hui, sert aux éléments que
+le JS crée lui-même : toute entrée qu'on y met est une dette.
+
+Les deux modales n'ont rien perdu au passage : `#btn-gerer-cafes` sur l'écran
+Saisie et `#btn-gerer-recettes` dans le Guide les ouvraient déjà, les boutons
+d'entête n'étaient que des raccourcis en double.
+
 **Les polices n'ont pas de `?v=`.** La version vit à trois endroits déjà
 (`index.html`, `sw.js`, et le `?v=` de chaque script) ; en ajouter un
 quatrième dans la feuille de style serait un oubli de plus à chaque montée.

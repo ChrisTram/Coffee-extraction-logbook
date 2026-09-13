@@ -73,8 +73,30 @@ function faireElement(nom) {
   };
 }
 
+/* LES IDENTIFIANTS DE LA PAGE, lus dans index.html.
+
+   Sans cette liste, parSelecteur inventait un element pour n'importe quel
+   selecteur : le faux DOM ne pouvait PAS voir un element supprime. Retirer un
+   bouton du HTML en laissant son addEventListener passait les cinq suites et
+   plantait au premier chargement reel. C'est arrive en retirant l'entete a la
+   refonte Comptoir, avec #btn-cafes-entete et #btn-recettes-entete.
+
+   Un selecteur d'identifiant SIMPLE rend donc null quand l'identifiant n'est
+   pas dans la page, comme un vrai navigateur. Les selecteurs de classe et
+   d'attribut restent permissifs : ce harnais ne modelise pas le CSS, et le
+   rendu des ecrans cree des elements que le HTML statique ne contient pas. */
+const HTML_PAGE = readFileSync(join(ROOT, "index.html"), "utf8");
+const IDS_PAGE = new Set([...HTML_PAGE.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]));
+
+/* Identifiants CREES PAR LE JS, donc legitimement absents du HTML statique.
+   Toute entree ici est une dette : elle dit "je sais que cet element n'existe
+   pas dans la page". A garder court, et a justifier. */
+const IDS_DYNAMIQUES = new Set([]);
+
 const cache = new Map();
 const parSelecteur = sel => {
+  const simple = /^#([A-Za-z][\w-]*)$/.exec(sel);
+  if (simple && !IDS_PAGE.has(simple[1]) && !IDS_DYNAMIQUES.has(simple[1])) return null;
   if (!cache.has(sel)) cache.set(sel, faireElement(sel));
   return cache.get(sel);
 };

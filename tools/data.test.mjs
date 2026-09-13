@@ -692,27 +692,64 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("chaque aria-label statique a sa traduction", nonTraduits.length === 0, nonTraduits.join(", "));
 }
 
-/* La barre de navigation ne doit plus jamais passer a la ligne : trois onglets a
-   texte, tout le reste en icone a droite. C'est le 7e onglet Parametres qui avait
-   casse la mise en page. */
+/* LA NAVIGATION : un rail sur ordinateur, une barre du bas sur telephone.
+
+   L'ancienne version de ce bloc visait <nav class="nav">, disparu avec
+   l'entete a la refonte Comptoir : indexOf rendait -1 et le controle passait a
+   vide. Elle portait aussi /data-ecran="(w+)"/ sans antislash, qui ne trouve
+   jamais rien : "toutes les cibles data-ecran existent" n'a donc jamais rien
+   verifie depuis qu'il existe. Les deux sont corriges ici. */
 {
-  const html = readFileSync(join(ROOT, 'index.html'), 'utf8');
-  const nav = html.slice(html.indexOf('<nav class="nav"'), html.indexOf('</nav>'));
-  const onglets = (nav.match(/nav-btn/g) || []).length;
-  check('trois onglets a texte au maximum dans la nav', onglets <= 3, String(onglets));
-
-  // Chaque icone d'ecran doit viser un ecran qui existe vraiment.
-  const cibles = [...html.matchAll(/data-ecran="(w+)"/g)].map(m => m[1]);
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
   const app = SOURCE_UI;
-  const liste = app.slice(app.indexOf('const ECRANS = ['), app.indexOf(']', app.indexOf('const ECRANS = [')));
-  const inconnues = cibles.filter(c => !liste.includes('"' + c + '"'));
-  check('toutes les cibles data-ecran existent', inconnues.length === 0, inconnues.join(', '));
+  const liste = app.slice(app.indexOf("const ECRANS = ["), app.indexOf("]", app.indexOf("const ECRANS = [")));
+  const ecrans = [...liste.matchAll(/"(\w+)"/g)].map(m => m[1]);
+  check("la liste des ecrans est lisible depuis le test", ecrans.length === 6, ecrans.join(", "));
 
-  // Une icone sans libelle accessible est muette au lecteur d'ecran.
-  const sansLabel = [...html.matchAll(/<button[^>]*nav-icone[^>]*>/g)].filter(m => !m[0].includes('aria-label'));
-  check('chaque icone d ecran porte un aria-label', sansLabel.length === 0, String(sansLabel.length));
+  /* Toute cible de navigation doit viser un ecran qui existe. Un data-ecran mal
+     orthographie ne leve rien : le clic ne fait simplement rien. */
+  const cibles = [...html.matchAll(/data-ecran="(\w+)"/g)].map(m => m[1]);
+  check("des cibles de navigation existent", cibles.length > 0, String(cibles.length));
+  const inconnues = [...new Set(cibles)].filter(c => !ecrans.includes(c));
+  check("toutes les cibles data-ecran existent", inconnues.length === 0, inconnues.join(", "));
+
+  /* Le rail porte les SIX ecrans : c'est lui le menu complet, la barre du bas
+     n'en montre que trois et renvoie le reste dans la feuille. */
+  const rail = html.slice(html.indexOf('<nav class="rail"'), html.indexOf("</nav>"));
+  const dansLeRail = [...rail.matchAll(/data-ecran="(\w+)"/g)].map(m => m[1]);
+  const oubliees = ecrans.filter(e => !dansLeRail.includes(e));
+  check("le rail mene aux six ecrans, aucun n'est devenu inatteignable",
+    oubliees.length === 0, oubliees.join(", "));
+
+  /* La barre du bas ne depasse pas quatre entrees : au dela elle se tasse et
+     les cibles passent sous le confort du pouce. C'est la raison d'etre de
+     "Plus", et le remplacant de l'ancienne regle des trois onglets. */
+  const barre = html.slice(html.indexOf('<nav class="barre-bas"'));
+  const finBarre = barre.indexOf("</nav>");
+  const entrees = (barre.slice(0, finBarre).match(/class="[^"]*barre-entree/g) || []).length;
+  check("quatre entrees au maximum dans la barre du bas", entrees <= 4, String(entrees));
+
+  /* LES TROIS OUTILS SONT UNIQUES. app.js les adresse par identifiant : si le
+     rail et la feuille etaient deux elements separes, le second bouton serait
+     muet. C'est precisement pour ca que le rail EST la feuille. */
+  ["btn-lang", "btn-theme", "btn-donnees", "btn-plus"].forEach(id => {
+    const n = (html.match(new RegExp('id="' + id + '"', "g")) || []).length;
+    check("#" + id + " n'existe qu'une fois dans la page", n === 1, String(n));
+  });
+
+  /* Une entree sans libelle lisible est muette au lecteur d'ecran. Les entrees
+     portent un <span> de texte ; celles qui n'en ont pas doivent porter un
+     aria-label. */
+  const muettes = [...html.matchAll(/<button[^>]*class="[^"]*(?:rail-entree|barre-entree)[^"]*"[^>]*>([\s\S]*?)<\/button>/g)]
+    .filter(m => !/<span>[^<]+<\/span>/.test(m[1]) && !/aria-label=/.test(m[0]));
+  check("chaque entree de navigation porte un libelle", muettes.length === 0, String(muettes.length));
+
+  /* AUCUN EMOJI dans la navigation : la DA demande des icones en trait, un seul
+     style. Les emoji rendaient la barre differente sur chaque systeme. */
+  const navEntiere = rail + barre.slice(0, finBarre);
+  const emoji = [...navEntiere.matchAll(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu)].map(m => m[0]);
+  check("aucun emoji dans la navigation", emoji.length === 0, emoji.join(" "));
 }
-
 /* Le carnet ne doit JAMAIS refuser un enregistrement au motif que la combinaison
    cafe plus machine lui deplait. Il y avait un blocage sur les cafes rang bo et
    non purs en Switch : il empechait exactement l'essai qui aurait produit la

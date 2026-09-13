@@ -7,8 +7,8 @@
 <!-- Version du site, source unique : le pied de page la lit, et les fichiers
      chargés à la demande la mettent dans leur URL. Se pose avec
      node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="8.0">
-<link rel="stylesheet" href="css/styles.css?v=8.0">
+<meta name="app-version" content="8.1">
+<link rel="stylesheet" href="css/styles.css?v=8.1">
 <!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
      SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
      parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
@@ -37,39 +37,65 @@
 </head>
 <body>
 
-<header class="entete">
-  <div class="entete-inner">
-    <div class="marque">
-      <a class="marque-lien" href="#tableau">
-        <span class="marque-icone" aria-hidden="true">☕</span>
-        <div>
-          <h1>Carnet d'extraction</h1>
-          <p class="marque-sous">Brikka, Switch et Timemore C5 ESP</p>
-        </div>
-      </a>
-    </div>
-    <!-- Trois entrées seulement : ce sont les seules où on va plusieurs fois par
-         jour. Tout le reste est consultatif et vit en icône à droite, ce qui évite
-         surtout à la barre de passer à la ligne. -->
-    <nav class="nav" aria-label="Navigation principale">
-      <button class="nav-btn actif" data-ecran="tableau">Tableau de bord</button>
-      <button class="nav-btn" data-ecran="saisie">Saisie</button>
-      <button class="nav-btn" data-ecran="historique">Historique</button>
-    </nav>
-    <div class="entete-actions">
+<!-- ================= NAVIGATION =================
+
+     UN SEUL element .rail dans le DOM, deux mises en page. Sur ordinateur c'est
+     le rail de gauche et il porte les six ecrans. Sous 1024 px il devient la
+     feuille « Plus » qui monte du bas, et les trois ecrans quotidiens passent
+     dans la barre du bas : le CSS cache alors les entrees en double.
+
+     Dupliquer le rail et la feuille aurait duplique #btn-lang, #btn-theme et
+     #btn-donnees, que app.js adresse par identifiant. Deux elements pour un
+     identifiant, c'est le second qui ne repond plus.
+
+     Toutes les entrees portent .nav-btn et data-ecran : activerEcran() et
+     app.js les cablent deja toutes, la navigation n'a rien a apprendre. -->
+<nav class="rail" id="rail" aria-label="Navigation principale">
+  <a class="rail-marque" href="#tableau">
+    <span class="rail-logo" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 9.5h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M7 3.5v2M11 3.5v2"/></svg></span>
+    <span class="rail-titres">
+      <h1 class="rail-nom">Carnet</h1>
+      <span class="rail-sous">Brikka et Switch</span>
+    </span>
+  </a>
+
+  <!-- Sur ordinateur, « Nouvelle tasse » ouvre la saisie COMPLETE : le bouton
+       flottant de saisie rapide disparait au dela de 1024 px. -->
+  <button class="btn btn-primaire rail-nouvelle" data-va="saisie"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg><span>Nouvelle tasse</span></button>
+
+  <div class="rail-entrees">
+      <button class="nav-btn rail-entree" data-ecran="tableau"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="8" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="11" width="7" height="10" rx="1.5"/></svg><span>Tableau de bord</span></button>
+      <button class="nav-btn rail-entree" data-ecran="saisie"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h8"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span>Saisie</span></button>
+      <button class="nav-btn rail-entree" data-ecran="historique"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h13"/><path d="M3 12h13"/><path d="M3 18h9"/><circle cx="19" cy="17" r="3"/><path d="M19 15.6V17l1 .7"/></svg><span>Historique</span></button>
+      <button class="nav-btn rail-entree" data-ecran="reglages"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M6 4h12v5a6 6 0 0 1-12 0z"/><path d="M18 5h2.5a2.5 2.5 0 0 1-2.5 4"/><path d="M6 5H3.5A2.5 2.5 0 0 0 6 9"/></svg><span>Mes réglages</span></button>
+      <button class="nav-btn rail-entree" data-ecran="guide"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v15H5.5A1.5 1.5 0 0 0 4 19.5z"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19"/><path d="M8 7.5h7"/></svg><span>Guide</span></button>
+      <button class="nav-btn rail-entree" data-ecran="parametres"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10"/><path d="M18 7h2"/><path d="M4 17h6"/><path d="M14 17h6"/><circle cx="16" cy="7" r="2"/><circle cx="12" cy="17" r="2"/></svg><span>Paramètres</span></button>
+  </div>
+
+  <div class="rail-pied">
+    <p class="rail-sync"><span class="rail-point" aria-hidden="true"></span><span class="sync-texte"></span></p>
+    <div class="rail-badges">
       <span id="badge-demo" class="badge badge-demo" hidden>Démo</span>
-      <span id="badge-fichier" class="badge badge-fichier" hidden title="Dossier de données lié">📁 <span id="badge-fichier-nom"></span></span>
-      <button id="btn-cafes-entete" class="btn-icone" title="Gérer mes cafés" aria-label="Gérer mes cafés">☕</button>
-      <button id="btn-recettes-entete" class="btn-icone" title="Gérer mes recettes" aria-label="Gérer mes recettes">📖</button>
-      <button id="btn-donnees" class="btn-icone" title="Gérer les données" aria-label="Gérer les données">⛁</button>
-      <button class="btn-icone nav-btn nav-icone" data-ecran="reglages" title="Mes meilleurs réglages" aria-label="Mes meilleurs réglages">🏆</button>
-      <button class="btn-icone nav-btn nav-icone" data-ecran="guide" title="Guide et référence" aria-label="Guide et référence">📚</button>
-      <button class="btn-icone nav-btn nav-icone" data-ecran="parametres" title="Paramètres" aria-label="Paramètres">⚙</button>
+      <span id="badge-fichier" class="badge badge-fichier" hidden title="Dossier de données lié"><svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2.5h7A1.5 1.5 0 0 1 19 10v7a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 3 17z"/></svg> <span id="badge-fichier-nom"></span></span>
+    </div>
+    <div class="rail-outils">
       <button id="btn-lang" class="btn-icone" title="Switch to English">EN</button>
-      <button id="btn-theme" class="btn-icone" title="Basculer clair ou sombre">◐</button>
+      <button id="btn-theme" class="btn-icone" title="Basculer clair ou sombre" aria-label="Basculer clair ou sombre"><svg class="ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor" stroke="none"/></svg></button>
+      <button id="btn-donnees" class="btn-icone rail-donnees" title="Gérer les données" aria-label="Gérer les données"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg><span>Données</span></button>
     </div>
   </div>
-</header>
+</nav>
+
+<!-- Barre du bas, telephone seulement. Quatre entrees : les trois ecrans
+     quotidiens, et « Plus » qui ouvre le rail en feuille. -->
+<nav class="barre-bas" aria-label="Navigation">
+  <button class="nav-btn barre-entree" data-ecran="tableau"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="8" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="11" width="7" height="10" rx="1.5"/></svg><span>Tableau</span></button>
+  <button class="nav-btn barre-entree" data-ecran="saisie"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h8"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span>Saisie</span></button>
+  <button class="nav-btn barre-entree" data-ecran="historique"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h13"/><path d="M3 12h13"/><path d="M3 18h9"/><circle cx="19" cy="17" r="3"/><path d="M19 15.6V17l1 .7"/></svg><span>Historique</span></button>
+  <button class="barre-entree" id="btn-plus" aria-expanded="false" aria-controls="rail"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg><span>Plus</span></button>
+</nav>
+
+<div id="voile-nav" class="voile-nav" hidden></div>
 
 <!-- Retiré par app.js dès que le premier écran est rendu. Volontairement dans le
      HTML et pas créé en JS : il doit être visible AVANT que le moindre script ne
@@ -1024,7 +1050,7 @@ Cảm ơn shop.</pre>
 <dialog id="modale-donnees" class="modale">
   <h2>Données</h2>
   <p id="donnees-statut"></p>
-  <p class="sync-ligne"><span id="sync-statut"></span>
+  <p class="sync-ligne"><span id="sync-statut" class="sync-texte"></span>
     <button class="btn btn-petit" id="don-sync" hidden>Synchroniser maintenant</button></p>
   <p class="modale-note" id="don-note-fs" hidden>Ton navigateur ne propose pas la liaison directe de fichiers (API File System Access). Elle existe dans Chrome et Edge. Dans Brave, elle s'active dans brave://flags (chercher File System Access API). En attendant, tes données restent dans le navigateur : pense à Exporter en CSV pour les sauvegarder.</p>
   <div class="donnees-actions">
@@ -1315,28 +1341,28 @@ Cảm ơn shop.</pre>
 <!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
      et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
      desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=8.0"></script>
-<script defer src="js/i18n.js?v=8.0"></script>
-<script defer src="js/grind.js?v=8.0"></script>
-<script defer src="js/recettes.js?v=8.0"></script>
+<script defer src="js/outils.js?v=8.1"></script>
+<script defer src="js/i18n.js?v=8.1"></script>
+<script defer src="js/grind.js?v=8.1"></script>
+<script defer src="js/recettes.js?v=8.1"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=8.0"></script>
-<script defer src="js/data-csv.js?v=8.0"></script>
-<script defer src="js/data-schema.js?v=8.0"></script>
-<script defer src="js/data-store.js?v=8.0"></script>
-<script defer src="js/data-calculs.js?v=8.0"></script>
-<script defer src="js/data-migrations.js?v=8.0"></script>
-<script defer src="js/data.js?v=8.0"></script>
-<script defer src="js/reglages.js?v=8.0"></script>
-<script defer src="js/charts.js?v=8.0"></script>
-<script defer src="js/ui-noyau.js?v=8.0"></script>
-<script defer src="js/ui-tableau.js?v=8.0"></script>
-<script defer src="js/ui-saisie.js?v=8.0"></script>
-<script defer src="js/ui-brouillon.js?v=8.0"></script>
-<script defer src="js/ui-rapide.js?v=8.0"></script>
-<script defer src="js/ui-historique.js?v=8.0"></script>
-<script defer src="js/ui-guide.js?v=8.0"></script>
-<script defer src="js/ui-catalogue.js?v=8.0"></script>
-<script defer src="js/app.js?v=8.0"></script>
+<script defer src="js/sync.js?v=8.1"></script>
+<script defer src="js/data-csv.js?v=8.1"></script>
+<script defer src="js/data-schema.js?v=8.1"></script>
+<script defer src="js/data-store.js?v=8.1"></script>
+<script defer src="js/data-calculs.js?v=8.1"></script>
+<script defer src="js/data-migrations.js?v=8.1"></script>
+<script defer src="js/data.js?v=8.1"></script>
+<script defer src="js/reglages.js?v=8.1"></script>
+<script defer src="js/charts.js?v=8.1"></script>
+<script defer src="js/ui-noyau.js?v=8.1"></script>
+<script defer src="js/ui-tableau.js?v=8.1"></script>
+<script defer src="js/ui-saisie.js?v=8.1"></script>
+<script defer src="js/ui-brouillon.js?v=8.1"></script>
+<script defer src="js/ui-rapide.js?v=8.1"></script>
+<script defer src="js/ui-historique.js?v=8.1"></script>
+<script defer src="js/ui-guide.js?v=8.1"></script>
+<script defer src="js/ui-catalogue.js?v=8.1"></script>
+<script defer src="js/app.js?v=8.1"></script>
 </body>
 </html>

@@ -427,9 +427,10 @@
   /* Câblage des modales cafés, sachets, recettes et de l'écran Paramètres.
      Appelé une fois par app.js. */
   function cablerCatalogue() {
-    // Boutons d'entête qui ouvrent les modales
-    $("#btn-cafes-entete").addEventListener("click", ouvrirModaleCafes);
-    $("#btn-recettes-entete").addEventListener("click", ouvrirModaleRecettes);
+    /* Les deux raccourcis d'entête ont disparu avec l'entête (refonte
+       Comptoir, étape 2). Les modales restent atteignables là où on en a besoin :
+       #btn-gerer-cafes sur l'écran Saisie, #btn-gerer-recettes dans le Guide.
+       Ces deux boutons là existent toujours et sont câblés par leurs écrans. */
 
     // Café : formulaire, et sachets
     $("#cafe-nouveau").addEventListener("click", () => ouvrirFormCafe(null));

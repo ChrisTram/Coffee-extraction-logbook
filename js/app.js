@@ -62,7 +62,11 @@
     if (plafond > 0 && taille / plafond >= 0.5) {
       texte += " " + I18N.t("sync_taille", { p: Math.round(100 * taille / plafond) });
     }
-    $("#sync-statut").textContent = texte;
+    $$(".sync-texte").forEach(e => { e.textContent = texte; });
+    /* Le point du rail prend la couleur de l'etat : c'est le seul endroit ou la
+       synchro est visible sans ouvrir un panneau. */
+    const point = $(".rail-point");
+    if (point) point.dataset.etat = DATA.state.syncEtat || "jamais";
     $("#don-sync").hidden = !DATA.syncPossible();
   }
 
@@ -85,13 +89,36 @@
 
   // ---------- Câblage ----------
 
+  /* Ouvre ou ferme la feuille « Plus » du telephone. Le rail et la feuille sont
+     le meme element : sur ordinateur cette fonction ne sert a rien et ne gene
+     pas, la classe n'a aucun effet au dela de 1024 px. */
+  function basculerFeuilleNav(ouvrir) {
+    const rail = $("#rail");
+    if (!rail) return;
+    rail.classList.toggle("ouverte", !!ouvrir);
+    $("#voile-nav").hidden = !ouvrir;
+    $("#btn-plus").setAttribute("aria-expanded", ouvrir ? "true" : "false");
+  }
+
   function cabler() {
     // Navigation
-    $$(".nav-btn").forEach(b => b.addEventListener("click", () => activerEcran(b.dataset.ecran)));
+    $$(".nav-btn").forEach(b => b.addEventListener("click", () => {
+      activerEcran(b.dataset.ecran);
+      /* Sur telephone le rail EST la feuille « Plus » : choisir un ecran doit la
+         refermer, sinon elle masque celui qu'on vient d'ouvrir. */
+      basculerFeuilleNav(false);
+    }));
 
-    // L'entete ramene au tableau de bord. On garde le href pour le clavier et
-    // l'ouverture dans un onglet, mais un clic simple bascule d'ecran.
-    const lienMarque = $(".marque-lien");
+    /* La feuille « Plus » du telephone. Le rail et elle sont le meme element :
+       voir le commentaire de la navigation dans index.html. */
+    $("#btn-plus").addEventListener("click", () => {
+      basculerFeuilleNav(!$("#rail").classList.contains("ouverte"));
+    });
+    $("#voile-nav").addEventListener("click", () => basculerFeuilleNav(false));
+
+    // La marque du rail ramene au tableau de bord. On garde le href pour le
+    // clavier et l'ouverture dans un onglet, mais un clic simple bascule d'ecran.
+    const lienMarque = $(".rail-marque");
     if (lienMarque) {
       lienMarque.addEventListener("click", ev => {
         if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button !== 0) return;
@@ -145,6 +172,7 @@
        dialogues : ils restaient ouverts et il fallait viser leur bouton. */
     document.addEventListener("keydown", ev => {
       if (ev.key !== "Escape") return;
+      if ($("#rail").classList.contains("ouverte")) { basculerFeuilleNav(false); return; }
       if (UI.rapideEstOuvert()) { UI.basculerRapide(false); return; }
       const ouverts = ["#form-cafe", "#form-sachet", "#form-recette"]
         .map(s => $(s)).filter(x => x && !x.hidden);
