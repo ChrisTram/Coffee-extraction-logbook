@@ -146,6 +146,7 @@ const I18N = (() => {
     d_chauffe: { fr: "Bouilloire sur le feu" },
     temp_estimee: { fr: "{d} sur le feu donne environ {t} °C (elle bout en {e})." },
     temp_conseil: { fr: "Pour {t} °C, laisse la bouilloire environ {d} sur le feu (elle bout en {e})." },
+    temp_sans_bouilloire: { fr: "Pour estimer le degré depuis le temps de chauffe : chronomètre une fois ta bouilloire, de l'eau du robinet au gros bouillon, et pose ce temps dans Paramètres, Ma bouilloire." },
     t_param_ebullition: { fr: "Le temps d'ébullition doit être entre 30 secondes et 30 minutes." },
     d_volume: { fr: "Volume extrait" },
     d_eau_ajoutee: { fr: "Eau ajoutée" },

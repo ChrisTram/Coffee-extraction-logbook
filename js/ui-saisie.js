@@ -125,8 +125,29 @@
   function majChampPrechauffe() {
     const r = trouverRecette($("#f-recette").value);
     const familleTranche = !!r && FAMILLES_PRECHAUFFAGE.includes(r.famille || "");
-    $("#champ-prechauffe").hidden = saisie.methode !== "Brikka" || familleTranche;
+    /* TOUJOURS visible sur la Brikka (v7.95, demande de Chris) : c'est la seule
+       question que la Brikka pose sur l'eau. Sur la famille brikka-classique la
+       case et la variante de recette disent la même chose, alors elles restent
+       d'accord dans les deux sens : la recette coche la case, et cocher la case
+       change la recette (surPrechauffe). */
+    $("#champ-prechauffe").hidden = saisie.methode !== "Brikka";
     if (familleTranche) $("#f-prechauffe").checked = RECETTES_EAU_PRECHAUFFEE.includes(r.id);
+  }
+
+  /* Cocher ou décocher « eau préchauffée » quand la recette est une des deux
+     Brikka classique bascule sur l'autre variante, pour qu'on ne puisse pas
+     enregistrer une recette préchauffée avec la case décochée. Sur les autres
+     recettes Brikka, la case est une simple donnée de la tasse. */
+  function surPrechauffe() {
+    const r = trouverRecette($("#f-recette").value);
+    if (!r || !FAMILLES_PRECHAUFFAGE.includes(r.famille || "")) return;
+    const voulue = $("#f-prechauffe").checked;
+    const cible = recettesDeMethode("Brikka").find(x =>
+      x.famille === r.famille && RECETTES_EAU_PRECHAUFFEE.includes(x.id) === voulue);
+    if (!cible || cible.nom === r.nom) return;
+    $("#f-recette").value = cible.nom;
+    prefillDepuisRecette(cible.nom);
+    majAvertissements();
   }
 
   // La recette demande-t-elle de remuer ? Coche l'agitation par défaut.
@@ -290,6 +311,8 @@
     const e = replis.ebullition;
     const s = lireDuree("f-chauffe");
     const t = $("#f-temp").value;
+    // Bouilloire jamais chronométrée : on le dit, on n'invente pas de degrés.
+    if (!(e > 0)) { poserTexte(hint, I18N.t("temp_sans_bouilloire")); return; }
     if (s !== "") {
       poserTexte(hint, I18N.t("temp_estimee", { d: fmtTemps(s), t: temperatureDepuisChauffe(s, e), e: fmtTemps(e) }));
     } else if (t !== "") {
@@ -1022,6 +1045,7 @@
     // Le volume extrait pilote le préremplissage du lait, il doit le rafraîchir.
     $("#f-volume").addEventListener("input", majLait);
     ["f-chauffe-min", "f-chauffe-sec"].forEach(id => $("#" + id).addEventListener("input", surChauffe));
+    $("#f-prechauffe").addEventListener("change", surPrechauffe);
     // Une saisie manuelle du degré a toujours le dernier mot ; l'aide suit.
     $("#f-temp").addEventListener("input", majTempHint);
     /* pointerdown en plus d'input : poser le doigt sur le curseur là où il est
@@ -1103,7 +1127,7 @@
     majCorrectionDiagnostic, majEtapesChrono, majLait, majLive,
     noteSaisie, paliersCourants, prefillDepuisRecette,
     brancherCurseurs, majCurseurs, marquerDateTouchee, rafraichirDateSaisie,
-    majTempHint, reinitialiserSaisie, releaseWakeLock, surChauffe,
+    majTempHint, reinitialiserSaisie, releaseWakeLock, surChauffe, surPrechauffe,
     remplirSelectCafes, remplirSelectRecettes, remplirSelectTasses, rendreTassesEditeur,
     saisie, screenWakeLock, surChoixCafe,
     syncWakeLock, tOuverture, volumeEstime,

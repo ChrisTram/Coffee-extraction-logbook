@@ -558,14 +558,20 @@
       (e.commentaire
         ? ' data-info="' + attrTitre(e.commentaire) + '"'
         : ' title="' + attrTitre(I18N.t("h_editer")) + '"') + ">" +
+      /* Trois colonnes : la pastille, le corps qui prend TOUTE la largeur
+         disponible (nom et contexte sur une ligne, puis mesures, goûts,
+         commentaire), et la note à droite. Le corps était un bloc qui ne
+         s'étirait pas : la ligne restait vide entre le texte et la note. */
       "<span class=\"pastille-methode " + e.methode.toLowerCase() + "\"></span>" +
-      "<div><span class=\"derniere-cafe\">" + I18N.tr(e._c.cafe_nom) + "</span>" +
-      "<div class=\"derniere-infos\">" + fmtDateHeure(e.date_heure) + " · " + e.methode +
+      "<div class=\"derniere-corps\">" +
+      "<div class=\"derniere-tete\"><span class=\"derniere-cafe\">" + I18N.tr(e._c.cafe_nom) + "</span>" +
+      "<span class=\"derniere-infos\">" + fmtDateHeure(e.date_heure) + " · " + e.methode +
       (e.recette ? " · " + e.recette : "") +
-      (e.diagnostic ? " · " + diagsAffiches(e.diagnostic) : "") + "</div>" +
+      (e.diagnostic ? " · " + diagsAffiches(e.diagnostic) : "") + "</span></div>" +
       mesuresDerniere(e) + goutsDerniere(e) + commentaireDerniere(e) + "</div>" +
+      "<div class=\"derniere-droite\">" +
       (estRatee(e) ? '<span class="badge-ratee" title="' + attrTitre(I18N.t("rt_badge_titre")) + '">' + I18N.t("rt_badge") + "</span>" : "") +
-      "<span class=\"derniere-note\">" + (e.note_sur_10 !== "" ? e.note_sur_10 + "<small>/10</small>" : "") + "</span></li>"
+      "<span class=\"derniere-note\">" + (e.note_sur_10 !== "" ? e.note_sur_10 + "<small>/10</small>" : "") + "</span></div></li>"
     ).join("");
   }
 

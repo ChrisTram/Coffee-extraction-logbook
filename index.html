@@ -7,8 +7,8 @@
 <!-- Version du site, source unique : le pied de page la lit, et les fichiers
      chargés à la demande la mettent dans leur URL. Se pose avec
      node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="7.94">
-<link rel="stylesheet" href="css/styles.css?v=7.94">
+<meta name="app-version" content="7.95">
+<link rel="stylesheet" href="css/styles.css?v=7.95">
 <!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
      SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
      parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
@@ -173,11 +173,20 @@
     </div>
     <p class="champ-hint legende-requis"><span class="requis">*</span> <span>= obligatoire, tout le reste est optionnel.</span></p>
 
+    <!-- Le formulaire est découpé en trois BLOCS titrés (v7.95) : le café et la
+         recette sur une rangée, les réglages chiffrés avec la ligne live en pied,
+         puis ce qu'on a en bouche. Avant, dix-huit champs se suivaient sans
+         respiration et Chris ne savait plus où poser les yeux. -->
+    <section class="saisie-bloc">
+    <h3 class="saisie-bloc-titre">Le café et la recette</h3>
+    <div class="saisie-tete">
     <div class="champ">
       <label for="f-cafe">Café</label>
       <div class="ligne-cafe">
         <select id="f-cafe"></select>
-        <button type="button" class="btn btn-petit" id="btn-gerer-cafes">Gérer les cafés</button>
+        <!-- Icône seule : en texte, le bouton écrasait le menu des cafés sur la
+             rangée café, méthode, recette. -->
+        <button type="button" class="btn btn-petit" id="btn-gerer-cafes" title="Gérer les cafés" aria-label="Gérer les cafés">✎</button>
       </div>
     </div>
 
@@ -193,13 +202,17 @@
       <label for="f-recette">Recette</label>
       <select id="f-recette"></select>
     </div>
+    </div>
 
     <div id="avertissements" class="avertissements" aria-live="polite"></div>
     <!-- Déduit de la date d'ouverture du sachet, jamais saisi ici. -->
     <p class="age-paquet" id="age-paquet" hidden></p>
+    </section>
 
     <!-- UNE seule grille pour tous les champs chiffrés : deux grilles côte à
          côte laissaient des cellules vides en fin de chacune. -->
+    <section class="saisie-bloc">
+    <h3 class="saisie-bloc-titre">Les réglages</h3>
     <div class="grille-nombres">
       <div class="champ">
         <label id="lbl-dose" for="f-dose">Dose (g)<span class="requis" title="Obligatoire">*</span></label>
@@ -310,6 +323,7 @@
       <span id="live-boisson" hidden>Boisson : <b>…</b></span>
       <span id="live-cout">Coût : <b>…</b></span>
     </div>
+    </section>
 
     <div class="chrono carte">
       <div class="chrono-entete-ligne">
@@ -346,6 +360,8 @@
       </div>
     </div>
 
+    <section class="saisie-bloc">
+    <h3 class="saisie-bloc-titre">En bouche</h3>
     <div class="champ">
       <!-- La note est FACULTATIVE : Chris enregistre souvent l'extraction en
            sortant la tasse et revient noter après l'avoir bue. -->
@@ -377,6 +393,8 @@
       <label for="f-commentaire">Commentaire</label>
       <textarea id="f-commentaire" enterkeyhint="done" rows="2" placeholder="Libre, par exemple : superbe tasse, ronde et sucrée"></textarea>
     </div>
+
+    </section>
 
     <div class="saisie-actions">
       <button type="submit" class="btn btn-primaire btn-grand" id="btn-enregistrer">Enregistrer l'extraction</button>
@@ -1140,12 +1158,12 @@ Cảm ơn shop.</pre>
 
   <article class="carte">
     <h3>Ma bouilloire</h3>
-    <p class="param-aide">Le temps qu'elle met à bouillir depuis l'eau du robinet, sur le feu habituel. En saisie Switch, le temps passé sur le feu donne la température estimée, en montée linéaire de 28 à 100 degrés. Une estimation, pas une mesure : le degré reste modifiable.</p>
+    <p class="param-aide">À chronométrer une fois : le temps qu'elle met, sur le feu habituel, de l'eau du robinet au gros bouillon, quand toute la surface roule. Pas les premières petites bulles, qui sont l'air dissous qui sort vers 60 ou 70 degrés. En saisie Switch, le temps passé sur le feu donne alors la température estimée, en montée linéaire de 28 à 100 degrés. Une estimation, pas une mesure : le degré reste modifiable. Vide tant que tu n'as pas mesuré, et le site n'estime rien.</p>
     <div class="grille-nombres">
       <div class="champ">
         <label for="param-ebullition-min">Temps pour bouillir</label>
         <div class="duree">
-          <input type="number" id="param-ebullition-min" step="1" min="0" max="30" inputmode="numeric" placeholder="4" aria-label="Temps pour bouillir, minutes"><span>min</span>
+          <input type="number" id="param-ebullition-min" step="1" min="0" max="30" inputmode="numeric" placeholder="0" aria-label="Temps pour bouillir, minutes"><span>min</span>
           <input type="number" id="param-ebullition-sec" step="1" min="0" max="59" inputmode="numeric" placeholder="00" aria-label="Temps pour bouillir, secondes"><span>s</span>
         </div>
       </div>
@@ -1297,28 +1315,28 @@ Cảm ơn shop.</pre>
 <!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
      et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
      desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=7.94"></script>
-<script defer src="js/i18n.js?v=7.94"></script>
-<script defer src="js/grind.js?v=7.94"></script>
-<script defer src="js/recettes.js?v=7.94"></script>
+<script defer src="js/outils.js?v=7.95"></script>
+<script defer src="js/i18n.js?v=7.95"></script>
+<script defer src="js/grind.js?v=7.95"></script>
+<script defer src="js/recettes.js?v=7.95"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=7.94"></script>
-<script defer src="js/data-csv.js?v=7.94"></script>
-<script defer src="js/data-schema.js?v=7.94"></script>
-<script defer src="js/data-store.js?v=7.94"></script>
-<script defer src="js/data-calculs.js?v=7.94"></script>
-<script defer src="js/data-migrations.js?v=7.94"></script>
-<script defer src="js/data.js?v=7.94"></script>
-<script defer src="js/reglages.js?v=7.94"></script>
-<script defer src="js/charts.js?v=7.94"></script>
-<script defer src="js/ui-noyau.js?v=7.94"></script>
-<script defer src="js/ui-tableau.js?v=7.94"></script>
-<script defer src="js/ui-saisie.js?v=7.94"></script>
-<script defer src="js/ui-brouillon.js?v=7.94"></script>
-<script defer src="js/ui-rapide.js?v=7.94"></script>
-<script defer src="js/ui-historique.js?v=7.94"></script>
-<script defer src="js/ui-guide.js?v=7.94"></script>
-<script defer src="js/ui-catalogue.js?v=7.94"></script>
-<script defer src="js/app.js?v=7.94"></script>
+<script defer src="js/sync.js?v=7.95"></script>
+<script defer src="js/data-csv.js?v=7.95"></script>
+<script defer src="js/data-schema.js?v=7.95"></script>
+<script defer src="js/data-store.js?v=7.95"></script>
+<script defer src="js/data-calculs.js?v=7.95"></script>
+<script defer src="js/data-migrations.js?v=7.95"></script>
+<script defer src="js/data.js?v=7.95"></script>
+<script defer src="js/reglages.js?v=7.95"></script>
+<script defer src="js/charts.js?v=7.95"></script>
+<script defer src="js/ui-noyau.js?v=7.95"></script>
+<script defer src="js/ui-tableau.js?v=7.95"></script>
+<script defer src="js/ui-saisie.js?v=7.95"></script>
+<script defer src="js/ui-brouillon.js?v=7.95"></script>
+<script defer src="js/ui-rapide.js?v=7.95"></script>
+<script defer src="js/ui-historique.js?v=7.95"></script>
+<script defer src="js/ui-guide.js?v=7.95"></script>
+<script defer src="js/ui-catalogue.js?v=7.95"></script>
+<script defer src="js/app.js?v=7.95"></script>
 </body>
 </html>

@@ -7,7 +7,7 @@ choix, les bugs trouvés et le raisonnement qui a mené là vivent dans
 qu'on touche. L'historique des versions est dans `CHANGELOG.md`. Commencer par
 `START-HERE.md` si tu arrives sans contexte.
 
-Dernière mise à jour : v7.94, 2026-09-13.
+Dernière mise à jour : v7.95, 2026-09-13.
 
 ## 1. Vue d'ensemble
 
@@ -433,10 +433,16 @@ Points fixés depuis, chacun expliqué dans `DECISIONS.md` :
   `temperatureDepuisChauffe` et `chauffePourTemperature` dans `recettes.js`. Le
   degré estimé s'écrit dans `f-temp`, reste modifiable et reste la valeur
   stockée ; l'aide sous le champ dit combien de temps viser pour la cible de la
-  recette. Rien de tout ça pour la Brikka : le champ Température ENTIER est
-  masqué (`#champ-temp`, v7.94) et rien n'est enregistré, l'eau chauffe dans la
-  chaudière ; seule la case « eau préchauffée » (décochée par défaut) la
-  concerne. L'ancien menu de méthodes de chauffe a disparu en v7.93.
+  recette. Le temps d'ébullition vaut ZÉRO tant qu'il n'est pas chronométré, et
+  alors rien n'est estimé. Rien de tout ça pour la Brikka : le champ Température
+  ENTIER est masqué (`#champ-temp`, v7.94) et rien n'est enregistré, l'eau
+  chauffe dans la chaudière. Sa seule option est la case « eau préchauffée »,
+  toujours visible sur la Brikka, décochée par défaut ; sur la famille
+  brikka-classique elle et la variante de recette se pilotent l'une l'autre
+  (`surPrechauffe`). L'ancien menu de méthodes de chauffe a disparu en v7.93.
+- Le formulaire est découpé en trois `<section class="saisie-bloc">` titrées
+  (v7.95) : café et recette sur une rangée (`.saisie-tete`), réglages avec la
+  ligne live en pied, en bouche. Les identifiants de champs n'ont pas changé.
 - Les cinq dernières extractions du tableau de bord montrent, sous les mesures,
   les goûts cochés (quatre au plus, puis « +n ») et le commentaire tronqué à
   110 caractères ; le texte complet reste au survol (v7.94).

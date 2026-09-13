@@ -5,6 +5,18 @@ de page du site est celui du `<meta name="app-version">` d'`index.html`, posé
 par `node tools/bump_version.mjs X`. Chaque entrée dit CE QUI a changé ; le
 pourquoi est dans `DECISIONS.md`.
 
+- v7.95 : la case « eau préchauffée » est toujours visible sur la Brikka ; sur la
+  famille Brikka classique, la cocher bascule sur la variante à l'eau préchauffée
+  et la décocher revient à la Standard, et choisir la recette coche la case : une
+  seule vérité, deux portes. Le temps d'ébullition de la bouilloire n'a plus de
+  valeur d'usine : tant qu'il n'est pas chronométré, le site n'estime aucune
+  température et l'aide explique comment le mesurer (jusqu'au gros bouillon, pas
+  aux premières bulles). La Sweet, variante de la Chronicler, passe en fin de
+  liste (Recette 8, pas de schéma v10). Le formulaire de saisie est découpé en
+  trois blocs titrés, café et recette sur une rangée, réglages avec la ligne live
+  en pied, en bouche ; le bouton des cafés devient une icône. Les cinq dernières
+  extractions passent en grille : le corps remplit toute la largeur jusqu'à la
+  note.
 - v7.94 : sur la Brikka le champ Température disparaît entièrement, rien n'est
   enregistré, l'eau chauffe dans la chaudière et seule la case « eau
   préchauffée » reste. Les cinq dernières extractions montrent leurs goûts cochés

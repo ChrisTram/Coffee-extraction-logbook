@@ -37,7 +37,7 @@ const DATA_MIGRATIONS = (() => {
 
        Chaque pas ne touche QUE la valeur semée d'avant. Un pas qui écraserait un
        réglage choisi volontairement serait un bug, pas une migration. */
-    const SCHEMA_ACTUEL = 9;
+    const SCHEMA_ACTUEL = 10;
 
     // Rattrapage de la puissance de feu des recettes Brikka : l'échelle de Chris a
     // bougé deux fois, 3 puis 4 puis 2.
@@ -205,6 +205,19 @@ const DATA_MIGRATIONS = (() => {
         const n = nouveaux[rec.id];
         if (!n || rec.numero !== n[0]) return;
         rec.numero = n[1];
+        estampiller(rec);
+        touche = true;
+      });
+      return touche;
+    } },
+
+    /* La Sweet passe en fin de liste (v7.95) et prend l'étiquette « Recette 8 ».
+       Ciblé sur l'étiquette posée par le pas v9, sinon rien. */
+    { v: 10, nom: "la Sweet en dernier", appliquer: () => {
+      let touche = false;
+      state.recettes.forEach(rec => {
+        if (rec.id !== "sweet" || rec.numero !== "Recette 1") return;
+        rec.numero = "Recette 8";
         estampiller(rec);
         touche = true;
       });

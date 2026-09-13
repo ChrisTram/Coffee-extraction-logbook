@@ -738,9 +738,10 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("chauffe_s est une colonne, en fin de ligne, apres ratee",
     DATA.EXT_COLS.indexOf("chauffe_s") === DATA.EXT_COLS.length - 1 && DATA.EXT_COLS.includes("temperature_c"));
   check("le temps d'ebullition de la bouilloire est un reglage synchronise",
-    DATA.REGLAGE_COLS.includes("ebullition_s") && DATA.normaliserReglages({}).ebullition_s === 240);
-  check("un temps d'ebullition absurde retombe sur l'usine",
-    DATA.normaliserReglages({ ebullition_s: 5 }).ebullition_s === 240 &&
+    DATA.REGLAGE_COLS.includes("ebullition_s") && DATA.normaliserReglages({}).ebullition_s === 0);
+  check("zero veut dire pas encore chronometree : aucune estimation", temperatureDepuisChauffe(120, 0) === "" && chauffePourTemperature(92, 0) === "");
+  check("un temps d'ebullition absurde retombe sur non mesure",
+    DATA.normaliserReglages({ ebullition_s: 5 }).ebullition_s === 0 &&
     DATA.normaliserReglages({ ebullition_s: 300 }).ebullition_s === 300);
 
   // Le modele : lineaire de l'eau du robinet (28) a l'ebullition (100).
@@ -764,7 +765,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     /chauffe_s: saisie\.methode === "Switch" \? lireDuree\("f-chauffe"\) : ""/.test(app));
   check("la ligne de chauffe est masquee sur la Brikka", /ligne-chauffe"\)\.hidden = m !== "Switch"/.test(app));
   check("les textes de l'aide sont bilingues",
-    bilingue("temp_estimee") && bilingue("temp_conseil") && bilingue("d_chauffe") && bilingue("t_param_ebullition"));
+    bilingue("temp_estimee") && bilingue("temp_conseil") && bilingue("temp_sans_bouilloire") && bilingue("d_chauffe") && bilingue("t_param_ebullition"));
 }
 
 /* Mise a l'echelle des versements. Une recette ecrit ses paliers en grammes

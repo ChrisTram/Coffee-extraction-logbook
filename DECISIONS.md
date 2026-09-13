@@ -383,6 +383,31 @@ doublon avec le choix de recette et permettrait d'enregistrer une contradiction.
 La valeur stockée se déduit alors de la recette, ce qui garde `eau_prechauffee`
 juste sur toute l'histoire. Elle reste visible sur les autres recettes Brikka.
 
+### La case « eau préchauffée » est toujours là sur la Brikka
+
+Depuis la v7.22 elle était MASQUÉE quand la recette appartenait à la famille
+Brikka classique, au motif que la variante de recette tranchait déjà la question.
+Logique, et faux à l'usage : Chris ouvre la saisie sur la Brikka et ne voit pas
+la seule option qu'il attend. La case est visible sur toute la Brikka depuis la
+v7.95, et le risque de contradiction est traité dans l'autre sens : sur cette
+famille, cocher bascule la recette sur la variante « eau préchauffée », décocher
+revient à la Standard, et choisir la recette coche la case (`surPrechauffe`,
+`majChampPrechauffe`). Une seule vérité, la recette, mais deux portes pour la
+changer. Sur les autres Brikka (au lait), la case reste une donnée de la tasse.
+
+### Le temps d'ébullition n'a pas de valeur d'usine
+
+La première version posait 4:00 par défaut, « l'ordre de grandeur d'une
+bouilloire d'un demi litre ». Chris a vu « elle bout en 4:00 » et a demandé d'où
+ça sortait : de nulle part, et sa bouilloire frétille déjà à 1:45. Un défaut
+inventé produit des degrés faux d'apparence sérieuse, ce qui est pire que pas de
+degrés. Depuis la v7.95, zéro veut dire « pas encore chronométrée » : aucune
+estimation n'est faite, et l'aide sous le champ explique la mesure à faire une
+fois, de l'eau du robinet au GROS BOUILLON, quand toute la surface roule. Les
+premières petites bulles vers 1:45 ne sont pas l'ébullition : c'est l'air
+dissous qui sort de l'eau vers 60 ou 70 degrés. Le frémissement vient plus tard,
+et le bouillon franc après. C'est ce dernier repère qui cale le modèle linéaire.
+
 ### La température du Switch par le temps de chauffe
 
 Chris n'a pas de thermomètre, et il a toujours la même bouilloire sur le même
@@ -789,6 +814,24 @@ La fiche des procédés du Guide reçoit dans le même mouvement ce que les note
 de Chris ajoutaient : le détail du lavé, les trois teintes de honey, les risques
 du natural, l'anaerobic en tasse, le co-ferment, le décaféiné, et une
 correspondance procédé vers recette.
+
+### Le formulaire de saisie en trois blocs
+
+Dix-huit champs se suivaient dans une seule colonne, café, deux gros boutons,
+recette, puis une grille de chiffres, des options, une ligne live, le chrono, la
+note, les diagnostics, les descripteurs, le commentaire. Chris l'a dit sans
+détour : « c'est le fouillis ». Depuis la v7.95 le formulaire est découpé en
+trois blocs titrés, en petites capitales discrètes : « Le café et la recette »
+(les trois choix qui décident du reste, sur UNE rangée), « Les réglages » (la
+grille chiffrée, les options, et la ligne live en pied de bloc, puisque c'est le
+résumé de ce qu'on vient de régler), et « En bouche » (note, ratée, diagnostic,
+descripteurs, commentaire). Le chrono garde sa carte entre les deux derniers.
+Aucun identifiant de champ n'a changé, donc ni le brouillon, ni les tests, ni le
+câblage n'ont bougé : ce sont des `<section>` posées autour de l'existant.
+
+La Sweet, variante de la Chronicler, passe en même temps en fin de liste
+(Recette 8) : dans le menu des recettes elle passait devant celles que Chris
+utilise, alors qu'elle n'est qu'une variante d'affichage de la première carte.
 
 ### Le moulin dans l'écran Guide : un réglage, pas un convertisseur
 

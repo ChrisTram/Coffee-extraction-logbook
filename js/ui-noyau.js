@@ -380,9 +380,9 @@ const UI = (() => {
      rendu ; il est juste rafraîchi depuis DATA à chaque notification. */
   const CLE_REPLIS = "replis-saisie";
   /* Temps d'ébullition de la bouilloire, en secondes, depuis l'eau du robinet.
-     Quatre minutes tant que Chris ne l'a pas chronométrée : c'est l'ordre de
-     grandeur d'une bouilloire d'un demi litre sur un feu de cuisine. */
-  const EBULLITION_USINE = 240;
+     ZÉRO tant que Chris ne l'a pas chronométrée : sans mesure, pas
+     d'estimation, l'aide de saisie demande de la faire une fois. */
+  const EBULLITION_USINE = 0;
   const replis = { dose: DOSE_REPLI_USINE, feu: FEU_REPLI_USINE, molette: MOLETTE_REPLI_USINE, ebullition: EBULLITION_USINE };
 
   function chargerReplis() {

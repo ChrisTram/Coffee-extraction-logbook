@@ -181,8 +181,11 @@ const DATA_SCHEMA = (() => {
       schema_version: nombre(r && r.schema_version, 0, 999, 0),
       /* Temps que met la bouilloire de Chris à bouillir depuis l'eau du robinet,
          en secondes. Décrit son MATÉRIEL, donc synchronisé comme la molette. Sert
-         à estimer la température du Switch depuis le temps de chauffe. */
-      ebullition_s: nombre(r && r.ebullition_s, 30, 1800, 240),
+         à estimer la température du Switch depuis le temps de chauffe. ZÉRO veut
+         dire « pas encore chronométré » : aucune estimation n'est faite tant que
+         Chris n'a pas mesuré sa bouilloire, une valeur d'usine inventée aurait
+         produit des degrés faux d'apparence sérieuse. */
+      ebullition_s: nombre(r && r.ebullition_s, 30, 1800, 0),
     };
   }
 

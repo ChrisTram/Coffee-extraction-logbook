@@ -586,12 +586,21 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
 
 /* Dernières extractions */
 .dernieres { list-style: none; margin: 0; padding: 0; }
+/* Trois colonnes : pastille, corps qui prend toute la largeur, note à droite.
+   En flex, le corps ne s'étirait pas et chaque ligne restait vide au milieu. */
 .dernieres li {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 4px;
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  column-gap: 12px;
+  align-items: start;
+  padding: 10px 6px;
   border-bottom: 1px solid var(--lignes);
-  flex-wrap: wrap;
 }
+.dernieres li .pastille-methode { margin-top: 6px; }
+.derniere-corps { min-width: 0; }
+.derniere-tete { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
+.derniere-droite { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.derniere-droite .badge-ratee { margin-right: 0; }
 .dernieres li:last-child { border-bottom: none; }
 .pastille-methode {
   width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
@@ -600,7 +609,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
 .pastille-methode.switch { background: var(--switch); }
 .derniere-note {
   font-family: var(--serif); font-size: 1.1rem; color: var(--encre);
-  min-width: 44px; text-align: right; margin-left: auto;
+  min-width: 44px; text-align: right;
   font-variant-numeric: tabular-nums;
 }
 .derniere-infos { font-size: 0.8rem; color: var(--attenue); }
@@ -731,6 +740,50 @@ input:focus, select:focus, textarea:focus {
   align-items: start;
 }
 #form-saisie { min-width: 0; }
+
+/* BLOCS DE SAISIE. Trois cartes titrées au lieu d'une colonne de dix-huit
+   champs : le café et la recette, les réglages, en bouche. Le titre est une
+   petite capitale discrète, pas un h3 de page : c'est un intertitre de formulaire. */
+.saisie-bloc {
+  background: var(--panneau);
+  border: 1px solid var(--lignes);
+  border-radius: var(--rayon);
+  padding: 16px 18px 4px;
+  margin-bottom: 16px;
+}
+.saisie-bloc-titre {
+  margin: 0 0 14px;
+  font-family: var(--sans);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--attenue);
+}
+/* Café, méthode et recette sur UNE rangée : ce sont les trois choix qui
+   décident de tout le reste, ils se lisent d'un regard. Alignés en bas pour que
+   les contrôles soient à la même hauteur malgré des libellés différents. */
+.saisie-tete {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1.3fr);
+  gap: 14px;
+  align-items: end;
+}
+.saisie-tete .champ { margin-bottom: 14px; }
+.saisie-tete .btn-methode { padding: 10px 8px; font-size: 1rem; }
+@media (max-width: 860px) {
+  .saisie-tete { grid-template-columns: 1fr; }
+}
+/* La ligne live devient le PIED du bloc des réglages : c'est le résumé de ce
+   qu'on vient de régler, à sa place juste dessous. */
+.saisie-bloc .bandeau-live {
+  margin: 4px -18px 0;
+  border-radius: 0 0 var(--rayon) var(--rayon);
+  border-top: 1px solid var(--lignes);
+}
+.saisie-bloc .grille-nombres { margin-bottom: 14px; }
+.saisie-bloc .options-saisie { margin-bottom: 4px; }
+.saisie-bloc .tasses-editeur { margin-bottom: 14px; }
 
 .saisie-aside {
   position: sticky;
