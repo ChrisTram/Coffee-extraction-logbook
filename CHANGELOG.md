@@ -454,6 +454,14 @@ pourquoi est dans `DECISIONS.md`.
   Guide (boutiques, achats, messages vietnamiens), correction du bug
   d'avertissement au préremplissage.
 - v1 : site initial, 4 écrans, 2 CSV, démo, Chart.js local, thèmes.
+## 8.7
+
+Refonte « Comptoir », étape 8 sur 8 : les deux thèmes vérifiés écran par écran.
+La carte sombre redéfinit ses jetons au lieu d'habiller ses descendants, ce qui
+rendait son contenu invisible en thème clair. Les pastilles de machine passent
+au point de couleur plutôt qu'au texte posé sur la couleur. Les six écrans
+passent maintenant l'audit de contraste dans les deux thèmes.
+
 ## 8.6
 
 Refonte « Comptoir », étape 7 sur 8 : les écrans secondaires. Tête de page sur Mes

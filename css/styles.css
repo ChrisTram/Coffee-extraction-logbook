@@ -163,6 +163,9 @@ html[data-theme="sombre"] {
   /* Graphique principal. La tendance lisse la ligne des notes : même teinte que
      l'accent, en translucide, pour se lire comme un fond. */
   --tendance: rgba(217, 135, 65, 0.40);
+  /* Fond de la carte sombre. En theme sombre elle n'a plus rien a inverser :
+     elle devient une carte secondaire bordee d'un filet accent. */
+  --carte-sombre-fond: #3c2d20;
 
   --hm0: #3c2d20;
   --hm1: #5a3c1f;
@@ -207,6 +210,9 @@ html[data-theme="clair"] {
   /* Pas de vert : « bon » prend l'accent. Voir le thème sombre. */
   --ok: #9a521c;
   --tendance: rgba(154, 82, 28, 0.34);
+  /* Fond de la carte sombre. Un jeton dedie et non --encre : a l'interieur de
+     la carte, --encre change de sens et devient la couleur du TEXTE. */
+  --carte-sombre-fond: #26190f;
 
   /* Rampe caramel du calendrier, du vide au plus actif. La DA en donne quatre
      pour cinq niveaux : le pas manquant est interpolé entre les deux derniers.
@@ -824,21 +830,44 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
 /* Une carte SOMBRE dans le theme clair : les insights et le chrono. En theme
    sombre l'inversion ne veut plus rien dire, elle devient une carte secondaire
    bordee d'un filet accent, ce qui la distingue sans l'eteindre. */
+/* LA CARTE SOMBRE REDEFINIT SES JETONS, elle n'habille pas ses descendants un
+   par un. C'est la seule facon de couvrir aussi ce qu'on y ajoutera plus tard :
+   la premiere version ne traitait que le titre et les liens, et tout le reste
+   ecrivait en --encre sur un fond --encre, soit du texte invisible. */
 .carte-sombre {
-  background: var(--encre);
-  border-color: var(--encre);
-  color: var(--fond);
-}
-.carte-sombre h3 { color: #c2ad98; }
-.carte-sombre a, .carte-sombre .lien-carte { color: #e0bd97; }
-html[data-theme="sombre"] .carte-sombre {
-  background: var(--panneau-2);
-  border-color: var(--accent);
+  --encre: #f6efe5;
+  --texte: #ede2d4;
+  --attenue: #c2ad98;
+  --accent: #e0bd97;
+  --accent-fort: #f0d3b4;
+  --accent-fond: rgba(224, 189, 151, 0.16);
+  --lignes: rgba(246, 239, 229, 0.2);
+  --lignes-douces: rgba(246, 239, 229, 0.12);
+  --panneau: rgba(246, 239, 229, 0.06);
+  --panneau-2: rgba(246, 239, 229, 0.1);
+  --barre-neutre: rgba(246, 239, 229, 0.3);
+  background: var(--carte-sombre-fond);
+  border-color: var(--carte-sombre-fond);
   color: var(--texte);
 }
-html[data-theme="sombre"] .carte-sombre h3 { color: var(--attenue); }
-html[data-theme="sombre"] .carte-sombre a,
-html[data-theme="sombre"] .carte-sombre .lien-carte { color: var(--accent); }
+/* En theme sombre il n'y a rien a inverser : la carte devient une carte
+   secondaire bordee d'un filet accent, et garde donc les jetons du theme. */
+html[data-theme="sombre"] .carte-sombre {
+  --encre: #f4eadb;
+  --texte: #dfd1bf;
+  /* Eclairci par rapport au theme : les sous-fonds de cette carte sont plus
+     clairs que --panneau, donc l attenue du theme n y tenait que 4,27:1. */
+  --attenue: #c0a88f;
+  --accent: #d98741;
+  --accent-fort: #eb9a52;
+  --accent-fond: rgba(217, 135, 65, 0.16);
+  --lignes: #4f3b28;
+  --lignes-douces: #402f21;
+  --panneau: #31241a;
+  --panneau-2: #47372a;
+  --barre-neutre: #7a6249;
+  border-color: var(--accent);
+}
 
 /* Le lien de bas de carte : « Voir mes meilleurs reglages », « Tout
    l'historique ». Un bouton, parce que ce sont des changements d'ecran. */
@@ -1954,15 +1983,29 @@ input:focus, select:focus, textarea:focus {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
+/* Un POINT de couleur suivi du nom, et non du texte pose sur la couleur de la
+   machine : le creme sur le vermillon du Switch donnait 2,75 et le bleu de la
+   Brikka 3,80. Les couleurs de donnees sont intouchables, mais rien n'obligeait
+   a ecrire dessus, et la DA decrit justement une pastille a point. */
 .chip-methode {
-  font-size: 0.75rem;
-  padding: 3px 9px;
-  border-radius: 999px;
-  color: var(--sur-accent);
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  padding: 3px 10px 3px 8px;
+  border-radius: var(--rayon-pastille);
+  background: var(--panneau-2);
+  color: var(--texte);
 }
-.chip-methode.brikka { background: var(--brikka); }
-.chip-methode.switch { background: var(--switch); }
+.chip-methode::before {
+  content: "";
+  width: 8px; height: 8px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--barre-neutre);
+}
+.chip-methode.brikka::before { background: var(--brikka); }
+.chip-methode.switch::before { background: var(--switch); }
 .chip-diagnostic { font-size: 0.8rem; color: var(--attenue); }
 
 .actions-ligne { display: flex; gap: 2px; }

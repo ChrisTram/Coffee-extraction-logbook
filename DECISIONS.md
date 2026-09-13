@@ -72,6 +72,34 @@ validée sur maquette, la police n'a pas été changée unilatéralement ; Manro
 lui, embarque bien le vietnamien, donc tout le texte courant est propre. À
 revoir avec Chris s'il trouve ça laid.
 
+**La carte sombre redéfinit ses JETONS, elle n'habille pas ses descendants.**
+Première version fausse, et pas qu'un peu : en thème clair, `.carte-sombre` pose
+un fond `--encre` mais tout son contenu continuait d'écrire en `--encre`. Encre
+sur encre, 1,00 de contraste, du texte littéralement invisible dans la carte des
+insights et dans le chrono. Seuls le titre et les liens avaient été traités, ce
+qui est exactement le piège : habiller les descendants un par un marche jusqu'au
+premier descendant qu'on ajoute ensuite. Le sous-arbre redéfinit maintenant
+`--encre`, `--texte`, `--attenue`, `--accent`, `--lignes` et `--panneau`, donc
+tout ce qui hérite est couvert d'avance. Le fond de la carte passe par un jeton
+dédié, `--carte-sombre-fond`, puisque `--encre` change de sens à l'intérieur.
+
+**Les pastilles de machine ne portent plus de texte sur la couleur.** Le crème
+sur le vermillon du Switch donnait 2,75:1, le bleu de la Brikka 3,80:1. Les
+couleurs de données sont intouchables, mais rien n'obligeait à écrire DESSUS :
+la pastille est devenue un point de couleur suivi du nom en texte normal, ce que
+la DA décrivait d'ailleurs.
+
+**Mesurer le contraste sur un volet masqué donne de faux positifs.** L'audit
+signalait cinq échecs de plus, tous avec des couleurs du thème sombre sur des
+fonds clairs. Explication : quand la page n'est pas visible, le navigateur gèle
+les transitions CSS, et `getComputedStyle` rend la couleur d'AVANT la bascule
+pour toute propriété qui transitionne. Il faut couper `transition` et
+`animation` avant de mesurer. Sans ça on court après des pannes qui n'existent
+pas, et on finit par ne plus croire l'outil.
+
+L'audit final passe les six écrans dans les deux thèmes : zéro élément de texte
+sous 4,5:1, ou 3:1 pour les grandes tailles.
+
 **Les filtres de l’historique restent des `<select>`, habillés en pastilles.** Le
 brief demande « cliquer une pastille ouvre le menu correspondant » : c’est
 exactement ce que fait un select natif, et il le fait mieux qu’un menu écrit à la
