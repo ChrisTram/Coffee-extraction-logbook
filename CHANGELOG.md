@@ -463,6 +463,15 @@ pourquoi est dans `DECISIONS.md`.
   Guide (boutiques, achats, messages vietnamiens), correction du bug
   d'avertissement au préremplissage.
 - v1 : site initial, 4 écrans, 2 CSV, démo, Chart.js local, thèmes.
+## 8.13
+
+Les six écrans ont enfin la même largeur : Paramètres vivait hors de main et
+s’affichait pleine fenêtre, et la barre de défilement faisait sauter le contenu de
+15 px entre écrans. Les cartes du tableau de bord s’étirent à la même hauteur,
+plus de trous. Les filtres de l’historique tiennent sur une ligne au lieu de
+deux étages. Les chiffres du calendrier passent en lignes et la grille s’ouvre sur
+la semaine en cours. Base typographique de 15 à 16 px.
+
 ## 8.12
 
 La note repasse au curseur, comme avant : le stepper est retiré. Corrige le champ

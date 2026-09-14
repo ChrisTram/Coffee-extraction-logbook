@@ -72,6 +72,33 @@ validée sur maquette, la police n'a pas été changée unilatéralement ; Manro
 lui, embarque bien le vietnamien, donc tout le texte courant est propre. À
 revoir avec Chris s'il trouve ça laid.
 
+**L’écran Paramètres vivait hors de `<main>`.** Il était posé après `</main>`,
+entre deux modales, et héritait donc de la largeur de la FENÊTRE : il commençait
+à 0, passait sous le rail et faisait 1293 px quand les autres en font 993. Ce
+n’est pas une régression de la refonte, il n’y a jamais été ; ça ne se voyait pas
+tant que `main` n’était qu’une colonne centrée, et le rail l’a rendu criant.
+
+**La place de la barre de défilement est réservée en permanence.** Un écran court
+(Mes réglages) était 15 px plus large qu’un écran long (le tableau de bord), et le
+contenu sautait latéralement à chaque changement d’onglet. `scrollbar-gutter:
+stable` règle ça en une ligne.
+
+**Les cartes d’une rangée s’étirent à la même hauteur.** Alignées sur le haut,
+elles laissaient un trou sous les plus courtes. Chris demandait des widgets
+déplaçables et redimensionnables ; l’étirement règle le symptôme pour une ligne de
+CSS, là où un tableau de bord manipulable demande un état persistant, une
+synchronisation, une version téléphone et un accès clavier. À reprendre comme
+chantier à part s’il le veut vraiment.
+
+**Les chiffres du calendrier passent en lignes.** La carte ne fait qu’un tiers de
+largeur : en colonnes, « tasses par semaine » se coupait en deux et chaque case
+prenait 70 px de haut pour un chiffre et un mot. Et quand la grille défile, elle
+part de la DROITE, sur la semaine en cours : commencer sur les semaines les plus
+anciennes montre exactement ce qu’on ne vient pas voir.
+
+**La base passe de 15 à 16 px.** Chris lit sur un 4K et se sentait mieux à 110
+pour cent de zoom.
+
 **Retour au curseur pour la note.** Le stepper visait juste sur le papier, Chris
 prefere le curseur, et c’est son carnet. Le stepper est retire en ENTIER, HTML,
 JS et CSS : laisser les deux dans le code, c’est laisser la question ouverte pour

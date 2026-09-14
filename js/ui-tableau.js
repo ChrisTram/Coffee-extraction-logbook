@@ -478,6 +478,14 @@
       if (nJour.length) infoParJour[cle] = "note moyenne " + moyenne(nJour).toFixed(1);
     });
     CHARTS.heatmap("g-heatmap", parJour, infoParJour, SEMAINES_HEATMAP);
+    /* Le calendrier se lit de gauche a droite, la semaine EN COURS est donc a
+       droite. Quand il est trop large pour sa carte et qu il defile, il doit
+       partir de la fin : commencer sur les semaines les plus anciennes montre
+       exactement ce qu on ne vient pas voir. */
+    {
+      const cadre = $("#g-heatmap");
+      if (cadre && cadre.scrollWidth > cadre.clientWidth) cadre.scrollLeft = cadre.scrollWidth;
+    }
     rendreStatsHeatmap(parJour);
 
     // Note moyenne par café

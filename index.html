@@ -7,8 +7,8 @@
 <!-- Version du site, source unique : le pied de page la lit, et les fichiers
      chargés à la demande la mettent dans leur URL. Se pose avec
      node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="8.12">
-<link rel="stylesheet" href="css/styles.css?v=8.12">
+<meta name="app-version" content="8.13">
+<link rel="stylesheet" href="css/styles.css?v=8.13">
 <!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
      SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
      parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
@@ -1104,6 +1104,94 @@ Cảm ơn shop.</pre>
   </div>
 </section>
 
+
+<!-- ================= ECRAN 7 : PARAMETRES ================= -->
+<section id="ecran-parametres" class="ecran">
+  <div class="tete-page">
+    <div class="tete-titres">
+      <p class="surligne">Valeurs par défaut et préférences</p>
+      <h2 class="titre-page">Paramètres</h2>
+    </div>
+  </div>
+  <p class="ecran-intro">Les valeurs pré-remplies quand tu ouvres une saisie. Elles appartiennent à la recette : c'est la même fiche que dans « Gérer les recettes », donc une seule vérité, et elle se synchronise entre tes appareils.</p>
+
+  <article class="carte">
+    <h3>Valeurs par défaut de chaque recette</h3>
+    <p class="param-aide">Un champ laissé vide n'est pas pré-rempli. C'est voulu pour la température de la Brikka : elle dépend de la puissance du feu, l'annoncer d'avance n'aurait aucun sens.</p>
+    <div class="param-tableau-zone">
+      <table class="tableau param-tableau">
+        <thead>
+          <tr>
+            <th>Recette</th>
+            <th>Dose (g)</th>
+            <th>Eau (g)</th>
+            <th>Température (°C)</th>
+            <th>Feu</th>
+            <th>Mouture</th>
+          </tr>
+        </thead>
+        <tbody id="param-recettes"></tbody>
+      </table>
+    </div>
+    <div class="saisie-actions">
+      <button class="btn btn-primaire" id="param-enregistrer">Enregistrer les valeurs par défaut</button>
+      <button class="btn btn-discret" id="param-annuler">Annuler mes changements</button>
+    </div>
+  </article>
+
+  <article class="carte">
+    <h3>Repli quand la recette ne dit rien</h3>
+    <p class="param-aide">Utilisé seulement si la recette choisie laisse la valeur vide.</p>
+    <div class="grille-nombres">
+      <div class="champ"><label for="param-dose-defaut">Dose de repli (g)</label><input type="number" id="param-dose-defaut" enterkeyhint="next" step="0.5" min="1"></div>
+      <div class="champ"><label for="param-feu-defaut">Puissance de feu de repli</label><input type="number" id="param-feu-defaut" enterkeyhint="next" step="1" min="1" max="10"></div>
+    </div>
+  </article>
+
+  <article class="carte">
+    <h3>Où est réglée la molette de mon broyeur</h3>
+    <p class="param-aide">C'est ce réglage qui prérempli la saisie, pas la cible de la recette. Ton C5 reste posé sur un seul réglage, la recette dit juste ce qu'elle viserait. La fiche continue d'afficher sa cible, et le site t'avertit si l'écart sort de la plage de la machine.</p>
+    <div class="grille-nombres">
+      <div class="champ">
+        <label for="param-molette">Molette (rotation.numéro.cran)</label>
+        <input type="text" id="param-molette" enterkeyhint="done" pattern="[0-3][.,][0-9][.,][0-4]" inputmode="decimal" placeholder="1.5.0">
+        <span class="champ-hint" id="param-molette-detail"></span>
+      </div>
+    </div>
+  </article>
+
+  <article class="carte">
+    <h3>Ma bouilloire</h3>
+    <p class="param-aide">À chronométrer une fois, sur le feu habituel, de l'eau du robinet au gros bouillon, quand toute la surface roule. Repère intermédiaire : beaucoup de petites bulles au fond et quelques-unes qui montent, c'est 85 à 90 degrés, pas encore l'ébullition ; le gros bouillon arrive une trentaine de secondes plus tard. Sur ta bouilloire ce repère tombe vers 1:30, d'où le 2:00 posé ici. En saisie Switch, le temps passé sur le feu donne la température estimée, en montée linéaire de 28 à 100 degrés. Une estimation, pas une mesure : le degré reste modifiable.</p>
+    <div class="grille-nombres">
+      <div class="champ">
+        <label for="param-ebullition-min">Temps pour bouillir</label>
+        <div class="duree">
+          <input type="number" id="param-ebullition-min" step="1" min="0" max="30" inputmode="numeric" placeholder="0" aria-label="Temps pour bouillir, minutes"><span>min</span>
+          <input type="number" id="param-ebullition-sec" step="1" min="0" max="59" inputmode="numeric" placeholder="00" aria-label="Temps pour bouillir, secondes"><span>s</span>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="carte">
+    <h3>Cet appareil</h3>
+    <p class="param-aide">Ces réglages restent locaux et ne se synchronisent pas : un téléphone et un ordinateur n'ont pas les mêmes besoins.</p>
+    <div class="grille-nombres">
+      <div class="champ"><label class="label-inline"><input type="checkbox" id="param-bips"> Bip du chronomètre à chaque palier</label></div>
+      <!-- Préférence de LECTURE : elle change ce que les chiffres du tableau de
+           bord racontent, pas les données. Elle vivait en bandeau au-dessus des
+           chiffres ; un réglage qu'on change une fois par mois n'a rien à faire
+           en tête de l'écran qu'on ouvre dix fois par jour. -->
+      <div class="champ">
+        <label class="label-inline"><input type="checkbox" id="param-ratees"> Inclure les ratées dans les analyses</label>
+        <span class="champ-hint" id="compte-ratees"></span>
+      </div>
+    </div>
+    <p class="param-aide">Le thème et la langue se règlent depuis l'en-tête, en haut à droite.</p>
+  </article>
+</section>
+
 </main>
 
 <!-- ================= MODALE PREMIER LANCEMENT ================= -->
@@ -1217,92 +1305,6 @@ Cảm ơn shop.</pre>
 
 <!-- ================= MODALE RECETTES ================= -->
 
-<!-- ================= ECRAN 7 : PARAMETRES ================= -->
-<section id="ecran-parametres" class="ecran">
-  <div class="tete-page">
-    <div class="tete-titres">
-      <p class="surligne">Valeurs par défaut et préférences</p>
-      <h2 class="titre-page">Paramètres</h2>
-    </div>
-  </div>
-  <p class="ecran-intro">Les valeurs pré-remplies quand tu ouvres une saisie. Elles appartiennent à la recette : c'est la même fiche que dans « Gérer les recettes », donc une seule vérité, et elle se synchronise entre tes appareils.</p>
-
-  <article class="carte">
-    <h3>Valeurs par défaut de chaque recette</h3>
-    <p class="param-aide">Un champ laissé vide n'est pas pré-rempli. C'est voulu pour la température de la Brikka : elle dépend de la puissance du feu, l'annoncer d'avance n'aurait aucun sens.</p>
-    <div class="param-tableau-zone">
-      <table class="tableau param-tableau">
-        <thead>
-          <tr>
-            <th>Recette</th>
-            <th>Dose (g)</th>
-            <th>Eau (g)</th>
-            <th>Température (°C)</th>
-            <th>Feu</th>
-            <th>Mouture</th>
-          </tr>
-        </thead>
-        <tbody id="param-recettes"></tbody>
-      </table>
-    </div>
-    <div class="saisie-actions">
-      <button class="btn btn-primaire" id="param-enregistrer">Enregistrer les valeurs par défaut</button>
-      <button class="btn btn-discret" id="param-annuler">Annuler mes changements</button>
-    </div>
-  </article>
-
-  <article class="carte">
-    <h3>Repli quand la recette ne dit rien</h3>
-    <p class="param-aide">Utilisé seulement si la recette choisie laisse la valeur vide.</p>
-    <div class="grille-nombres">
-      <div class="champ"><label for="param-dose-defaut">Dose de repli (g)</label><input type="number" id="param-dose-defaut" enterkeyhint="next" step="0.5" min="1"></div>
-      <div class="champ"><label for="param-feu-defaut">Puissance de feu de repli</label><input type="number" id="param-feu-defaut" enterkeyhint="next" step="1" min="1" max="10"></div>
-    </div>
-  </article>
-
-  <article class="carte">
-    <h3>Où est réglée la molette de mon broyeur</h3>
-    <p class="param-aide">C'est ce réglage qui prérempli la saisie, pas la cible de la recette. Ton C5 reste posé sur un seul réglage, la recette dit juste ce qu'elle viserait. La fiche continue d'afficher sa cible, et le site t'avertit si l'écart sort de la plage de la machine.</p>
-    <div class="grille-nombres">
-      <div class="champ">
-        <label for="param-molette">Molette (rotation.numéro.cran)</label>
-        <input type="text" id="param-molette" enterkeyhint="done" pattern="[0-3][.,][0-9][.,][0-4]" inputmode="decimal" placeholder="1.5.0">
-        <span class="champ-hint" id="param-molette-detail"></span>
-      </div>
-    </div>
-  </article>
-
-  <article class="carte">
-    <h3>Ma bouilloire</h3>
-    <p class="param-aide">À chronométrer une fois, sur le feu habituel, de l'eau du robinet au gros bouillon, quand toute la surface roule. Repère intermédiaire : beaucoup de petites bulles au fond et quelques-unes qui montent, c'est 85 à 90 degrés, pas encore l'ébullition ; le gros bouillon arrive une trentaine de secondes plus tard. Sur ta bouilloire ce repère tombe vers 1:30, d'où le 2:00 posé ici. En saisie Switch, le temps passé sur le feu donne la température estimée, en montée linéaire de 28 à 100 degrés. Une estimation, pas une mesure : le degré reste modifiable.</p>
-    <div class="grille-nombres">
-      <div class="champ">
-        <label for="param-ebullition-min">Temps pour bouillir</label>
-        <div class="duree">
-          <input type="number" id="param-ebullition-min" step="1" min="0" max="30" inputmode="numeric" placeholder="0" aria-label="Temps pour bouillir, minutes"><span>min</span>
-          <input type="number" id="param-ebullition-sec" step="1" min="0" max="59" inputmode="numeric" placeholder="00" aria-label="Temps pour bouillir, secondes"><span>s</span>
-        </div>
-      </div>
-    </div>
-  </article>
-
-  <article class="carte">
-    <h3>Cet appareil</h3>
-    <p class="param-aide">Ces réglages restent locaux et ne se synchronisent pas : un téléphone et un ordinateur n'ont pas les mêmes besoins.</p>
-    <div class="grille-nombres">
-      <div class="champ"><label class="label-inline"><input type="checkbox" id="param-bips"> Bip du chronomètre à chaque palier</label></div>
-      <!-- Préférence de LECTURE : elle change ce que les chiffres du tableau de
-           bord racontent, pas les données. Elle vivait en bandeau au-dessus des
-           chiffres ; un réglage qu'on change une fois par mois n'a rien à faire
-           en tête de l'écran qu'on ouvre dix fois par jour. -->
-      <div class="champ">
-        <label class="label-inline"><input type="checkbox" id="param-ratees"> Inclure les ratées dans les analyses</label>
-        <span class="champ-hint" id="compte-ratees"></span>
-      </div>
-    </div>
-    <p class="param-aide">Le thème et la langue se règlent depuis l'en-tête, en haut à droite.</p>
-  </article>
-</section>
 
 <dialog id="modale-recettes" class="modale modale-large">
   <h2>Mes recettes</h2>
@@ -1439,28 +1441,28 @@ Cảm ơn shop.</pre>
 <!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
      et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
      desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=8.12"></script>
-<script defer src="js/i18n.js?v=8.12"></script>
-<script defer src="js/grind.js?v=8.12"></script>
-<script defer src="js/recettes.js?v=8.12"></script>
+<script defer src="js/outils.js?v=8.13"></script>
+<script defer src="js/i18n.js?v=8.13"></script>
+<script defer src="js/grind.js?v=8.13"></script>
+<script defer src="js/recettes.js?v=8.13"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=8.12"></script>
-<script defer src="js/data-csv.js?v=8.12"></script>
-<script defer src="js/data-schema.js?v=8.12"></script>
-<script defer src="js/data-store.js?v=8.12"></script>
-<script defer src="js/data-calculs.js?v=8.12"></script>
-<script defer src="js/data-migrations.js?v=8.12"></script>
-<script defer src="js/data.js?v=8.12"></script>
-<script defer src="js/reglages.js?v=8.12"></script>
-<script defer src="js/charts.js?v=8.12"></script>
-<script defer src="js/ui-noyau.js?v=8.12"></script>
-<script defer src="js/ui-tableau.js?v=8.12"></script>
-<script defer src="js/ui-saisie.js?v=8.12"></script>
-<script defer src="js/ui-brouillon.js?v=8.12"></script>
-<script defer src="js/ui-rapide.js?v=8.12"></script>
-<script defer src="js/ui-historique.js?v=8.12"></script>
-<script defer src="js/ui-guide.js?v=8.12"></script>
-<script defer src="js/ui-catalogue.js?v=8.12"></script>
-<script defer src="js/app.js?v=8.12"></script>
+<script defer src="js/sync.js?v=8.13"></script>
+<script defer src="js/data-csv.js?v=8.13"></script>
+<script defer src="js/data-schema.js?v=8.13"></script>
+<script defer src="js/data-store.js?v=8.13"></script>
+<script defer src="js/data-calculs.js?v=8.13"></script>
+<script defer src="js/data-migrations.js?v=8.13"></script>
+<script defer src="js/data.js?v=8.13"></script>
+<script defer src="js/reglages.js?v=8.13"></script>
+<script defer src="js/charts.js?v=8.13"></script>
+<script defer src="js/ui-noyau.js?v=8.13"></script>
+<script defer src="js/ui-tableau.js?v=8.13"></script>
+<script defer src="js/ui-saisie.js?v=8.13"></script>
+<script defer src="js/ui-brouillon.js?v=8.13"></script>
+<script defer src="js/ui-rapide.js?v=8.13"></script>
+<script defer src="js/ui-historique.js?v=8.13"></script>
+<script defer src="js/ui-guide.js?v=8.13"></script>
+<script defer src="js/ui-catalogue.js?v=8.13"></script>
+<script defer src="js/app.js?v=8.13"></script>
 </body>
 </html>

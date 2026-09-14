@@ -96,7 +96,7 @@
   /* Espaces et hauteurs de la DA, pour cesser de les réécrire à chaque bloc. */
   --ecart-cartes: 18px;
   --carte-padding: 22px 26px;
-  --hauteur-controle: 46px;
+  --hauteur-controle: 48px;
   --rail-large: 232px;
   --barre-basse: 62px;
 
@@ -232,7 +232,13 @@ html[data-theme="clair"] {
 /* L'attribut hidden doit toujours gagner, même contre display: flex. */
 [hidden] { display: none !important; }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  /* La place de la barre de defilement est TOUJOURS reservee. Sans ca, un ecran
+     court (Mes reglages) est 15 px plus large qu un ecran long (le tableau de
+     bord), et le contenu saute lateralement a chaque changement d onglet. */
+  scrollbar-gutter: stable;
+}
 
 /* Au doigt : pas de zoom au double appui sur un bouton ni de halo gris au tap,
    les deux font "page web" la ou on veut "application". */
@@ -255,7 +261,9 @@ button, a, .pilule, .tag { -webkit-tap-highlight-color: transparent; }
 body {
   margin: 0;
   font-family: var(--sans);
-  font-size: 15px;
+  /* 16 px et non 15 : sur un ecran 4K, Chris lisait mieux a 110 pour cent de
+     zoom. La base porte tous les rem du site, donc elle suffit a tout monter. */
+  font-size: 16px;
   line-height: 1.55;
   color: var(--texte);
   background: var(--fond);
@@ -462,7 +470,11 @@ button { font-family: inherit; }
 /* Ecran Parametres : un tableau d edition compact, une ligne par recette. */
 /* Colonne de lecture bornee, mais CENTREE : sans la marge auto elle se collait
    a gauche de main, qui fait 1180 px, et la page paraissait de travers. */
-#ecran-parametres { max-width: 780px; margin: 0 auto; }
+/* La largeur des ecrans est posee UNE fois, dans le bloc de mise en page.
+   Un plafond propre a un ecran le decalait des autres : Parametres tenait 780 px
+   pendant que ses voisins en faisaient 993, et le saut se voyait a chaque
+   changement d'onglet. Seule la LONGUEUR DE LIGNE des textes est bridee, par
+   .ecran-intro et les paragraphes, pas le cadre. */
 #ecran-parametres .carte { margin-bottom: 18px; }
 .param-aide { color: var(--attenue); font-size: 0.85rem; margin: 0 0 12px; max-width: 72ch; }
 .param-tableau-zone { overflow-x: auto; margin-bottom: 14px; }
@@ -564,12 +576,34 @@ button { font-family: inherit; }
 .cafe-ligne.epuise b { text-decoration: line-through; text-decoration-thickness: 1px; }
 
 /* Mini statistiques, sous le calendrier d'activite. */
+/* Les chiffres du calendrier, en LIGNES et non en grille. La carte ne fait
+   qu un tiers de largeur : en colonnes, « tasses par semaine » se coupait en
+   deux et chaque case prenait 70 px de haut pour un chiffre et un mot. En
+   lignes, le nombre a gauche et le libelle a droite, rien ne se coupe. */
 .mini-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
-  gap: 8px;
-  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--lignes-douces);
 }
+.mini-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 3px 0;
+}
+.mini-stat b {
+  min-width: 2.6rem;
+  text-align: right;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 1.15rem;
+  color: var(--encre);
+  font-variant-numeric: tabular-nums;
+}
+.mini-stat span { font-size: 0.78rem; color: var(--attenue); }
 .mini-stat {
   text-align: center;
   padding: 10px 6px;
@@ -758,9 +792,14 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
     margin-inline-start: var(--rail-large);
     padding: 28px clamp(20px, 2.6vw, 40px) 80px;
   }
-  /* Les ecrans gardent une largeur lisible : sans plafond, le guide ferait des
-     lignes de 200 caracteres sur un ecran large. */
+  /* Les ecrans gardent une largeur lisible, et TOUS LA MEME : un plafond propre
+     a un ecran le decale des autres, et le saut se voit a chaque changement
+     d'onglet. La longueur de ligne des textes se bride ailleurs, sur les
+     paragraphes, pas sur le cadre. */
   .ecran { max-width: 1560px; margin-inline: auto; }
+  #ecran-parametres, #ecran-reglages, #ecran-guide { max-width: 1560px; margin-inline: auto; }
+  /* Les textes longs du guide gardent une longueur de ligne lisible. */
+  #ecran-guide p, #ecran-guide li, #ecran-parametres p { max-width: 78ch; }
   .pied-site { margin-inline-start: var(--rail-large); }
   /* Le bouton flottant de saisie rapide DISPARAIT : « Nouvelle tasse » du rail
      ouvre la saisie complete, qui est ce qu'on veut au clavier. */
@@ -945,8 +984,17 @@ html[data-theme="sombre"] .carte-sombre {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--ecart-cartes);
-  align-items: start;
+  /* Les cartes d'une meme rangee s'ETIRENT a la hauteur de la plus haute.
+     Alignees sur le haut, elles laissaient un trou sous les plus courtes, et un
+     tableau de bord troue se lit comme un tableau de bord casse. */
+  align-items: stretch;
 }
+/* Etirer la carte ne suffit pas : son contenu doit occuper la place gagnee,
+   sinon on a deplace le trou a l'interieur. */
+.grille-tableau > .carte { display: flex; flex-direction: column; }
+.grille-tableau > .carte > .canvas-h240,
+.grille-tableau > .carte > .canvas-h200 { flex: 1; min-height: 200px; }
+.grille-tableau > .carte > .lien-carte { margin-top: auto; padding-top: 12px; }
 .grille-tableau > * { min-width: 0; }
 .col-2 { grid-column: span 2; }
 
@@ -2837,8 +2885,14 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 #ecran-historique { width: auto; margin-left: 0; }
 
 /* La recherche vit dans la tete de page, a droite du titre. */
-#ecran-historique .champ-recherche { width: 260px; max-width: 100%; margin: 0; }
+#ecran-historique .champ-recherche { width: 280px; max-width: 100%; margin: 0; }
 #ecran-historique .champ-recherche label { display: none; }
+/* Le fond de champ etait coupe : « Chercher dans les commentair ». Plus court,
+   il tient, et l'ecran s'appelle deja Historique. */
+#ecran-historique .champ-recherche input { text-overflow: ellipsis; }
+/* « Reinitialiser » vit AVEC les pastilles, pas flottant a l'autre bout de la
+   ligne : c'est leur bouton, il doit etre a cote d'elles. */
+.historique-filtres-actions { display: flex; gap: 8px; margin-left: 0; align-items: center; }
 
 /* ---------- Les filtres, en pastilles ----------
    Ce sont des <select> natifs habilles. Un select OUVRE deja un menu, sait le
@@ -2855,11 +2909,16 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   padding: 0;
 }
 .historique-filtres .champ {
+  /* flex-direction: ROW, explicitement. .champ est en colonne par defaut, et
+     poser display:flex sans direction laissait le libelle au-dessus du
+     controle : chaque pastille devenait un galet a deux etages. */
   display: flex;
+  flex-direction: row;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   margin: 0;
-  padding: 5px 6px 5px 12px;
+  padding: 0 10px 0 14px;
+  min-height: var(--hauteur-controle);
   border: 1px solid var(--lignes);
   border-radius: var(--rayon-pastille);
   background: var(--panneau);
@@ -2874,22 +2933,27 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 .historique-filtres .champ input {
   border: none;
   background: none;
-  padding: 2px 4px;
+  padding: 0;
   min-height: 0;
-  font-size: 0.82rem;
+  width: auto;
+  font-size: 0.86rem;
   color: var(--encre);
-  max-width: 170px;
+  max-width: 160px;
 }
+/* Les champs de date portent leur propre icone, ils ont besoin d'un peu d'air. */
+.historique-filtres .champ input[type="date"] { min-width: 118px; }
+.historique-filtres .champ input[type="number"] { width: 3.2rem; }
 .historique-filtres .champ select:focus-visible,
 .historique-filtres .champ input:focus-visible { outline: 2px solid var(--accent); border-radius: 6px; }
 .historique-filtres-actions { display: flex; gap: 8px; margin-left: auto; }
 
 /* ---------- Le bandeau resume ---------- */
 .historique-resume {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px 40px;
-  padding: 14px 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px 24px;
+  align-items: start;
+  padding: 16px 22px;
   margin-bottom: 14px;
   background: var(--panneau-2);
   border-radius: var(--rayon);
@@ -2909,7 +2973,6 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 220px;
 }
 
 /* ---------- Intertitres de jour ---------- */

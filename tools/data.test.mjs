@@ -1176,7 +1176,12 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
   const bornes = [...css.matchAll(/#ecran-([a-z]+) \{([^}]*max-width[^}]*)\}/g)];
   check("au moins un ecran borne existe", bornes.length > 0, String(bornes.length));
-  const decentres = bornes.filter(m => !/margin:\s*0\s+auto/.test(m[2])).map(m => m[1]);
+  /* DEUX orthographes centrent : margin: 0 auto, et margin-inline: auto qui
+     suit le sens de lecture et que la regle generale de .ecran emploie deja. Ne
+     reconnaitre que la premiere faisait echouer un centrage parfaitement valide,
+     ce qui pousse a reecrire le CSS pour plaire au test plutot que l'inverse. */
+  const centre = corps => /margin:\s*0\s+auto/.test(corps) || /margin-inline:\s*auto/.test(corps);
+  const decentres = bornes.filter(m => !centre(m[2])).map(m => m[1]);
   check("tout ecran a largeur bornee est centre", decentres.length === 0, decentres.join(", "));
 }
 
