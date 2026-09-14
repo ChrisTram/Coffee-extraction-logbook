@@ -463,6 +463,14 @@ pourquoi est dans `DECISIONS.md`.
   Guide (boutiques, achats, messages vietnamiens), correction du bug
   d'avertissement au préremplissage.
 - v1 : site initial, 4 écrans, 2 CSV, démo, Chart.js local, thèmes.
+## 8.14
+
+L’historique passe de treize à dix colonnes : le temps, les degrés et le feu
+retournent dans le détail déplié. Le commentaire prend sa propre ligne en pleine
+largeur sous chaque tasse, au lieu d’une colonne où il n’aurait tenu que trois
+mots. La table ne défile plus horizontalement et les cinq boutons d’action
+tiennent enfin dans leur cellule.
+
 ## 8.13
 
 Les six écrans ont enfin la même largeur : Paramètres vivait hors de main et

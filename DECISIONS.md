@@ -72,6 +72,25 @@ validée sur maquette, la police n'a pas été changée unilatéralement ; Manro
 lui, embarque bien le vietnamien, donc tout le texte courant est propre. À
 revoir avec Chris s'il trouve ça laid.
 
+**Treize colonnes deviennent dix, et le commentaire prend sa propre ligne.**
+Chris voulait de la place pour le diagnostic et son commentaire, et se passe du
+temps, des degrés et du feu dans la ligne. Ces trois là retournent dans le détail
+déplié : le détail montre ce que la ligne ne montre pas, et la ligne vient de
+changer.
+
+La mesure a tranché la suite. Le contenu des dix colonnes demande **1741 px** de
+large pour **992** disponibles dans la carte : quelque chose doit se tronquer,
+c’est arithmétique. Donner une colonne au commentaire lui offrait 50 à 150 px,
+soit trois mots. Il passe donc SOUS sa ligne, en pleine largeur, comme un
+intertitre de jour : il gagne les 992 px entiers, n’est plus tronqué du tout, et
+les colonnes chiffrées restent lisibles. La table ne défile plus horizontalement.
+
+**Une cellule ne se tronque jamais : celle des actions.** Elle demandait 137 px
+pour 129 offerts, dont 24 px de marge interne inutile sur une rangée de boutons.
+Un bouton tronqué est INATTEIGNABLE, c’est une panne et pas un défaut de mise en
+page. La marge saute, les cinq boutons tiennent, vérifié en mesurant chacun
+contre les bords de sa cellule.
+
 **L’écran Paramètres vivait hors de `<main>`.** Il était posé après `</main>`,
 entre deux modales, et héritait donc de la largeur de la FENÊTRE : il commençait
 à 0, passait sous le rail et faisait 1293 px quand les autres en font 993. Ce

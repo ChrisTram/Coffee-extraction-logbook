@@ -192,6 +192,8 @@ const I18N_EN = {
     h_res_meilleure: "the best",
     h_res_ratees: "botched",
     h_res_aucune: "none",
+    d_temps: "Total time",
+    d_feu: "Flame setting",
     q_repris: "{v}: taken from the recipe",
     tb_min: "{n} min ago",
     tb_heures: "{n} h ago",

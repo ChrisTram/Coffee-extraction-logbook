@@ -125,7 +125,7 @@
              « dimanche 9 » suivi de « 9 aout 2026 » repetait le quantieme. */
           const nomme = titreDeJour(jour);
           const dateDite = nomme === I18N.t("h_aujourdhui") || nomme === I18N.t("h_hier");
-          tete = '<tr class="ligne-jour"><td colspan="13">' +
+          tete = '<tr class="ligne-jour"><td colspan="10">' +
             '<span class="jour-titre">' + nomme + "</span>" +
             '<span class="jour-detail">' +
             (dateDite ? fmtDateCourte(jour) + " · " : "") +
@@ -177,6 +177,23 @@
       bloc(ratees, I18N.t("h_res_ratees"));
   }
 
+  /* Le COMMENTAIRE dans la ligne, tronque. Il n'etait visible qu'en depliant,
+     alors que c'est le seul champ qui dit POURQUOI une tasse etait bonne. La
+     ligne porte deja une bulle avec le texte entier au survol. */
+  /* Le commentaire sur sa PROPRE ligne, en pleine largeur. Mesure faite, les dix
+     colonnes demandent 1741 px pour 992 disponibles : lui reserver une colonne
+     revenait a lui donner trois mots. Ici il a toute la table, il n'est plus
+     tronque du tout, et les colonnes chiffrees restent lisibles.
+
+     Elle porte le meme data-id que sa ligne : cliquer dessus ouvre la meme
+     extraction, sinon la moitie de la surface d'une tasse ne repond pas. */
+  function commentaireHistorique(e) {
+    const c = String(e.commentaire || "").trim();
+    if (!c) return "";
+    return '<tr class="ligne-commentaire" data-id="' + e.id + '"><td colspan="10">' +
+      attrTitre(c) + "</td></tr>";
+  }
+
   /* Les gouts de la ligne, trois au plus puis « +n », comme sur la carte des
      cinq dernieres : deux vues du meme objet doivent dire la meme chose. */
   const MAX_GOUTS_HISTO = 3;
@@ -200,11 +217,17 @@
   function ligneDetail(e) {
     const item = (cle, valeur) => valeur === "" || valeur === undefined || valeur === null
       ? "" : '<div class="detail-item"><span>' + I18N.t(cle) + "</span><b>" + valeur + "</b></div>";
-    /* La dose, l'eau, la température, le feu et le temps total sont devenus des
-       COLONNES en v7.71 : les répéter ici ferait lire deux fois la même chose. Le
-       détail garde son rôle, montrer ce que la ligne ne montre pas. */
+    /* Le détail montre ce que la LIGNE ne montre pas, et la ligne a change : le
+       temps total, la température et le feu ont laissé leur colonne au goût, au
+       diagnostic et au commentaire, ils reviennent donc ici. La dose et l'eau,
+       elles, sont restées dans la ligne et ne se répètent pas. */
     const cases = [
+      item("d_temps", e.temps_total_s !== "" ? fmtTemps(e.temps_total_s) : ""),
       item("d_ecoulement", e.temps_ecoulement_s !== "" ? fmtTemps(e.temps_ecoulement_s) : ""),
+      item("d_temp", e.temperature_c !== "" && e.temperature_c !== undefined ? e.temperature_c + " °C" : ""),
+      // Le feu ne veut rien dire hors Brikka : le Switch n'a pas de flamme.
+      item("d_feu", e.methode === "Brikka" && e.puissance_feu !== "" && e.puissance_feu !== undefined
+        ? e.puissance_feu : ""),
       item("d_chauffe", e.chauffe_s !== "" && e.chauffe_s !== undefined ? fmtTemps(e.chauffe_s) : ""),
       item("d_volume", e.volume_extrait_ml !== "" ? e.volume_extrait_ml + " ml" : ""),
       item("d_eau_ajoutee", e.eau_ajoutee_ml !== "" ? e.eau_ajoutee_ml + " ml" : ""),
@@ -219,7 +242,7 @@
     const tags = (e.descripteurs || "").split("|").filter(Boolean)
       .map(t => '<span class="detail-tag">' + I18N.tag(t) + "</span>").join("");
 
-    return '<tr class="ligne-detail" data-detail="' + e.id + '"><td colspan="13">' +
+    return '<tr class="ligne-detail" data-detail="' + e.id + '"><td colspan="10">' +
       (cases ? '<div class="detail-grille">' + cases + "</div>" : "") +
       (tags ? '<div class="detail-tags">' + tags + "</div>" : "") +
       (e.commentaire ? '<p class="detail-commentaire">' + e.commentaire + "</p>" : "") +
@@ -247,10 +270,6 @@
       e._c.ratioTexte +
       (e._c.ratioTasseTexte ? ' <small>(' + I18N.t("rt_tasse_court") + " " + e._c.ratioTasseTexte + ")</small>" : "") +
       (e._c.ratioBoisson ? ' <small>(' + I18N.t("rt_boisson_court") + " " + e._c.ratioBoisson + ")</small>" : "") + "</td>" +
-      "<td>" + (e.temps_total_s !== "" ? fmtTemps(e.temps_total_s) : "") + "</td>" +
-      "<td>" + (e.temperature_c !== "" ? e.temperature_c : "") + "</td>" +
-      // Le feu ne veut rien dire hors Brikka : le Switch n'a pas de flamme.
-      "<td>" + (e.methode === "Brikka" && e.puissance_feu !== "" ? e.puissance_feu : "") + "</td>" +
       '<td class="note-cellule">' + (estRatee(e)
         ? '<span class="badge-ratee" title="' + attrTitre(I18N.t("rt_badge_titre")) + '">' + I18N.t("rt_badge") + "</span>"
         : "") + (e.note_sur_10 !== "" ? e.note_sur_10 : "") + "</td>" +
@@ -258,7 +277,7 @@
          colonne de plus demande quatre retouches coordonnees (voir DECISIONS,
          « Le piege des largeurs figees ») et se decale en silence si on en
          oublie une. */
-      '<td class="chip-diagnostic" title="' + attrTitre(e.diagnostic ? diagsAffiches(e.diagnostic) : "") + '">' +
+      '<td class="chip-diagnostic"' + (e.commentaire ? ' data-info="' + attrTitre(e.commentaire) + '"' : "") + ">" +
       (e.diagnostic ? '<span class="h-diag">' + diagsAffiches(e.diagnostic) + "</span>" : "") +
       goutsHistorique(e) + "</td>" +
       '<td><div class="actions-ligne">' +
@@ -271,7 +290,7 @@
       '<button class="btn-ligne" data-action="dupliquer" title="Dupliquer pour refaire la même">⧉</button>' +
       '<button class="btn-ligne" data-action="modifier" title="Modifier">✎</button>' +
       '<button class="btn-ligne danger" data-action="supprimer" title="Supprimer">🗑</button>' +
-      "</div></td></tr>" + (ouvert ? ligneDetail(e) : "");
+      "</div></td></tr>" + commentaireHistorique(e) + (ouvert ? ligneDetail(e) : "");
   }
 
   /* Comparateur : deux extractions côte à côte, différences surlignées. C'est le
@@ -491,7 +510,7 @@
   Object.assign(UI, {
     FILTRES, basculerComparaison, cablerHistorique, carteReglage, champsComparaison, comparaison, detailsOuverts,
     filtrerHistorique, ligneDetail, ligneHistorique, majBarreComparaison, ouvrirComparaison,
-    goutsHistorique, remplirFiltres, rendreHistorique, rendreHistoriqueDifferee, rendreReglages,
+    commentaireHistorique, goutsHistorique, remplirFiltres, rendreHistorique, rendreHistoriqueDifferee, rendreReglages,
     rendreResume, sansAccents, texteCherchable, titreDeJour, tri, valeurTri,
   });
 })();

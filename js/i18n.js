@@ -242,6 +242,8 @@ const I18N = (() => {
     h_res_meilleure: { fr: "la meilleure" },
     h_res_ratees: { fr: "ratées" },
     h_res_aucune: { fr: "aucune" },
+    d_temps: { fr: "Temps total" },
+    d_feu: { fr: "Puissance de feu" },
     q_repris: { fr: "{v} : repris de la recette" },
     tb_min: { fr: "il y a {n} min" },
     tb_heures: { fr: "il y a {n} h" },

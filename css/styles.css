@@ -1991,7 +1991,11 @@ input:focus, select:focus, textarea:focus {
 
 .table-historique {
   width: 100%;
-  min-width: 1180px;
+  /* 1180 px etait la largeur minimale de TREIZE colonnes. A dix, la table tient
+     dans la carte sans defiler : le plancher descend a 940, de quoi garder les
+     colonnes lisibles sur un ecran etroit sans imposer un defilement a Chris
+     sur le sien. */
+  min-width: 930px;
   table-layout: fixed;
   border-collapse: collapse;
   font-size: 0.88rem;
@@ -1999,19 +2003,47 @@ input:focus, select:focus, textarea:focus {
 /* Somme exacte de 100 pour cent. Les colonnes de texte libre (cafe, recette,
    diagnostic) sont les seules a pouvoir deborder, ce sont donc elles qui
    tronquent; les colonnes calculees ont juste la place qu'il leur faut. */
-.table-historique th:nth-child(1),  .table-historique td:nth-child(1)  { width: 12%; }  /* date */
-.table-historique th:nth-child(2),  .table-historique td:nth-child(2)  { width: 11%; }  /* café */
-.table-historique th:nth-child(3),  .table-historique td:nth-child(3)  { width: 6%; }   /* méthode */
-.table-historique th:nth-child(4),  .table-historique td:nth-child(4)  { width: 10%; }  /* recette */
-.table-historique th:nth-child(5),  .table-historique td:nth-child(5)  { width: 8%; }   /* dose et eau */
-.table-historique th:nth-child(6),  .table-historique td:nth-child(6)  { width: 9%; }   /* mouture */
-.table-historique th:nth-child(7),  .table-historique td:nth-child(7)  { width: 8%; }   /* ratio */
-.table-historique th:nth-child(8),  .table-historique td:nth-child(8)  { width: 6%; }   /* temps */
-.table-historique th:nth-child(9),  .table-historique td:nth-child(9)  { width: 5%; }   /* °C */
-.table-historique th:nth-child(10), .table-historique td:nth-child(10) { width: 5%; }   /* feu */
-.table-historique th:nth-child(11), .table-historique td:nth-child(11) { width: 5%; }   /* note */
-.table-historique th:nth-child(12), .table-historique td:nth-child(12) { width: 9%; }   /* diagnostic */
-.table-historique th:nth-child(13), .table-historique td:nth-child(13) { width: 6%; }   /* actions */
+/* DIX colonnes depuis que le temps, les degres et le feu sont repartis dans le
+   detail : la place gagnee va au gout, au diagnostic et au commentaire, qui est
+   ce que Chris relit. Les largeurs sont par POSITION : en changer le nombre
+   demande de toucher le <th>, le <td>, cette liste et les deux colspan. */
+.table-historique th:nth-child(1),  .table-historique td:nth-child(1)  { width: 13%; }  /* date */
+.table-historique th:nth-child(2),  .table-historique td:nth-child(2)  { width: 10%; }  /* café */
+.table-historique th:nth-child(3),  .table-historique td:nth-child(3)  { width: 10%; }  /* méthode */
+.table-historique th:nth-child(4),  .table-historique td:nth-child(4)  { width: 11%; }  /* recette */
+.table-historique th:nth-child(5),  .table-historique td:nth-child(5)  { width: 9%; }   /* dose et eau */
+.table-historique th:nth-child(6),  .table-historique td:nth-child(6)  { width: 8%; }   /* mouture */
+.table-historique th:nth-child(7),  .table-historique td:nth-child(7)  { width: 6%; }   /* ratio */
+.table-historique th:nth-child(8),  .table-historique td:nth-child(8)  { width: 6%; }   /* note */
+.table-historique th:nth-child(9),  .table-historique td:nth-child(9)  { width: 14%; }  /* goûts et diagnostic */
+.table-historique th:nth-child(10), .table-historique td:nth-child(10) { width: 13%; }  /* actions */
+/* La cellule des actions se passe de sa marge interne : mesure faite, elle
+   demandait 137 px pour 129 offerts, et 24 de ces px etaient du vide sur les
+   cotes. Un bouton tronque est INATTEIGNABLE, ce qui est une panne et non un
+   defaut de mise en page : cette cellule ne se tronque jamais. */
+.table-historique td:nth-child(10) { padding-inline: 2px; overflow: visible; }
+
+/* Les gouts s'empilent au lieu de se tronquer : ils sont courts, et une pastille
+   coupee en deux ne dit plus quel gout c'etait. */
+.chip-diagnostic { white-space: normal; }
+/* Les cinq boutons d'action doivent TENIR : tronques, ils deviennent
+   inatteignables, ce qui est une panne et pas un defaut de mise en page. */
+.actions-ligne { gap: 1px; justify-content: flex-end; }
+.btn-ligne { padding: 3px 4px; }
+
+/* La ligne de commentaire : pleine largeur sous sa tasse, sans bordure haute
+   pour qu'elle se lise comme la suite de la ligne et non comme une ligne de
+   plus. */
+.ligne-commentaire td {
+  border-top: none;
+  padding: 0 10px 10px 30px;
+  font-style: italic;
+  font-size: 0.82rem;
+  color: var(--attenue);
+  white-space: normal;
+  cursor: pointer;
+}
+.ligne-commentaire:hover td { background: var(--panneau-2); }
 .table-historique th {
   text-align: left;
   padding: 12px 12px;
