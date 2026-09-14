@@ -535,7 +535,19 @@ button { font-family: inherit; }
 
 /* Duree en minutes et secondes : deux champs etroits sur une ligne. */
 .duree { display: flex; align-items: center; gap: 6px; }
-.duree input { width: 4.2rem; min-width: 0; }
+/* Deux chiffres, pas plus. Les fleches du champ numerique mangeaient 13 px et
+   coupaient le « 45 » des secondes dans une colonne de 175 px ; on les retire,
+   elles ne servent a rien sur un champ qu'on tape, et la marge interne se
+   resserre. inputmode="numeric" donne deja le bon clavier au telephone. */
+.duree input {
+  width: 4.2rem;
+  min-width: 0;
+  padding-inline: 8px;
+  text-align: center;
+  appearance: textfield;
+}
+.duree input::-webkit-outer-spin-button,
+.duree input::-webkit-inner-spin-button { appearance: none; margin: 0; }
 .duree span { font-size: 0.8rem; color: var(--attenue); }
 
 /* Stock du sachet en cours, dans la liste des cafes. */
@@ -2766,46 +2778,6 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   font-variant-numeric: tabular-nums;
 }
 
-/* ---------- Bloc 3 : la note en stepper ---------- */
-.stepper-note {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  width: 100%;
-  max-width: 230px;
-  height: 64px;
-  padding: 0 8px;
-  border: 1px solid var(--lignes);
-  border-radius: var(--rayon-petit);
-  background: var(--panneau-2);
-}
-.stepper-btn {
-  width: 42px; height: 42px;
-  flex: none;
-  border: 1px solid var(--lignes);
-  border-radius: var(--rayon-petit);
-  background: var(--panneau);
-  color: var(--encre);
-  font-size: 1.3rem;
-  line-height: 1;
-  cursor: pointer;
-  transition: border-color var(--transition), background var(--transition);
-}
-.stepper-btn:hover { border-color: var(--accent); color: var(--accent); }
-.stepper-valeur {
-  flex: 1;
-  text-align: center;
-  font-family: var(--serif);
-  font-weight: 400;
-  font-size: 1.75rem;
-  color: var(--encre);
-  font-variant-numeric: tabular-nums;
-}
-/* Tant que « pas encore notee » est cochee, le chiffre s'efface. Les boutons
-   restent actifs : c'est en appuyant qu'on decide de noter. */
-.stepper-inactif .stepper-valeur { font-size: 0.86rem; color: var(--attenue); font-family: var(--sans); }
-
 /* ---------- Le chrono, dans la colonne de droite ---------- */
 .chrono-bloc { margin-bottom: 0; }
 .chrono-bloc .chrono-grand {
@@ -2853,7 +2825,6 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 }
 @media (max-width: 560px) {
   .saisie-bloc .grille-nombres { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .stepper-note { max-width: none; }
 }
 
 /* ==================================================================

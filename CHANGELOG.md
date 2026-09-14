@@ -463,6 +463,11 @@ pourquoi est dans `DECISIONS.md`.
   Guide (boutiques, achats, messages vietnamiens), correction du bug
   d'avertissement au préremplissage.
 - v1 : site initial, 4 écrans, 2 CSV, démo, Chart.js local, thèmes.
+## 8.12
+
+La note repasse au curseur, comme avant : le stepper est retiré. Corrige le champ
+des secondes de la bouilloire, dont le contenu était coupe.
+
 ## 8.11
 
 Le chrono devient un widget repliable et passe sous la fiche recette, qui reste

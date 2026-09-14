@@ -72,6 +72,19 @@ validée sur maquette, la police n'a pas été changée unilatéralement ; Manro
 lui, embarque bien le vietnamien, donc tout le texte courant est propre. À
 revoir avec Chris s'il trouve ça laid.
 
+**Retour au curseur pour la note.** Le stepper visait juste sur le papier, Chris
+prefere le curseur, et c’est son carnet. Le stepper est retire en ENTIER, HTML,
+JS et CSS : laisser les deux dans le code, c’est laisser la question ouverte pour
+la prochaine session, qui ne saura pas lequel fait foi.
+
+**Le champ des secondes etait coupe.** 53 px pour 59 px de contenu : le « 45 »
+perdait son 5. Les deux pixels de marge interne ajoutes a l’etape 7 et les
+fleches du champ numerique ne tenaient plus dans une colonne de 175 px. Les
+fleches partent, elles ne servent a rien sur un champ de deux chiffres qu’on
+tape et `inputmode="numeric"` donne deja le bon clavier au telephone. Un balayage
+de tous les champs visibles, sur les six ecrans et les deux machines, confirme
+que c’etait le seul du site.
+
 **Le chrono est repliable, et passe sous la fiche recette.** Demande de Chris :
 la recette se relit à chaque étape, le chrono ne sert que pendant l’extraction,
 et c’est pourtant lui qui occupait le haut de la colonne. Deux règles tiennent ce
