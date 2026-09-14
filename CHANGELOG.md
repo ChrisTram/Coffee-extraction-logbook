@@ -463,6 +463,13 @@ pourquoi est dans `DECISIONS.md`.
   Guide (boutiques, achats, messages vietnamiens), correction du bug
   d'avertissement au préremplissage.
 - v1 : site initial, 4 écrans, 2 CSV, démo, Chart.js local, thèmes.
+## 8.16
+
+Les cinq dernières extractions passent de 174 à 54 px par tasse : une ligne par
+tasse, le commentaire tronqué sur une seconde ligne avec son texte entier au
+survol. La molette, les degrés et le feu quittent la carte, ils sont dans
+l’historique. La table tient dans sa carte sans défiler.
+
 ## 8.15
 
 Le calendrier ne défile plus dans sa carte : le nombre de semaines se calcule

@@ -629,15 +629,15 @@
       '<td class="d-machine"><span class="pastille-methode ' + e.methode.toLowerCase() +
         '" title="' + attrTitre(e.methode) + '"></span></td>' +
       '<td class="d-cafe"><b>' + I18N.tr(e._c.cafe_nom) + "</b>" +
-        (estRatee(e) ? '<span class="mention-ratee">' + I18N.t("rt_badge") + "</span>" : "") +
-        commentaireDerniere(e) + "</td>" +
+        (estRatee(e) ? '<span class="mention-ratee">' + I18N.t("rt_badge") + "</span>" : "") + "</td>" +
       '<td class="d-mesures">' +
         (e.recette ? '<span class="d-recette">' + I18N.tr(e.recette) + "</span>" : "") +
-        mesuresDerniere(e) +
+        mesuresCourtes(e) +
         (e.diagnostic ? '<span class="d-diag">' + diagsAffiches(e.diagnostic) + "</span>" : "") +
       "</td>" +
       '<td class="d-gouts">' + goutsDerniere(e) + "</td>" +
-      '<td class="d-note">' + (e.note_sur_10 !== "" ? e.note_sur_10 : "") + "</td></tr>"
+      '<td class="d-note">' + (e.note_sur_10 !== "" ? e.note_sur_10 : "") + "</td></tr>" +
+      commentaireDerniere(e)
     ).join("");
   }
 
@@ -750,12 +750,27 @@
   /* Le commentaire, en clair et tronqué, au lieu d'attendre le survol : c'est le
      seul champ qui dit POURQUOI une tasse était bonne, et il fallait poser la
      souris dessus pour le lire. Le survol garde le texte complet. */
-  const MAX_COMMENTAIRE_DERNIERE = 110;
+  /* LE COMMENTAIRE SUR SA PROPRE LIGNE, tronque a UNE ligne par le CSS et non
+     par un compte de caracteres : la largeur disponible depend de la fenetre, un
+     seuil en dur coupe trop tot sur grand ecran et trop tard sur petit. Le texte
+     entier reste dans l'infobulle. */
   function commentaireDerniere(e) {
     const c = String(e.commentaire || "").trim();
     if (!c) return "";
-    const court = c.length > MAX_COMMENTAIRE_DERNIERE ? c.slice(0, MAX_COMMENTAIRE_DERNIERE).replace(/\s+\S*$/, "") + "…" : c;
-    return '<div class="derniere-commentaire">' + attrTitre(court) + "</div>";
+    return '<tr class="derniere-commentaire" data-ext="' + e.id + '"><td colspan="6" title="' +
+      attrTitre(c) + '">' + attrTitre(c) + "</td></tr>";
+  }
+
+  /* LES MESURES DE LA CARTE, version courte : la dose, l'eau et le temps. La
+     molette, les degres et le feu sont dans l'historique, qui existe pour les
+     comparer ; ici ils faisaient replier la ligne sur trois etages. */
+  function mesuresCourtes(e) {
+    const bouts = [];
+    if (e.dose_g > 0 && e.eau_g) bouts.push(e.dose_g + " → " + e.eau_g + " g");
+    const t = fmtTemps(e.temps_total_s);
+    if (t) bouts.push(t);
+    if (!bouts.length) return "";
+    return '<span class="d-chiffres">' + bouts.join(" · ") + "</span>";
   }
 
   // Mis à disposition des autres écrans.
@@ -788,7 +803,7 @@
     MIN_GAP, MIN_SAMPLE, MIN_TASSES_GOUT, PIRES_GOUTS, SEMAINES_HEATMAP, TOP_GOUTS,
     bestOfGroups, cablerTableau, causeDuelVide, causeGoutsVide, causeMoutureVide, computeInsights,
     insightAgePaquet, insightMoment, insightPuissance, insightRecettes, insightsParCafe,
-    majCarteVide, note1, rendreGouts, rendreInsights, rendreStatsHeatmap, rendreTableau,
+    majCarteVide, mesuresCourtes, note1, rendreGouts, rendreInsights, rendreStatsHeatmap, rendreTableau,
     statsHeatmap,
   });
 })();
