@@ -5,15 +5,128 @@ de page du site est celui du `<meta name="app-version">` d'`index.html`, posé
 par `node tools/bump_version.mjs X`. Chaque entrée dit CE QUI a changé ; le
 pourquoi est dans `DECISIONS.md`.
 
-- v7.101 : dans le panneau latéral de la saisie, les pas de la recette
-  s'affichent en entier au lieu d'une boîte de 220 px à faire défiler.
-- v7.100 : recette Better 1 Cup (Hoffmann), le dernier pas n'interdit plus la
-  cuillère : tourbillon doux, ou un aller et retour de cuillère si le Switch est
-  trop lourd à faire tourner sur la balance, comme Hoffmann l'accepte dans sa
-  Part 2. Pas de schéma v13 pour les fiches déjà semées, ciblé sur l'ancien texte.
-- v7.99 : recette Better 1 Cup (Hoffmann), le premier pas dit désormais que le
-  tourbillon se fait PENDANT le bloom, pour mouiller tout le lit. Pas de schéma
-  v12 pour les fiches déjà semées, ciblé sur l'ancien texte.
+- v8.22 : CHANGELOG remis au format du fichier, les vingt-deux entrées de la
+  refonte étaient arrivées en bas sous des titres ##. Apostrophes droites
+  partout, ici et dans DECISIONS.md.
+- v8.21 : Vingt classes CSS mortes depuis la refonte sont retirées. La légende
+  du calendrier revient : son style était resté, son HTML avait disparu, et une
+  échelle de couleurs sans légende est une suite de bruns. Les trois classes de
+  badge de stock, assemblées par concaténation, sont gardées.
+- v8.20 : Les intertitres de carte passent en Manrope 700 : une serif à 11 px en
+  capitales est illisible. La couleur de thème du navigateur suit le nouveau
+  fond clair. Les libellés des graphiques se tronquent au mot entier avec le nom
+  complet dans l'infobulle, au lieu d'être coupés en plein mot. Les champs du
+  chrono sont rattachés au formulaire par form=.
+- v8.19 : L'historique passe en cartes par jour sous 1024 px : dix colonnes dans
+  350 px se lisaient en faisant glisser la table. La table reste sur ordinateur.
+  Les cinq actions, le dépliage et le détail sont construits par le même code
+  des deux côtés, et un test compare les gestes offerts par les deux rendus.
+- v8.18 : Les familles de goûts se replient : deux visibles plus celles qui
+  contiennent un goût coché, le reste sous un bouton, choix retenu. Le bloc « En
+  bouche » passe de 1 672 à 1 111 px. Le chronomètre sort dans js/ui-chrono.js,
+  ui-saisie.js ayant dépassé le plafond de 1 200 lignes.
+- v8.17 : Le chrono passe en haut de la colonne de droite, avant les fiches
+  recette et café : il commençait à 803 px du haut, donc hors écran au moment où
+  on verse. Sur téléphone il devient un bandeau collé en haut, avant le
+  formulaire. Le palier en cours se lit maintenant sans déplier.
+- v8.16 : Les cinq dernières extractions passent de 174 à 54 px par tasse : une
+  ligne par tasse, le commentaire tronqué sur une seconde ligne avec son texte
+  entier au survol. La molette, les degrés et le feu quittent la carte, ils sont
+  dans l'historique. La table tient dans sa carte sans défiler.
+- v8.15 : Le calendrier ne défile plus dans sa carte : le nombre de semaines se
+  calcule depuis la largeur disponible, et les cinq chiffres du dessous
+  décrivent la même fenêtre que la grille. Le titre dit combien de semaines il
+  montre.
+- v8.14 : L'historique passe de treize à dix colonnes : le temps, les degrés et
+  le feu retournent dans le détail déplié. Le commentaire prend sa propre ligne
+  en pleine largeur sous chaque tasse, au lieu d'une colonne où il n'aurait tenu
+  que trois mots. La table ne défile plus horizontalement et les cinq boutons
+  d'action tiennent enfin dans leur cellule.
+- v8.13 : Les six écrans ont enfin la même largeur : Paramètres vivait hors de
+  main et s'affichait pleine fenêtre, et la barre de défilement faisait sauter
+  le contenu de 15 px entre écrans. Les cartes du tableau de bord s'étirent à la
+  même hauteur, plus de trous. Les filtres de l'historique tiennent sur une
+  ligne au lieu de deux étages. Les chiffres du calendrier passent en lignes et
+  la grille s'ouvre sur la semaine en cours. Base typographique de 15 à 16 px.
+- v8.12 : La note repasse au curseur, comme avant : le stepper est retiré.
+  Corrige le champ des secondes de la bouilloire, dont le contenu était coupe.
+- v8.11 : Le chrono devient un widget repliable et passe sous la fiche recette,
+  qui reste donc visible en haut de la colonne de droite. Le temps reste lisible
+  replié, le chrono s'ouvre tout seul au démarrage et refuse de se replier tant
+  qu'il tourne.
+- v8.10 : Répare le formulaire de saisie : les blocs « Les réglages » et « En
+  bouche » étaient passés dans la colonne de droite depuis la v8.3, habillés en
+  carte sombre, et le formulaire ne contenait plus que le premier bloc. Le
+  déplacement du chrono avait attrapé la mauvaise balise. La date de la tête de
+  page est rattachée au formulaire par `form=`. Un test vérifie désormais de
+  quel côté tombe chaque champ.
+- v8.9 : Corrige la mise en page de la saisie : le formulaire était comprimé à
+  gauche avec une colonne vide de 360 px à sa droite. La grille de deux colonnes
+  était posée sur l'écran, qui n'a qu'un enfant, au lieu de `.saisie-layout`,
+  qui porte la répartition. La tête de page sort du formulaire pour couvrir les
+  deux colonnes comme sur les autres écrans.
+- v8.8 : Corrige la navigation : l'écran de saisie restait affiché en permanence
+  et les autres s'empilaient dessous au lieu de le remplacer. Sa mise en page en
+  grille visait `#ecran-saisie` sans `.actif`, et un sélecteur d'identifiant bat
+  la classe qui masque les écrans inactifs. Un test refuse désormais ce genre de
+  règle.
+- v7.101 (numérotée à rebours, livrée après la 8.7) : dans le panneau latéral de
+  la saisie, les pas de la recette s'affichent en entier au lieu d'une boîte de
+  220 px à faire défiler.
+- v7.100 (numérotée à rebours, livrée après la 8.7) : recette Better 1 Cup
+  (Hoffmann), le dernier pas n'interdit plus la cuillère : tourbillon doux, ou
+  un aller et retour de cuillère si le Switch est trop lourd à faire tourner sur
+  la balance, comme Hoffmann l'accepte dans sa Part 2. Pas de schéma v13 pour
+  les fiches déjà semées, ciblé sur l'ancien texte.
+- v7.99 (numérotée à rebours, livrée après la 8.7) : recette Better 1 Cup
+  (Hoffmann), le premier pas dit désormais que le tourbillon se fait PENDANT le
+  bloom, pour mouiller tout le lit. Pas de schéma v12 pour les fiches déjà
+  semées, ciblé sur l'ancien texte.
+- v8.7 : Refonte « Comptoir », étape 8 sur 8 : les deux thèmes vérifiés écran
+  par écran. La carte sombre redéfinit ses jetons au lieu d'habiller ses
+  descendants, ce qui rendait son contenu invisible en thème clair. Les
+  pastilles de machine passent au point de couleur plutôt qu'au texte posé sur
+  la couleur. Les six écrans passent maintenant l'audit de contraste dans les
+  deux thèmes.
+- v8.6 : Refonte « Comptoir », étape 7 sur 8 : les écrans secondaires. Tête de
+  page sur Mes meilleurs réglages, le Guide et les Paramètres, sommaire du guide
+  en pastilles, titres de modale en serif sur le voile de la DA, et une hauteur
+  de contrôle unique de 46 px posée sur la ligne de base des champs plutôt
+  qu'écran par écran.
+- v8.5 : Refonte « Comptoir », étape 6 sur 8 : l'historique. Tête de page avec
+  le total et la recherche, filtres en pastilles, bandeau résumé du filtre
+  courant en quatre chiffres, tableau groupé par jour quand le tri est par date,
+  goûts visibles sur chaque ligne, détail déplié en quatre colonnes.
+- v8.4 : Refonte « Comptoir », étape 5 sur 8 : la saisie rapide devient une
+  feuille qui monte du bas, sur un voile qui la referme d'un appui n'importe où.
+  Elle affiche l'heure d'enregistrement et les chiffres repris de la recette,
+  qu'elle se contentait d'annoncer sans les dire. Le bouton flottant passe en
+  icônes en trait et change de dessin au lieu de pivoter.
+- v8.3 : Refonte « Comptoir », étape 4 sur 8 : la saisie. Deux colonnes, trois
+  blocs numérotés, contrôle segmenté pour la machine, pied de bloc pour ratio,
+  microns, coût et caféine. Le chrono passe dans la colonne fixe de droite, et
+  devient un bandeau collant sur téléphone. La note passe du curseur au stepper
+  par demi points. Un bug trouvé au passage : la reprise de brouillon affichait
+  une note sur une tasse enregistrée comme non notée.
+- v8.2 : Refonte « Comptoir », étape 3 sur 8 : le tableau de bord. Quatre
+  rangées sur trois colonnes, une grande carte « Dernière tasse », quatre tuiles
+  de chiffres au lieu de sept, les cinq dernières en vraie table, carte sombre
+  pour les insights. Le graphe 30 jours est inchangé. Deux cartes que le brief
+  avait oubliées sont gardées. Le bouton « Charger la démonstration » de l'état
+  vide, mort depuis la v7.3, fonctionne enfin.
+- v8.1 : Refonte « Comptoir », étape 2 sur 8 : la navigation. Rail fixe à gauche
+  sur ordinateur, barre du bas plus feuille « Plus » sur téléphone, fin de
+  l'entête. Le bouton flottant de saisie rapide est désormais réservé au
+  téléphone. Le rail et la feuille sont le même élément, pour que les bascules
+  restent uniques. Deux bugs trouvés au passage : le câblage des boutons
+  d'entête supprimés plantait le démarrage, et le faux DOM des tests ne pouvait
+  pas le voir.
+- v8.0 : Refonte « Comptoir », étape 1 sur 8 : les fondations. Instrument Serif
+  et Manrope embarquées en woff2 dans `css/fonts/` (jamais un CDN, le site doit
+  marcher hors ligne), précachées, et servies avec un cache d'un an. Nouveaux
+  jetons de couleur dans les deux thèmes, cinq valeurs assombries par rapport à
+  la maquette pour tenir 4,5:1. Plus aucune teinte verte, y compris pour dire «
+  bon ». Rayons et espaces de la DA. Le layout ne bouge pas encore.
 - v7.98 : bouilloire recalée. Le 4:00 inventé des premières versions, qui
   s'était écrit dans les réglages synchronisés, passe à 2:00 par un pas de schéma
   (v11), calé sur l'observation de Chris : petites bulles qui montent vers 1:30,
@@ -463,171 +576,4 @@ pourquoi est dans `DECISIONS.md`.
   Guide (boutiques, achats, messages vietnamiens), correction du bug
   d'avertissement au préremplissage.
 - v1 : site initial, 4 écrans, 2 CSV, démo, Chart.js local, thèmes.
-## 8.21
-
-Vingt classes CSS mortes depuis la refonte sont retirées. La légende du
-calendrier revient : son style était resté, son HTML avait disparu, et une
-échelle de couleurs sans légende est une suite de bruns. Les trois classes de
-badge de stock, assemblées par concaténation, sont gardées.
-
-## 8.20
-
-Les intertitres de carte passent en Manrope 700 : une serif à 11 px en capitales
-est illisible. La couleur de thème du navigateur suit le nouveau fond clair. Les
-libellés des graphiques se tronquent au mot entier avec le nom complet dans
-l’infobulle, au lieu d’être coupés en plein mot. Les champs du chrono sont
-rattachés au formulaire par form=.
-
-## 8.19
-
-L’historique passe en cartes par jour sous 1024 px : dix colonnes dans 350 px se
-lisaient en faisant glisser la table. La table reste sur ordinateur. Les cinq
-actions, le dépliage et le détail sont construits par le même code des deux
-côtés, et un test compare les gestes offerts par les deux rendus.
-
-## 8.18
-
-Les familles de goûts se replient : deux visibles plus celles qui contiennent un
-goût coché, le reste sous un bouton, choix retenu. Le bloc « En bouche » passe de
-1 672 à 1 111 px. Le chronomètre sort dans js/ui-chrono.js, ui-saisie.js ayant
-dépassé le plafond de 1 200 lignes.
-
-## 8.17
-
-Le chrono passe en haut de la colonne de droite, avant les fiches recette et
-café : il commençait à 803 px du haut, donc hors écran au moment où on verse. Sur
-téléphone il devient un bandeau collé en haut, avant le formulaire. Le palier en
-cours se lit maintenant sans déplier.
-
-## 8.16
-
-Les cinq dernières extractions passent de 174 à 54 px par tasse : une ligne par
-tasse, le commentaire tronqué sur une seconde ligne avec son texte entier au
-survol. La molette, les degrés et le feu quittent la carte, ils sont dans
-l’historique. La table tient dans sa carte sans défiler.
-
-## 8.15
-
-Le calendrier ne défile plus dans sa carte : le nombre de semaines se calcule
-depuis la largeur disponible, et les cinq chiffres du dessous décrivent la même
-fenêtre que la grille. Le titre dit combien de semaines il montre.
-
-## 8.14
-
-L’historique passe de treize à dix colonnes : le temps, les degrés et le feu
-retournent dans le détail déplié. Le commentaire prend sa propre ligne en pleine
-largeur sous chaque tasse, au lieu d’une colonne où il n’aurait tenu que trois
-mots. La table ne défile plus horizontalement et les cinq boutons d’action
-tiennent enfin dans leur cellule.
-
-## 8.13
-
-Les six écrans ont enfin la même largeur : Paramètres vivait hors de main et
-s’affichait pleine fenêtre, et la barre de défilement faisait sauter le contenu de
-15 px entre écrans. Les cartes du tableau de bord s’étirent à la même hauteur,
-plus de trous. Les filtres de l’historique tiennent sur une ligne au lieu de
-deux étages. Les chiffres du calendrier passent en lignes et la grille s’ouvre sur
-la semaine en cours. Base typographique de 15 à 16 px.
-
-## 8.12
-
-La note repasse au curseur, comme avant : le stepper est retiré. Corrige le champ
-des secondes de la bouilloire, dont le contenu était coupe.
-
-## 8.11
-
-Le chrono devient un widget repliable et passe sous la fiche recette, qui reste
-donc visible en haut de la colonne de droite. Le temps reste lisible replié, le
-chrono s’ouvre tout seul au démarrage et refuse de se replier tant qu’il tourne.
-
-## 8.10
-
-Répare le formulaire de saisie : les blocs « Les réglages » et « En bouche »
-étaient passés dans la colonne de droite depuis la v8.3, habillés en carte
-sombre, et le formulaire ne contenait plus que le premier bloc. Le déplacement
-du chrono avait attrapé la mauvaise balise. La date de la tête de page est
-rattachée au formulaire par `form=`. Un test vérifie désormais de quel côté
-tombe chaque champ.
-
-## 8.9
-
-Corrige la mise en page de la saisie : le formulaire était comprimé à gauche
-avec une colonne vide de 360 px à sa droite. La grille de deux colonnes était
-posée sur l'écran, qui n'a qu'un enfant, au lieu de `.saisie-layout`, qui porte
-la répartition. La tête de page sort du formulaire pour couvrir les deux
-colonnes comme sur les autres écrans.
-
-## 8.8
-
-Corrige la navigation : l'écran de saisie restait affiché en permanence et les
-autres s'empilaient dessous au lieu de le remplacer. Sa mise en page en grille
-visait `#ecran-saisie` sans `.actif`, et un sélecteur d'identifiant bat la
-classe qui masque les écrans inactifs. Un test refuse désormais ce genre de
-règle.
-
-## 8.7
-
-Refonte « Comptoir », étape 8 sur 8 : les deux thèmes vérifiés écran par écran.
-La carte sombre redéfinit ses jetons au lieu d'habiller ses descendants, ce qui
-rendait son contenu invisible en thème clair. Les pastilles de machine passent
-au point de couleur plutôt qu'au texte posé sur la couleur. Les six écrans
-passent maintenant l'audit de contraste dans les deux thèmes.
-
-## 8.6
-
-Refonte « Comptoir », étape 7 sur 8 : les écrans secondaires. Tête de page sur Mes
-meilleurs réglages, le Guide et les Paramètres, sommaire du guide en pastilles,
-titres de modale en serif sur le voile de la DA, et une hauteur de contrôle
-unique de 46 px posée sur la ligne de base des champs plutôt qu’écran par écran.
-
-## 8.5
-
-Refonte « Comptoir », étape 6 sur 8 : l’historique. Tête de page avec le total et
-la recherche, filtres en pastilles, bandeau résumé du filtre courant en quatre
-chiffres, tableau groupé par jour quand le tri est par date, goûts visibles sur
-chaque ligne, détail déplié en quatre colonnes.
-
-## 8.4
-
-Refonte « Comptoir », étape 5 sur 8 : la saisie rapide devient une feuille qui
-monte du bas, sur un voile qui la referme d’un appui n’importe où. Elle affiche
-l’heure d’enregistrement et les chiffres repris de la recette, qu’elle se
-contentait d’annoncer sans les dire. Le bouton flottant passe en icônes en trait
-et change de dessin au lieu de pivoter.
-
-## 8.3
-
-Refonte « Comptoir », étape 4 sur 8 : la saisie. Deux colonnes, trois blocs
-numérotés, contrôle segmenté pour la machine, pied de bloc pour ratio, microns,
-coût et caféine. Le chrono passe dans la colonne fixe de droite, et devient un
-bandeau collant sur téléphone. La note passe du curseur au stepper par demi
-points. Un bug trouvé au passage : la reprise de brouillon affichait une note
-sur une tasse enregistrée comme non notée.
-
-## 8.2
-
-Refonte « Comptoir », étape 3 sur 8 : le tableau de bord. Quatre rangées sur
-trois colonnes, une grande carte « Dernière tasse », quatre tuiles de chiffres au
-lieu de sept, les cinq dernières en vraie table, carte sombre pour les insights.
-Le graphe 30 jours est inchangé. Deux cartes que le brief avait oubliées sont
-gardées. Le bouton « Charger la démonstration » de l'état vide, mort depuis la
-v7.3, fonctionne enfin.
-
-## 8.1
-
-Refonte « Comptoir », étape 2 sur 8 : la navigation. Rail fixe à gauche sur
-ordinateur, barre du bas plus feuille « Plus » sur téléphone, fin de l'entête. Le
-bouton flottant de saisie rapide est désormais réservé au téléphone. Le rail et
-la feuille sont le même élément, pour que les bascules restent uniques. Deux
-bugs trouvés au passage : le câblage des boutons d'entête supprimés plantait le
-démarrage, et le faux DOM des tests ne pouvait pas le voir.
-
-## 8.0
-
-Refonte « Comptoir », étape 1 sur 8 : les fondations. Instrument Serif et Manrope
-embarquées en woff2 dans `css/fonts/` (jamais un CDN, le site doit marcher hors
-ligne), précachées, et servies avec un cache d'un an. Nouveaux jetons de couleur
-dans les deux thèmes, cinq valeurs assombries par rapport à la maquette pour
-tenir 4,5:1. Plus aucune teinte verte, y compris pour dire « bon ». Rayons et
-espaces de la DA. Le layout ne bouge pas encore.
 

@@ -80,64 +80,64 @@ changer.
 
 La mesure a tranché la suite. Le contenu des dix colonnes demande **1741 px** de
 large pour **992** disponibles dans la carte : quelque chose doit se tronquer,
-c’est arithmétique. Donner une colonne au commentaire lui offrait 50 à 150 px,
+c'est arithmétique. Donner une colonne au commentaire lui offrait 50 à 150 px,
 soit trois mots. Il passe donc SOUS sa ligne, en pleine largeur, comme un
-intertitre de jour : il gagne les 992 px entiers, n’est plus tronqué du tout, et
+intertitre de jour : il gagne les 992 px entiers, n'est plus tronqué du tout, et
 les colonnes chiffrées restent lisibles. La table ne défile plus horizontalement.
 
 **Une cellule ne se tronque jamais : celle des actions.** Elle demandait 137 px
 pour 129 offerts, dont 24 px de marge interne inutile sur une rangée de boutons.
-Un bouton tronqué est INATTEIGNABLE, c’est une panne et pas un défaut de mise en
+Un bouton tronqué est INATTEIGNABLE, c'est une panne et pas un défaut de mise en
 page. La marge saute, les cinq boutons tiennent, vérifié en mesurant chacun
 contre les bords de sa cellule.
 
-**L’écran Paramètres vivait hors de `<main>`.** Il était posé après `</main>`,
+**L'écran Paramètres vivait hors de `<main>`.** Il était posé après `</main>`,
 entre deux modales, et héritait donc de la largeur de la FENÊTRE : il commençait
 à 0, passait sous le rail et faisait 1293 px quand les autres en font 993. Ce
-n’est pas une régression de la refonte, il n’y a jamais été ; ça ne se voyait pas
-tant que `main` n’était qu’une colonne centrée, et le rail l’a rendu criant.
+n'est pas une régression de la refonte, il n'y a jamais été ; ça ne se voyait pas
+tant que `main` n'était qu'une colonne centrée, et le rail l'a rendu criant.
 
 **La place de la barre de défilement est réservée en permanence.** Un écran court
-(Mes réglages) était 15 px plus large qu’un écran long (le tableau de bord), et le
-contenu sautait latéralement à chaque changement d’onglet. `scrollbar-gutter:
+(Mes réglages) était 15 px plus large qu'un écran long (le tableau de bord), et le
+contenu sautait latéralement à chaque changement d'onglet. `scrollbar-gutter:
 stable` règle ça en une ligne.
 
-**Les cartes d’une rangée s’étirent à la même hauteur.** Alignées sur le haut,
+**Les cartes d'une rangée s'étirent à la même hauteur.** Alignées sur le haut,
 elles laissaient un trou sous les plus courtes. Chris demandait des widgets
-déplaçables et redimensionnables ; l’étirement règle le symptôme pour une ligne de
+déplaçables et redimensionnables ; l'étirement règle le symptôme pour une ligne de
 CSS, là où un tableau de bord manipulable demande un état persistant, une
 synchronisation, une version téléphone et un accès clavier. À reprendre comme
-chantier à part s’il le veut vraiment.
+chantier à part s'il le veut vraiment.
 
-**Les chiffres du calendrier passent en lignes.** La carte ne fait qu’un tiers de
+**Les chiffres du calendrier passent en lignes.** La carte ne fait qu'un tiers de
 largeur : en colonnes, « tasses par semaine » se coupait en deux et chaque case
 prenait 70 px de haut pour un chiffre et un mot. Et quand la grille défile, elle
 part de la DROITE, sur la semaine en cours : commencer sur les semaines les plus
-anciennes montre exactement ce qu’on ne vient pas voir.
+anciennes montre exactement ce qu'on ne vient pas voir.
 
 **La base passe de 15 à 16 px.** Chris lit sur un 4K et se sentait mieux à 110
 pour cent de zoom.
 
 **Retour au curseur pour la note.** Le stepper visait juste sur le papier, Chris
-prefere le curseur, et c’est son carnet. Le stepper est retire en ENTIER, HTML,
-JS et CSS : laisser les deux dans le code, c’est laisser la question ouverte pour
+prefere le curseur, et c'est son carnet. Le stepper est retire en ENTIER, HTML,
+JS et CSS : laisser les deux dans le code, c'est laisser la question ouverte pour
 la prochaine session, qui ne saura pas lequel fait foi.
 
 **Le champ des secondes etait coupe.** 53 px pour 59 px de contenu : le « 45 »
-perdait son 5. Les deux pixels de marge interne ajoutes a l’etape 7 et les
+perdait son 5. Les deux pixels de marge interne ajoutes a l'etape 7 et les
 fleches du champ numerique ne tenaient plus dans une colonne de 175 px. Les
-fleches partent, elles ne servent a rien sur un champ de deux chiffres qu’on
+fleches partent, elles ne servent a rien sur un champ de deux chiffres qu'on
 tape et `inputmode="numeric"` donne deja le bon clavier au telephone. Un balayage
 de tous les champs visibles, sur les six ecrans et les deux machines, confirme
-que c’etait le seul du site.
+que c'etait le seul du site.
 
 **Le chrono est repliable, et passe sous la fiche recette.** Demande de Chris :
-la recette se relit à chaque étape, le chrono ne sert que pendant l’extraction,
-et c’est pourtant lui qui occupait le haut de la colonne. Deux règles tiennent ce
-repli. Le temps vit dans l’ENTÊTE et non dans le corps, donc il reste lisible
-replié : un chrono qu’il faut déplier pour lire ne sert à rien. Et il s’ouvre
-tout seul au démarrage et refuse de se replier tant qu’il tourne : se refermer
-sur un chrono en marche, c’est perdre les paliers et le bouton d’arrêt au moment
+la recette se relit à chaque étape, le chrono ne sert que pendant l'extraction,
+et c'est pourtant lui qui occupait le haut de la colonne. Deux règles tiennent ce
+repli. Le temps vit dans l'ENTÊTE et non dans le corps, donc il reste lisible
+replié : un chrono qu'il faut déplier pour lire ne sert à rien. Et il s'ouvre
+tout seul au démarrage et refuse de se replier tant qu'il tourne : se refermer
+sur un chrono en marche, c'est perdre les paliers et le bouton d'arrêt au moment
 précis où on en a besoin.
 
 **Le déplacement du chrono a emporté les deux tiers du formulaire.** C'est la
@@ -244,40 +244,40 @@ pas, et on finit par ne plus croire l'outil.
 L'audit final passe les six écrans dans les deux thèmes : zéro élément de texte
 sous 4,5:1, ou 3:1 pour les grandes tailles.
 
-**Les filtres de l’historique restent des `<select>`, habillés en pastilles.** Le
-brief demande « cliquer une pastille ouvre le menu correspondant » : c’est
-exactement ce que fait un select natif, et il le fait mieux qu’un menu écrit à la
-main, qui devrait réapprendre le clavier, la frappe au début d’un mot et la roue
-du téléphone. Le dessin s’obtient en CSS, la logique de filtrage n’a pas bougé.
+**Les filtres de l'historique restent des `<select>`, habillés en pastilles.** Le
+brief demande « cliquer une pastille ouvre le menu correspondant » : c'est
+exactement ce que fait un select natif, et il le fait mieux qu'un menu écrit à la
+main, qui devrait réapprendre le clavier, la frappe au début d'un mot et la roue
+du téléphone. Le dessin s'obtient en CSS, la logique de filtrage n'a pas bougé.
 
-**Le groupement par jour ne s’applique QUE si le tri est par date.** Grouper par
-jour un tableau trié par note ferait réapparaître « Aujourd’hui » à trois
+**Le groupement par jour ne s'applique QUE si le tri est par date.** Grouper par
+jour un tableau trié par note ferait réapparaître « Aujourd'hui » à trois
 endroits différents : deux ordres se disputeraient la même liste. Les autres tris
 rendent donc une liste plate, comme avant.
 
 **Les goûts partagent la cellule Diagnostic au lieu de prendre une colonne.**
 Une colonne de plus demande quatre retouches coordonnées (voir « Le piège des
 largeurs figées ») et se décale en silence si on en oublie une. Le brief les
-décrit d’ailleurs comme une seule colonne.
+décrit d'ailleurs comme une seule colonne.
 
 **Deux contrôles ont dû être corrigés, pas contournés.** Celui qui compare les
 cellules aux en-têtes tombait sur un intertitre de jour, qui est un `colspan` et
 non une extraction : il cherche maintenant la première ligne de DONNÉES, ce
-qu’il a toujours voulu dire. Celui qui vérifie les noms accessibles lisait les
+qu'il a toujours voulu dire. Celui qui vérifie les noms accessibles lisait les
 COMMENTAIRES : un commentaire citant `<select>` devenait un champ sans nom. Il
-retire les commentaires d’abord, comme la chasse au vert le fait déjà.
+retire les commentaires d'abord, comme la chasse au vert le fait déjà.
 
-**La saisie rapide dit enfin ce qu’elle enregistre.** Sa note de bas de panneau
+**La saisie rapide dit enfin ce qu'elle enregistre.** Sa note de bas de panneau
 annonçait « Dose, eau, température et mouture reprennent la recette » sans jamais
-dire LESQUELLES : il fallait connaître la recette par coeur pour savoir ce qu’on
-venait d’écrire en trois clics. Elle affiche maintenant les chiffres, avec la
+dire LESQUELLES : il fallait connaître la recette par coeur pour savoir ce qu'on
+venait d'écrire en trois clics. Elle affiche maintenant les chiffres, avec la
 pastille de machine, qui était la seule information de méthode absente de cette
 feuille.
 
 **Le bouton flottant change de dessin, il ne tourne plus.** Une tasse pivotée de
 90 degrés ne dit pas « fermer », elle dit « tasse de travers ». Les deux icônes
 cohabitent dans le bouton et le CSS en cache une ; elles sont en trait, comme
-toute la navigation, l’emoji est parti.
+toute la navigation, l'emoji est parti.
 
 **Le chrono a quitté le formulaire.** Il vit maintenant dans la colonne fixe de
 droite, avec la fiche recette et la fiche café : ce sont des choses qu'on LIT
