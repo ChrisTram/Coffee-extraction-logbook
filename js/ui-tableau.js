@@ -274,6 +274,19 @@
     return { tasses, joursActifs, serieEnCours, meilleureSerie, parSemaine };
   }
 
+  /* LA LEGENDE DE L'ECHELLE. Les teintes du calendrier suivent une echelle
+     ABSOLUE, une couleur veut donc toujours dire la meme chose : c'est ce qui
+     rend une legende utile, et c'est pourquoi elle doit exister. Sans elle, le
+     calendrier est une suite de bruns. */
+  function rendreLegendeHeatmap() {
+    const cible = $("#heatmap-legende");
+    if (!cible) return;
+    const cases = [0, 1, 2, 3, 4].map(n =>
+      '<span class="hm-i hm-n' + n + '"></span>').join("");
+    cible.innerHTML = '<span>' + I18N.t("hm_leg_moins") + "</span>" + cases +
+      "<span>" + I18N.t("hm_leg_plus") + "</span>";
+  }
+
   function rendreStatsHeatmap(parJour, semaines) {
     const fenetre = semaines || SEMAINES_HEATMAP;
     const s = statsHeatmap(parJour, fenetre);
@@ -509,6 +522,7 @@
     CHARTS.heatmap("g-heatmap", parJour, infoParJour, semaines);
     $("#heatmap-titre").textContent = I18N.t("hm_titre", { n: semaines });
     rendreStatsHeatmap(parJour, semaines);
+    rendreLegendeHeatmap();
 
     /* AU PREMIER RENDU la carte n a pas encore de largeur : semainesVisibles()
        retombe sur le plafond et dessine 18 semaines ecrasees a l echelle. Une
@@ -799,7 +813,7 @@
   }
 
   Object.assign(UI, {
-    rendreDerniereTasse, semainesVisibles,
+    rendreDerniereTasse, rendreLegendeHeatmap, semainesVisibles,
     MIN_GAP, MIN_SAMPLE, MIN_TASSES_GOUT, PIRES_GOUTS, SEMAINES_HEATMAP, TOP_GOUTS,
     bestOfGroups, cablerTableau, causeDuelVide, causeGoutsVide, causeMoutureVide, computeInsights,
     insightAgePaquet, insightMoment, insightPuissance, insightRecettes, insightsParCafe,

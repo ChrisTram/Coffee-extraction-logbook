@@ -675,27 +675,6 @@ button { font-family: inherit; }
    etape 2). .nav-btn reste, mais comme simple crochet de comportement : c'est
    .rail-entree et .barre-entree qui portent le dessin. */
 .nav-btn { font: inherit; }
-.ancienne-marque-retiree { display: none; }
-.marque-retiree { display: flex; align-items: center; gap: 12px; }
-/* L'ensemble icone plus titre ramene au tableau de bord. Un vrai lien, donc
-   focusable au clavier et ouvrable dans un onglet, mais app.js intercepte le
-   clic pour basculer d'ecran sans passer par le hash. */
-.marque-lien {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 4px 8px;
-  margin: -4px -8px;
-  border-radius: var(--rayon-petit);
-  color: inherit;
-  text-decoration: none;
-  transition: background var(--transition);
-}
-.marque-lien:hover { background: var(--accent-fond); }
-.marque-lien:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.marque h1 { font-size: 1.25rem; margin: 0; }
-.marque-icone { font-size: 1.7rem; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.25)); }
-.marque-sous { margin: 0; font-size: 0.78rem; color: var(--attenue); }
 
 .nav { display: flex; gap: 4px; flex: 1; justify-content: center; flex-wrap: wrap; }
 
@@ -714,8 +693,6 @@ button { font-family: inherit; }
 /* Un état sélectionné ne change QUE des couleurs : voir le commentaire sur
    .tag.actif plus bas. Le gras élargissait le libellé et décalait les voisins. */
 .nav-btn.actif { background: var(--accent-fond); color: var(--accent-fort); }
-
-.entete-actions { display: flex; align-items: center; gap: 8px; }
 
 .badge {
   font-size: 0.75rem;
@@ -745,7 +722,6 @@ button { font-family: inherit; }
   align-items: center;
   gap: 5px;
 }
-.entete-actions { flex-wrap: wrap; }
 .btn-icone:hover { border-color: var(--accent); }
 
 /* ZONE D'APPUI de 44 px sans changer le dessin. Les icones d'entete font 30 a
@@ -757,18 +733,8 @@ button { font-family: inherit; }
 .btn-icone { position: relative; }
 .btn-icone::after { content: ""; position: absolute; inset: -6px -2px; }
 @media (max-width: 480px) {
-  .nav-icone::after { inset: -8px -2px; }
 }
 
-/* Parametres : un 7e onglet faisait passer la nav a la ligne sous le reste.
-   Il vit donc avec les outils d'entete, en engrenage, mais garde la classe
-   .nav-btn pour que le clic et l'etat actif restent geres au meme endroit. */
-.nav-icone {
-  font-size: 1.02rem; line-height: 1;
-  width: 34px; height: 32px; padding: 0;
-  justify-content: center;
-}
-.nav-icone.actif { background: var(--accent-fond); border-color: var(--accent); color: var(--accent-fort); }
 
 /* ---------- Structure ---------- */
 
@@ -1195,16 +1161,6 @@ html[data-theme="sombre"] .carte-sombre {
 .kpi-valeur small { font-size: 0.95rem; color: var(--attenue); }
 .kpi-label { font-size: 0.78rem; color: var(--attenue); margin-top: 2px; }
 
-/* ---------- Grille des graphiques ---------- */
-
-.grille-graphes {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-.grille-graphes > * { min-width: 0; }
-.carte-large { grid-column: 1 / -1; }
-
 .canvas-h240 { position: relative; height: 250px; min-width: 0; }
 .canvas-h200 { position: relative; height: 200px; min-width: 0; }
 
@@ -1272,22 +1228,12 @@ html[data-theme="sombre"] .carte-sombre {
   border-bottom: 1px solid var(--lignes);
 }
 .dernieres li .pastille-methode { margin-top: 6px; }
-.derniere-corps { min-width: 0; }
-.derniere-tete { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
-.derniere-droite { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-.derniere-droite .badge-ratee { margin-right: 0; }
 .dernieres li:last-child { border-bottom: none; }
 .pastille-methode {
   width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
 }
 .pastille-methode.brikka { background: var(--brikka); }
 .pastille-methode.switch { background: var(--switch); }
-.derniere-note {
-  font-family: var(--serif); font-size: 1.1rem; color: var(--encre);
-  min-width: 44px; text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-.derniere-infos { font-size: 0.8rem; color: var(--attenue); }
 /* Goûts cochés et commentaire, sous les mesures : la carte avait la place et ne
    disait rien de la tasse en bouche. */
 .derniere-gouts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
@@ -1325,7 +1271,6 @@ html[data-theme="sombre"] .carte-sombre {
 .derniere-mesures b { color: var(--encre); font-weight: 600; }
 .derniere-mesures small { color: var(--attenue); }
 .derniere-mesures > span { color: var(--lignes-graphe); }
-.derniere-cafe { color: var(--encre); font-weight: 600; }
 
 /* ---------- États vides ---------- */
 
@@ -2023,7 +1968,6 @@ input:focus, select:focus, textarea:focus {
   vertical-align: middle;
 }
 
-
 .historique-compte { color: var(--attenue); font-size: 0.85rem; margin: 0 0 10px 4px; }
 
 .table-conteneur { overflow-x: auto; padding: 0; }
@@ -2658,13 +2602,8 @@ input:focus, select:focus, textarea:focus {
 /* ---------- Responsive ---------- */
 
 @media (max-width: 860px) {
-  .grille-graphes { grid-template-columns: 1fr; }
-  .entete-inner { padding: 8px 12px; gap: 8px; }
   .nav { order: 3; width: 100%; justify-content: space-between; }
   .nav-btn { padding: 8px 10px; font-size: 0.85rem; flex: 1; text-align: center; }
-  /* Les icônes d'écran restent des icônes, elles ne doivent pas s'étirer
-     comme les trois onglets à texte au dessus. */
-  .nav-icone { flex: 0 0 auto; width: 32px; height: 30px; }
   main { padding: 16px 12px 70px; }
   .kpi-valeur { font-size: 1.4rem; }
   .chrono-valeur { font-size: 1.6rem; }
@@ -2685,11 +2624,7 @@ input:focus, select:focus, textarea:focus {
 
 @media (max-width: 480px) {
   .kpis { grid-template-columns: repeat(2, 1fr); }
-  /* Huit outils dans l'entête : sur un petit écran ils se resserrent au lieu
-     de passer à la ligne et de repousser le contenu. */
-  .entete-actions { gap: 4px; }
   .btn-icone { padding: 6px 7px; }
-  .nav-icone { width: 30px; height: 28px; }
   .grille-recettes { grid-template-columns: 1fr; }
   .btn-methode { padding: 14px 8px; }
   .nav-btn { padding: 8px 6px; font-size: 0.78rem; }
@@ -2771,7 +2706,6 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 @keyframes chargement-tourne {
   to { transform: rotate(360deg); }
 }
-
 
 /* ==================================================================
    REFONTE COMPTOIR, ETAPE 4 : LA SAISIE
@@ -3108,7 +3042,6 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   .historique-filtres-actions { margin-left: 0; }
 }
 
-
 /* ==================================================================
    REFONTE COMPTOIR, ETAPE 7 : LES ECRANS SECONDAIRES
    ================================================================== */
@@ -3180,7 +3113,6 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 /* Mes meilleurs reglages : une carte par cafe, au meme ecart que partout. */
 #reglages-liste { gap: var(--ecart-cartes); }
 
-
 /* ---------- Le chrono repliable ----------
    Il vit sous la fiche recette, replie derriere son entete. L'entete EST le
    bouton, et porte le temps : replie, le chrono reste lisible. */
@@ -3234,7 +3166,6 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 @media (prefers-reduced-motion: reduce) {
   .chrono-chevron { transition: none; }
 }
-
 
 /* Le palier en cours, dans l'entete du chrono : replie, le bandeau doit dire ou
    on en est. Il s'efface quand le chrono ne tourne pas, et cede la place au

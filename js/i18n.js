@@ -243,6 +243,8 @@ const I18N = (() => {
     h_res_ratees: { fr: "ratées" },
     h_res_aucune: { fr: "aucune" },
     hm_titre: { fr: "Les {n} dernières semaines" },
+    hm_leg_moins: { fr: "moins" },
+    hm_leg_plus: { fr: "4 et plus" },
     gouts_plus: { fr: "toutes les familles ({n} de plus)" },
     gouts_moins: { fr: "moins de familles" },
     d_temps: { fr: "Temps total" },

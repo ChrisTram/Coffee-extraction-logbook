@@ -463,6 +463,13 @@ pourquoi est dans `DECISIONS.md`.
   Guide (boutiques, achats, messages vietnamiens), correction du bug
   d'avertissement au préremplissage.
 - v1 : site initial, 4 écrans, 2 CSV, démo, Chart.js local, thèmes.
+## 8.21
+
+Vingt classes CSS mortes depuis la refonte sont retirées. La légende du
+calendrier revient : son style était resté, son HTML avait disparu, et une
+échelle de couleurs sans légende est une suite de bruns. Les trois classes de
+badge de stock, assemblées par concaténation, sont gardées.
+
 ## 8.20
 
 Les intertitres de carte passent en Manrope 700 : une serif à 11 px en capitales
