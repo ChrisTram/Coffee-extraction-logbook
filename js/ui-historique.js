@@ -79,6 +79,11 @@
      a rien à regrouper. */
   const rendreHistoriqueDifferee = antiRebond(() => rendreHistorique());
 
+  /* EN CARTES ou en table : le seuil est celui du reste du site, 1024 px. */
+  function enCartes() {
+    return typeof matchMedia === "function" && matchMedia("(max-width: 1023px)").matches;
+  }
+
   function rendreHistorique() {
     const liste = filtrerHistorique().sort((a, b) => {
       const va = valeurTri(a, tri.colonne), vb = valeurTri(b, tri.colonne);
@@ -110,6 +115,16 @@
     /* GROUPEMENT PAR JOUR, mais seulement quand le tri est par date. Grouper un
        tableau trie par note ferait reapparaitre « Aujourd'hui » a trois endroits
        differents : deux ordres se disputeraient la meme liste. */
+    /* Les cartes du telephone. On vide l'autre conteneur : deux rendus vivants
+       en meme temps, ce sont deux fois les memes identifiants dans la page. */
+    if (enCartes()) {
+      $("#h-corps").innerHTML = "";
+      $("#h-cartes").innerHTML = rendreCartes(liste);
+      majBarreComparaison();
+      return;
+    }
+    $("#h-cartes").innerHTML = "";
+
     if (tri.colonne !== "date_heure") {
       $("#h-corps").innerHTML = liste.map(e => ligneHistorique(e)).join("");
     } else {
@@ -135,6 +150,28 @@
       }).join("");
     }
     majBarreComparaison();
+  }
+
+  /* LES CARTES, groupees par jour comme la table. Les intertitres sont les
+     memes, la regle aussi : on ne groupe que si le tri est par date, sinon deux
+     ordres se disputent la meme liste. */
+  function rendreCartes(liste) {
+    if (tri.colonne !== "date_heure") return liste.map(carteExtraction).join("");
+    let jour = null;
+    return liste.map(e => {
+      const j = String(e.date_heure).slice(0, 10);
+      let tete = "";
+      if (j !== jour) {
+        jour = j;
+        const n = liste.filter(x => String(x.date_heure).slice(0, 10) === j).length;
+        const nomme = titreDeJour(j);
+        const dateDite = nomme === I18N.t("h_aujourdhui") || nomme === I18N.t("h_hier");
+        tete = '<h3 class="h-cartes-jour"><span class="jour-titre">' + nomme + "</span>" +
+          '<span class="jour-detail">' + (dateDite ? fmtDateCourte(j) + " · " : "") +
+          I18N.t("h_jour_tasses", { n, s: n > 1 ? "s" : "" }) + "</span></h3>";
+      }
+      return tete + carteExtraction(e);
+    }).join("");
   }
 
   /* « Aujourd'hui », « Hier », puis le jour de la semaine. Un nom vaut mieux
@@ -214,18 +251,23 @@
   const detailsOuverts = new Set();
   const comparaison = new Set();
 
+  /* Le detail, dans une ligne en colspan sous sa tasse. Son CONTENU vit dans
+     detailContenu() : la carte du telephone le reutilise tel quel, dans un div. */
   function ligneDetail(e) {
+    return '<tr class="ligne-detail" data-detail="' + e.id + '"><td colspan="10">' +
+      detailContenu(e) + "</td></tr>";
+  }
+
+  /* Le CONTENU du detail, sans son enveloppe : la ligne le pose dans un <tr> en
+     colspan, la carte du telephone dans un simple <div>. Deux enveloppes, un
+     seul contenu, donc jamais deux versions du detail qui divergent. */
+  function detailContenu(e) {
     const item = (cle, valeur) => valeur === "" || valeur === undefined || valeur === null
       ? "" : '<div class="detail-item"><span>' + I18N.t(cle) + "</span><b>" + valeur + "</b></div>";
-    /* Le détail montre ce que la LIGNE ne montre pas, et la ligne a change : le
-       temps total, la température et le feu ont laissé leur colonne au goût, au
-       diagnostic et au commentaire, ils reviennent donc ici. La dose et l'eau,
-       elles, sont restées dans la ligne et ne se répètent pas. */
     const cases = [
       item("d_temps", e.temps_total_s !== "" ? fmtTemps(e.temps_total_s) : ""),
       item("d_ecoulement", e.temps_ecoulement_s !== "" ? fmtTemps(e.temps_ecoulement_s) : ""),
       item("d_temp", e.temperature_c !== "" && e.temperature_c !== undefined ? e.temperature_c + " °C" : ""),
-      // Le feu ne veut rien dire hors Brikka : le Switch n'a pas de flamme.
       item("d_feu", e.methode === "Brikka" && e.puissance_feu !== "" && e.puissance_feu !== undefined
         ? e.puissance_feu : ""),
       item("d_chauffe", e.chauffe_s !== "" && e.chauffe_s !== undefined ? fmtTemps(e.chauffe_s) : ""),
@@ -238,16 +280,12 @@
       item("d_boisson", e._c.volume_boisson_ml !== "" ? e._c.volume_boisson_ml + " ml" : ""),
       item("d_cout", e._c.cout_tasse_vnd !== "" ? fmtVND(e._c.cout_tasse_vnd) : ""),
     ].filter(Boolean).join("");
-
     const tags = (e.descripteurs || "").split("|").filter(Boolean)
       .map(t => '<span class="detail-tag">' + I18N.tag(t) + "</span>").join("");
-
-    return '<tr class="ligne-detail" data-detail="' + e.id + '"><td colspan="10">' +
-      (cases ? '<div class="detail-grille">' + cases + "</div>" : "") +
+    return (cases ? '<div class="detail-grille">' + cases + "</div>" : "") +
       (tags ? '<div class="detail-tags">' + tags + "</div>" : "") +
       (e.commentaire ? '<p class="detail-commentaire">' + e.commentaire + "</p>" : "") +
-      (cases || tags || e.commentaire ? "" : '<p class="detail-vide">' + I18N.t("d_rien") + "</p>") +
-      "</td></tr>";
+      (cases || tags || e.commentaire ? "" : '<p class="detail-vide">' + I18N.t("d_rien") + "</p>");
   }
 
   function ligneHistorique(e) {
@@ -280,7 +318,17 @@
       '<td class="chip-diagnostic"' + (e.commentaire ? ' data-info="' + attrTitre(e.commentaire) + '"' : "") + ">" +
       (e.diagnostic ? '<span class="h-diag">' + diagsAffiches(e.diagnostic) + "</span>" : "") +
       goutsHistorique(e) + "</td>" +
-      '<td><div class="actions-ligne">' +
+      "<td>" + actionsExtraction(e) + "</td></tr>" +
+      commentaireHistorique(e) + (ouvert ? ligneDetail(e) : "");
+  }
+
+  /* LES CINQ ACTIONS, ecrites UNE fois et rendues par la ligne comme par la
+     carte. C'est ce qui garantit qu'un geste possible sur ordinateur l'est aussi
+     sur telephone : deux listes separees divergent au premier ajout. Le clic est
+     delegue sur data-action, donc rien d'autre n'a besoin de le savoir. */
+  function actionsExtraction(e) {
+    const compare = comparaison.has(e.id);
+    return '<div class="actions-ligne">' +
       '<button class="btn-ligne' + (compare ? " actif" : "") + '" data-action="comparer" title="' +
       attrTitre(I18N.t("h_comparer")) + '">⇄</button>' +
       /* La bascule ratée, en PREMIER des actions d'écriture : c'est celle qui se
@@ -290,7 +338,43 @@
       '<button class="btn-ligne" data-action="dupliquer" title="Dupliquer pour refaire la même">⧉</button>' +
       '<button class="btn-ligne" data-action="modifier" title="Modifier">✎</button>' +
       '<button class="btn-ligne danger" data-action="supprimer" title="Supprimer">🗑</button>' +
-      "</div></td></tr>" + commentaireHistorique(e) + (ouvert ? ligneDetail(e) : "");
+      "</div>";
+  }
+
+  /* UNE TASSE EN CARTE, pour le telephone. Mêmes informations que la ligne, mais
+     empilees : heure, machine, cafe, recette, dose et eau, ratio, note, gouts et
+     diagnostic, commentaire, et les cinq mêmes actions. */
+  function carteExtraction(e) {
+    const ouvert = detailsOuverts.has(e.id);
+    const chiffres = [];
+    if (e.dose_g !== "" && e.eau_g !== "") chiffres.push(e.dose_g + " → " + e.eau_g + " g");
+    if (e._c.ratioTexte) chiffres.push(e._c.ratioTexte);
+    if (e.mouture_dial) chiffres.push(I18N.t("molette") + " " + e.mouture_dial);
+    return '<article class="h-carte' + (ouvert ? " ouverte" : "") +
+      (comparaison.has(e.id) ? " comparee" : "") + (estRatee(e) ? " ratee" : "") +
+      '" data-id="' + e.id + '">' +
+      '<div class="h-carte-tete">' +
+        '<span class="h-carte-heure">' + fmtDateHeure(e.date_heure).replace(/^.*\s/, "") + "</span>" +
+        '<span class="chip-methode ' + e.methode.toLowerCase() + '">' + e.methode + "</span>" +
+        '<span class="h-carte-note">' + (e.note_sur_10 !== "" ? e.note_sur_10 : "") + "</span>" +
+      "</div>" +
+      '<p class="h-carte-cafe">' + I18N.tr(e._c.cafe_nom) +
+        (estRatee(e) ? '<span class="mention-ratee">' + I18N.t("rt_badge") + "</span>" : "") + "</p>" +
+      (e.recette ? '<p class="h-carte-recette">' + I18N.tr(e.recette) + "</p>" : "") +
+      (chiffres.length ? '<p class="h-carte-chiffres">' + chiffres.join(" · ") + "</p>" : "") +
+      ((e.diagnostic || e.descripteurs)
+        ? '<p class="h-carte-gouts">' +
+          (e.diagnostic ? '<span class="h-diag">' + diagsAffiches(e.diagnostic) + "</span>" : "") +
+          goutsHistorique(e) + "</p>"
+        : "") +
+      (e.commentaire ? '<p class="h-carte-commentaire">' + attrTitre(e.commentaire) + "</p>" : "") +
+      '<div class="h-carte-pied">' +
+        '<button type="button" class="btn-deplier" data-action="deplier" aria-expanded="' + ouvert +
+        '" title="' + attrTitre(I18N.t("h_detail")) + '">' + (ouvert ? "▾" : "▸") + "</button>" +
+        actionsExtraction(e) +
+      "</div>" +
+      (ouvert ? '<div class="h-carte-detail">' + detailContenu(e) + "</div>" : "") +
+      "</article>";
   }
 
   /* Comparateur : deux extractions côte à côte, différences surlignées. C'est le
@@ -460,13 +544,16 @@
       else { tri.colonne = th.dataset.tri; tri.sens = -1; }
       rendreHistorique();
     }));
-    $("#h-corps").addEventListener("click", async ev => {
+    /* LES DEUX CONTENEURS, table et cartes : le meme gestionnaire sert les deux
+       rendus. Attache au seul #h-corps, il laissait les six actions des cartes
+       rendues mais mortes. */
+    const surClicHistorique = async ev => {
       const btn = ev.target.closest("[data-action]");
       if (!btn) {
         /* Cliquer la LIGNE ouvre l'extraction en édition, comme les cinq
            dernières du tableau de bord. Sans ça, seul le crayon fonctionnait :
            une cible de 24 px pour une ligne qui a l'air cliquable entière. */
-        const ligne = ev.target.closest("tr[data-id]");
+        const ligne = ev.target.closest("[data-id]");
         if (!ligne) return;
         /* Une sélection de texte n'est pas un clic. Sans ce test, copier un
            commentaire depuis le détail déplié ouvrirait l'édition. */
@@ -476,7 +563,7 @@
         if (extLigne) UI.chargerExtractionDansSaisie(extLigne, false);
         return;
       }
-      const id = btn.closest("tr").dataset.id;
+      const id = btn.closest("[data-id]").dataset.id;
       const ext = DATA.state.extractions.find(e => e.id === id);
       if (!ext) return;
       if (btn.dataset.action === "supprimer") {
@@ -502,7 +589,8 @@
         await DATA.modifierExtraction(id, { ...ext, ratee: Number(ext.ratee) === 1 ? "" : 1 });
         toast(I18N.t(Number(ext.ratee) === 1 ? "t_deratee" : "t_ratee"));
       }
-    });
+    };
+    [$("#h-corps"), $("#h-cartes")].forEach(z => z.addEventListener("click", surClicHistorique));
     $("#comparaison-ouvrir").addEventListener("click", ouvrirComparaison);
     $("#comparaison-vider").addEventListener("click", () => { comparaison.clear(); rendreHistorique(); });
   }
@@ -510,7 +598,9 @@
   Object.assign(UI, {
     FILTRES, basculerComparaison, cablerHistorique, carteReglage, champsComparaison, comparaison, detailsOuverts,
     filtrerHistorique, ligneDetail, ligneHistorique, majBarreComparaison, ouvrirComparaison,
-    commentaireHistorique, goutsHistorique, remplirFiltres, rendreHistorique, rendreHistoriqueDifferee, rendreReglages,
+    actionsExtraction, carteExtraction, commentaireHistorique, detailContenu, enCartes,
+    rendreCartes,
+    goutsHistorique, remplirFiltres, rendreHistorique, rendreHistoriqueDifferee, rendreReglages,
     rendreResume, sansAccents, texteCherchable, titreDeJour, tri, valeurTri,
   });
 })();

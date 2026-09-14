@@ -463,6 +463,13 @@ pourquoi est dans `DECISIONS.md`.
   Guide (boutiques, achats, messages vietnamiens), correction du bug
   d'avertissement au préremplissage.
 - v1 : site initial, 4 écrans, 2 CSV, démo, Chart.js local, thèmes.
+## 8.19
+
+L’historique passe en cartes par jour sous 1024 px : dix colonnes dans 350 px se
+lisaient en faisant glisser la table. La table reste sur ordinateur. Les cinq
+actions, le dépliage et le détail sont construits par le même code des deux
+côtés, et un test compare les gestes offerts par les deux rendus.
+
 ## 8.18
 
 Les familles de goûts se replient : deux visibles plus celles qui contiennent un

@@ -3247,3 +3247,75 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 .chrono-palier:not(:empty) + .chrono-chevron { margin-left: 8px; }
 /* Quand un palier est affiche, le mot « Chrono » ne sert plus a rien. */
 .chrono-libelle:has(+ .chrono-palier:not(:empty)) { flex: none; }
+
+/* ---------- Historique en cartes, sous 1024 px ----------
+   Dix colonnes dans 350 px se lisaient en faisant glisser la table, ce qui est
+   la pire facon de lire un journal au pouce. Un seul des deux rendus vit a la
+   fois, le JS ne remplit que celui qui sert. */
+.h-cartes { display: none; }
+
+@media (max-width: 1023px) {
+  .table-conteneur { display: none; }
+  .h-cartes { display: flex; flex-direction: column; gap: 10px; }
+}
+
+.h-cartes-jour {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 18px 0 2px;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 1.15rem;
+  text-transform: none;
+  color: var(--encre);
+}
+.h-cartes-jour:first-child { margin-top: 0; }
+
+.h-carte {
+  background: var(--panneau);
+  border: 1px solid var(--lignes);
+  border-radius: var(--rayon);
+  padding: 14px 16px;
+}
+.h-carte.comparee { border-color: var(--accent); }
+.h-carte.ratee .h-carte-cafe { color: var(--attenue); }
+
+.h-carte-tete { display: flex; align-items: center; gap: 10px; }
+.h-carte-heure { font-size: 0.8rem; color: var(--attenue); font-variant-numeric: tabular-nums; }
+.h-carte-note {
+  margin-left: auto;
+  font-family: var(--serif);
+  font-size: 1.5rem;
+  color: var(--encre);
+  font-variant-numeric: tabular-nums;
+}
+.h-carte-cafe { margin: 8px 0 0; font-weight: 600; color: var(--encre); }
+.h-carte-recette { margin: 2px 0 0; font-size: 0.84rem; color: var(--attenue); }
+.h-carte-chiffres { margin: 6px 0 0; font-size: 0.84rem; color: var(--texte); }
+.h-carte-gouts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0 0; }
+.h-carte-commentaire {
+  margin: 8px 0 0;
+  font-style: italic;
+  font-size: 0.84rem;
+  color: var(--attenue);
+}
+/* Le pied porte les MEMES cinq actions que la ligne du tableau : elles sont
+   construites par la meme fonction, voir actionsExtraction(). */
+.h-carte-pied {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--lignes-douces);
+}
+.h-carte-pied .actions-ligne { margin-left: auto; gap: 4px; }
+.h-carte-pied .btn-ligne { padding: 6px 8px; }
+.h-carte-detail {
+  margin-top: 12px;
+  padding: 14px;
+  background: var(--panneau-2);
+  border-radius: var(--rayon-petit);
+}
+.h-carte-detail .detail-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 0; background: none; }

@@ -135,6 +135,15 @@
       if (nav.ecran === "tableau") UI.rendreTableau();
     }, 200));
 
+    /* L'historique change de FORME au seuil de 1024 px, table ou cartes.
+       matchMedia et non resize : un seul evenement au franchissement, la ou
+       resize en tire des dizaines pendant qu'on tire le coin de la fenetre. */
+    if (typeof matchMedia === "function") {
+      const seuil = matchMedia("(max-width: 1023px)");
+      const suivre = () => { if (nav.ecran === "historique") UI.rendreHistorique(); };
+      if (seuil.addEventListener) seuil.addEventListener("change", suivre);
+    }
+
     window.addEventListener("hashchange", () => {
       const h = location.hash.slice(1);
       const cible = normaliserEcran(h);

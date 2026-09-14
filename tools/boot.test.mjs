@@ -918,5 +918,37 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
     orphelines.length === 0, [...new Set(orphelines)].join(", "));
 }
 
+/* LES DEUX RENDUS DE L'HISTORIQUE OFFRENT LES MEMES GESTES.
+
+   Sous 1024 px la table passe en cartes. Le risque evident : une action
+   presente sur ordinateur et absente au telephone, sans que rien ne le signale.
+   Les cinq boutons sont donc construits par UNE fonction, actionsExtraction(),
+   et ce controle le verifie sur une vraie extraction plutot que sur la
+   promesse : meme nombre de boutons, memes actions, dans la ligne et la carte. */
+{
+  const ext = api.DATA.state.extractions[0];
+  const avecCalculs = api.UI.extAvecCalculs().find(x => x.id === ext.id) || ext;
+
+  const ligne = api.UI.ligneHistorique(avecCalculs);
+  const carte = api.UI.carteExtraction(avecCalculs);
+  const actions = html => [...html.matchAll(/data-action="(\w+)"/g)].map(m => m[1]).sort();
+
+  const aLigne = actions(ligne), aCarte = actions(carte);
+  check("la ligne du tableau offre les cinq actions plus le depliage",
+    aLigne.length === 6, aLigne.join(", "));
+  check("la carte du telephone offre exactement les memes",
+    aCarte.join(",") === aLigne.join(","), aCarte.join(", ") + "  vs  " + aLigne.join(", "));
+
+  /* Et les deux portent l'identifiant : le gestionnaire de clic est delegue, il
+     ne sait pas d'ou vient le clic et ne doit pas avoir a le savoir. */
+  check("la carte porte l'identifiant de son extraction",
+    carte.includes('data-id="' + ext.id + '"'));
+
+  /* Le detail deplie est le MEME contenu des deux cotes. */
+  const detail = api.UI.detailContenu(avecCalculs);
+  check("le detail se rend sans son enveloppe, pour les deux",
+    typeof detail === "string" && !detail.includes("<tr"));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);
