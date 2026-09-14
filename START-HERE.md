@@ -66,6 +66,9 @@ jamais à la main dans les CSV.
 - Si tu changes le modèle de données de la démo, régénère la avec
   `python3 tools/gen_demo.py` (seed fixe, sortie déterministe). Python n'est
   pas installé sur la machine de Chris.
+- `README.md` est en ANGLAIS, et doit le rester : le depot est public. C’est la
+  seule exception, `DOCUMENTATION.md`, `DECISIONS.md`, `CHANGELOG.md`, les
+  commentaires et l’interface restent en francais.
 - Commits en ANGLAIS, clairs, un sujet par commit, une version par commit.
   Idem pour les noms de variables et de fonctions du code NOUVEAU (`worker/`
   par exemple). Le code applicatif existant est nommé en français, on ne le

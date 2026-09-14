@@ -1,146 +1,243 @@
-# Carnet d'extraction : Brikka et Switch
+# Brew journal: Brikka and Switch
 
-Site local, sans installation, sans serveur. Ouvre `index.html` dans Chrome et c'est tout.
+A local site. No install, no build, no server. Open `index.html` in Chrome and
+that is the whole setup.
 
-Il existe aussi en ligne, sur une adresse privée protégée par un identifiant et un mot de passe. La connexion tient 30 jours, donc en pratique tu ne la retapes presque jamais. En local, en `file://`, il n'y a évidemment aucun login : le double clic sur `index.html` ouvre le site directement, comme avant. Pour te déconnecter d'un appareil, va sur `/logout`. Si tu perds un téléphone, change le secret `AUTH_SECRET` dans Cloudflare, toutes les sessions ouvertes tombent d'un coup.
+It also runs online, at a private address behind a single username and
+password. A session lasts 30 days, so in practice you almost never retype it.
+Locally, over `file://`, there is no login at all: double-clicking
+`index.html` opens the site directly. To sign out of a device, go to `/logout`.
+If you lose a phone, change the `AUTH_SECRET` secret in Cloudflare and every
+open session drops at once.
 
-Tes données ne partent jamais en ligne : elles restent dans les CSV de ton disque et dans le stockage local de ton navigateur. Le serveur ne fait que vérifier ton mot de passe et servir les fichiers du site.
+Your data never goes online. It lives in CSV files on your disk and in your
+browser's local storage. The server only checks your password and serves the
+site's files.
 
-Cinq écrans : Tableau de bord, Saisie, Historique, Référence (recettes, moulin, diagnostic, vocabulaire) et Guide (boutiques, quoi acheter, entretien, messages vietnamiens prêts à copier).
+**Six screens**: Dashboard, New brew, History, My best settings, Guide
+(recipes, grinder, taste diagnosis, vocabulary, shops) and Settings.
 
-## Français ou anglais
+## Getting around
 
-Le bouton EN / FR dans l'entête bascule toute l'interface, y compris les pages Référence et Guide, les graphiques, les avertissements et les messages. Français par défaut, choix mémorisé. Les descripteurs et diagnostics sont traduits à l'affichage seulement : les valeurs stockées dans les CSV restent en français, donc tes données ne bougent pas d'un octet en changeant de langue. Le contenu de tes recettes et de tes cafés (noms, étapes, notes) est à toi, il s'affiche tel que tu l'as écrit. Toute la couche de traduction vit dans `js/i18n.js`.
+On a desktop, a fixed rail on the left carries the six screens, a **New cup**
+button, the sync status and the language, theme and **Data** buttons. Under
+1024px the rail becomes a **More** sheet that slides up from the bottom, and a
+bottom bar takes the three screens you use daily. The floating button for quick
+entry only exists on the phone; on a desktop, New cup opens the full form.
 
-## Démarrage rapide
+## French or English
 
-1. Double clique sur `index.html` (ou glisse le dans Chrome).
-2. Au premier lancement, trois choix :
-   - **Créer un dossier de données** : choisis un dossier sur ton disque (par exemple un sous dossier `donnees` à côté du site). Le site y crée `cafes.csv` et `extractions.csv` avec tes 5 cafés de départ, puis y écrit à chaque ajout ou modification.
-   - **Ouvrir un dossier existant** : reprends un dossier qui contient déjà ces deux fichiers.
-   - **Charger la démonstration** : 65 extractions sur 6 semaines pour explorer le site.
+The EN / FR button in the rail switches the whole interface, including the
+Guide, the charts, the warnings and the messages. French is the default and the
+choice is remembered. Taste descriptors and diagnoses are translated on display
+only: the values stored in the CSV files stay in French, so your data does not
+move by a single byte when you switch languages. The contents of your recipes
+and coffees (names, steps, notes) are yours and show exactly as you wrote them.
+The whole translation layer lives in `js/i18n.js` and `js/i18n.en.js`.
 
-## Lier le fichier CSV
+## Quick start
 
-Le bouton **Données** (en haut à droite) permet à tout moment de créer ou d'ouvrir un dossier de données. Une fois lié, un badge 📁 affiche son nom dans l'entête, et chaque enregistrement est écrit immédiatement dans les CSV. Chrome redemande la permission d'écriture au premier geste après chaque réouverture, c'est normal, c'est sa sécurité.
+1. Double-click `index.html`, or drag it into Chrome.
+2. On first launch you get three choices:
+   - **Create a data folder**: pick a folder on your disk. The site creates
+     `cafes.csv` and `extractions.csv` there with your 5 starting coffees, then
+     writes to them on every add or edit.
+   - **Open an existing folder**: pick up a folder that already holds those
+     files.
+   - **Load the demo**: 65 brews over 6 weeks, to explore the site.
 
-**Importer un CSV** et **Exporter en CSV** vivent dans ce même panneau Données, donc toujours à deux gestes maximum depuis n'importe quel écran. Je les ai regroupés là plutôt qu'en boutons permanents dans l'entête pour garder la place aux quatre onglets sur téléphone. L'historique a en plus son propre bouton d'export, qui respecte les filtres en cours.
+## Linking the CSV folder
 
-Les CSV restent lisibles et éditables dans un tableur (Excel, LibreOffice, Google Sheets). Si tu les modifies à la main, rouvre le dossier via Données, Ouvrir un dossier existant, pour recharger.
+The **Data** button, at the foot of the rail, creates or opens a data folder at
+any time. Once linked, a badge shows its name next to the sync status, and every
+save is written straight to the CSV files. Chrome asks for write permission
+again on the first action after each reopen. That is normal, that is its
+security model.
 
-## Basculer de la démonstration à tes vraies données
+**Import a CSV** and **Export to CSV** live in that same Data panel, so they are
+never more than two gestures away from any screen. The History screen also has
+its own export button, which respects the filters currently applied.
 
-Deux façons :
+The CSV files stay readable and editable in a spreadsheet (Excel, LibreOffice,
+Google Sheets). If you edit them by hand, reopen the folder through Data, Open
+an existing folder, to reload.
 
-- **Données, Créer un dossier de données** : abandonne la démo et repart sur tes 5 cafés de départ, zéro extraction, dans de vrais fichiers.
-- **Données, Importer un CSV** : si tu as déjà tes propres fichiers, importe les un par un. Le site reconnaît tout seul s'il s'agit d'une table cafés ou extractions et remplace la table correspondante.
+## Moving from the demo to your real data
 
-Le badge **Démo** dans l'entête disparaît dès que tu quittes le jeu de démonstration. Les fichiers du dossier `demo/` sont une copie de la démo embarquée, éditables au tableur si tu veux voir le format attendu.
+Two ways:
 
-## Tout s'édite dans l'interface, rien à bricoler à la main
+- **Data, Create a data folder**: drops the demo and starts again from your 5
+  starting coffees and zero brews, in real files.
+- **Data, Import a CSV**: if you already have your own files, import them one at
+  a time. The site works out on its own whether a file is a coffees table or a
+  brews table, and replaces the matching one.
 
-- **Les cafés** : bouton Gérer les cafés depuis l'écran Saisie. Ajout, édition, activation.
-- **Les recettes** : bouton Gérer les recettes depuis la page Référence, ou bouton Modifier sur chaque fiche. Tout est éditable, y compris les étapes du pas à pas (une par ligne, `0:45 texte` pour une étape minutée, `- texte` sinon). Les 7 recettes d'origine restent restaurables à leur version vérifiée en un clic, et les recettes personnelles s'ajoutent librement. Renommer une recette met à jour l'historique et les cafés qui la recommandent.
-- Les recettes vivent dans un troisième fichier, `recettes.csv`, avec les deux autres.
+The **Demo** badge disappears as soon as you leave the demo set. The files in
+`demo/` are a copy of the embedded demo, editable in a spreadsheet if you want
+to see the expected format.
 
-Note : la mouture de la recette Brikka référence est réglée sur `1.5.0`, le compromis qui évite de retoucher la molette entre les deux machines. Le réglage optimal Brikka reste `1.2.0` (voir le bloc moulin), éditable en dix secondes dans Gérer les recettes.
+## Everything is edited in the interface
 
-## La saisie rapide
+- **Coffees**: the pencil next to the coffee menu on the New brew screen. Add,
+  edit, activate.
+- **Recipes**: the Manage recipes button in the Guide, or the Edit button on any
+  recipe card. Everything is editable, including the step-by-step (one per line,
+  `0:45 text` for a timed step, `- text` otherwise). The original recipes can be
+  restored to their verified version in one click, and your own recipes are free
+  to add. Renaming a recipe updates the history and the coffees that recommend
+  it.
+- Recipes live in a third file, `recettes.csv`, alongside the other two.
 
-Le bouton flottant ☕ (en bas à droite) ouvre une saisie en trois gestes : café, recette, note. La date est mise à maintenant, la dose, l'eau, la température et la mouture reprennent la recette. Pour le détail (chrono, diagnostic, descripteurs), le lien Saisie complète est juste à côté.
+Eleven recipes ship with the site: three for the Brikka (classic, classic with
+preheated water, and one milk recipe covering both flat white and cappuccino)
+and eight for the Switch.
 
-## Champs obligatoires et cafés déjà moulus
+## Quick entry
 
-Un seul champ est obligatoire en saisie, la dose, marquée d'une étoile rouge. Tout le reste est optionnel, y compris le café et la date (remplie à maintenant si absente).
+The floating button opens a sheet that rises from the bottom, on the phone. Three
+things: coffee, recipe, score. The date is set to now, and the dose, water,
+temperature and grind are taken from the recipe, with the actual figures shown
+so you can see what you are about to save. For the detail (timer, diagnosis,
+descriptors) the Full entry link sits right beside it.
 
-Un café peut être marqué "déjà moulu" dans sa fiche (c'est le cas du Sáng Tạo 4 et du Bana G4). Dans ce cas le champ mouture se désactive et affiche "défaut paquet" : la molette ne s'applique pas, aucune valeur n'est stockée, et l'historique affiche "défaut paquet" à la place du réglage. Ces extractions n'apparaissent pas dans le nuage note contre mouture, ce qui est voulu : elles ne disent rien de ton réglage de moulin.
+## Required fields and pre-ground coffees
 
-## Si la liaison de fichiers ne marche pas
+Only one field is required, the dose, marked with a red star. Everything else is
+optional, including the coffee and the date, which fills itself with the current
+time if left empty.
 
-L'API File System Access (liaison directe d'un dossier) existe dans Chrome et Edge. Firefox ne la propose pas, et Brave la désactive par défaut (activable dans brave://flags, chercher File System Access API). Le site le détecte, l'explique dans le panneau Données, et continue de fonctionner en mode navigateur : tout est conservé dans IndexedDB, avec Importer et Exporter CSV pour les sauvegardes.
+A coffee can be marked "pre-ground" in its card. The grind field then switches
+off and shows "bag default": the dial does not apply, no value is stored, and
+the history shows "bag default" instead of a setting. Those brews stay out of
+the score-against-grind scatter, which is deliberate: they say nothing about
+your grinder.
 
-## Les recettes v2 et la migration automatique
+## If folder linking does not work
 
-Les recettes ont été remplacées : deux Brikka (classique et flat white avec calcul du lait selon la tasse) et six Switch (Chronicler's, Sweet Variation, Costaud Bloom, Costaud Immersion, Tetsu Devil, Sherrycipe). L'historique existant est migré tout seul au premier chargement : Le Fruité devient The Coffee Chronicler's Recipe, Le Costaud devient Le Costaud (Bloom), L'Adoucisseur devient Le Costaud (Immersion), Le 4:6 de Tetsu devient The Tetsu Devil, et les deux anciennes Brikka fusionnent en Brikka classique. Les extractions de l'ancienne recette Le Complet, supprimée sans remplaçante, gardent leur nom dans l'historique. Les recettes personnelles ne sont pas touchées.
+The File System Access API exists in Chrome and Edge. Firefox does not offer it,
+and Brave disables it by default (turn it on in brave://flags, search for File
+System Access API). The site detects this, explains it in the Data panel, and
+keeps working in browser mode: everything is kept in IndexedDB, with Import and
+Export CSV for backups.
 
-Le champ volume s'appelle désormais volume_extrait_ml (l'ancien volume_tasse_ml est lu automatiquement), et trois champs s'ajoutent : eau_ajoutee_ml (Brikka, eau d'allongement, hors ratio), lait_ml (flat white), agitation_nb et tasse. Les tasses vivent dans tasses.csv, éditables depuis la saisie.
+## The timer
 
-## Les variantes de recettes
+The timer lives in the right-hand column of the New brew screen, folded under
+the recipe card, and opens with a click on its header. The elapsed time stays
+readable while folded, and it opens itself when you start it and refuses to fold
+away while it runs.
 
-Sur la page Référence, les recettes d'une même famille partagent une carte avec une bascule de variante : The Coffee Chronicler's Recipe (Classique ou Sweet), Le Costaud (Bloom ou Immersion), et la Brikka au lait (Flat white ou Cappuccino). Ce sont bien des recettes distinctes en base et dans l'historique, avec la variante entre parenthèses dans le nom, donc les statistiques par recette restent séparées.
+Start, Pause, Resume as often as you like, Stop and report, Reset. The selected
+recipe's stages show below it, current stage large and next one small with a
+countdown, with a soft beep at each stage that a checkbox turns off. Drawdown is
+worked out on its own, from the "open" stage to the moment you stop the timer.
 
-## Le chronomètre
+## Coffees that are not pure
 
-Un seul chrono : Démarrer, Pause, Reprendre (à volonté), Arrêter et reporter, Remettre à zéro. Les paliers de la recette sélectionnée s'affichent dessous (étape en cours en gros, suivante en petit avec décompte) avec un bip doux à chaque palier, coupable d'une case. L'écoulement se déduit tout seul : du palier "ouvrir" à l'arrêt du chrono.
+Every coffee carries a percentage of real coffee (the thành phần line on the
+label). Below 100 the coffee gets a warning dot, the site warns you against
+brewing it in the Switch (the paper would hold back the soy, the sugar and the
+fats), and the cost per cup shows a second figure scaled to the real coffee.
 
-## Cafés non purs
+## Conversion basis
 
-Chaque café porte un pourcentage de café réel (ligne thành phần de l'étiquette). En dessous de 100, le café reçoit une pastille rouge, il est interdit de Switch (enregistrement refusé, le papier retiendrait le soja, le sucre et les graisses), et le coût par tasse affiche une seconde valeur rapportée au café réel. Le Sáng Tạo 4 est à 82 pour cent, le Balanced est l'étalon de référence (barre verte dans le graphique par café).
+The whole site works in 8.32 microns per click (the official Timemore diagram),
+so 416 microns per rotation and a stop at 1248 microns. The official diagram is
+rebuilt as SVG in the Guide, with the 13 methods, the particle-size bands, the
+hatched out-of-reach zone and your four markers.
 
-## Base de conversion
+## During full entry
 
-Tout le site calcule en 8,32 microns par cran (diagramme officiel Timemore), soit 416 microns par rotation et une butée à 1248 microns. Le diagramme officiel est reconstruit en SVG sur la page Référence, avec les 13 méthodes, les bandes de granulométrie, la zone hachurée hors de portée et tes quatre marqueurs.
+The right-hand column always shows the selected recipe (settings, steps, access
+to the step-by-step) and the coffee card (profile, stated notes,
+recommendations, price per gram, age since roasting with the freshness window).
+Temperature is optional: with no thermometer, water that has just boiled and
+stopped bubbling is around 95 degrees. The volume field offers a clickable
+estimate worked out from the water, the dose and the method (the Switch paper
+holds about 2 g of water per gram of coffee, the Brikka noticeably less).
 
-## Pendant la saisie complète
+## Diagnosis and descriptors: why two separate fields
 
-Un panneau latéral affiche en permanence la recette sélectionnée (paramètres, étapes, accès au pas à pas) et la fiche du café (profil, notes annoncées, recommandations, prix au gramme, âge depuis la torréfaction avec la fenêtre de fraîcheur). La température est optionnelle : sans thermomètre, une eau tout juste bouillie qui a fini de buller est autour de 95 degrés. Le volume en tasse propose une estimation cliquable calculée depuis l'eau, la dose et la méthode (le papier du Switch retient environ 2 g d'eau par gramme de café, la Brikka nettement moins).
+The diagnosis answers "what do I fix" (one choice, with its correction shown);
+the descriptors answer "what do I taste" (multi-select, arranged by the families
+of the SCA flavour wheel). Merging them would make the diagnosis ring
+unreadable: it measures the health of your brews, not your taste.
 
-## Diagnostic et descripteurs : pourquoi deux champs séparés
+## Design choices, and why
 
-Le diagnostic répond à "qu'est ce que je corrige" (un seul choix, avec la correction associée affichée), les descripteurs répondent à "qu'est ce que je goûte" (multi-sélection, organisée selon les familles de la roue des saveurs SCA). Les fusionner rendrait l'anneau des diagnostics illisible : il mesure la santé de tes extractions, pas tes goûts. Le coût du mois a laissé sa place à une estimation de caféine par jour (calculée depuis la dose et l'espèce : arabica environ 1,2 pour cent, robusta 2,4, blend 1,8, liberica 1,4, dont environ 90 pour cent passent dans la tasse).
+- **Three CSV files rather than one with a type column**: the tables share no
+  columns at all. A single file would have mixed the schemas, with empty columns
+  everywhere, painful to edit in a spreadsheet.
+- **Linking a folder rather than two separate files**: one gesture instead of
+  two, and the site finds both files by name. That is the File System Access API
+  (Chrome, Edge). The working copy in IndexedDB is always up to date, so nothing
+  is lost if the folder is not linked or the permission expires.
+- **Chart.js bundled in `js/vendor/`** instead of a CDN: the site works with no
+  connection, in the kitchen, on a phone. The calendar heatmap and the grind
+  ruler are hand-written SVG, because no light library does them well.
+- **The two fonts are in the repository** (`css/fonts/`, Instrument Serif and
+  Manrope, both OFL). Same reason: a CDN link would show the fallback on the
+  first offline open and then flash when the real font arrived.
+- **The demo embedded as JS** (`js/demo-data.js`) alongside the CSV files in
+  `demo/`: Chrome blocks `fetch` on local files over `file://`, so the demo has
+  to live in the code to load in one click.
+- **The method colours everything**: Brikka blue `#2a78d6`, Switch orange
+  `#eb6834`, both machines pink `#cc79a7`, in every chart, chip and dot. These
+  are colour-blind safe and do not change between themes.
+- **No green anywhere**, including for "good". Favourable states take the terra
+  cotta accent, unfavourable ones keep red. A test refuses the whole green band
+  of the hue circle.
+- **The converter and the entry form share one engine** (`js/grind.js`): one
+  range table, one formula, so the entry warning and the reference page can
+  never disagree.
 
-## Choix d'architecture, et pourquoi
+## Small extras
 
-- **Trois CSV plutôt qu'un seul avec champ type** : les tables n'ont aucune colonne en commun. Un fichier unique aurait mélangé les schémas, avec des colonnes vides partout, pénible à éditer au tableur. Des fichiers propres, c'est aussi plus simple à ouvrir dans Excel sans se tromper.
-- **Liaison d'un dossier plutôt que de deux fichiers séparés** : un seul geste au lieu de deux, et le site retrouve les deux fichiers par leur nom. C'est l'API File System Access (Chrome, Edge). La copie de travail dans IndexedDB reste toujours à jour, donc rien n'est perdu si le dossier n'est pas lié ou si la permission expire.
-- **Chart.js embarqué dans `js/vendor/`** au lieu d'un CDN : le site marche sans connexion, en cuisine, sur téléphone en partage de fichiers. La heatmap calendaire et la réglette des moutures sont en SVG maison, car aucune librairie légère ne les fait bien.
-- **Démo embarquée en JS** (`js/demo-data.js`) en plus des CSV du dossier `demo/` : Chrome bloque la lecture de fichiers locaux par `fetch` en `file://`, la démo doit donc vivre dans le code pour se charger en un clic.
-- **La méthode colore tout** : Brikka en bleu `#2a78d6`, Switch en orange `#eb6834`, les deux machines en vert `#1baf7a`, dans tous les graphiques, chips et pastilles. Ces couleurs sont validées daltonisme et ne changent pas entre les thèmes.
-- **Écrans fusionnés** : recettes, réglage du moulin, diagnostic du goût et vocabulaire vivent dans une seule page Référence avec un sommaire ancré, plus agréable à faire défiler sur téléphone pendant la préparation qu'une navigation à tiroirs.
-- **Le convertisseur et la saisie partagent le même moteur** (`js/grind.js`) : une seule table de plages, une seule formule, aucune divergence possible entre l'avertissement de saisie et la page de référence.
+- Duplicate a brew in one click from the history, to make the same one again.
+- The Tetsu 4:6 step-by-step recalculates itself from the chosen variants.
+- The cost of the cup shows live during entry, as soon as the coffee has a price
+  and a format.
+- Dark and light themes, remembered, in coffee tones both ways.
+- The Guide carries the shops, the buying list with links, the buying rules, the
+  equipment care and the Vietnamese messages, each with a Copy button.
 
-## Petits plus non demandés
-
-- Duplication d'une extraction en un clic depuis l'historique, pour refaire la même.
-- Le mode pas à pas du 4:6 de Tetsu se recalcule selon les variantes choisies (découpage du premier 40 pour cent, nombre de versements du dernier 60 pour cent).
-- Le coût de la tasse s'affiche en direct pendant la saisie, dès que le café a un prix et un format.
-- Bascule sombre et clair mémorisée, tons café dans les deux thèmes.
-- La page Guide reprend du guide d'origine les boutiques, le récapitulatif d'achat avec liens, les règles d'achat, l'entretien du matériel et les messages vietnamiens, chacun avec un bouton Copier.
-
-## Structure du dossier
+## Folder structure
 
 ```
 tracker/
-  index.html            la page unique, tout le HTML statique
-  css/styles.css        styles, thèmes sombre et clair
-  js/outils.js          fonctions pures partagées (moyenne, dates, version)
-  js/i18n.js            traduction, moitié française et mécanisme
-  js/i18n.en.js         paquet anglais, chargé à la demande
-  js/grind.js           conversions du moulin (dial, crans, microns, plages)
-  js/recettes.js        recettes et cafés de départ, règles d'avertissement
-  js/sync.js            synchronisation entre appareils, côté client
-  js/data*.js           CSV, IndexedDB, File System Access, migrations, calculs
-  js/reglages.js        meilleurs réglages par café, calcul pur
-  js/charts.js          graphiques Chart.js (à la demande), heatmap et réglette SVG
-  js/ui-noyau.js        outils d'interface partagés, thème, navigation
-  js/ui-tableau.js      tableau de bord et insights
-  js/ui-saisie.js       formulaire, chrono, brouillon
-  js/ui-brouillon.js    brouillon de saisie (localStorage)
-  js/ui-rapide.js       saisie rapide flottante
-  js/ui-historique.js   historique, filtres, comparateur, meilleurs réglages
-  js/ui-guide.js        recettes, moulin, pas à pas
-  js/ui-catalogue.js    cafés, sachets, recettes éditables, paramètres
-  js/app.js             démarrage et câblage global
-  js/demo-data.js       la démo embarquée, chargée à la demande
-  js/vendor/chart.umd.js   Chart.js 4.4.4, local, aucune dépendance réseau
-  sw.js, manifest.json, icons/   PWA installable, hors ligne
-  worker/               porte d'entrée et synchronisation Cloudflare (en ligne seulement)
-  demo/                 les mêmes données de démo en CSV éditables
-  tools/                tests et générateurs
+  index.html            the single page, all the static HTML
+  css/styles.css        styles, dark and light themes
+  css/fonts/            the two bundled fonts, woff2, under the OFL
+  js/outils.js          shared pure functions (average, dates, version)
+  js/i18n.js            translation, French half and the mechanism
+  js/i18n.en.js         English pack, loaded on demand
+  js/grind.js           grinder conversions (dial, clicks, microns, ranges)
+  js/recettes.js        starting recipes and coffees, warning rules
+  js/sync.js            device-to-device sync, client side
+  js/data*.js           CSV, IndexedDB, File System Access, migrations, maths
+  js/reglages.js        best settings per coffee, pure calculation
+  js/charts.js          Chart.js charts (on demand), SVG heatmap and ruler
+  js/ui-noyau.js        shared interface tools, theme, navigation
+  js/ui-tableau.js      dashboard and insights
+  js/ui-saisie.js       form and timer
+  js/ui-brouillon.js    entry draft (localStorage)
+  js/ui-rapide.js       quick entry sheet
+  js/ui-historique.js   history, filters, comparator, best settings
+  js/ui-guide.js        recipes, grinder, step-by-step
+  js/ui-catalogue.js    coffees, bags, editable recipes, settings screen
+  js/app.js             startup and global wiring
+  js/demo-data.js       the embedded demo, loaded on demand
+  js/vendor/chart.umd.js   Chart.js 4.4.4, local, no network dependency
+  sw.js, manifest.json, icons/   installable PWA, offline
+  worker/               login gate and Cloudflare sync (online only)
+  demo/                 the same demo data as editable CSV
+  tools/                tests and generators
 ```
 
-La documentation technique complète est dans `DOCUMENTATION.md`, les décisions
-et leur raisonnement dans `DECISIONS.md`, l'historique des versions dans
-`CHANGELOG.md`.
+The full technical documentation is in `DOCUMENTATION.md`, the decisions and
+their reasoning in `DECISIONS.md`, the version history in `CHANGELOG.md`. Those
+three are in French, like the code comments and the interface; this README is in
+English because the repository is public.
 
-Sauvegarde : le dossier de données lié contient tout ce qui t'appartient. Le copier, c'est sauvegarder.
+Backup: the linked data folder holds everything that is yours. Copying it is
+backing it up.
