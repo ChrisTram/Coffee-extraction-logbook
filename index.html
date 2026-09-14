@@ -7,14 +7,14 @@
 <!-- Version du site, source unique : le pied de page la lit, et les fichiers
      chargés à la demande la mettent dans leur URL. Se pose avec
      node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="8.19">
-<link rel="stylesheet" href="css/styles.css?v=8.19">
+<meta name="app-version" content="8.20">
+<link rel="stylesheet" href="css/styles.css?v=8.20">
 <!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
      SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
      parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
      n'est pas installable du tout. Invisible en local, où il n'y a pas de porte. -->
 <link rel="manifest" href="manifest.json" crossorigin="use-credentials">
-<meta name="theme-color" content="#f8f2e9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#f4ede3" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#241a10" media="(prefers-color-scheme: dark)">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon-180.png">
 <meta name="mobile-web-app-capable" content="yes">
@@ -266,7 +266,7 @@
       </button>
       <div id="chrono-corps" hidden>
       <label class="label-inline chrono-bip-label" title="Bip discret à chaque palier de la recette">
-        <input type="checkbox" id="chrono-bip" checked> Bips aux paliers
+        <input type="checkbox" id="chrono-bip" form="form-saisie" checked> Bips aux paliers
       </label>
       <div class="chrono-etapes" id="chrono-etapes" hidden>
         <p class="chrono-etape-courante" id="chrono-courante"></p>
@@ -281,15 +281,15 @@
         <div class="champ">
           <label for="f-total-min">Temps total</label>
           <div class="duree">
-            <input type="number" id="f-total-min" step="1" min="0" max="59" inputmode="numeric" placeholder="0" aria-label="Temps total, minutes"><span>min</span>
-            <input type="number" id="f-total-sec" step="1" min="0" max="59" inputmode="numeric" placeholder="00" aria-label="Temps total, secondes"><span>s</span>
+            <input type="number" id="f-total-min" form="form-saisie" step="1" min="0" max="59" inputmode="numeric" placeholder="0" aria-label="Temps total, minutes"><span>min</span>
+            <input type="number" id="f-total-sec" form="form-saisie" step="1" min="0" max="59" inputmode="numeric" placeholder="00" aria-label="Temps total, secondes"><span>s</span>
           </div>
         </div>
         <div class="champ">
           <label for="f-ecoulement-min">Écoulement</label>
           <div class="duree">
-            <input type="number" id="f-ecoulement-min" step="1" min="0" max="59" inputmode="numeric" placeholder="0" aria-label="Écoulement, minutes"><span>min</span>
-            <input type="number" id="f-ecoulement-sec" step="1" min="0" max="59" inputmode="numeric" placeholder="00" aria-label="Écoulement, secondes"><span>s</span>
+            <input type="number" id="f-ecoulement-min" form="form-saisie" step="1" min="0" max="59" inputmode="numeric" placeholder="0" aria-label="Écoulement, minutes"><span>min</span>
+            <input type="number" id="f-ecoulement-sec" form="form-saisie" step="1" min="0" max="59" inputmode="numeric" placeholder="00" aria-label="Écoulement, secondes"><span>s</span>
           </div>
           <span class="champ-hint">Déduit tout seul : du palier "ouvrir" à l'arrêt du chrono.</span>
         </div>
@@ -1457,29 +1457,29 @@ Cảm ơn shop.</pre>
 <!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
      et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
      desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=8.19"></script>
-<script defer src="js/i18n.js?v=8.19"></script>
-<script defer src="js/grind.js?v=8.19"></script>
-<script defer src="js/recettes.js?v=8.19"></script>
+<script defer src="js/outils.js?v=8.20"></script>
+<script defer src="js/i18n.js?v=8.20"></script>
+<script defer src="js/grind.js?v=8.20"></script>
+<script defer src="js/recettes.js?v=8.20"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=8.19"></script>
-<script defer src="js/data-csv.js?v=8.19"></script>
-<script defer src="js/data-schema.js?v=8.19"></script>
-<script defer src="js/data-store.js?v=8.19"></script>
-<script defer src="js/data-calculs.js?v=8.19"></script>
-<script defer src="js/data-migrations.js?v=8.19"></script>
-<script defer src="js/data.js?v=8.19"></script>
-<script defer src="js/reglages.js?v=8.19"></script>
-<script defer src="js/charts.js?v=8.19"></script>
-<script defer src="js/ui-noyau.js?v=8.19"></script>
-<script defer src="js/ui-tableau.js?v=8.19"></script>
-<script defer src="js/ui-saisie.js?v=8.19"></script>
-<script defer src="js/ui-chrono.js?v=8.19"></script>
-<script defer src="js/ui-brouillon.js?v=8.19"></script>
-<script defer src="js/ui-rapide.js?v=8.19"></script>
-<script defer src="js/ui-historique.js?v=8.19"></script>
-<script defer src="js/ui-guide.js?v=8.19"></script>
-<script defer src="js/ui-catalogue.js?v=8.19"></script>
-<script defer src="js/app.js?v=8.19"></script>
+<script defer src="js/sync.js?v=8.20"></script>
+<script defer src="js/data-csv.js?v=8.20"></script>
+<script defer src="js/data-schema.js?v=8.20"></script>
+<script defer src="js/data-store.js?v=8.20"></script>
+<script defer src="js/data-calculs.js?v=8.20"></script>
+<script defer src="js/data-migrations.js?v=8.20"></script>
+<script defer src="js/data.js?v=8.20"></script>
+<script defer src="js/reglages.js?v=8.20"></script>
+<script defer src="js/charts.js?v=8.20"></script>
+<script defer src="js/ui-noyau.js?v=8.20"></script>
+<script defer src="js/ui-tableau.js?v=8.20"></script>
+<script defer src="js/ui-saisie.js?v=8.20"></script>
+<script defer src="js/ui-chrono.js?v=8.20"></script>
+<script defer src="js/ui-brouillon.js?v=8.20"></script>
+<script defer src="js/ui-rapide.js?v=8.20"></script>
+<script defer src="js/ui-historique.js?v=8.20"></script>
+<script defer src="js/ui-guide.js?v=8.20"></script>
+<script defer src="js/ui-catalogue.js?v=8.20"></script>
+<script defer src="js/app.js?v=8.20"></script>
 </body>
 </html>

@@ -463,6 +463,14 @@ pourquoi est dans `DECISIONS.md`.
   Guide (boutiques, achats, messages vietnamiens), correction du bug
   d'avertissement au préremplissage.
 - v1 : site initial, 4 écrans, 2 CSV, démo, Chart.js local, thèmes.
+## 8.20
+
+Les intertitres de carte passent en Manrope 700 : une serif à 11 px en capitales
+est illisible. La couleur de thème du navigateur suit le nouveau fond clair. Les
+libellés des graphiques se tronquent au mot entier avec le nom complet dans
+l’infobulle, au lieu d’être coupés en plein mot. Les champs du chrono sont
+rattachés au formulaire par form=.
+
 ## 8.19
 
 L’historique passe en cartes par jour sous 1024 px : dix colonnes dans 350 px se

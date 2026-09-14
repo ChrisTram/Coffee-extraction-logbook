@@ -170,11 +170,25 @@ const CHARTS = (() => {
     });
   }
 
+  /* LIBELLE COURT pour les axes et les legendes. Dans une carte d'une colonne,
+     « The Coffee Chronicler's Recipe (Sweet) » se coupait en plein mot et
+     donnait « icler's Recipe (Sweet) », qui ne designe rien. On tronque au mot
+     entier avec des points de suspension ; le nom complet reste dans
+     l'infobulle, que Chart.js construit a part. */
+  const MAX_LIBELLE = 18;
+  function libelleCourt(texte) {
+    const t = String(texte == null ? "" : texte);
+    if (t.length <= MAX_LIBELLE) return t;
+    return t.slice(0, MAX_LIBELLE).replace(/\s+\S*$/, "") + "…";
+  }
+
   function barresHorizontales(idCanvas, items, couleurs, titreX, max) {
     creer(idCanvas, {
       type: "bar",
       data: {
-        labels: items.map(i => i.label),
+        /* Le libelle COURT sur l'axe, le complet dans l'infobulle : c'est le
+           titre du tooltip ci-dessous qui le restitue. */
+        labels: items.map(i => libelleCourt(i.label)),
         datasets: [{
           data: items.map(i => i.value),
           backgroundColor: couleurs || items.map(() => cssVar("--accent")),
@@ -185,11 +199,14 @@ const CHARTS = (() => {
         indexAxis: "y",
         plugins: {
           legend: { display: false },
-          tooltip: { callbacks: { label: ctx => {
-            const it = items[ctx.dataIndex];
-            const extra = it.extra ? " (" + it.extra + ")" : "";
-            return " " + ctx.parsed.x.toFixed(1) + extra;
-          } } },
+          tooltip: { callbacks: {
+            title: ctx => (items[ctx[0].dataIndex] || {}).label || "",
+            label: ctx => {
+              const it = items[ctx.dataIndex];
+              const extra = it.extra ? " (" + it.extra + ")" : "";
+              return " " + ctx.parsed.x.toFixed(1) + extra;
+            },
+          } },
         },
         scales: {
           x: { beginAtZero: true, max: max || undefined, title: titreX ? { display: true, text: titreX } : undefined },
@@ -256,7 +273,17 @@ const CHARTS = (() => {
       },
       options: {
         cutout: "62%",
-        plugins: { legend: { position: "right" } },
+        plugins: {
+          /* La legende de l'anneau vit dans une colonne etroite : « Acide ET
+             amer (extraction inegale) » y tenait sur trois pixels. Elle est
+             raccourcie au mot entier, et l'infobulle donne le nom complet. */
+          legend: {
+            position: "right",
+            labels: { generateLabels: ch => Chart.defaults.plugins.legend.labels
+              .generateLabels(ch).map(l => ({ ...l, text: libelleCourt(l.text) })) },
+          },
+          tooltip: { callbacks: { title: ctx => labels[ctx[0].dataIndex] || "" } },
+        },
       },
     });
   }

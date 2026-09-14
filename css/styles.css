@@ -871,6 +871,11 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
 /* Les intertitres de bloc : petites capitales espacees, attenuees. */
 .carte h3 {
   margin: 0 0 14px;
+  /* MANROPE, pas la serif heritee de la regle globale h1..h4. Une serif a 11 px
+     en capitales est illisible : ses pleins et delies sont dessines pour de
+     grandes tailles, et a cette echelle ils se remplissent. La serif reste aux
+     titres de page, aux chiffres et aux notes, ou elle a la place de respirer. */
+  font-family: var(--sans);
   font-size: 0.69rem;
   font-weight: 700;
   text-transform: uppercase;
