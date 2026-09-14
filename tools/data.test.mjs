@@ -557,6 +557,14 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   DATA.migrerDonnees();
   check("un bloom reecrit a la main n'est pas touche", hof().etapes[0].texte === "Mon bloom a moi.");
 
+  // Pas v13 : la cuillere est permise sur le dernier pas Hoffmann.
+  avant();
+  DATA.state.reglages = [DATA.normaliserReglages({ schema_version: 12 })];
+  semerHof("Tourbillon doux, AUCUNE cuillère. Laisser s'écouler, fin vers 2:45 à 3:15.");
+  DATA.migrerDonnees();
+  check("le dernier pas Hoffmann n'interdit plus la cuillere",
+    !hof().etapes[0].texte.includes("AUCUNE") && hof().etapes[0].texte.includes("cuillère"), hof().etapes[0].texte);
+
   // Plus aucun drapeau par appareil dans la couche de donnees.
   const data = SOURCE_DATA;
   const bloc = data.slice(data.indexOf("const PAS_DE_SCHEMA"), data.indexOf("function migrerDonnees"));

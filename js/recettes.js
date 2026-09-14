@@ -142,11 +142,11 @@ const RECETTES_DEPART = [
       { t: 70,  texte: "Verser jusqu'à 150 g." },
       { t: 90,  texte: "Verser jusqu'à 200 g." },
       { t: 110, texte: "Verser jusqu'à 250 g." },
-      { t: 120, texte: "Tourbillon doux, AUCUNE cuillère. Laisser s'écouler, fin vers 2:45 à 3:15." },
+      { t: 120, texte: "Tourbillon doux du porte-filtre, ou un petit coup de cuillère, un aller et un retour, si le Switch est trop lourd à faire tourner sur la balance : même effet, décoller la mouture des parois et aplanir le lit. Laisser s'écouler, fin vers 2:45 à 3:15." },
     ],
     pourQui: "Les lavés propres, quand je cherche la clarté. Plus de clarté et d'acidité que la Chronicler, qui garde plus de sucre et de corps avec moins de risque : sur un lavé et un C5 bien réglé, celle-ci ; sur un natural ou un grain que je découvre, la Chronicler. Les cinq verses courtes gardent le lit sous une lame d'eau fine et constante, donc ni gros volume qui creuse le lit ni canalisation, et les pauses rallongent le contact sans avoir à resserrer la molette. Percolation pure, donc plus sensible à la mouture. C'est presque le Five Pour de Matt Winton, Hoffmann le reconnaît : rien de magique, juste bien calibré.",
     cafesAssocies: ["Là Việt Balanced", "Cầu Đất lavé (The Married Beans)", "Guji Uraga lavé (Greenfields)", "Serie 1 The 1893 (Là Việt)", "Specialty Arabica Cầu Đất (Ritachi)"],
-    note: "Better 1 Cup V60 Technique de James Hoffmann, novembre 2022, qui remplace son Ultimate 500 ml de 2020 pour une tasse (youtube.com/watch?v=1oB1oDrDkHM ; la partie 2 corrige des points, il dit coarse à 10:13 en voulant dire finer). Il conseille medium-fine, un cran plus fin qu'en 500 ml. Écoulement fini après 3:30 ou tasse amère : un numéro plus gros, 1.6.0, sans toucher au rythme. Fini avant 2:30 ou tasse aigre : un numéro plus fin, 1.4.0. Pour deux tasses, 30 g et 500 g, garder plutôt l'ancienne Ultimate, faite pour ça.",
+    note: "Better 1 Cup V60 Technique de James Hoffmann, novembre 2022, qui remplace son Ultimate 500 ml de 2020 pour une tasse (youtube.com/watch?v=1oB1oDrDkHM ; la partie 2 corrige des points, il dit coarse à 10:13 en voulant dire finer). Il conseille medium-fine, un cran plus fin qu'en 500 ml. Dans la Part 2 il accepte la cuillère à la place du tourbillon final, en douceur. Écoulement fini après 3:30 ou tasse amère : un numéro plus gros, 1.6.0, sans toucher au rythme. Fini avant 2:30 ou tasse aigre : un numéro plus fin, 1.4.0. Pour deux tasses, 30 g et 500 g, garder plutôt l'ancienne Ultimate, faite pour ça.",
     parDefaut: false, avancee: false, variantes: false, actif: 1,
   },
   {

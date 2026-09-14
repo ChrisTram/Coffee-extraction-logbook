@@ -37,7 +37,7 @@ const DATA_MIGRATIONS = (() => {
 
        Chaque pas ne touche QUE la valeur semée d'avant. Un pas qui écraserait un
        réglage choisi volontairement serait un bug, pas une migration. */
-    const SCHEMA_ACTUEL = 12;
+    const SCHEMA_ACTUEL = 13;
 
     // Rattrapage de la puissance de feu des recettes Brikka : l'échelle de Chris a
     // bougé deux fois, 3 puis 4 puis 2.
@@ -250,6 +250,38 @@ const DATA_MIGRATIONS = (() => {
         if (rec.id !== "hoffmann-1cup") return;
         const etapes = (rec.etapes || []).map(e => (e.texte === avant ? { ...e, texte: apres } : e));
         if (etapes.every((e, i) => e === rec.etapes[i])) return;
+        rec.etapes = etapes;
+        estampiller(rec);
+        touche = true;
+      });
+      return touche;
+    } },
+
+    /* Le « AUCUNE cuillère » du dernier pas Hoffmann n'était pas de lui : la
+       vidéo d'origine dit un tourbillon doux, et la Part 2 accepte un petit coup
+       de cuillère quand on ne peut pas faire tourner le porte-filtre, ce qui est
+       le cas d'un Switch sur la balance. Chris l'a relevé le 14 septembre 2026.
+       Ciblé sur l'ancien texte, la note aussi. */
+    { v: 13, nom: "Hoffmann, la cuillère est permise", appliquer: () => {
+      const avant = "Tourbillon doux, AUCUNE cuillère. Laisser s'écouler, fin vers 2:45 à 3:15.";
+      const apres = "Tourbillon doux du porte-filtre, ou un petit coup de cuillère, un aller et un retour, si le Switch est trop lourd à faire tourner sur la balance : même effet, décoller la mouture des parois et aplanir le lit. Laisser s'écouler, fin vers 2:45 à 3:15.";
+      const noteAvant = "Il conseille medium-fine, un cran plus fin qu'en 500 ml.";
+      const noteApres = "Il conseille medium-fine, un cran plus fin qu'en 500 ml. Dans la Part 2 il accepte la cuillère à la place du tourbillon final, en douceur.";
+      let touche = false;
+      state.recettes.forEach(rec => {
+        if (rec.id !== "hoffmann-1cup") return;
+        let bouge = false;
+        const etapes = (rec.etapes || []).map(e => {
+          if (e.texte !== avant) return e;
+          bouge = true;
+          return { ...e, texte: apres };
+        });
+        const note = String(rec.note || "");
+        if (note.includes(noteAvant) && !note.includes(noteApres)) {
+          rec.note = note.split(noteAvant).join(noteApres);
+          bouge = true;
+        }
+        if (!bouge) return;
         rec.etapes = etapes;
         estampiller(rec);
         touche = true;
