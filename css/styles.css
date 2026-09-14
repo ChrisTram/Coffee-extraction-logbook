@@ -1408,7 +1408,11 @@ input:focus, select:focus, textarea:focus {
 .aside-reco { color: var(--accent-fort); font-weight: 600; }
 .aside-age { border-top: 1px dashed var(--lignes); padding-top: 7px; }
 .aside-vide { color: var(--attenue); font-size: 0.85rem; margin: 0; }
-.aside-carte .recette-etapes { margin: 8px 0 10px; max-height: 220px; overflow-y: auto; }
+/* Les pas s'affichent EN ENTIER : une boite de 220 px a faire defiler cachait la
+   moitie d'une recette a six pas, et la recette est ce que Chris lit pendant la
+   verse. Le panneau colle en haut ; ce qui depasse en bas (pour qui, note,
+   fiche cafe) se decouvre en descendant dans le formulaire. */
+.aside-carte .recette-etapes { margin: 8px 0 10px; }
 .aside-carte .recette-etapes li { font-size: 0.83rem; padding: 4px 0; }
 
 @media (max-width: 980px) {

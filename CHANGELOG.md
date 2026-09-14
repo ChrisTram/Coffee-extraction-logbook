@@ -5,6 +5,8 @@ de page du site est celui du `<meta name="app-version">` d'`index.html`, posé
 par `node tools/bump_version.mjs X`. Chaque entrée dit CE QUI a changé ; le
 pourquoi est dans `DECISIONS.md`.
 
+- v7.101 : dans le panneau latéral de la saisie, les pas de la recette
+  s'affichent en entier au lieu d'une boîte de 220 px à faire défiler.
 - v7.100 : recette Better 1 Cup (Hoffmann), le dernier pas n'interdit plus la
   cuillère : tourbillon doux, ou un aller et retour de cuillère si le Switch est
   trop lourd à faire tourner sur la balance, comme Hoffmann l'accepte dans sa
