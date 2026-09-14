@@ -72,6 +72,15 @@ validée sur maquette, la police n'a pas été changée unilatéralement ; Manro
 lui, embarque bien le vietnamien, donc tout le texte courant est propre. À
 revoir avec Chris s'il trouve ça laid.
 
+**Le chrono est repliable, et passe sous la fiche recette.** Demande de Chris :
+la recette se relit à chaque étape, le chrono ne sert que pendant l’extraction,
+et c’est pourtant lui qui occupait le haut de la colonne. Deux règles tiennent ce
+repli. Le temps vit dans l’ENTÊTE et non dans le corps, donc il reste lisible
+replié : un chrono qu’il faut déplier pour lire ne sert à rien. Et il s’ouvre
+tout seul au démarrage et refuse de se replier tant qu’il tourne : se refermer
+sur un chrono en marche, c’est perdre les paliers et le bouton d’arrêt au moment
+précis où on en a besoin.
+
 **Le déplacement du chrono a emporté les deux tiers du formulaire.** C'est la
 panne la plus grave de la série, et elle a vécu de la v8.3 à la v8.10. Pour
 sortir le chrono du formulaire, le script d'édition cherchait la `<section>`

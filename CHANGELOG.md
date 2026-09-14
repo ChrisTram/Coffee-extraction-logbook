@@ -457,6 +457,12 @@ pourquoi est dans `DECISIONS.md`.
   Guide (boutiques, achats, messages vietnamiens), correction du bug
   d'avertissement au préremplissage.
 - v1 : site initial, 4 écrans, 2 CSV, démo, Chart.js local, thèmes.
+## 8.11
+
+Le chrono devient un widget repliable et passe sous la fiche recette, qui reste
+donc visible en haut de la colonne de droite. Le temps reste lisible replié, le
+chrono s’ouvre tout seul au démarrage et refuse de se replier tant qu’il tourne.
+
 ## 8.10
 
 Répare le formulaire de saisie : les blocs « Les réglages » et « En bouche »

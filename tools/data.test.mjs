@@ -840,6 +840,22 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
      signale que le decoupage a derape. */
   check("aucun bloc de formulaire n'est habille en carte sombre",
     !dansForm.includes("carte-sombre"));
+
+  /* LA FICHE RECETTE PASSE AVANT LE CHRONO. Chris la relit a chaque etape ;
+     le chrono ne sert que pendant l extraction et vit replie sous elle. */
+  const posRecette = dansAside.indexOf('id="aside-recette"');
+  const posChrono = dansAside.indexOf('id="chrono-widget"');
+  check("la fiche recette vient avant le chrono dans la colonne",
+    posRecette > 0 && posChrono > posRecette, "recette " + posRecette + ", chrono " + posChrono);
+
+  /* Le chrono est repliable : une entete qui commande un corps. */
+  check("le chrono a une entete qui ouvre et ferme son corps",
+    dansAside.includes('aria-controls="chrono-corps"') && dansAside.includes('id="chrono-corps"'));
+  /* Et le temps vit dans l ENTETE, pas dans le corps : replie, il doit rester
+     lisible, sinon le repli coute plus qu il ne rapporte. */
+  const entete = dansAside.slice(dansAside.indexOf('id="chrono-basculer"'), dansAside.indexOf('id="chrono-corps"'));
+  check("le temps reste lisible quand le chrono est replie",
+    entete.includes('id="chrono-total"'));
 }
 /* AUCUN BOUTON MORT.
 

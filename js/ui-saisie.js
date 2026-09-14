@@ -1051,6 +1051,31 @@
      Chaque écran câble ce qui lui appartient : le formulaire, le chrono, les
      options et l'éditeur de tasses vivent ici, et une fonction de câblage de
      quatre cents lignes dans app.js n'existe plus. */
+  /* LE CHRONO REPLIABLE.
+
+     Il vit sous la fiche recette, replie, parce qu'il ne sert que pendant
+     l'extraction alors que la recette se relit a chaque etape.
+
+     Deux regles. Le temps reste lisible replie : c'est l'entete qui le porte,
+     un chrono qu'il faut deplier pour lire ne sert a rien. Et il s'ouvre tout
+     seul au demarrage et refuse de se replier tant qu'il tourne : se refermer
+     sur un chrono en marche, c'est perdre les paliers et le bouton d'arret au
+     moment precis ou on en a besoin. */
+  function chronoTourne() {
+    return !$("#btn-chrono-stop").hidden;
+  }
+
+  function basculerChrono(ouvrir) {
+    const corps = $("#chrono-corps");
+    if (!corps) return;
+    const veut = ouvrir === undefined ? corps.hidden : ouvrir;
+    /* On ne referme pas un chrono en marche. */
+    const etat = !veut && chronoTourne() ? true : veut;
+    corps.hidden = !etat;
+    $("#chrono-widget").classList.toggle("ouvert", etat);
+    $("#chrono-basculer").setAttribute("aria-expanded", etat ? "true" : "false");
+  }
+
   function cablerSaisie() {
     $$(".btn-methode").forEach(b => b.addEventListener("click", () => {
       choisirMethode(b.dataset.methode);
@@ -1080,6 +1105,10 @@
     $("#note-moins").addEventListener("click", () => bougerNote(-1));
     $("#note-plus").addEventListener("click", () => bougerNote(1));
     $("#f-note-vide").addEventListener("change", majAffichageNote);
+    $("#chrono-basculer").addEventListener("click", () => basculerChrono());
+    /* Demarrer OUVRE le chrono : on vient de lancer une extraction, les paliers
+       et le bouton d'arret doivent etre sous la main sans un clic de plus. */
+    $("#btn-chrono").addEventListener("click", () => { basculerChrono(true); });
     $("#btn-chrono").addEventListener("click", chronoPrincipal);
     $("#btn-chrono-stop").addEventListener("click", chronoArreter);
     $("#btn-chrono-raz").addEventListener("click", chronoRaz);
@@ -1146,7 +1175,7 @@
     brancherPilules, cablerSaisie, cafeCourantMoulu,
     cafesSelectionnables, chargerExtractionDansSaisie, choisirMethode, chrono, chronoArreter,
     chronoEcoule, chronoPrincipal, chronoRaz, chronoTic, construirePilules, ecrireDuree, enregistrerSaisie, infoDiagnostic,
-    jouerBip, lireDuree, majAffichageNote, majAgePaquet, majAgitationDepuisRecette,
+    basculerChrono, jouerBip, lireDuree, majAffichageNote, majAgePaquet, majAgitationDepuisRecette,
     majAsideSaisie, majAvertissements, majBoutonsChrono, majChampPrechauffe,
     majCorrectionDiagnostic, majEtapesChrono, majLait, majLive,
     noteSaisie, paliersCourants, prefillDepuisRecette,

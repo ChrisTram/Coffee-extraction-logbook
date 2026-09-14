@@ -374,6 +374,8 @@ const I18N_EN = {
     "total environ 2:45": "about 2:45 total",
     "Navigation principale": "Main navigation",
     "Navigation": "Navigation",
+    "Chrono": "Timer",
+    "Recette, café et chrono": "Recipe, coffee and timer",
     "Ce qui marche le mieux": "What works best",
     "Valeurs par défaut et préférences": "Defaults and preferences",
     "Recettes, moulin, diagnostic, boutiques": "Recipes, grinder, diagnosis, shops",

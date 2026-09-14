@@ -7,8 +7,8 @@
 <!-- Version du site, source unique : le pied de page la lit, et les fichiers
      chargés à la demande la mettent dans leur URL. Se pose avec
      node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="8.10">
-<link rel="stylesheet" href="css/styles.css?v=8.10">
+<meta name="app-version" content="8.11">
+<link rel="stylesheet" href="css/styles.css?v=8.11">
 <!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
      SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
      parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
@@ -448,17 +448,26 @@
     </div>
   </form>
 
-  <aside class="saisie-aside" aria-label="Chrono, recette et café sélectionnés">
-    <!-- Le chrono vit ICI depuis la refonte Comptoir : c'est ce qu'on regarde
-         pendant que l'extraction coule, pas un champ a remplir. Les blocs du
-         formulaire, eux, restent dans le formulaire. -->
-    <div class="chrono carte carte-sombre chrono-bloc">
-      <div class="chrono-entete-ligne">
+  <aside class="saisie-aside" aria-label="Recette, café et chrono">
+    <!-- La fiche recette EN PREMIER : c'est ce qu'on relit a chaque etape. Le
+         chrono, lui, ne sert que pendant l'extraction, il vit replie sous elle
+         et s'ouvre d'un clic (ou tout seul quand on le demarre). -->
+    <div class="carte aside-carte" id="aside-recette"></div>
+    <div class="carte aside-carte" id="aside-cafe"></div>
+    <div class="chrono carte carte-sombre chrono-bloc" id="chrono-widget">
+      <!-- L'entete est le bouton d'ouverture, et porte le temps : replie, le
+           chrono reste lisible. Un chrono qu'il faut deplier pour lire ne sert
+           a rien. -->
+      <button type="button" class="chrono-entete-ligne" id="chrono-basculer"
+              aria-expanded="false" aria-controls="chrono-corps">
         <span class="chrono-valeur chrono-grand" id="chrono-total">0:00</span>
-        <label class="label-inline chrono-bip-label" title="Bip discret à chaque palier de la recette">
-          <input type="checkbox" id="chrono-bip" checked> Bips aux paliers
-        </label>
-      </div>
+        <span class="chrono-libelle">Chrono</span>
+        <span class="chrono-chevron" aria-hidden="true"></span>
+      </button>
+      <div id="chrono-corps" hidden>
+      <label class="label-inline chrono-bip-label" title="Bip discret à chaque palier de la recette">
+        <input type="checkbox" id="chrono-bip" checked> Bips aux paliers
+      </label>
       <div class="chrono-etapes" id="chrono-etapes" hidden>
         <p class="chrono-etape-courante" id="chrono-courante"></p>
         <p class="chrono-etape-suivante" id="chrono-suivante"></p>
@@ -485,9 +494,8 @@
           <span class="champ-hint">Déduit tout seul : du palier "ouvrir" à l'arrêt du chrono.</span>
         </div>
       </div>
+      </div>
     </div>
-    <div class="carte aside-carte" id="aside-recette"></div>
-    <div class="carte aside-carte" id="aside-cafe"></div>
   </aside>
   </div>
 </section>
@@ -1439,28 +1447,28 @@ Cảm ơn shop.</pre>
 <!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
      et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
      desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=8.10"></script>
-<script defer src="js/i18n.js?v=8.10"></script>
-<script defer src="js/grind.js?v=8.10"></script>
-<script defer src="js/recettes.js?v=8.10"></script>
+<script defer src="js/outils.js?v=8.11"></script>
+<script defer src="js/i18n.js?v=8.11"></script>
+<script defer src="js/grind.js?v=8.11"></script>
+<script defer src="js/recettes.js?v=8.11"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=8.10"></script>
-<script defer src="js/data-csv.js?v=8.10"></script>
-<script defer src="js/data-schema.js?v=8.10"></script>
-<script defer src="js/data-store.js?v=8.10"></script>
-<script defer src="js/data-calculs.js?v=8.10"></script>
-<script defer src="js/data-migrations.js?v=8.10"></script>
-<script defer src="js/data.js?v=8.10"></script>
-<script defer src="js/reglages.js?v=8.10"></script>
-<script defer src="js/charts.js?v=8.10"></script>
-<script defer src="js/ui-noyau.js?v=8.10"></script>
-<script defer src="js/ui-tableau.js?v=8.10"></script>
-<script defer src="js/ui-saisie.js?v=8.10"></script>
-<script defer src="js/ui-brouillon.js?v=8.10"></script>
-<script defer src="js/ui-rapide.js?v=8.10"></script>
-<script defer src="js/ui-historique.js?v=8.10"></script>
-<script defer src="js/ui-guide.js?v=8.10"></script>
-<script defer src="js/ui-catalogue.js?v=8.10"></script>
-<script defer src="js/app.js?v=8.10"></script>
+<script defer src="js/sync.js?v=8.11"></script>
+<script defer src="js/data-csv.js?v=8.11"></script>
+<script defer src="js/data-schema.js?v=8.11"></script>
+<script defer src="js/data-store.js?v=8.11"></script>
+<script defer src="js/data-calculs.js?v=8.11"></script>
+<script defer src="js/data-migrations.js?v=8.11"></script>
+<script defer src="js/data.js?v=8.11"></script>
+<script defer src="js/reglages.js?v=8.11"></script>
+<script defer src="js/charts.js?v=8.11"></script>
+<script defer src="js/ui-noyau.js?v=8.11"></script>
+<script defer src="js/ui-tableau.js?v=8.11"></script>
+<script defer src="js/ui-saisie.js?v=8.11"></script>
+<script defer src="js/ui-brouillon.js?v=8.11"></script>
+<script defer src="js/ui-rapide.js?v=8.11"></script>
+<script defer src="js/ui-historique.js?v=8.11"></script>
+<script defer src="js/ui-guide.js?v=8.11"></script>
+<script defer src="js/ui-catalogue.js?v=8.11"></script>
+<script defer src="js/app.js?v=8.11"></script>
 </body>
 </html>
