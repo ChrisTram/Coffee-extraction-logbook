@@ -1187,8 +1187,13 @@ html[data-theme="sombre"] .carte-sombre {
 .duel-col span { display: block; font-size: 0.75rem; color: var(--attenue); }
 
 /* Heatmap */
-.heatmap-conteneur { overflow-x: auto; }
-.heatmap-svg { width: 100%; min-width: 620px; max-width: 820px; height: auto; display: block; margin: 0 auto; }
+/* Une carte ne defile pas horizontalement. Si le contenu ne tient pas, c'est le
+   contenu qui s'adapte, pas le lecteur qui fait glisser. */
+.heatmap-conteneur { overflow-x: hidden; }
+/* PAS de min-width : c'est elle qui faisait defiler la carte. Le nombre de
+   semaines s'adapte a la place disponible (voir semainesVisibles), donc le SVG
+   n'a plus jamais besoin de deborder. */
+.heatmap-svg { width: 100%; max-width: 820px; height: auto; display: block; margin: 0 auto; }
 .hm-label { font-size: 10.5px; fill: var(--attenue); font-family: var(--sans); }
 /* Un filet sur chaque case : sans lui les jours sans extraction se fondent dans
    le fond et la grille ne se lit plus comme un calendrier. */

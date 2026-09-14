@@ -11,7 +11,7 @@
   // Emprunté au noyau, chargé avant nous.
   const { $, $$, animerCompteur, attrTitre, cleLocale, detailRatio, diagsAffiches,
     ecartMoyen, estRatee, extAnalysables, extAvecCalculs, fmtDateHeure, fmtDecimal, fmtTemps,
-    inclureRatees, moyenne, trouverRecette } = UI;
+    inclureRatees, moyenne, nav, trouverRecette } = UI;
 
   // ---------- Insights automatiques ----------
   // Des phrases calculées, pas des graphiques en plus. Les règles sont
@@ -199,7 +199,30 @@
   // 18 semaines et pas 26 : à raison d'une ou deux tasses par jour, six mois de
   // grille sont surtout six mois de cases vides, ce qui donne l'impression que
   // le calendrier ne marche pas.
+  /* Plafond de la fenetre du calendrier. Le nombre REELLEMENT affiche se calcule
+     depuis la largeur du conteneur, voir semainesVisibles() : au dela de ce
+     plafond on n'apprend plus rien, en dessous on entasse. */
   const SEMAINES_HEATMAP = 18;
+  const SEMAINES_MIN = 6;
+
+  /* COMBIEN DE SEMAINES TIENNENT, vraiment. Une case fait 17 px plus 4 de
+     gouttiere, et la colonne des jours en prend 34 a gauche : c'est la seule
+     arithmetique. Sans ce calcul, le SVG imposait 620 px dans une carte de 257
+     et la carte defilait horizontalement, ce qu'une carte ne doit jamais faire.
+
+     Le resultat sert A LA FOIS a la grille et aux cinq chiffres du dessous :
+     deux fenetres differentes pour un meme bloc, ce serait un bloc qui se
+     contredit. */
+  /* Empeche le rattrapage de se rappeler lui-meme sans fin. */
+  let heatmapRecomptee = false;
+
+  function semainesVisibles() {
+    const cadre = $("#g-heatmap");
+    const dispo = cadre ? cadre.clientWidth : 0;
+    if (!dispo) return SEMAINES_HEATMAP;
+    const tiennent = Math.floor((dispo - 34) / 21);
+    return Math.max(SEMAINES_MIN, Math.min(SEMAINES_HEATMAP, tiennent));
+  }
 
   /* Chiffre la période affichée. Une grille de cases ne dit rien de mesurable
      toute seule; ces cinq nombres sont ce qu'on vient y chercher.
@@ -208,11 +231,12 @@
      annoncée que si ce jour est aujourd'hui ou hier. Sinon, à huit heures du
      matin avant le premier café, elle retomberait à zéro tous les jours et ne
      voudrait plus rien dire. */
-  function statsHeatmap(parJour) {
+  function statsHeatmap(parJour, semaines) {
+    const fenetre = semaines || SEMAINES_HEATMAP;
     const fin = new Date();
     fin.setHours(0, 0, 0, 0);
     const debut = new Date(fin);
-    debut.setDate(debut.getDate() - (SEMAINES_HEATMAP * 7 - 1));
+    debut.setDate(debut.getDate() - (fenetre * 7 - 1));
 
     const jours = [];
     const jour = new Date(debut);
@@ -250,11 +274,12 @@
     return { tasses, joursActifs, serieEnCours, meilleureSerie, parSemaine };
   }
 
-  function rendreStatsHeatmap(parJour) {
-    const s = statsHeatmap(parJour);
+  function rendreStatsHeatmap(parJour, semaines) {
+    const fenetre = semaines || SEMAINES_HEATMAP;
+    const s = statsHeatmap(parJour, fenetre);
     if (!s.tasses) {
       $("#heatmap-stats").innerHTML =
-        '<p class="carte-vide">' + I18N.t("hm_resume_vide", { s: SEMAINES_HEATMAP }) + "</p>";
+        '<p class="carte-vide">' + I18N.t("hm_resume_vide", { s: fenetre }) + "</p>";
       return;
     }
     const cases = [
@@ -477,16 +502,25 @@
       const nJour = analysables.filter(e => e.date_heure.slice(0, 10) === cle && e.note_sur_10 !== "").map(e => e.note_sur_10);
       if (nJour.length) infoParJour[cle] = "note moyenne " + moyenne(nJour).toFixed(1);
     });
-    CHARTS.heatmap("g-heatmap", parJour, infoParJour, SEMAINES_HEATMAP);
-    /* Le calendrier se lit de gauche a droite, la semaine EN COURS est donc a
-       droite. Quand il est trop large pour sa carte et qu il defile, il doit
-       partir de la fin : commencer sur les semaines les plus anciennes montre
-       exactement ce qu on ne vient pas voir. */
-    {
-      const cadre = $("#g-heatmap");
-      if (cadre && cadre.scrollWidth > cadre.clientWidth) cadre.scrollLeft = cadre.scrollWidth;
+    /* Autant de semaines que la carte peut en montrer, sans defilement. Le meme
+       nombre part aux cinq chiffres du dessous : la grille et son resume
+       decrivent la meme fenetre. */
+    const semaines = semainesVisibles();
+    CHARTS.heatmap("g-heatmap", parJour, infoParJour, semaines);
+    $("#heatmap-titre").textContent = I18N.t("hm_titre", { n: semaines });
+    rendreStatsHeatmap(parJour, semaines);
+
+    /* AU PREMIER RENDU la carte n a pas encore de largeur : semainesVisibles()
+       retombe sur le plafond et dessine 18 semaines ecrasees a l echelle. Une
+       fois la mise en page faite, on recompte, et on ne redessine que si le
+       compte a change. Le drapeau empeche la boucle : un seul rattrapage. */
+    if (!heatmapRecomptee) {
+      heatmapRecomptee = true;
+      setTimeout(() => {
+        heatmapRecomptee = false;
+        if (nav.ecran === "tableau" && semainesVisibles() !== semaines) UI.rendreTableau();
+      }, 0);
     }
-    rendreStatsHeatmap(parJour);
 
     // Note moyenne par café
     const parCafe = {};
@@ -750,7 +784,7 @@
   }
 
   Object.assign(UI, {
-    rendreDerniereTasse,
+    rendreDerniereTasse, semainesVisibles,
     MIN_GAP, MIN_SAMPLE, MIN_TASSES_GOUT, PIRES_GOUTS, SEMAINES_HEATMAP, TOP_GOUTS,
     bestOfGroups, cablerTableau, causeDuelVide, causeGoutsVide, causeMoutureVide, computeInsights,
     insightAgePaquet, insightMoment, insightPuissance, insightRecettes, insightsParCafe,

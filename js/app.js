@@ -9,7 +9,7 @@
 (() => {
 
   // Emprunté au noyau, chargé avant nous.
-  const { $, $$, ECRANS, activerAppuiLong, activerEcran, appliquerTheme, basculerEtat,
+  const { $, $$, ECRANS, activerAppuiLong, activerEcran, antiRebond, appliquerTheme, basculerEtat,
     chargerReplis, ecrireReplis, nav, normaliserEcran, oublierSignatures, recettesVivantes,
     rendreEcranCourant, replis, reprendreReplisLocaux, siChange,
     supprimerExtractionAvecRetour, toast, trouverRecette } = UI;
@@ -127,6 +127,14 @@
       });
     }
     $$("[data-va]").forEach(b => b.addEventListener("click", () => activerEcran(b.dataset.va)));
+    /* Le calendrier compte ses semaines depuis la largeur de sa carte : il doit
+       donc se refaire quand la fenetre change de taille, sinon il garde le
+       compte de l ouverture et laisse un vide ou deborde. Anti rebond, parce
+       qu un redimensionnement tire des dizaines d evenements. */
+    window.addEventListener("resize", antiRebond(() => {
+      if (nav.ecran === "tableau") UI.rendreTableau();
+    }, 200));
+
     window.addEventListener("hashchange", () => {
       const h = location.hash.slice(1);
       const cible = normaliserEcran(h);

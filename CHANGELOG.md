@@ -463,6 +463,12 @@ pourquoi est dans `DECISIONS.md`.
   Guide (boutiques, achats, messages vietnamiens), correction du bug
   d'avertissement au préremplissage.
 - v1 : site initial, 4 écrans, 2 CSV, démo, Chart.js local, thèmes.
+## 8.15
+
+Le calendrier ne défile plus dans sa carte : le nombre de semaines se calcule
+depuis la largeur disponible, et les cinq chiffres du dessous décrivent la même
+fenêtre que la grille. Le titre dit combien de semaines il montre.
+
 ## 8.14
 
 L’historique passe de treize à dix colonnes : le temps, les degrés et le feu
