@@ -790,6 +790,57 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("aucun ecran ne porte lui-meme une grille de colonnes",
     grilles.length === 0, grilles.join(" | "));
 }
+/* LES CHAMPS DE SAISIE VIVENT DANS LE FORMULAIRE.
+
+   En deplacant le chrono vers la colonne de droite, le decoupage a attrape la
+   <section> du bloc 2 au lieu du <div> du chrono : « Les reglages » et « En
+   bouche » sont partis avec lui. Le formulaire n'a plus contenu que le premier
+   bloc, et tous les champs de saisie se sont retrouves dans l'aside, habilles
+   en carte sombre.
+
+   Les cinq suites sont restees vertes tout du long : aucune ne regarde OU vit
+   un champ, et le faux DOM trouve un identifiant aussi bien dans un aside que
+   dans un formulaire. Il a fallu que Chris ouvre la page.
+
+   Le controle decoupe le HTML aux frontieres reelles et verifie de quel cote
+   tombe chaque champ. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  const debutForm = html.indexOf('<form id="form-saisie"');
+  const finForm = html.indexOf("</form>", debutForm);
+  const debutAside = html.indexOf('<aside class="saisie-aside"');
+  const finAside = html.indexOf("</aside>", debutAside);
+  check("le formulaire de saisie et sa colonne existent",
+    debutForm > 0 && finForm > debutForm && debutAside > finForm && finAside > debutAside);
+
+  const dansForm = html.slice(debutForm, finForm);
+  const dansAside = html.slice(debutAside, finAside);
+
+  /* Les champs que Chris remplit. Un seul hors du formulaire et la saisie part
+     dans la mauvaise colonne. */
+  const CHAMPS = ["f-cafe", "f-recette", "f-dose", "f-eau", "f-mouture", "f-volume",
+    "f-tasse", "f-note", "f-diagnostic", "f-descripteurs", "f-commentaire", "f-date"];
+  /* Un champ pose HORS des balises du formulaire compte quand meme s il porte
+     form="form-saisie" : c est le rattachement officiel de HTML, et la date de
+     la tete de page s en sert. */
+  const rattaches = new Set([...html.matchAll(/id="([^"]+)"[^>]*form="form-saisie"/g)].map(m => m[1]));
+  const egares = CHAMPS.filter(id => !dansForm.includes('id="' + id + '"') && !rattaches.has(id));
+  check("chaque champ de saisie est dans le formulaire", egares.length === 0, egares.join(", "));
+
+  /* Les trois blocs numerotes, dans le formulaire et dans l'ordre. */
+  const blocs = [...dansForm.matchAll(/class="bloc-num"[^>]*>(\d)</g)].map(m => m[1]);
+  check("les trois blocs numerotes sont dans le formulaire",
+    blocs.join(",") === "1,2,3", blocs.join(",") || "aucun");
+
+  /* Et le chrono, lui, est bien dans la colonne de droite. */
+  check("le chrono vit dans la colonne fixe", dansAside.includes('id="chrono-total"'));
+  check("et pas dans le formulaire", !dansForm.includes('id="chrono-total"'));
+
+  /* La carte sombre est reservee au chrono : un bloc de formulaire qui la porte
+     signale que le decoupage a derape. */
+  check("aucun bloc de formulaire n'est habille en carte sombre",
+    !dansForm.includes("carte-sombre"));
+}
 /* AUCUN BOUTON MORT.
 
    "Charger la demonstration", sur le tableau de bord vide, ne faisait rien

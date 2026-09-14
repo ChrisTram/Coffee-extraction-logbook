@@ -457,6 +457,15 @@ pourquoi est dans `DECISIONS.md`.
   Guide (boutiques, achats, messages vietnamiens), correction du bug
   d'avertissement au préremplissage.
 - v1 : site initial, 4 écrans, 2 CSV, démo, Chart.js local, thèmes.
+## 8.10
+
+Répare le formulaire de saisie : les blocs « Les réglages » et « En bouche »
+étaient passés dans la colonne de droite depuis la v8.3, habillés en carte
+sombre, et le formulaire ne contenait plus que le premier bloc. Le déplacement
+du chrono avait attrapé la mauvaise balise. La date de la tête de page est
+rattachée au formulaire par `form=`. Un test vérifie désormais de quel côté
+tombe chaque champ.
+
 ## 8.9
 
 Corrige la mise en page de la saisie : le formulaire était comprimé à gauche

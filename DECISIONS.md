@@ -72,6 +72,39 @@ validée sur maquette, la police n'a pas été changée unilatéralement ; Manro
 lui, embarque bien le vietnamien, donc tout le texte courant est propre. À
 revoir avec Chris s'il trouve ça laid.
 
+**Le déplacement du chrono a emporté les deux tiers du formulaire.** C'est la
+panne la plus grave de la série, et elle a vécu de la v8.3 à la v8.10. Pour
+sortir le chrono du formulaire, le script d'édition cherchait la `<section>`
+précédant `id="chrono-total"`. Or le chrono n'est pas une `<section>` mais un
+`<div class="chrono carte">` : la recherche est remontée jusqu'à la section du
+BLOC 2, et le déplacement a emporté « Les réglages », le chrono ET « En bouche »
+dans la colonne de droite, en collant au passage la classe de la carte sombre
+sur l'ouverture du bloc 2. Le formulaire ne contenait plus que le bloc 1, et
+tous les champs de saisie vivaient à droite, habillés en carte sombre.
+
+Les cinq suites sont restées vertes pendant tout ce temps. Aucune ne regarde OÙ
+vit un champ : le faux DOM cherche par identifiant, et un identifiant se trouve
+aussi bien dans un `<aside>` que dans un `<form>`. Le contrôle « autant de
+cellules que d'en-têtes » et l'audit de contraste ne regardent pas non plus la
+structure. Il a fallu que Chris ouvre la page.
+
+Un test découpe maintenant le HTML aux frontières réelles du formulaire et de sa
+colonne, et vérifie de quel côté tombe chacun des douze champs de saisie, que les
+trois blocs numérotés sont dans le formulaire et dans l'ordre, que le chrono est
+dans la colonne, et qu'aucun bloc de formulaire ne porte la carte sombre.
+
+Il a trouvé au passage que `#f-date`, remonté dans la tête de page, était un
+contrôle orphelin hors des balises du formulaire. Il porte désormais
+`form="form-saisie"`, le rattachement officiel de HTML.
+
+**Leçon d'outillage : on ne découpe pas du HTML en cherchant une balise.** Les
+deux dérapages de cette série viennent de là, un `lastIndexOf("<section")` et un
+`indexOf("    </div>")` qui ont attrapé la mauvaise occurrence. La reconstruction
+s'est faite par numéros de ligne, avec une assertion sur le premier et le dernier
+caractère de chaque tranche et sur les identifiants qu'elle doit contenir. C'est
+plus long à écrire et ça échoue bruyamment quand on se trompe, ce qui est
+exactement ce qu'on veut.
+
 **Un écran ne se met pas en page lui-même.** Deuxième moitié de la même leçon.
 `#ecran-saisie` n'a qu'UN enfant, `.saisie-layout`, qui portait déjà la grille
 « formulaire plus colonne fixe » depuis longtemps. En posant une seconde grille
