@@ -840,30 +840,40 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("les trois blocs numerotes sont dans le formulaire",
     blocs.join(",") === "1,2,3", blocs.join(",") || "aucun");
 
-  /* Et le chrono, lui, est bien dans la colonne de droite. */
-  check("le chrono vit dans la colonne fixe", dansAside.includes('id="chrono-total"'));
+  /* LE CHRONO VIENT AVANT LE FORMULAIRE dans le DOM. C'est ce qui le met en
+     premier sur telephone, ou il doit se coller en haut de l'ecran : il vivait
+     dans l'aside, qui passe APRES un formulaire de 3 500 px, et son sticky ne
+     collait donc rien du tout. Sur ordinateur le CSS le replace en haut de la
+     colonne de droite, voir le controle de placement plus bas. */
   check("et pas dans le formulaire", !dansForm.includes('id="chrono-total"'));
+  const posChronoDom = html.indexOf('id="chrono-widget"');
+  check("le chrono precede le formulaire dans le DOM",
+    posChronoDom > 0 && posChronoDom < debutForm, "chrono " + posChronoDom + ", form " + debutForm);
 
   /* La carte sombre est reservee au chrono : un bloc de formulaire qui la porte
      signale que le decoupage a derape. */
   check("aucun bloc de formulaire n'est habille en carte sombre",
     !dansForm.includes("carte-sombre"));
 
-  /* LA FICHE RECETTE PASSE AVANT LE CHRONO. Chris la relit a chaque etape ;
-     le chrono ne sert que pendant l extraction et vit replie sous elle. */
-  const posRecette = dansAside.indexOf('id="aside-recette"');
-  const posChrono = dansAside.indexOf('id="chrono-widget"');
-  check("la fiche recette vient avant le chrono dans la colonne",
-    posRecette > 0 && posChrono > posRecette, "recette " + posRecette + ", chrono " + posChrono);
+  /* SUR ORDINATEUR le CSS remet le chrono en haut de la colonne de droite.
+     L'ordre du DOM sert le telephone, la grille sert l'ecran large, et aucun
+     des deux ne depend d'un ordre de lecture accidentel. */
+  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  check("le chrono est place en haut de la colonne de droite sur ordinateur",
+    /#chrono-widget\s*\{[^}]*grid-column:\s*2[^}]*grid-row:\s*1/.test(css));
+  check("et la colonne des fiches passe en seconde rangee",
+    /\.saisie-aside\s*\{[^}]*grid-column:\s*2[^}]*grid-row:\s*2/.test(css));
 
   /* Le chrono est repliable : une entete qui commande un corps. */
+  const zoneChrono = html.slice(posChronoDom, debutForm);
   check("le chrono a une entete qui ouvre et ferme son corps",
-    dansAside.includes('aria-controls="chrono-corps"') && dansAside.includes('id="chrono-corps"'));
-  /* Et le temps vit dans l ENTETE, pas dans le corps : replie, il doit rester
-     lisible, sinon le repli coute plus qu il ne rapporte. */
-  const entete = dansAside.slice(dansAside.indexOf('id="chrono-basculer"'), dansAside.indexOf('id="chrono-corps"'));
+    zoneChrono.includes('aria-controls="chrono-corps"') && zoneChrono.includes('id="chrono-corps"'));
+  /* Le temps vit dans l'ENTETE, pas dans le corps : replie, il doit rester
+     lisible, sinon le repli coute plus qu'il ne rapporte. */
+  const entete = zoneChrono.slice(zoneChrono.indexOf('id="chrono-basculer"'), zoneChrono.indexOf('id="chrono-corps"'));
   check("le temps reste lisible quand le chrono est replie",
     entete.includes('id="chrono-total"'));
+  check("et le palier en cours aussi", entete.includes('id="chrono-palier-court"'));
 }
 /* AUCUN BOUTON MORT.
 

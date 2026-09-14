@@ -7,8 +7,8 @@
 <!-- Version du site, source unique : le pied de page la lit, et les fichiers
      chargés à la demande la mettent dans leur URL. Se pose avec
      node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="8.16">
-<link rel="stylesheet" href="css/styles.css?v=8.16">
+<meta name="app-version" content="8.17">
+<link rel="stylesheet" href="css/styles.css?v=8.17">
 <!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
      SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
      parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
@@ -247,6 +247,56 @@
   </div>
 
   <div class="saisie-layout">
+  <!-- LE CHRONO EST ICI, avant le formulaire, et non dans l'aside : sur
+       telephone il doit venir EN PREMIER et se coller en haut de l'ecran,
+       c'est la seule chose qu'on regarde pendant que ca coule. Sur ordinateur
+       le CSS le replace en haut de la colonne de droite. -->
+    <div class="chrono carte carte-sombre chrono-bloc" id="chrono-widget">
+      <!-- L'entete est le bouton d'ouverture, et porte le temps : replie, le
+           chrono reste lisible. Un chrono qu'il faut deplier pour lire ne sert
+           a rien. -->
+      <button type="button" class="chrono-entete-ligne" id="chrono-basculer"
+              aria-expanded="false" aria-controls="chrono-corps">
+        <span class="chrono-valeur chrono-grand" id="chrono-total">0:00</span>
+        <span class="chrono-libelle">Chrono</span>
+        <!-- Le palier en cours, lisible SANS deplier : replie, le bandeau doit
+             dire ou on en est, sinon il ne fait que prendre de la place. -->
+        <span class="chrono-palier" id="chrono-palier-court"></span>
+        <span class="chrono-chevron" aria-hidden="true"></span>
+      </button>
+      <div id="chrono-corps" hidden>
+      <label class="label-inline chrono-bip-label" title="Bip discret à chaque palier de la recette">
+        <input type="checkbox" id="chrono-bip" checked> Bips aux paliers
+      </label>
+      <div class="chrono-etapes" id="chrono-etapes" hidden>
+        <p class="chrono-etape-courante" id="chrono-courante"></p>
+        <p class="chrono-etape-suivante" id="chrono-suivante"></p>
+      </div>
+      <div class="chrono-boutons">
+        <button type="button" class="btn btn-primaire" id="btn-chrono">Démarrer</button>
+        <button type="button" class="btn" id="btn-chrono-stop" hidden>Arrêter et reporter</button>
+        <button type="button" class="btn btn-discret" id="btn-chrono-raz" hidden>Remettre à zéro</button>
+      </div>
+      <div class="grille-nombres chrono-manuels">
+        <div class="champ">
+          <label for="f-total-min">Temps total</label>
+          <div class="duree">
+            <input type="number" id="f-total-min" step="1" min="0" max="59" inputmode="numeric" placeholder="0" aria-label="Temps total, minutes"><span>min</span>
+            <input type="number" id="f-total-sec" step="1" min="0" max="59" inputmode="numeric" placeholder="00" aria-label="Temps total, secondes"><span>s</span>
+          </div>
+        </div>
+        <div class="champ">
+          <label for="f-ecoulement-min">Écoulement</label>
+          <div class="duree">
+            <input type="number" id="f-ecoulement-min" step="1" min="0" max="59" inputmode="numeric" placeholder="0" aria-label="Écoulement, minutes"><span>min</span>
+            <input type="number" id="f-ecoulement-sec" step="1" min="0" max="59" inputmode="numeric" placeholder="00" aria-label="Écoulement, secondes"><span>s</span>
+          </div>
+          <span class="champ-hint">Déduit tout seul : du palier "ouvrir" à l'arrêt du chrono.</span>
+        </div>
+      </div>
+      </div>
+    </div>
+
   <form id="form-saisie" autocomplete="off">
     <p class="champ-hint legende-requis"><span class="requis">*</span> <span>= obligatoire, tout le reste est optionnel.</span></p>
 
@@ -449,48 +499,6 @@
          et s'ouvre d'un clic (ou tout seul quand on le demarre). -->
     <div class="carte aside-carte" id="aside-recette"></div>
     <div class="carte aside-carte" id="aside-cafe"></div>
-    <div class="chrono carte carte-sombre chrono-bloc" id="chrono-widget">
-      <!-- L'entete est le bouton d'ouverture, et porte le temps : replie, le
-           chrono reste lisible. Un chrono qu'il faut deplier pour lire ne sert
-           a rien. -->
-      <button type="button" class="chrono-entete-ligne" id="chrono-basculer"
-              aria-expanded="false" aria-controls="chrono-corps">
-        <span class="chrono-valeur chrono-grand" id="chrono-total">0:00</span>
-        <span class="chrono-libelle">Chrono</span>
-        <span class="chrono-chevron" aria-hidden="true"></span>
-      </button>
-      <div id="chrono-corps" hidden>
-      <label class="label-inline chrono-bip-label" title="Bip discret à chaque palier de la recette">
-        <input type="checkbox" id="chrono-bip" checked> Bips aux paliers
-      </label>
-      <div class="chrono-etapes" id="chrono-etapes" hidden>
-        <p class="chrono-etape-courante" id="chrono-courante"></p>
-        <p class="chrono-etape-suivante" id="chrono-suivante"></p>
-      </div>
-      <div class="chrono-boutons">
-        <button type="button" class="btn btn-primaire" id="btn-chrono">Démarrer</button>
-        <button type="button" class="btn" id="btn-chrono-stop" hidden>Arrêter et reporter</button>
-        <button type="button" class="btn btn-discret" id="btn-chrono-raz" hidden>Remettre à zéro</button>
-      </div>
-      <div class="grille-nombres chrono-manuels">
-        <div class="champ">
-          <label for="f-total-min">Temps total</label>
-          <div class="duree">
-            <input type="number" id="f-total-min" step="1" min="0" max="59" inputmode="numeric" placeholder="0" aria-label="Temps total, minutes"><span>min</span>
-            <input type="number" id="f-total-sec" step="1" min="0" max="59" inputmode="numeric" placeholder="00" aria-label="Temps total, secondes"><span>s</span>
-          </div>
-        </div>
-        <div class="champ">
-          <label for="f-ecoulement-min">Écoulement</label>
-          <div class="duree">
-            <input type="number" id="f-ecoulement-min" step="1" min="0" max="59" inputmode="numeric" placeholder="0" aria-label="Écoulement, minutes"><span>min</span>
-            <input type="number" id="f-ecoulement-sec" step="1" min="0" max="59" inputmode="numeric" placeholder="00" aria-label="Écoulement, secondes"><span>s</span>
-          </div>
-          <span class="champ-hint">Déduit tout seul : du palier "ouvrir" à l'arrêt du chrono.</span>
-        </div>
-      </div>
-      </div>
-    </div>
   </aside>
   </div>
 </section>
@@ -1441,28 +1449,28 @@ Cảm ơn shop.</pre>
 <!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
      et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
      desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=8.16"></script>
-<script defer src="js/i18n.js?v=8.16"></script>
-<script defer src="js/grind.js?v=8.16"></script>
-<script defer src="js/recettes.js?v=8.16"></script>
+<script defer src="js/outils.js?v=8.17"></script>
+<script defer src="js/i18n.js?v=8.17"></script>
+<script defer src="js/grind.js?v=8.17"></script>
+<script defer src="js/recettes.js?v=8.17"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=8.16"></script>
-<script defer src="js/data-csv.js?v=8.16"></script>
-<script defer src="js/data-schema.js?v=8.16"></script>
-<script defer src="js/data-store.js?v=8.16"></script>
-<script defer src="js/data-calculs.js?v=8.16"></script>
-<script defer src="js/data-migrations.js?v=8.16"></script>
-<script defer src="js/data.js?v=8.16"></script>
-<script defer src="js/reglages.js?v=8.16"></script>
-<script defer src="js/charts.js?v=8.16"></script>
-<script defer src="js/ui-noyau.js?v=8.16"></script>
-<script defer src="js/ui-tableau.js?v=8.16"></script>
-<script defer src="js/ui-saisie.js?v=8.16"></script>
-<script defer src="js/ui-brouillon.js?v=8.16"></script>
-<script defer src="js/ui-rapide.js?v=8.16"></script>
-<script defer src="js/ui-historique.js?v=8.16"></script>
-<script defer src="js/ui-guide.js?v=8.16"></script>
-<script defer src="js/ui-catalogue.js?v=8.16"></script>
-<script defer src="js/app.js?v=8.16"></script>
+<script defer src="js/sync.js?v=8.17"></script>
+<script defer src="js/data-csv.js?v=8.17"></script>
+<script defer src="js/data-schema.js?v=8.17"></script>
+<script defer src="js/data-store.js?v=8.17"></script>
+<script defer src="js/data-calculs.js?v=8.17"></script>
+<script defer src="js/data-migrations.js?v=8.17"></script>
+<script defer src="js/data.js?v=8.17"></script>
+<script defer src="js/reglages.js?v=8.17"></script>
+<script defer src="js/charts.js?v=8.17"></script>
+<script defer src="js/ui-noyau.js?v=8.17"></script>
+<script defer src="js/ui-tableau.js?v=8.17"></script>
+<script defer src="js/ui-saisie.js?v=8.17"></script>
+<script defer src="js/ui-brouillon.js?v=8.17"></script>
+<script defer src="js/ui-rapide.js?v=8.17"></script>
+<script defer src="js/ui-historique.js?v=8.17"></script>
+<script defer src="js/ui-guide.js?v=8.17"></script>
+<script defer src="js/ui-catalogue.js?v=8.17"></script>
+<script defer src="js/app.js?v=8.17"></script>
 </body>
 </html>

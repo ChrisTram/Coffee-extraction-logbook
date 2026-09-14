@@ -643,9 +643,16 @@
     zone.hidden = false;
     let courante = null, suivante = null;
     paliers.forEach(pal => { if (pal.t <= s) courante = pal; else if (!suivante) suivante = pal; });
-    $("#chrono-courante").textContent = courante
+    const texteCourant = courante
       ? fmtTemps(courante.t) + " · " + courante.texte
       : I18N.t("ch_pret");
+    $("#chrono-courante").textContent = texteCourant;
+    /* Le meme palier dans l'entete, pour qu'il se lise SANS deplier : sur
+       telephone le chrono est un bandeau replie colle en haut, et un bandeau qui
+       ne dit pas ou on en est ne fait que prendre de la place. Vide quand le
+       chrono ne tourne pas, sinon il annoncerait un palier qui n'a pas commence. */
+    const court = $("#chrono-palier-court");
+    if (court) court.textContent = chrono.etat === "arrete" ? "" : texteCourant;
     if (suivante) {
       $("#chrono-suivante").textContent = I18N.t("ch_suivante", {
         t: fmtTemps(suivante.t), d: Math.max(0, Math.ceil(suivante.t - s)), texte: suivante.texte,

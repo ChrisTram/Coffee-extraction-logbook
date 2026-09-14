@@ -1417,6 +1417,20 @@ input:focus, select:focus, textarea:focus {
   max-width: 1240px;
   align-items: start;
 }
+/* PLACEMENT EXPLICITE sur ordinateur. Le chrono est premier dans le DOM pour le
+   telephone ; ici on le remet en haut de la colonne de droite, le formulaire
+   tient la colonne de gauche sur les deux rangees, et les deux fiches passent
+   sous le chrono. Sans ce placement, l'ordre du DOM le mettrait a gauche. */
+@media (min-width: 1024px) {
+  /* auto puis 1fr : sans cette ligne, le formulaire qui couvre les DEUX rangees
+     repartit sa hauteur entre elles, la premiere gonfle a 1 300 px et les fiches
+     recette et cafe tombent au milieu de nulle part. La premiere rangee tient la
+     hauteur du chrono, la seconde prend tout le reste. */
+  .saisie-layout { grid-template-rows: auto 1fr; }
+  #chrono-widget { grid-column: 2; grid-row: 1; }
+  #form-saisie { grid-column: 1; grid-row: 1 / span 2; }
+  .saisie-aside { grid-column: 2; grid-row: 2; }
+}
 #form-saisie { min-width: 0; }
 
 /* BLOCS DE SAISIE. Trois cartes titrées au lieu d'une colonne de dix-huit
@@ -1512,8 +1526,7 @@ input:focus, select:focus, textarea:focus {
 .aside-carte .recette-etapes li { font-size: 0.83rem; padding: 4px 0; }
 
 @media (max-width: 980px) {
-  .saisie-layout { grid-template-columns: 1fr; max-width: 720px; }
-  .saisie-aside { position: static; order: 2; }
+  .saisie-layout { max-width: 720px; }
 }
 
 .saisie-entete {
@@ -2915,17 +2928,25 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 
 /* ---------- Telephone ---------- */
 @media (max-width: 1023px) {
-  .saisie-layout { grid-template-columns: 1fr; }
+  /* BLOC et non grille : un element sticky ne peut coller que DANS sa propre
+     zone de grille, qui fait ici la hauteur du chrono. Il ne bougeait donc pas
+     d un pixel. En bloc, son bloc contenant est toute la colonne et il colle
+     vraiment. Les enfants se suivent dans l ordre du DOM, qui est deja le bon :
+     chrono, formulaire, fiches. */
+  .saisie-layout { display: block; }
   .saisie-aside { position: static; }
-  /* Le chrono remonte EN HAUT et reste visible au defilement : pendant une
-     extraction c'est la seule chose qui compte, et elle etait en bas de page. */
-  .saisie-aside .chrono-bloc {
-    order: -1;
+  /* LE CHRONO EN BANDEAU, colle en haut de l'ecran. Il est deja premier dans le
+     DOM, il ne lui reste qu'a coller. Avant, il vivait dans l'aside, qui passe
+     APRES un formulaire de 3 500 px : son position sticky ne collait rien du
+     tout, il etait simplement tout en bas de la page. */
+  #chrono-widget {
     position: sticky;
     top: 0;
     z-index: var(--z-sommaire);
+    margin-bottom: var(--ecart-cartes);
+    box-shadow: var(--ombre);
   }
-  .chrono-bloc .chrono-grand { font-size: 2.5rem; }
+  #chrono-widget .chrono-grand { font-size: 2.5rem; }
   .saisie-bloc .grille-nombres { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
   /* La barre d'action reste sous la main, au dessus de la barre de navigation. */
   .saisie-actions {
@@ -3208,3 +3229,21 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 @media (prefers-reduced-motion: reduce) {
   .chrono-chevron { transition: none; }
 }
+
+
+/* Le palier en cours, dans l'entete du chrono : replie, le bandeau doit dire ou
+   on en est. Il s'efface quand le chrono ne tourne pas, et cede la place au
+   libelle « Chrono ». */
+.chrono-palier {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  color: var(--encre);
+}
+.chrono-palier:empty { display: none; }
+.chrono-palier:not(:empty) + .chrono-chevron { margin-left: 8px; }
+/* Quand un palier est affiche, le mot « Chrono » ne sert plus a rien. */
+.chrono-libelle:has(+ .chrono-palier:not(:empty)) { flex: none; }
