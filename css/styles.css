@@ -1311,12 +1311,14 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 0 0 3px var(--accent-fond);
 }
 
+/* LA mise en page de la saisie, et la seule. Le formulaire a gauche, la colonne
+   fixe de 360 px a droite. Elle vit ICI et pas sur #ecran-saisie, qui n'a qu'un
+   enfant et n'a donc rien a repartir. */
 .saisie-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 330px;
-  gap: 22px;
-  max-width: 1080px;
-  margin: 0 auto;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: var(--ecart-cartes);
+  max-width: 1240px;
   align-items: start;
 }
 #form-saisie { min-width: 0; }
@@ -2628,17 +2630,10 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 /* Deux colonnes : le formulaire, puis une colonne FIXE de 360 px qui suit le
    defilement. C'est la que vivent le chrono, la fiche recette et la fiche cafe,
    parce qu'on les LIT pendant qu'on remplit le formulaire, on ne les remplit pas. */
-/* .actif EST OBLIGATOIRE ICI. Sans lui, ce selecteur d identifiant (1,0,0)
-   battait .ecran { display: none } (0,1,0) : la saisie restait affichee en
-   permanence et les autres ecrans s empilaient dessous. Toute regle qui pose un
-   display sur un #ecran-* doit porter .actif. */
-#ecran-saisie.actif {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
-  gap: var(--ecart-cartes);
-  align-items: start;
-}
-#ecran-saisie > form { min-width: 0; }
+/* L'ecran ne repartit rien : il n'a qu'un enfant, .saisie-layout, qui porte la
+   grille. Une seconde grille ici mettait tout le formulaire dans la colonne 1 et
+   laissait 360 px vides a droite. */
+#form-saisie { min-width: 0; }
 .saisie-aside {
   position: sticky;
   top: 22px;
@@ -2648,8 +2643,8 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   min-width: 0;
 }
 
-/* La tete de page de la saisie : le titre a gauche, la date et l'heure a droite. */
-#ecran-saisie .tete-page { grid-column: 1 / -1; }
+/* La tete de page precede la grille, elle couvre donc toute la largeur. */
+#ecran-saisie .saisie-entete { max-width: 1240px; }
 
 /* ---------- Les blocs numerotes ---------- */
 .saisie-bloc {
@@ -2828,7 +2823,7 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 
 /* ---------- Telephone ---------- */
 @media (max-width: 1023px) {
-  #ecran-saisie.actif { grid-template-columns: 1fr; }
+  .saisie-layout { grid-template-columns: 1fr; }
   .saisie-aside { position: static; }
   /* Le chrono remonte EN HAUT et reste visible au defilement : pendant une
      extraction c'est la seule chose qui compte, et elle etait en bas de page. */

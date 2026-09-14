@@ -767,6 +767,28 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   }
   check("aucune regle ne force l'affichage d'un ecran sans .actif",
     fautifs.length === 0, fautifs.join(" | "));
+
+  /* MEME LECON, AUTRE VISAGE : un ecran ne se met pas en page lui-meme.
+
+     #ecran-saisie n'a qu'UN enfant, .saisie-layout, qui portait deja la grille
+     « formulaire plus colonne fixe ». Une seconde grille posee sur l'ecran a mis
+     tout le formulaire dans la colonne 1 et laisse 360 px vides a droite : le
+     contenu paraissait serre et decale, sans que rien ne soit en erreur.
+
+     La mise en page appartient au conteneur qui a vraiment plusieurs enfants a
+     repartir. Si un ecran en a besoin un jour, l'auteur verra ce test et posera
+     la regle sur un enveloppeur : c'est le but. */
+  const grilles = [];
+  for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const selecteur = m[1].trim(), corps = m[2];
+    if (!/grid-template-columns\s*:/.test(corps)) continue;
+    for (const part of selecteur.split(",")) {
+      const sel = part.trim();
+      if (/#ecran-[\w-]+[\w.:\[\]="-]*$/.test(sel)) grilles.push(sel);
+    }
+  }
+  check("aucun ecran ne porte lui-meme une grille de colonnes",
+    grilles.length === 0, grilles.join(" | "));
 }
 /* AUCUN BOUTON MORT.
 

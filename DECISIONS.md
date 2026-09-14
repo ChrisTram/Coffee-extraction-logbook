@@ -72,6 +72,33 @@ validée sur maquette, la police n'a pas été changée unilatéralement ; Manro
 lui, embarque bien le vietnamien, donc tout le texte courant est propre. À
 revoir avec Chris s'il trouve ça laid.
 
+**Un écran ne se met pas en page lui-même.** Deuxième moitié de la même leçon.
+`#ecran-saisie` n'a qu'UN enfant, `.saisie-layout`, qui portait déjà la grille
+« formulaire plus colonne fixe » depuis longtemps. En posant une seconde grille
+de deux colonnes sur l'écran, tout le formulaire tombait dans la colonne 1 et les
+360 px de la colonne 2 restaient vides : le contenu paraissait serré et décalé
+vers la droite, sans que rien ne soit en erreur nulle part. La mise en page
+appartient au conteneur qui a réellement plusieurs enfants à répartir.
+
+La tête de page de la saisie est sortie du formulaire à cette occasion : dans le
+formulaire elle ne surplombait que la colonne de gauche, alors que sur tous les
+autres écrans elle couvre la largeur.
+
+Un test refuse maintenant qu'un sélecteur `#ecran-*` déclare
+`grid-template-columns`. Volontairement strict : si un écran en a besoin un
+jour, l'auteur verra le test, lira pourquoi, et posera la règle sur un
+enveloppeur.
+
+**Ce que ces deux pannes disent des tests.** Aucune des cinq suites ne charge de
+CSS, et l'audit de contraste regardait les couleurs sans jamais regarder la
+géométrie. Les deux bugs de mise en page de cette série sont donc passés entiers
+à travers tout ce qui existe, et n'ont été vus que parce que Chris utilisait le
+site. Les deux tests ajoutés couvrent les deux pièges précis rencontrés, pas la
+famille : une vérification réelle demanderait un navigateur, ce que le projet
+n'a pas (voir « Tests »). D'ici là, une modification de mise en page se regarde
+dans un navigateur avant d'être poussée, et on mesure les rectangles plutôt que
+de juger sur une capture.
+
 **Le basculement d'écran ne tient qu'à la spécificité, et ça a cassé.** Toute la
 navigation repose sur deux lignes : `.ecran { display: none }` puis
 `.ecran.actif { display: block }`. La mise en page de la saisie a été écrite

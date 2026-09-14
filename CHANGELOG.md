@@ -457,6 +457,14 @@ pourquoi est dans `DECISIONS.md`.
   Guide (boutiques, achats, messages vietnamiens), correction du bug
   d'avertissement au préremplissage.
 - v1 : site initial, 4 écrans, 2 CSV, démo, Chart.js local, thèmes.
+## 8.9
+
+Corrige la mise en page de la saisie : le formulaire était comprimé à gauche
+avec une colonne vide de 360 px à sa droite. La grille de deux colonnes était
+posée sur l'écran, qui n'a qu'un enfant, au lieu de `.saisie-layout`, qui porte
+la répartition. La tête de page sort du formulaire pour couvrir les deux
+colonnes comme sur les autres écrans.
+
 ## 8.8
 
 Corrige la navigation : l'écran de saisie restait affiché en permanence et les
