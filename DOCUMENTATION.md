@@ -7,7 +7,7 @@ choix, les bugs trouvés et le raisonnement qui a mené là vivent dans
 qu'on touche. L'historique des versions est dans `CHANGELOG.md`. Commencer par
 `START-HERE.md` si tu arrives sans contexte.
 
-Dernière mise à jour : v7.101, 2026-09-14.
+Dernière mise à jour : v8.23, 2026-09-14.
 
 ## 1. Vue d'ensemble
 
@@ -328,7 +328,8 @@ Pourquoi une version et pas des drapeaux : `DECISIONS.md`, « Migrations ».
 
 ## 5. i18n
 
-Français par défaut, bouton EN/FR dans l'entête, choix dans localStorage.
+Français par défaut, bouton EN/FR au pied du rail (dans la feuille « Plus » sur
+téléphone), choix dans localStorage.
 Trois mécanismes :
 
 1. `UI` : dictionnaire "fragment français exact vers anglais". Au premier
@@ -376,6 +377,28 @@ Dans l'écran Guide, le moulin est un RÉGLAGE, pas un convertisseur : curseur e
 crans, repères cliquables, conseil vivant, bouton qui pose `replis.molette` (la
 même source que l'écran Paramètres). Raisons et pièges : `DECISIONS.md`.
 
+## 6 bis. Tableau de bord (js/ui-tableau.js)
+
+Quatre rangées sur une grille de trois colonnes, la carte principale sur deux.
+
+- **Dernière tasse** : le café en serif, la ligne de contexte (machine, recette,
+  dose, temps, température, feu), les goûts, le commentaire, et la note en gros
+  à droite derrière un filet. Cliquer la carte ouvre l'extraction.
+- **Chiffres clés** : quatre tuiles (aujourd'hui, cette semaine, note sur
+  7 jours, régularité) plus une ligne de texte pour le total, la note globale et
+  la caféine.
+- **Graphe 30 jours** : Chart.js, inchangé depuis la v7.x.
+- **Ce que tes données disent** : les insights, sur carte sombre.
+- **Les 5 dernières** : une table, une ligne par tasse plus le commentaire
+  tronqué sur une seconde ligne. Largeurs imposées par `<colgroup>`.
+- **Calendrier** : le nombre de semaines se calcule depuis la largeur du
+  conteneur (`semainesVisibles()`), la même valeur sert à la grille, au titre et
+  aux cinq chiffres du dessous. Légende de l'échelle, puis les mini statistiques
+  en lignes. Un rattrapage unique recompte après la mise en page, et `app.js`
+  redemande un rendu au redimensionnement.
+- **Analyses** : note par café, Brikka contre Switch, goûts, diagnostics, note
+  contre mouture, note par recette.
+
 ## 7. Graphiques (js/charts.js)
 
 Chart.js pour : barres + note + grammes 30 jours (3 datasets, tooltip avec
@@ -398,7 +421,7 @@ Les couleurs des séries : trois jetons protégés pour les machines (`--brikka`
 emprunte jamais (`--tendance`, `--grammes`). Pourquoi : `DECISIONS.md`, « Une
 couleur, une série ».
 
-## 8. Saisie et chrono (js/ui-saisie.js, js/ui-rapide.js)
+## 8. Saisie (js/ui-saisie.js, js/ui-chrono.js, js/ui-rapide.js)
 
 - Préremplissage au choix du café : méthode et recette recommandées, dose et
   molette de la recette. L'EAU RESTE VIDE (pas de balance) et la température
@@ -409,8 +432,20 @@ couleur, une série ».
 - Avertissements non bloquants (recommandations, plage de mouture) et
   BLOQUANTS (café non pur ou rang bơ en Switch : `cafeInterditSwitch`,
   `avertissementsCombinaison` retourne {msgs, bloque}).
-- Chrono unique : Démarrer / Pause / Reprendre (cycles illimités) / Arrêter
-  et reporter / RAZ. Paliers minutés extraits de la recette sélectionnée,
+- Mise en page : le formulaire à gauche, une colonne fixe de 360 px à droite.
+  Le CHRONO est un enfant direct de `.saisie-layout`, placé AVANT le formulaire
+  dans le DOM et remis en haut de la colonne de droite par la grille
+  (`grid-row: 1`). Sous 1024 px la mise en page passe en bloc et il devient un
+  bandeau collé en haut. Il vit replié, s'ouvre au démarrage et refuse de se
+  replier tant qu'il tourne ; le temps et le palier courant se lisent dans son
+  entête.
+- Le formulaire est en trois blocs numérotés : le café et la recette, les
+  réglages (avec le pied ratio, microns, coût, caféine), en bouche. Les familles
+  de goûts se replient : deux visibles plus celles qui contiennent un goût
+  coché, le reste derrière un bouton, choix en localStorage.
+- Champs hors du `<form>` (date, chrono) : ils portent `form="form-saisie"`.
+- Chrono unique (`js/ui-chrono.js`) : Démarrer / Pause / Reprendre (cycles
+  illimités) / Arrêter et reporter / RAZ. Paliers minutés extraits de la recette sélectionnée,
   étape courante en gros, suivante avec décompte, bip WebAudio doux (880 Hz)
   à chaque palier, coupable (préférence localStorage "bips"). L'écoulement
   est déduit : temps de l'étape contenant "ouvrir" jusqu'à l'arrêt.
@@ -468,6 +503,28 @@ Points fixés depuis, chacun expliqué dans `DECISIONS.md` :
   110 caractères ; le texte complet reste au survol (v7.94).
 - La saisie rapide enregistre SANS note par défaut, comme le formulaire complet
   (`#q-note-vide`, coché à chaque ouverture) ; toucher le curseur décoche.
+
+## 8 bis. Historique (js/ui-historique.js)
+
+DEUX rendus de la meme liste, choisis a 1024 px par `enCartes()` :
+
+- **Ordinateur** : une table de DIX colonnes (date, cafe, machine, recette, dose
+  et eau, mouture, ratio, note, gouts et diagnostic, actions). Largeurs figees
+  par position, voir DECISIONS pour le piege. Le commentaire prend sa propre
+  ligne en pleine largeur sous sa tasse. Le temps, les degres et le feu vivent
+  dans le detail deplie.
+- **Telephone** : une liste de cartes par jour, memes intertitres.
+
+Les cinq actions viennent de `actionsExtraction()` et le detail de
+`detailContenu()`, appeles par les DEUX rendus : c'est ce qui garantit qu'un
+geste disponible sur ordinateur l'est aussi sur telephone, et un test le
+verifie. Le clic est delegue sur `data-action` et `data-id`, attache aux deux
+conteneurs (`#h-corps` et `#h-cartes`).
+
+Au dessus : une tete de page (total et depuis quand, recherche, export), les
+filtres en pastilles (des `<select>` natifs habilles), et un bandeau resume du
+filtre courant en quatre chiffres. Le groupement par jour ne s'applique que si
+le tri est par date.
 
 ## 9. Synchronisation entre appareils
 

@@ -5,6 +5,8 @@ de page du site est celui du `<meta name="app-version">` d'`index.html`, posé
 par `node tools/bump_version.mjs X`. Chaque entrée dit CE QUI a changé ; le
 pourquoi est dans `DECISIONS.md`.
 
+- v8.23 : DOCUMENTATION remise au niveau du code : date de mise à jour, entête
+  disparue, et deux sections neuves pour le tableau de bord et l'historique.
 - v8.22 : CHANGELOG remis au format du fichier, les vingt-deux entrées de la
   refonte étaient arrivées en bas sous des titres ##. Apostrophes droites
   partout, ici et dans DECISIONS.md.
