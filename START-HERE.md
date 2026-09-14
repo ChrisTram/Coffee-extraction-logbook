@@ -97,7 +97,7 @@ jamais à la main dans les CSV.
 | `js/data*.js` | Couche de données en six fichiers, façade `DATA` dans `data.js` |
 | `js/reglages.js` | Meilleurs réglages par café, calcul pur |
 | `js/charts.js` | Graphiques Chart.js, heatmap SVG, diagramme officiel SVG |
-| `js/ui-*.js` | L'interface, un fichier par écran plus le noyau |
+| `js/ui-*.js` | L’interface : un fichier par écran, plus le noyau et le chrono |
 | `js/app.js` | Démarrage, navigation, câblage global |
 | `js/demo-data.js` | Démo embarquée (générée, ne pas éditer à la main) |
 | `demo/` | La même démo en CSV |

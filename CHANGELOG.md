@@ -463,6 +463,13 @@ pourquoi est dans `DECISIONS.md`.
   Guide (boutiques, achats, messages vietnamiens), correction du bug
   d'avertissement au préremplissage.
 - v1 : site initial, 4 écrans, 2 CSV, démo, Chart.js local, thèmes.
+## 8.18
+
+Les familles de goûts se replient : deux visibles plus celles qui contiennent un
+goût coché, le reste sous un bouton, choix retenu. Le bloc « En bouche » passe de
+1 672 à 1 111 px. Le chronomètre sort dans js/ui-chrono.js, ui-saisie.js ayant
+dépassé le plafond de 1 200 lignes.
+
 ## 8.17
 
 Le chrono passe en haut de la colonne de droite, avant les fiches recette et

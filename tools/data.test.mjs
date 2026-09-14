@@ -22,7 +22,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
    contrôles qui cherchent une chaîne dans "l'interface" doivent les lire tous :
    sinon ils repassent au vert dès qu'un bout de code change de fichier, ce qui
    est exactement le moment où on aimerait qu'ils regardent. */
-const SOURCE_UI = ["js/ui-noyau.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-brouillon.js", "js/ui-rapide.js",
+const SOURCE_UI = ["js/ui-noyau.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-chrono.js", "js/ui-brouillon.js", "js/ui-rapide.js",
   "js/ui-historique.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/app.js"]
   .map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 /* demo-data.js n'est plus une balise script depuis la v7.56, mais le harnais le
@@ -733,7 +733,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
    est un second avis sur la meme question, et c'est comme ca qu'ils divergent. */
 {
   const saisie = readFileSync(join(ROOT, "js/ui-saisie.js"), "utf8");
-  const autres = ["js/ui-brouillon.js", "js/app.js", "js/ui-historique.js", "js/ui-tableau.js"]
+  const autres = ["js/ui-chrono.js", "js/ui-brouillon.js", "js/app.js", "js/ui-historique.js", "js/ui-tableau.js"]
     .filter(f => /\$\("#note-affichee"\)\s*\.\s*textContent\s*=/.test(readFileSync(join(ROOT, f), "utf8")));
   check("un seul fichier ecrit #note-affichee, et c'est celui de la saisie",
     autres.length === 0, autres.join(", "));

@@ -453,7 +453,7 @@
       }
       zoneC.innerHTML = '<div class="aside-titre"><h4>' + cafe.nom + "</h4>" + pastille + "</div>" + lignes.join("");
     }
-    majEtapesChrono(false);
+    UI.majEtapesChrono(false);
   }
 
   /* Explique le ratio affiché : quelle formule a servi, et pourquoi. Le calcul
@@ -566,170 +566,6 @@
     }
   }
 
-  // Chronomètre unique : Démarrer, Pause, Reprendre, Arrêter, Reset.
-  // Les paliers viennent de la recette sélectionnée, avec bip discret à chacun.
-  // L'écoulement se déduit : du palier "ouvrir" à l'arrêt du chrono.
-  const chrono = { etat: "arrete", accumule: 0, departTs: null, interval: null, passes: new Set() };
-  let audioCtx = null;
-
-  // Verrou d'écran pendant le chrono : l'écran du téléphone ne doit pas se
-  // verrouiller au milieu d'une extraction, les mains sont mouillées.
-  // L'API n'existe qu'en contexte sécurisé (https), donc PAS en file:// : on
-  // échoue en silence, ce n'est pas une fonction critique. Le système relâche
-  // le verrou dès que l'onglet passe en arrière plan, d'où la reprise sur
-  // visibilitychange.
-  let screenWakeLock = null;
-
-  async function acquireWakeLock() {
-    if (screenWakeLock || !("wakeLock" in navigator)) return;
-    try {
-      const lock = await navigator.wakeLock.request("screen");
-      lock.addEventListener("release", () => { if (screenWakeLock === lock) screenWakeLock = null; });
-      screenWakeLock = lock;
-    } catch (e) { /* refusé, ou onglet caché : tant pis */ }
-  }
-
-  function releaseWakeLock() {
-    if (!screenWakeLock) return;
-    const lock = screenWakeLock;
-    screenWakeLock = null;
-    lock.release().catch(() => { /* déjà relâché */ });
-  }
-
-  // Un seul point de vérité : le verrou suit l'état du chrono.
-  function syncWakeLock() {
-    if (chrono.etat === "encours") acquireWakeLock();
-    else releaseWakeLock();
-  }
-
-  function chronoEcoule() {
-    return (chrono.accumule + (chrono.etat === "encours" ? Date.now() - chrono.departTs : 0)) / 1000;
-  }
-
-  function paliersCourants() {
-    const r = trouverRecette($("#f-recette").value);
-    if (!r) return [];
-    return UI.etapesPour(r).filter(e => e.t !== null && e.t !== undefined);
-  }
-
-  function tOuverture() {
-    const pal = paliersCourants().find(e => /ouvr|open/i.test(e.texte));
-    return pal ? pal.t : null;
-  }
-
-  function jouerBip() {
-    if (!$("#chrono-bip").checked) return;
-    try {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const o = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
-      o.type = "sine";
-      o.frequency.value = 880;
-      g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.07, audioCtx.currentTime + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.28);
-      o.connect(g);
-      g.connect(audioCtx.destination);
-      o.start();
-      o.stop(audioCtx.currentTime + 0.3);
-    } catch (e) { /* audio indisponible */ }
-  }
-
-  function majEtapesChrono(avecBips) {
-    const s = chronoEcoule();
-    const paliers = paliersCourants();
-    const zone = $("#chrono-etapes");
-    if (!paliers.length) { zone.hidden = true; return; }
-    zone.hidden = false;
-    let courante = null, suivante = null;
-    paliers.forEach(pal => { if (pal.t <= s) courante = pal; else if (!suivante) suivante = pal; });
-    const texteCourant = courante
-      ? fmtTemps(courante.t) + " · " + courante.texte
-      : I18N.t("ch_pret");
-    $("#chrono-courante").textContent = texteCourant;
-    /* Le meme palier dans l'entete, pour qu'il se lise SANS deplier : sur
-       telephone le chrono est un bandeau replie colle en haut, et un bandeau qui
-       ne dit pas ou on en est ne fait que prendre de la place. Vide quand le
-       chrono ne tourne pas, sinon il annoncerait un palier qui n'a pas commence. */
-    const court = $("#chrono-palier-court");
-    if (court) court.textContent = chrono.etat === "arrete" ? "" : texteCourant;
-    if (suivante) {
-      $("#chrono-suivante").textContent = I18N.t("ch_suivante", {
-        t: fmtTemps(suivante.t), d: Math.max(0, Math.ceil(suivante.t - s)), texte: suivante.texte,
-      });
-    } else {
-      $("#chrono-suivante").textContent = courante ? I18N.t("ch_derniere") : "";
-    }
-    if (avecBips && chrono.etat === "encours") {
-      paliers.forEach(pal => {
-        if (pal.t > 0 && pal.t <= s && !chrono.passes.has(pal.t)) {
-          chrono.passes.add(pal.t);
-          jouerBip();
-        }
-      });
-    }
-  }
-
-  function chronoTic() {
-    $("#chrono-total").textContent = fmtTemps(Math.floor(chronoEcoule()));
-    majEtapesChrono(true);
-  }
-
-  function majBoutonsChrono() {
-    const b = $("#btn-chrono");
-    if (chrono.etat === "arrete") b.textContent = I18N.t("ch_demarrer");
-    else if (chrono.etat === "encours") b.textContent = I18N.t("ch_pause");
-    else b.textContent = I18N.t("ch_reprendre");
-    $("#btn-chrono-stop").hidden = chrono.etat === "arrete";
-    $("#btn-chrono-raz").hidden = chrono.etat === "arrete" && chronoEcoule() === 0;
-    $(".chrono").classList.toggle("en-cours", chrono.etat === "encours");
-    // Appelée à chaque transition du chrono, c'est le bon endroit pour aligner
-    // le verrou d'écran sans risque d'oubli dans une branche.
-    syncWakeLock();
-  }
-
-  function chronoPrincipal() {
-    if (chrono.etat === "arrete") {
-      chrono.accumule = 0;
-      chrono.passes.clear();
-      chrono.departTs = Date.now();
-      chrono.etat = "encours";
-      chrono.interval = setInterval(chronoTic, 200);
-    } else if (chrono.etat === "encours") {
-      chrono.accumule += Date.now() - chrono.departTs;
-      chrono.etat = "pause";
-      clearInterval(chrono.interval);
-    } else {
-      chrono.departTs = Date.now();
-      chrono.etat = "encours";
-      chrono.interval = setInterval(chronoTic, 200);
-    }
-    majBoutonsChrono();
-  }
-
-  function chronoArreter() {
-    if (chrono.etat === "arrete") return;
-    if (chrono.etat === "encours") chrono.accumule += Date.now() - chrono.departTs;
-    clearInterval(chrono.interval);
-    const total = Math.round(chrono.accumule / 1000);
-    chrono.etat = "arrete";
-    ecrireDuree("f-total", total);
-    const tOuv = tOuverture();
-    if (tOuv !== null && total > tOuv) ecrireDuree("f-ecoulement", total - tOuv);
-    majBoutonsChrono();
-    toast(I18N.t("t_temps"));
-  }
-
-  function chronoRaz() {
-    clearInterval(chrono.interval);
-    chrono.etat = "arrete";
-    chrono.accumule = 0;
-    chrono.departTs = null;
-    chrono.passes.clear();
-    $("#chrono-total").textContent = "0:00";
-    majEtapesChrono(false);
-    majBoutonsChrono();
-  }
 
   // Corrections des diagnostics cochés, une ligne chacune, sous les pilules.
   // Familles opposées de l'axe d'extraction : cocher une de chaque empile deux
@@ -786,6 +622,7 @@
       UI.planifierBrouillon();
       majCorrectionDiagnostic();
     });
+    /* Apres chaque clic sur une pastille, on recalcule : voir majFamillesVisibles. */
     $("#f-descripteurs").addEventListener("click", ev => {
       const b = ev.target.closest(".tag");
       if (!b || !b.dataset.tag) return;
@@ -813,12 +650,55 @@
     // Descripteurs groupés par famille de la roue des saveurs. Chaque tag
     // porte sa définition en infobulle (data-info, bulle CSS au survol).
     $("#f-descripteurs").innerHTML = DESCRIPTEURS_GROUPES.map(g =>
-      '<div class="tags-groupe"><span class="tags-groupe-nom">' + I18N.groupe(g.nom) + "</span>" +
+      '<div class="tags-groupe" data-groupe="' + g.nom + '"><span class="tags-groupe-nom">' +
+      I18N.groupe(g.nom) + "</span>" +
       '<div class="tags">' + g.tags.map(d =>
         '<button type="button" class="tag" aria-pressed="false" data-tag="' + d + '" data-info="' +
         I18N.tagInfo(d) + '">' + I18N.tag(d) + "</button>").join("") +
       "</div></div>").join("");
+    majFamillesVisibles();
+  }
 
+  /* COMBIEN DE FAMILLES RESTENT VISIBLES quand tout est replie. Deux, comme le
+     brief : assez pour comprendre qu'il y en a d'autres, assez peu pour que le
+     bloc tienne dans l'ecran. */
+  const FAMILLES_VISIBLES = 2;
+  const CLE_FAMILLES = "gouts-toutes-familles";
+
+  function toutesFamilles() {
+    try { return localStorage.getItem(CLE_FAMILLES) === "1"; } catch (e) { return false; }
+  }
+
+  function basculerFamilles(ouvrir) {
+    const veut = ouvrir === undefined ? !toutesFamilles() : !!ouvrir;
+    try { localStorage.setItem(CLE_FAMILLES, veut ? "1" : "0"); } catch (e) { /* navigation privee */ }
+    majFamillesVisibles();
+  }
+
+  /* QUELLES FAMILLES SE VOIENT. Une famille qui contient un gout coche reste
+     visible quoi qu'il arrive : cacher une pastille cochee, c'est faire croire
+     qu'elle ne l'est pas, et l'enregistrement suivant la garde pourtant. Les
+     deux premieres sont toujours la, le reste suit le bouton.
+
+     Appelee a chaque changement de selection, et pas seulement au premier
+     rendu : l'edition d'une tasse ancienne coche des gouts APRES la
+     construction des pastilles. */
+  function majFamillesVisibles() {
+    const zone = $("#f-descripteurs");
+    if (!zone) return;
+    const tout = toutesFamilles();
+    let caches = 0;
+    $$("#f-descripteurs .tags-groupe").forEach((g, i) => {
+      const coche = !!g.querySelector(".tag.actif");
+      const visible = tout || coche || i < FAMILLES_VISIBLES;
+      g.hidden = !visible;
+      if (!visible) caches++;
+    });
+    const b = $("#gouts-plus");
+    if (!b) return;
+    b.hidden = !tout && caches === 0;
+    b.textContent = tout ? I18N.t("gouts_moins") : I18N.t("gouts_plus", { n: caches });
+    b.setAttribute("aria-expanded", tout ? "true" : "false");
   }
 
   /* Appelée à CHAQUE arrivée sur l'écran Saisie pour une nouvelle tasse. La date
@@ -926,8 +806,9 @@
     majLait();
     $$("#f-diagnostic .pilule").forEach(x => basculerEtat(x, false));
     $$("#f-descripteurs .tag").forEach(x => basculerEtat(x, false));
+    majFamillesVisibles();
     $("#diagnostic-correction").textContent = "";
-    chronoRaz();
+    UI.chronoRaz();
     /* EN DERNIER, et c'est le point important : les lignes ci-dessus posent les
        replis, la recette a le dernier mot. Sans cet appel le formulaire vierge
        restait vide, et les valeurs par défaut réglées dans Paramètres
@@ -978,6 +859,8 @@
     majCorrectionDiagnostic();
     saisie.descripteurs = new Set((ext.descripteurs || "").split("|").filter(Boolean));
     $$("#f-descripteurs .tag").forEach(x => x.classList.toggle("actif", saisie.descripteurs.has(x.dataset.tag)));
+    /* Une famille qui vient de recevoir un gout coche doit reapparaitre. */
+    majFamillesVisibles();
     $("#saisie-titre").textContent = duplication ? I18N.t("s_dupliquee") : I18N.t("s_modifier");
     $("#btn-enregistrer").textContent = duplication ? I18N.t("s_enregistrer") : I18N.t("s_enregistrer_modif");
     $("#btn-annuler-edition").hidden = duplication;
@@ -1036,30 +919,6 @@
      Chaque écran câble ce qui lui appartient : le formulaire, le chrono, les
      options et l'éditeur de tasses vivent ici, et une fonction de câblage de
      quatre cents lignes dans app.js n'existe plus. */
-  /* LE CHRONO REPLIABLE.
-
-     Il vit sous la fiche recette, replie, parce qu'il ne sert que pendant
-     l'extraction alors que la recette se relit a chaque etape.
-
-     Deux regles. Le temps reste lisible replie : c'est l'entete qui le porte,
-     un chrono qu'il faut deplier pour lire ne sert a rien. Et il s'ouvre tout
-     seul au demarrage et refuse de se replier tant qu'il tourne : se refermer
-     sur un chrono en marche, c'est perdre les paliers et le bouton d'arret au
-     moment precis ou on en a besoin. */
-  function chronoTourne() {
-    return !$("#btn-chrono-stop").hidden;
-  }
-
-  function basculerChrono(ouvrir) {
-    const corps = $("#chrono-corps");
-    if (!corps) return;
-    const veut = ouvrir === undefined ? corps.hidden : ouvrir;
-    /* On ne referme pas un chrono en marche. */
-    const etat = !veut && chronoTourne() ? true : veut;
-    corps.hidden = !etat;
-    $("#chrono-widget").classList.toggle("ouvert", etat);
-    $("#chrono-basculer").setAttribute("aria-expanded", etat ? "true" : "false");
-  }
 
   function cablerSaisie() {
     $$(".btn-methode").forEach(b => b.addEventListener("click", () => {
@@ -1078,7 +937,7 @@
       $("#" + id).addEventListener("input", () => { majLive(); majAvertissements(); }));
     // majAvertissements redessine le panneau latéral, le chrono a besoin d'un
     // rappel explicite : ses paliers sont mis à l'échelle de l'eau saisie.
-    $("#f-eau").addEventListener("input", () => majEtapesChrono(false));
+    $("#f-eau").addEventListener("input", () => UI.majEtapesChrono(false));
     // Le volume extrait pilote le préremplissage du lait, il doit le rafraîchir.
     $("#f-volume").addEventListener("input", majLait);
     ["f-chauffe-min", "f-chauffe-sec"].forEach(id => $("#" + id).addEventListener("input", surChauffe));
@@ -1096,19 +955,20 @@
         majAffichageNote();
       }));
     $("#f-note-vide").addEventListener("change", majAffichageNote);
-    $("#chrono-basculer").addEventListener("click", () => basculerChrono());
+    $("#chrono-basculer").addEventListener("click", () => UI.basculerChrono());
     /* Demarrer OUVRE le chrono : on vient de lancer une extraction, les paliers
        et le bouton d'arret doivent etre sous la main sans un clic de plus. */
-    $("#btn-chrono").addEventListener("click", () => { basculerChrono(true); });
-    $("#btn-chrono").addEventListener("click", chronoPrincipal);
-    $("#btn-chrono-stop").addEventListener("click", chronoArreter);
-    $("#btn-chrono-raz").addEventListener("click", chronoRaz);
+    $("#btn-chrono").addEventListener("click", () => { UI.basculerChrono(true); });
+    $("#btn-chrono").addEventListener("click", UI.chronoPrincipal);
+    $("#btn-chrono-stop").addEventListener("click", UI.chronoArreter);
+    $("#btn-chrono-raz").addEventListener("click", UI.chronoRaz);
     // UNE SEULE FOIS : les conteneurs survivent aux reconstructions de pilules,
     // les attacher depuis construirePilules empilerait un jeu par bascule de langue.
     brancherPilules();
     brancherCurseurs();
     activerAppuiLong($("#f-diagnostic"));
     activerAppuiLong($("#f-descripteurs"));
+    $("#gouts-plus").addEventListener("click", () => basculerFamilles());
     $("#chrono-bip").addEventListener("change", () => {
       try { localStorage.setItem("bips", $("#chrono-bip").checked ? "1" : "0"); } catch (e) { /* tant pis */ }
     });
@@ -1161,19 +1021,14 @@
 
   // Mis à disposition des autres écrans.
   Object.assign(UI, {
-    DIAGS_SOUS_EXTRAIT,
-    DIAGS_SUR_EXTRAIT, DIAG_INEGALE, acquireWakeLock, audioCtx,
-    brancherPilules, cablerSaisie, cafeCourantMoulu,
-    cafesSelectionnables, chargerExtractionDansSaisie, choisirMethode, chrono, chronoArreter,
-    chronoEcoule, chronoPrincipal, chronoRaz, chronoTic, construirePilules, ecrireDuree, enregistrerSaisie, infoDiagnostic,
-    basculerChrono, jouerBip, lireDuree, majAffichageNote, majAgePaquet, majAgitationDepuisRecette,
-    majAsideSaisie, majAvertissements, majBoutonsChrono, majChampPrechauffe,
-    majCorrectionDiagnostic, majEtapesChrono, majLait, majLive,
-    noteSaisie, paliersCourants, prefillDepuisRecette,
-    brancherCurseurs, majCurseurs, marquerDateTouchee, rafraichirDateSaisie,
-    majTempHint, reinitialiserSaisie, releaseWakeLock, surChauffe, surPrechauffe,
+    basculerFamilles, brancherCurseurs, brancherPilules, cablerSaisie, cafeCourantMoulu,
+    cafesSelectionnables, chargerExtractionDansSaisie, choisirMethode, construirePilules,
+    DIAG_INEGALE, DIAGS_SOUS_EXTRAIT, DIAGS_SUR_EXTRAIT, ecrireDuree, enregistrerSaisie,
+    infoDiagnostic, lireDuree, majAffichageNote, majAgePaquet, majAgitationDepuisRecette,
+    majAsideSaisie, majAvertissements, majChampPrechauffe, majCorrectionDiagnostic,
+    majCurseurs, majFamillesVisibles, majLait, majLive, majTempHint, marquerDateTouchee,
+    noteSaisie, prefillDepuisRecette, rafraichirDateSaisie, reinitialiserSaisie,
     remplirSelectCafes, remplirSelectRecettes, remplirSelectTasses, rendreTassesEditeur,
-    saisie, screenWakeLock, surChoixCafe,
-    syncWakeLock, tOuverture, volumeEstime,
+    saisie, surChauffe, surChoixCafe, surPrechauffe, volumeEstime,
   });
 })();

@@ -193,6 +193,8 @@ const I18N_EN = {
     h_res_ratees: "botched",
     h_res_aucune: "none",
     hm_titre: "The last {n} weeks",
+    gouts_plus: "all the families ({n} more)",
+    gouts_moins: "fewer families",
     d_temps: "Total time",
     d_feu: "Flame setting",
     q_repris: "{v}: taken from the recipe",

@@ -70,6 +70,7 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/ui-noyau.js` | outils d'interface partagés, thème, navigation. Définit `UI`. |
 | `js/ui-tableau.js` | tableau de bord, insights, calendrier |
 | `js/ui-saisie.js` | formulaire, chronomètre |
+| `js/ui-chrono.js` | chronomètre de la saisie : paliers, bips, verrou d’écran, widget repliable |
 | `js/ui-brouillon.js` | brouillon de saisie en localStorage, chargé après ui-saisie.js |
 | `js/ui-rapide.js` | panneau de saisie rapide |
 | `js/ui-historique.js` | tableau, filtres, tri, comparateur, écran Mes meilleurs réglages |

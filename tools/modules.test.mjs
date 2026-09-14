@@ -133,7 +133,7 @@ function lexer(src) {
 const OPS = ["...", "===", "!==", "**=", "&&=", "||=", "??=", "=>", "==", "!=", "<=", ">=",
   "&&", "||", "??", "?.", "++", "--", "+=", "-=", "*=", "/=", "%=", "**", "<<", ">>"];
 
-const FICHIERS = ["js/ui-noyau.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-brouillon.js", "js/ui-rapide.js",
+const FICHIERS = ["js/ui-noyau.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-chrono.js", "js/ui-brouillon.js", "js/ui-rapide.js",
   "js/ui-historique.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/app.js"];
 
 const MOTS_CLES = new Set(["if","else","for","while","do","return","function","const","let","var",

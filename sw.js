@@ -25,7 +25,7 @@
  *    la deconnexion cessent de fonctionner.
  */
 
-const VERSION = "8.17";
+const VERSION = "8.18";
 const CACHE_NAME = "carnet-extraction";
 
 const versionnee = url => url + "?v=" + VERSION;
@@ -76,6 +76,7 @@ const PRECACHE_URLS = [
   "./js/ui-noyau.js",
   "./js/ui-tableau.js",
   "./js/ui-saisie.js",
+  "./js/ui-chrono.js",
   "./js/ui-brouillon.js",
   "./js/ui-rapide.js",
   "./js/ui-historique.js",
