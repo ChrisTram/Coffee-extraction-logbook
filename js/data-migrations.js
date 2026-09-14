@@ -37,7 +37,7 @@ const DATA_MIGRATIONS = (() => {
 
        Chaque pas ne touche QUE la valeur semée d'avant. Un pas qui écraserait un
        réglage choisi volontairement serait un bug, pas une migration. */
-    const SCHEMA_ACTUEL = 11;
+    const SCHEMA_ACTUEL = 12;
 
     // Rattrapage de la puissance de feu des recettes Brikka : l'échelle de Chris a
     // bougé deux fois, 3 puis 4 puis 2.
@@ -236,6 +236,25 @@ const DATA_MIGRATIONS = (() => {
       if (Number(r.ebullition_s) !== 240) return false;
       state.reglages = [estampiller(normaliserReglages({ ...r, ebullition_s: 120 }))];
       return true;
+    } },
+
+    /* Hoffmann, Better 1 Cup : le tourbillon se fait PENDANT le premier bloom,
+       pour mouiller tout le lit, et le pas de la fiche ne le disait pas assez
+       (demande de Chris, 14 septembre 2026). Ciblé sur l'ancien texte : une fiche
+       réécrite à la main n'est pas touchée. */
+    { v: 12, nom: "Hoffmann, tourbillon pendant le bloom", appliquer: () => {
+      const avant = "Bloom : verser 50 g lentement, en quinze secondes environ, vanne OUVERTE. Tourbillon doux de la carafe.";
+      const apres = "Bloom : verser 50 g lentement, en quinze secondes environ, vanne OUVERTE. PENDANT le bloom, tourbillon doux du porte-filtre pour mouiller tout le lit, aucune poche sèche.";
+      let touche = false;
+      state.recettes.forEach(rec => {
+        if (rec.id !== "hoffmann-1cup") return;
+        const etapes = (rec.etapes || []).map(e => (e.texte === avant ? { ...e, texte: apres } : e));
+        if (etapes.every((e, i) => e === rec.etapes[i])) return;
+        rec.etapes = etapes;
+        estampiller(rec);
+        touche = true;
+      });
+      return touche;
     } },
     ];
 

@@ -137,7 +137,7 @@ const RECETTES_DEPART = [
     totalTexte: "total 2:45 à 3:15",
     lait: false,
     etapes: [
-      { t: 0,   texte: "Bloom : verser 50 g lentement, en quinze secondes environ, vanne OUVERTE. Tourbillon doux de la carafe." },
+      { t: 0,   texte: "Bloom : verser 50 g lentement, en quinze secondes environ, vanne OUVERTE. PENDANT le bloom, tourbillon doux du porte-filtre pour mouiller tout le lit, aucune poche sèche." },
       { t: 45,  texte: "Verser jusqu'à 100 g, en dix secondes." },
       { t: 70,  texte: "Verser jusqu'à 150 g." },
       { t: 90,  texte: "Verser jusqu'à 200 g." },

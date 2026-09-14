@@ -5,6 +5,9 @@ de page du site est celui du `<meta name="app-version">` d'`index.html`, posé
 par `node tools/bump_version.mjs X`. Chaque entrée dit CE QUI a changé ; le
 pourquoi est dans `DECISIONS.md`.
 
+- v7.99 : recette Better 1 Cup (Hoffmann), le premier pas dit désormais que le
+  tourbillon se fait PENDANT le bloom, pour mouiller tout le lit. Pas de schéma
+  v12 pour les fiches déjà semées, ciblé sur l'ancien texte.
 - v7.98 : bouilloire recalée. Le 4:00 inventé des premières versions, qui
   s'était écrit dans les réglages synchronisés, passe à 2:00 par un pas de schéma
   (v11), calé sur l'observation de Chris : petites bulles qui montent vers 1:30,

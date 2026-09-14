@@ -540,6 +540,23 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("une bouilloire chronometree a la main n'est pas ecrasee", Number(DATA.reglagesCourants().ebullition_s) === 300,
     String(DATA.reglagesCourants().ebullition_s));
 
+  // Pas v12 : le bloom Hoffmann dit le tourbillon pendant le bloom. Une fiche
+  // reecrite a la main garde son texte.
+  avant();
+  DATA.state.reglages = [DATA.normaliserReglages({ schema_version: 11 })];
+  const hof = () => DATA.state.recettes.find(r => r.id === "hoffmann-1cup");
+  const semerHof = texte => DATA.state.recettes.push({ id: "hoffmann-1cup", nom: "Better 1 Cup (Hoffmann)", methode: "Switch",
+    famille: "", eau: 250, temp: 95, puissance_feu: "", dial: "1.5.0", maj_le: 0, etapes: [{ t: 0, texte }] });
+  semerHof("Bloom : verser 50 g lentement, en quinze secondes environ, vanne OUVERTE. Tourbillon doux de la carafe.");
+  DATA.migrerDonnees();
+  check("le bloom Hoffmann dit le tourbillon pendant le bloom",
+    hof().etapes[0].texte.includes("PENDANT le bloom"), hof().etapes[0].texte);
+  avant();
+  DATA.state.reglages = [DATA.normaliserReglages({ schema_version: 11 })];
+  semerHof("Mon bloom a moi.");
+  DATA.migrerDonnees();
+  check("un bloom reecrit a la main n'est pas touche", hof().etapes[0].texte === "Mon bloom a moi.");
+
   // Plus aucun drapeau par appareil dans la couche de donnees.
   const data = SOURCE_DATA;
   const bloc = data.slice(data.indexOf("const PAS_DE_SCHEMA"), data.indexOf("function migrerDonnees"));
