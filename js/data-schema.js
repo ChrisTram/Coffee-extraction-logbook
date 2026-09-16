@@ -181,11 +181,17 @@ const DATA_SCHEMA = (() => {
       schema_version: nombre(r && r.schema_version, 0, 999, 0),
       /* Temps que met la bouilloire de Chris à bouillir depuis l'eau du robinet,
          en secondes. Décrit son MATÉRIEL, donc synchronisé comme la molette. Sert
-         à estimer la température du Switch depuis le temps de chauffe. ZÉRO veut
-         dire « pas encore chronométré » : aucune estimation n'est faite tant que
-         Chris n'a pas mesuré sa bouilloire, une valeur d'usine inventée aurait
-         produit des degrés faux d'apparence sérieuse. */
-      ebullition_s: nombre(r && r.ebullition_s, 30, 1800, 0),
+         à estimer la température du Switch depuis le temps de chauffe.
+
+         120 SECONDES par défaut, et non zéro. Le choix d'origine était zéro, avec
+         une raison valable : sans mesure, une valeur d'usine INVENTÉE produirait
+         des degrés faux d'apparence sérieuse. Son prix était que la fonction
+         restait éteinte tant qu'on n'allait pas la régler, et rien ne le disait
+         au moment où on tapait un temps de chauffe. Chris a depuis mesuré sa
+         bouilloire, 2 minutes du robinet au gros bouillon : la valeur n'est plus
+         inventée, et le raisonnement d'origine ne s'applique plus. C'est CE
+         défaut qui alimente replis.ebullition, pas la constante d'interface. */
+      ebullition_s: nombre(r && r.ebullition_s, 30, 1800, 120),
     };
   }
 

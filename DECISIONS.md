@@ -131,6 +131,21 @@ tape et `inputmode="numeric"` donne deja le bon clavier au telephone. Un balayag
 de tous les champs visibles, sur les six ecrans et les deux machines, confirme
 que c'etait le seul du site.
 
+**Le repli de la bouilloire passe de zéro à deux minutes.** Une session
+précédente avait choisi zéro, avec une raison valable : sans mesure, une valeur
+d'usine INVENTÉE produirait des degrés faux d'apparence sérieuse. Son prix était
+que `temperatureDepuisChauffe()` refuse de calculer sans temps d'ébullition, donc
+l'estimation ne partait JAMAIS tant qu'on n'allait pas la régler dans Paramètres,
+ce que rien ne disait au moment où on tapait un temps de chauffe. Chris a mesuré
+sa bouilloire, 2 minutes du robinet au gros bouillon et 1 min 30 au stade des
+petites bulles qui remontent : la valeur n'est plus inventée, le raisonnement
+d'origine ne s'applique plus. Le modèle linéaire donne 82 degrés à 1 min 30, ce
+qui tombe dans la bande observée, et un test le verrouille.
+
+Le défaut qui compte est celui du SCHÉMA (`data-schema.js`), pas la constante
+d'interface : c'est lui qui alimente `replis.ebullition`. Changer la constante
+seule ne faisait rien, ce qui a coûté un aller-retour.
+
 **Le chrono est repliable, et passe sous la fiche recette.** Demande de Chris :
 la recette se relit à chaque étape, le chrono ne sert que pendant l'extraction,
 et c'est pourtant lui qui occupait le haut de la colonne. Deux règles tiennent ce

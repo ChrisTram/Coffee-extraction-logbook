@@ -79,6 +79,13 @@
      a rien à regrouper. */
   const rendreHistoriqueDifferee = antiRebond(() => rendreHistorique());
 
+  /* L'etat visible du controle segmente, aligne sur le <select> qui fait foi. */
+  function majSegmentMethode() {
+    const v = $("#h-methode") ? $("#h-methode").value : "";
+    $$(".filtre-methode .seg").forEach(b =>
+      b.setAttribute("aria-pressed", b.dataset.methode === v ? "true" : "false"));
+  }
+
   /* EN CARTES ou en table : le seuil est celui du reste du site, 1024 px. */
   function enCartes() {
     return typeof matchMedia === "function" && matchMedia("(max-width: 1023px)").matches;
@@ -591,6 +598,18 @@
       }
     };
     [$("#h-corps"), $("#h-cartes")].forEach(z => z.addEventListener("click", surClicHistorique));
+
+    /* Le controle segmente de la machine PILOTE le <select>, qui reste la source
+       de verite : tout le filtrage, la reinitialisation et l'export lisent lui.
+       Deux sources pour un meme filtre, c'est deux etats qui divergent. */
+    $$(".filtre-methode .seg").forEach(b => b.addEventListener("click", () => {
+      const sel = $("#h-methode");
+      sel.value = b.dataset.methode;
+      sel.dispatchEvent(new Event("input", { bubbles: true }));
+      majSegmentMethode();
+    }));
+    /* La reinitialisation passe par le select : le segment doit suivre. */
+    $("#h-reinitialiser").addEventListener("click", () => setTimeout(majSegmentMethode, 0));
     $("#comparaison-ouvrir").addEventListener("click", ouvrirComparaison);
     $("#comparaison-vider").addEventListener("click", () => { comparaison.clear(); rendreHistorique(); });
   }
@@ -599,6 +618,7 @@
     FILTRES, basculerComparaison, cablerHistorique, carteReglage, champsComparaison, comparaison, detailsOuverts,
     filtrerHistorique, ligneDetail, ligneHistorique, majBarreComparaison, ouvrirComparaison,
     actionsExtraction, carteExtraction, commentaireHistorique, detailContenu, enCartes,
+    majSegmentMethode,
     rendreCartes,
     goutsHistorique, remplirFiltres, rendreHistorique, rendreHistoriqueDifferee, rendreReglages,
     rendreResume, sansAccents, texteCherchable, titreDeJour, tri, valeurTri,

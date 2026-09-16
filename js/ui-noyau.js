@@ -382,7 +382,12 @@ const UI = (() => {
   /* Temps d'ébullition de la bouilloire, en secondes, depuis l'eau du robinet.
      ZÉRO tant que Chris ne l'a pas chronométrée : sans mesure, pas
      d'estimation, l'aide de saisie demande de la faire une fois. */
-  const EBULLITION_USINE = 0;
+  /* DEUX MINUTES, mesurees par Chris sur sa bouilloire : eau du robinet au gros
+     bouillon. Valait 0 jusqu'ici, et le modele refuse de calculer sans temps
+     d'ebullition : l'estimation du degre depuis le temps de chauffe ne partait
+     donc JAMAIS tant qu'on n'etait pas alle la regler dans Parametres. Un repli
+     d'usine juste vaut mieux qu'un repli neutre qui desactive la fonction. */
+  const EBULLITION_USINE = 120;
   const replis = { dose: DOSE_REPLI_USINE, feu: FEU_REPLI_USINE, molette: MOLETTE_REPLI_USINE, ebullition: EBULLITION_USINE };
 
   function chargerReplis() {

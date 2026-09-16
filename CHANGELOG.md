@@ -5,6 +5,13 @@ de page du site est celui du `<meta name="app-version">` d'`index.html`, posé
 par `node tools/bump_version.mjs X`. Chaque entrée dit CE QUI a changé ; le
 pourquoi est dans `DECISIONS.md`.
 
+- v8.24 : le calcul de la température depuis le temps de chauffe fonctionne
+  enfin, le défaut du temps d'ébullition valait zéro et éteignait la fonction ;
+  2 minutes, mesurées par Chris. Le paragraphe qui réclamait de chronométrer sa
+  bouilloire disparaît. Les familles de goûts sont ouvertes par défaut. Le
+  tableau de bord montre huit extractions et le lien colle à la table. Entête de
+  l'historique refait : machine en contrôle segmenté, menus à chevron, bandeau
+  résumé serré.
 - v8.23 : DOCUMENTATION remise au niveau du code : date de mise à jour, entête
   disparue, et deux sections neuves pour le tableau de bord et l'historique.
 - v8.22 : CHANGELOG remis au format du fichier, les vingt-deux entrées de la

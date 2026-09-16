@@ -965,7 +965,9 @@ html[data-theme="sombre"] .carte-sombre {
 .grille-tableau > .carte { display: flex; flex-direction: column; }
 .grille-tableau > .carte > .canvas-h240,
 .grille-tableau > .carte > .canvas-h200 { flex: 1; min-height: 200px; }
-.grille-tableau > .carte > .lien-carte { margin-top: auto; padding-top: 12px; }
+/* Le lien SUIT son contenu, il n'est plus pousse en bas de la carte etiree :
+   margin-top: auto creusait un grand blanc entre la derniere ligne et le lien. */
+.grille-tableau > .carte > .lien-carte { margin-top: 12px; align-self: flex-start; }
 .grille-tableau > * { min-width: 0; }
 .col-2 { grid-column: span 2; }
 
@@ -2968,6 +2970,26 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   color: var(--encre);
   max-width: 160px;
 }
+/* La fleche du systeme est retiree au profit d'un chevron dessine : celle du
+   navigateur change de dessin sur chaque plateforme et se colle au bord. */
+.historique-filtres .champ select {
+  appearance: none;
+  padding-right: 16px;
+  cursor: pointer;
+}
+.historique-filtres .champ:has(select) { position: relative; cursor: pointer; }
+.historique-filtres .champ:has(select)::after {
+  content: "";
+  position: absolute;
+  right: 14px;
+  width: 7px; height: 7px;
+  border-right: 1.6px solid var(--attenue);
+  border-bottom: 1.6px solid var(--attenue);
+  transform: translateY(-2px) rotate(45deg);
+  pointer-events: none;
+}
+.historique-filtres .champ:hover { border-color: var(--accent); }
+.historique-filtres .champ:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-fond); }
 /* Les champs de date portent leur propre icone, ils ont besoin d'un peu d'air. */
 .historique-filtres .champ input[type="date"] { min-width: 118px; }
 .historique-filtres .champ input[type="number"] { width: 3.2rem; }
@@ -3255,3 +3277,92 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   border-radius: var(--rayon-petit);
 }
 .h-carte-detail .detail-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 0; background: none; }
+
+
+/* ---------- Entete de l'historique, refait ---------- */
+
+/* La MACHINE en controle segmente : le filtre le plus utilise se lit et se
+   change sans ouvrir de menu. Le <select> qui le pilote reste dans la page,
+   hors ecran, parce que c'est lui la source de verite du filtrage. */
+.filtre-methode {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--panneau-2);
+  border-radius: var(--rayon-pastille);
+}
+.filtre-methode .seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 14px;
+  min-height: calc(var(--hauteur-controle) - 6px);
+  border: none;
+  border-radius: var(--rayon-pastille);
+  background: transparent;
+  color: var(--attenue);
+  font: inherit;
+  font-size: 0.86rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition), color var(--transition);
+}
+.filtre-methode .seg-brikka::before,
+.filtre-methode .seg-switch::before {
+  content: "";
+  width: 8px; height: 8px;
+  border-radius: 999px;
+}
+.filtre-methode .seg-brikka::before { background: var(--brikka); }
+.filtre-methode .seg-switch::before { background: var(--switch); }
+.filtre-methode .seg:hover { color: var(--encre); }
+.filtre-methode .seg[aria-pressed="true"] {
+  background: var(--panneau);
+  color: var(--encre);
+  box-shadow: 0 1px 3px rgba(38, 25, 15, 0.13);
+}
+
+/* LE BANDEAU RESUME, serre. Il etalait quatre chiffres sur 990 px avec un
+   auto-fit : des colonnes de 250 px pour un nombre a deux chiffres, donc du
+   vide partout. Les items se dimensionnent a leur contenu, cales a gauche, et
+   un filet les separe. */
+.historique-resume {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0;
+  padding: 14px 22px;
+}
+.resume-item {
+  padding: 2px 30px;
+  border-left: 1px solid var(--lignes);
+  min-width: 0;
+}
+.resume-item:first-child { padding-left: 0; border-left: none; }
+.resume-valeur { font-size: 1.85rem; line-height: 1.05; }
+.resume-libelle {
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.resume-note { max-width: 200px; margin-top: 2px; }
+
+@media (max-width: 700px) {
+  .resume-item { padding: 2px 16px; }
+  .filtre-methode { width: 100%; }
+  .filtre-methode .seg { flex: 1; justify-content: center; }
+}
+
+
+/* Les EN-TETES passent a la ligne au lieu de se couper. « Goûts et diagnostic »
+   demandait 171 px pour 135 offerts et devenait « Goûts et diag… » ; les
+   cellules, elles, gardent leurs points de suspension, parce qu un nom de cafe
+   tronque reste reconnaissable la ou un intitule de colonne ne l est plus. */
+.table-historique thead th {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  vertical-align: bottom;
+  line-height: 1.2;
+}

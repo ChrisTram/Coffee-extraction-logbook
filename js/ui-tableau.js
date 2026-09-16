@@ -613,7 +613,10 @@
     CHARTS.barresHorizontales("g-recettes", itemsRecettes, couleursRecettes, I18N.t("axe_note_moy"), 10);
 
     // 5 dernières
-    const dernieres = [...exts].sort((a, b) => b.date_heure.localeCompare(a.date_heure)).slice(0, 5);
+    /* HUIT et non cinq : la carte s'etire a la hauteur de sa rangee, et cinq
+       lignes y laissaient un grand blanc. Des lignes valent mieux que du vide. */
+    const dernieres = [...exts].sort((a, b) => b.date_heure.localeCompare(a.date_heure))
+      .slice(0, DERNIERES_AFFICHEES);
     // Chaque ligne ouvre l'édition de son extraction. role et tabindex plutôt
     // qu'un vrai bouton : le contenu est structuré (div, span) et un bouton n'a
     // pas le droit d'en contenir.
@@ -751,6 +754,7 @@
      avait la place et ne disait rien de ce que la tasse avait en bouche, alors que
      c'est le sujet du carnet. Les valeurs stockées sont françaises, l'affichage
      passe par I18N.tag. */
+  const DERNIERES_AFFICHEES = 8;
   const MAX_GOUTS_DERNIERE = 4;
   function goutsDerniere(e) {
     const tags = String(e.descripteurs || "").split("|").filter(Boolean);
@@ -817,7 +821,7 @@
     MIN_GAP, MIN_SAMPLE, MIN_TASSES_GOUT, PIRES_GOUTS, SEMAINES_HEATMAP, TOP_GOUTS,
     bestOfGroups, cablerTableau, causeDuelVide, causeGoutsVide, causeMoutureVide, computeInsights,
     insightAgePaquet, insightMoment, insightPuissance, insightRecettes, insightsParCafe,
-    majCarteVide, mesuresCourtes, note1, rendreGouts, rendreInsights, rendreStatsHeatmap, rendreTableau,
+    DERNIERES_AFFICHEES, majCarteVide, mesuresCourtes, note1, rendreGouts, rendreInsights, rendreStatsHeatmap, rendreTableau,
     statsHeatmap,
   });
 })();

@@ -311,8 +311,11 @@
     const e = replis.ebullition;
     const s = lireDuree("f-chauffe");
     const t = $("#f-temp").value;
-    // Bouilloire jamais chronométrée : on le dit, on n'invente pas de degrés.
-    if (!(e > 0)) { poserTexte(hint, I18N.t("temp_sans_bouilloire")); return; }
+    /* Sans temps d'ébullition il n'y a rien à dire : le repli d'usine en pose
+       un, et Paramètres permet de le corriger. L'ancien paragraphe qui demandait
+       d'aller chronométrer sa bouilloire déformait la mise en page pour un
+       réglage qu'on fait une fois. */
+    if (!(e > 0)) { poserTexte(hint, ""); return; }
     if (s !== "") {
       poserTexte(hint, I18N.t("temp_estimee", { d: fmtTemps(s), t: temperatureDepuisChauffe(s, e) }));
     } else if (t !== "") {
@@ -665,8 +668,11 @@
   const FAMILLES_VISIBLES = 2;
   const CLE_FAMILLES = "gouts-toutes-familles";
 
+  /* OUVERT PAR DEFAUT. Le repli reste, mais il se choisit : Chris ne veut pas
+     avoir a cliquer pour voir sa propre liste. Seul un « 0 » explicitement
+     enregistre replie les familles. */
   function toutesFamilles() {
-    try { return localStorage.getItem(CLE_FAMILLES) === "1"; } catch (e) { return false; }
+    try { return localStorage.getItem(CLE_FAMILLES) !== "0"; } catch (e) { return true; }
   }
 
   function basculerFamilles(ouvrir) {

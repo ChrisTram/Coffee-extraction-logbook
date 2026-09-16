@@ -875,6 +875,31 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     entete.includes('id="chrono-total"'));
   check("et le palier en cours aussi", entete.includes('id="chrono-palier-court"'));
 }
+/* LE REPLI D'USINE DE LA BOUILLOIRE NE PEUT PAS ETRE ZERO.
+
+   temperatureDepuisChauffe() refuse de calculer sans temps d'ebullition
+   (`!(e > 0)`). Avec un repli a zero, l'estimation du degre depuis le temps de
+   chauffe ne partait donc JAMAIS : la fonction existait, elle etait juste
+   eteinte, et rien ne le disait au moment ou on tapait un temps.
+
+   Chris a mesure sa bouilloire : 2 minutes du robinet au gros bouillon, et
+   1 min 30 au stade des petites bulles qui remontent, soit 80 a 90 degres. Le
+   controle verrouille les deux : un repli non nul, et un modele qui tombe dans
+   la bande observee. */
+{
+  const noyau = readFileSync(join(ROOT, "js/ui-noyau.js"), "utf8");
+  const repli = Number((noyau.match(/EBULLITION_USINE\s*=\s*(\d+)/) || [])[1]);
+  check("le temps d'ebullition d'usine n'est pas nul, sinon le calcul est eteint",
+    repli > 0, String(repli));
+  check("et vaut les 2 minutes mesurees par Chris", repli === 120, String(repli));
+
+  const t90 = temperatureDepuisChauffe(90, repli);
+  check("a 1 min 30, le modele tombe dans la bande des petites bulles (80 a 90)",
+    t90 >= 78 && t90 <= 90, String(t90));
+  check("et a 2 minutes il annonce l'ebullition",
+    temperatureDepuisChauffe(repli, repli) === 100,
+    String(temperatureDepuisChauffe(repli, repli)));
+}
 /* AUCUN BOUTON MORT.
 
    "Charger la demonstration", sur le tableau de bord vide, ne faisait rien
@@ -999,10 +1024,19 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("chauffe_s est une colonne, en fin de ligne, apres ratee",
     DATA.EXT_COLS.indexOf("chauffe_s") === DATA.EXT_COLS.length - 1 && DATA.EXT_COLS.includes("temperature_c"));
   check("le temps d'ebullition de la bouilloire est un reglage synchronise",
-    DATA.REGLAGE_COLS.includes("ebullition_s") && DATA.normaliserReglages({}).ebullition_s === 0);
-  check("zero veut dire pas encore chronometree : aucune estimation", temperatureDepuisChauffe(120, 0) === "" && chauffePourTemperature(92, 0) === "");
-  check("un temps d'ebullition absurde retombe sur non mesure",
-    DATA.normaliserReglages({ ebullition_s: 5 }).ebullition_s === 0 &&
+    DATA.REGLAGE_COLS.includes("ebullition_s"));
+  /* 120 s par defaut depuis que Chris a mesure sa bouilloire. Zero laissait la
+     fonction eteinte : temperatureDepuisChauffe refuse de calculer sans temps
+     d'ebullition, donc l'estimation ne partait jamais. */
+  check("le defaut est la mesure de Chris, 2 minutes",
+    DATA.normaliserReglages({}).ebullition_s === 120,
+    String(DATA.normaliserReglages({}).ebullition_s));
+  /* La fonction refuse toujours de calculer sans temps : c'est sa garde, et
+     elle reste utile pour une donnee ancienne ou volontairement mise a zero. */
+  check("sans temps d'ebullition, aucune estimation n'est inventee",
+    temperatureDepuisChauffe(120, 0) === "" && chauffePourTemperature(92, 0) === "");
+  check("un temps d'ebullition absurde retombe sur la mesure, pas sur zero",
+    DATA.normaliserReglages({ ebullition_s: 5 }).ebullition_s === 120 &&
     DATA.normaliserReglages({ ebullition_s: 300 }).ebullition_s === 300);
 
   // Le modele : lineaire de l'eau du robinet (28) a l'ebullition (100).

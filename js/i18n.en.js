@@ -511,6 +511,8 @@ const I18N_EN = {
       "Enregistrer le sachet": "Save bag",
       "Synchroniser maintenant": "Sync now",
       "Brikka, Switch et Timemore C5 ESP": "Brikka, Switch and Timemore C5 ESP",
+      "Les dernières extractions": "The latest brews",
+      "Toutes": "All",
       "Tableau de bord": "Dashboard",
       "Chiffres clés": "Key figures",
       "Les dernières semaines": "The last few weeks",
