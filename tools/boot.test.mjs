@@ -58,7 +58,7 @@ function faireElement(nom) {
   return {
     _nom: nom, tagName: "DIV", hidden: false, value: "", checked: false,
     textContent: "", innerHTML: "", disabled: false, tabIndex: 0, open: false,
-    dataset: {}, style: {}, options: [], elements: [], files: [],
+    dataset: {}, style: { setProperty() {}, removeProperty() {} }, options: [], elements: [], files: [],
     classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
     addEventListener() {}, removeEventListener() {}, appendChild() {}, remove() {},
     setAttribute() {}, getAttribute: () => null, removeAttribute() {},

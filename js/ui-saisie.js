@@ -11,7 +11,7 @@
 
   // Emprunté au noyau, chargé avant nous.
   const { $, $$, $f, activerAppuiLong, activerEcran, attrTitre, basculerEtat, detailRatio, fmtTemps,
-    fmtVND, maintenantLocal, nav, poser, poserTexte, recettesDeMethode, replis, toast,
+    fmtVND, icone, maintenantLocal, nav, peindreCurseur, poser, poserTexte, recettesDeMethode, replis, toast,
     trouverRecette } = UI;
 
   // ---------- Saisie ----------
@@ -232,7 +232,7 @@
   function rendreTassesEditeur() {
     $("#tasses-liste").innerHTML = DATA.state.tasses.map(t =>
       '<div class="tasse-ligne"><span>' + t.nom + " · " + t.contenance_ml + ' ml</span>' +
-      '<button type="button" class="btn-ligne danger" data-tasse-suppr="' + t.id + '" title="' + I18N.t("btn_supprimer") + '">✕</button></div>'
+      '<button type="button" class="btn-ligne danger" data-tasse-suppr="' + t.id + '" title="' + I18N.t("btn_supprimer") + '">' + icone("croix") + "</button></div>"
     ).join("");
     $$("[data-tasse-suppr]").forEach(b => b.addEventListener("click", async () => {
       await DATA.supprimerTasse(b.dataset.tasseSuppr);
@@ -338,6 +338,7 @@
     /* Le curseur se grise tant que la tasse n'est pas notee : il ne doit pas
        avoir l'air de proposer la valeur sur laquelle il est pose. */
     $("#f-note").classList.toggle("curseur-inactif", vide);
+    peindreCurseur($("#f-note"));
   }
 
   /* Ce qui part en base : une chaine vide quand la tasse n est pas notee, pour
@@ -744,6 +745,7 @@
       const curseur = $("#" + c.curseur), champ = $("#" + c.champ);
       if (!curseur || !champ) return;
       curseur.addEventListener("input", () => {
+        peindreCurseur(curseur);
         champ.value = c.versChamp ? c.versChamp(curseur.value) : curseur.value;
         /* On rejoue l'événement du CHAMP : c'est lui que le reste du formulaire
            écoute, pour la ligne live, le brouillon et les avertissements.
@@ -764,9 +766,11 @@
       const v = c.versCurseur ? c.versCurseur(champ.value) : champ.value;
       // Une valeur vide ou illisible laisse le curseur où il est : le déplacer
       // au minimum donnerait à croire à un réglage que Chris n'a pas fait.
-      if (v === null || v === "" || isNaN(Number(v))) return;
+      if (v === null || v === "" || isNaN(Number(v))) { peindreCurseur(curseur); return; }
       if (String(curseur.value) !== String(v)) curseur.value = v;
+      peindreCurseur(curseur);
     });
+    peindreCurseur($("#f-note"));
   }
 
   function reinitialiserSaisie(garderCafe) {

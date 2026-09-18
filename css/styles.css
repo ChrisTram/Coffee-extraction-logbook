@@ -1573,7 +1573,7 @@ input:focus, select:focus, textarea:focus {
    du moulin lui-même pour que ce qu'on lit se reproduise à la main. */
 .conv-ligne { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
 .conv-ligne .champ { flex: 0 0 160px; margin-bottom: 0; }
-.conv-slider { width: 100%; margin: 10px 0 4px; accent-color: var(--accent); }
+.conv-slider { width: 100%; margin: 10px 0 4px; }
 .conv-slider-reperes { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
 .conv-repere {
   border: 1px solid var(--lignes); background: var(--panneau); color: var(--texte);
@@ -1666,7 +1666,21 @@ input:focus, select:focus, textarea:focus {
   color: var(--encre);
   animation: apparition 250ms ease-out;
 }
-.avertissement::before { content: "⚠ "; }
+.avertissement { position: relative; padding-left: 40px; }
+.avertissement::before {
+  content: "";
+  position: absolute; left: 14px; top: 12px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  border: 1.8px solid var(--accent);
+}
+.avertissement::after {
+  content: "!";
+  position: absolute; left: 14px; top: 10px;
+  width: 16px; text-align: center;
+  font-weight: 800; font-size: 0.8rem; line-height: 20px;
+  color: var(--accent);
+}
 
 /* Bandeau live */
 .bandeau-live {
@@ -1703,7 +1717,10 @@ input:focus, select:focus, textarea:focus {
 .chrono-etape-suivante { font-size: 0.83rem; color: var(--attenue); margin: 0; }
 .chrono-boutons { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
 .chrono-manuels { margin-top: 6px; }
-.chrono.en-cours .chrono-grand { color: var(--accent-fort); }
+.chrono.en-cours .chrono-grand {
+  color: var(--accent-fort);
+  text-shadow: 0 0 24px color-mix(in srgb, var(--accent) 45%, transparent);
+}
 .chrono.en-cours .chrono-etape-courante { color: var(--accent-fort); }
 
 /* Tasses */
@@ -1777,13 +1794,10 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* Curseur de note */
-.curseur-note {
-  width: 100%;
-  accent-color: var(--accent);
-  height: 34px;
-  cursor: pointer;
-}
-#note-affichee { color: var(--accent-fort); font-size: 1.15em; }
+.curseur-note { width: 100%; height: 34px; }
+/* La note en grand a cote de son libelle : c'est la valeur qu'on regle, elle
+   ne doit pas se lire comme un mot du libelle. */
+#note-affichee { color: var(--accent-fort); font-family: var(--serif); font-size: 1.5rem; font-weight: 400; line-height: 1; vertical-align: -2px; }
 
 /* Diagnostic en pilules radio */
 .choix-diagnostic { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -2003,7 +2017,81 @@ input:focus, select:focus, textarea:focus {
 .ligne-curseur .curseur-champ { flex: 1 1 auto; min-width: 0; }
 .ligne-curseur input[type="number"],
 .ligne-curseur input[type="text"] { flex: 0 0 76px; width: 76px; text-align: center; }
-.curseur-champ { accent-color: var(--accent); height: 22px; }
+.curseur-champ { height: 22px; }
+
+/* ---------- Les curseurs, dessines ----------
+   accent-color rendait une piste et un pouce differents sur chaque moteur, et
+   gris fonce en theme sombre. Ici : piste de 4 px remplie jusqu'a la valeur
+   (--pc, posee par UI.peindreCurseur), pouce rond borde d'accent. Les deux
+   moteurs ont chacun leur syntaxe, d'ou les deux jeux de regles. */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  background: transparent;
+  margin: 0;
+  cursor: pointer;
+  padding: 0;
+  border: none;
+  min-height: 0;
+  box-shadow: none;
+}
+input[type="range"]:focus { box-shadow: none; }
+input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 4px; }
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 4px;
+  background: linear-gradient(to right, var(--accent) var(--pc, 0%), var(--lignes) var(--pc, 0%));
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px; height: 18px;
+  margin-top: -7px;
+  border-radius: 50%;
+  background: var(--panneau);
+  border: 2px solid var(--accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+input[type="range"]::-moz-range-track { height: 4px; border-radius: 4px; background: var(--lignes); }
+input[type="range"]::-moz-range-progress { height: 4px; border-radius: 4px; background: var(--accent); }
+input[type="range"]::-moz-range-thumb {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--panneau);
+  border: 2px solid var(--accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+/* Non notee : la piste ne se remplit pas, elle ne propose rien. */
+.curseur-inactif::-webkit-slider-runnable-track { background: var(--lignes); }
+.curseur-inactif::-moz-range-progress { background: var(--lignes); }
+
+/* ---------- L'interrupteur ----------
+   Autour d'une case a cocher ORDINAIRE, qui reste la source de verite : le
+   formulaire, le brouillon et les tests lisent toujours input.checked. Seul le
+   dessin change, pour que les options ne ressemblent pas a des champs. */
+.interrupteur { position: relative; display: inline-block; width: 40px; height: 22px; flex: none; }
+.interrupteur input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; margin: 0; cursor: pointer; }
+.interrupteur i {
+  position: absolute; inset: 0;
+  border-radius: 999px;
+  background: var(--barre-neutre);
+  transition: background var(--transition);
+}
+.interrupteur i::after {
+  content: "";
+  position: absolute; top: 3px; left: 3px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--panneau);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform var(--transition);
+}
+.interrupteur input:checked + i { background: var(--accent); }
+.interrupteur input:checked + i::after { transform: translateX(18px); }
+.interrupteur input:focus-visible + i { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Un bouton carre a icone seule, a la hauteur des champs qu'il accompagne. */
+.btn-carre { width: var(--hauteur-controle); min-height: var(--hauteur-controle); padding: 0; flex: none; }
 
 .badge-ratee {
   display: inline-block;

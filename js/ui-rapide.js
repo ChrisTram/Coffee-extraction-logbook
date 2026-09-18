@@ -9,7 +9,7 @@
 (() => {
 
   // Emprunté au noyau, chargé avant nous.
-  const { $, activerEcran, maintenantLocal, recettesDeMethode, replis, toast, trouverRecette } = UI;
+  const { $, activerEcran, maintenantLocal, peindreCurseur, recettesDeMethode, replis, toast, trouverRecette } = UI;
 
   let rapideOuvert = false;
 
@@ -57,6 +57,7 @@
     const vide = $("#q-note-vide").checked;
     $("#q-note-affichee").textContent = vide ? I18N.t("n_pas_notee") : $("#q-note").value;
     $("#q-note").classList.toggle("curseur-inactif", vide);
+    peindreCurseur($("#q-note"));
   }
 
   function noteRapide() {

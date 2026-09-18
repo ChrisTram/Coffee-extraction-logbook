@@ -249,6 +249,19 @@ const UI = (() => {
     return d.toISOString().slice(0, 16);
   }
 
+  /* LA PISTE D'UN CURSEUR. Les curseurs sont dessines en CSS (piste fine, pouce
+     borde d'accent) au lieu d'accent-color, qui rend differemment sur chaque
+     moteur. Le CSS ne connait pas la valeur : on lui pose --pc, la part de
+     course parcourue, et le degrade de la piste s'arrete la. A appeler a chaque
+     input ET a chaque ecriture de .value par le code, sinon la piste ment. */
+  function peindreCurseur(curseur) {
+    if (!curseur) return;
+    const min = Number(curseur.min) || 0, max = Number(curseur.max);
+    const v = Number(curseur.value);
+    const pc = isNaN(max) || max === min || isNaN(v) ? 0 : ((v - min) / (max - min)) * 100;
+    curseur.style.setProperty("--pc", Math.max(0, Math.min(100, pc)) + "%");
+  }
+
   /* LES ICONES EN TRAIT. Meme dessin que la navigation : 1,8 px, bouts ronds,
      couleur du texte. Elles remplacent les glyphes Unicode (⇄ ⚠ ⧉ ✎ 🗑) des
      boutons d'action, qui changeaient de dessin selon la plateforme et que la
@@ -571,7 +584,7 @@ const UI = (() => {
     basculerRatees, chargerReplis, cleLocale, confirmer, detailRatio, diagsAffiches, ecartMoyen,
     ecrireReplis, estRatee, extAnalysables, inclureRatees,
     extAvecCalculs, fmtDateCourte, fmtDateHeure, fmtDecimal, fmtTemps, fmtVND, icone,
-    maintenantLocal, moyenne, nav, normaliserEcran, oublierSignatures, poser, poserTexte,
+    maintenantLocal, peindreCurseur, moyenne, nav, normaliserEcran, oublierSignatures, poser, poserTexte,
     recetteAvecVariantes, recettesDeMethode, recettesVivantes, rendreEcranCourant, replis,
     reprendreReplisLocaux, siChange, signatureTable, signatures,
     supprimerExtractionAvecRetour, toast, toastAction, trouverRecette,

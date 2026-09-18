@@ -9,7 +9,7 @@
 (() => {
 
   // Emprunté au noyau, chargé avant nous.
-  const { $, $$, antiRebond, attrTitre, ecrireReplis, fmtTemps, recetteAvecVariantes, recettesVivantes,
+  const { $, $$, antiRebond, attrTitre, ecrireReplis, fmtTemps, peindreCurseur, recetteAvecVariantes, recettesVivantes,
     replis, toast } = UI;
 
   // ---------- Référence : recettes ----------
@@ -262,6 +262,7 @@
     }
     // Le curseur suit toujours la valeur, y compris quand elle vient du texte.
     if (Number($("#conv-slider").value) !== p.crans) $("#conv-slider").value = p.crans;
+    peindreCurseur($("#conv-slider"));
     const compatibles = GRIND.methodesCompatibles(p.microns).map(m => I18N.methode(m.nom));
     zone.innerHTML =
       '<span class="conv-chip"><b>' + p.crans + "</b> " + I18N.t("cv_crans") + "</span>" +
