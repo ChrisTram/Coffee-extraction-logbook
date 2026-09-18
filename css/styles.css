@@ -125,53 +125,63 @@
   --z-toast: 300;
 }
 
-/* Thème sombre ÉCLAIRCI (v7.97). Le fond était presque noir (#171009) et les
-   panneaux à peine plus clairs : le tout tirait vers le noir et fatiguait les
-   yeux, disait Chris. Trois pas d'écart maintenant, fond, panneau, panneau
-   secondaire, dans des bruns chauds qui restent sombres sans être noirs, et un
-   texte un peu moins blanc pour ne pas éblouir par contraste. */
+/* Thème sombre « Espresso » (v8.26). Pas noir : le fond reste un brun, un cran
+   plus profond que le #241a10 de la v7.97 pour que les cartes s'en détachent.
+   Ce qui manquait à l'ancien n'était pas de la clarté mais de la SÉPARATION :
+   un demi pas entre le fond et le panneau, des filets opaques qui se fondaient
+   dans le panneau secondaire. Ici quatre surfaces à pas nets, des filets en
+   alpha, et le relief par ombre et filet clair. Tous les textes tiennent au
+   moins 4,5:1 sur les cinq surfaces, ratios dans DECISIONS.md. */
 html[data-theme="sombre"] {
-  --fond: #241a10;
-  --rail: #2b2016;
-  --fond-degrade: radial-gradient(1200px 600px at 80% -10%, #3a2818 0%, #241a10 55%);
-  --panneau: #31241a;
-  --panneau-2: #3c2d20;
-  --encre: #f4eadb;
-  --texte: #dfd1bf;
-  --attenue: #b49a83;
-  --accent: #d98741;
-  --accent-fort: #eb9a52;
-  --accent-fond: rgba(217, 135, 65, 0.16);
-  /* Encre sombre sur l'accent clair : 6,10:1. Le crème donnait 2,66:1. */
-  --sur-accent: #26190f;
-  --lignes: #4f3b28;
-  --lignes-douces: #402f21;
-  --lignes-graphe: rgba(180, 154, 131, 0.18);
-  --barre-neutre: #7a6249;
-  --ombre: 0 6px 24px rgba(0, 0, 0, 0.30);
-  --tooltip-fond: #f3e8d8;
-  --tooltip-texte: #2e211a;
-  --avert-fond: rgba(217, 135, 65, 0.12);
-  --avert-bord: rgba(217, 135, 65, 0.45);
-  /* Éclairci de #e06c5a : sur --panneau-2 il ne tenait que 4,07:1. */
-  --danger: #e37867;
+  --fond: #1a120d;
+  --rail: #201711;
+  --fond-degrade: radial-gradient(1100px 520px at 85% -8%, #2e2016 0%, #1a120d 60%);
+  --panneau: #261c15;
+  --panneau-2: #33271e;
+  /* Surface de survol et d'etat enfonce, un pas au dessus de --panneau-2. */
+  --panneau-3: #3c2f25;
+  --encre: #f5ebdf;
+  --texte: #dccbb6;
+  /* 6,37:1 sur --panneau, 5,53:1 sur --panneau-2, 4,93:1 sur --panneau-3. */
+  --attenue: #b39c86;
+  --accent: #e39448;
+  --accent-fort: #f0a65f;
+  --accent-fond: rgba(227, 148, 72, 0.14);
+  /* Encre sombre sur l'accent : 7,40:1. */
+  --sur-accent: #1f1409;
+  /* Filets en ALPHA : une seule valeur reste visible sur toutes les surfaces,
+     la ou un brun opaque se fondait dans le panneau secondaire. */
+  --lignes: rgba(245, 235, 223, 0.10);
+  --lignes-douces: rgba(245, 235, 223, 0.06);
+  --lignes-graphe: rgba(245, 235, 223, 0.10);
+  --barre-neutre: #6f5a47;
+  /* Le relief du theme sombre : une ombre douce sous chaque carte, et un filet
+     clair d'un pixel en haut. Le theme clair pose ses cartes a plat sur une
+     bordure, ces deux jetons y sont vides. */
+  --ombre-carte: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 8px 24px rgba(0, 0, 0, 0.28);
+  --ombre-haut: 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+  --ombre: 0 16px 40px rgba(0, 0, 0, 0.5);
+  --tooltip-fond: #f5ebdf;
+  --tooltip-texte: #26190f;
+  --avert-fond: rgba(227, 148, 72, 0.12);
+  --avert-bord: rgba(227, 148, 72, 0.45);
+  /* 6,33:1 sur --panneau, 4,91:1 sur --panneau-3. */
+  --danger: #e88472;
   /* PLUS DE VERT, nulle part, y compris pour dire « bon » : c'est une demande
-     explicite de Chris. Le statut favorable prend donc l'accent terre cuite, le
+     explicite de Chris. Le statut favorable prend donc l'accent caramel, le
      défavorable garde le rouge. Le nom --ok est conservé pour ne pas réécrire
      les trente règles qui l'utilisent. */
-  --ok: #d98741;
-  /* Graphique principal. La tendance lisse la ligne des notes : même teinte que
-     l'accent, en translucide, pour se lire comme un fond. */
-  --tendance: rgba(217, 135, 65, 0.40);
+  --ok: #e39448;
+  --tendance: rgba(227, 148, 72, 0.40);
   /* Fond de la carte sombre. En theme sombre elle n'a plus rien a inverser :
-     elle devient une carte secondaire bordee d'un filet accent. */
-  --carte-sombre-fond: #3c2d20;
+     elle devient une carte secondaire avec un trait d'accent a gauche. */
+  --carte-sombre-fond: #33271e;
 
-  --hm0: #3c2d20;
-  --hm1: #5a3c1f;
-  --hm2: #7d4f22;
-  --hm3: #ab6c2c;
-  --hm4: #d98741;
+  --hm0: #33271e;
+  --hm1: #5b3d20;
+  --hm2: #8a5324;
+  --hm3: #bd722f;
+  --hm4: #e39448;
   color-scheme: dark;
 }
 
@@ -183,6 +193,7 @@ html[data-theme="clair"] {
   --fond-degrade: radial-gradient(1200px 600px at 80% -10%, #faf4ea 0%, #f4ede3 55%);
   --panneau: #fcf8f2;
   --panneau-2: #ebe1d4;
+  --panneau-3: #e2d5c4;
   --rail: #f0e7db;
   --encre: #26190f;
   --texte: #5e4b3c;
@@ -201,6 +212,8 @@ html[data-theme="clair"] {
   /* Aucune ombre sur les cartes du thème clair : la DA les pose à plat, sur
      bordure. --ombre ne sert plus qu'au bouton flottant et à la feuille. */
   --ombre: 0 10px 30px rgba(38, 25, 15, 0.14);
+  --ombre-carte: none;
+  --ombre-haut: none;
   --tooltip-fond: #26190f;
   --tooltip-texte: #f4ede3;
   --avert-fond: #f2e2d2;
@@ -367,7 +380,7 @@ button { font-family: inherit; }
   transition: background var(--transition), color var(--transition);
 }
 .rail-entree .ico { flex: none; color: var(--attenue); transition: color var(--transition); }
-.rail-entree:hover { background: var(--panneau-2); color: var(--encre); }
+.rail-entree:hover { background: var(--panneau-3); color: var(--encre); }
 .rail-entree:hover .ico { color: var(--encre); }
 /* L'entree active prend le FOND de la page, pas l'accent : la DA veut un rail
    ou l'ecran courant a l'air decoupe dedans, pas surligne. */
@@ -830,8 +843,9 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
   border: 1px solid var(--lignes);
   border-radius: var(--rayon);
   padding: var(--carte-padding);
-  /* Pas d'ombre : la DA Comptoir pose les cartes a plat, sur un filet. Il ne
-     reste qu'une ombre dans tout le site, sur le bouton flottant et la feuille. */
+  /* En theme clair --ombre-carte est vide : la DA pose les cartes a plat, sur
+     un filet. En theme sombre c'est ce jeton qui donne le relief. */
+  box-shadow: var(--ombre-carte);
 }
 
 /* Les intertitres de bloc : petites capitales espacees, attenuees. */
@@ -875,20 +889,22 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
 /* En theme sombre il n'y a rien a inverser : la carte devient une carte
    secondaire bordee d'un filet accent, et garde donc les jetons du theme. */
 html[data-theme="sombre"] .carte-sombre {
-  --encre: #f4eadb;
-  --texte: #dfd1bf;
+  --encre: #f5ebdf;
+  --texte: #dccbb6;
   /* Eclairci par rapport au theme : les sous-fonds de cette carte sont plus
      clairs que --panneau, donc l attenue du theme n y tenait que 4,27:1. */
   --attenue: #c0a88f;
-  --accent: #d98741;
-  --accent-fort: #eb9a52;
-  --accent-fond: rgba(217, 135, 65, 0.16);
-  --lignes: #4f3b28;
-  --lignes-douces: #402f21;
-  --panneau: #31241a;
-  --panneau-2: #47372a;
-  --barre-neutre: #7a6249;
-  border-color: var(--accent);
+  --accent: #e39448;
+  --accent-fort: #f0a65f;
+  --accent-fond: rgba(227, 148, 72, 0.14);
+  --lignes: rgba(245, 235, 223, 0.10);
+  --lignes-douces: rgba(245, 235, 223, 0.06);
+  --panneau: #261c15;
+  --panneau-2: #3c2f25;
+  --barre-neutre: #6f5a47;
+  --carte-sombre-fond: #33271e;
+  border-color: var(--lignes);
+  box-shadow: var(--ombre-carte), inset 3px 0 0 var(--accent);
 }
 
 /* Le lien de bas de carte : « Voir mes meilleurs reglages », « Tout
@@ -2739,6 +2755,7 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   border-radius: var(--rayon);
   padding: var(--carte-padding);
   margin-bottom: var(--ecart-cartes);
+  box-shadow: var(--ombre-carte);
 }
 .saisie-bloc-titre {
   display: flex;

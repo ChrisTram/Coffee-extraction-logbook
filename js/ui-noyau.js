@@ -438,7 +438,7 @@ const UI = (() => {
        <head> ne connaissent que la préférence du système, et le navigateur
        retient celle dont le media correspond : on écrit donc la couleur choisie
        dans les DEUX, sinon celle qu'il retient contredirait le choix. */
-    const teinte = theme === "sombre" ? "#241a10" : "#f8f2e9";
+    const teinte = theme === "sombre" ? "#1a120d" : "#f4ede3";
     document.querySelectorAll('meta[name="theme-color"]')
       .forEach(m => m.setAttribute("content", teinte));
     if (typeof Chart !== "undefined") {

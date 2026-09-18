@@ -5,6 +5,7 @@ de page du site est celui du `<meta name="app-version">` d'`index.html`, posé
 par `node tools/bump_version.mjs X`. Chaque entrée dit CE QUI a changé ; le
 pourquoi est dans `DECISIONS.md`.
 
+- v8.26 : thème sombre « Espresso » : fond un cran plus profond sans être noir, quatre surfaces à pas nets, filets en alpha, relief par ombre douce et filet clair, caramel plus franc. Tous les textes au dessus de 4,5:1 sur les cinq surfaces. Nouveaux jetons --panneau-3, --ombre-carte, --ombre-haut dans les deux thèmes. La couleur de fond change aux quatre endroits (feuille de style, theme-color, manifeste, page de connexion du Worker).
 - v8.25 : le feu Brikka par défaut repasse à 3, dans les trois recettes, le
   repli d'usine et le schéma des réglages, avec un pas de schéma pour les
   recettes déjà enregistrées. Un test vérifie que les trois sources disent le
