@@ -99,6 +99,9 @@
   --hauteur-controle: 48px;
   --rail-large: 232px;
   --barre-basse: 62px;
+  /* Le cadre : largeur maximale de TOUT ecran, centre dans main. Un seul jeton,
+     une seule regle (.ecran), aucun ecran ne le redefinit. */
+  --cadre: 1560px;
 
   --transition: 220ms cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -775,8 +778,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
      a un ecran le decale des autres, et le saut se voit a chaque changement
      d'onglet. La longueur de ligne des textes se bride ailleurs, sur les
      paragraphes, pas sur le cadre. */
-  .ecran { max-width: 1560px; margin-inline: auto; }
-  #ecran-parametres, #ecran-reglages, #ecran-guide { max-width: 1560px; margin-inline: auto; }
+  .ecran { max-width: var(--cadre); margin-inline: auto; }
   /* Les textes longs du guide gardent une longueur de ligne lisible. */
   #ecran-guide p, #ecran-guide li, #ecran-parametres p { max-width: 78ch; }
   .pied-site { margin-inline-start: var(--rail-large); }
@@ -1380,9 +1382,12 @@ input:focus, select:focus, textarea:focus {
    enfant et n'a donc rien a repartir. */
 .saisie-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
+  grid-template-columns: minmax(0, 1fr) 380px;
   gap: var(--ecart-cartes);
-  max-width: 1240px;
+  /* Plafonnee ET centree : a 1240 px sans marge automatique, le formulaire
+     s'arretait a gauche du cadre de 1560 et laissait une bande vide a droite. */
+  max-width: 1400px;
+  margin-inline: auto;
   align-items: start;
 }
 /* PLACEMENT EXPLICITE sur ordinateur. Le chrono est premier dans le DOM pour le
@@ -1995,15 +2000,11 @@ input:focus, select:focus, textarea:focus {
    texte trop long est tronque avec des points de suspension.
    min-width : en dessous (telephone), on defile plutot que d'ecraser neuf
    colonnes en bouillie. */
-/* L'écran d'historique déborde de la colonne de lecture. main est calibré à
-   1180 px pour du TEXTE ; un tableau de treize colonnes n'y tient pas. La marge
-   négative vaut la moitié du débordement, ce qui le recentre sur la fenêtre sans
-   transform, qui perturberait la transition de vue. Sur un écran étroit la marge
-   redevient positive et tout se comporte comme avant. */
-#ecran-historique {
-  width: min(96vw, 1560px);
-  margin-left: calc((100% - min(96vw, 1560px)) / 2);
-}
+/* AUCUNE regle de largeur ou de marge sur un #ecran-* : le cadre est pose UNE
+   fois sur .ecran (bloc de mise en page). Une regle d'identifiant bat la classe
+   et decentre l'ecran en silence : c'est ce qui est arrive a l'historique, cale
+   a gauche par un margin-left: 0 herite d'un ancien elargissement. Un test le
+   refuse desormais. */
 
 .table-historique {
   width: 100%;
@@ -2746,7 +2747,7 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 }
 
 /* La tete de page precede la grille, elle couvre donc toute la largeur. */
-#ecran-saisie .saisie-entete { max-width: 1240px; }
+#ecran-saisie .saisie-entete { max-width: 1400px; margin-inline: auto; }
 
 /* ---------- Les blocs numerotes ---------- */
 .saisie-bloc {
@@ -2926,10 +2927,6 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
    REFONTE COMPTOIR, ETAPE 6 : L'HISTORIQUE
    ================================================================== */
 
-/* L'ancien elargissement par marge negative n'a plus lieu d'etre : depuis que le
-   rail decale le contenu, .ecran porte deja son propre plafond de 1560 px et
-   main n'est plus cale sur une colonne de texte de 1180. */
-#ecran-historique { width: auto; margin-left: 0; }
 
 /* La recherche vit dans la tete de page, a droite du titre. */
 #ecran-historique .champ-recherche { width: 280px; max-width: 100%; margin: 0; }

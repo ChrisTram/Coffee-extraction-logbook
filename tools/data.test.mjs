@@ -1236,20 +1236,26 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     /molette unique a 1\.5\.0[\s\S]{0,300}state\.recettes\.forEach/.test(data));
 }
 
-/* Tout ecran a largeur bornee doit etre CENTRE dans main, qui fait 1180 px.
-   L'ecran Parametres avait max-width sans margin auto : il se collait a gauche
-   et la page paraissait de travers. Regle generale, pas correction ponctuelle. */
+/* Le cadre est pose UNE fois, sur .ecran : largeur maximale et centrage. Aucun
+   #ecran-* ne doit poser de largeur ni de marge : une regle d'identifiant bat la
+   classe, et c'est ainsi que l'historique s'est retrouve cale a gauche par un
+   margin-left: 0 herite d'un ancien elargissement, pendant que ses voisins
+   etaient centres. Regle generale, pas correction ponctuelle. */
 {
-  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
-  const bornes = [...css.matchAll(/#ecran-([a-z]+) \{([^}]*max-width[^}]*)\}/g)];
-  check("au moins un ecran borne existe", bornes.length > 0, String(bornes.length));
-  /* DEUX orthographes centrent : margin: 0 auto, et margin-inline: auto qui
-     suit le sens de lecture et que la regle generale de .ecran emploie deja. Ne
-     reconnaitre que la premiere faisait echouer un centrage parfaitement valide,
-     ce qui pousse a reecrire le CSS pour plaire au test plutot que l'inverse. */
-  const centre = corps => /margin:\s*0\s+auto/.test(corps) || /margin-inline:\s*auto/.test(corps);
-  const decentres = bornes.filter(m => !centre(m[2])).map(m => m[1]);
-  check("tout ecran a largeur bornee est centre", decentres.length === 0, decentres.join(", "));
+  // Sans les commentaires : un commentaire qui cite #ecran-saisie n'est pas une regle.
+  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+  const cadre =(css.match(/\.ecran \{([^}]*)\}/g) || []).join(" ");
+  check("le cadre commun borne et centre tous les ecrans",
+    /max-width:\s*var\(--cadre\)/.test(cadre) && /margin-inline:\s*auto/.test(cadre), cadre);
+  const fautifs = [];
+  const re = /([^{}]*)\{([^}]*)\}/g;
+  let m;
+  while ((m = re.exec(css))) {
+    const sel = m[1].trim();
+    if (!/#ecran-[\w-]+\s*(,|$)/.test(sel)) continue;
+    if (/(^|[^-])(width|max-width|margin|margin-left|margin-right|margin-inline)\s*:/.test(m[2])) fautifs.push(sel);
+  }
+  check("aucun ecran ne pose sa propre largeur ni sa propre marge", fautifs.length === 0, fautifs.join(" | "));
 }
 
 /* Ecran Guide : le moulin se manipule au curseur et le reglage s'applique en un
