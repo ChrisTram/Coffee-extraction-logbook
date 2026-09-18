@@ -406,6 +406,59 @@ l'extension `.woff2`, ce qui suppose un contrat : on ne réécrit jamais un
 fichier de police sous le même nom. Sans cette ligne, les cinq polices
 repartaient revalider à chaque ouverture.
 
+### Un seul cadre, et le bug qui l'a imposé
+
+L'historique était calé à gauche sur les écrans larges pendant que ses voisins
+étaient centrés, et ce n'était pas voulu. La cause : deux règles d'identifiant
+héritées de l'ancien élargissement par marge négative, dont
+`#ecran-historique { width: auto; margin-left: 0 }`, écrite pour ANNULER la
+première quand le rail est arrivé. Une règle d'identifiant bat la classe, donc
+ce `margin-left: 0` battait le `margin-inline: auto` de `.ecran`. Mesuré à
+2400 px : l'historique commençait à 272 px.
+
+La saisie avait le même défaut sous une autre forme : `.saisie-layout`
+plafonnée à 1240 px sans marge automatique, dans un écran de 1560 centré, donc
+une bande vide à droite.
+
+Le cadre est maintenant UN jeton (`--cadre`) et UNE règle (`.ecran`). Le test
+qui existait vérifiait qu'un écran borné était centré ; il a été remplacé par
+son contraire : aucun `#ecran-*` ne pose de largeur ni de marge, jamais. Le
+premier test disait « si tu le fais, fais-le bien », le second dit « ne le fais
+pas », et c'est le second qui empêche la récidive. Il retire les commentaires
+avant de chercher, sinon un commentaire qui cite `#ecran-saisie` compte comme
+une règle.
+
+### La consolidation de la feuille de style, vérifiée par empreinte
+
+Quarante-trois sélecteurs de premier niveau étaient définis deux ou trois fois
+dans `styles.css`, la dernière copie gagnant par ordre : `.btn`, `.modale`,
+`.saisie-bloc`, `.bandeau-live`, `.historique-filtres-actions` (trois fois)...
+Ce sont les blocs « refonte Comptoir, étape 4, 6, 7 », écrits en fin de fichier
+pour redéfinir ce qui précédait. Lisible pendant la refonte, intenable après :
+pour changer un bouton il fallait trouver ses trois définitions et savoir
+laquelle gagne.
+
+La fusion est mécanique (`tools/` n'en garde pas le script, il a servi une
+fois) : chaque propriété prend sa DERNIÈRE valeur, comme la cascade le faisait,
+et le résultat s'écrit à la PREMIÈRE position du sélecteur. La première position
+et non la dernière : `.btn-primaire` est défini juste après le premier `.btn`,
+et un `.btn` fusionné en fin de fichier serait passé devant lui à spécificité
+égale. Les commentaires attachés aux copies supprimées sont partis avec elles ;
+ceux qui expliquaient une valeur non évidente ont été remis sur la règle
+fusionnée.
+
+La vérification ne pouvait pas venir des tests, qui ne chargent pas de CSS. Elle
+s'est faite dans le navigateur : une EMPREINTE des styles calculés (trente-cinq
+propriétés plus le rectangle) de chaque élément des six écrans, dans les deux
+thèmes, à 1600 px puis à 400 px, prise avant la fusion et comparée après.
+Transitions et animations coupées pendant la mesure, curseurs de compteurs et
+calendrier exclus, sans quoi la même feuille chargée deux fois donnait mille
+écarts de bruit. Résultat : zéro écart sur ordinateur, et UN sur téléphone, sur
+`#btn-enregistrer` : 52 px avant, 54 après. C'est un bug corrigé et pas une
+régression : la règle téléphone `.btn-grand { min-height: 54px }` vivait entre
+la deuxième et la troisième définition de `.btn-grand`, et la troisième la
+battait. Elle était écrite pour ne jamais s'appliquer.
+
 ### Le découpage de l'interface : le piège silencieux, et ce qu'il a trouvé
 
 #### Le piège, et il est silencieux
@@ -1236,6 +1289,34 @@ couleurs de données ne bougent pas. La même couleur de fond est recopiée dans
 meta theme-color, le manifeste et la page de connexion du Worker : quatre
 endroits pour une couleur, à changer ensemble.
 
+### Le thème sombre « Espresso » : de la séparation, pas de la clarté
+
+Chris trouvait le sombre « pas clean, pas moderne ». Le diagnostic n'est pas
+celui de la v7.97, où il avait mal aux yeux sur du presque noir : ici tout
+était brun sur brun. Un demi pas de luminosité entre le fond (#241a10) et le
+panneau (#31241a), des filets opaques (#4f3b28) qui se fondaient dans le panneau
+secondaire, et une carte sombre qui, n'ayant plus rien à inverser, se dessinait
+avec un cadre orange sur les quatre côtés.
+
+La palette Espresso descend le fond d'un cran (#1a120d) sans revenir au noir
+de la v7.96, et surtout écarte les surfaces : fond, rail, panneau, panneau
+secondaire, et une quatrième surface de survol (`--panneau-3`), séparées d'au
+moins six points de luminosité chacune. Les filets passent en alpha
+(`rgba(245, 235, 223, 0.10)`) : une seule valeur reste visible sur toutes les
+surfaces. Le relief que le clair obtient par sa bordure, le sombre l'obtient par
+une ombre douce et un filet clair d'un pixel en haut de carte (`--ombre-carte`,
+`--ombre-haut`, vides en clair). La carte sombre devient un panneau secondaire
+avec un trait d'accent à gauche.
+
+Contrastes mesurés avant de choisir, sur les cinq surfaces (fond, rail,
+panneau, panneau-2, panneau-3) : encre 15,7 à 11,0 ; texte 11,7 à 8,2 ; atténué
+7,1 à 4,9 ; accent 7,6 à 5,3 ; danger 7,0 à 4,9 ; encre sur accent 7,4. Tout
+au dessus de 4,5:1. L'atténué a été remonté de #ad9680 à #b39c86 précisément
+pour tenir sur la surface de survol, où il faisait 4,44.
+
+Le thème clair n'a pas bougé : il avait été validé à 4,5:1 et Chris ne s'en
+plaignait pas. La couleur de fond du sombre vit toujours à quatre endroits.
+
 ### Le formulaire de saisie en trois blocs
 
 Dix-huit champs se suivaient dans une seule colonne, café, deux gros boutons,
@@ -1821,6 +1902,26 @@ la valeur complète au survol. Les guillemets doubles y sont neutralisés,
 d'écraser neuf colonnes en bouillie. Le défilement horizontal n'a donc pas
 disparu, il est devenu le comportement de repli sur petit écran au lieu d'être la
 norme sur grand écran.
+
+### Plus d'intertitre de jour : la date sur chaque ligne
+
+Le groupement par jour, avec « Aujourd'hui », « Hier » puis le jour de la
+semaine en intertitre, tenait sur une bonne intention : nommer le jour vaut
+mieux qu'une date quand la date est récente. Chris l'a refusé en une phrase :
+une ligne entière pour afficher le jour, c'est ce que ne fait aucun site, et
+c'est une ligne de moins pour une tasse. La date complète se lit maintenant au
+début de chaque ligne, jour en encre et heure en atténué, et chaque carte du
+téléphone porte la sienne. `titreDeJour` et ses trois clés de traduction sont
+partis avec les intertitres : garder une fonction sans appelant, c'est laisser
+la question ouverte pour la session suivante.
+
+Au passage, les largeurs par position en pourcentages (dix règles `nth-child`
+dont la somme devait faire 100, avec le test qui allait avec) ont cédé la place
+à un `<colgroup>` : pixels pour les colonnes chiffrées, rien pour café,
+recette et goûts qui se partagent le reste. La mesure a tranché : à 1600 px de
+fenêtre, les pourcentages donnaient 52 px à la colonne des goûts. Et les deux
+colonnes de texte passent à la ligne au lieu de se tronquer, parce que
+« Trung Nguyên Sáng… » ne dit plus lequel des deux cafés c'est.
 
 ### Détail dépliable et comparateur
 

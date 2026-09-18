@@ -262,7 +262,18 @@ button, .pilule, .tag, .nav-btn, input[type="range"] { touch-action: manipulatio
 /* Application installée : tirer vers le bas en haut de page ne recharge pas le
    site. Le service worker et le versionnage livrent la nouvelle version à
    l'ouverture suivante de toute façon. */
-body { overscroll-behavior-y: contain; }
+body {
+  overscroll-behavior-y: contain;
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--texte);
+  background: var(--fond);
+  background-image: var(--fond-degrade);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
 button, a, .pilule, .tag { -webkit-tap-highlight-color: transparent; }
 
 /* CONTRASTE FORCE (Windows). Les couleurs de fond disparaissent : un etat actif
@@ -272,20 +283,6 @@ button, a, .pilule, .tag { -webkit-tap-highlight-color: transparent; }
     outline: 2px solid CanvasText;
     outline-offset: 2px;
   }
-}
-
-body {
-  margin: 0;
-  font-family: var(--sans);
-  /* 16 px et non 15 : sur un ecran 4K, Chris lisait mieux a 110 pour cent de
-     zoom. La base porte tous les rem du site, donc elle suffit a tout monter. */
-  font-size: 16px;
-  line-height: 1.55;
-  color: var(--texte);
-  background: var(--fond);
-  background-image: var(--fond-degrade);
-  background-attachment: fixed;
-  min-height: 100vh;
 }
 
 h1, h2, h3, h4 {
@@ -462,7 +459,11 @@ button { font-family: inherit; }
 }
 
 /* Ecran Mes meilleurs reglages : une carte par cafe. */
-#reglages-liste { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+#reglages-liste {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--ecart-cartes);
+}
 .reglage { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
 .reglage.inactif { opacity: 0.6; }
 .reglage-entete { display: flex; flex-direction: column; gap: 2px; }
@@ -530,14 +531,24 @@ button { font-family: inherit; }
 .btn-ligne.actif { color: var(--accent-fort); background: var(--accent-fond); }
 
 /* Détail dépliable : rendu en colspan, donc sans toucher aux largeurs figées. */
-.ligne-detail > td { background: var(--panneau-2); padding: 14px 16px; white-space: normal; }
+.ligne-detail > td {
+  background: var(--panneau-2);
+  padding: 0 12px 14px 38px;
+  white-space: normal;
+  border-top: none;
+}
 .detail-grille {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 10px 14px;
 }
-.detail-item { display: flex; flex-direction: column; }
-.detail-item span { font-size: 0.7rem; color: var(--attenue); text-transform: uppercase; letter-spacing: 0.04em; }
-.detail-item b { font-size: 0.9rem; color: var(--encre); }
+.detail-item { display: flex; flex-direction: column; min-width: 0; }
+.detail-item span {
+  font-size: 0.7rem;
+  color: var(--attenue);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.detail-item b { font-size: 0.9rem; color: var(--encre); font-weight: 600; }
 .detail-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
 .detail-tag {
   font-size: 0.75rem; padding: 2px 9px; border-radius: 999px;
@@ -676,11 +687,8 @@ button { font-family: inherit; }
 /* .marque, .nav et .nav-icone ont disparu avec l'entete (refonte Comptoir,
    etape 2). .nav-btn reste, mais comme simple crochet de comportement : c'est
    .rail-entree et .barre-entree qui portent le dessin. */
-.nav-btn { font: inherit; }
-
-.nav { display: flex; gap: 4px; flex: 1; justify-content: center; flex-wrap: wrap; }
-
 .nav-btn {
+  font: inherit;
   border: none;
   background: transparent;
   color: var(--attenue);
@@ -691,6 +699,9 @@ button { font-family: inherit; }
   white-space: nowrap;
   transition: background var(--transition), color var(--transition);
 }
+
+.nav { display: flex; gap: 4px; flex: 1; justify-content: center; flex-wrap: wrap; }
+
 .nav-btn:hover { color: var(--encre); background: var(--panneau-2); }
 /* Un état sélectionné ne change QUE des couleurs : voir le commentaire sur
    .tag.actif plus bas. Le gras élargissait le libellé et décalait les voisins. */
@@ -723,20 +734,17 @@ button { font-family: inherit; }
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  /* ZONE D'APPUI de 44 px sans changer le dessin : le pseudo-element ::after
+     deborde de 6 px en hauteur et 2 px sur les cotes. Ce sont les boutons qu'on
+     tape plusieurs fois par jour les doigts mouilles, et 30 px passent le
+     minimum WCAG (24) mais pas le confort (44). */
+  position: relative;
 }
 .btn-icone:hover { border-color: var(--accent); }
 
-/* ZONE D'APPUI de 44 px sans changer le dessin. Les icones d'entete font 30 a
-   34 px de haut, ce qui passe le minimum WCAG (24) mais pas le confort (44), et
-   ce sont les boutons qu'on tape plusieurs fois par jour les doigts mouilles.
-   Le pseudo-element deborde surtout en hauteur : sur les cotes, deux pixels
-   suffisent pour que deux voisins ne se marchent pas dessus (l'espace entre eux
-   fait 4 a 5 px). */
-.btn-icone { position: relative; }
 .btn-icone::after { content: ""; position: absolute; inset: -6px -2px; }
 @media (max-width: 480px) {
 }
-
 
 /* ---------- Structure ---------- */
 
@@ -1107,18 +1115,20 @@ html[data-theme="sombre"] .carte-sombre {
 .table-dernieres col.c-mesures { width: 33%; }
 .table-dernieres col.c-gouts { width: 20%; }
 .table-dernieres col.c-note { width: 8%; }
+/* UNE LIGNE PAR TASSE. Tout ce qui est ici tient sur une ligne et se tronque
+   proprement : une table dont chaque ligne fait six lignes n'est plus une table. */
 .table-dernieres td {
   padding: 11px 10px;
   border-top: 1px solid var(--lignes-douces);
   vertical-align: top;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .table-dernieres tr:first-child td { border-top: none; }
 .table-dernieres tr { cursor: pointer; }
 .table-dernieres tr:hover td { background: var(--panneau-2); }
 .table-dernieres tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-/* UNE LIGNE PAR TASSE. Tout ce qui est ici tient sur une ligne et se tronque
-   proprement : une table dont chaque ligne fait six lignes n'est plus une table. */
-.table-dernieres td { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .d-quand { white-space: nowrap; color: var(--attenue); font-variant-numeric: tabular-nums; }
 .d-machine { width: 18px; }
 .d-cafe b { color: var(--encre); }
@@ -1348,6 +1358,13 @@ html[data-theme="sombre"] .carte-sombre {
   font-size: 0.92rem;
   cursor: pointer;
   transition: border-color var(--transition), background var(--transition), transform 120ms;
+  /* A la hauteur des champs : cote a cote dans une meme ligne, deux hauteurs
+     differentes se voient immediatement. */
+  min-height: var(--hauteur-controle);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
 }
 .btn:hover { border-color: var(--accent); }
 .btn:active { transform: scale(0.98); }
@@ -1358,8 +1375,14 @@ html[data-theme="sombre"] .carte-sombre {
   font-weight: 600;
 }
 .btn-primaire:hover { background: var(--accent-fort); border-color: var(--accent-fort); }
-.btn-grand { padding: 14px 26px; font-size: 1.02rem; border-radius: 12px; }
-.btn-petit { padding: 6px 11px; font-size: 0.82rem; }
+.btn-grand {
+  padding: 14px 26px;
+  font-size: 1.02rem;
+  border-radius: var(--rayon-petit);
+  min-height: 52px;
+  padding-inline: 26px;
+}
+.btn-petit { padding: 6px 11px; font-size: 0.82rem; min-height: 34px; }
 .btn-discret { border-color: transparent; background: transparent; color: var(--attenue); }
 .btn-discret:hover { color: var(--encre); border-color: var(--lignes); }
 /* Modale de confirmation : courte, boutons a droite, le choix sur en premier. */
@@ -1445,17 +1468,21 @@ input:focus, select:focus, textarea:focus {
   background: var(--panneau);
   border: 1px solid var(--lignes);
   border-radius: var(--rayon);
-  padding: 16px 18px 4px;
-  margin-bottom: 16px;
+  padding: var(--carte-padding);
+  margin-bottom: var(--ecart-cartes);
+  box-shadow: var(--ombre-carte);
 }
 .saisie-bloc-titre {
-  margin: 0 0 14px;
-  font-family: var(--sans);
-  font-size: 0.74rem;
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--attenue);
+  margin: 0 0 18px;
+  font-family: var(--serif);
+  font-size: 1.35rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--encre);
+  display: flex;
+  align-items: center;
+  gap: 11px;
 }
 /* Café, méthode et recette sur UNE rangée : ce sont les trois choix qui
    décident de tout le reste, ils se lisent d'un regard. Alignés en bas pour que
@@ -1503,16 +1530,22 @@ input:focus, select:focus, textarea:focus {
 }
 .saisie-bloc .option-saisie .label-inline { font-weight: 600; }
 .saisie-bloc .option-saisie .champ-hint { flex: 1 1 200px; }
-.saisie-bloc .grille-nombres { margin-bottom: 14px; }
+.saisie-bloc .grille-nombres {
+  margin-bottom: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px 18px;
+}
 .saisie-bloc .options-saisie { margin-bottom: 4px; }
 .saisie-bloc .tasses-editeur { margin-bottom: 14px; }
 
 .saisie-aside {
   position: sticky;
-  top: 82px;
+  top: 22px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--ecart-cartes);
+  min-width: 0;
 }
 .aside-carte { padding: 15px 17px; }
 .aside-titre { display: flex; align-items: center; gap: 9px; }
@@ -1645,6 +1678,9 @@ input:focus, select:focus, textarea:focus {
   background: var(--panneau-2);
   border: 1px solid var(--lignes);
   border-radius: var(--rayon-petit);
+  border-top: 1px dashed var(--lignes);
+  padding-top: 10px;
+  margin-top: 4px;
 }
 .option-saisie .champ-hint { margin: 0; }
 .option-saisie input[type="number"] { max-width: 110px; }
@@ -1665,8 +1701,9 @@ input:focus, select:focus, textarea:focus {
   font-size: 0.87rem;
   color: var(--encre);
   animation: apparition 250ms ease-out;
+  position: relative;
+  padding-left: 40px;
 }
-.avertissement { position: relative; padding-left: 40px; }
 .avertissement::before {
   content: "";
   position: absolute; left: 14px; top: 12px;
@@ -1685,28 +1722,59 @@ input:focus, select:focus, textarea:focus {
 /* Bandeau live */
 .bandeau-live {
   display: flex;
-  gap: 18px;
+  gap: 10px 26px;
   flex-wrap: wrap;
-  background: var(--panneau-2);
+  background: none;
   border-radius: var(--rayon-petit);
   padding: 10px 16px;
   margin-bottom: 16px;
-  font-size: 0.88rem;
+  font-size: 0.78rem;
   color: var(--attenue);
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--lignes);
 }
-.bandeau-live b { color: var(--encre); font-variant-numeric: tabular-nums; }
+.bandeau-live b {
+  color: var(--encre);
+  font-variant-numeric: tabular-nums;
+  display: block;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 1.25rem;
+}
 .bandeau-live .hors-plage b { color: var(--danger); }
 
 /* Chronomètre */
 .chrono { margin-bottom: 16px; }
-.chrono-entete-ligne { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.chrono-entete-ligne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+  padding: 14px 18px;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
 .chrono-valeur {
   font-family: var(--serif);
   color: var(--encre);
   font-variant-numeric: tabular-nums;
 }
 .chrono-grand { font-size: 2.6rem; line-height: 1.1; }
-.chrono-bip-label { font-size: 0.8rem; color: var(--attenue); }
+.chrono-bip-label {
+  font-size: 0.8rem;
+  color: var(--attenue);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 12px;
+}
 .chrono-etapes { margin: 6px 0 10px; }
 .chrono-etape-courante {
   font-size: 1.05rem;
@@ -1934,18 +2002,36 @@ input:focus, select:focus, textarea:focus {
 /* Les pilules et les tags gardent leur reperage pour la bulle commune. */
 .pilule, .tag { position: relative; }
 
-.saisie-actions { display: flex; gap: 12px; align-items: center; margin-top: 20px; flex-wrap: wrap; }
+.saisie-actions { display: flex; gap: 14px; align-items: center; margin-top: 20px; flex-wrap: wrap; }
 
 /* ---------- Historique ---------- */
 
+/* Les filtres, en pastilles. Ce sont des <select> natifs habilles : un select
+   OUVRE deja un menu, sait le clavier, la frappe et la roue du telephone ; un
+   menu ecrit a la main aurait tout cela a reapprendre pour le meme dessin. */
 .historique-filtres {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 10px 14px;
+  display: flex;
+  gap: 8px;
   margin-bottom: 14px;
-  align-items: end;
+  align-items: center;
+  flex-wrap: wrap;
+  background: none;
+  border: none;
+  padding: 0;
 }
-.historique-filtres .champ { margin-bottom: 0; }
+.historique-filtres .champ {
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0 10px 0 14px;
+  min-height: var(--hauteur-controle);
+  border: 1px solid var(--lignes);
+  border-radius: var(--rayon-pastille);
+  background: var(--panneau);
+}
 /* La recherche prend sa propre ligne, sur toute la largeur. Elle ne filtre pas
    sur une colonne comme les autres, elle cherche dans le texte libre : lui
    donner la taille d'un menu déroulant de 150 px la ferait passer pour un
@@ -1961,8 +2047,8 @@ input:focus, select:focus, textarea:focus {
   gap: 8px;
   align-items: center;
   justify-content: flex-end;
-  grid-column: 1 / -1;
   flex-wrap: wrap;
+  margin-left: auto;
 }
 .historique-filtres-actions .btn { white-space: nowrap; }
 
@@ -2167,10 +2253,10 @@ input[type="range"]::-moz-range-thumb {
 
 /* Les gouts s'empilent au lieu de se tronquer : ils sont courts, et une pastille
    coupee en deux ne dit plus quel gout c'etait. */
-.chip-diagnostic { white-space: normal; }
+.chip-diagnostic { white-space: normal; font-size: 0.8rem; color: var(--attenue); }
 /* Les cinq boutons d'action doivent TENIR : tronques, ils deviennent
    inatteignables, ce qui est une panne et pas un defaut de mise en page. */
-.actions-ligne { gap: 2px; justify-content: flex-end; }
+.actions-ligne { gap: 2px; justify-content: flex-end; display: flex; }
 
 /* La ligne de commentaire : pleine largeur sous sa tasse, sans bordure haute
    pour qu'elle se lise comme la suite de la ligne et non comme une ligne de
@@ -2199,6 +2285,8 @@ input[type="range"]::-moz-range-thumb {
   position: sticky;
   top: 0;
   background: var(--panneau);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .table-historique th:hover { color: var(--encre); }
 .table-historique td {
@@ -2211,8 +2299,6 @@ input[type="range"]::-moz-range-thumb {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* Les en-tetes aussi, sinon un libelle long recreerait le probleme. */
-.table-historique th { overflow: hidden; text-overflow: ellipsis; }
 .table-historique tbody tr { transition: background 150ms; }
 .table-historique tbody tr:hover { background: var(--panneau-2); }
 .tri { font-size: 0.7rem; }
@@ -2245,9 +2331,6 @@ input[type="range"]::-moz-range-thumb {
 }
 .chip-methode.brikka::before { background: var(--brikka); }
 .chip-methode.switch::before { background: var(--switch); }
-.chip-diagnostic { font-size: 0.8rem; color: var(--attenue); }
-
-.actions-ligne { display: flex; gap: 2px; }
 .btn-ligne {
   display: inline-grid;
   place-items: center;
@@ -2269,15 +2352,16 @@ input[type="range"]::-moz-range-thumb {
 
 .sommaire {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
   position: sticky;
   top: 62px;
   z-index: var(--z-sommaire);
-  background: color-mix(in srgb, var(--fond) 88%, transparent);
+  background: none;
   backdrop-filter: blur(8px);
-  padding: 8px 0;
-  margin-bottom: 8px;
+  padding: 0;
+  margin-bottom: 22px;
+  border: none;
 }
 .sommaire-sep {
   width: 1px; align-self: stretch; margin: 2px 5px;
@@ -2285,15 +2369,15 @@ input[type="range"]::-moz-range-thumb {
 }
 .sommaire a {
   text-decoration: none;
-  color: var(--attenue);
-  font-size: 0.85rem;
-  padding: 6px 13px;
-  border-radius: 999px;
+  color: var(--texte);
+  font-size: 0.84rem;
+  padding: 7px 14px;
+  border-radius: var(--rayon-pastille);
   border: 1px solid var(--lignes);
   background: var(--panneau);
   transition: all var(--transition);
 }
-.sommaire a:hover { color: var(--accent-fort); border-color: var(--accent); }
+.sommaire a:hover { color: var(--accent); border-color: var(--accent); }
 
 .ref-titre {
   font-size: 1.45rem;
@@ -2513,16 +2597,25 @@ input[type="range"]::-moz-range-thumb {
 
 .modale {
   border: 1px solid var(--lignes);
-  border-radius: 18px;
+  border-radius: var(--rayon);
   background: var(--panneau);
   color: var(--texte);
   padding: 26px 28px;
   max-width: 620px;
   width: calc(100vw - 40px);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--ombre);
 }
-.modale::backdrop { background: rgba(12, 7, 3, 0.6); backdrop-filter: blur(3px); }
-.modale h2 { margin-top: 0; }
+.modale::backdrop { background: rgba(38, 25, 15, 0.35); backdrop-filter: blur(3px); }
+/* Les titres de modale en serif, comme les titres de page : une modale est un
+   ecran de plus, pas une boite de dialogue systeme. */
+.modale h2 {
+  margin: 0 0 18px;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 1.65rem;
+  letter-spacing: -0.01em;
+  color: var(--encre);
+}
 .modale-large { max-width: 780px; }
 .modale-note { font-size: 0.8rem; color: var(--attenue); }
 .modale-fermer { margin-top: 14px; }
@@ -2861,43 +2954,9 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 /* Deux colonnes : le formulaire, puis une colonne FIXE de 360 px qui suit le
    defilement. C'est la que vivent le chrono, la fiche recette et la fiche cafe,
    parce qu'on les LIT pendant qu'on remplit le formulaire, on ne les remplit pas. */
-/* L'ecran ne repartit rien : il n'a qu'un enfant, .saisie-layout, qui porte la
-   grille. Une seconde grille ici mettait tout le formulaire dans la colonne 1 et
-   laissait 360 px vides a droite. */
-#form-saisie { min-width: 0; }
-.saisie-aside {
-  position: sticky;
-  top: 22px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--ecart-cartes);
-  min-width: 0;
-}
-
 /* La tete de page precede la grille, elle couvre donc toute la largeur. */
 #ecran-saisie .saisie-entete { max-width: 1400px; margin-inline: auto; }
 
-/* ---------- Les blocs numerotes ---------- */
-.saisie-bloc {
-  background: var(--panneau);
-  border: 1px solid var(--lignes);
-  border-radius: var(--rayon);
-  padding: var(--carte-padding);
-  margin-bottom: var(--ecart-cartes);
-  box-shadow: var(--ombre-carte);
-}
-.saisie-bloc-titre {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  margin: 0 0 18px;
-  font-family: var(--serif);
-  font-weight: 400;
-  font-size: 1.35rem;
-  letter-spacing: -0.01em;
-  text-transform: none;
-  color: var(--encre);
-}
 /* Le numero du bloc : un rond d'encre. Il dit l'ORDRE, ce qu'un titre seul ne
    fait pas, et c'est un formulaire qu'on remplit de haut en bas. */
 .bloc-num {
@@ -2956,43 +3015,7 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   box-shadow: 0 1px 3px rgba(38, 25, 15, 0.13);
 }
 
-/* ---------- Bloc 2 : trois colonnes, et un pied de bloc ---------- */
-.saisie-bloc .grille-nombres {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px 18px;
-}
 .saisie-bloc .grille-nombres > * { min-width: 0; }
-
-/* Les options a cocher sur une ligne en pointilles : elles ne sont pas des
-   champs, elles ne doivent pas ressembler a des champs. */
-.option-saisie {
-  border-top: 1px dashed var(--lignes);
-  padding-top: 10px;
-  margin-top: 4px;
-}
-
-/* Le pied de bloc : ratio, microns, cout, cafeine. Filet en haut, fond
-   transparent : c'est un RESULTAT, pas une carte de plus. */
-.bandeau-live {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 26px;
-  margin-top: 18px;
-  padding-top: 14px;
-  border-top: 1px solid var(--lignes);
-  background: none;
-  font-size: 0.78rem;
-  color: var(--attenue);
-}
-.bandeau-live b {
-  display: block;
-  font-family: var(--serif);
-  font-weight: 400;
-  font-size: 1.25rem;
-  color: var(--encre);
-  font-variant-numeric: tabular-nums;
-}
 
 /* ---------- Le chrono, dans la colonne de droite ---------- */
 .chrono-bloc { margin-bottom: 0; }
@@ -3003,14 +3026,6 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   font-variant-numeric: tabular-nums;
 }
 
-/* ---------- La barre d'action ---------- */
-.saisie-actions {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-.btn-grand { min-height: 52px; padding-inline: 26px; }
 .saisie-rappel { font-size: 0.78rem; color: var(--attenue); }
 
 /* ---------- Telephone ---------- */
@@ -3055,46 +3070,12 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
    REFONTE COMPTOIR, ETAPE 6 : L'HISTORIQUE
    ================================================================== */
 
-
 /* La recherche vit dans la tete de page, a droite du titre. */
 #ecran-historique .champ-recherche { width: 280px; max-width: 100%; margin: 0; }
 #ecran-historique .champ-recherche label { display: none; }
 /* Le fond de champ etait coupe : « Chercher dans les commentair ». Plus court,
    il tient, et l'ecran s'appelle deja Historique. */
 #ecran-historique .champ-recherche input { text-overflow: ellipsis; }
-/* « Reinitialiser » vit AVEC les pastilles, pas flottant a l'autre bout de la
-   ligne : c'est leur bouton, il doit etre a cote d'elles. */
-.historique-filtres-actions { display: flex; gap: 8px; margin-left: 0; align-items: center; }
-
-/* ---------- Les filtres, en pastilles ----------
-   Ce sont des <select> natifs habilles. Un select OUVRE deja un menu, sait le
-   clavier, la frappe et la roue du telephone ; un menu ecrit a la main aurait
-   tout cela a reapprendre pour le meme dessin. */
-.historique-filtres {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 14px;
-  background: none;
-  border: none;
-  padding: 0;
-}
-.historique-filtres .champ {
-  /* flex-direction: ROW, explicitement. .champ est en colonne par defaut, et
-     poser display:flex sans direction laissait le libelle au-dessus du
-     controle : chaque pastille devenait un galet a deux etages. */
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  padding: 0 10px 0 14px;
-  min-height: var(--hauteur-controle);
-  border: 1px solid var(--lignes);
-  border-radius: var(--rayon-pastille);
-  background: var(--panneau);
-}
 .historique-filtres .champ label {
   margin: 0;
   font-size: 0.76rem;
@@ -3137,44 +3118,53 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 .historique-filtres .champ input[type="number"] { width: 3.2rem; }
 .historique-filtres .champ select:focus-visible,
 .historique-filtres .champ input:focus-visible { outline: 2px solid var(--accent); border-radius: 6px; }
-.historique-filtres-actions { display: flex; gap: 8px; margin-left: auto; }
-
 /* ---------- Le bandeau resume ---------- */
 .historique-resume {
-  display: grid;
+  display: flex;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 14px 24px;
-  align-items: start;
-  padding: 16px 22px;
+  gap: 0;
+  align-items: stretch;
+  padding: 14px 22px;
   margin-bottom: 14px;
   background: var(--panneau-2);
   border-radius: var(--rayon);
+  flex-wrap: wrap;
 }
-.resume-item { display: flex; flex-direction: column; min-width: 0; }
+.resume-item {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 2px 30px;
+  border-left: 1px solid var(--lignes);
+}
 .resume-valeur {
   font-family: var(--serif);
-  font-size: 1.4rem;
-  line-height: 1.1;
+  font-size: 1.85rem;
+  line-height: 1.05;
   color: var(--encre);
   font-variant-numeric: tabular-nums;
 }
-.resume-libelle { font-size: 0.72rem; color: var(--attenue); }
+.resume-libelle {
+  font-size: 0.66rem;
+  color: var(--attenue);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
 .resume-note {
   font-size: 0.72rem;
   color: var(--texte);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: 200px;
+  margin-top: 2px;
 }
-
-
 
 /* Gouts et diagnostic partagent une cellule. */
 .h-diag { display: block; color: var(--accent-fort); }
 .h-gouts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 
-/* ---------- Le detail deplie ---------- */
-.ligne-detail > td { padding: 0 12px 14px 38px; border-top: none; }
 .detail-bloc,
 .ligne-detail .detail-grille {
   display: grid;
@@ -3184,10 +3174,6 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   background: var(--panneau-2);
   border-radius: var(--rayon-petit);
 }
-.detail-item { display: flex; flex-direction: column; min-width: 0; }
-.detail-item span { font-size: 0.7rem; color: var(--attenue); }
-.detail-item b { font-weight: 600; color: var(--encre); }
-
 @media (max-width: 900px) {
   .detail-bloc, .ligne-detail .detail-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .historique-filtres-actions { margin-left: 0; }
@@ -3197,27 +3183,6 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
    REFONTE COMPTOIR, ETAPE 7 : LES ECRANS SECONDAIRES
    ================================================================== */
 
-/* Les boutons suivent la hauteur des champs : cote a cote dans une meme ligne,
-   deux hauteurs differentes se voient immediatement. */
-.btn { min-height: var(--hauteur-controle); display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
-.btn-petit { min-height: 34px; }
-.btn-grand { min-height: 52px; border-radius: var(--rayon-petit); }
-
-/* Les titres de modale en serif, comme les titres de page : une modale est un
-   ecran de plus, pas une boite de dialogue systeme. */
-.modale {
-  border-radius: var(--rayon);
-  padding: 26px 28px;
-  box-shadow: var(--ombre);
-}
-.modale h2 {
-  margin: 0 0 18px;
-  font-family: var(--serif);
-  font-weight: 400;
-  font-size: 1.65rem;
-  letter-spacing: -0.01em;
-  color: var(--encre);
-}
 .modale h3 {
   font-size: 0.69rem;
   font-weight: 700;
@@ -3225,30 +3190,6 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   letter-spacing: 0.08em;
   color: var(--attenue);
 }
-/* Le voile de la DA, le meme que celui des feuilles. */
-.modale::backdrop { background: rgba(38, 25, 15, 0.35); backdrop-filter: blur(3px); }
-
-/* Le sommaire du guide, en pastilles comme les filtres de l'historique. */
-.sommaire {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 22px;
-  padding: 0;
-  background: none;
-  border: none;
-}
-.sommaire a {
-  padding: 7px 14px;
-  border: 1px solid var(--lignes);
-  border-radius: var(--rayon-pastille);
-  background: var(--panneau);
-  color: var(--texte);
-  text-decoration: none;
-  font-size: 0.84rem;
-}
-.sommaire a:hover { border-color: var(--accent); color: var(--accent); }
-
 /* Les titres de section du guide et des parametres passent en serif : ce sont
    des titres de contenu, pas des intertitres de bloc. */
 #ecran-guide h3,
@@ -3261,26 +3202,10 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   color: var(--encre);
 }
 
-/* Mes meilleurs reglages : une carte par cafe, au meme ecart que partout. */
-#reglages-liste { gap: var(--ecart-cartes); }
-
 /* ---------- Le chrono repliable ----------
    Il vit sous la fiche recette, replie derriere son entete. L'entete EST le
    bouton, et porte le temps : replie, le chrono reste lisible. */
 #chrono-widget { padding: 0; overflow: hidden; }
-.chrono-entete-ligne {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 14px 18px;
-  border: none;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
 .chrono-entete-ligne:hover { background: var(--panneau-2); }
 .chrono-entete-ligne:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .chrono-libelle {
@@ -3302,8 +3227,6 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 }
 #chrono-widget.ouvert .chrono-chevron { transform: rotate(-135deg) translate(-2px, -2px); }
 #chrono-corps { padding: 0 18px 18px; }
-.chrono-bip-label { display: inline-flex; align-items: center; gap: 7px; margin-bottom: 12px; }
-
 /* Replie, le temps reste grand : c'est lui qu'on vient lire. */
 #chrono-widget .chrono-grand {
   font-family: var(--serif);
@@ -3345,8 +3268,6 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   .table-conteneur { display: none; }
   .h-cartes { display: flex; flex-direction: column; gap: 10px; }
 }
-
-
 
 .h-carte {
   background: var(--panneau);
@@ -3396,7 +3317,6 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 }
 .h-carte-detail .detail-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 0; background: none; }
 
-
 /* ---------- Entete de l'historique, refait ---------- */
 
 /* La MACHINE en controle segmente : le filtre le plus utilise se lit et se
@@ -3440,38 +3360,12 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   box-shadow: 0 1px 3px rgba(38, 25, 15, 0.13);
 }
 
-/* LE BANDEAU RESUME, serre. Il etalait quatre chiffres sur 990 px avec un
-   auto-fit : des colonnes de 250 px pour un nombre a deux chiffres, donc du
-   vide partout. Les items se dimensionnent a leur contenu, cales a gauche, et
-   un filet les separe. */
-.historique-resume {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  gap: 0;
-  padding: 14px 22px;
-}
-.resume-item {
-  padding: 2px 30px;
-  border-left: 1px solid var(--lignes);
-  min-width: 0;
-}
 .resume-item:first-child { padding-left: 0; border-left: none; }
-.resume-valeur { font-size: 1.85rem; line-height: 1.05; }
-.resume-libelle {
-  font-size: 0.66rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-.resume-note { max-width: 200px; margin-top: 2px; }
-
 @media (max-width: 700px) {
   .resume-item { padding: 2px 16px; }
   .filtre-methode { width: 100%; }
   .filtre-methode .seg { flex: 1; justify-content: center; }
 }
-
 
 /* Les EN-TETES passent a la ligne au lieu de se couper. « Goûts et diagnostic »
    demandait 171 px pour 135 offerts et devenait « Goûts et diag… » ; les

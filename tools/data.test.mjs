@@ -2050,12 +2050,13 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("chaque type de champ texte de la page est habille par le CSS",
     nus.length === 0, nus.join(", "));
 
-  /* Le bloc des actions de l'historique prend sa propre ligne. Il etait une
-     cellule de la grille des filtres, large de 150 px : les deux boutons
-     passaient a la ligne et "Exporter le filtre en CSV" se coupait dedans, d'ou
-     un bloc haut et etroit. Ce ne sont pas des filtres. */
+  /* Le bloc des actions de l'historique ne se comporte pas comme un filtre. Il
+     etait une cellule de la grille des filtres, large de 150 px : les deux
+     boutons passaient a la ligne et "Exporter le filtre en CSV" se coupait
+     dedans, d'ou un bloc haut et etroit. Depuis que les filtres sont en flex
+     (pastilles), il se pousse a droite par margin-left: auto. */
   check("les actions de l'historique ne sont plus une colonne de filtre",
-    /\.historique-filtres-actions \{[^}]*grid-column: 1 \/ -1/.test(css));
+    /\.historique-filtres-actions \{[^}]*margin-left: auto/.test(css));
   check("et leurs libelles ne se coupent plus",
     /\.historique-filtres-actions \.btn \{[^}]*white-space: nowrap/.test(css));
 }

@@ -7,7 +7,7 @@ choix, les bugs trouvés et le raisonnement qui a mené là vivent dans
 qu'on touche. L'historique des versions est dans `CHANGELOG.md`. Commencer par
 `START-HERE.md` si tu arrives sans contexte.
 
-Dernière mise à jour : v8.23, 2026-09-14.
+Dernière mise à jour : v8.31, 2026-09-19.
 
 ## 1. Vue d'ensemble
 
@@ -44,6 +44,27 @@ câblage d'`app.js` les traitent déjà toutes, la navigation n'a rien appris de
 nouveau. Les icônes sont des SVG en trait de 1,8 px, jamais des emoji, et un
 test le vérifie. Le bouton flottant de saisie rapide n'existe QUE sur téléphone :
 sur ordinateur « Nouvelle tasse » ouvre la saisie complète.
+
+LE CADRE (v8.27). Tout écran est borné et centré par UNE règle, `.ecran
+{ max-width: var(--cadre); margin-inline: auto }`, 1560 px. Aucun sélecteur
+`#ecran-*` ne pose de largeur ni de marge, un test le refuse : une règle
+d'identifiant bat la classe, et c'est ainsi que l'historique s'est retrouvé calé
+à gauche. La grille de saisie a son propre plafond de 1400 px, centré.
+
+LES THÈMES. Deux blocs de jetons dans `css/styles.css`, `html[data-theme="clair"]`
+et `html[data-theme="sombre"]` (« Espresso », v8.26). Quatre surfaces par thème
+(`--fond`, `--panneau`, `--panneau-2`, `--panneau-3` pour le survol), des filets
+en alpha en sombre, et le relief par `--ombre-carte` et `--ombre-haut`, vides en
+clair. La couleur de fond du thème sombre vit à QUATRE endroits à changer
+ensemble : la feuille de style, la balise `theme-color` d'`index.html`,
+`manifest.json` et la page de connexion de `worker/index.js`. Les icônes en
+trait des boutons d'action viennent de `UI.icone(nom)`, la piste des curseurs
+de `UI.peindreCurseur(curseur)` (à appeler après toute écriture de `.value`).
+
+LA FEUILLE DE STYLE ne définit chaque sélecteur de premier niveau qu'UNE fois
+(v8.31). Les blocs « refonte, étape n » qui redéfinissaient ce qui précédait ont
+été fusionnés dans la première définition. La vérification s'est faite par
+empreinte des styles calculés dans le navigateur, voir `DECISIONS.md`.
 
 Les cinq règles non négociables sont dans `START-HERE.md`. En résumé : jamais de
 tiret cadratin ni demi-cadratin, interface bilingue complète, couleurs de données
@@ -379,14 +400,16 @@ même source que l'écran Paramètres). Raisons et pièges : `DECISIONS.md`.
 
 ## 6 bis. Tableau de bord (js/ui-tableau.js)
 
-Quatre rangées sur une grille de trois colonnes, la carte principale sur deux.
+Quatre rangées sur une grille de DOUZE colonnes : la carte principale sur huit,
+les autres sur quatre (`.col-2` vaut `span 8`, le défaut `span 4`).
 
 - **Dernière tasse** : le café en serif, la ligne de contexte (machine, recette,
-  dose, temps, température, feu), les goûts, le commentaire, et la note en gros
-  à droite derrière un filet. Cliquer la carte ouvre l'extraction.
+  dose, temps, température, feu), les goûts, le commentaire, puis un pied avec
+  ratio, mouture, écoulement et coût (`piedDerniere`), et la note en gros à
+  droite derrière un filet. Cliquer la carte ouvre l'extraction.
 - **Chiffres clés** : quatre tuiles (aujourd'hui, cette semaine, note sur
-  7 jours, régularité) plus une ligne de texte pour le total, la note globale et
-  la caféine.
+  7 jours, régularité) plus trois lignes alignées en bas de carte pour le total,
+  la note globale et la caféine (`#kpis-secondaires`, un `<ul>`).
 - **Graphe 30 jours** : Chart.js, inchangé depuis la v7.x.
 - **Ce que tes données disent** : les insights, sur carte sombre.
 - **Les 5 dernières** : une table, une ligne par tasse plus le commentaire
@@ -394,7 +417,7 @@ Quatre rangées sur une grille de trois colonnes, la carte principale sur deux.
 - **Calendrier** : le nombre de semaines se calcule depuis la largeur du
   conteneur (`semainesVisibles()`), la même valeur sert à la grille, au titre et
   aux cinq chiffres du dessous. Légende de l'échelle, puis les mini statistiques
-  en lignes. Un rattrapage unique recompte après la mise en page, et `app.js`
+  en deux colonnes. Un rattrapage unique recompte après la mise en page, et `app.js`
   redemande un rendu au redimensionnement.
 - **Analyses** : note par café, Brikka contre Switch, goûts, diagnostics, note
   contre mouture, note par recette.
@@ -509,11 +532,15 @@ Points fixés depuis, chacun expliqué dans `DECISIONS.md` :
 DEUX rendus de la meme liste, choisis a 1024 px par `enCartes()` :
 
 - **Ordinateur** : une table de DIX colonnes (date, cafe, machine, recette, dose
-  et eau, mouture, ratio, note, gouts et diagnostic, actions). Largeurs figees
-  par position, voir DECISIONS pour le piege. Le commentaire prend sa propre
-  ligne en pleine largeur sous sa tasse. Le temps, les degres et le feu vivent
-  dans le detail deplie.
-- **Telephone** : une liste de cartes par jour, memes intertitres.
+  et eau, mouture, ratio, note, gouts et diagnostic, actions). Largeurs par
+  `<colgroup>` dans `index.html` : pixels pour les colonnes chiffrees et les
+  actions, rien pour cafe, recette et gouts qui se partagent le reste et passent
+  a la ligne au lieu de se tronquer (un test verifie cette repartition). Microns
+  et ratio en tasse sur une seconde ligne (`small.sous`). Le commentaire prend sa
+  propre ligne en pleine largeur sous sa tasse. Le temps, les degres et le feu
+  vivent dans le detail deplie. PAS d'intertitre de jour : la date complete est
+  au debut de chaque ligne (v8.29, demande de Chris).
+- **Telephone** : une liste de cartes, chacune avec sa date complete.
 
 Les cinq actions viennent de `actionsExtraction()` et le detail de
 `detailContenu()`, appeles par les DEUX rendus : c'est ce qui garantit qu'un
@@ -523,8 +550,8 @@ conteneurs (`#h-corps` et `#h-cartes`).
 
 Au dessus : une tete de page (total et depuis quand, recherche, export), les
 filtres en pastilles (des `<select>` natifs habilles), et un bandeau resume du
-filtre courant en quatre chiffres. Le groupement par jour ne s'applique que si
-le tri est par date.
+filtre courant en quatre chiffres. Les cinq actions et le chevron de depliage
+sont des icones en trait (`UI.icone`), avec les memes `data-action` qu'avant.
 
 ## 9. Synchronisation entre appareils
 
