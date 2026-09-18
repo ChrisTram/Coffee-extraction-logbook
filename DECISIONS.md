@@ -131,6 +131,19 @@ tape et `inputmode="numeric"` donne deja le bon clavier au telephone. Un balayag
 de tous les champs visibles, sur les six ecrans et les deux machines, confirme
 que c'etait le seul du site.
 
+**Le feu par défaut vit à TROIS endroits, et le quatrième est une migration.**
+Chris a redemandé 3 ; l'échelle avait déjà fait 3, puis 4, puis 2. Changer la
+valeur demande de toucher la semence des recettes (`recettes.js`), le repli
+d'usine de l'interface (`ui-noyau.js`) et le défaut du schéma des réglages
+(`data-schema.js`), puis d'ajouter un pas de schéma pour les recettes déjà
+enregistrées. En oublier un laisse un carnet neuf et un carnet existant annoncer
+deux feux différents, sans que rien ne le signale. Un test compare désormais les
+trois sources entre elles.
+
+Au passage, le contrôle « des valeurs valides passent telles quelles » utilisait
+3 comme valeur d'essai : 3 étant devenu le défaut, il ne prouvait plus rien,
+puisqu'une valeur rejetée serait retombée sur le même chiffre. Il utilise 5.
+
 **Le repli de la bouilloire passe de zéro à deux minutes.** Une session
 précédente avait choisi zéro, avec une raison valable : sans mesure, une valeur
 d'usine INVENTÉE produirait des degrés faux d'apparence sérieuse. Son prix était

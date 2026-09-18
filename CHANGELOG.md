@@ -5,6 +5,10 @@ de page du site est celui du `<meta name="app-version">` d'`index.html`, posé
 par `node tools/bump_version.mjs X`. Chaque entrée dit CE QUI a changé ; le
 pourquoi est dans `DECISIONS.md`.
 
+- v8.25 : le feu Brikka par défaut repasse à 3, dans les trois recettes, le
+  repli d'usine et le schéma des réglages, avec un pas de schéma pour les
+  recettes déjà enregistrées. Un test vérifie que les trois sources disent le
+  même chiffre.
 - v8.24 : le calcul de la température depuis le temps de chauffe fonctionne
   enfin, le défaut du temps d'ébullition valait zéro et éteignait la fonction ;
   2 minutes, mesurées par Chris. Le paragraphe qui réclamait de chronométrer sa

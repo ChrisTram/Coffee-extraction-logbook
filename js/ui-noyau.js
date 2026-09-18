@@ -355,7 +355,9 @@ const UI = (() => {
   const DOSE_REPLI_USINE = 15;
 
   // Puissance de feu par défaut, échelle personnelle de 1 à 10, Brikka seulement.
-  const FEU_REPLI_USINE = 2;
+  /* 3 depuis que Chris l'a redemande. L'echelle a deja fait 3, puis 4, puis 2
+     (pas de schema v1 et v2) : elle revient a son point de depart. */
+  const FEU_REPLI_USINE = 3;
 
   /* Réglage RÉEL du broyeur, celui où la molette est physiquement posée. Ce n'est
      pas la même chose que le dial d'une recette, qui est une CIBLE : la Brikka

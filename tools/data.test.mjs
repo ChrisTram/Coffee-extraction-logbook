@@ -238,7 +238,7 @@ const BRIKKAS = RECETTES_DEPART.filter(r => r.methode === "Brikka");
    une cible, pas qu'il y en ait un nombre precis. Un test qui fige le nombre
    demande d'etre retouche a chaque fusion, ce qui est exactement le moment ou on
    ne veut pas d'un test a modifier. */
-check("chaque recette Brikka porte une cible de feu a 2", BRIKKAS.length > 0 && BRIKKAS.every(r => r.puissance_feu === 2),
+check("chaque recette Brikka porte une cible de feu a 3", BRIKKAS.length > 0 && BRIKKAS.every(r => r.puissance_feu === 3),
   BRIKKAS.map(r => r.nom + "=" + r.puissance_feu).join(" | "));
 check("aucune recette Switch n'en porte", RECETTES_DEPART.filter(r => r.methode === "Switch").every(r => r.puissance_feu === undefined));
 
@@ -481,8 +481,12 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     par("b1").eau + " / " + par("b2").eau);
   check("la temperature cible Brikka disparait", par("b1").temp === "" && par("b2").temp === "",
     JSON.stringify([par("b1").temp, par("b2").temp]));
-  check("le feu seme a 4 finit a 2", par("b1").puissance_feu === 2, par("b1").puissance_feu);
-  check("le feu seme a 3 passe par 4 puis finit a 2", par("b2").puissance_feu === 2, par("b2").puissance_feu);
+  /* L'echelle du feu a bouge quatre fois : 3, 4, 2, puis 3 de nouveau (pas v14,
+     demande de Chris). Une fiche semee a 4 comme une fiche semee a 3 finissent
+     donc au meme endroit, et c'est le sens de ces deux controles : la chaine
+     entiere est rejouee, pas seulement le dernier pas. */
+  check("le feu seme a 4 finit a 3", par("b1").puissance_feu === 3, par("b1").puissance_feu);
+  check("le feu seme a 3 revient a 3 apres tout le chemin", par("b2").puissance_feu === 3, par("b2").puissance_feu);
   check("la molette unique s'applique aussi au Switch", par("s1").dial === "1.5.0", par("s1").dial);
   check("la Chronicler passe a 240 g", par("s1").eau === 240, par("s1").eau);
   check("ses paliers suivent",
@@ -899,6 +903,25 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("et a 2 minutes il annonce l'ebullition",
     temperatureDepuisChauffe(repli, repli) === 100,
     String(temperatureDepuisChauffe(repli, repli)));
+}
+/* LE FEU PAR DEFAUT SE DIT AU MEME CHIFFRE PARTOUT.
+
+   Il vit a TROIS endroits : la semence des recettes Brikka (recettes.js), le
+   repli d'usine de l'interface (ui-noyau.js) et le defaut du schema des
+   reglages (data-schema.js). En changer un seul laisse un carnet neuf et un
+   carnet existant annoncer deux feux differents, sans que rien ne le signale.
+
+   Le quatrieme endroit, le pas de schema, ne peut pas se verifier ici : il
+   agit sur des donnees deja enregistrees, et c'est le controle de rejeu des
+   migrations, plus haut, qui s'en charge. */
+{
+  const noyau = readFileSync(join(ROOT, "js/ui-noyau.js"), "utf8");
+  const repli = Number((noyau.match(/FEU_REPLI_USINE\s*=\s*(\d+)/) || [])[1]);
+  const schema = DATA.normaliserReglages({}).puissance_feu;
+  const semees = RECETTES_DEPART.filter(r => r.methode === "Brikka").map(r => r.puissance_feu);
+  const memes = semees.every(v => v === repli) && repli === schema;
+  check("le feu par defaut est le meme dans les trois sources",
+    memes, "semence " + semees.join("/") + ", repli " + repli + ", schema " + schema);
 }
 /* AUCUN BOUTON MORT.
 
@@ -1342,19 +1365,22 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("les reglages sont une table synchronisee", Array.isArray(DATA.state.reglages));
 
   const parDefaut = DATA.normaliserReglages({});
-  check("valeurs d'usine : 15 g, feu 2, molette 1.5.0",
-    parDefaut.dose_g === 15 && parDefaut.puissance_feu === 2 && parDefaut.mouture_dial === "1.5.0",
+  check("valeurs d'usine : 15 g, feu 3, molette 1.5.0",
+    parDefaut.dose_g === 15 && parDefaut.puissance_feu === 3 && parDefaut.mouture_dial === "1.5.0",
     JSON.stringify(parDefaut));
   check("une seule ligne, d'id fixe", parDefaut.id === DATA.REGLAGE_ID);
 
   // Ce qui arrive du reseau n'est pas digne de confiance : on borne tout.
   const absurde = DATA.normaliserReglages({ dose_g: -5, puissance_feu: 99, mouture_dial: "nawak" });
   check("une dose negative retombe sur la valeur d'usine", absurde.dose_g === 15, String(absurde.dose_g));
-  check("un feu hors echelle retombe sur la valeur d'usine", absurde.puissance_feu === 2);
+  check("un feu hors echelle retombe sur la valeur d'usine", absurde.puissance_feu === 3);
   check("une molette invalide retombe sur la valeur d'usine", absurde.mouture_dial === "1.5.0");
-  const bon = DATA.normaliserReglages({ dose_g: 16, puissance_feu: 3, mouture_dial: "1.2.0" });
+  /* 5 et non 3 : 3 est devenu la valeur d'usine, et un controle qui verifie
+     qu'une valeur passe telle quelle ne prouve rien si c'est aussi celle qu'on
+     obtient en cas d'echec. */
+  const bon = DATA.normaliserReglages({ dose_g: 16, puissance_feu: 5, mouture_dial: "1.2.0" });
   check("des valeurs valides passent telles quelles",
-    bon.dose_g === 16 && bon.puissance_feu === 3 && bon.mouture_dial === "1.2.0", JSON.stringify(bon));
+    bon.dose_g === 16 && bon.puissance_feu === 5 && bon.mouture_dial === "1.2.0", JSON.stringify(bon));
 
   // maj_le preserve, jamais restampe a la lecture : meme regle que partout.
   check("maj_le est preserve tel quel", DATA.normaliserReglages({ maj_le: 1234 }).maj_le === 1234);

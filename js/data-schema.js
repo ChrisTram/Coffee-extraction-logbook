@@ -172,7 +172,10 @@ const DATA_SCHEMA = (() => {
       id: REGLAGE_ID,
       maj_le: Number(r && r.maj_le) || 0,
       dose_g: nombre(r && r.dose_g, 0.1, 100, 15),
-      puissance_feu: nombre(r && r.puissance_feu, 1, 10, 2),
+      /* 3, comme le repli d'usine de l'interface et la semence des recettes :
+         trois endroits, une seule valeur, sinon un carnet neuf et un carnet
+         existant n'annoncent pas le meme feu. */
+      puissance_feu: nombre(r && r.puissance_feu, 1, 10, 3),
       mouture_dial: typeof (r && r.mouture_dial) === "string" && GRIND.parseDial(r.mouture_dial)
         ? r.mouture_dial : "1.5.0",
       // Version de schéma du document, voir PAS_DE_SCHEMA. Rangée ici parce que

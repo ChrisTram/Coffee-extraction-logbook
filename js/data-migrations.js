@@ -37,7 +37,7 @@ const DATA_MIGRATIONS = (() => {
 
        Chaque pas ne touche QUE la valeur semée d'avant. Un pas qui écraserait un
        réglage choisi volontairement serait un bug, pas une migration. */
-    const SCHEMA_ACTUEL = 13;
+    const SCHEMA_ACTUEL = 14;
 
     // Rattrapage de la puissance de feu des recettes Brikka : l'échelle de Chris a
     // bougé deux fois, 3 puis 4 puis 2.
@@ -288,6 +288,16 @@ const DATA_MIGRATIONS = (() => {
       });
       return touche;
     } },
+
+    /* Le feu revient a 3, demande de Chris. Troisieme mouvement de cette
+       echelle apres 3 vers 4 (v1) et 4 vers 2 (v2) : les recettes DEJA
+       enregistrees doivent suivre la semence, sinon un carnet existant reste a 2
+       pendant qu'un carnet neuf demarre a 3.
+
+       Ne touche que les Brikka encore a 2, la valeur semee : une recette que
+       Chris aurait lui-meme reglee ailleurs garde son chiffre. */
+    { v: 14, nom: "feu 2 redevient 3",
+      appliquer: majFeuBrikka(r => Number(r.puissance_feu) === 2, 3) },
     ];
 
     /* Applique les pas manquants et écrit la nouvelle version. Renvoie vrai si
