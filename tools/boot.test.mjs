@@ -683,14 +683,22 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
   check("et le detail deplie couvre exactement ces colonnes",
     colspan === entetes, colspan + " contre " + entetes);
 
-  /* Les largeurs sont posees par position : il en faut une par colonne, et leur
-     somme doit faire 100, sinon le navigateur redistribue a sa facon. */
+  /* Les largeurs vivent dans le <colgroup> : une <col> par colonne, en pixels
+     pour les colonnes chiffrees et les actions, rien pour cafe, recette et
+     gouts qui se partagent le reste. Une <col> de moins et le navigateur
+     redistribue a sa facon ; une largeur sur une colonne de texte et elle
+     recommence a tronquer. */
+  const colgroup = htmlPage.slice(debutTable, htmlPage.indexOf("</colgroup>", debutTable));
+  const cols = [...colgroup.matchAll(/<col class="(c-[a-z]+)"/g)].map(m => m[1]);
+  check("chaque colonne a sa <col>", cols.length === entetes, cols.length + " col pour " + entetes + " colonnes");
   const cssPage = readFileSync(join(ROOT, "css/styles.css"), "utf8");
-  const largeurs = [...cssPage.matchAll(/\.table-historique th:nth-child\((\d+)\)[^{]*\{ width: (\d+)%/g)];
-  check("chaque colonne a sa largeur", largeurs.length === entetes,
-    largeurs.length + " largeurs pour " + entetes + " colonnes");
-  const somme = largeurs.reduce((a, m) => a + Number(m[2]), 0);
-  check("et leur somme fait exactement 100", somme === 100, somme + " %");
+  const fixees = cols.filter(c => cssPage.includes(".table-historique col." + c + " { width: ") &&
+    /\d+px/.test(cssPage.split(".table-historique col." + c + " { width: ")[1].split(";")[0]));
+  const libres = cols.filter(c => !fixees.includes(c));
+  check("les colonnes chiffrees et les actions ont une largeur en pixels",
+    fixees.length === entetes - 3, fixees.join(", "));
+  check("cafe, recette et gouts se partagent le reste",
+    libres.join(",") === "c-cafe,c-recette,c-gouts", libres.join(", "));
 }
 
 /* LES EXTRACTIONS RATEES : ecartees des CONSEILS, gardees dans les COMPTAGES.

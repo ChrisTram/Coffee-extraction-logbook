@@ -249,6 +249,27 @@ const UI = (() => {
     return d.toISOString().slice(0, 16);
   }
 
+  /* LES ICONES EN TRAIT. Meme dessin que la navigation : 1,8 px, bouts ronds,
+     couleur du texte. Elles remplacent les glyphes Unicode (⇄ ⚠ ⧉ ✎ 🗑) des
+     boutons d'action, qui changeaient de dessin selon la plateforme et que la
+     regle « jamais d'emoji » de la navigation interdisait deja ailleurs. Le
+     nom est une cle, pas du texte : ce qui se lit est le title du bouton. */
+  const ICONES = {
+    chevron: '<path d="m9 6 6 6-6 6"/>',
+    comparer: '<path d="M4 8h13"/><path d="m14 5 3 3-3 3"/><path d="M20 16H7"/><path d="m10 13-3 3 3 3"/>',
+    ratee: '<path d="M12 4 3 19h18z"/><path d="M12 10v4"/><path d="M12 17h.01"/>',
+    dupliquer: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
+    modifier: '<path d="M12 20h8"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+    supprimer: '<path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/>',
+    plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
+    croix: '<path d="M6 6l12 12"/><path d="M18 6L6 18"/>',
+  };
+  function icone(nom) {
+    return '<svg class="ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"' +
+      ' stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      (ICONES[nom] || "") + "</svg>";
+  }
+
   function fmtDateHeure(dh) {
     const d = new Date(dh);
     if (isNaN(d)) return dh;
@@ -549,7 +570,7 @@ const UI = (() => {
     antiRebond, appliquerTheme, attrTitre, avecTransition, basculerEtat, cacheChamps,
     basculerRatees, chargerReplis, cleLocale, confirmer, detailRatio, diagsAffiches, ecartMoyen,
     ecrireReplis, estRatee, extAnalysables, inclureRatees,
-    extAvecCalculs, fmtDateCourte, fmtDateHeure, fmtDecimal, fmtTemps, fmtVND,
+    extAvecCalculs, fmtDateCourte, fmtDateHeure, fmtDecimal, fmtTemps, fmtVND, icone,
     maintenantLocal, moyenne, nav, normaliserEcran, oublierSignatures, poser, poserTexte,
     recetteAvecVariantes, recettesDeMethode, recettesVivantes, rendreEcranCourant, replis,
     reprendreReplisLocaux, siChange, signatureTable, signatures,

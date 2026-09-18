@@ -521,8 +521,10 @@ button { font-family: inherit; }
 /* Bouton de dépliage, dans la colonne date. */
 .btn-deplier {
   border: none; background: transparent; color: var(--attenue);
-  cursor: pointer; padding: 0 4px 0 0; font-size: 0.8rem;
+  cursor: pointer; padding: 2px; display: inline-grid; place-items: center; border-radius: 6px;
 }
+.btn-deplier .ico { width: 14px; height: 14px; transition: transform var(--transition); }
+.btn-deplier[aria-expanded="true"] .ico { transform: rotate(90deg); }
 .btn-deplier:hover { color: var(--accent); }
 .ligne-histo.comparee { background: var(--accent-fond); }
 .btn-ligne.actif { color: var(--accent-fort); background: var(--accent-fond); }
@@ -2047,23 +2049,28 @@ input:focus, select:focus, textarea:focus {
   border-collapse: collapse;
   font-size: 0.88rem;
 }
-/* Somme exacte de 100 pour cent. Les colonnes de texte libre (cafe, recette,
-   diagnostic) sont les seules a pouvoir deborder, ce sont donc elles qui
-   tronquent; les colonnes calculees ont juste la place qu'il leur faut. */
-/* DIX colonnes depuis que le temps, les degres et le feu sont repartis dans le
-   detail : la place gagnee va au gout, au diagnostic et au commentaire, qui est
-   ce que Chris relit. Les largeurs sont par POSITION : en changer le nombre
-   demande de toucher le <th>, le <td>, cette liste et les deux colspan. */
-.table-historique th:nth-child(1),  .table-historique td:nth-child(1)  { width: 13%; }  /* date */
-.table-historique th:nth-child(2),  .table-historique td:nth-child(2)  { width: 10%; }  /* café */
-.table-historique th:nth-child(3),  .table-historique td:nth-child(3)  { width: 10%; }  /* méthode */
-.table-historique th:nth-child(4),  .table-historique td:nth-child(4)  { width: 11%; }  /* recette */
-.table-historique th:nth-child(5),  .table-historique td:nth-child(5)  { width: 9%; }   /* dose et eau */
-.table-historique th:nth-child(6),  .table-historique td:nth-child(6)  { width: 8%; }   /* mouture */
-.table-historique th:nth-child(7),  .table-historique td:nth-child(7)  { width: 6%; }   /* ratio */
-.table-historique th:nth-child(8),  .table-historique td:nth-child(8)  { width: 6%; }   /* note */
-.table-historique th:nth-child(9),  .table-historique td:nth-child(9)  { width: 14%; }  /* goûts et diagnostic */
-.table-historique th:nth-child(10), .table-historique td:nth-child(10) { width: 13%; }  /* actions */
+/* Les largeurs vivent dans le <colgroup> d'index.html : pixels pour les sept
+   colonnes chiffrees et les actions, rien pour cafe, recette et gouts, qui se
+   partagent le reste a parts egales. Ce sont les seules qui peuvent deborder,
+   et elles passent a la ligne (voir .td-texte) au lieu de se tronquer. */
+.table-historique col.c-date { width: 132px; }
+.table-historique col.c-methode { width: 92px; }
+.table-historique col.c-dose { width: 100px; }
+.table-historique col.c-mouture { width: 104px; }
+.table-historique col.c-ratio { width: 94px; }
+.table-historique col.c-note { width: 60px; }
+.table-historique col.c-actions { width: 150px; }
+/* Cafe et recette passent a la LIGNE au lieu de se tronquer : un nom de cafe
+   coupe en « Trung Nguyên Sáng… » ne dit plus lequel des deux c'est. Les
+   colonnes chiffrees, elles, ne passent jamais a la ligne. */
+.table-historique .td-texte { white-space: normal; line-height: 1.3; color: var(--encre); font-weight: 600; }
+.table-historique .td-recette { white-space: normal; line-height: 1.3; }
+.table-historique .td-num { font-variant-numeric: tabular-nums; }
+.table-historique .td-num small.sous { display: block; font-size: 0.72rem; color: var(--attenue); }
+/* La date en deux tons : le jour en encre, l'heure en attenue, le chevron devant. */
+.td-date { display: flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
+.td-date time { color: var(--encre); }
+.td-date .heure { color: var(--attenue); margin-left: 4px; }
 /* La cellule des actions se passe de sa marge interne : mesure faite, elle
    demandait 137 px pour 129 offerts, et 24 de ces px etaient du vide sur les
    cotes. Un bouton tronque est INATTEIGNABLE, ce qui est une panne et non un
@@ -2075,15 +2082,14 @@ input:focus, select:focus, textarea:focus {
 .chip-diagnostic { white-space: normal; }
 /* Les cinq boutons d'action doivent TENIR : tronques, ils deviennent
    inatteignables, ce qui est une panne et pas un defaut de mise en page. */
-.actions-ligne { gap: 1px; justify-content: flex-end; }
-.btn-ligne { padding: 3px 4px; }
+.actions-ligne { gap: 2px; justify-content: flex-end; }
 
 /* La ligne de commentaire : pleine largeur sous sa tasse, sans bordure haute
    pour qu'elle se lise comme la suite de la ligne et non comme une ligne de
    plus. */
 .ligne-commentaire td {
   border-top: none;
-  padding: 0 10px 10px 30px;
+  padding: 0 12px 10px 38px;
   font-style: italic;
   font-size: 0.82rem;
   color: var(--attenue);
@@ -2155,15 +2161,19 @@ input:focus, select:focus, textarea:focus {
 
 .actions-ligne { display: flex; gap: 2px; }
 .btn-ligne {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
   border: none;
   background: transparent;
   cursor: pointer;
-  font-size: 0.95rem;
-  padding: 4px 5px;
-  border-radius: 6px;
+  padding: 0;
+  border-radius: 7px;
   color: var(--attenue);
   transition: all 150ms;
 }
+.btn-ligne .ico { width: 15px; height: 15px; }
 .btn-ligne:hover { background: var(--panneau-2); color: var(--encre); }
 .btn-ligne.danger:hover { color: var(--danger); }
 
@@ -3069,27 +3079,14 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   white-space: nowrap;
 }
 
-/* ---------- Intertitres de jour ---------- */
-.ligne-jour td {
-  padding: 20px 10px 7px;
-  border: none;
-  background: none;
-}
-.ligne-jour:first-child td { padding-top: 6px; }
-.jour-titre {
-  font-family: var(--serif);
-  font-size: 1.1rem;
-  color: var(--encre);
-  margin-right: 10px;
-}
-.jour-detail { font-size: 0.74rem; color: var(--attenue); }
+
 
 /* Gouts et diagnostic partagent une cellule. */
 .h-diag { display: block; color: var(--accent-fort); }
 .h-gouts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 
 /* ---------- Le detail deplie ---------- */
-.ligne-detail > td { padding: 0 10px 14px; border-top: none; }
+.ligne-detail > td { padding: 0 12px 14px 38px; border-top: none; }
 .detail-bloc,
 .ligne-detail .detail-grille {
   display: grid;
@@ -3261,18 +3258,7 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   .h-cartes { display: flex; flex-direction: column; gap: 10px; }
 }
 
-.h-cartes-jour {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin: 18px 0 2px;
-  font-family: var(--serif);
-  font-weight: 400;
-  font-size: 1.15rem;
-  text-transform: none;
-  color: var(--encre);
-}
-.h-cartes-jour:first-child { margin-top: 0; }
+
 
 .h-carte {
   background: var(--panneau);

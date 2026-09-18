@@ -8,7 +8,7 @@
 (() => {
 
   // Emprunté au noyau, chargé avant nous.
-  const { $, $$, antiRebond, attrTitre, cleLocale, detailRatio, diagsAffiches, estRatee,
+  const { $, icone, $$, antiRebond, attrTitre, cleLocale, detailRatio, diagsAffiches, estRatee,
     extAnalysables, extAvecCalculs, fmtDateCourte, fmtDateHeure, fmtDecimal, fmtTemps, fmtVND,
     moyenne, supprimerExtractionAvecRetour, toast } = UI;
 
@@ -119,9 +119,9 @@
 
     rendreResume(liste);
 
-    /* GROUPEMENT PAR JOUR, mais seulement quand le tri est par date. Grouper un
-       tableau trie par note ferait reapparaitre « Aujourd'hui » a trois endroits
-       differents : deux ordres se disputeraient la meme liste. */
+    /* PLUS D'INTERTITRE DE JOUR (v8.29). Chris n'en voulait pas : une ligne
+       entiere pour un nom de jour, c'est une ligne de moins pour une tasse. La
+       date complete se lit au debut de chaque ligne, comme partout ailleurs. */
     /* Les cartes du telephone. On vide l'autre conteneur : deux rendus vivants
        en meme temps, ce sont deux fois les memes identifiants dans la page. */
     if (enCartes()) {
@@ -131,66 +131,13 @@
       return;
     }
     $("#h-cartes").innerHTML = "";
-
-    if (tri.colonne !== "date_heure") {
-      $("#h-corps").innerHTML = liste.map(e => ligneHistorique(e)).join("");
-    } else {
-      let jourCourant = null;
-      $("#h-corps").innerHTML = liste.map(e => {
-        const jour = String(e.date_heure).slice(0, 10);
-        let tete = "";
-        if (jour !== jourCourant) {
-          jourCourant = jour;
-          const duJour = liste.filter(x => String(x.date_heure).slice(0, 10) === jour).length;
-          /* La date complete n'apparait que quand le titre ne la dit pas.
-             « Aujourd'hui » et « Hier » ont besoin qu'on precise quel jour ;
-             « dimanche 9 » suivi de « 9 aout 2026 » repetait le quantieme. */
-          const nomme = titreDeJour(jour);
-          const dateDite = nomme === I18N.t("h_aujourdhui") || nomme === I18N.t("h_hier");
-          tete = '<tr class="ligne-jour"><td colspan="10">' +
-            '<span class="jour-titre">' + nomme + "</span>" +
-            '<span class="jour-detail">' +
-            (dateDite ? fmtDateCourte(jour) + " · " : "") +
-            I18N.t("h_jour_tasses", { n: duJour, s: duJour > 1 ? "s" : "" }) + "</span></td></tr>";
-        }
-        return tete + ligneHistorique(e);
-      }).join("");
-    }
+    $("#h-corps").innerHTML = liste.map(e => ligneHistorique(e)).join("");
     majBarreComparaison();
   }
 
-  /* LES CARTES, groupees par jour comme la table. Les intertitres sont les
-     memes, la regle aussi : on ne groupe que si le tri est par date, sinon deux
-     ordres se disputent la meme liste. */
+  /* LES CARTES : la meme liste, chaque carte porte sa date complete. */
   function rendreCartes(liste) {
-    if (tri.colonne !== "date_heure") return liste.map(carteExtraction).join("");
-    let jour = null;
-    return liste.map(e => {
-      const j = String(e.date_heure).slice(0, 10);
-      let tete = "";
-      if (j !== jour) {
-        jour = j;
-        const n = liste.filter(x => String(x.date_heure).slice(0, 10) === j).length;
-        const nomme = titreDeJour(j);
-        const dateDite = nomme === I18N.t("h_aujourdhui") || nomme === I18N.t("h_hier");
-        tete = '<h3 class="h-cartes-jour"><span class="jour-titre">' + nomme + "</span>" +
-          '<span class="jour-detail">' + (dateDite ? fmtDateCourte(j) + " · " : "") +
-          I18N.t("h_jour_tasses", { n, s: n > 1 ? "s" : "" }) + "</span></h3>";
-      }
-      return tete + carteExtraction(e);
-    }).join("");
-  }
-
-  /* « Aujourd'hui », « Hier », puis le jour de la semaine. Un nom vaut mieux
-     qu'une date quand la date est recente : on sait tout de suite si c'est la
-     tasse de ce matin. */
-  function titreDeJour(jour) {
-    if (jour === cleLocale(new Date())) return I18N.t("h_aujourdhui");
-    const hier = new Date();
-    hier.setDate(hier.getDate() - 1);
-    if (jour === cleLocale(hier)) return I18N.t("h_hier");
-    return new Date(jour + "T12:00").toLocaleDateString(I18N.locale(),
-      { weekday: "long", day: "numeric" });
+    return liste.map(carteExtraction).join("");
   }
 
   /* LE BANDEAU RESUME : ce que le filtre courant raconte.
@@ -295,26 +242,39 @@
       (cases || tags || e.commentaire ? "" : '<p class="detail-vide">' + I18N.t("d_rien") + "</p>");
   }
 
+  /* La date de la ligne : le jour en encre, l'heure en attenue. fmtDateHeure
+     rend « 9 août 14:43 » ; on coupe sur la derniere espace. */
+  function dateDeuxTons(dh) {
+    const texte = fmtDateHeure(dh);
+    const i = texte.lastIndexOf(" ");
+    if (i < 0) return "<time>" + texte + "</time>";
+    return "<time>" + texte.slice(0, i) + '</time><span class="heure">' + texte.slice(i + 1) + "</span>";
+  }
+
   function ligneHistorique(e) {
     const ouvert = detailsOuverts.has(e.id);
     const compare = comparaison.has(e.id);
     return '<tr data-id="' + e.id + '" class="ligne-histo' + (ouvert ? " ouverte" : "") +
       (compare ? " comparee" : "") + '">' +
-      '<td><button type="button" class="btn-deplier" data-action="deplier" aria-expanded="' + ouvert +
-      '" title="' + attrTitre(I18N.t("h_detail")) + '">' + (ouvert ? "▾" : "▸") + "</button> " +
-      fmtDateHeure(e.date_heure) + "</td>" +
-      '<td title="' + attrTitre(I18N.tr(e._c.cafe_nom)) + '">' + I18N.tr(e._c.cafe_nom) + "</td>" +
+      '<td><span class="td-date"><button type="button" class="btn-deplier" data-action="deplier" aria-expanded="' + ouvert +
+      '" title="' + attrTitre(I18N.t("h_detail")) + '">' + icone("chevron") + "</button>" +
+      dateDeuxTons(e.date_heure) + "</span></td>" +
+      '<td class="td-texte">' + I18N.tr(e._c.cafe_nom) + "</td>" +
       '<td><span class="chip-methode ' + e.methode.toLowerCase() + '">' + e.methode + "</span></td>" +
-      '<td title="' + attrTitre(e.recette) + '">' + (e.recette || "") + "</td>" +
+      '<td class="td-recette">' + (e.recette || "") + "</td>" +
       /* Dose et eau ensemble, comme sur la carte des cinq dernières : ce sont
          deux moitiés d'un même geste, et les séparer en deux colonnes aurait
          coûté de la largeur sans rien apprendre. */
-      "<td>" + (e.dose_g !== "" && e.eau_g !== "" ? e.dose_g + " → " + e.eau_g + " <small>g</small>" : "") + "</td>" +
-      "<td>" + (e.mouture_dial ? e.mouture_dial + " <small>(" + e._c.microns + " µm)</small>" : e._c.moulu ? "<small>" + I18N.t("paquet") + "</small>" : "") + "</td>" +
-      '<td title="' + attrTitre(detailRatio(e._c.ratioBase, e.dose_g, e.eau_g)) + '">' +
+      '<td class="td-num">' + (e.dose_g !== "" && e.eau_g !== "" ? e.dose_g + " → " + e.eau_g + " <small>g</small>" : "") + "</td>" +
+      /* Le complement (microns, ratio en tasse ou en boisson) passe SOUS la
+         valeur, en petit : sur une ligne, « 1.2.0 (499 µm) » se tronquait en
+         « 1.2.0 (49… » dans sa colonne. */
+      '<td class="td-num">' + (e.mouture_dial ? e.mouture_dial + '<small class="sous">' + e._c.microns + " µm</small>"
+        : e._c.moulu ? "<small>" + I18N.t("paquet") + "</small>" : "") + "</td>" +
+      '<td class="td-num" title="' + attrTitre(detailRatio(e._c.ratioBase, e.dose_g, e.eau_g)) + '">' +
       e._c.ratioTexte +
-      (e._c.ratioTasseTexte ? ' <small>(' + I18N.t("rt_tasse_court") + " " + e._c.ratioTasseTexte + ")</small>" : "") +
-      (e._c.ratioBoisson ? ' <small>(' + I18N.t("rt_boisson_court") + " " + e._c.ratioBoisson + ")</small>" : "") + "</td>" +
+      (e._c.ratioTasseTexte ? '<small class="sous">' + I18N.t("rt_tasse_court") + " " + e._c.ratioTasseTexte + "</small>" : "") +
+      (e._c.ratioBoisson ? '<small class="sous">' + I18N.t("rt_boisson_court") + " " + e._c.ratioBoisson + "</small>" : "") + "</td>" +
       '<td class="note-cellule">' + (estRatee(e)
         ? '<span class="badge-ratee" title="' + attrTitre(I18N.t("rt_badge_titre")) + '">' + I18N.t("rt_badge") + "</span>"
         : "") + (e.note_sur_10 !== "" ? e.note_sur_10 : "") + "</td>" +
@@ -337,14 +297,14 @@
     const compare = comparaison.has(e.id);
     return '<div class="actions-ligne">' +
       '<button class="btn-ligne' + (compare ? " actif" : "") + '" data-action="comparer" title="' +
-      attrTitre(I18N.t("h_comparer")) + '">⇄</button>' +
+      attrTitre(I18N.t("h_comparer")) + '">' + icone("comparer") + "</button>" +
       /* La bascule ratée, en PREMIER des actions d'écriture : c'est celle qui se
          clique le plus souvent après coup, et son état est visible sans survol. */
       '<button class="btn-ligne' + (estRatee(e) ? " actif-ratee" : "") + '" data-action="ratee" aria-pressed="' +
-      estRatee(e) + '" title="' + attrTitre(I18N.t(estRatee(e) ? "h_derater" : "h_rater")) + '">⚠</button>' +
-      '<button class="btn-ligne" data-action="dupliquer" title="Dupliquer pour refaire la même">⧉</button>' +
-      '<button class="btn-ligne" data-action="modifier" title="Modifier">✎</button>' +
-      '<button class="btn-ligne danger" data-action="supprimer" title="Supprimer">🗑</button>' +
+      estRatee(e) + '" title="' + attrTitre(I18N.t(estRatee(e) ? "h_derater" : "h_rater")) + '">' + icone("ratee") + "</button>" +
+      '<button class="btn-ligne" data-action="dupliquer" title="Dupliquer pour refaire la même">' + icone("dupliquer") + "</button>" +
+      '<button class="btn-ligne" data-action="modifier" title="Modifier">' + icone("modifier") + "</button>" +
+      '<button class="btn-ligne danger" data-action="supprimer" title="Supprimer">' + icone("supprimer") + "</button>" +
       "</div>";
   }
 
@@ -361,7 +321,7 @@
       (comparaison.has(e.id) ? " comparee" : "") + (estRatee(e) ? " ratee" : "") +
       '" data-id="' + e.id + '">' +
       '<div class="h-carte-tete">' +
-        '<span class="h-carte-heure">' + fmtDateHeure(e.date_heure).replace(/^.*\s/, "") + "</span>" +
+        '<span class="h-carte-heure">' + fmtDateHeure(e.date_heure) + "</span>" +
         '<span class="chip-methode ' + e.methode.toLowerCase() + '">' + e.methode + "</span>" +
         '<span class="h-carte-note">' + (e.note_sur_10 !== "" ? e.note_sur_10 : "") + "</span>" +
       "</div>" +
@@ -377,7 +337,7 @@
       (e.commentaire ? '<p class="h-carte-commentaire">' + attrTitre(e.commentaire) + "</p>" : "") +
       '<div class="h-carte-pied">' +
         '<button type="button" class="btn-deplier" data-action="deplier" aria-expanded="' + ouvert +
-        '" title="' + attrTitre(I18N.t("h_detail")) + '">' + (ouvert ? "▾" : "▸") + "</button>" +
+        '" title="' + attrTitre(I18N.t("h_detail")) + '">' + icone("chevron") + "</button>" +
         actionsExtraction(e) +
       "</div>" +
       (ouvert ? '<div class="h-carte-detail">' + detailContenu(e) + "</div>" : "") +
@@ -621,6 +581,6 @@
     majSegmentMethode,
     rendreCartes,
     goutsHistorique, remplirFiltres, rendreHistorique, rendreHistoriqueDifferee, rendreReglages,
-    rendreResume, sansAccents, texteCherchable, titreDeJour, tri, valeurTri,
+    rendreResume, sansAccents, texteCherchable, tri, valeurTri,
   });
 })();
