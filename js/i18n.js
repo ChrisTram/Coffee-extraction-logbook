@@ -229,7 +229,6 @@ const I18N = (() => {
 
     kpi_regularite: { fr: "régularité, écart moyen à ta moyenne" },
     /* Les trois chiffres sortis des tuiles : ils se lisent en ligne. */
-    kpi_secondaires: { fr: "{n} tasses en tout, {g} sur 10 de moyenne, environ {c} mg de caféine par jour." },
     tb_derniere: { fr: "Dernière tasse, {q}" },
     tb_sur10: { fr: "sur 10" },
     q_maintenant: { fr: "maintenant, {h}" },

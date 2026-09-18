@@ -11,7 +11,7 @@
   // Emprunté au noyau, chargé avant nous.
   const { $, $$, animerCompteur, attrTitre, cleLocale, detailRatio, diagsAffiches,
     ecartMoyen, estRatee, extAnalysables, extAvecCalculs, fmtDateHeure, fmtDecimal, fmtTemps,
-    inclureRatees, moyenne, nav, trouverRecette } = UI;
+    fmtVND, inclureRatees, moyenne, nav, trouverRecette } = UI;
 
   // ---------- Insights automatiques ----------
   // Des phrases calculées, pas des graphiques en plus. Les règles sont
@@ -455,11 +455,12 @@
 
     /* Les trois chiffres sortis des tuiles. Ils restent lisibles, en clair, et
        ne sont plus sur le chemin du regard. */
-    $("#kpis-secondaires").textContent = I18N.t("kpi_secondaires", {
-      n: exts.length,
-      g: fmtDecimal(moyenne(notes) || 0, 1),
-      c: Math.round(cafeine7j / 7),
-    });
+    const ligne = (libelle, valeur) =>
+      "<li><span>" + libelle + "</span><b>" + valeur + "</b></li>";
+    $("#kpis-secondaires").innerHTML =
+      ligne(I18N.t("kpi_total"), exts.length) +
+      ligne(I18N.t("kpi_note"), fmtDecimal(moyenne(notes) || 0, 1) + " / 10") +
+      ligne(I18N.t("kpi_cafeine"), "≈ " + Math.round(cafeine7j / 7) + " mg");
 
     /* La surligne de la tete de page : la date du jour, comme dans la maquette. */
     $("#tableau-surligne").textContent = maintenant.toLocaleDateString(I18N.locale(),
@@ -697,6 +698,7 @@
         "</p>" +
         goutsDerniere(e) +
         (e.commentaire ? '<p class="derniere-grande-commentaire">' + attrTitre(e.commentaire) + "</p>" : "") +
+        piedDerniere(e) +
       "</div>" +
       '<div class="derniere-grande-note">' +
         (estRatee(e) ? '<span class="badge-ratee">' + I18N.t("rt_badge") + "</span>" : "") +
@@ -709,6 +711,22 @@
           : '<span class="grande-note-sans">' + I18N.t("n_pas_notee") + "</span>") +
         (e.diagnostic ? '<span class="pastille-diag">' + diagsAffiches(e.diagnostic) + "</span>" : "") +
       "</div>";
+  }
+
+  /* LE PIED de la carte : ratio, mouture, ecoulement, cout. Quatre chiffres
+     deja calcules, ceux qu'on compare d'une tasse a l'autre, qui occupent la
+     hauteur que la carte gagne en s'alignant sur les chiffres cles. Chaque
+     case n'apparait que si la valeur existe : une case vide est un trou. */
+  function piedDerniere(e) {
+    const cases = [];
+    const carre = (libelle, valeur) => cases.push("<div><span>" + libelle + "</span><b>" + valeur + "</b></div>");
+    if (e._c.ratioTexte) carre(I18N.t("d_ratio"), e._c.ratioTexte);
+    if (e.mouture_dial) carre(I18N.t("d_mouture"), e.mouture_dial + (e._c.microns ? " <small>" + e._c.microns + " µm</small>" : ""));
+    else if (e._c.moulu) carre(I18N.t("d_mouture"), I18N.t("paquet"));
+    const ecoulement = fmtTemps(e.temps_ecoulement_s);
+    if (ecoulement) carre(I18N.t("d_ecoulement"), ecoulement);
+    if (e._c.cout_tasse_vnd !== "") carre(I18N.t("d_cout"), fmtVND(e._c.cout_tasse_vnd));
+    return cases.length ? '<div class="derniere-grande-pied">' + cases.join("") + "</div>" : "";
   }
 
   /* « il y a 2 h ». Assez precis pour situer la tasse, jamais a la minute : on

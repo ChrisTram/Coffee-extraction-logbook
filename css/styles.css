@@ -591,50 +591,34 @@ button { font-family: inherit; }
 .badge-stock-vide { color: var(--danger); border-color: rgba(224, 108, 90, 0.4); background: rgba(224, 108, 90, 0.12); }
 .cafe-ligne.epuise b { text-decoration: line-through; text-decoration-thickness: 1px; }
 
-/* Mini statistiques, sous le calendrier d'activite. */
-/* Les chiffres du calendrier, en LIGNES et non en grille. La carte ne fait
-   qu un tiers de largeur : en colonnes, « tasses par semaine » se coupait en
-   deux et chaque case prenait 70 px de haut pour un chiffre et un mot. En
-   lignes, le nombre a gauche et le libelle a droite, rien ne se coupe. */
+/* Mini statistiques, sous le calendrier d'activite : le nombre a gauche, le
+   libelle a droite, en DEUX colonnes. En une colonne de cinq lignes elles
+   creusaient la carte ; en boites, « tasses par semaine » se coupait en deux. */
 .mini-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 16px;
+  margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid var(--lignes-douces);
 }
 .mini-stat {
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  gap: 8px;
   padding: 3px 0;
+  min-width: 0;
 }
 .mini-stat b {
-  min-width: 2.6rem;
+  min-width: 2.2rem;
   text-align: right;
   font-family: var(--serif);
   font-weight: 400;
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   color: var(--encre);
   font-variant-numeric: tabular-nums;
 }
-.mini-stat span { font-size: 0.78rem; color: var(--attenue); }
-.mini-stat {
-  text-align: center;
-  padding: 10px 6px;
-  background: var(--panneau-2);
-  border: 1px solid var(--lignes);
-  border-radius: var(--rayon-petit);
-}
-.mini-stat b {
-  display: block;
-  font-family: var(--serif);
-  font-size: 1.35rem;
-  color: var(--encre);
-  line-height: 1.1;
-}
-.mini-stat span { font-size: 0.72rem; color: var(--attenue); }
+.mini-stat span { font-size: 0.76rem; color: var(--attenue); }
 
 /* Message qui remplace un graphique legitimement vide. */
 .carte-vide {
@@ -971,7 +955,10 @@ html[data-theme="sombre"] .carte-sombre {
    Trois colonnes egales, la carte principale sur deux. */
 .grille-tableau {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* DOUZE colonnes et non trois : la carte principale prend 8, les autres 4.
+     Meme rapport qu'avant (deux tiers, un tiers), mais une grille de douze
+     permet de le changer carte par carte sans toucher aux voisines. */
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: var(--ecart-cartes);
   /* Les cartes d'une meme rangee s'ETIRENT a la hauteur de la plus haute.
      Alignees sur le haut, elles laissaient un trou sous les plus courtes, et un
@@ -986,16 +973,21 @@ html[data-theme="sombre"] .carte-sombre {
 /* Le lien SUIT son contenu, il n'est plus pousse en bas de la carte etiree :
    margin-top: auto creusait un grand blanc entre la derniere ligne et le lien. */
 .grille-tableau > .carte > .lien-carte { margin-top: 12px; align-self: flex-start; }
-.grille-tableau > * { min-width: 0; }
-.col-2 { grid-column: span 2; }
+/* La derniere tasse est la seule carte en LIGNE : le corps a gauche, la note a
+   droite derriere un filet. La regle generale ci-dessus la mettait en colonne
+   et la note tombait sous le corps, centree dans le vide. */
+.grille-tableau > .carte-derniere { flex-direction: row; }
+.grille-tableau > * { min-width: 0; grid-column: span 4; }
+.col-2 { grid-column: span 8; }
 
 @media (max-width: 1100px) {
   .grille-tableau { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grille-tableau > * { grid-column: span 1; }
   .col-2 { grid-column: span 2; }
 }
 @media (max-width: 700px) {
   .grille-tableau { grid-template-columns: 1fr; }
-  .col-2 { grid-column: span 1; }
+  .grille-tableau > *, .col-2 { grid-column: span 1; }
 }
 
 /* ---------- Carte « Derniere tasse » ---------- */
@@ -1007,7 +999,7 @@ html[data-theme="sombre"] .carte-sombre {
 }
 .carte-derniere:hover { border-color: var(--accent); }
 .carte-derniere:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.derniere-grande-corps { flex: 1; min-width: 0; }
+.derniere-grande-corps { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .derniere-grande-cafe {
   margin: 2px 0 8px;
   font-family: var(--serif);
@@ -1033,6 +1025,29 @@ html[data-theme="sombre"] .carte-sombre {
   color: var(--attenue);
   font-size: 0.86rem;
 }
+/* LE PIED : ratio, mouture, ecoulement, cout. La carte s'etire a la hauteur de
+   la carte des chiffres cles et laissait 200 px de vide sous les gouts ; ces
+   quatre valeurs sont deja calculees et c'est ce qu'on compare d'une tasse a
+   l'autre. margin-top: auto le pousse en bas, quelle que soit la hauteur. */
+.derniere-grande-pied {
+  margin-top: auto;
+  padding-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  font-size: 0.74rem;
+  color: var(--attenue);
+}
+.derniere-grande-pied > div { display: flex; flex-direction: column; gap: 1px; }
+.derniere-grande-pied b {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 1.2rem;
+  line-height: 1.1;
+  color: var(--encre);
+  font-variant-numeric: tabular-nums;
+}
+.derniere-grande-pied small { font-size: 0.72rem; color: var(--attenue); }
 /* La note, separee par un filet vertical : c'est la reponse a « c'etait bien ? ». */
 .derniere-grande-note {
   flex: none;
@@ -1145,6 +1160,21 @@ html[data-theme="sombre"] .carte-sombre {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-bottom: 0;
 }
+/* Total, note globale et cafeine : trois lignes alignees sous un filet, au bas
+   de la carte. En une phrase, ils se lisaient comme une note de bas de page ;
+   en lignes, le chiffre se trouve du premier coup d'oeil. */
+.kpi-secondaires {
+  list-style: none;
+  margin: auto 0 0;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--lignes-douces);
+  display: grid;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--attenue);
+}
+.kpi-secondaires li { display: flex; justify-content: space-between; gap: 10px; }
+.kpi-secondaires b { color: var(--encre); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .carte-note { font-size: 0.8rem; color: var(--attenue); margin: 10px 0 0; }
 
 /* ---------- KPIs ---------- */

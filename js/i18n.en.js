@@ -179,7 +179,6 @@ const I18N_EN = {
     rt_boisson_court: "drink",
     rt_rien: "Fill in the dose and the water, or the volume out, to see the ratio.",
     kpi_regularite: "consistency, average gap from your mean",
-    kpi_secondaires: "{n} cups in all, {g} out of 10 on average, about {c} mg of caffeine a day.",
     tb_derniere: "Last cup, {q}",
     tb_sur10: "out of 10",
     q_maintenant: "now, {h}",
