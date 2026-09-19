@@ -519,23 +519,31 @@ button { font-family: inherit; }
   border-radius: var(--rayon-petit); font-size: 0.85rem;
 }
 
-/* Bouton de dépliage, dans la colonne date. */
-.btn-deplier {
-  border: none; background: transparent; color: var(--attenue);
-  cursor: pointer; padding: 2px; display: inline-grid; place-items: center; border-radius: 6px;
-}
-.btn-deplier .ico { width: 14px; height: 14px; transition: transform var(--transition); }
-.btn-deplier[aria-expanded="true"] .ico { transform: rotate(90deg); }
-.btn-deplier:hover { color: var(--accent); }
 .ligne-histo.comparee { background: var(--accent-fond); }
 .btn-ligne.actif { color: var(--accent-fort); background: var(--accent-fond); }
 
-/* Détail dépliable : rendu en colspan, donc sans toucher aux largeurs figées. */
-.ligne-detail > td {
-  background: var(--panneau-2);
-  padding: 0 12px 14px 38px;
-  white-space: normal;
-  border-top: none;
+/* LA FICHE AU SURVOL de l'historique (v8.33) : le detail d'une tasse, flottant
+   sous sa ligne. Posee en fixed par ui-historique.js, qui la place ; elle ne
+   capte jamais la souris, sinon elle volerait le survol a la ligne dessous. */
+.h-fiche {
+  position: fixed;
+  z-index: var(--z-bulle);
+  width: min(460px, calc(100vw - 24px));
+  padding: 16px 18px;
+  background: var(--panneau);
+  border: 1px solid var(--lignes);
+  border-radius: var(--rayon-petit);
+  box-shadow: var(--ombre);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 140ms ease-out, transform 140ms ease-out;
+}
+.h-fiche.visible { opacity: 1; transform: none; }
+.h-fiche .detail-grille { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.h-fiche .detail-tags { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--lignes-douces); }
+@media (prefers-reduced-motion: reduce) {
+  .h-fiche { transition: none; transform: none; }
 }
 .detail-grille {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -1139,7 +1147,7 @@ html[data-theme="sombre"] .carte-sombre {
    et la ligne garde sa hauteur. */
 .d-gouts .derniere-gouts { display: flex; flex-wrap: nowrap; gap: 4px; overflow: hidden; }
 
-/* La ligne de commentaire : une seule ligne, tronquee, texte entier au survol. */
+/* La ligne de commentaire : une seule ligne, tronquee, texte entier au survol si coupe. */
 .derniere-commentaire td {
   border-top: none;
   padding: 0 10px 9px 30px;
@@ -1458,6 +1466,17 @@ input:focus, select:focus, textarea:focus {
   #chrono-widget { grid-column: 2; grid-row: 1; }
   #form-saisie { grid-column: 1; grid-row: 1 / span 2; }
   .saisie-aside { grid-column: 2; grid-row: 2; }
+}
+/* ENTRE 1024 ET 1399 PX, UNE SEULE COLONNE. Le rail prend 232 px et la colonne
+   de droite 380 : a 1024 il restait 326 px au formulaire, le menu des cafes
+   tombait a 30 px et les curseurs a zero ; a 1280, encore 116 et 74. Deux
+   colonnes ne valent que si la premiere garde environ 700 px, ce qui arrive vers
+   1400. En dessous, l'ordre du DOM, celui du telephone : chrono, formulaire,
+   fiches. */
+@media (min-width: 1024px) and (max-width: 1399px) {
+  .saisie-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; max-width: 860px; }
+  #chrono-widget, #form-saisie, .saisie-aside { grid-column: 1; grid-row: auto; }
+  .saisie-aside { position: static; }
 }
 #form-saisie { min-width: 0; }
 
@@ -1989,15 +2008,6 @@ input:focus, select:focus, textarea:focus {
 [data-info=""]:hover::after,
 [data-info=""]:focus-visible::after,
 [data-info=""].info-ouverte::after { content: none; }
-/* Sous l'element plutot qu'au-dessus. Dans une LISTE, une bulle au-dessus
-   recouvre la ligne precedente, et celle de la premiere ligne recouvre le titre
-   de la carte. */
-[data-info].info-dessous:hover::after,
-[data-info].info-dessous:focus-visible::after,
-[data-info].info-dessous.info-ouverte::after {
-  bottom: auto;
-  top: calc(100% + 6px);
-}
 
 /* Les pilules et les tags gardent leur reperage pour la bulle commune. */
 .pilule, .tag { position: relative; }
@@ -2092,8 +2102,7 @@ input:focus, select:focus, textarea:focus {
 /* La ligne entière ouvre l'extraction : le curseur doit le dire. Les boutons
    d'action reprennent le leur, sinon la nuance se perd au survol. */
 .ligne-histo { cursor: pointer; }
-.ligne-histo .btn-ligne, .ligne-histo .btn-deplier { cursor: pointer; }
-.ligne-detail { cursor: auto; }
+.ligne-histo .btn-ligne { cursor: pointer; }
 
 /* Curseur et nombre sur UNE ligne. Empilés, chaque cellule de la grille
    chiffrée doublerait de hauteur, exactement le défaut que la cellule
@@ -2263,7 +2272,7 @@ input[type="range"]::-moz-range-thumb {
    plus. */
 .ligne-commentaire td {
   border-top: none;
-  padding: 0 12px 10px 38px;
+  padding: 0 12px 10px;
   font-style: italic;
   font-size: 0.82rem;
   color: var(--attenue);
@@ -3170,8 +3179,7 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 .h-diag { display: block; color: var(--accent-fort); }
 .h-gouts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 
-.detail-bloc,
-.ligne-detail .detail-grille {
+.detail-bloc {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px 22px;
@@ -3180,7 +3188,7 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   border-radius: var(--rayon-petit);
 }
 @media (max-width: 900px) {
-  .detail-bloc, .ligne-detail .detail-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .detail-bloc { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .historique-filtres-actions { margin-left: 0; }
 }
 
@@ -3313,6 +3321,13 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   border-top: 1px solid var(--lignes-douces);
 }
 .h-carte-pied .actions-ligne { margin-left: auto; gap: 4px; }
+/* Le detail de la carte, en mots : le telephone n'a pas de survol. */
+.btn-detail-carte {
+  border: none; background: transparent; padding: 6px 0;
+  font: inherit; font-size: 0.8rem; font-weight: 600;
+  color: var(--accent-fort); cursor: pointer;
+}
+.btn-detail-carte[aria-expanded="true"] { color: var(--attenue); }
 .h-carte-pied .btn-ligne { padding: 6px 8px; }
 .h-carte-detail {
   margin-top: 12px;

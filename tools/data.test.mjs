@@ -2076,21 +2076,13 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     /\[data-info\]:hover::after/.test(css));
   // Un data-info vide ne doit pas ouvrir une bulle vide.
   check("un data-info vide n'ouvre rien", /\[data-info=""\]:hover::after/.test(css));
-  /* Sous l'element dans une LISTE : au-dessus, la bulle recouvrirait la ligne
-     precedente, et celle de la premiere ligne recouvrirait le titre de la carte. */
-  check("une variante ouvre la bulle sous l'element",
-    /\[data-info\]\.info-dessous:hover::after/.test(css));
-
-  /* Le commentaire est le seul champ qui dit POURQUOI une tasse etait bonne, et
-     il fallait ouvrir l'extraction pour le lire. */
+  /* Le commentaire est ECRIT sous sa ligne, dans les dernieres extractions comme
+     dans l'historique : une bulle qui le repete au survol ne dit rien de plus.
+     Chris la trouvait absurde (v8.33). */
   const tableau = readFileSync(join(ROOT, "js/ui-tableau.js"), "utf8");
-  check("les dernieres extractions portent le commentaire au survol",
-    /data-info="' \+ attrTitre\(e\.commentaire\)/.test(tableau));
-  /* Pas de title natif EN PLUS sur ces lignes : deux infobulles au meme endroit
-     se superposeraient. */
-  check("et le title natif ne s'y ajoute pas",
-    /e\.commentaire[\s\S]{0,160}title="/.test(tableau) &&
-    !/role="button" title="/.test(tableau));
+  const historique = readFileSync(join(ROOT, "js/ui-historique.js"), "utf8");
+  check("aucune bulle ne repete le commentaire deja ecrit",
+    !/data-info="' \+ attrTitre\(e\.commentaire\)/.test(tableau + historique));
 }
 
 /* L'APPUI LONG N'AGIT PLUS EN PLUS D'EXPLIQUER.

@@ -621,28 +621,15 @@
     // Chaque ligne ouvre l'édition de son extraction. role et tabindex plutôt
     // qu'un vrai bouton : le contenu est structuré (div, span) et un bouton n'a
     // pas le droit d'en contenir.
-    /* Le commentaire au SURVOL, quand il y en a un. C'est le seul champ qui dit
-       pourquoi une tasse était bonne, et il fallait ouvrir l'extraction pour le
-       lire. Bulle maison plutôt que title natif : instantanée, fidèle au thème,
-       et l'appui long la donne aussi au téléphone.
-
-       Le title natif n'est gardé que sur les lignes SANS commentaire : les deux
-       ensemble feraient apparaître deux infobulles au même endroit. */
     /* UNE VRAIE TABLE, et non plus une liste de blocs : les colonnes alignent
        les memes grandeurs d'une ligne a l'autre, ce qu'une liste ne fait pas.
 
-       Le COMMENTAIRE reste a deux endroits, en clair sous le nom du cafe et au
-       survol : c'est le seul champ qui dit pourquoi une tasse etait bonne, et
-       Chris a demande les deux. Bulle maison plutot que title natif, elle suit
-       le theme et l'appui long la donne au doigt ; le title natif ne sert que
-       sur les lignes SANS commentaire, sinon deux bulles se superposeraient. */
+       PLUS DE BULLE DU COMMENTAIRE AU SURVOL (v8.33) : il est deja ecrit sur la
+       ligne juste dessous, la bulle le repetait mot pour mot. Chris la trouvait
+       absurde. Le title dit seulement ce que fait le clic. */
     $("#dernieres-liste").innerHTML = dernieres.map(e =>
       '<tr class="derniere-cliquable' + (estRatee(e) ? " ligne-ratee" : "") +
-      (e.commentaire ? " info-dessous" : "") +
-      '" data-ext="' + e.id + '" tabindex="0" role="button"' +
-      (e.commentaire
-        ? ' data-info="' + attrTitre(e.commentaire) + '"'
-        : ' title="' + attrTitre(I18N.t("h_editer")) + '"') + ">" +
+      '" data-ext="' + e.id + '" tabindex="0" role="button" title="' + attrTitre(I18N.t("h_editer")) + '">' +
       '<td class="d-quand">' + fmtDateHeure(e.date_heure) + "</td>" +
       '<td class="d-machine"><span class="pastille-methode ' + e.methode.toLowerCase() +
         '" title="' + attrTitre(e.methode) + '"></span></td>' +
@@ -657,6 +644,13 @@
       '<td class="d-note">' + (e.note_sur_10 !== "" ? e.note_sur_10 : "") + "</td></tr>" +
       commentaireDerniere(e)
     ).join("");
+    /* Le texte complet au survol, mais SEULEMENT si la ligne l'a coupe : un
+       commentaire lisible en entier n'a pas besoin d'etre repete. Mesure au
+       survol et non au rendu : l'ecran peut se rendre cache, et tout mesure 0. */
+    $("#dernieres-liste").onmouseover = ev => {
+      const td = ev.target.closest(".derniere-commentaire td");
+      if (td) td.title = td.scrollWidth > td.clientWidth + 1 ? td.textContent : "";
+    };
   }
 
   /* LA DERNIERE TASSE, en grand.
@@ -789,12 +783,11 @@
   /* LE COMMENTAIRE SUR SA PROPRE LIGNE, tronque a UNE ligne par le CSS et non
      par un compte de caracteres : la largeur disponible depend de la fenetre, un
      seuil en dur coupe trop tot sur grand ecran et trop tard sur petit. Le texte
-     entier reste dans l'infobulle. */
+     entier ne vient au survol que si la ligne est coupee, voir plus haut. */
   function commentaireDerniere(e) {
     const c = String(e.commentaire || "").trim();
     if (!c) return "";
-    return '<tr class="derniere-commentaire" data-ext="' + e.id + '"><td colspan="6" title="' +
-      attrTitre(c) + '">' + attrTitre(c) + "</td></tr>";
+    return '<tr class="derniere-commentaire" data-ext="' + e.id + '"><td colspan="6">' + attrTitre(c) + "</td></tr>";
   }
 
   /* LES MESURES DE LA CARTE, version courte : la dose, l'eau et le temps. La

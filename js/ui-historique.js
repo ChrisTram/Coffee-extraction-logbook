@@ -132,6 +132,7 @@
     }
     $("#h-cartes").innerHTML = "";
     $("#h-corps").innerHTML = liste.map(e => ligneHistorique(e)).join("");
+    affichees = new Map(liste.map(e => [e.id, e]));
     majBarreComparaison();
   }
 
@@ -197,25 +198,21 @@
       (reste > 0 ? '<span class="derniere-tag derniere-tag-plus">+' + reste + "</span>" : "") + "</span>";
   }
 
-  /* Détail dépliable : le carnet stocke 22 champs par extraction et le tableau
-     en montre 12. Le reste (commentaire, descripteurs, écoulement, tasse,
-     volume, lait, agitation, coût) disparaissait à l'enregistrement. Le détail se
-     rend dans une ligne en colspan, donc sans toucher aux largeurs de colonnes
-     qui viennent d'être figées. */
+  /* Le détail : le carnet stocke 22 champs par extraction et le tableau en
+     montre 12. Le reste (écoulement, tasse, volume, lait, agitation, coût...)
+     se lit dans la FICHE AU SURVOL sur ordinateur, et dans la carte dépliée sur
+     téléphone. detailsOuverts ne sert plus qu'aux cartes. */
   const detailsOuverts = new Set();
   const comparaison = new Set();
+  // Les extractions de la table affichée, par id : la fiche les relit au survol.
+  let affichees = new Map();
 
-  /* Le detail, dans une ligne en colspan sous sa tasse. Son CONTENU vit dans
-     detailContenu() : la carte du telephone le reutilise tel quel, dans un div. */
-  function ligneDetail(e) {
-    return '<tr class="ligne-detail" data-detail="' + e.id + '"><td colspan="10">' +
-      detailContenu(e) + "</td></tr>";
-  }
-
-  /* Le CONTENU du detail, sans son enveloppe : la ligne le pose dans un <tr> en
-     colspan, la carte du telephone dans un simple <div>. Deux enveloppes, un
-     seul contenu, donc jamais deux versions du detail qui divergent. */
-  function detailContenu(e) {
+  /* Le CONTENU du detail, sans son enveloppe : la fiche au survol le pose dans
+     un div flottant, la carte du telephone dans un div deplie. Un seul contenu,
+     donc jamais deux versions du detail qui divergent. sansCommentaire : la
+     table ecrit deja le commentaire en entier sous la ligne, la fiche ne le
+     repete pas. */
+  function detailContenu(e, sansCommentaire) {
     const item = (cle, valeur) => valeur === "" || valeur === undefined || valeur === null
       ? "" : '<div class="detail-item"><span>' + I18N.t(cle) + "</span><b>" + valeur + "</b></div>";
     const cases = [
@@ -236,10 +233,11 @@
     ].filter(Boolean).join("");
     const tags = (e.descripteurs || "").split("|").filter(Boolean)
       .map(t => '<span class="detail-tag">' + I18N.tag(t) + "</span>").join("");
+    const commentaire = sansCommentaire ? "" : e.commentaire;
     return (cases ? '<div class="detail-grille">' + cases + "</div>" : "") +
       (tags ? '<div class="detail-tags">' + tags + "</div>" : "") +
-      (e.commentaire ? '<p class="detail-commentaire">' + e.commentaire + "</p>" : "") +
-      (cases || tags || e.commentaire ? "" : '<p class="detail-vide">' + I18N.t("d_rien") + "</p>");
+      (commentaire ? '<p class="detail-commentaire">' + commentaire + "</p>" : "") +
+      (cases || tags || commentaire ? "" : '<p class="detail-vide">' + I18N.t("d_rien") + "</p>");
   }
 
   /* La date de la ligne : le jour en encre, l'heure en attenue. fmtDateHeure
@@ -251,14 +249,12 @@
     return "<time>" + texte.slice(0, i) + '</time><span class="heure">' + texte.slice(i + 1) + "</span>";
   }
 
+  /* Plus de fleche de depliage (v8.33) : le detail vient en fiche au survol,
+     voir brancherFiche(). */
   function ligneHistorique(e) {
-    const ouvert = detailsOuverts.has(e.id);
     const compare = comparaison.has(e.id);
-    return '<tr data-id="' + e.id + '" class="ligne-histo' + (ouvert ? " ouverte" : "") +
-      (compare ? " comparee" : "") + '">' +
-      '<td><span class="td-date"><button type="button" class="btn-deplier" data-action="deplier" aria-expanded="' + ouvert +
-      '" title="' + attrTitre(I18N.t("h_detail")) + '">' + icone("chevron") + "</button>" +
-      dateDeuxTons(e.date_heure) + "</span></td>" +
+    return '<tr data-id="' + e.id + '" class="ligne-histo' + (compare ? " comparee" : "") + '">' +
+      '<td><span class="td-date">' + dateDeuxTons(e.date_heure) + "</span></td>" +
       '<td class="td-texte">' + I18N.tr(e._c.cafe_nom) + "</td>" +
       '<td><span class="chip-methode ' + e.methode.toLowerCase() + '">' + e.methode + "</span></td>" +
       '<td class="td-recette">' + (e.recette || "") + "</td>" +
@@ -282,11 +278,12 @@
          colonne de plus demande quatre retouches coordonnees (voir DECISIONS,
          « Le piege des largeurs figees ») et se decale en silence si on en
          oublie une. */
-      '<td class="chip-diagnostic"' + (e.commentaire ? ' data-info="' + attrTitre(e.commentaire) + '"' : "") + ">" +
+      // Pas de bulle du commentaire ici : il est ecrit en entier juste dessous.
+      '<td class="chip-diagnostic">' +
       (e.diagnostic ? '<span class="h-diag">' + diagsAffiches(e.diagnostic) + "</span>" : "") +
       goutsHistorique(e) + "</td>" +
       "<td>" + actionsExtraction(e) + "</td></tr>" +
-      commentaireHistorique(e) + (ouvert ? ligneDetail(e) : "");
+      commentaireHistorique(e);
   }
 
   /* LES CINQ ACTIONS, ecrites UNE fois et rendues par la ligne comme par la
@@ -336,8 +333,10 @@
         : "") +
       (e.commentaire ? '<p class="h-carte-commentaire">' + attrTitre(e.commentaire) + "</p>" : "") +
       '<div class="h-carte-pied">' +
-        '<button type="button" class="btn-deplier" data-action="deplier" aria-expanded="' + ouvert +
-        '" title="' + attrTitre(I18N.t("h_detail")) + '">' + icone("chevron") + "</button>" +
+        /* En mots et non en fleche : le telephone n'a pas de survol, le detail
+           s'y deplie, et le bouton dit ce qu'il fait. */
+        '<button type="button" class="btn-detail-carte" data-action="deplier" aria-expanded="' + ouvert + '">' +
+        I18N.t(ouvert ? "h_detail_masquer" : "h_detail") + "</button>" +
         actionsExtraction(e) +
       "</div>" +
       (ouvert ? '<div class="h-carte-detail">' + detailContenu(e) + "</div>" : "") +
@@ -496,6 +495,70 @@
   /* Câblage des contrôles de l'historique. Appelé une fois par app.js. */
   const FILTRES = ["h-recherche", "h-cafe", "h-methode", "h-diagnostic", "h-note-min", "h-du", "h-au", "h-ratee"];
 
+  /* LA FICHE AU SURVOL (v8.33), a la place de la fleche qui depliait une ligne
+     de detail : Chris la trouvait laide, et deplier poussait toute la table vers
+     le bas. La fiche flotte sous la ligne survolee (au-dessus si la place
+     manque), apres un court delai pour ne pas clignoter quand la souris ne fait
+     que traverser la table. Elle ne montre que ce que la ligne ne dit pas.
+
+     Seulement avec une vraie souris : au doigt il n'y a pas de survol, les
+     cartes du telephone gardent leur detail deplie. Elle se cache sur les
+     boutons d'action, qu'elle ne doit pas gener, et au defilement. */
+  function brancherFiche() {
+    if (typeof matchMedia !== "function" || !matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    const fiche = document.createElement("div");
+    fiche.className = "h-fiche";
+    fiche.setAttribute("role", "tooltip");
+    fiche.hidden = true;
+    document.body.appendChild(fiche);
+    let minuteur = null, idCourant = null, sourisX = 0;
+
+    const cacher = () => {
+      clearTimeout(minuteur);
+      idCourant = null;
+      fiche.classList.remove("visible");
+      fiche.hidden = true;
+    };
+    const montrer = id => {
+      const e = affichees.get(id);
+      const ligne = $('#h-corps tr.ligne-histo[data-id="' + id + '"]');
+      if (!e || !ligne) return;
+      const contenu = detailContenu(e, true);
+      if (contenu.includes("detail-vide")) return;
+      fiche.innerHTML = contenu;
+      fiche.hidden = false;
+      // Sous le groupe entier, la ligne ET son commentaire : on ne recouvre pas ce qu'on lit.
+      const suite = ligne.nextElementSibling;
+      const dernier = suite && suite.classList.contains("ligne-commentaire") ? suite : ligne;
+      const bas = dernier.getBoundingClientRect().bottom;
+      const haut = ligne.getBoundingClientRect().top;
+      const l = fiche.offsetWidth, h = fiche.offsetHeight;
+      const top = bas + 6 + h <= window.innerHeight - 12 ? bas + 6 : Math.max(12, haut - 6 - h);
+      const left = Math.min(Math.max(12, sourisX - 60), window.innerWidth - l - 12);
+      fiche.style.top = Math.round(top) + "px";
+      fiche.style.left = Math.round(left) + "px";
+      requestAnimationFrame(() => fiche.classList.add("visible"));
+    };
+
+    const corps = $("#h-corps");
+    corps.addEventListener("mousemove", ev => {
+      sourisX = ev.clientX;
+      const ligne = ev.target.closest("[data-id]");
+      const surAction = ev.target.closest(".actions-ligne");
+      const id = ligne && !surAction ? ligne.dataset.id : null;
+      if (id === idCourant) return;
+      cacher();
+      if (!id) return;
+      idCourant = id;
+      minuteur = setTimeout(() => montrer(id), 280);
+    });
+    corps.addEventListener("mouseleave", cacher);
+    /* N'importe quel clic, pas seulement dans la table : la fiche vit sur le
+       body, et un clic sur le rail change d'ecran sans quitter la ligne. */
+    document.addEventListener("click", cacher, true);
+    window.addEventListener("scroll", cacher, { passive: true, capture: true });
+  }
+
   function cablerHistorique() {
     FILTRES.forEach(id => $("#" + id).addEventListener("input", rendreHistoriqueDifferee));
     $("#h-reinitialiser").addEventListener("click", () => {
@@ -558,6 +621,7 @@
       }
     };
     [$("#h-corps"), $("#h-cartes")].forEach(z => z.addEventListener("click", surClicHistorique));
+    brancherFiche();
 
     /* Le controle segmente de la machine PILOTE le <select>, qui reste la source
        de verite : tout le filtrage, la reinitialisation et l'export lisent lui.
@@ -576,7 +640,7 @@
 
   Object.assign(UI, {
     FILTRES, basculerComparaison, cablerHistorique, carteReglage, champsComparaison, comparaison, detailsOuverts,
-    filtrerHistorique, ligneDetail, ligneHistorique, majBarreComparaison, ouvrirComparaison,
+    filtrerHistorique, ligneHistorique, majBarreComparaison, ouvrirComparaison,
     actionsExtraction, carteExtraction, commentaireHistorique, detailContenu, enCartes,
     majSegmentMethode,
     rendreCartes,

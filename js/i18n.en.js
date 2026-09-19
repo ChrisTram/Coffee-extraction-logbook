@@ -126,6 +126,7 @@ const I18N_EN = {
     d_rien: "Nothing more to show for this brew.",
     h_editer: "Open for editing",
     h_detail: "Show details",
+    h_detail_masquer: "Hide details",
     h_comparer: "Compare with another",
     cmp_une: "1 brew selected, pick a second one.",
     cmp_deux: "2 brews selected.",

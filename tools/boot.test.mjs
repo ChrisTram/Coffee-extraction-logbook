@@ -942,20 +942,26 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
   const actions = html => [...html.matchAll(/data-action="(\w+)"/g)].map(m => m[1]).sort();
 
   const aLigne = actions(ligne), aCarte = actions(carte);
-  check("la ligne du tableau offre les cinq actions plus le depliage",
-    aLigne.length === 6, aLigne.join(", "));
-  check("la carte du telephone offre exactement les memes",
-    aCarte.join(",") === aLigne.join(","), aCarte.join(", ") + "  vs  " + aLigne.join(", "));
+  /* La ligne n'a plus de depliage (v8.33) : son detail vient en fiche au
+     survol. La carte, sans survol au doigt, garde le sien en plus. */
+  check("la ligne du tableau offre les cinq actions",
+    aLigne.length === 5 && !aLigne.includes("deplier"), aLigne.join(", "));
+  check("la carte du telephone offre les memes, plus son depliage",
+    aCarte.filter(a => a !== "deplier").join(",") === aLigne.join(",") && aCarte.includes("deplier"),
+    aCarte.join(", ") + "  vs  " + aLigne.join(", "));
 
   /* Et les deux portent l'identifiant : le gestionnaire de clic est delegue, il
      ne sait pas d'ou vient le clic et ne doit pas avoir a le savoir. */
   check("la carte porte l'identifiant de son extraction",
     carte.includes('data-id="' + ext.id + '"'));
 
-  /* Le detail deplie est le MEME contenu des deux cotes. */
+  /* Le detail est le MEME contenu dans la fiche au survol et dans la carte. */
   const detail = api.UI.detailContenu(avecCalculs);
   check("le detail se rend sans son enveloppe, pour les deux",
     typeof detail === "string" && !detail.includes("<tr"));
+  // La fiche ne repete pas le commentaire, ecrit en entier sous la ligne.
+  check("la fiche au survol ne repete pas le commentaire",
+    !api.UI.detailContenu({ ...avecCalculs, commentaire: "un mot" }, true).includes("detail-commentaire"));
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);

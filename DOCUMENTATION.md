@@ -537,10 +537,13 @@ DEUX rendus de la meme liste, choisis a 1024 px par `enCartes()` :
   actions, rien pour cafe, recette et gouts qui se partagent le reste et passent
   a la ligne au lieu de se tronquer (un test verifie cette repartition). Microns
   et ratio en tasse sur une seconde ligne (`small.sous`). Le commentaire prend sa
-  propre ligne en pleine largeur sous sa tasse. Le temps, les degres et le feu
-  vivent dans le detail deplie. PAS d'intertitre de jour : la date complete est
+  propre ligne en pleine largeur sous sa tasse. Le temps, les degres, le feu et
+  le reste vivent dans la FICHE AU SURVOL (`brancherFiche()`, souris seulement),
+  qui ne repete pas le commentaire. Plus de fleche de depliage (v8.33). PAS
+  d'intertitre de jour : la date complete est
   au debut de chaque ligne (v8.29, demande de Chris).
-- **Telephone** : une liste de cartes, chacune avec sa date complete.
+- **Telephone** : une liste de cartes, chacune avec sa date complete. Pas de
+  survol au doigt : le detail s'y deplie par le bouton texte « Voir le detail ».
 
 Les cinq actions viennent de `actionsExtraction()` et le detail de
 `detailContenu()`, appeles par les DEUX rendus : c'est ce qui garantit qu'un
@@ -550,8 +553,7 @@ conteneurs (`#h-corps` et `#h-cartes`).
 
 Au dessus : une tete de page (total et depuis quand, recherche, export), les
 filtres en pastilles (des `<select>` natifs habilles), et un bandeau resume du
-filtre courant en quatre chiffres. Les cinq actions et le chevron de depliage
-sont des icones en trait (`UI.icone`), avec les memes `data-action` qu'avant.
+filtre courant en quatre chiffres. Les cinq actions sont des icones en trait (`UI.icone`), avec les memes `data-action` qu'avant.
 
 ## 9. Synchronisation entre appareils
 

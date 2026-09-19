@@ -1935,6 +1935,17 @@ commentaire utile, il n'était jamais relu.
 L'état d'ouverture vit dans un `Set` en mémoire (`detailsOuverts`), pas dans les
 données : quelles lignes sont dépliées n'a aucune raison d'être synchronisé.
 
+**v8.33 : la fiche au survol remplace le chevron, sur ordinateur.** Chris
+n'aimait pas la flèche, et déplier poussait toute la table vers le bas. Le même
+`detailContenu()` se pose maintenant dans une fiche flottante sous la ligne
+survolée (au-dessus si la place manque), après 280 ms pour ne pas clignoter
+quand la souris traverse la table. Elle se cache sur les boutons d'action, au
+défilement et à tout clic, et ne montre PAS le commentaire, déjà écrit en entier
+sous la ligne. Seulement avec `(hover: hover) and (pointer: fine)` : les cartes
+du téléphone gardent leur dépliage, par un bouton en mots. Même raisonnement pour
+le tableau de bord : la bulle qui répétait le commentaire écrit juste dessous a
+disparu, le texte complet ne vient au survol que si la ligne l'a coupé.
+
 **Comparateur.** Sélection par un bouton de la colonne Actions, PAS par une
 colonne de cases à cocher : le tableau vient d'être figé à neuf colonnes, en
 ajouter une casserait les largeurs. Au delà de deux sélections, la plus ancienne

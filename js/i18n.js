@@ -162,6 +162,7 @@ const I18N = (() => {
     d_rien: { fr: "Rien de plus à montrer sur cette extraction." },
     h_editer: { fr: "Ouvrir en édition" },
     h_detail: { fr: "Voir le détail" },
+    h_detail_masquer: { fr: "Masquer le détail" },
     h_comparer: { fr: "Comparer avec une autre" },
     cmp_une: { fr: "1 extraction sélectionnée, choisis en une seconde." },
     cmp_deux: { fr: "2 extractions sélectionnées." },
