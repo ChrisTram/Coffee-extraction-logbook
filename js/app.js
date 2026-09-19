@@ -150,10 +150,12 @@
       if (ECRANS.includes(cible) && cible !== nav.ecran) activerEcran(cible);
     });
 
-    // Thème
+    /* Thème : un seul bouton fait le tour clair, Graphite, Nuit, puis clair. */
     $("#btn-theme").addEventListener("click", () => {
-      const courant = document.documentElement.getAttribute("data-theme");
-      appliquerTheme(courant === "sombre" ? "clair" : "sombre");
+      const racine = document.documentElement;
+      if (racine.getAttribute("data-theme") !== "sombre") appliquerTheme("sombre", "graphite");
+      else if (racine.getAttribute("data-sombre") !== "nuit") appliquerTheme("sombre", "nuit");
+      else appliquerTheme("clair");
     });
 
     // Langue

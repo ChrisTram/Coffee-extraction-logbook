@@ -51,13 +51,19 @@ LE CADRE (v8.27). Tout écran est borné et centré par UNE règle, `.ecran
 d'identifiant bat la classe, et c'est ainsi que l'historique s'est retrouvé calé
 à gauche. La grille de saisie a son propre plafond de 1400 px, centré.
 
-LES THÈMES. Deux blocs de jetons dans `css/styles.css`, `html[data-theme="clair"]`
-et `html[data-theme="sombre"]` (« Espresso », v8.26). Quatre surfaces par thème
+LES THÈMES. Trois palettes dans `css/styles.css` (v8.34) : `html[data-theme="clair"]`,
+`html[data-theme="sombre"]` (Graphite, le sombre par défaut) et
+`html[data-theme="sombre"][data-sombre="nuit"]` (Nuit, qui ne redéfinit que ce qui
+change). `data-theme` dit la famille, `data-sombre` la palette ; les deux sont
+posés par le script en ligne du `<head>` (clés `theme` et `sombre` du
+localStorage), et le bouton de thème fait le tour clair, Graphite, Nuit. La carte
+du chrono prend ses sous-surfaces dans `--cs-*`. Quatre surfaces par thème
 (`--fond`, `--panneau`, `--panneau-2`, `--panneau-3` pour le survol), des filets
 en alpha en sombre, et le relief par `--ombre-carte` et `--ombre-haut`, vides en
-clair. La couleur de fond du thème sombre vit à QUATRE endroits à changer
-ensemble : la feuille de style, la balise `theme-color` d'`index.html`,
-`manifest.json` et la page de connexion de `worker/index.js`. Les icônes en
+clair. La couleur de fond du sombre vit à CINQ endroits à changer
+ensemble : la feuille de style, la balise `theme-color` d'`index.html`, la table
+`TEINTES` d'`ui-noyau.js` (une par palette), `manifest.json` et la page de
+connexion de `worker/index.js` (ces deux derniers en Graphite). Les icônes en
 trait des boutons d'action viennent de `UI.icone(nom)`, la piste des curseurs
 de `UI.peindreCurseur(curseur)` (à appeler après toute écriture de `.value`).
 

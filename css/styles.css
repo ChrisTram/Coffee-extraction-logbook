@@ -128,64 +128,126 @@
   --z-toast: 300;
 }
 
-/* Thème sombre « Espresso » (v8.26). Pas noir : le fond reste un brun, un cran
-   plus profond que le #241a10 de la v7.97 pour que les cartes s'en détachent.
-   Ce qui manquait à l'ancien n'était pas de la clarté mais de la SÉPARATION :
-   un demi pas entre le fond et le panneau, des filets opaques qui se fondaient
-   dans le panneau secondaire. Ici quatre surfaces à pas nets, des filets en
-   alpha, et le relief par ombre et filet clair. Tous les textes tiennent au
-   moins 4,5:1 sur les cinq surfaces, ratios dans DECISIONS.md. */
+/* LES DEUX THÈMES SOMBRES (v8.34), choisis par Chris sur maquette le 19
+   septembre 2026, à la place de l'« Espresso » brun qu'il n'aimait pas du tout.
+   data-theme="sombre" reste l'interrupteur de la FAMILLE : toutes les règles
+   écrites pour le sombre continuent de s'appliquer aux deux. data-sombre choisit
+   la palette, Graphite par défaut. Le bouton de thème fait le tour clair,
+   Graphite, Nuit.
+
+   Même grammaire dans les deux : quatre surfaces à pas nets, filets en alpha,
+   relief par ombre douce et filet clair d'un pixel, le brun seulement dans
+   l'accent. Tous les textes tiennent au moins 4,5:1 sur le fond, le rail et les
+   trois panneaux ; un test le vérifie (data.test, « thèmes sombres »). Les
+   couleurs de machines sont éclaircies d'un cran : sur un fond presque noir, le
+   bleu Brikka d'origine tombait sous 4:1.
+
+   GRAPHITE : presque noir, neutre à peine chaud, un seul accent, la crème d'un
+   espresso. La direction « app moderne ». */
 html[data-theme="sombre"] {
-  --fond: #1a120d;
-  --rail: #201711;
-  --fond-degrade: radial-gradient(1100px 520px at 85% -8%, #2e2016 0%, #1a120d 60%);
-  --panneau: #261c15;
-  --panneau-2: #33271e;
+  --fond: #111113;
+  --rail: #141416;
+  --fond-degrade: radial-gradient(1100px 520px at 85% -8%, rgba(232, 187, 133, 0.07) 0%, #111113 60%);
+  --panneau: #18181b;
+  --panneau-2: #212125;
   /* Surface de survol et d'etat enfonce, un pas au dessus de --panneau-2. */
-  --panneau-3: #3c2f25;
-  --encre: #f5ebdf;
-  --texte: #dccbb6;
-  /* 6,37:1 sur --panneau, 5,53:1 sur --panneau-2, 4,93:1 sur --panneau-3. */
-  --attenue: #b39c86;
-  --accent: #e39448;
-  --accent-fort: #f0a65f;
-  --accent-fond: rgba(227, 148, 72, 0.14);
-  /* Encre sombre sur l'accent : 7,40:1. */
-  --sur-accent: #1f1409;
-  /* Filets en ALPHA : une seule valeur reste visible sur toutes les surfaces,
-     la ou un brun opaque se fondait dans le panneau secondaire. */
-  --lignes: rgba(245, 235, 223, 0.10);
-  --lignes-douces: rgba(245, 235, 223, 0.06);
-  --lignes-graphe: rgba(245, 235, 223, 0.10);
-  --barre-neutre: #6f5a47;
+  --panneau-3: #2b2b30;
+  --encre: #f4f1ec;
+  --texte: #d2cdc6;
+  /* 5,82:1 sur --panneau, 4,63:1 sur --panneau-3, la plus claire. */
+  --attenue: #99938b;
+  --accent: #e8bb85;
+  --accent-fort: #f4cd9d;
+  --accent-fond: rgba(232, 187, 133, 0.12);
+  /* Encre sombre sur l'accent : 10,3:1. */
+  --sur-accent: #1b140c;
+  /* Filets en ALPHA : une seule valeur reste visible sur toutes les surfaces. */
+  --lignes: rgba(255, 255, 255, 0.08);
+  --lignes-douces: rgba(255, 255, 255, 0.05);
+  --lignes-graphe: rgba(255, 255, 255, 0.08);
+  --barre-neutre: #4a4640;
   /* Le relief du theme sombre : une ombre douce sous chaque carte, et un filet
      clair d'un pixel en haut. Le theme clair pose ses cartes a plat sur une
      bordure, ces deux jetons y sont vides. */
-  --ombre-carte: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 8px 24px rgba(0, 0, 0, 0.28);
+  --ombre-carte: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 10px 30px rgba(0, 0, 0, 0.35);
   --ombre-haut: 0 1px 0 rgba(255, 255, 255, 0.05) inset;
-  --ombre: 0 16px 40px rgba(0, 0, 0, 0.5);
-  --tooltip-fond: #f5ebdf;
-  --tooltip-texte: #26190f;
-  --avert-fond: rgba(227, 148, 72, 0.12);
-  --avert-bord: rgba(227, 148, 72, 0.45);
-  /* 6,33:1 sur --panneau, 4,91:1 sur --panneau-3. */
-  --danger: #e88472;
+  --ombre: 0 16px 40px rgba(0, 0, 0, 0.55);
+  --tooltip-fond: #f4f1ec;
+  --tooltip-texte: #18181b;
+  --avert-fond: rgba(232, 187, 133, 0.10);
+  --avert-bord: rgba(232, 187, 133, 0.40);
+  --danger: #ef8a78;
   /* PLUS DE VERT, nulle part, y compris pour dire « bon » : c'est une demande
-     explicite de Chris. Le statut favorable prend donc l'accent caramel, le
-     défavorable garde le rouge. Le nom --ok est conservé pour ne pas réécrire
-     les trente règles qui l'utilisent. */
-  --ok: #e39448;
-  --tendance: rgba(227, 148, 72, 0.40);
-  /* Fond de la carte sombre. En theme sombre elle n'a plus rien a inverser :
-     elle devient une carte secondaire avec un trait d'accent a gauche. */
-  --carte-sombre-fond: #33271e;
+     explicite de Chris. Le statut favorable prend donc l'accent, le défavorable
+     garde le rouge. Le nom --ok est conservé pour ne pas réécrire les trente
+     règles qui l'utilisent. */
+  --ok: #e8bb85;
+  --tendance: rgba(232, 187, 133, 0.45);
+  /* Fond de la carte sombre (le chrono) : une carte secondaire avec un trait
+     d'accent a gauche. Ses sous-surfaces et son attenue vivent dans --cs-*. */
+  --carte-sombre-fond: #212125;
+  --cs-panneau: #18181b;
+  --cs-panneau-2: #2b2b30;
+  --cs-attenue: #a29c94;
 
-  --hm0: #33271e;
-  --hm1: #5b3d20;
-  --hm2: #8a5324;
-  --hm3: #bd722f;
-  --hm4: #e39448;
+  --brikka: #4f93e6;
+  --switch: #ef7440;
+  --deux: #d58ab3;
+
+  --hm0: #212125;
+  --hm1: #3d3326;
+  --hm2: #6b5335;
+  --hm3: #a67e4f;
+  --hm4: #e8bb85;
   color-scheme: dark;
+}
+
+/* NUIT : un bleu encre très profond, presque noir, et un accent cuivre de moka
+   chauffée. Froid dessous, chaud dessus : le contraste le plus franc. Le bleu
+   Brikka monte encore d'un cran pour ne pas se fondre dans le fond. Ne
+   redéfinit que ce qui change, le reste vient du bloc Graphite. */
+html[data-theme="sombre"][data-sombre="nuit"] {
+  --fond: #0b1017;
+  --rail: #0e141d;
+  --fond-degrade: radial-gradient(1100px 520px at 88% -10%, rgba(91, 156, 240, 0.10) 0%, #0b1017 60%);
+  --panneau: #121a25;
+  --panneau-2: #192331;
+  --panneau-3: #212e3f;
+  --encre: #eef2f6;
+  --texte: #c7d0db;
+  /* 6,33:1 sur --panneau, 4,98:1 sur --panneau-3. */
+  --attenue: #8e9db0;
+  --accent: #e5935a;
+  --accent-fort: #f3aa74;
+  --accent-fond: rgba(229, 147, 90, 0.13);
+  /* 7,7:1. */
+  --sur-accent: #1c0f06;
+  --lignes: rgba(200, 220, 255, 0.09);
+  --lignes-douces: rgba(200, 220, 255, 0.05);
+  --lignes-graphe: rgba(200, 220, 255, 0.09);
+  --barre-neutre: #3a4a60;
+  --ombre-carte: 0 1px 0 rgba(200, 220, 255, 0.05) inset, 0 12px 32px rgba(0, 0, 0, 0.45);
+  --ombre-haut: 0 1px 0 rgba(200, 220, 255, 0.05) inset;
+  --ombre: 0 16px 40px rgba(0, 0, 0, 0.6);
+  --tooltip-fond: #eef2f6;
+  --tooltip-texte: #121a25;
+  --avert-fond: rgba(229, 147, 90, 0.10);
+  --avert-bord: rgba(229, 147, 90, 0.40);
+  --danger: #f08a7a;
+  --ok: #e5935a;
+  --tendance: rgba(229, 147, 90, 0.45);
+  --carte-sombre-fond: #192331;
+  --cs-panneau: #121a25;
+  --cs-panneau-2: #212e3f;
+  --cs-attenue: #95a4b6;
+
+  --brikka: #5b9cf0;
+
+  --hm0: #192331;
+  --hm1: #3a2e2a;
+  --hm2: #6c4630;
+  --hm3: #a8683f;
+  --hm4: #e5935a;
 }
 
 /* Thème clair « Comptoir ». Papier chaud, encre espresso, accent terre cuite.
@@ -893,20 +955,21 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
 /* En theme sombre il n'y a rien a inverser : la carte devient une carte
    secondaire bordee d'un filet accent, et garde donc les jetons du theme. */
 html[data-theme="sombre"] .carte-sombre {
-  --encre: #f5ebdf;
-  --texte: #dccbb6;
-  /* Eclairci par rapport au theme : les sous-fonds de cette carte sont plus
-     clairs que --panneau, donc l attenue du theme n y tenait que 4,27:1. */
-  --attenue: #c0a88f;
-  --accent: #e39448;
-  --accent-fort: #f0a65f;
-  --accent-fond: rgba(227, 148, 72, 0.14);
-  --lignes: rgba(245, 235, 223, 0.10);
-  --lignes-douces: rgba(245, 235, 223, 0.06);
-  --panneau: #261c15;
-  --panneau-2: #3c2f25;
-  --barre-neutre: #6f5a47;
-  --carte-sombre-fond: #33271e;
+  /* inherit : on ANNULE l inversion posee par .carte-sombre pour le theme clair,
+     et la carte reprend les jetons de la palette sombre active, quelle qu elle
+     soit. Seules ses sous-surfaces et son attenue ont des valeurs a elles. */
+  --encre: inherit;
+  --texte: inherit;
+  --attenue: var(--cs-attenue);
+  --accent: inherit;
+  --accent-fort: inherit;
+  --accent-fond: inherit;
+  --lignes: inherit;
+  --lignes-douces: inherit;
+  --panneau: var(--cs-panneau);
+  --panneau-2: var(--cs-panneau-2);
+  --barre-neutre: inherit;
+  --carte-sombre-fond: inherit;
   border-color: var(--lignes);
   box-shadow: var(--ombre-carte), inset 3px 0 0 var(--accent);
 }

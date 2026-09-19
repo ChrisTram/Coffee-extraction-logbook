@@ -1908,7 +1908,8 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("et la reglette du convertisseur garde sa couleur de defaut",
     css.includes("--tendance"));
   const tendances = [...css.matchAll(/--tendance: ([^;]+);/g)].map(m => m[1].trim());
-  check("la tendance existe dans les deux themes", tendances.length === 2, tendances.join(" | "));
+  // Un par palette : clair, Graphite et Nuit (v8.34).
+  check("la tendance existe dans les trois palettes", tendances.length === 3, tendances.join(" | "));
   check("et elle est translucide, pour se lire comme un fond",
     tendances.every(t => {
       const m = t.match(/^rgba\([^)]*,\s*([\d.]+)\s*\)$/);
@@ -2327,6 +2328,59 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   } else {
     check("csvRecettes est exposee pour pouvoir etre testee", false, "absente de l'API");
   }
+}
+
+/* LES DEUX THÈMES SOMBRES, Graphite et Nuit (v8.34), et plus d'Espresso.
+
+   Les jetons sont relus DANS la feuille de style, et chaque couleur de texte est
+   mesurée contre chaque surface où elle peut se poser : 4,5:1 au moins. Nuit ne
+   redéfinit que ce qui change, le reste lui vient de Graphite, exactement comme
+   dans le navigateur. */
+{
+  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  const bloc = sel => {
+    const i = css.indexOf(sel + " {");
+    if (i < 0) return {};
+    const corps = css.slice(i, css.indexOf("\n}", i));
+    return Object.fromEntries([...corps.matchAll(/(--[\w-]+):\s*(#[0-9a-f]{6})\s*;/gi)].map(m => [m[1], m[2]]));
+  };
+  const graphite = bloc('html[data-theme="sombre"]');
+  const nuit = { ...graphite, ...bloc('html[data-theme="sombre"][data-sombre="nuit"]') };
+  const lum = h => {
+    const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255)
+      .map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  };
+  const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+
+  check("le theme Espresso a disparu", !css.includes("#1a120d") && !css.includes("#261c15"));
+  check("Nuit est une palette a part entiere", nuit["--fond"] && nuit["--fond"] !== graphite["--fond"]);
+  for (const [nom, p] of [["Graphite", graphite], ["Nuit", nuit]]) {
+    const surfaces = ["--fond", "--rail", "--panneau", "--panneau-2", "--panneau-3"];
+    const faibles = [];
+    for (const t of ["--encre", "--texte", "--attenue", "--accent", "--danger"]) {
+      for (const s of surfaces) {
+        if (!p[t] || !p[s]) { faibles.push(t + " ou " + s + " absent"); continue; }
+        const r = ratio(p[t], p[s]);
+        if (r < 4.5) faibles.push(t + " sur " + s + " " + r.toFixed(2));
+      }
+    }
+    // La carte du chrono : son attenue sur ses propres sous-surfaces.
+    for (const s of ["--carte-sombre-fond", "--cs-panneau", "--cs-panneau-2"]) {
+      const r = ratio(p["--cs-attenue"], p[s]);
+      if (r < 4.5) faibles.push("--cs-attenue sur " + s + " " + r.toFixed(2));
+    }
+    if (ratio(p["--sur-accent"], p["--accent"]) < 4.5) faibles.push("--sur-accent sur --accent");
+    check(nom + " : tous les textes tiennent 4,5:1", faibles.length === 0, faibles.join(", "));
+  }
+
+  // Le bouton fait le tour des trois, et le choix survit au rechargement.
+  const tete = readFileSync(join(ROOT, "index.html"), "utf8");
+  check("le head restaure la palette sombre", tete.includes('localStorage.getItem("sombre")') &&
+    tete.includes('"data-sombre"'));
+  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  check("le bouton de theme propose Graphite puis Nuit",
+    app.includes('appliquerTheme("sombre", "graphite")') && app.includes('appliquerTheme("sombre", "nuit")'));
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);

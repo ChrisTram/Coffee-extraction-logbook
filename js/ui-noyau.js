@@ -465,14 +465,23 @@ const UI = (() => {
 
   // ---------- Thème ----------
 
-  function appliquerTheme(theme) {
+  /* Les deux palettes sombres (v8.34) : data-theme dit la famille, data-sombre
+     la palette. La couleur de la barre d etat suit la palette. */
+  const TEINTES = { clair: "#f4ede3", graphite: "#111113", nuit: "#0b1017" };
+  function appliquerTheme(theme, palette) {
     document.documentElement.setAttribute("data-theme", theme);
-    try { localStorage.setItem("theme", theme); } catch (e) { /* indisponible, tant pis */ }
+    if (palette) document.documentElement.setAttribute("data-sombre", palette);
+    try {
+      localStorage.setItem("theme", theme);
+      if (palette) localStorage.setItem("sombre", palette);
+    } catch (e) { /* indisponible, tant pis */ }
     /* La barre d'état de la PWA installée suit le thème. Les deux balises du
        <head> ne connaissent que la préférence du système, et le navigateur
        retient celle dont le media correspond : on écrit donc la couleur choisie
        dans les DEUX, sinon celle qu'il retient contredirait le choix. */
-    const teinte = theme === "sombre" ? "#1a120d" : "#f4ede3";
+    const teinte = theme === "sombre"
+      ? TEINTES[document.documentElement.getAttribute("data-sombre")] || TEINTES.graphite
+      : TEINTES.clair;
     document.querySelectorAll('meta[name="theme-color"]')
       .forEach(m => m.setAttribute("content", teinte));
     if (typeof Chart !== "undefined") {

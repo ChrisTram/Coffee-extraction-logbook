@@ -395,7 +395,7 @@ const I18N_EN = {
     "Guide et référence": "Guide and reference",
     "Sommaire du guide": "Guide contents",
     "Switch to English": "Passer en français",
-    "Basculer clair ou sombre": "Switch light or dark",
+    "Thème : clair, Graphite ou Nuit": "Theme: light, Graphite or Night",
     "Obligatoire": "Required",
     "Estimer la température depuis la méthode": "Estimate the temperature from the method",
     "Bip discret à chaque palier de la recette": "Quiet beep at each step of the recipe",

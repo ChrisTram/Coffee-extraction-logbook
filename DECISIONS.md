@@ -1289,6 +1289,21 @@ couleurs de données ne bougent pas. La même couleur de fond est recopiée dans
 meta theme-color, le manifeste et la page de connexion du Worker : quatre
 endroits pour une couleur, à changer ensemble.
 
+### Graphite et Nuit remplacent Espresso (v8.34)
+
+Chris n'aimait « pas du tout » l'Espresso, même après la v8.26 : le brun en
+fond faisait sale, quoi qu'on règle. Maquette de trois directions (Graphite,
+Nuit et cuivre, Ristretto) ; il a retenu les deux premières, et les deux sont
+livrées. Le brun ne vit plus que dans l'accent. Graphite est le défaut parce
+qu'il est le plus neutre ; Nuit est un choix, au deuxième clic du bouton de
+thème. Plutôt qu'un second `data-theme`, un attribut `data-sombre` : les
+dizaines de règles écrites pour `[data-theme="sombre"]` valent pour les deux
+sans être dupliquées. Les couleurs de machines sont éclaircies d'un cran dans
+la famille sombre (sur un fond presque noir, le bleu Brikka d'origine tombait
+sous 4:1). La section suivante raconte l'Espresso, gardée pour son
+raisonnement (séparation par pas de surface et filets en alpha), qui vaut
+toujours.
+
 ### Le thème sombre « Espresso » : de la séparation, pas de la clarté
 
 Chris trouvait le sombre « pas clean, pas moderne ». Le diagnostic n'est pas
