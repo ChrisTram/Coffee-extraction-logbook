@@ -2858,8 +2858,13 @@ input[type="range"]::-moz-range-thumb {
 
 @media (max-width: 860px) {
   .messages-vn { grid-template-columns: 1fr; }
-  .fab { right: 16px; bottom: 16px; width: 54px; height: 54px; }
-  .panneau-rapide { right: 16px; bottom: 82px; }
+  /* Au dessus de la barre du bas, qui existe à toute largeur sous 1024 px. Un
+     bottom: 16px posé ici, APRÈS la règle de la barre, remettait le bouton
+     dessus. Et la feuille fermée, posée à 82 px du bas, ne descendait que de sa
+     propre hauteur : son haut dépassait de 78 px et masquait la barre. */
+  .fab { right: 16px; bottom: calc(var(--barre-basse) + 16px + env(safe-area-inset-bottom)); width: 54px; height: 54px; }
+  .panneau-rapide { right: 16px; bottom: calc(var(--barre-basse) + env(safe-area-inset-bottom)); }
+  .panneau-rapide:not(.ouvert) { transform: translateY(calc(101% + var(--barre-basse) + env(safe-area-inset-bottom))); }
 }
 
 @media (max-width: 480px) {
