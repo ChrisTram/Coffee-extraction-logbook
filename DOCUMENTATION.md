@@ -51,6 +51,13 @@ LE CADRE (v8.27). Tout écran est borné et centré par UNE règle, `.ecran
 d'identifiant bat la classe, et c'est ainsi que l'historique s'est retrouvé calé
 à gauche. La grille de saisie a son propre plafond de 1400 px, centré.
 
+LES INSIGHTS (« Ce que tes données disent »). Sept règles dans `ui-tableau.js`,
+chacune rendant `{ texte, haut, bas, confiance }` ou `null` via `constat()`,
+où `haut` et `bas` sont `{ libelle, note, n }`. `rendreInsights()` en fait une
+phrase, deux barres à l’échelle des notes et un pied de confiance. Les seuils
+d’affichage (0,4 point, 3 tasses par groupe) sont dans `MIN_GAP` et
+`MIN_SAMPLE`, ceux du « solide » dans `GAP_SOLIDE` et `N_SOLIDE`.
+
 LES CHAMPS NOMBRE ÉTROITS. Chrome n’affiche ses flèches natives qu’à partir
 d’une certaine largeur : le champ Température (66 px) n’en avait aucune. Le
 sélecteur maison est `.champ-pas` + `.pas` dans la feuille de style, et

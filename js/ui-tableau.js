@@ -25,6 +25,27 @@
   const MIN_GAP = 0.4;
   const note1 = n => fmtDecimal(n, 1);
 
+  /* LA PREUVE SOUS LA PHRASE (v8.36). Une phrase seule demande de croire sur
+     parole ; en dessous, les deux moyennes comparées, leurs effectifs et deux
+     barres à la même échelle (sur 10) disent d'où sort le constat.
+
+     Le niveau de confiance n'est pas un calcul de statisticien, et il ne se
+     présente pas comme tel : « écart solide » quand l'écart atteint 0,8 point
+     ET que les deux groupes ont au moins cinq tasses, « écart probable » sinon.
+     Les seuils d'affichage, eux, ne bougent pas : sous 0,4 point ou sous trois
+     tasses par groupe, on continue de se taire. */
+  const GAP_SOLIDE = 0.8;
+  const N_SOLIDE = 5;
+  function confiance(haut, bas, nHaut, nBas) {
+    return haut - bas >= GAP_SOLIDE && Math.min(nHaut, nBas) >= N_SOLIDE ? "solide" : "probable";
+  }
+
+  /* Un constat complet : la phrase, les deux côtés de la comparaison, et de
+     quoi juger. Toutes les règles rendent cette forme, ou null. */
+  function constat(texte, haut, bas) {
+    return { texte, haut, bas, confiance: confiance(haut.note, bas.note, haut.n, bas.n) };
+  }
+
   // Compare des groupes nommés {cle: [notes]} et oppose le MEILLEUR au RESTE MIS
   // EN COMMUN, pas au deuxième.
   //
@@ -67,11 +88,14 @@
     });
     const res = bestOfGroups(groupes);
     if (!res) return null;
-    return I18N.t("ins_paquet", {
-      quand: I18N.t(res.gagnant.cle),
-      haut: note1(res.gagnant.moy),
-      bas: note1(res.moyReste),
-    });
+    return constat(
+      I18N.t("ins_paquet", {
+        quand: I18N.t(res.gagnant.cle),
+        haut: note1(res.gagnant.moy),
+        bas: note1(res.moyReste),
+      }),
+      { libelle: I18N.t(res.gagnant.cle), note: res.gagnant.moy, n: res.gagnant.notes.length },
+      { libelle: I18N.t("ins_reste_temps"), note: res.moyReste, n: res.nReste });
   }
 
   /* LE CONSTAT PAR CAFÉ ET PAR MACHINE, la phrase la plus utile du lot.
@@ -89,15 +113,18 @@
       minLot: MIN_SAMPLE * 2,
       minParGroupe: MIN_SAMPLE,
       minEcart: MIN_GAP,
-    }).slice(0, 2).map(c => I18N.t("ins_cafe_levier", {
-      cafe: c.cafe ? c.cafe.nom : "",
-      machine: I18N.machine(c.methode),
-      levier: I18N.t("lev_" + c.levier),
-      valeur: I18N.tr(String(c.valeur)),
-      haut: note1(c.haut),
-      bas: note1(c.bas),
-      n: c.n,
-    }));
+    }).slice(0, 2).map(c => constat(
+      I18N.t("ins_cafe_levier", {
+        cafe: c.cafe ? c.cafe.nom : "",
+        machine: I18N.machine(c.methode),
+        levier: I18N.t("lev_" + c.levier),
+        valeur: I18N.tr(String(c.valeur)),
+        haut: note1(c.haut),
+        bas: note1(c.bas),
+        n: c.n,
+      }),
+      { libelle: I18N.t("lev_" + c.levier) + " " + I18N.tr(String(c.valeur)), note: c.haut, n: c.n },
+      { libelle: I18N.t("ins_reste"), note: c.bas, n: c.nReste }));
   }
 
   // Duel entre recettes d'une même famille : c'est la comparaison qui a du sens
@@ -116,16 +143,19 @@
     for (const famille of Object.keys(parFamille)) {
       const classes = Object.entries(parFamille[famille])
         .filter(([, notes]) => notes.length >= MIN_SAMPLE)
-        .map(([nom, notes]) => ({ nom, moy: moyenne(notes) }))
+        .map(([nom, notes]) => ({ nom, moy: moyenne(notes), n: notes.length }))
         .sort((a, b) => b.moy - a.moy);
       if (classes.length !== 2) continue;
       if (classes[0].moy - classes[1].moy < MIN_GAP) continue;
-      return I18N.t("ins_recettes", {
-        gagnante: I18N.tr(classes[0].nom),
-        perdante: I18N.tr(classes[1].nom),
-        haut: note1(classes[0].moy),
-        bas: note1(classes[1].moy),
-      });
+      return constat(
+        I18N.t("ins_recettes", {
+          gagnante: I18N.tr(classes[0].nom),
+          perdante: I18N.tr(classes[1].nom),
+          haut: note1(classes[0].moy),
+          bas: note1(classes[1].moy),
+        }),
+        { libelle: I18N.tr(classes[0].nom), note: classes[0].moy, n: classes[0].n },
+        { libelle: I18N.tr(classes[1].nom), note: classes[1].moy, n: classes[1].n });
     }
     return null;
   }
@@ -144,11 +174,14 @@
     });
     const res = bestOfGroups(groupes);
     if (!res) return null;
-    return I18N.t("ins_moment", {
-      quand: I18N.t(res.gagnant.cle),
-      haut: note1(res.gagnant.moy),
-      bas: note1(res.moyReste),
-    });
+    return constat(
+      I18N.t("ins_moment", {
+        quand: I18N.t(res.gagnant.cle),
+        haut: note1(res.gagnant.moy),
+        bas: note1(res.moyReste),
+      }),
+      { libelle: I18N.t(res.gagnant.cle), note: res.gagnant.moy, n: res.gagnant.notes.length },
+      { libelle: I18N.t("ins_reste_jour"), note: res.moyReste, n: res.nReste });
   }
 
   // Puissance de feu, Brikka seulement. C'est la variable que Chris cherche
@@ -161,11 +194,14 @@
       .forEach(e => (groupes[e.puissance_feu] = groupes[e.puissance_feu] || []).push(e.note_sur_10));
     const res = bestOfGroups(groupes);
     if (!res) return null;
-    return I18N.t("ins_puissance", {
-      feu: res.gagnant.cle,
-      haut: note1(res.gagnant.moy),
-      bas: note1(res.moyReste),
-    });
+    return constat(
+      I18N.t("ins_puissance", {
+        feu: res.gagnant.cle,
+        haut: note1(res.gagnant.moy),
+        bas: note1(res.moyReste),
+      }),
+      { libelle: I18N.t("rg_feu", { f: res.gagnant.cle }), note: res.gagnant.moy, n: res.gagnant.notes.length },
+      { libelle: I18N.t("ins_reste_reglages"), note: res.moyReste, n: res.nReste });
   }
 
   function computeInsights(exts) {
@@ -173,26 +209,47 @@
     /* Les constats PAR CAFÉ d'abord : ils sont plus précis, donc plus
        actionnables. Les règles globales ensuite, et elles annoncent elles mêmes
        qu'elles mélangent les cafés : c'est leur limite, autant la dire. */
-    const phrases = insightsParCafe(exts).concat([
+    const constats = insightsParCafe(exts).concat([
       insightAgePaquet(notees),
       insightRecettes(notees),
       insightMoment(notees),
       insightPuissance(notees),
-    ].filter(Boolean).map(p => I18N.t("ins_global", { p })));
+    ].filter(Boolean).map(c => ({ ...c, texte: I18N.t("ins_global", { p: c.texte }) })));
 
-    if (phrases.length) return phrases;
+    if (constats.length) return constats;
 
     // Rien à dire : on explique POURQUOI plutôt que de laisser un cadre vide.
     // C'est la différence entre "pas assez de données" et "le site est cassé".
     // On ne réclame PAS les dates de torréfaction ici : les paquets vietnamiens
     // ne les portent presque jamais, le rappel serait un reproche permanent.
-    return [I18N.t("ins_vide", { n: MIN_SAMPLE })];
+    return [{ texte: I18N.t("ins_vide", { n: MIN_SAMPLE }) }];
+  }
+
+  /* Une barre par côté, à la MÊME échelle, celle des notes : sur 10, et non
+     l'une par rapport à l'autre. Deux barres normalisées sur l'écart feraient
+     passer 0,4 point pour un gouffre. */
+  function barre(note, classe) {
+    const pc = Math.max(0, Math.min(100, (Number(note) / 10) * 100));
+    return '<span class="barre' + (classe ? " " + classe : "") +
+      '"><i style="width:' + pc.toFixed(1) + '%"></i></span>';
+  }
+
+  function ligneDePreuve(cote, classe) {
+    return '<span class="preuve-nom">' + cote.libelle + "</span>" +
+      barre(cote.note, classe) +
+      "<b>" + note1(cote.note) + "</b>" +
+      '<span class="preuve-n">' + I18N.t("ins_tasses", { n: cote.n, s: cote.n > 1 ? "s" : "" }) + "</span>";
   }
 
   function rendreInsights(exts) {
-    $("#insights").innerHTML = computeInsights(exts)
-      .map(p => "<li>" + p + "</li>")
-      .join("");
+    $("#insights").innerHTML = computeInsights(exts).map(c => {
+      if (!c.haut) return '<li class="constat constat-vide"><p>' + c.texte + "</p></li>";
+      const total = c.haut.n + c.bas.n;
+      return '<li class="constat"><p>' + c.texte + "</p>" +
+        '<div class="preuve">' + ligneDePreuve(c.haut) + ligneDePreuve(c.bas, "bas") + "</div>" +
+        '<p class="preuve-pied">' + I18N.t("ins_" + c.confiance) + " · " +
+        I18N.t("ins_tasses_notees", { n: total, s: total > 1 ? "s" : "" }) + "</p></li>";
+    }).join("");
   }
 
   // ---------- Calendrier d'activité ----------

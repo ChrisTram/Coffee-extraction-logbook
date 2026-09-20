@@ -13,6 +13,30 @@ introduit est dans le changelog.
 
 ## Architecture et code
 
+### La preuve sous chaque constat (v8.36)
+
+Les sept règles d’insight se taisent tant qu’un écart n’atteint pas 0,4 point
+avec trois tasses notées de chaque côté. Sur les données de Chris elles
+parlaient donc rarement, et toujours de la même chose : la carte avait l’air
+d’un texte figé, ce qu’il a fini par demander (« c’est un truc statique
+non ? »).
+
+Elle ne l’était pas. Ce qui manquait n’était pas du calcul mais de quoi JUGER :
+une phrase seule demande de croire sur parole. Chaque règle rend maintenant un
+objet et non une chaîne : la phrase, le côté gagnant et le côté comparé, chacun
+avec son libellé, sa moyenne et son effectif. Dessous s’affichent deux barres à
+la même échelle, celle des notes sur 10 (et non normalisées sur l’écart, qui
+ferait passer 0,4 point pour un gouffre), puis le total en pied.
+
+Le niveau de confiance est volontairement grossier et nommé comme tel : « écart
+solide » à partir de 0,8 point avec cinq tasses de chaque côté, « écart
+probable » sinon. Ce n’est pas un test statistique et la carte ne prétend pas
+le contraire ; les seuils d’affichage, eux, n’ont pas bougé.
+
+Les phrases ont perdu leurs chiffres au passage : ils sont dans la preuve, et
+les lire deux fois ne disait rien de plus. C’est la même règle que pour la
+bulle du commentaire supprimée en v8.33.
+
 ### La refonte « Comptoir » : la peau, et ce qu'elle a coûté
 
 Direction artistique validée sur maquette le 13 septembre 2026 : papier chaud,

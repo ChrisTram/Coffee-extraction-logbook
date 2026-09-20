@@ -753,6 +753,39 @@ button { font-family: inherit; }
   color: var(--accent);
   font-weight: 700;
 }
+/* LA PREUVE SOUS LA PHRASE (v8.36) : les deux moyennes comparées, à la même
+   échelle sur 10, avec leur effectif. La barre du gagnant prend l'accent,
+   celle du reste un gris neutre : c'est la comparaison qui doit se lire, pas
+   deux couleurs qui s'opposent. */
+.insights .constat p { margin: 0; }
+.insights .constat .preuve {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(70px, 1.1fr) auto auto;
+  align-items: center;
+  gap: 6px 10px;
+  margin-top: 10px;
+  font-size: 0.78rem;
+  color: var(--attenue);
+}
+.preuve .preuve-nom { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.preuve .barre { height: 7px; border-radius: 99px; background: var(--panneau-3); overflow: hidden; }
+.preuve .barre i { display: block; height: 100%; border-radius: 99px; background: var(--accent); }
+.preuve .barre.bas i { background: var(--barre-neutre); }
+.preuve b { color: var(--encre); font-variant-numeric: tabular-nums; font-size: 0.85rem; }
+.preuve .preuve-n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.insights .preuve-pied {
+  margin-top: 8px;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--attenue);
+}
+@media (max-width: 520px) {
+  /* Le nom passe au dessus de sa barre : sur 320 px utiles, quatre colonnes
+     laissaient 40 px au libelle, donc trois lettres et des points. */
+  .insights .constat .preuve { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .preuve .preuve-nom { grid-column: 1 / -1; white-space: normal; }
+}
 
 /* .marque, .nav et .nav-icone ont disparu avec l'entete (refonte Comptoir,
    etape 2). .nav-btn reste, mais comme simple crochet de comportement : c'est

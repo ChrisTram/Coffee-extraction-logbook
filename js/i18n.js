@@ -54,7 +54,9 @@ const I18N = (() => {
     // Insights automatiques du tableau de bord. Phrases construites en JS, donc
     // gabarits T et pas entrées UI. Éviter les pluriels variables dans les
     // formulations : les nombres arrivent déjà formatés.
-    ins_cafe_levier: { fr: "Sur ton {cafe} en {machine} : {levier} {valeur} donne {haut} de moyenne sur {n} tasses, contre {bas} pour le reste." },
+    /* Les phrases ne portent PLUS les chiffres (v8.36) : ils sont dans la
+       preuve, juste dessous, et les lire deux fois ne dit rien de plus. */
+    ins_cafe_levier: { fr: "Sur ton {cafe} en {machine}, {levier} {valeur} sort au dessus du reste." },
     ins_global: { fr: "Toutes tasses confondues : {p}" },
     lev_feu: { fr: "puissance de feu" },
     lev_prechauffage: { fr: "eau préchauffée" },
@@ -65,16 +67,25 @@ const I18N = (() => {
     ins_paquet_frais: { fr: "dans la première semaine après ouverture" },
     ins_paquet_median: { fr: "entre 1 et 3 semaines après ouverture" },
     ins_paquet_vieux: { fr: "au delà de 3 semaines après ouverture" },
-    ins_paquet: { fr: "Tes tasses sont meilleures {quand} : {haut} de moyenne contre {bas} le reste du temps." },
-    ins_recettes: { fr: "{gagnante} passe devant {perdante} : {haut} de moyenne contre {bas}." },
+    ins_paquet: { fr: "Tes tasses sont meilleures {quand}." },
+    ins_recettes: { fr: "{gagnante} passe devant {perdante}." },
     ins_moment_matin: { fr: "le matin" },
     ins_moment_aprem: { fr: "l'après midi" },
     ins_moment_soir: { fr: "le soir" },
-    ins_moment: { fr: "Tes tasses {quand} sortent mieux : {haut} de moyenne contre {bas} au reste de la journée." },
+    ins_moment: { fr: "Tes tasses {quand} sortent mieux qu’au reste de la journée." },
 
 
-    ins_puissance: { fr: "Sur la Brikka, une puissance de feu de {feu} te réussit mieux : {haut} de moyenne contre {bas} aux autres réglages." },
+    ins_puissance: { fr: "Sur la Brikka, une puissance de feu de {feu} te réussit mieux." },
 
+    /* La preuve sous la phrase (v8.36). */
+    ins_reste: { fr: "le reste" },
+    ins_reste_temps: { fr: "le reste du temps" },
+    ins_reste_jour: { fr: "le reste de la journée" },
+    ins_reste_reglages: { fr: "les autres réglages" },
+    ins_tasses: { fr: "{n} tasse{s}" },
+    ins_tasses_notees: { fr: "{n} tasse{s} notée{s}" },
+    ins_solide: { fr: "Écart solide" },
+    ins_probable: { fr: "Écart probable" },
     ins_vide: { fr: "Pas encore assez de matière. Une tendance ne veut dire quelque chose qu'à partir de {n} extractions notées dans chacun des groupes comparés." },
     // États de la synchronisation entre appareils.
     sync_local: { fr: "Synchronisation indisponible en local : tes données restent sur cet appareil." },
