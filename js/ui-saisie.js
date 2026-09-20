@@ -740,6 +740,39 @@
     },
   ];
 
+  /* LES BOUTONS HAUT ET BAS des champs nombre (v8.35). Chrome masque ses
+     propres fleches sous une certaine largeur : la Temperature, 66 px, n'en
+     avait pas. stepUp/stepDown font le travail, y compris les bornes min et max
+     du champ ; on rejoue ensuite son evenement input, que le reste du
+     formulaire ecoute pour la ligne live, le brouillon et les avertissements.
+
+     Maintenir le bouton repete, comme une vraie fleche de systeme : 400 ms
+     avant le premier repeat, puis un pas toutes les 90 ms. Sans ca, passer de
+     92 a 100 demande huit clics. */
+  function brancherPas() {
+    let minuteur = null, repete = null;
+    const arreter = () => { clearTimeout(minuteur); clearInterval(repete); minuteur = repete = null; };
+    $$("[data-pas]").forEach(b => {
+      const champ = $("#" + b.dataset.pasChamp);
+      if (!champ) return;
+      const pas = () => {
+        if (champ.value === "") champ.value = champ.min || 0;
+        else if (Number(b.dataset.pas) > 0) champ.stepUp();
+        else champ.stepDown();
+        champ.dispatchEvent(new Event("input", { bubbles: true }));
+      };
+      b.addEventListener("pointerdown", ev => {
+        // Bouton gauche seulement : un clic droit ouvre le menu, il ne compte pas.
+        if (ev.button !== 0) return;
+        ev.preventDefault();
+        pas();
+        minuteur = setTimeout(() => { repete = setInterval(pas, 90); }, 400);
+      });
+      ["pointerup", "pointerleave", "pointercancel"].forEach(e => b.addEventListener(e, arreter));
+    });
+    window.addEventListener("blur", arreter);
+  }
+
   function brancherCurseurs() {
     COUPLES_CURSEUR.forEach(c => {
       const curseur = $("#" + c.curseur), champ = $("#" + c.champ);
@@ -976,6 +1009,7 @@
     // les attacher depuis construirePilules empilerait un jeu par bascule de langue.
     brancherPilules();
     brancherCurseurs();
+    brancherPas();
     activerAppuiLong($("#f-diagnostic"));
     activerAppuiLong($("#f-descripteurs"));
     $("#gouts-plus").addEventListener("click", () => basculerFamilles());

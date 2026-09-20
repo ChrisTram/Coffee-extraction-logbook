@@ -1713,7 +1713,40 @@ input:focus, select:focus, textarea:focus {
 .ligne-temp { display: flex; gap: 6px; align-items: center; }
 .ligne-temp .duree { flex: 1; min-width: 0; }
 .ligne-temp .duree input { flex: 0 0 3.4rem; width: 3.4rem; }
-.ligne-temp > input { flex: 0 0 66px; width: 66px; }
+.ligne-temp > .champ-pas { flex: 0 0 92px; }
+
+/* LE SELECTEUR HAUT ET BAS d'un champ nombre (v8.35). Chrome n'affiche ses
+   propres fleches qu'a partir d'une certaine largeur, et le champ Temperature
+   fait 66 px : il n'en avait aucune, contrairement au champ Volume juste a
+   cote. Deux boutons dessines, collés au champ, du coup identiques sur les deux
+   moteurs et dans les deux themes. tabindex="-1" sur les boutons : au clavier
+   les fleches du champ font deja le travail, et deux arrets de tabulation par
+   champ nombre alourdiraient tout le formulaire. */
+.champ-pas { display: flex; align-items: stretch; min-width: 0; }
+.champ-pas input[type="number"] {
+  flex: 1; min-width: 0; width: 100%;
+  border-top-right-radius: 0; border-bottom-right-radius: 0;
+  padding-inline: 10px;
+  appearance: textfield;
+}
+.champ-pas input[type="number"]::-webkit-outer-spin-button,
+.champ-pas input[type="number"]::-webkit-inner-spin-button { appearance: none; margin: 0; }
+.pas {
+  display: flex; flex-direction: column;
+  border: 1px solid var(--lignes); border-left: none;
+  border-radius: 0 var(--rayon-petit) var(--rayon-petit) 0;
+  overflow: hidden;
+  background: var(--panneau-2);
+}
+.pas button {
+  flex: 1; width: 28px; padding: 0;
+  border: none; background: transparent; color: var(--attenue);
+  cursor: pointer; display: grid; place-items: center;
+}
+.pas button + button { border-top: 1px solid var(--lignes-douces); }
+.pas button:hover { background: var(--panneau-3); color: var(--accent-fort); }
+.pas button:active { background: var(--accent-fond); }
+.pas .ico { width: 13px; height: 13px; }
 
 .ligne-cafe { display: flex; gap: 8px; align-items: center; }
 .ligne-cafe select { flex: 1; }

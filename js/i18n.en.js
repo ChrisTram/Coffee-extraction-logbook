@@ -396,6 +396,8 @@ const I18N_EN = {
     "Sommaire du guide": "Guide contents",
     "Switch to English": "Passer en français",
     "Thème : clair, Graphite ou Nuit": "Theme: light, Graphite or Night",
+    "Un degré de plus": "One degree up",
+    "Un degré de moins": "One degree down",
     "Obligatoire": "Required",
     "Estimer la température depuis la méthode": "Estimate the temperature from the method",
     "Bip discret à chaque palier de la recette": "Quiet beep at each step of the recipe",

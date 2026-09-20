@@ -51,6 +51,12 @@ LE CADRE (v8.27). Tout écran est borné et centré par UNE règle, `.ecran
 d'identifiant bat la classe, et c'est ainsi que l'historique s'est retrouvé calé
 à gauche. La grille de saisie a son propre plafond de 1400 px, centré.
 
+LES CHAMPS NOMBRE ÉTROITS. Chrome n’affiche ses flèches natives qu’à partir
+d’une certaine largeur : le champ Température (66 px) n’en avait aucune. Le
+sélecteur maison est `.champ-pas` + `.pas` dans la feuille de style, et
+`brancherPas()` dans `ui-saisie.js` : tout champ nombre peut l’avoir en posant
+deux boutons `data-pas="1|-1" data-pas-champ="<id>"` à côté de lui.
+
 LES THÈMES. Trois palettes dans `css/styles.css` (v8.34) : `html[data-theme="clair"]`,
 `html[data-theme="sombre"]` (Graphite, le sombre par défaut) et
 `html[data-theme="sombre"][data-sombre="nuit"]` (Nuit, qui ne redéfinit que ce qui
