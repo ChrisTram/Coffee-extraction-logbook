@@ -1,21 +1,73 @@
 # Brew journal: Brikka and Switch
 
-A local site. No install, no build, no server. Open `index.html` in Chrome and
-that is the whole setup.
+**A notebook for two coffee makers, a grinder and a shelf of Vietnamese beans.
+It records what you brewed, then tells you which of your settings actually
+makes a better cup.**
 
-It also runs online, at a private address behind a single username and
+Brewing at home produces a number of small decisions every morning: dose, grind
+dial, water temperature, flame, which recipe, which bean, how long. Tasting
+notes on paper never survive the comparison stage, because comparing means
+holding thirty cups in your head at once. This site does that part. You log a
+cup in about twenty seconds, and it keeps the arithmetic.
+
+It is built around one specific setup, and it does not pretend otherwise: a
+Bialetti **Brikka** (pressure moka), a Hario **Switch** (immersion and
+percolation in one dripper), a **Timemore C5** hand grinder, and coffee bought
+in Vietnam. Recipes, grind conversions, warnings and vocabulary are all written
+for that kit. Everything is editable, so another setup is a matter of rewriting
+the recipes and the coffees, not the code.
+
+It is a single HTML page. No install, no build, no framework, no account, no
+tracking, no network needed. Your data stays in CSV files on your own disk.
+
+## What it does
+
+- **Log a cup.** One required field, the dose. Everything else is optional and
+  pre-filled from the chosen recipe: water, temperature, grind, flame. A timer
+  with the recipe's stages runs beside the form, and works out the drawdown on
+  its own. Quick entry on the phone asks three things: coffee, recipe, score.
+- **Tell you what works.** The dashboard reads your history and writes plain
+  sentences: this recipe beats that one on this bean, this flame setting suits
+  you, your cups are better in the first week after opening the bag. Each one
+  shows the two averages it compares, how many cups are behind them, and
+  whether the gap is solid or merely likely. When nothing is solid enough, it
+  stays quiet rather than inventing a trend.
+- **Keep the recipes straight.** Eleven verified recipes ship with the site
+  (three Brikka, eight Switch), each with its settings, its step-by-step, what
+  it is good for, and which of your coffees suit it. Yours can be added, and
+  the originals restored in one click.
+- **Convert your grind.** One engine for the whole site: dial position, clicks,
+  microns, and the range each brewing method wants, from the official Timemore
+  diagram, redrawn as an SVG chart in the Guide.
+- **Follow your beans.** Bags, prices, freshness windows, cost per cup, and the
+  percentage of real coffee for the blends sold in Vietnam, with a warning when
+  a cup would go through paper it should not.
+- **Work everywhere, offline.** Installable as an app on the phone, usable with
+  no connection, and syncable between devices if you host it yourself.
+
+## The six screens
+
+| Screen | What you do there |
+|---|---|
+| **Dashboard** | The last cup in full, the key figures, the 30-day chart, the activity calendar, and what your data says |
+| **New brew** | The form and the timer, with the recipe and the coffee card beside them |
+| **History** | Every cup, filterable and sortable, with a detail card on hover, a comparator and a CSV export |
+| **My best settings** | The best combination found for each coffee, and what is still missing to conclude |
+| **Guide** | Recipes, grinder converter, taste diagnosis, vocabulary, shops and buying list |
+| **Settings** | Defaults, language, data, and everything else |
+
+## Where your data lives
+
+Your data never goes online. It lives in CSV files on your disk and in your
+browser's local storage. The server, when you use one, only checks your
+password and serves the site's files.
+
+Hosted, the site sits at a private address behind a single username and
 password. A session lasts 30 days, so in practice you almost never retype it.
 Locally, over `file://`, there is no login at all: double-clicking
 `index.html` opens the site directly. To sign out of a device, go to `/logout`.
 If you lose a phone, change the `AUTH_SECRET` secret in Cloudflare and every
 open session drops at once.
-
-Your data never goes online. It lives in CSV files on your disk and in your
-browser's local storage. The server only checks your password and serves the
-site's files.
-
-**Six screens**: Dashboard, New brew, History, My best settings, Guide
-(recipes, grinder, taste diagnosis, vocabulary, shops) and Settings.
 
 ## Getting around
 
@@ -194,10 +246,14 @@ unreadable: it measures the health of your brews, not your taste.
 ## Small extras
 
 - Duplicate a brew in one click from the history, to make the same one again.
+- Hovering a history row shows everything the row has no column for: drawdown,
+  temperature, volumes, cup, cost, all the tasting notes.
 - The Tetsu 4:6 step-by-step recalculates itself from the chosen variants.
 - The cost of the cup shows live during entry, as soon as the coffee has a price
   and a format.
-- Dark and light themes, remembered, in coffee tones both ways.
+- Three palettes, remembered: a light one, and two darks, Graphite (near-black
+  and neutral, crema accent) and Night (deep ink blue, copper accent). The
+  theme button cycles through them.
 - The Guide carries the shops, the buying list with links, the buying rules, the
   equipment care and the Vietnamese messages, each with a Copy button.
 
