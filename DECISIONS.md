@@ -24,7 +24,7 @@ non ? »).
 Elle ne l’était pas. Ce qui manquait n’était pas du calcul mais de quoi JUGER :
 une phrase seule demande de croire sur parole. Chaque règle rend maintenant un
 objet et non une chaîne : la phrase, le côté gagnant et le côté comparé, chacun
-avec son libellé, sa moyenne et son effectif. Dessous s’affichent deux barres à
+avec son libellé, sa moyenne et son effectif. Dessous s’affichaient (v8.36) deux barres à
 la même échelle, celle des notes sur 10 (et non normalisées sur l’écart, qui
 ferait passer 0,4 point pour un gouffre), puis le total en pied.
 
@@ -36,6 +36,15 @@ le contraire ; les seuils d’affichage, eux, n’ont pas bougé.
 Les phrases ont perdu leurs chiffres au passage : ils sont dans la preuve, et
 les lire deux fois ne disait rien de plus. C’est la même règle que pour la
 bulle du commentaire supprimée en v8.33.
+
+**v8.37 : sur une ligne.** Deux rangées de barres et un pied à part faisaient
+164 px par constat, et le graphe des trente jours, qui s’étire à la hauteur de
+sa voisine pour ne pas laisser de trou, montait à 370 px de dessin. La preuve
+tient maintenant sur une ligne : une réglette de 0 à 10 avec deux points, les
+deux moyennes, puis « Solide · 5 et 9 tasses ». Hauteur revenue à celle
+d’avant la v8.36, mesurée à 1600 px contre la v8.25. Les libellés des deux camps
+ne s’affichent plus, ils répétaient la phrase ; ils restent le nom accessible de
+la réglette.
 
 ### La refonte « Comptoir » : la peau, et ce qu'elle a coûté
 

@@ -753,38 +753,45 @@ button { font-family: inherit; }
   color: var(--accent);
   font-weight: 700;
 }
-/* LA PREUVE SOUS LA PHRASE (v8.36) : les deux moyennes comparées, à la même
-   échelle sur 10, avec leur effectif. La barre du gagnant prend l'accent,
-   celle du reste un gris neutre : c'est la comparaison qui doit se lire, pas
-   deux couleurs qui s'opposent. */
+/* LA PREUVE, SUR UNE LIGNE (v8.37) : une réglette de 0 à 10 avec le réglage
+   en accent et le reste en neutre, les deux moyennes, puis la confiance et
+   les effectifs. Une ligne et non trois : la carte, plus haute que le graphe
+   voisin, le faisait grandir avec elle. */
 .insights .constat p { margin: 0; }
 .insights .constat .preuve {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(70px, 1.1fr) auto auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 6px 10px;
-  margin-top: 10px;
-  font-size: 0.78rem;
+  gap: 6px 12px;
+  margin-top: 3px;
+  font-size: 0.76rem;
   color: var(--attenue);
 }
-.preuve .preuve-nom { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.preuve .barre { height: 7px; border-radius: 99px; background: var(--panneau-3); overflow: hidden; }
-.preuve .barre i { display: block; height: 100%; border-radius: 99px; background: var(--accent); }
-.preuve .barre.bas i { background: var(--barre-neutre); }
-.preuve b { color: var(--encre); font-variant-numeric: tabular-nums; font-size: 0.85rem; }
-.preuve .preuve-n { font-variant-numeric: tabular-nums; white-space: nowrap; }
-.insights .preuve-pied {
-  margin-top: 8px;
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--attenue);
+.reglette {
+  position: relative;
+  flex: 1 1 48px;
+  max-width: 130px;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--panneau-3);
 }
-@media (max-width: 520px) {
-  /* Le nom passe au dessus de sa barre : sur 320 px utiles, quatre colonnes
-     laissaient 40 px au libelle, donc trois lettres et des points. */
-  .insights .constat .preuve { grid-template-columns: minmax(0, 1fr) auto auto; }
-  .preuve .preuve-nom { grid-column: 1 / -1; white-space: normal; }
+.reglette i { position: absolute; top: 0; height: 100%; }
+.reglette-trait { background: var(--accent-fond); border-radius: 99px; }
+.reglette .reglette-point {
+  width: 10px; height: 10px; top: -2px;
+  margin-left: -5px;
+  border-radius: 50%;
+}
+.reglette-point.haut { background: var(--accent); }
+.reglette-point.bas { background: var(--barre-neutre); }
+.preuve-chiffres { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.preuve-chiffres b { color: var(--encre); font-size: 0.86rem; }
+.preuve-pied {
+  margin-left: auto;
+  white-space: nowrap;
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+  font-variant-numeric: tabular-nums;
 }
 
 /* .marque, .nav et .nav-icone ont disparu avec l'entete (refonte Comptoir,

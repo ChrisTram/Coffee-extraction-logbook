@@ -85,7 +85,12 @@
     if (Date.now() - (b.le || 0) > BROUILLON_MAX_MS) { effacerBrouillon(); return false; }
     if (!brouillonUtile(b)) return false;
 
-    if (b.methode) UI.choisirMethode(b.methode, true);
+    /* SANS garderRecette (v8.37) : avec, la méthode du brouillon s'appliquait
+       mais la liste des recettes restait celle de la méthode d'avant. Une
+       recette Switch posée dans un menu de recettes Brikka n'existe pas, et le
+       navigateur laissait le menu VIDE. Chris arrivait alors sur la saisie sans
+       recette, à chaque fois qu'il avait brassé au Switch la veille. */
+    if (b.methode) UI.choisirMethode(b.methode);
     const dateFraiche = Date.now() - (b.le || 0) <= DATE_BROUILLON_MAX_MS;
     Object.entries(b.valeurs).forEach(([id, valeur]) => {
       // Une date périmée ne remplace pas l'heure qu'il est.
@@ -97,6 +102,18 @@
        l'arrivée sur l'écran ne doit donc pas la remplacer. */
     if (dateFraiche && b.valeurs["f-date"]) saisie.dateTouchee = true;
     CASES_BROUILLON.forEach(id => { const el = $("#" + id); if (el) el.checked = !!b.valeurs[id]; });
+
+    /* JAMAIS de café ni de recette vides après une reprise : un brouillon peut
+       garder un café désactivé depuis, une recette renommée ou supprimée, ou
+       une valeur vide. On retombe alors sur le premier café et la première
+       recette de la méthode, comme sur un formulaire neuf : la plupart du
+       temps c'est celle que Chris garde, et c'est un clic de moins. */
+    if (!$("#f-cafe").value) {
+      const premier = UI.cafesSelectionnables()[0];
+      if (premier) $("#f-cafe").value = premier.id;
+    }
+    // Sans prefillDepuisRecette : il écraserait la dose et l'eau du brouillon.
+    if (!$("#f-recette").value) UI.remplirSelectRecettes();
 
     saisie.diagnostics = new Set(b.diagnostics || []);
     saisie.descripteurs = new Set(b.descripteurs || []);

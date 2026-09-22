@@ -54,7 +54,7 @@ d'identifiant bat la classe, et c'est ainsi que l'historique s'est retrouvé cal
 LES INSIGHTS (« Ce que tes données disent »). Sept règles dans `ui-tableau.js`,
 chacune rendant `{ texte, haut, bas, confiance }` ou `null` via `constat()`,
 où `haut` et `bas` sont `{ libelle, note, n }`. `rendreInsights()` en fait une
-phrase, deux barres à l’échelle des notes et un pied de confiance. Les seuils
+phrase et une ligne de preuve : réglette de 0 à 10, les deux moyennes, la confiance et les effectifs. Les seuils
 d’affichage (0,4 point, 3 tasses par groupe) sont dans `MIN_GAP` et
 `MIN_SAMPLE`, ceux du « solide » dans `GAP_SOLIDE` et `N_SOLIDE`.
 

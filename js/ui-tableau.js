@@ -225,30 +225,36 @@
     return [{ texte: I18N.t("ins_vide", { n: MIN_SAMPLE }) }];
   }
 
-  /* Une barre par côté, à la MÊME échelle, celle des notes : sur 10, et non
-     l'une par rapport à l'autre. Deux barres normalisées sur l'écart feraient
-     passer 0,4 point pour un gouffre. */
-  function barre(note, classe) {
-    const pc = Math.max(0, Math.min(100, (Number(note) / 10) * 100));
-    return '<span class="barre' + (classe ? " " + classe : "") +
-      '"><i style="width:' + pc.toFixed(1) + '%"></i></span>';
-  }
+  /* LA PREUVE, SUR UNE LIGNE (v8.37). La v8.36 la posait en deux rangées de
+     barres avec un pied à part : 164 px par constat, et le graphe des trente
+     jours, qui s'aligne sur la hauteur de sa voisine, montait à 370 px de
+     dessin. Elle répétait aussi, en libellé, le réglage que la phrase venait de
+     nommer.
 
-  function ligneDePreuve(cote, classe) {
-    return '<span class="preuve-nom">' + cote.libelle + "</span>" +
-      barre(cote.note, classe) +
-      "<b>" + note1(cote.note) + "</b>" +
-      '<span class="preuve-n">' + I18N.t("ins_tasses", { n: cote.n, s: cote.n > 1 ? "s" : "" }) + "</span>";
+     Ici une réglette de 0 à 10, l'échelle des notes (normaliser sur l'écart
+     ferait passer 0,4 point pour un gouffre), avec deux points : le réglage en
+     accent, le reste en neutre, et le trait entre eux. Puis « 6,8 contre 5,2 »,
+     et à droite la confiance avec les deux effectifs. Rien n'est perdu. */
+  function reglette(c) {
+    const haut = c.haut.note, bas = c.bas.note;
+    const pc = n => Math.max(0, Math.min(100, (Number(n) / 10) * 100)).toFixed(1) + "%";
+    const g = Math.min(haut, bas), d = Math.max(haut, bas);
+    // Les libellés des deux camps, pour un lecteur d'écran : la phrase les nomme déjà à l'oeil.
+    const dit = c.haut.libelle + " " + note1(haut) + ", " + c.bas.libelle + " " + note1(bas);
+    return '<span class="reglette" role="img" aria-label="' + attrTitre(dit) + '">' +
+      '<i class="reglette-trait" style="left:' + pc(g) + ";width:calc(" + pc(d) + " - " + pc(g) + ')"></i>' +
+      '<i class="reglette-point bas" style="left:' + pc(bas) + '"></i>' +
+      '<i class="reglette-point haut" style="left:' + pc(haut) + '"></i></span>';
   }
 
   function rendreInsights(exts) {
     $("#insights").innerHTML = computeInsights(exts).map(c => {
       if (!c.haut) return '<li class="constat constat-vide"><p>' + c.texte + "</p></li>";
-      const total = c.haut.n + c.bas.n;
       return '<li class="constat"><p>' + c.texte + "</p>" +
-        '<div class="preuve">' + ligneDePreuve(c.haut) + ligneDePreuve(c.bas, "bas") + "</div>" +
-        '<p class="preuve-pied">' + I18N.t("ins_" + c.confiance) + " · " +
-        I18N.t("ins_tasses_notees", { n: total, s: total > 1 ? "s" : "" }) + "</p></li>";
+        '<div class="preuve">' + reglette(c) +
+        '<span class="preuve-chiffres">' + I18N.t("ins_contre", { h: note1(c.haut.note), b: note1(c.bas.note) }) + "</span>" +
+        '<span class="preuve-pied">' + I18N.t("ins_" + c.confiance) + " · " +
+        I18N.t("ins_effectifs", { h: c.haut.n, b: c.bas.n }) + "</span></div></li>";
     }).join("");
   }
 
