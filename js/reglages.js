@@ -193,6 +193,23 @@ const REGLAGES = (() => {
       combinaisons: groupes.size,
       raison: "",
     };
+    /* UN « MEILLEUR » SOUS LA MOYENNE N'EN EST PAS UN (v8.38). Quand tous les
+       réglages refaits au moins trois fois restent sous la moyenne du café, les
+       bonnes tasses viennent de réglages essayés une ou deux fois : couronner
+       le moins mauvais des réglages répétés conseillait de refaire une tasse
+       plus mauvaise que d'habitude. On désigne plutôt le réglage de la
+       MEILLEURE tasse, et ce qu'il manque pour savoir s'il tient. */
+    if (bilan.meilleure && bilan.meilleure.moyenne < bilan.moyenne - 0.2) {
+      const top = [...notees].sort((a, b) =>
+        Number(b.note_sur_10) - Number(a.note_sur_10) ||
+        String(b.date_heure).localeCompare(String(a.date_heure)))[0];
+      const k = groupes.get(signature(top)).length;
+      bilan.meilleure = null;
+      bilan.raison = "sous_moyenne";
+      bilan.meilleureTasse = { id: top.id, note: Number(top.note_sur_10), fois: k };
+      bilan.manque = Math.max(1, seuil - k);
+      return bilan;
+    }
     if (!bilan.meilleure) {
       bilan.raison = notees.length < seuil ? "pas_assez" : "eparpille";
       // Combien de tasses manquent à la combinaison la plus jouée : c'est

@@ -192,6 +192,7 @@ const I18N = (() => {
     rg_preremplie: { fr: "Saisie préremplie avec ce réglage" },
     rg_aucune: { fr: "Aucune tasse notée sur ce café pour l instant." },
     rg_pas_assez: { fr: "Encore {n} tasse au même réglage et un gagnant apparaîtra. Il en faut {s} identiques." },
+    rg_sous_moyenne: { fr: "Aucun réglage ne se détache encore : ceux que tu as refaits au moins {s} fois restent sous ta moyenne. Ta meilleure tasse, {note} / 10, vient d'un réglage joué {k} fois : refais-le encore {n} fois pour savoir s'il tient." },
     rg_eparpille: { fr: "Assez de tasses, mais chacune à un réglage différent. Refais {n} fois ton réglage le plus joué plutôt que d en essayer un nouveau." },
     rg_sans_cafe: { fr: "Ajoute un café pour voir tes réglages ici." },
 

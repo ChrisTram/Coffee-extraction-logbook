@@ -513,8 +513,18 @@
       (k.sur10 ? "<small> / 10</small>" : k.mg ? "<small> mg</small>" : k.plusMoins ? "<small> pt</small>" : "") +
       '</div><div class="kpi-label">' + k.label + "</div></div>"
     ).join("");
-    $$("#kpis .kpi-nombre").forEach((el, i) =>
-      animerCompteur(el, kpis[i].valeur, kpis[i].dec, "", kpis[i].plusMoins ? "± " : ""));
+    /* Une moyenne sans tasse n'est pas zéro (v8.38) : « 0,0 / 10 » se lisait
+       comme une semaine de tasses ratées. Un trait, sans animation ni unité. */
+    kpis[2].vide = !notes7j.length;
+    kpis[3].vide = notes.length < 2;
+    $$("#kpis .kpi-nombre").forEach((el, i) => {
+      if (kpis[i].vide) {
+        el.textContent = "-";
+        el.parentElement.querySelector("small")?.remove();
+        return;
+      }
+      animerCompteur(el, kpis[i].valeur, kpis[i].dec, "", kpis[i].plusMoins ? "± " : "");
+    });
 
     /* Les trois chiffres sortis des tuiles. Ils restent lisibles, en clair, et
        ne sont plus sur le chemin du regard. */
@@ -541,7 +551,7 @@
        en gardant la dernière valeur connue, pour qu'elle ne se coupe pas les
        jours sans tasse. */
     const glissante = REGLAGES.moyenneGlissante(analysables, 5);
-    let iGliss = 0, derniere = null;
+    let iGliss = 0, derniere = null, derniereDate = null;
     for (let i = 29; i >= 0; i--) {
       const d = new Date(); d.setDate(d.getDate() - i);
       const cle = cleLocale(d);
@@ -562,10 +572,18 @@
       const d = new Date(); d.setDate(d.getDate() - i);
       const cle = cleLocale(d);
       while (iGliss < glissante.length && String(glissante[iGliss].date).slice(0, 10) <= cle) {
-        if (glissante[iGliss].valeur !== null) derniere = glissante[iGliss].valeur;
+        if (glissante[iGliss].valeur !== null) {
+          derniere = glissante[iGliss].valeur;
+          derniereDate = String(glissante[iGliss].date).slice(0, 10);
+        }
         iGliss += 1;
       }
-      tendance.push(derniere);
+      /* Prolongée sept jours au plus après la dernière tasse notée (v8.38) :
+         au-delà, elle traçait une ligne plate sur un mois sans une tasse, une
+         tendance que rien ne mesurait. */
+      const vieille = derniereDate &&
+        (new Date(cle + "T12:00") - new Date(derniereDate + "T12:00")) / 86400000 > 7;
+      tendance.push(vieille ? null : derniere);
     }
     CHARTS.barresEtLigne30j("g-30jours", labels, comptes, moyennes, details, tendance);
 

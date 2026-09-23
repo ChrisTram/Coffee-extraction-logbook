@@ -247,11 +247,40 @@ const DATA = (() => {
     });
   }
 
+  /* LA DÉMO RAJEUNIT (v8.38). Ses dates sont écrites en dur dans le CSV : six
+     semaines après leur écriture, les 30 derniers jours du tableau de bord
+     étaient vides, les chiffres de la semaine à zéro, et le graphe traçait une
+     tendance sur un mois sans une tasse. Tout ce qui porte une date (tasses,
+     torréfaction, ajout du café) glisse du même nombre de jours entiers, pour
+     que la dernière tasse tombe hier : les écarts entre dates, donc l'âge des
+     paquets et les séries, restent exactement ceux du jeu d'origine. */
+  function rajeunirDemo(cafes, extractions) {
+    const dates = extractions.map(e => String(e.date_heure).slice(0, 10)).filter(Boolean).sort();
+    if (!dates.length) return;
+    const derniere = new Date(dates[dates.length - 1] + "T12:00");
+    const hier = new Date(); hier.setHours(12, 0, 0, 0); hier.setDate(hier.getDate() - 1);
+    const jours = Math.round((hier - derniere) / 86400000);
+    if (jours <= 0) return;
+    const decaler = v => {
+      if (!/^\d{4}-\d{2}-\d{2}/.test(String(v || ""))) return v;
+      const d = new Date(String(v).slice(0, 10) + "T12:00");
+      d.setDate(d.getDate() + jours);
+      const iso = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+      return iso + String(v).slice(10);
+    };
+    extractions.forEach(e => { e.date_heure = decaler(e.date_heure); });
+    cafes.forEach(c => {
+      c.date_torrefaction = decaler(c.date_torrefaction);
+      c.date_ajout = decaler(c.date_ajout);
+    });
+  }
+
   async function chargerDemo() {
     // Un échec laisse les données en place plutôt que de vider l'état à moitié.
     if (!await chargerScriptDemo()) throw new Error("Jeu de démonstration indisponible.");
     state.cafes = csvParse(DEMO_CAFES_CSV).map(normaliserCafe);
     state.extractions = csvParse(DEMO_EXTRACTIONS_CSV).map(normaliserExtraction);
+    rajeunirDemo(state.cafes, state.extractions);
     state.recettes = recettesDefaut();
     state.tasses = tassesDefaut();
     // La demo n'a pas de fichier d'achats : la migration en fabrique un sachet

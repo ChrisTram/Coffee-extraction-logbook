@@ -151,6 +151,7 @@ const I18N_EN = {
     rg_preremplie: "Entry prefilled with these settings",
     rg_aucune: "No scored cup on this coffee yet.",
     rg_pas_assez: "One more cup at the same settings and a winner appears, {n} to go. {s} identical ones are needed.",
+    rg_sous_moyenne: "No setting stands out yet: the ones you repeated at least {s} times stay below your average. Your best cup, {note} / 10, came from a setting used {k} times: repeat it {n} more times to see if it holds.",
     rg_eparpille: "Enough cups, but each at different settings. Repeat your most used setting {n} more times rather than trying another one.",
     rg_sans_cafe: "Add a coffee to see your settings here.",
     param_vide: "none",

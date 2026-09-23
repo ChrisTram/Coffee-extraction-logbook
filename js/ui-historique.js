@@ -433,6 +433,15 @@
         ? '<span class="reglage-moyenne">' + I18N.t("rg_moyenne", { m: fmtDecimal(bilan.moyenne, 1), n: bilan.total }) + "</span>"
         : "") + "</div>";
 
+    if (bilan.raison === "sous_moyenne") {
+      const t = bilan.meilleureTasse;
+      return '<article class="carte reglage' + (c.actif === 0 ? " inactif" : "") + '">' + entete +
+        '<p class="carte-vide">' + I18N.t("rg_sous_moyenne", {
+          s: REGLAGES.MIN_TASSES, note: fmtDecimal(t.note, 1), k: t.fois, n: bilan.manque,
+        }) + "</p>" +
+        '<button type="button" class="btn btn-petit" data-refaire="' + t.id + '">' +
+        I18N.t("rg_refaire") + "</button></article>";
+    }
     if (!bilan.meilleure) {
       const cle = bilan.raison === "aucune" ? "rg_aucune"
         : bilan.raison === "pas_assez" ? "rg_pas_assez" : "rg_eparpille";
