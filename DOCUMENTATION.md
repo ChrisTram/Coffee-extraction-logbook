@@ -443,6 +443,14 @@ les autres sur quatre (`.col-2` vaut `span 8`, le défaut `span 4`).
   aux cinq chiffres du dessous. Légende de l'échelle, puis les mini statistiques
   en deux colonnes. Un rattrapage unique recompte après la mise en page, et `app.js`
   redemande un rendu au redimensionnement.
+- **Chaque point est une tasse** (v8.55) : tout point de dessin qui représente une
+  tasse porte `data-tasse="<id>"` (horloge, spectre, carte du moulin, trajectoire,
+  courbe de la fiche). Un clic, capté en phase de capture sur `#carte-dessins` et
+  `#fiche-contenu`, ouvre `#bulle-tasse` : date, café, recette, réglages, goûts,
+  note, et « Modifier » (`chargerExtractionDansSaisie`) ou « Refaire »
+  (`refaireTasse`). La bulle est déplacée dans le `<dialog>` ouvert s'il y en a un,
+  sinon elle passerait sous la couche du dessus. Elle se ferme au clic ailleurs, à
+  Échap et au défilement.
 - **Récap de la semaine** (v8.51, `#carte-recap`, `UI.donneesRecap()` dans
   js/ui-dessins.js) : la semaine passée, lundi à dimanche, en tête du tableau de bord
   pendant la semaine suivante, jusqu'à « Refermer » (localStorage `recap-ferme`, clé

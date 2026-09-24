@@ -98,7 +98,7 @@
     const depuis = new Date(); depuis.setDate(depuis.getDate() - 90);
     const tasses = extAnalysables().filter(e => e.note_sur_10 !== "" && new Date(e.date_heure) >= depuis)
       .map(e => ({ h: Number(String(e.date_heure).slice(11, 13)) + Number(String(e.date_heure).slice(14, 16)) / 60,
-        n: Number(e.note_sur_10), m: e.methode }))
+        n: Number(e.note_sur_10), m: e.methode, id: e.id }))
       .filter(t => Number.isFinite(t.h));
     if (tasses.length < MIN) { muet(id, "de_horloge_vide", { n: MIN }); return; }
     const C = [104, 100], R0 = 20, R1 = 84;
@@ -111,7 +111,7 @@
     });
     tasses.forEach(t => {
       const [x, y] = pt(t.h, R0 + ((Math.max(3, t.n) - 3) / 7) * (R1 - R0));
-      s += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="4" class="de-point-' + String(t.m || "").toLowerCase() + '"></circle>';
+      s += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="4" class="de-point-' + String(t.m || "").toLowerCase() + '"' + ' data-tasse="' + echap(t.id) + '"></circle>';
     });
     const moments = [["de_matin", t => t.h < 12], ["de_aprem", t => t.h >= 12 && t.h < 18], ["de_soir", t => t.h >= 18]]
       .map(([cle, f]) => { const ns = tasses.filter(f).map(t => t.n); return { cle, n: ns.length, moy: ns.length ? moyenne(ns) : null }; })
@@ -147,11 +147,11 @@
       if (!pos.length || !e.recette) return;
       // Une tasse, un point : le diagnostic le plus franc la place.
       const v = pos.reduce((a, b) => (Math.abs(b) > Math.abs(a) ? b : a), 0);
-      (parRecette[e.recette] = parRecette[e.recette] || []).push(v);
+      (parRecette[e.recette] = parRecette[e.recette] || []).push({ v, id: e.id });
     });
     return Object.entries(parRecette).filter(([, v]) => v.length >= MIN)
       .sort((a, b) => b[1].length - a[1].length).slice(0, 4)
-      .map(([recette, vals]) => ({ recette, vals, moy: moyenne(vals) }));
+      .map(([recette, l]) => ({ recette, vals: l.map(x => x.v), ids: l.map(x => x.id), moy: moyenne(l.map(x => x.v)) }));
   }
 
   function dessinerSpectre(id) {
@@ -164,12 +164,12 @@
       s += '<line x1="' + x(-2) + '" y1="' + y + '" x2="' + x(2) + '" y2="' + y + '" class="de-axe"></line>' +
         '<text x="' + x(-2) + '" y="' + (y - 14) + '" class="de-fort">' + echap(court(I18N.tr(r.recette), 30)) + "</text>";
       const pile = {};
-      r.vals.forEach(v => {
+      r.vals.forEach((v, j) => {
         const k = (pile[v] = (pile[v] || 0) + 1) - 1;
         // Au-dessus puis au-dessous de la ligne, sans monter sur la rangée voisine.
         const dy = k === 0 ? 0 : (k % 2 ? -1 : 1) * Math.min(2, Math.ceil(k / 2)) * 4.5;
         s += '<circle cx="' + x(v).toFixed(1) + '" cy="' + (y + dy) + '" r="3.6" class="' +
-          (v === 0 ? "de-juste" : "de-ecart") + '"></circle>';
+          (v === 0 ? "de-juste" : "de-ecart") + '"' + ' data-tasse="' + echap(r.ids[j]) + '"></circle>';
       });
       s += '<path d="M' + x(r.moy).toFixed(1) + " " + (y + 4) + ' l-4 7 l8 0 z" class="de-moyenne"></path>';
     });
@@ -194,7 +194,7 @@
     return ["Brikka", "Switch"].map(m => {
       const plage = GRIND.METHODES.find(x => x.id === m.toLowerCase());
       const tasses = extAnalysables().filter(e => e.methode === m && e.note_sur_10 !== "" && (!cafeId || e.cafe_id === cafeId))
-        .map(e => ({ d: GRIND.parseDial(String(e.mouture_dial || "")), n: Number(e.note_sur_10) })).filter(t => t.d);
+        .map(e => ({ d: GRIND.parseDial(String(e.mouture_dial || "")), n: Number(e.note_sur_10), id: e.id })).filter(t => t.d);
       let doree = null;
       tasses.forEach(t => {
         const dedans = tasses.filter(u => u.d.crans >= t.d.crans && u.d.crans <= t.d.crans + 2);
@@ -228,7 +228,7 @@
       }
       r.tasses.forEach((t, k) => {
         s += '<circle cx="' + x(t.d.microns).toFixed(1) + '" cy="' + (y + ((k % 3) - 1) * 5) + '" r="3.8" class="de-grain" style="fill-opacity:' +
-          opacite(t.n) + '"></circle>';
+          opacite(t.n) + '"' + ' data-tasse="' + echap(t.id) + '"></circle>';
       });
     });
     const el = document.getElementById(id);
@@ -305,7 +305,7 @@
     const tasses = avecDial.filter(e => e.recette === recette)
       .filter(e => Number.isFinite(chaleur(e)) && chaleur(e) > 0)
       .sort((a, b) => String(a.date_heure).localeCompare(String(b.date_heure)))
-      .map(e => ({ c: GRIND.parseDial(String(e.mouture_dial)).crans, y: chaleur(e), n: Number(e.note_sur_10), dial: e.mouture_dial }));
+      .map(e => ({ c: GRIND.parseDial(String(e.mouture_dial)).crans, y: chaleur(e), n: Number(e.note_sur_10), dial: e.mouture_dial, id: e.id }));
     if (tasses.length < MIN) { muet(id, "de_trajectoire_vide", { n: MIN }); return; }
     const cs = tasses.map(t => t.c), ys = tasses.map(t => t.y);
     const c0 = Math.min(...cs) - 2, c1 = Math.max(...cs) + 2, y0 = Math.min(...ys) - 1, y1 = Math.max(...ys) + 1;
@@ -323,7 +323,7 @@
     tasses.forEach((t, i) => {
       const der = i === tasses.length - 1;
       s += '<circle cx="' + x(t.c).toFixed(1) + '" cy="' + y(t.y).toFixed(1) + '" r="' + (der ? 6.5 : 4.2) + '" class="de-grain' + (der ? " de-derniere" : "") +
-        '" style="fill-opacity:' + opacite(t.n) + '"></circle>';
+        '" style="fill-opacity:' + opacite(t.n) + '"' + ' data-tasse="' + echap(t.id) + '"></circle>';
     });
     const meilleure = tasses.slice().sort((a, b) => b.n - a.n)[0];
     const unite = v => machine === "Switch" ? I18N.t("de_degres", { v: fmtDecimal(v, 0) }) : I18N.t("j_feu", { f: v });
@@ -574,6 +574,69 @@
       : I18N.t("de_frise_courte"));
   }
 
+  // ---------- Chaque point est une tasse (v8.55) ----------
+
+  /* Tout point de dessin qui porte data-tasse est une vraie tasse : le toucher
+     ouvre sa fiche en bulle (date, café, recette, réglages, goûts, note), avec
+     « Modifier » et « Refaire ». UNE bulle pour tous les dessins, du tableau de bord
+     comme de la fiche café. Elle se range dans le dialogue ouvert s'il y en a un :
+     hors de lui, elle passerait sous la fiche, qui occupe la couche du dessus. */
+  let bulleId = null;
+  function fermerBulle() {
+    const b = $("#bulle-tasse");
+    if (b) b.hidden = true;
+    bulleId = null;
+  }
+  function montrerBulle(id, ev) {
+    const e = UI.extAvecCalculs().find(x => x.id === id);
+    const b = $("#bulle-tasse");
+    if (!e || !b) return;
+    const hote = ev.target.closest("dialog") || document.body;
+    if (b.parentNode !== hote) hote.appendChild(b);
+    const cafe = DATA.state.cafes.find(c => c.id === e.cafe_id);
+    const d = new Date(e.date_heure);
+    const quand = isNaN(d) ? "" : d.toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" }) + ", " +
+      d.toLocaleTimeString(I18N.locale(), { hour: "2-digit", minute: "2-digit" });
+    const reglages = [e.dose_g ? e.dose_g + " g" : "", e.eau_g ? e.eau_g + " g" : "", e.mouture_dial,
+      e.methode === "Switch" && e.temperature_c !== "" ? e.temperature_c + " °C" : "",
+      e.methode === "Brikka" && e.puissance_feu !== "" ? I18N.t("j_feu", { f: e.puissance_feu }) : ""].filter(Boolean).join(" · ");
+    const gouts = String(e.descripteurs || "").split("|").filter(Boolean).slice(0, 4).map(t => echap(I18N.tag(t))).join(", ");
+    b.innerHTML =
+      '<div class="bt-tete"><span class="bt-quand">' + echap(quand) + "</span>" +
+      '<button type="button" class="bt-fermer" data-bulle="fermer" aria-label="' + echap(I18N.t("bt_fermer")) + '">×</button></div>' +
+      '<div class="bt-corps"><div><b class="bt-cafe">' + echap(cafe ? cafe.nom : "") + "</b>" +
+      '<span><i class="pastille-methode ' + String(e.methode || "").toLowerCase() + '"></i>' + echap(I18N.tr(e.recette || "")) + "</span>" +
+      "<span>" + echap(reglages) + "</span>" + (gouts ? '<span class="bt-gouts">' + gouts + "</span>" : "") + "</div>" +
+      '<b class="bt-note">' + (e.note_sur_10 === "" ? "·" : note1(Number(e.note_sur_10))) + "</b></div>" +
+      '<div class="bt-actions"><button type="button" class="btn btn-petit" data-bulle="modifier">' + echap(I18N.t("btn_modifier")) + "</button>" +
+      '<button type="button" class="btn btn-petit btn-primaire" data-bulle="refaire">' + echap(I18N.t("bt_refaire")) + "</button></div>";
+    b.hidden = false;
+    bulleId = id;
+    // Au plus près du toucher, sans sortir de l'écran.
+    const l = b.offsetWidth || 260, h = b.offsetHeight || 150;
+    b.style.left = Math.round(Math.max(8, Math.min(ev.clientX + 12, window.innerWidth - l - 8))) + "px";
+    b.style.top = Math.round(Math.max(8, Math.min(ev.clientY + 12, window.innerHeight - h - 8))) + "px";
+  }
+  function surBulle(ev) {
+    const a = ev.target.closest("[data-bulle]");
+    if (!a) return;
+    const ext = DATA.state.extractions.find(x => x.id === bulleId);
+    const action = a.dataset.bulle;
+    fermerBulle();
+    if (!ext || action === "fermer") return;
+    const fiche = $("#modale-fiche");
+    if (fiche && fiche.open) fiche.close();
+    if (action === "modifier") UI.chargerExtractionDansSaisie(ext, false);
+    else UI.refaireTasse(ext);
+  }
+  // Toucher un point, n'importe où : capté avant les raccourcis des dessins.
+  function surPoint(ev) {
+    const p = ev.target.closest && ev.target.closest("[data-tasse]");
+    if (!p) return;
+    ev.stopPropagation();
+    montrerBulle(p.dataset.tasse, ev);
+  }
+
   // ---------- Le tableau de bord ----------
 
   function rendreDessins() {
@@ -624,6 +687,18 @@
       if (m) { ev.preventDefault(); activerEcran("guide"); UI.montrerRecette(m.dataset.guideRecette); }
     });
     DATA.abonner(() => { if (nav.ecran === "tableau") rendreDessins(); });
+
+    // Les points des dessins, sur le tableau de bord et dans la fiche café.
+    carte.addEventListener("click", surPoint, true);
+    const fiche = $("#fiche-contenu");
+    if (fiche) fiche.addEventListener("click", surPoint, true);
+    const bulle = $("#bulle-tasse");
+    if (bulle) bulle.addEventListener("click", surBulle);
+    document.addEventListener("click", ev => {
+      if (bulleId && !ev.target.closest("#bulle-tasse") && !ev.target.closest("[data-tasse]")) fermerBulle();
+    });
+    document.addEventListener("keydown", ev => { if (ev.key === "Escape") fermerBulle(); });
+    window.addEventListener("scroll", fermerBulle, { passive: true });
   }
 
   Object.assign(UI, {

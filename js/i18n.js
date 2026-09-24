@@ -456,6 +456,8 @@ const I18N = (() => {
     de_ruban_aria: { fr: "Sachet de {c}, {n} tasses, ouvrir sa fiche" },
     de_frise_lecture: { fr: "Ton meilleur sachet : {a}, {x}. Le moins bon : {b}, {y}." },
     de_frise_courte: { fr: "Un ruban par sachet, de son ouverture à sa fin ; plus il est plein, mieux ses tasses étaient notées." },
+    bt_fermer: { fr: "Fermer" },
+    bt_refaire: { fr: "Refaire" },
     rc_titre: { fr: "Ta semaine, du {a} au {b}" },
     rc_fermer: { fr: "Refermer" },
     rc_tasses: { fr: "tasses" },
@@ -718,7 +720,7 @@ const I18N = (() => {
     "#dessin-etagere,#dessin-horloge,#dessin-spectre,#dessin-moulin," +
     "#dessin-etagere-lecture,#dessin-horloge-lecture,#dessin-spectre-lecture,#dessin-moulin-lecture," +
     "#carte-recap,#fiche-empreinte,#fiche-trajectoire,#fiche-moulin," +
-    "#dessin-frise,#dessin-podium,#dessin-progression,#dessin-frise-lecture,#dessin-podium-lecture,#dessin-progression-lecture";
+    "#bulle-tasse,#dessin-frise,#dessin-podium,#dessin-progression,#dessin-frise-lecture,#dessin-podium-lecture,#dessin-progression-lecture";
 
   function scanner() {
     const marche = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {

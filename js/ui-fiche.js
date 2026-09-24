@@ -174,7 +174,7 @@
     });
     points.forEach(e => {
       svg += '<circle cx="' + x(e._c.jours_ouvert).toFixed(1) + '" cy="' + y(Number(e.note_sur_10)).toFixed(1) +
-        '" r="3" class="fc-c-point"><title>' + echap(jourCourt(e.date_heure) + " : " + note1(Number(e.note_sur_10))) + "</title></circle>";
+        '" r="3" class="fc-c-point" data-tasse="' + echap(e.id) + '"><title>' + echap(jourCourt(e.date_heure) + " : " + note1(Number(e.note_sur_10))) + "</title></circle>";
     });
     const moyens = f.tranches.filter(t => t.n > 0 && t.a <= max)
       .map(t => [x((t.a + Math.min(t.b, max)) / 2), y(t.moy)]);

@@ -2966,6 +2966,26 @@ input[type="range"].curseur-inactif::-moz-range-thumb { opacity: 0; }
 .de-plage { fill: var(--panneau-3); }
 .de-doree { fill: none; stroke: var(--accent-fort); stroke-width: 1.5; }
 .de-grain { fill: var(--accent); }
+/* Un point qui est une tasse (v8.55) : il se touche. Le trait transparent élargit
+   la zone de toucher sans grossir le point. */
+[data-tasse] { cursor: pointer; stroke: transparent; stroke-width: 10; }
+[data-tasse]:hover { stroke: var(--encre); stroke-width: 1.5; stroke-opacity: 0.8; }
+.de-derniere[data-tasse] { stroke: var(--encre); stroke-width: 2; }
+.bulle-tasse {
+  position: fixed; z-index: var(--z-bulle); width: min(300px, calc(100vw - 16px));
+  background: var(--panneau-3); color: var(--texte); border: 1px solid var(--lignes); border-radius: var(--rayon-petit);
+  box-shadow: var(--ombre); padding: 10px 12px; display: grid; gap: 8px; font-size: 0.82rem;
+}
+.bt-tete { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.bt-quand { font-size: 0.74rem; color: var(--attenue); }
+.bt-fermer { font: inherit; font-size: 1.1rem; line-height: 1; background: none; border: none; color: var(--attenue); cursor: pointer; padding: 2px 4px; }
+.bt-corps { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: start; }
+.bt-corps > div { display: grid; gap: 2px; min-width: 0; }
+.bt-corps span { display: flex; align-items: center; gap: 6px; overflow-wrap: anywhere; }
+.bt-cafe { color: var(--encre); font-size: 0.92rem; }
+.bt-gouts { color: var(--attenue); }
+.bt-note { font-family: var(--serif); font-weight: 400; font-size: 2rem; line-height: 1; color: var(--encre); }
+.bt-actions { display: flex; gap: 6px; justify-content: flex-end; }
 .de-marche, .de-ruban { cursor: pointer; }
 .de-marche:focus-visible, .de-ruban:focus-visible { outline: none; }
 .de-marche-bloc { fill: var(--accent); }
