@@ -678,6 +678,11 @@ chaque notification de données et à la bascule de langue tant qu'il est ouvert
   la carte du moulin restreinte à ce café.
 - **Meilleur réglage** : `UI.carteReglage` sur `REGLAGES.pourCafe`, son entête masqué.
 - **Dernières tasses** : les cinq plus récentes, ratées comprises.
+- **Comparer avec un autre café** (v8.56) : un menu en pied de fiche (`#fiche-comparer`,
+  les cafés qui ont au moins une tasse). Le choix, gardé tant que la fiche reste sur
+  ce café, rend `#fiche-comparaison` : les deux empreintes superposées
+  (`UI.dessinerEmpreinte(id, a, b)`) et un tableau face à face, moyenne, machine,
+  meilleur réglage, fenêtre de fraîcheur, coût par tasse, goût qui revient.
 - Pied : Brasser ce café (saisie neuve sur ce café, `surChoixCafe`), Modifier le café,
   Fermer.
 

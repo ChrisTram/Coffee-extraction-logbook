@@ -471,6 +471,22 @@ const I18N = (() => {
     fi_empreinte: { fr: "Son empreinte, contre tes autres cafés" },
     fi_trajectoire: { fr: "Ta trajectoire sur ce café" },
     fi_moulin: { fr: "Ce café sur le moulin" },
+    fi_comparer: { fr: "Comparer avec un autre café" },
+    fi_comparer_choisir: { fr: "Choisir un café…" },
+    fi_duo_aria: { fr: "Empreintes de {a} et de {b}, superposées" },
+    fi_cmp_note: { fr: "Moyenne" },
+    fi_cmp_machine: { fr: "Surtout" },
+    fi_cmp_reglage: { fr: "Meilleur réglage" },
+    fi_cmp_fenetre: { fr: "Fraîcheur" },
+    fi_cmp_cout: { fr: "Coût" },
+    fi_cmp_gout: { fr: "Goût qui revient" },
+    fi_cmp_moyenne: { fr: "{m}, {n} tasses" },
+    fi_cmp_pas_de_reglage: { fr: "pas encore assez de tasses" },
+    fi_cmp_jours: { fr: "jours {a} à {b} du sachet" },
+    fi_cmp_pas_de_fenetre: { fr: "pas encore de fenêtre" },
+    de_empreinte_vide_autre: { fr: "Il faut {n} tasses de chaque café avec des goûts cochés pour comparer leurs empreintes." },
+    de_empreinte_lecture_autre: { fr: "Plus de {p} que {c}, moins de {m}." },
+    de_empreinte_proche_autre: { fr: "Son profil ressemble à celui de {c}." },
     de_empreinte_vide: { fr: "Il faut {n} tasses de ce café avec des goûts cochés pour dessiner son empreinte." },
     de_empreinte_lecture: { fr: "Plus de {p} que tes autres cafés, moins de {m}." },
     de_empreinte_proche: { fr: "Son profil ressemble à celui de tes autres cafés." },
@@ -719,7 +735,7 @@ const I18N = (() => {
     "#br-go,#br-note-dite," +
     "#dessin-etagere,#dessin-horloge,#dessin-spectre,#dessin-moulin," +
     "#dessin-etagere-lecture,#dessin-horloge-lecture,#dessin-spectre-lecture,#dessin-moulin-lecture," +
-    "#carte-recap,#fiche-empreinte,#fiche-trajectoire,#fiche-moulin," +
+    "#carte-recap,#fiche-comparaison,#fiche-duo,#fiche-empreinte,#fiche-trajectoire,#fiche-moulin," +
     "#bulle-tasse,#dessin-frise,#dessin-podium,#dessin-progression,#dessin-frise-lecture,#dessin-podium-lecture,#dessin-progression-lecture";
 
   function scanner() {

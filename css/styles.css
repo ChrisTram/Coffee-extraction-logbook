@@ -3011,6 +3011,20 @@ input[type="range"].curseur-inactif::-moz-range-thumb { opacity: 0; }
 .de-empreinte-tous { fill: none; stroke: var(--encre); stroke-width: 1.4; stroke-dasharray: 4 3; }
 .de-empreinte-cafe { fill: var(--accent); fill-opacity: 0.3; stroke: var(--accent); stroke-width: 2; }
 .fc-dessin { width: 100%; height: auto; display: block; }
+/* Deux cafés côte à côte (v8.56), en pied de fiche, sur toute la largeur. */
+.fc-comparer { grid-column: 1 / -1; }
+.fc-comparer-tete { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.fc-comparer-tete select { max-width: 260px; }
+.fc-comparer-corps { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 18px; align-items: start; margin-top: 6px; }
+.fc-duo-leg { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.78rem; color: var(--attenue); }
+.fc-duo-leg i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.fc-duo-a { background: var(--accent); }
+.fc-duo-b { border: 1.5px dashed var(--encre); }
+.fc-duo-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+.fc-duo-table th, .fc-duo-table td { text-align: left; padding: 7px 8px; border-top: 1px solid var(--lignes-douces); vertical-align: top; }
+.fc-duo-table thead th { border-top: none; font-size: 0.78rem; color: var(--encre); }
+.fc-duo-table tbody th { font-weight: 600; color: var(--attenue); white-space: nowrap; }
+@media (max-width: 760px) { .fc-comparer-corps { grid-template-columns: 1fr; } }
 .fc-dessin:empty { display: none; }
 .fc-dessin text { font-family: var(--sans); font-size: 9.5px; fill: var(--attenue); }
 .fc-dessin .de-fort { fill: var(--encre); font-weight: 700; }

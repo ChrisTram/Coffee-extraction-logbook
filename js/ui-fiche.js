@@ -27,6 +27,8 @@
   const MIN_TRANCHE = 3;
   const REACHAT_TASSES = 3;
   let ficheId = null;
+  // Le café d'en face dans « Comparer avec… » (v8.56), remis à zéro à chaque fiche.
+  let compareId = "";
 
   const echap = s => String(s === undefined || s === null ? "" : s)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
@@ -245,17 +247,72 @@
       '<section class="fc-bloc"><h3 class="fc-h">' + I18N.t("fi_moulin") + "</h3>" +
       '<svg id="fiche-moulin" class="fc-dessin" viewBox="0 0 320 126" role="img" aria-label="' + echap(I18N.t("fi_moulin")) + '"></svg>' +
       '<p class="fc-texte" id="fiche-moulin-lecture"></p></section>' +
-      blocDernieres(exts) + "</div>";
+      blocDernieres(exts) + blocComparer(cafe) + "</div>";
     UI.dessinerEmpreinte("fiche-empreinte", cafe.id);
     UI.dessinerTrajectoire("fiche-trajectoire", cafe.id);
     UI.dessinerMoulin("fiche-moulin", cafe.id);
+    rendreComparaison();
     const nbGouts = CHARTS.roueAromes(notees, { svg: "fiche-roue", detail: "fiche-roue-detail", lecture: "" });
     $("#fiche-roue-vide").hidden = nbGouts > 0;
     $(".fc-roue").hidden = nbGouts === 0;
   }
 
+  /* DEUX CAFÉS CÔTE À CÔTE (v8.56). « Comparer avec… » en pied de fiche : les deux
+     empreintes superposées, et face à face ce qui aide à choisir quoi racheter,
+     leur moyenne, leur machine, leur meilleur réglage, leur fenêtre de fraîcheur,
+     leur coût par tasse et le goût qui revient. Tout vient des mêmes calculs que
+     le reste de la fiche. */
+  function blocComparer(cafe) {
+    const autres = DATA.state.cafes.filter(c => c.id !== cafe.id && DATA.state.extractions.some(e => e.cafe_id === c.id));
+    if (!autres.length) return "";
+    return '<section class="fc-bloc fc-comparer"><div class="fc-comparer-tete"><h3 class="fc-h">' + I18N.t("fi_comparer") + "</h3>" +
+      '<select id="fiche-comparer" aria-label="' + echap(I18N.t("fi_comparer")) + '"><option value="">' + echap(I18N.t("fi_comparer_choisir")) + "</option>" +
+      autres.map(c => '<option value="' + echap(c.id) + '"' + (c.id === compareId ? " selected" : "") + ">" + echap(c.nom) + "</option>").join("") +
+      '</select></div><div id="fiche-comparaison"></div></section>';
+  }
+  function resumeCafe(c) {
+    const notees = extAnalysables().filter(e => e.cafe_id === c.id && e.note_sur_10 !== "");
+    const exts = extAvecCalculs().filter(e => e.cafe_id === c.id);
+    const moy = notees.length ? moyenne(notees.map(e => Number(e.note_sur_10))) : null;
+    const machines = {};
+    exts.forEach(e => { if (e.methode) machines[e.methode] = (machines[e.methode] || 0) + 1; });
+    const machine = Object.keys(machines).sort((a, b) => machines[b] - machines[a])[0];
+    const bilan = REGLAGES.pourCafe(c.id, extAnalysables());
+    const m = bilan.meilleure;
+    const f = fenetre(notees, moy || 0).fenetre;
+    const doses = exts.filter(e => Number(e.dose_g) > 0).map(e => Number(e.dose_g));
+    const tags = {};
+    notees.forEach(e => String(e.descripteurs || "").split("|").filter(Boolean).forEach(t => { tags[t] = (tags[t] || 0) + 1; }));
+    const gout = Object.keys(tags).sort((a, b) => tags[b] - tags[a])[0];
+    return [
+      moy === null ? I18N.t("fi_pas_notee") : I18N.t("fi_cmp_moyenne", { m: note1(moy), n: notees.length }),
+      machine ? I18N.machine(machine) : "·",
+      m ? [I18N.tr(m.recette || ""), m.mouture || ""].filter(Boolean).join(" · ") + ", " + note1(m.moyenne) : I18N.t("fi_cmp_pas_de_reglage"),
+      f ? I18N.t("fi_cmp_jours", { a: f.debut + 1, b: f.fin + 1 }) : I18N.t("fi_cmp_pas_de_fenetre"),
+      UI.coutParTasse(c, doses.length ? moyenne(doses) : replis.dose) || "·",
+      gout ? I18N.tag(gout) : "·",
+    ];
+  }
+  function rendreComparaison() {
+    const zone = $("#fiche-comparaison");
+    if (!zone) return;
+    const a = DATA.state.cafes.find(c => c.id === ficheId), b = DATA.state.cafes.find(c => c.id === compareId);
+    if (!a || !b) { zone.innerHTML = ""; return; }
+    const ra = resumeCafe(a), rb = resumeCafe(b);
+    const lignes = ["fi_cmp_note", "fi_cmp_machine", "fi_cmp_reglage", "fi_cmp_fenetre", "fi_cmp_cout", "fi_cmp_gout"];
+    zone.innerHTML = '<div class="fc-comparer-corps"><div>' +
+      '<svg id="fiche-duo" class="fc-dessin" viewBox="0 0 320 210" role="img" aria-label="' + echap(I18N.t("fi_duo_aria", { a: a.nom, b: b.nom })) + '"></svg>' +
+      '<div class="fc-duo-leg"><span><i class="fc-duo-a"></i>' + echap(a.nom) + '</span><span><i class="fc-duo-b"></i>' + echap(b.nom) + "</span></div>" +
+      '<p class="fc-texte" id="fiche-duo-lecture"></p></div>' +
+      '<table class="fc-duo-table"><thead><tr><th></th><th>' + echap(a.nom) + "</th><th>" + echap(b.nom) + "</th></tr></thead><tbody>" +
+      lignes.map((cle, i) => "<tr><th>" + echap(I18N.t(cle)) + "</th><td>" + echap(ra[i]) + "</td><td>" + echap(rb[i]) + "</td></tr>").join("") +
+      "</tbody></table></div>";
+    UI.dessinerEmpreinte("fiche-duo", a.id, b.id);
+  }
+
   function ouvrirFiche(cafeId) {
     if (!DATA.state.cafes.some(c => c.id === cafeId)) return;
+    if (cafeId !== ficheId) compareId = "";
     ficheId = cafeId;
     rendreFiche();
     const m = $("#modale-fiche");
@@ -287,6 +344,11 @@
       $("#modale-fiche").close();
       UI.ouvrirModaleCafes();
       UI.ouvrirFormCafe(id);
+    });
+    $("#fiche-contenu").addEventListener("change", ev => {
+      if (ev.target.id !== "fiche-comparer") return;
+      compareId = ev.target.value;
+      rendreComparaison();
     });
     // Le bouton « Refaire » de la carte du meilleur réglage, rendue dans la fiche.
     $("#fiche-contenu").addEventListener("click", ev => {

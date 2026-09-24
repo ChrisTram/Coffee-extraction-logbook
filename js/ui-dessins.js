@@ -260,12 +260,17 @@
     return { parts, norm: parts.map(p => p / max), total };
   }
 
-  function dessinerEmpreinte(id, cafeId) {
+  /* autreId (v8.56, « Comparer avec… ») : la forme de référence est cet autre café
+     au lieu de tous tes cafés, et la phrase le nomme. */
+  function dessinerEmpreinte(id, cafeId, autreId) {
     const toutes = extAnalysables();
     const aTags = e => String(e.descripteurs || "").trim() !== "";
     const siennes = toutes.filter(e => e.cafe_id === cafeId && aTags(e));
     if (siennes.length < MIN) { muet(id, "de_empreinte_vide", { n: MIN }); return; }
-    const a = profil(siennes), b = profil(toutes.filter(aTags));
+    const autres = autreId ? toutes.filter(e => e.cafe_id === autreId && aTags(e)) : toutes.filter(aTags);
+    if (autreId && autres.length < MIN) { muet(id, "de_empreinte_vide_autre", { n: MIN }); return; }
+    const a = profil(siennes), b = profil(autres);
+    const autre = autreId ? DATA.state.cafes.find(c => c.id === autreId) : null;
     const N = DESCRIPTEURS_GROUPES.length, C = [160, 104], R = 72;
     const pt = (i, r) => { const ang = -Math.PI / 2 + (i / N) * Math.PI * 2; return [C[0] + Math.cos(ang) * r, C[1] + Math.sin(ang) * r]; };
     let s = "";
@@ -283,9 +288,10 @@
     // La lecture : la famille où ce café dépasse le plus tes autres, et celle où il manque.
     const ecarts = a.parts.map((p, i) => ({ g: DESCRIPTEURS_GROUPES[i].nom, d: p - b.parts[i] })).sort((x, y) => y.d - x.d);
     const plus = ecarts[0], moins = ecarts[ecarts.length - 1];
+    const v = { p: I18N.groupe(plus.g).toLowerCase(), m: I18N.groupe(moins.g).toLowerCase(), c: autre ? autre.nom : "" };
     poserDessin(id, s, plus.d >= 0.05 && moins.d <= -0.05
-      ? I18N.t("de_empreinte_lecture", { p: I18N.groupe(plus.g).toLowerCase(), m: I18N.groupe(moins.g).toLowerCase() })
-      : I18N.t("de_empreinte_proche"));
+      ? I18N.t(autre ? "de_empreinte_lecture_autre" : "de_empreinte_lecture", v)
+      : I18N.t(autre ? "de_empreinte_proche_autre" : "de_empreinte_proche", v));
   }
 
   // ---------- Ta trajectoire (fiche café, v8.50) ----------
