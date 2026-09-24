@@ -2924,6 +2924,16 @@ input[type="range"].curseur-inactif::-moz-range-thumb { opacity: 0; }
 /* TES CAFÉS EN DESSINS (v8.49), rendus par js/ui-dessins.js. Chaque dessin est
    un raccourci : toute sa surface mène à la page qu'il résume, le bouton de son
    entête fait la même chose au clavier. */
+/* Arranger (v8.57) : le panneau n'existe que le temps de ranger. */
+.carte-dessins .carte-tete { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.dessins-panneau { margin-top: 10px; padding: 12px 14px; border-radius: var(--rayon-petit); background: var(--panneau-2); border: 1px solid var(--accent); display: grid; gap: 10px; }
+.dp-aide { margin: 0; font-size: 0.82rem; color: var(--attenue); }
+.dp-liste { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 4px 20px; }
+.dp-liste li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--lignes-douces); font-size: 0.88rem; }
+.dp-liste label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.dp-fleches { display: inline-flex; gap: 4px; }
+.dp-fleches .btn-ligne:disabled { opacity: 0.3; cursor: default; }
+.dp-pied { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 .carte-dessins .carte-sous { margin: 2px 0 0; font-size: 0.82rem; color: var(--attenue); }
 .dessins-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-top: 10px; }
 .dessin {

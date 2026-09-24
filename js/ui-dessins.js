@@ -645,16 +645,90 @@
 
   // ---------- Le tableau de bord ----------
 
+  /* TES DESSINS, À TA FAÇON (v8.57). L'ordre et les masqués vivent dans la ligne
+     de réglages (replis.dessins, « etagere,!horloge,… »), donc suivent d'un
+     appareil à l'autre. Un dessin nouveau, absent du choix enregistré, arrive
+     visible en fin de liste. Un dessin masqué n'est pas calculé. */
+  const DESSINS = {
+    etagere: () => dessinerEtagere("dessin-etagere"),
+    frise: () => dessinerFrise("dessin-frise"),
+    podium: () => dessinerPodium("dessin-podium"),
+    progression: () => dessinerProgression("dessin-progression"),
+    horloge: () => dessinerHorloge("dessin-horloge"),
+    spectre: () => dessinerSpectre("dessin-spectre"),
+    moulin: () => dessinerMoulin("dessin-moulin"),
+  };
+  function ordreDessins() {
+    const lu = String(replis.dessins || "").split(",").filter(Boolean)
+      .map(x => ({ cle: x.replace(/^!/, ""), visible: !x.startsWith("!") })).filter(x => DESSINS[x.cle]);
+    const vus = new Set(lu.map(x => x.cle));
+    return lu.concat(Object.keys(DESSINS).filter(k => !vus.has(k)).map(cle => ({ cle, visible: true })));
+  }
+  function appliquerOrdre(ordre) {
+    const grille = $(".dessins-grille");
+    if (!grille) return;
+    ordre.forEach(o => {
+      const el = grille.querySelector('[data-dessin="' + o.cle + '"]');
+      if (!el) return;
+      el.hidden = !o.visible;
+      grille.appendChild(el);
+    });
+    const aucun = $("#dessins-aucun");
+    if (aucun) aucun.hidden = ordre.some(o => o.visible);
+  }
   function rendreDessins() {
     rendreRecap();
     if (!$("#carte-dessins")) return;
-    dessinerEtagere("dessin-etagere");
-    dessinerFrise("dessin-frise");
-    dessinerPodium("dessin-podium");
-    dessinerProgression("dessin-progression");
-    dessinerHorloge("dessin-horloge");
-    dessinerSpectre("dessin-spectre");
-    dessinerMoulin("dessin-moulin");
+    const ordre = ordreDessins();
+    appliquerOrdre(ordre);
+    ordre.filter(o => o.visible).forEach(o => DESSINS[o.cle]());
+    if (!$("#dessins-panneau").hidden) rendrePanneau();
+  }
+
+  function rendrePanneau() {
+    const ordre = ordreDessins();
+    const nom = cle => { const t = document.querySelector('[data-dessin="' + cle + '"] h4'); return t ? t.textContent : cle; };
+    $("#dessins-panneau").innerHTML = '<p class="dp-aide">' + echap(I18N.t("dp_aide")) + "</p><ol class=\"dp-liste\">" +
+      ordre.map((o, i) => '<li><label><input type="checkbox" data-dp-voir="' + o.cle + '"' + (o.visible ? " checked" : "") + "> " +
+        echap(nom(o.cle)) + '</label><span class="dp-fleches">' +
+        '<button type="button" class="btn-ligne" data-dp-monter="' + o.cle + '"' + (i === 0 ? " disabled" : "") +
+        ' aria-label="' + echap(I18N.t("dp_monter", { d: nom(o.cle) })) + '">↑</button>' +
+        '<button type="button" class="btn-ligne" data-dp-descendre="' + o.cle + '"' + (i === ordre.length - 1 ? " disabled" : "") +
+        ' aria-label="' + echap(I18N.t("dp_descendre", { d: nom(o.cle) })) + '">↓</button></span></li>').join("") +
+      '</ol><div class="dp-pied"><button type="button" class="btn btn-petit" data-dp-origine>' + echap(I18N.t("dp_origine")) + "</button>" +
+      '<button type="button" class="btn btn-petit btn-primaire" data-dp-fini>' + echap(I18N.t("dp_fini")) + "</button></div>";
+  }
+  async function enregistrerOrdre(ordre) {
+    replis.dessins = ordre.map(o => (o.visible ? "" : "!") + o.cle).join(",");
+    rendreDessins();
+    await UI.ecrireReplis();
+  }
+  function basculerPanneau(ouvrir) {
+    const p = $("#dessins-panneau");
+    p.hidden = !ouvrir;
+    $("#dessins-arranger").setAttribute("aria-expanded", String(ouvrir));
+    if (ouvrir) rendrePanneau();
+  }
+  function cablerPanneau() {
+    $("#dessins-arranger").addEventListener("click", ev => { ev.stopPropagation(); basculerPanneau($("#dessins-panneau").hidden); });
+    const p = $("#dessins-panneau");
+    p.addEventListener("click", ev => {
+      ev.stopPropagation();
+      const b = ev.target.closest("button");
+      if (!b) return;
+      const ordre = ordreDessins();
+      const i = ordre.findIndex(o => o.cle === (b.dataset.dpMonter || b.dataset.dpDescendre));
+      if (b.dataset.dpMonter && i > 0) { [ordre[i - 1], ordre[i]] = [ordre[i], ordre[i - 1]]; enregistrerOrdre(ordre); }
+      else if (b.dataset.dpDescendre && i >= 0 && i < ordre.length - 1) { [ordre[i + 1], ordre[i]] = [ordre[i], ordre[i + 1]]; enregistrerOrdre(ordre); }
+      else if (b.hasAttribute("data-dp-origine")) { replis.dessins = ""; rendreDessins(); UI.ecrireReplis(); }
+      else if (b.hasAttribute("data-dp-fini")) basculerPanneau(false);
+    });
+    p.addEventListener("change", ev => {
+      const c = ev.target.closest("[data-dp-voir]");
+      if (!c) return;
+      const ordre = ordreDessins().map(o => (o.cle === c.dataset.dpVoir ? { ...o, visible: c.checked } : o));
+      enregistrerOrdre(ordre);
+    });
   }
 
   /* Les raccourcis. Un dessin résume une page : le toucher y mène. Un bocal, lui,
@@ -693,6 +767,7 @@
       if (m) { ev.preventDefault(); activerEcran("guide"); UI.montrerRecette(m.dataset.guideRecette); }
     });
     DATA.abonner(() => { if (nav.ecran === "tableau") rendreDessins(); });
+    cablerPanneau();
 
     // Les points des dessins, sur le tableau de bord et dans la fiche café.
     carte.addEventListener("click", surPoint, true);
@@ -708,7 +783,7 @@
   }
 
   Object.assign(UI, {
-    cablerDessins, donneesFrise, donneesPodium, donneesRecap, dessinerEmpreinte, dessinerMoulin, dessinerTrajectoire, donneesEtagere, donneesMoulin, donneesSpectre, positionDiagnostic: position,
+    cablerDessins, ordreDessins, donneesFrise, donneesPodium, donneesRecap, dessinerEmpreinte, dessinerMoulin, dessinerTrajectoire, donneesEtagere, donneesMoulin, donneesSpectre, positionDiagnostic: position,
     rendreDessins,
   });
 })();

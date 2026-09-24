@@ -1479,7 +1479,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
 
   // Et surtout : maj_le ne doit pas fuir dans le CSV.
   const csv = DATA.csvSerialiser([{ id: "moi", maj_le: 1699999999999, dose_g: 16 }], DATA.REGLAGE_COLS);
-  check("entete reglages.csv", csv.split("\n")[0] === "id,dose_g,puissance_feu,mouture_dial,schema_version,ebullition_s,pas_crans,pas_degres,pas_feu,pas_eau_g,pas_dose_g",
+  check("entete reglages.csv", csv.split("\n")[0] === "id,dose_g,puissance_feu,mouture_dial,schema_version,ebullition_s,pas_crans,pas_degres,pas_feu,pas_eau_g,pas_dose_g,dessins",
     csv.split("\n")[0]);
   check("maj_le absent du CSV reglages", !csv.includes("1699999999999"));
 }

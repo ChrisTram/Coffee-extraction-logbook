@@ -24,7 +24,7 @@ const DATA_SCHEMA = (() => {
   const REGLAGE_ID = "moi";
 
   const REGLAGE_COLS = ["id", "dose_g", "puissance_feu", "mouture_dial", "schema_version", "ebullition_s",
-    "pas_crans", "pas_degres", "pas_feu", "pas_eau_g", "pas_dose_g"];
+    "pas_crans", "pas_degres", "pas_feu", "pas_eau_g", "pas_dose_g", "dessins"];
 
   const RECETTE_COLS = ["id", "nom", "numero", "methode", "famille", "variante", "sous_titre", "dose_g", "eau_g",
     "temperature_c", "temp_texte", "mouture_dial", "ratio_texte", "total_texte", "lait",
@@ -206,6 +206,10 @@ const DATA_SCHEMA = (() => {
       pas_feu: nombre(r && r.pas_feu, 1, 3, 1),
       pas_eau_g: nombre(r && r.pas_eau_g, 5, 60, 15),
       pas_dose_g: nombre(r && r.pas_dose_g, 0.5, 3, 1),
+      /* Les dessins du tableau de bord (v8.57), dans l'ordre choisi, « ! » devant
+         ceux qui sont masqués : « etagere,!horloge,podium ». Vide = l'ordre
+         d'origine, tout visible. Un nom inconnu est ignoré à la lecture. */
+      dessins: String(r && r.dessins || "").replace(/[^a-z!,]/g, "").slice(0, 200),
     };
   }
 

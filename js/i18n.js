@@ -456,6 +456,11 @@ const I18N = (() => {
     de_ruban_aria: { fr: "Sachet de {c}, {n} tasses, ouvrir sa fiche" },
     de_frise_lecture: { fr: "Ton meilleur sachet : {a}, {x}. Le moins bon : {b}, {y}." },
     de_frise_courte: { fr: "Un ruban par sachet, de son ouverture à sa fin ; plus il est plein, mieux ses tasses étaient notées." },
+    dp_aide: { fr: "Coche ceux que tu veux voir, et range-les avec les flèches. Le choix suit sur tous tes appareils." },
+    dp_monter: { fr: "Monter {d}" },
+    dp_descendre: { fr: "Descendre {d}" },
+    dp_origine: { fr: "Revenir à l'ordre d'origine" },
+    dp_fini: { fr: "Terminé" },
     bt_fermer: { fr: "Fermer" },
     bt_refaire: { fr: "Refaire" },
     rc_titre: { fr: "Ta semaine, du {a} au {b}" },
@@ -736,7 +741,7 @@ const I18N = (() => {
     "#dessin-etagere,#dessin-horloge,#dessin-spectre,#dessin-moulin," +
     "#dessin-etagere-lecture,#dessin-horloge-lecture,#dessin-spectre-lecture,#dessin-moulin-lecture," +
     "#carte-recap,#fiche-comparaison,#fiche-duo,#fiche-empreinte,#fiche-trajectoire,#fiche-moulin," +
-    "#bulle-tasse,#dessin-frise,#dessin-podium,#dessin-progression,#dessin-frise-lecture,#dessin-podium-lecture,#dessin-progression-lecture";
+    "#dessins-panneau,#bulle-tasse,#dessin-frise,#dessin-podium,#dessin-progression,#dessin-frise-lecture,#dessin-podium-lecture,#dessin-progression-lecture";
 
   function scanner() {
     const marche = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {

@@ -498,6 +498,7 @@ const UI = (() => {
     replis.molette = r.mouture_dial;
     replis.ebullition = r.ebullition_s;
     // Les pas de la correction chiffrée (v8.48), tels quels : les colonnes de la ligne.
+    replis.dessins = r.dessins || "";
     replis.pas = { pas_crans: r.pas_crans, pas_degres: r.pas_degres, pas_feu: r.pas_feu,
       pas_eau_g: r.pas_eau_g, pas_dose_g: r.pas_dose_g };
   }
@@ -529,6 +530,7 @@ const UI = (() => {
       mouture_dial: replis.molette,
       ebullition_s: replis.ebullition,
       ...(replis.pas || {}),
+      dessins: replis.dessins || "",
     });
   }
 
