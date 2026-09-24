@@ -7,8 +7,8 @@
 <!-- Version du site, source unique : le pied de page la lit, et les fichiers
      chargés à la demande la mettent dans leur URL. Se pose avec
      node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="8.48">
-<link rel="stylesheet" href="css/styles.css?v=8.48">
+<meta name="app-version" content="8.49">
+<link rel="stylesheet" href="css/styles.css?v=8.49">
 <!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
      SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
      parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
@@ -194,6 +194,35 @@
              refonte, son style etait reste. -->
         <div class="legende-heatmap" id="heatmap-legende" aria-hidden="true"></div>
         <div class="mini-stats" id="heatmap-stats"></div>
+      </article>
+
+      <!-- RANGEE 3 bis : TES CAFÉS EN DESSINS (v8.49), rendus par js/ui-dessins.js.
+           Chaque dessin est un raccourci vers la page qu'il résume ; un bocal de
+           l'étagère ouvre la fiche de son café. -->
+      <article class="carte carte-dessins col-plein" id="carte-dessins">
+        <div class="carte-tete"><h3>Tes cafés en dessins</h3><p class="carte-sous">Touche un dessin pour ouvrir ce qu'il résume.</p></div>
+        <div class="dessins-grille">
+          <section class="dessin" data-raccourci="cafes">
+            <header class="dessin-tete"><h4>L'étagère</h4><button type="button" class="dessin-lien" data-raccourci="cafes">Mes cafés<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button></header>
+            <svg id="dessin-etagere" class="dessin-svg" viewBox="0 0 320 160" role="img" aria-label="Tes sachets en bocaux, remplis de ce qui reste"></svg>
+            <p class="dessin-lecture" id="dessin-etagere-lecture"></p>
+          </section>
+          <section class="dessin" data-raccourci="historique">
+            <header class="dessin-tete"><h4>L'horloge du café</h4><button type="button" class="dessin-lien" data-raccourci="historique">Historique<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button></header>
+            <svg id="dessin-horloge" class="dessin-svg" viewBox="0 0 320 200" role="img" aria-label="Tes tasses des trois derniers mois à leur heure, plus loin du centre quand elles sont mieux notées"></svg>
+            <p class="dessin-lecture" id="dessin-horloge-lecture"></p>
+          </section>
+          <section class="dessin" data-raccourci="diagnostics">
+            <header class="dessin-tete"><h4>Le spectre d'extraction</h4><button type="button" class="dessin-lien" data-raccourci="diagnostics">Diagnostics<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button></header>
+            <svg id="dessin-spectre" class="dessin-svg" viewBox="0 0 320 160" role="img" aria-label="Tes diagnostics de sous-extrait à sur-extrait, une rangée par recette"></svg>
+            <p class="dessin-lecture" id="dessin-spectre-lecture"></p>
+          </section>
+          <section class="dessin" data-raccourci="moulin">
+            <header class="dessin-tete"><h4>Ta carte du moulin</h4><button type="button" class="dessin-lien" data-raccourci="moulin">Le moulin<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button></header>
+            <svg id="dessin-moulin" class="dessin-svg" viewBox="0 0 320 126" role="img" aria-label="Tes tasses à leurs microns, dans la plage de chaque machine"></svg>
+            <p class="dessin-lecture" id="dessin-moulin-lecture"></p>
+          </section>
+        </div>
       </article>
 
       <!-- RANGEE 4 : LES ANALYSES, EN ONGLETS (v8.39). Six graphiques
@@ -1626,31 +1655,32 @@ Cảm ơn shop.</pre>
 <!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
      et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
      desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=8.48"></script>
-<script defer src="js/i18n.js?v=8.48"></script>
-<script defer src="js/grind.js?v=8.48"></script>
-<script defer src="js/recettes.js?v=8.48"></script>
+<script defer src="js/outils.js?v=8.49"></script>
+<script defer src="js/i18n.js?v=8.49"></script>
+<script defer src="js/grind.js?v=8.49"></script>
+<script defer src="js/recettes.js?v=8.49"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=8.48"></script>
-<script defer src="js/data-csv.js?v=8.48"></script>
-<script defer src="js/data-schema.js?v=8.48"></script>
-<script defer src="js/data-store.js?v=8.48"></script>
-<script defer src="js/data-calculs.js?v=8.48"></script>
-<script defer src="js/data-migrations.js?v=8.48"></script>
-<script defer src="js/data.js?v=8.48"></script>
-<script defer src="js/reglages.js?v=8.48"></script>
-<script defer src="js/charts.js?v=8.48"></script>
-<script defer src="js/ui-noyau.js?v=8.48"></script>
-<script defer src="js/ui-tableau.js?v=8.48"></script>
-<script defer src="js/ui-saisie.js?v=8.48"></script>
-<script defer src="js/ui-chrono.js?v=8.48"></script>
-<script defer src="js/ui-brouillon.js?v=8.48"></script>
-<script defer src="js/ui-rapide.js?v=8.48"></script>
-<script defer src="js/ui-historique.js?v=8.48"></script>
-<script defer src="js/ui-guide.js?v=8.48"></script>
-<script defer src="js/ui-catalogue.js?v=8.48"></script>
-<script defer src="js/ui-fiche.js?v=8.48"></script>
-<script defer src="js/ui-brassage.js?v=8.48"></script>
-<script defer src="js/app.js?v=8.48"></script>
+<script defer src="js/sync.js?v=8.49"></script>
+<script defer src="js/data-csv.js?v=8.49"></script>
+<script defer src="js/data-schema.js?v=8.49"></script>
+<script defer src="js/data-store.js?v=8.49"></script>
+<script defer src="js/data-calculs.js?v=8.49"></script>
+<script defer src="js/data-migrations.js?v=8.49"></script>
+<script defer src="js/data.js?v=8.49"></script>
+<script defer src="js/reglages.js?v=8.49"></script>
+<script defer src="js/charts.js?v=8.49"></script>
+<script defer src="js/ui-noyau.js?v=8.49"></script>
+<script defer src="js/ui-tableau.js?v=8.49"></script>
+<script defer src="js/ui-saisie.js?v=8.49"></script>
+<script defer src="js/ui-chrono.js?v=8.49"></script>
+<script defer src="js/ui-brouillon.js?v=8.49"></script>
+<script defer src="js/ui-rapide.js?v=8.49"></script>
+<script defer src="js/ui-historique.js?v=8.49"></script>
+<script defer src="js/ui-guide.js?v=8.49"></script>
+<script defer src="js/ui-catalogue.js?v=8.49"></script>
+<script defer src="js/ui-fiche.js?v=8.49"></script>
+<script defer src="js/ui-brassage.js?v=8.49"></script>
+<script defer src="js/ui-dessins.js?v=8.49"></script>
+<script defer src="js/app.js?v=8.49"></script>
 </body>
 </html>

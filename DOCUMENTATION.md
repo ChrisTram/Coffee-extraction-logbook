@@ -120,6 +120,7 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/ui-catalogue.js` | modales cafés, sachets, recettes, écran Paramètres |
 | `js/ui-fiche.js` | la fiche d'un café (v8.46), dialogue `#modale-fiche` |
 | `js/ui-brassage.js` | le mode Brassage (v8.47), dialogue plein écran `#modale-brassage` |
+| `js/ui-dessins.js` | les dessins en SVG maison (v8.49) : étagère, horloge, spectre, carte du moulin |
 | `js/app.js` | démarrage, navigation, thème, langue, modales d'accueil et de données, abonnement aux données |
 | `css/fonts/` | les deux polices de la DA, embarquées en woff2, sous OFL (section 10) |
 | `sw.js`, `manifest.json`, `icons/` | PWA et hors ligne (section 10) |
@@ -442,6 +443,17 @@ les autres sur quatre (`.col-2` vaut `span 8`, le défaut `span 4`).
   aux cinq chiffres du dessous. Légende de l'échelle, puis les mini statistiques
   en deux colonnes. Un rattrapage unique recompte après la mise en page, et `app.js`
   redemande un rendu au redimensionnement.
+- **Tes cafés en dessins** (v8.49, `#carte-dessins`, js/ui-dessins.js) : quatre
+  dessins, chacun raccourci vers la page qu'il résume (`data-raccourci` : cafes,
+  historique, diagnostics, moulin). L'étagère (un bocal par café actif avec sachet,
+  le moins rempli d'abord, liseré selon la fenêtre de fraîcheur de la fiche ; un bocal
+  porte `data-fiche` et ouvre la fiche), l'horloge (tasses notées des 90 derniers
+  jours à leur heure, rayon selon la note, couleur de la machine), le spectre (position
+  d'un diagnostic = le sens de mouture de `DIAGNOSTIC_LEVIERS`, « Équilibré » au
+  centre, une rangée par recette dès trois tasses), la carte du moulin (microns sur la
+  plage `GRIND.METHODES`, zone dorée = les trois crans à la meilleure moyenne dès
+  trois tasses). Rendus par `UI.rendreDessins()`, appelé par `rendreEcranCourant` et
+  à chaque notification de données sur le tableau de bord.
 - **Analyses** : note par café, Brikka contre Switch, goûts, arômes, diagnostics,
   note contre mouture, note par recette. L'onglet Arômes (v8.45) est la roue
   `CHARTS.roueAromes()`, SVG maison : familles de `DESCRIPTEURS_GROUPES` au centre,

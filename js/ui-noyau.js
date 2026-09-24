@@ -648,7 +648,7 @@ const UI = (() => {
   }
 
   function rendreEcranCourant(force) {
-    if (nav.ecran === "tableau") UI.rendreTableau();
+    if (nav.ecran === "tableau") { UI.rendreTableau(); UI.rendreDessins(); }
     else if (nav.ecran === "reglages") UI.rendreReglages();
     else if (nav.ecran === "historique") UI.rendreHistorique();
     else if (nav.ecran === "parametres") UI.rendreParametres();

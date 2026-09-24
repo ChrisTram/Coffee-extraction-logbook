@@ -293,5 +293,7 @@
     DATA.abonner(rendreFicheOuverte);
   }
 
-  Object.assign(UI, { cablerFiche, fenetreFraicheur: fenetre, ouvrirFiche, rendreFicheOuverte, TRANCHES_SACHET: TRANCHES });
+  // Sous des noms qui disent ce qu'ils sont hors de ce fichier : l'étagère du tableau de bord s'en sert.
+  const fenetreFraicheur = fenetre, jourSachet = jourCourant, TRANCHES_SACHET = TRANCHES;
+  Object.assign(UI, { cablerFiche, fenetreFraicheur, jourSachet, ouvrirFiche, rendreFicheOuverte, TRANCHES_SACHET });
 })();

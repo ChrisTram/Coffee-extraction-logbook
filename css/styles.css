@@ -2916,6 +2916,52 @@ input[type="range"].curseur-inactif::-moz-range-thumb { opacity: 0; }
   color: var(--encre);
 }
 .modale-large { max-width: 780px; }
+/* TES CAFÉS EN DESSINS (v8.49), rendus par js/ui-dessins.js. Chaque dessin est
+   un raccourci : toute sa surface mène à la page qu'il résume, le bouton de son
+   entête fait la même chose au clavier. */
+.carte-dessins .carte-sous { margin: 2px 0 0; font-size: 0.82rem; color: var(--attenue); }
+.dessins-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-top: 10px; }
+.dessin {
+  display: grid; gap: 8px; align-content: start; padding: 12px 14px; min-width: 0;
+  border-radius: var(--rayon-petit); background: var(--panneau-2); border: 1px solid transparent; cursor: pointer;
+}
+.dessin:hover { border-color: var(--lignes); }
+.dessin-tete { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.dessin-tete h4 { margin: 0; font-size: 0.95rem; color: var(--encre); }
+.dessin-lien {
+  display: inline-flex; align-items: center; gap: 4px; font: inherit; font-size: 0.76rem; font-weight: 600;
+  color: var(--attenue); background: none; border: none; padding: 4px 0; cursor: pointer;
+}
+.dessin-lien:hover, .dessin:hover .dessin-lien { color: var(--accent-fort); }
+.dessin-lien:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.dessin-svg { width: 100%; height: auto; display: block; }
+.dessin-svg:empty { display: none; }
+.dessin-svg text { font-family: var(--sans); font-size: 9.5px; fill: var(--attenue); }
+.dessin-svg .de-fort { fill: var(--encre); font-weight: 700; }
+.dessin-lecture { margin: 0; font-size: 0.8rem; line-height: 1.45; color: var(--texte); }
+.de-planche { stroke: var(--lignes); stroke-width: 2; }
+.de-bocal { cursor: pointer; }
+.de-bocal:focus-visible { outline: none; }
+.de-bocal:focus-visible .de-verre, .de-bocal:hover .de-verre { stroke-width: 2.5; }
+.de-verre { fill: var(--panneau-3); stroke: var(--lignes); stroke-width: 1.5; }
+.de-dedans .de-verre { stroke: var(--accent); }
+.de-apres .de-verre { stroke: var(--danger); }
+.de-avant .de-verre { stroke: var(--attenue); }
+.de-grains { fill: var(--accent); }
+.de-couvercle { fill: var(--barre-neutre); }
+.de-cadran { fill: none; stroke: var(--lignes); }
+.de-cadran-mi { fill: none; stroke: var(--lignes-douces); stroke-dasharray: 3 3; }
+.de-point-brikka { fill: var(--brikka); fill-opacity: 0.85; }
+.de-point-switch { fill: var(--switch); fill-opacity: 0.85; }
+.de-zone { fill: var(--accent-fond); }
+.de-axe, .de-grille { stroke: var(--lignes); }
+.de-juste { fill: var(--accent); }
+.de-ecart { fill: var(--texte); fill-opacity: 0.6; }
+.de-moyenne { fill: var(--accent-fort); }
+.de-plage { fill: var(--panneau-3); }
+.de-doree { fill: none; stroke: var(--accent-fort); stroke-width: 1.5; }
+.de-grain { fill: var(--accent); }
+
 /* LE MODE BRASSAGE (v8.47) : le chrono en plein écran, lisible à un mètre.
    Un dialogue qui couvre tout, sur le fond du thème, sans cadre de carte. */
 .brassage {

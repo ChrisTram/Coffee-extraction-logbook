@@ -441,6 +441,28 @@ const I18N = (() => {
     br_vanne_fermee: { fr: "Vanne fermée" },
     br_suivante: { fr: "Dans {d} s : {texte}" },
     br_recommencer: { fr: "Recommencer" },
+    de_etagere_vide: { fr: "Aucun sachet enregistré : ajoute-en un dans Mes cafés pour remplir l'étagère." },
+    de_bocal_aria: { fr: "{c}, environ {n} tasses, ouvrir sa fiche" },
+    de_tasses: { fr: "{n} tasses" },
+    de_etagere_racheter: { fr: "À racheter bientôt : {c}." },
+    de_etagere_ok: { fr: "Liseré cuivre : dans ta fenêtre de fraîcheur. Rouge : passée. Gris : pas encore, ou pas assez de tasses pour le dire." },
+    de_horloge_vide: { fr: "Il faut au moins {n} tasses notées ces trois derniers mois." },
+    de_matin: { fr: "Le matin" },
+    de_aprem: { fr: "L'après-midi" },
+    de_soir: { fr: "Le soir" },
+    de_moyenne: { fr: "{m} de moyenne, {n} tasses" },
+    de_horloge_lecture: { fr: "{a}, tes tasses sortent mieux. {b}, elles baissent." },
+    de_horloge_egal: { fr: "Tes tasses se valent d'un moment à l'autre de la journée." },
+    de_spectre_vide: { fr: "Il faut {n} tasses diagnostiquées sur une même recette pour la placer." },
+    de_sous: { fr: "sous-extrait" },
+    de_equilibre: { fr: "équilibré" },
+    de_sur: { fr: "sur-extrait" },
+    de_spectre_sur: { fr: "{r} penche vers le sur-extrait : moudre un peu plus gros." },
+    de_spectre_sous: { fr: "{r} penche vers le sous-extrait : moudre un peu plus fin." },
+    de_spectre_centre: { fr: "Tes recettes tombent autour de l'équilibre." },
+    de_moulin_vide: { fr: "Aucune tasse notée avec une molette : les cafés déjà moulus n'y paraissent pas." },
+    de_moulin_lecture: { fr: "Ta zone dorée ({m}) : de {a} à {b}, {x} de moyenne sur {n} tasses." },
+    de_moulin_sans_zone: { fr: "Pas encore de zone dorée : il faut {n} tasses notées à trois crans près." },
     cc_prochaine: { fr: "Pour la prochaine : {q}." },
     cc_ensuite: { fr: "Si ça ne suffit pas : {q}." },
     cc_mouture: { fr: "molette {de} → {vers} ({e} crans, {a} → {b} µm)" },
@@ -658,7 +680,9 @@ const I18N = (() => {
     "#vide-mouture,#vide-gouts,#vide-duel,#note-gouts,#param-recettes,#note-affichee," +
     "#aside-jumelles,#roue-detail,#lecture-aromes,#vide-aromes,#f-dicter-texte,#fiche-contenu," +
     "#br-machine,#br-titre,#br-dose,#br-sur,#br-cible,#br-vanne,#br-consigne,#br-suivante,#br-frise," +
-    "#br-go,#br-note-dite";
+    "#br-go,#br-note-dite," +
+    "#dessin-etagere,#dessin-horloge,#dessin-spectre,#dessin-moulin," +
+    "#dessin-etagere-lecture,#dessin-horloge-lecture,#dessin-spectre-lecture,#dessin-moulin-lecture";
 
   function scanner() {
     const marche = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
