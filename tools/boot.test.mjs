@@ -54,12 +54,28 @@ function check(label, condition, detail) {
 
 /* ---------- Faux DOM ---------- */
 
+/* Une vraie liste de classes : depuis la v8.40, l'etat « pas encore notee »
+   vit dans une classe du curseur, et un classList muet le rendait invisible. */
+function fausseListeDeClasses() {
+  const classes = new Set();
+  return {
+    add: (...c) => c.forEach(x => classes.add(x)),
+    remove: (...c) => c.forEach(x => classes.delete(x)),
+    toggle(c, force) {
+      const on = force === undefined ? !classes.has(c) : !!force;
+      if (on) classes.add(c); else classes.delete(c);
+      return on;
+    },
+    contains: c => classes.has(c),
+  };
+}
+
 function faireElement(nom) {
   return {
     _nom: nom, tagName: "DIV", hidden: false, value: "", checked: false,
     textContent: "", innerHTML: "", disabled: false, tabIndex: 0, open: false,
     dataset: {}, style: { setProperty() {}, removeProperty() {} }, options: [], elements: [], files: [],
-    classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
+    classList: fausseListeDeClasses(),
     addEventListener() {}, removeEventListener() {}, appendChild() {}, remove() {},
     setAttribute() {}, getAttribute: () => null, removeAttribute() {},
     focus() {}, click() {}, showModal() {}, close() {}, submit() {}, requestSubmit() {},
@@ -962,6 +978,22 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
   // La fiche ne repete pas le commentaire, ecrit en entier sous la ligne.
   check("la fiche au survol ne repete pas le commentaire",
     !api.UI.detailContenu({ ...avecCalculs, commentaire: "un mot" }, true).includes("detail-commentaire"));
+}
+
+/* REFAIRE UNE TASSE REPREND SES REGLAGES, PAS SON RESULTAT (v8.41).
+   Le raccourci de l'icone et le bouton Dupliquer passent par refaireTasse :
+   la dose et la molette reviennent, la note et le commentaire non. */
+{
+  const exts = api.DATA.state.extractions;
+  const derniere = exts.reduce((a, e) => (!a || String(e.date_heure) > String(a.date_heure) ? e : a), null);
+  const notee = { ...derniere, note_sur_10: 8, commentaire: "tres bonne", descripteurs: "caramel" };
+  api.UI.refaireTasse(notee);
+  check("refaire reprend la dose", String(document.querySelector("#f-dose").value) === String(derniere.dose_g),
+    document.querySelector("#f-dose").value);
+  check("mais pas la note", api.UI.noteVide(document.querySelector("#f-note")));
+  check("ni le commentaire", document.querySelector("#f-commentaire").value === "");
+  check("et le raccourci trouve la derniere tasse", api.UI.refaireDerniere() === true);
+  api.UI.reinitialiserSaisie();
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);

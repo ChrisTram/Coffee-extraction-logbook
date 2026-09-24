@@ -913,6 +913,31 @@
     activerEcran("saisie", true);
   }
 
+  /* REFAIRE UNE TASSE, c'est reprendre ses RÉGLAGES, pas son résultat (v8.41).
+     La duplication recopiait aussi la note, les goûts, les diagnostics, le
+     commentaire et les temps mesurés : une tasse pas encore brassée arrivait
+     avec le 7 de la veille, exactement la note inventée que « pas encore
+     notée » existe pour empêcher. Sert au bouton Dupliquer de l'historique et
+     au raccourci « Refaire ma dernière tasse » de l'icône. */
+  function reglagesSeuls(ext) {
+    return {
+      ...ext, note_sur_10: "", commentaire: "", diagnostic: "", descripteurs: "", ratee: "",
+      temps_total_s: "", temps_ecoulement_s: "", volume_extrait_ml: "",
+    };
+  }
+  function refaireTasse(ext) {
+    chargerExtractionDansSaisie(reglagesSeuls(ext), true);
+  }
+  /* La plus récente par date, pas la dernière du tableau : une tasse ajoutée
+     après coup avec une date passée arrive en fin de liste. */
+  function refaireDerniere() {
+    const derniere = DATA.state.extractions.reduce(
+      (a, e) => (!a || String(e.date_heure) > String(a.date_heure) ? e : a), null);
+    if (!derniere) { activerEcran("saisie"); return false; }
+    refaireTasse(derniere);
+    return true;
+  }
+
   async function enregistrerSaisie(ev) {
     ev.preventDefault();
     if (!$("#f-dose").value) { toast(I18N.t("t_dose")); return; }
@@ -1064,7 +1089,7 @@
     basculerFamilles, brancherCurseurs, brancherPilules, cablerSaisie, cafeCourantMoulu,
     cafesSelectionnables, chargerExtractionDansSaisie, choisirMethode, construirePilules,
     DIAG_INEGALE, DIAGS_SOUS_EXTRAIT, DIAGS_SUR_EXTRAIT, ecrireDuree, enregistrerSaisie,
-    infoDiagnostic, lireDuree, majAffichageNote, majAgePaquet, majAgitationDepuisRecette,
+    infoDiagnostic, lireDuree, majAffichageNote, refaireDerniere, refaireTasse, majAgePaquet, majAgitationDepuisRecette,
     majAsideSaisie, majAvertissements, majChampPrechauffe, majCorrectionDiagnostic,
     majCurseurs, majFamillesVisibles, majLait, majLive, majTempHint, marquerDateTouchee,
     noteSaisie, prefillDepuisRecette, rafraichirDateSaisie, reinitialiserSaisie,

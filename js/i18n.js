@@ -401,6 +401,8 @@ const I18N = (() => {
     t_modifiee: { fr: "Extraction modifiée" },
     t_supprimee: { fr: "Extraction supprimée" },
     t_dupliquee: { fr: "Extraction dupliquée, ajuste et enregistre" },
+    t_refaire: { fr: "Les réglages de ta dernière tasse sont repris, la note reste à donner" },
+    t_refaire_vide: { fr: "Pas encore de tasse à refaire : voici une saisie neuve" },
     t_cafe: { fr: "Café enregistré" },
     t_recette: { fr: "Recette enregistrée" },
     t_retablie: { fr: "Recette rétablie à sa version d'origine" },

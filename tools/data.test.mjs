@@ -684,8 +684,16 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     const liste = app.slice(app.indexOf("const ECRANS = ["), app.indexOf("]", app.indexOf("const ECRANS = [")));
     const raccourcis = Array.isArray(manifest.shortcuts) ? manifest.shortcuts : [];
     check("au moins un raccourci d'appui long", raccourcis.length >= 1);
-    const morts = raccourcis.filter(r => !liste.includes('"' + String(r.url).replace("./#", "") + '"'));
-    check("chaque raccourci vise un ecran existant", morts.length === 0, morts.map(r => r.url).join(", "));
+    /* Un raccourci vise un ecran, ou une ACTION qu'app.js traite nommement
+       (« refaire », v8.41) : au demarrage ET au changement de hash, sinon un
+       appli deja ouverte l'ignorerait. */
+    const appJs = readFileSync(join(ROOT, "js/app.js"), "utf8");
+    const actionTraitee = cle => (appJs.match(new RegExp('h === "' + cle + '"', "g")) || []).length >= 2;
+    const morts = raccourcis.filter(r => {
+      const cle = String(r.url).replace("./#", "");
+      return !liste.includes('"' + cle + '"') && !actionTraitee(cle);
+    });
+    check("chaque raccourci vise un ecran existant ou une action traitee", morts.length === 0, morts.map(r => r.url).join(", "));
     check("chaque raccourci a une icone", raccourcis.every(r => Array.isArray(r.icons) && r.icons.length));
   }
 }

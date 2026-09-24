@@ -710,8 +710,14 @@ les mêmes URL et jette les anciennes à l'activation.
 `tools/data.test.mjs` refuse toute divergence entre les trois. Ne jamais poser une
 version à la main.
 
-Le manifeste porte un `id` stable (`./`) et deux raccourcis d'appui long (Saisie,
-Historique) ; un test vérifie qu'ils visent des écrans de `ECRANS`.
+Le manifeste porte un `id` stable (`./`) et trois raccourcis d'appui long (Saisie,
+Refaire ma dernière tasse, Historique). Le deuxième ouvre `./#refaire`, une ACTION
+et non un écran : `app.js` la traite au démarrage et au changement de hash, par
+`UI.refaireDerniere()`, qui charge dans la saisie les RÉGLAGES de la tasse la plus
+récente (`reglagesSeuls()` vide note, goûts, diagnostics, commentaire et temps
+mesurés ; le bouton Dupliquer de l'historique passe par le même chemin). Un test
+vérifie que chaque raccourci vise un écran de `ECRANS` ou une action traitée. Les
+raccourcis s'affichent sur Android, pas sur iPhone.
 
 ## 11. Pièges connus
 

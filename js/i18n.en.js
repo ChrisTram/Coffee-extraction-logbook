@@ -333,6 +333,8 @@ const I18N_EN = {
     t_modifiee: "Brew updated",
     t_supprimee: "Brew deleted",
     t_dupliquee: "Brew duplicated, adjust and save",
+    t_refaire: "Your last cup's settings are back, the score is still to give",
+    t_refaire_vide: "No cup to redo yet: here is a fresh entry",
     t_cafe: "Coffee saved",
     t_recette: "Recipe saved",
     t_retablie: "Recipe restored to its original version",

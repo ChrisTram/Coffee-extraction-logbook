@@ -24,6 +24,13 @@
       "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
+      "name": "Refaire ma dernière tasse",
+      "short_name": "Refaire",
+      "description": "Ouvrir la saisie avec les réglages de la dernière tasse",
+      "url": "./#refaire",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
       "name": "Historique",
       "short_name": "Historique",
       "description": "Retrouver les dernières extractions",

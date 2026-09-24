@@ -613,7 +613,7 @@
       } else if (btn.dataset.action === "modifier") {
         UI.chargerExtractionDansSaisie(ext, false);
       } else if (btn.dataset.action === "dupliquer") {
-        UI.chargerExtractionDansSaisie(ext, true);
+        UI.refaireTasse(ext);
         toast(I18N.t("t_dupliquee"));
       } else if (btn.dataset.action === "deplier") {
         if (detailsOuverts.has(id)) detailsOuverts.delete(id);

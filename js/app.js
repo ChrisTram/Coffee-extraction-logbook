@@ -146,6 +146,7 @@
 
     window.addEventListener("hashchange", () => {
       const h = location.hash.slice(1);
+      if (h === "refaire") { ouvrirRefaire(); return; }
       const cible = normaliserEcran(h);
       if (ECRANS.includes(cible) && cible !== nav.ecran) activerEcran(cible);
     });
@@ -288,6 +289,12 @@
     });
   }
 
+  /* Le raccourci « Refaire ma dernière tasse » de l'icône (manifest.json) ouvre
+     ./#refaire : la saisie préremplie avec les réglages de la dernière tasse. */
+  function ouvrirRefaire() {
+    toast(I18N.t(UI.refaireDerniere() ? "t_refaire" : "t_refaire_vide"));
+  }
+
   function remplirSelectRecetteReco() {
     const sel = $("#c-recette");
     const v = sel.value;
@@ -371,7 +378,8 @@
     if (UI.restaurerBrouillon()) toast(I18N.t("t_brouillon"));
 
     const h = location.hash.slice(1);
-    activerEcran(ECRANS.includes(normaliserEcran(h)) ? normaliserEcran(h) : "tableau");
+    if (h === "refaire") ouvrirRefaire();
+    else activerEcran(ECRANS.includes(normaliserEcran(h)) ? normaliserEcran(h) : "tableau");
 
     // Le premier écran est rendu : le voile de chargement n'a plus de raison d'être.
     const voile = $("#chargement");
