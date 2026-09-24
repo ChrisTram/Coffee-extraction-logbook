@@ -261,7 +261,7 @@ Chart.defaults = creuse();
 const SCRIPTS = ["js/outils.js", "js/i18n.en.js", "js/i18n.js", "js/grind.js", "js/recettes.js", "js/demo-data.js",
   "js/sync.js", "js/data-csv.js", "js/data-schema.js", "js/data-store.js", "js/data-calculs.js",
   "js/data-migrations.js", "js/data.js", "js/reglages.js", "js/charts.js",
-  "js/ui-noyau.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-chrono.js", "js/ui-brouillon.js", "js/ui-rapide.js", "js/ui-historique.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/ui-fiche.js", "js/app.js"];
+  "js/ui-noyau.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-chrono.js", "js/ui-brouillon.js", "js/ui-rapide.js", "js/ui-historique.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/ui-fiche.js", "js/ui-brassage.js", "js/app.js"];
 const source = SCRIPTS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 
 // console.error interceptée : c'est par là que sortent les erreurs de rendu.
@@ -1030,6 +1030,16 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
   check("elle compare dedans et dehors", f && f.dedans === 8 && f.dehors === 5, JSON.stringify(f));
   check("sans deux tranches documentees, pas de fenetre",
     api.UI.fenetreFraicheur(notees.slice(0, 4), moy).fenetre === null);
+}
+
+/* LE MODE BRASSAGE lit la cible CUMULEE d'un versement dans le texte de la
+   recette, sans jamais le reecrire (v8.47). */
+{
+  const c = api.UI.cibleVersement;
+  check("« jusqu'a 120 g » vise 120", c("Verser jusqu'à 120 g, vanne OUVERTE") === 120);
+  check("« verser 45 g de plus, jusqu'a 90 g » vise le cumul", c("Second bloom : verser 45 g de plus, jusqu'à 90 g.") === 90);
+  check("« Bloom 45 g » vise 45", c("Bloom 45 g, vanne FERMÉE. Remuer 3 fois.") === 45);
+  check("une etape sans volume n'a pas de cible", c("Ouvrir, laisser s'écouler.") === null);
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);

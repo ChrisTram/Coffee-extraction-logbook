@@ -432,6 +432,15 @@ const I18N = (() => {
     roue_fois: { fr: "{n} fois" },
     roue_lecture: { fr: "Ta famille la plus cochée : {f}, {n} fois. Celle de tes meilleures tasses : {m}, {x} de moyenne." },
     roue_lecture_seule: { fr: "Ta famille la plus cochée : {f}, {n} fois, et c'est aussi celle de tes meilleures tasses." },
+    br_sans_recette: { fr: "Sans recette" },
+    br_sur: { fr: "sur {t}" },
+    br_pret: { fr: "Prêt" },
+    br_attente: { fr: "Au départ : {texte}" },
+    br_sans_paliers: { fr: "Cette recette n'a pas de paliers minutés : le chrono compte, les étapes sont dessous." },
+    br_vanne_ouverte: { fr: "Vanne ouverte" },
+    br_vanne_fermee: { fr: "Vanne fermée" },
+    br_suivante: { fr: "Dans {d} s : {texte}" },
+    br_recommencer: { fr: "Recommencer" },
     fi_voir: { fr: "Fiche du café" },
     fi_surligne: { fr: "Fiche café" },
     fi_moyenne: { fr: "moyenne, {n} tasses notées" },
@@ -638,7 +647,9 @@ const I18N = (() => {
     "#insights,#sync-statut,#heatmap-stats,#version-site,#comparaison-compte,#reglages-liste," +
     "#comparaison-resume,#comparaison-titres,#comparaison-corps," +
     "#vide-mouture,#vide-gouts,#vide-duel,#note-gouts,#param-recettes,#note-affichee," +
-    "#aside-jumelles,#roue-detail,#lecture-aromes,#vide-aromes,#f-dicter-texte,#fiche-contenu";
+    "#aside-jumelles,#roue-detail,#lecture-aromes,#vide-aromes,#f-dicter-texte,#fiche-contenu," +
+    "#br-machine,#br-titre,#br-dose,#br-sur,#br-cible,#br-vanne,#br-consigne,#br-suivante,#br-frise," +
+    "#br-go,#br-note-dite";
 
   function scanner() {
     const marche = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {

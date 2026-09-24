@@ -2914,6 +2914,79 @@ input[type="range"].curseur-inactif::-moz-range-thumb { opacity: 0; }
   color: var(--encre);
 }
 .modale-large { max-width: 780px; }
+/* LE MODE BRASSAGE (v8.47) : le chrono en plein écran, lisible à un mètre.
+   Un dialogue qui couvre tout, sur le fond du thème, sans cadre de carte. */
+.brassage {
+  width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; margin: 0; padding: 0;
+  border: none; border-radius: 0; background: var(--fond); color: var(--texte);
+}
+.brassage[open] { display: flex; flex-direction: column; }
+.brassage::backdrop { background: var(--fond); }
+.br-tete {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: calc(18px + env(safe-area-inset-top, 0px)) clamp(16px, 4vw, 40px) 10px;
+}
+.br-titres { flex: 1; min-width: 0; }
+.br-titres h2 { margin: 2px 0 0; font-family: var(--serif); font-weight: 400; font-size: clamp(1.4rem, 3.5vw, 2rem); color: var(--encre); line-height: 1.1; }
+.br-dose { margin: 4px 0 0; font-size: 0.85rem; color: var(--attenue); font-variant-numeric: tabular-nums; }
+.br-unite { display: inline-flex; padding: 3px; gap: 2px; border-radius: 10px; background: var(--panneau-2); }
+.br-unite button {
+  font: inherit; font-size: 0.82rem; font-weight: 700; min-width: 40px; min-height: 34px;
+  border: none; border-radius: 8px; background: transparent; color: var(--attenue); cursor: pointer;
+}
+.br-unite button[aria-pressed="true"] { background: var(--panneau-3); color: var(--encre); }
+.br-unite button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.br-corps {
+  flex: 1; min-height: 0; overflow-y: auto; display: grid; gap: 22px; align-content: start;
+  padding: 8px clamp(16px, 4vw, 40px) 16px; max-width: 1100px; width: 100%; margin: 0 auto;
+}
+.br-scene { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: clamp(18px, 4vw, 48px); align-items: center; }
+.br-anneau { position: relative; width: 100%; max-width: 340px; aspect-ratio: 1; margin: 0 auto; }
+.br-anneau svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.br-fond-anneau { fill: none; stroke: var(--panneau-3); stroke-width: 7; }
+.br-trace { fill: none; stroke: var(--accent); stroke-width: 7; stroke-linecap: round; transition: stroke-dashoffset 250ms linear; }
+.br-anneau.depasse .br-trace { stroke: var(--accent-fort); }
+.br-centre { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 4px; }
+.br-centre b { font-family: var(--serif); font-weight: 400; font-size: clamp(3.4rem, 11vw, 5.6rem); line-height: 1; color: var(--encre); font-variant-numeric: tabular-nums; }
+.br-centre span { font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--attenue); }
+.br-etape { display: grid; gap: 12px; min-width: 0; }
+.br-cible { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.br-cible b { font-family: var(--serif); font-weight: 400; font-size: clamp(3rem, 10vw, 5.4rem); line-height: 1; color: var(--accent-fort); font-variant-numeric: tabular-nums; }
+.br-vanne {
+  font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 99px; background: var(--accent-fond); color: var(--accent-fort);
+}
+.br-consigne { margin: 0; font-size: clamp(1.05rem, 2.4vw, 1.35rem); line-height: 1.45; color: var(--encre); max-width: 46ch; }
+.br-consigne.seule { font-family: var(--serif); font-size: clamp(1.8rem, 5vw, 2.8rem); line-height: 1.15; }
+.br-cible b:empty { display: none; }
+.br-suivante { margin: 0; font-size: 0.95rem; color: var(--attenue); font-variant-numeric: tabular-nums; }
+.br-frise { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.br-frise li {
+  display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 12px; padding: 10px 0;
+  border-top: 1px solid var(--lignes-douces); font-size: 0.9rem; color: var(--attenue);
+}
+.br-frise li time { font-family: var(--serif); font-size: 1.2rem; color: var(--texte); font-variant-numeric: tabular-nums; }
+.br-frise li.courant { color: var(--encre); }
+.br-frise li.courant time { color: var(--accent-fort); }
+.br-frise li.passe { opacity: 0.55; }
+.br-fin { display: grid; gap: 10px; padding: 16px; border-radius: var(--rayon); background: var(--panneau); border: 1px solid var(--lignes); }
+.br-fin .note-tete b { font-family: var(--serif); font-weight: 400; font-size: 1.6rem; color: var(--encre); }
+.br-fin-boutons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+.br-boutons {
+  display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 10px;
+  padding: 12px clamp(16px, 4vw, 40px) calc(14px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--lignes);
+}
+.br-boutons .btn { min-height: 56px; font-size: 1rem; }
+.br-boutons #br-go { grid-column: 3; }
+.btn-brassage { margin-left: auto; }
+@media (max-width: 760px) {
+  .br-scene { grid-template-columns: 1fr; }
+  .br-anneau { max-width: 250px; }
+  .br-etape { text-align: center; justify-items: center; }
+  .br-cible { justify-content: center; }
+}
+
 /* LA FICHE D'UN CAFÉ (v8.46). Plus large que les autres modales : elle tient
    une grille de six blocs. En plein écran au téléphone. */
 .modale-fiche { max-width: 1040px; padding: 0; overflow: hidden; }

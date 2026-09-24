@@ -113,6 +113,11 @@
         if (pal.t > 0 && pal.t <= s && !chrono.passes.has(pal.t)) {
           chrono.passes.add(pal.t);
           jouerBip();
+          // Le mode Brassage se regarde de loin : une vibration en plus du bip,
+          // là où le téléphone la permet (Android ; l'iPhone n'a pas l'API).
+          if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+            try { navigator.vibrate(120); } catch (e) { /* refusée */ }
+          }
         }
       });
     }

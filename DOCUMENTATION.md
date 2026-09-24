@@ -119,6 +119,7 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/ui-guide.js` | recettes de référence, pas à pas, moulin interactif |
 | `js/ui-catalogue.js` | modales cafés, sachets, recettes, écran Paramètres |
 | `js/ui-fiche.js` | la fiche d'un café (v8.46), dialogue `#modale-fiche` |
+| `js/ui-brassage.js` | le mode Brassage (v8.47), dialogue plein écran `#modale-brassage` |
 | `js/app.js` | démarrage, navigation, thème, langue, modales d'accueil et de données, abonnement aux données |
 | `css/fonts/` | les deux polices de la DA, embarquées en woff2, sous OFL (section 10) |
 | `sw.js`, `manifest.json`, `icons/` | PWA et hors ligne (section 10) |
@@ -566,6 +567,27 @@ Points fixés depuis, chacun expliqué dans `DECISIONS.md` :
   hors ligne. Le texte dicté s'ajoute au commentaire et reste modifiable.
 - La saisie rapide enregistre SANS note par défaut, comme le formulaire complet :
   curseur sans pouce à chaque ouverture, même mécanisme (`UI.brancherNote`).
+
+## 8 quater. Le mode Brassage (js/ui-brassage.js)
+
+Le chrono de la saisie en plein écran, ouvert par `#btn-brassage` dans le widget du
+chrono. PAS un second chrono : il lit `UI.chrono` et appelle `chronoPrincipal`,
+`chronoArreter`, `chronoRaz` ; bips, vibration (Android) et verrou d'écran sont ceux
+du chrono. Fermer le mode laisse le chrono tourner. Un minuteur de 250 ms repeint tant
+qu'il est ouvert.
+
+- La cible du palier courant est le volume CUMULÉ lu dans le texte de l'étape
+  (`UI.cibleVersement` : « jusqu'à N g », « à N g », sinon le premier « N g »),
+  affiché en ml par défaut (pas de balance), en g par la bascule `.br-unite`, retenue
+  en localStorage (`brassage-unite`). Le texte des recettes n'est jamais réécrit. Une
+  étape sans volume met sa consigne en grand.
+- Badge de vanne au Switch, déduit des étapes passées (« OUVERTE », « FERMÉE »,
+  « Ouvrir »).
+- Anneau : le total de la recette (`totalTexte`), sinon dernier palier plus une minute,
+  sinon la moyenne des temps de cette recette, sinon 5:00.
+- Arrêter depuis le mode reporte temps et écoulement comme le chrono, puis montre la
+  note (`#br-note`, même curseur sans pouce) qui écrit dans `#f-note`, et deux boutons :
+  Enregistrer la tasse (soumet le formulaire) ou Compléter la saisie.
 
 ## 8 ter. La fiche d'un café (js/ui-fiche.js)
 

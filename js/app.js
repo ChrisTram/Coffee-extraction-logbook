@@ -176,6 +176,7 @@
     UI.cablerGuide();
     UI.cablerCatalogue();
     UI.cablerFiche();
+    UI.cablerBrassage();
 
     /* REPRISE QUAND LE RÉSEAU REVIENT. Une synchro ratée attendait le prochain
        geste de Chris : en cuisine, il enregistre sa tasse, range son téléphone, et

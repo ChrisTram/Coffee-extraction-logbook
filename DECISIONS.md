@@ -1554,6 +1554,24 @@ d'application installée. Le choix SÛR reçoit le focus, Échap annule. Un test
 refuse tout `confirm()` natif dans l'interface. La suppression d'extraction, elle,
 n'a pas de confirmation du tout : elle a un retour arrière (voir « Historique »).
 
+### Le mode Brassage : une vue du chrono, pas un chrono de plus (v8.47)
+
+Le Guide a déjà un « pas à pas » avec son propre chrono, et la saisie le sien. Un
+troisième aurait fait deux temps différents pour la même tasse. Le mode Brassage est donc
+une VUE plein écran de `UI.chrono` : ses boutons appellent les fonctions du chrono de la
+saisie, et arrêter y écrit exactement ce que le bouton « Arrêter et reporter » écrit.
+
+Les cibles s'affichent en millilitres par défaut : START-HERE dit « pas encore de
+balance de précision », et la maquette qui affichait « 120 g » en énorme demandait un
+instrument absent de la cuisine. Un gramme d'eau est un millilitre, la conversion est
+exacte ; la bascule g la rend inutile le jour où la balance arrive. Le texte des étapes,
+vérifié par Chris, reste en grammes : on ne réécrit pas une recette pour l'afficher.
+
+La cible se lit dans le texte, par « jusqu'à N g » ou « à N g » (le cumul), sinon le
+premier « N g ». Piège rencontré : `\bà` ne trouve rien après une apostrophe, parce
+que JavaScript ne voit pas de frontière de mot autour d'une lettre accentuée ; « jusqu'à
+90 g » rendait 45, le premier nombre de la phrase.
+
 ### Les tasses jumelles : proches, pas identiques (v8.44)
 
 La maquette proposait une proximité sur tout (café, machine, molette, température,

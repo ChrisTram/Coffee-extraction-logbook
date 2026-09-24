@@ -7,8 +7,8 @@
 <!-- Version du site, source unique : le pied de page la lit, et les fichiers
      chargés à la demande la mettent dans leur URL. Se pose avec
      node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="8.46">
-<link rel="stylesheet" href="css/styles.css?v=8.46">
+<meta name="app-version" content="8.47">
+<link rel="stylesheet" href="css/styles.css?v=8.47">
 <!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
      SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
      parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
@@ -331,6 +331,8 @@
         <button type="button" class="btn btn-primaire" id="btn-chrono">Démarrer</button>
         <button type="button" class="btn" id="btn-chrono-stop" hidden>Arrêter et reporter</button>
         <button type="button" class="btn btn-discret" id="btn-chrono-raz" hidden>Remettre à zéro</button>
+        <!-- Le même chrono en plein écran (v8.47), lisible à un mètre. -->
+        <button type="button" class="btn btn-brassage" id="btn-brassage">Mode Brassage</button>
       </div>
       <div class="grille-nombres chrono-manuels">
         <div class="champ">
@@ -1501,6 +1503,56 @@ Cảm ơn shop.</pre>
 </div>
 
 <!-- ================= MODE PAS A PAS ================= -->
+<!-- Le mode Brassage (v8.47), rendu par js/ui-brassage.js : le chrono de la
+     saisie en plein écran. Il pilote UI.chrono, il n'en a pas d'autre. -->
+<dialog id="modale-brassage" class="brassage" aria-labelledby="br-titre">
+  <div class="br-tete">
+    <div class="br-titres">
+      <p class="surligne" id="br-machine"></p>
+      <h2 id="br-titre">Recette</h2>
+      <p class="br-dose" id="br-dose"></p>
+    </div>
+    <div class="br-unite" role="group" aria-label="Unité des versements">
+      <button type="button" data-unite="ml" aria-pressed="true">ml</button>
+      <button type="button" data-unite="g" aria-pressed="false">g</button>
+    </div>
+    <button type="button" class="btn btn-discret" id="br-fermer">Fermer</button>
+  </div>
+  <div class="br-corps">
+    <div class="br-scene">
+      <div class="br-anneau" id="br-anneau">
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+          <circle class="br-fond-anneau" cx="60" cy="60" r="52"></circle>
+          <circle class="br-trace" id="br-trace" cx="60" cy="60" r="52" stroke-dasharray="326.73" stroke-dashoffset="326.73"></circle>
+        </svg>
+        <div class="br-centre" aria-live="off"><b id="br-temps">0:00</b><span id="br-sur"></span></div>
+      </div>
+      <div class="br-etape">
+        <div class="br-cible"><b id="br-cible"></b><span class="br-vanne" id="br-vanne" hidden></span></div>
+        <p class="br-consigne" id="br-consigne" aria-live="polite"></p>
+        <p class="br-suivante" id="br-suivante"></p>
+      </div>
+    </div>
+    <ol class="br-frise" id="br-frise"></ol>
+    <div class="br-fin" id="br-fin" hidden>
+      <div class="note-tete">
+        <label for="br-note">Note : <b id="br-note-dite">pas encore notée</b></label>
+      </div>
+      <input type="range" id="br-note" min="0" max="10" step="0.5" value="5" class="curseur-note curseur-inactif">
+      <small class="note-aide">Touche la piste pour noter, ou reviens plus tard.</small>
+      <div class="br-fin-boutons">
+        <button type="button" class="btn btn-primaire" id="br-enregistrer">Enregistrer la tasse</button>
+        <button type="button" class="btn" id="br-completer">Compléter la saisie</button>
+      </div>
+    </div>
+  </div>
+  <div class="br-boutons">
+    <button type="button" class="btn btn-discret" id="br-raz" hidden>Remettre à zéro</button>
+    <button type="button" class="btn" id="br-stop" hidden>Arrêter</button>
+    <button type="button" class="btn btn-primaire" id="br-go">Démarrer</button>
+  </div>
+</dialog>
+
 <!-- La fiche d'un café (v8.46), rendue par js/ui-fiche.js. -->
 <dialog id="modale-fiche" class="modale modale-fiche" aria-labelledby="fiche-nom">
   <div id="fiche-contenu" class="fc-contenu"></div>
@@ -1561,30 +1613,31 @@ Cảm ơn shop.</pre>
 <!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
      et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
      desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=8.46"></script>
-<script defer src="js/i18n.js?v=8.46"></script>
-<script defer src="js/grind.js?v=8.46"></script>
-<script defer src="js/recettes.js?v=8.46"></script>
+<script defer src="js/outils.js?v=8.47"></script>
+<script defer src="js/i18n.js?v=8.47"></script>
+<script defer src="js/grind.js?v=8.47"></script>
+<script defer src="js/recettes.js?v=8.47"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=8.46"></script>
-<script defer src="js/data-csv.js?v=8.46"></script>
-<script defer src="js/data-schema.js?v=8.46"></script>
-<script defer src="js/data-store.js?v=8.46"></script>
-<script defer src="js/data-calculs.js?v=8.46"></script>
-<script defer src="js/data-migrations.js?v=8.46"></script>
-<script defer src="js/data.js?v=8.46"></script>
-<script defer src="js/reglages.js?v=8.46"></script>
-<script defer src="js/charts.js?v=8.46"></script>
-<script defer src="js/ui-noyau.js?v=8.46"></script>
-<script defer src="js/ui-tableau.js?v=8.46"></script>
-<script defer src="js/ui-saisie.js?v=8.46"></script>
-<script defer src="js/ui-chrono.js?v=8.46"></script>
-<script defer src="js/ui-brouillon.js?v=8.46"></script>
-<script defer src="js/ui-rapide.js?v=8.46"></script>
-<script defer src="js/ui-historique.js?v=8.46"></script>
-<script defer src="js/ui-guide.js?v=8.46"></script>
-<script defer src="js/ui-catalogue.js?v=8.46"></script>
-<script defer src="js/ui-fiche.js?v=8.46"></script>
-<script defer src="js/app.js?v=8.46"></script>
+<script defer src="js/sync.js?v=8.47"></script>
+<script defer src="js/data-csv.js?v=8.47"></script>
+<script defer src="js/data-schema.js?v=8.47"></script>
+<script defer src="js/data-store.js?v=8.47"></script>
+<script defer src="js/data-calculs.js?v=8.47"></script>
+<script defer src="js/data-migrations.js?v=8.47"></script>
+<script defer src="js/data.js?v=8.47"></script>
+<script defer src="js/reglages.js?v=8.47"></script>
+<script defer src="js/charts.js?v=8.47"></script>
+<script defer src="js/ui-noyau.js?v=8.47"></script>
+<script defer src="js/ui-tableau.js?v=8.47"></script>
+<script defer src="js/ui-saisie.js?v=8.47"></script>
+<script defer src="js/ui-chrono.js?v=8.47"></script>
+<script defer src="js/ui-brouillon.js?v=8.47"></script>
+<script defer src="js/ui-rapide.js?v=8.47"></script>
+<script defer src="js/ui-historique.js?v=8.47"></script>
+<script defer src="js/ui-guide.js?v=8.47"></script>
+<script defer src="js/ui-catalogue.js?v=8.47"></script>
+<script defer src="js/ui-fiche.js?v=8.47"></script>
+<script defer src="js/ui-brassage.js?v=8.47"></script>
+<script defer src="js/app.js?v=8.47"></script>
 </body>
 </html>
