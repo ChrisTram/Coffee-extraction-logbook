@@ -121,6 +121,8 @@ const CHARTS = (() => {
      de surcroît : elle chargeait la vue sans être lisible. Le chiffre est passé
      dans l'infobulle, où il se consulte quand on le cherche. */
   function barresEtLigne30j(idCanvas, labels, comptes, moyennes, details, tendance) {
+    const plusBasse = Math.min(...moyennes.filter(n => n !== null), 10);
+    const plancher = plusBasse < 4 ? Math.max(0, Math.floor(plusBasse / 2) * 2) : 4;
     creer(idCanvas, {
       data: {
         labels,
@@ -143,8 +145,8 @@ const CHARTS = (() => {
             fill: false,
           },
           {
-            type: "bar", label: I18N.t("l_extractions"), data: comptes, yAxisID: "y",
-            backgroundColor: cssVar("--barre-neutre"), borderRadius: 4, maxBarThickness: 22,
+            type: "bar", label: I18N.t("l_tasses_jour"), data: comptes, yAxisID: "y",
+            backgroundColor: cssVar("--barre-neutre"), borderRadius: 3, maxBarThickness: 16,
           },
         ],
       },
@@ -161,10 +163,28 @@ const CHARTS = (() => {
             },
           },
         },
+        /* DEUX BANDES EMPILÉES (v8.39) et non deux axes superposés. Les barres
+           des tasses et la ligne des notes partageaient la même hauteur, l'une
+           graduée à gauche, l'autre à droite : il fallait deviner quelle
+           graduation lisait quoi, et le nombre de tasses du jour ne se lisait
+           pas d'un coup d'oeil. Ici, la note en haut sur deux tiers, les tasses
+           en bas sur un tiers, chacune avec sa graduation à gauche, le même
+           axe des jours dessous. */
         scales: {
-          x: { grid: { display: false }, ticks: { maxTicksLimit: 10 } },
-          y: { beginAtZero: true, ticks: { stepSize: 1 }, title: { display: true, text: I18N.t("l_extractions") } },
-          y2: { position: "right", min: 0, max: 10, grid: { drawOnChartArea: false }, title: { display: true, text: I18N.t("axe_note") } },
+          x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } },
+          /* Chart.js empile les axes d'une même pile dans l'ordre où ils sont
+             déclarés, du bas vers le haut : les tasses d'abord, la note ensuite. */
+          y: {
+            stack: "trente", stackWeight: 1, position: "left", beginAtZero: true, offset: true,
+            suggestedMax: 3, ticks: { stepSize: 1 },
+            grid: { display: false },
+            title: { display: true, text: I18N.t("axe_tasses") },
+          },
+          y2: {
+            stack: "trente", stackWeight: 2, position: "left", min: plancher, max: 10,
+            ticks: { stepSize: 2 },
+            title: { display: true, text: I18N.t("axe_note_court") },
+          },
         },
       },
     });

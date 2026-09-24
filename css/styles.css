@@ -1152,10 +1152,12 @@ html[data-theme="sombre"] .carte-sombre {
    l'autre. margin-top: auto le pousse en bas, quelle que soit la hauteur. */
 .derniere-grande-pied {
   margin-top: auto;
-  padding-top: 14px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 24px;
+  padding-top: 10px;
+  /* En GRILLE (v8.39) : cinq cases et leur cible dessous tiennent sur une
+     ligne ; en flex elles passaient a la ligne et la carte grandissait. */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  gap: 8px 16px;
   font-size: 0.74rem;
   color: var(--attenue);
 }
@@ -1199,7 +1201,10 @@ html[data-theme="sombre"] .carte-sombre {
   text-align: center;
 }
 @media (max-width: 560px) {
-  .carte-derniere { flex-direction: column; gap: 16px; }
+  /* Meme specificite que la regle qui la met en ligne (.grille-tableau >
+     .carte-derniere) : sans elle, la carte restait en ligne au telephone et
+     son corps tombait a 166 px, a cote de la note. */
+  .grille-tableau > .carte-derniere { flex-direction: column; gap: 16px; }
   .derniere-grande-note {
     flex-direction: row;
     padding-left: 0; padding-top: 14px;
@@ -1336,6 +1341,95 @@ html[data-theme="sombre"] .carte-sombre {
 
 .canvas-h240 { position: relative; height: 250px; min-width: 0; }
 .canvas-h200 { position: relative; height: 200px; min-width: 0; }
+/* Le graphe des 30 jours a SA hauteur (v8.39), il ne suit plus sa voisine :
+   il s'etirait a la hauteur des constats et montait a 272 px de dessin. */
+.canvas-30j { position: relative; height: 210px; min-width: 0; }
+
+/* L'EN-TETE DE CARTE : le titre et un controle sur la meme ligne (le
+   carrousel des constats, les onglets des analyses). */
+.carte-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 14px;
+}
+.carte .carte-tete h3 { margin: 0; }
+
+/* LE CARROUSEL DES CONSTATS (v8.39). Tous dans la meme case de grille, un
+   seul visible : la carte prend la hauteur du plus long, jamais leur somme. */
+.insights > li { grid-area: 1 / 1; visibility: hidden; }
+.insights > li.courant { visibility: visible; }
+.insights-nav { display: flex; align-items: center; gap: 4px; }
+.insights-pos { font-size: 0.72rem; color: var(--attenue); margin-right: 6px; font-variant-numeric: tabular-nums; }
+.btn-carre-petit {
+  width: 28px; height: 28px; padding: 0;
+  display: grid; place-items: center;
+  border-radius: 8px; border: 1px solid var(--lignes);
+  background: var(--panneau-2); color: var(--texte); cursor: pointer;
+}
+.btn-carre-petit:hover { background: var(--panneau-3); color: var(--accent-fort); }
+.btn-carre-petit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn-carre-petit .ico { width: 14px; height: 14px; }
+
+/* LES ANALYSES EN ONGLETS (v8.39) : une carte sur toute la largeur, le
+   graphique a gauche, sa lecture en une phrase a droite. */
+.grille-tableau > .col-plein { grid-column: 1 / -1; }
+.onglets-analyses {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  padding: 4px; border-radius: 12px; background: var(--panneau-2);
+}
+.onglets-analyses [role="tab"] {
+  font: inherit; font-size: 0.82rem; font-weight: 600;
+  border: none; background: transparent; color: var(--attenue);
+  padding: 7px 13px; border-radius: 9px; cursor: pointer;
+}
+.onglets-analyses [role="tab"]:hover { color: var(--encre); }
+.onglets-analyses [role="tab"][aria-selected="true"] { background: var(--panneau-3); color: var(--encre); box-shadow: var(--ombre-haut); }
+.onglets-analyses [role="tab"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.analyses-pile { display: grid; }
+.analyses-pile > .analyse { grid-area: 1 / 1; visibility: hidden; }
+.analyses-pile > .analyse.courant { visibility: visible; }
+.analyse {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(200px, 300px);
+  gap: 16px 28px;
+  align-items: center;
+}
+.analyse-graphe { min-width: 0; }
+.analyse-lecture {
+  margin: 0;
+  padding-left: 14px;
+  border-left: 2px solid var(--accent);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--texte);
+}
+p.analyse-lecture:empty { display: none; }
+div.analyse-lecture p { margin: 0; }
+div.analyse-lecture p + p { margin-top: 8px; }
+@media (max-width: 900px) {
+  .analyse { grid-template-columns: 1fr; }
+}
+
+/* LA PLACE DE LA DERNIERE TASSE parmi celles de son cafe (v8.39) : elle
+   remplit la bande vide entre les gouts et le pied. */
+.derniere-place {
+  margin-top: 8px;
+  padding: 7px 14px 0;
+  border-radius: var(--rayon-petit);
+  background: var(--panneau-2);
+}
+.derniere-place-tete {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px;
+  margin: 0 0 4px;
+  font-size: 0.76rem; color: var(--attenue);
+}
+.derniere-place-tete b { color: var(--accent-fort); font-weight: 700; }
+.derniere-place svg { display: block; width: 100%; height: auto; overflow: visible; }
+.derniere-place text { font-family: var(--sans); font-size: 10px; fill: var(--attenue); }
+.derniere-grande-pied small.cible-tenue { color: var(--accent-fort); }
 
 /* Duel Brikka contre Switch */
 .duel { display: flex; gap: 12px; margin-bottom: 12px; }

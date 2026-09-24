@@ -946,7 +946,8 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     const b = m[0];
     const id = (b.match(/id="([^"]+)"/) || [])[1];
     if (!id) continue;
-    if (/data-va=|data-ferme=|data-ecran=|type="submit"/.test(b)) continue;
+    // data-analyse : les onglets des analyses, pilotés par délégation (v8.39).
+    if (/data-va=|data-ferme=|data-ecran=|data-analyse=|type="submit"/.test(b)) continue;
     if (!tousLesJs.includes('"' + id + '"') && !tousLesJs.includes("#" + id)) morts.push(id);
   }
   check("aucun bouton a identifiant n'est laisse sans code", morts.length === 0, morts.join(", "));

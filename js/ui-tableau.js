@@ -247,8 +247,32 @@
       '<i class="reglette-point haut" style="left:' + pc(haut) + '"></i></span>';
   }
 
+  /* LE CARROUSEL (v8.39). Les constats s'empilaient, et la carte, plus haute
+     que le graphe voisin, l'étirait avec elle. Ils sont maintenant tous dans
+     la même case de grille, un seul visible : la carte prend la hauteur du
+     plus long, jamais la somme, et changer de constat ne fait rien sauter. */
+  let insightCourant = 0;
+  function montrerInsight(i) {
+    const lis = $$("#insights > li");
+    if (!lis.length) return;
+    insightCourant = (i + lis.length) % lis.length;
+    lis.forEach((li, k) => {
+      li.classList.toggle("courant", k === insightCourant);
+      li.setAttribute("aria-hidden", String(k !== insightCourant));
+    });
+    const pos = $("#insights-nav .insights-pos");
+    if (pos) pos.textContent = (insightCourant + 1) + " / " + lis.length;
+  }
+
   function rendreInsights(exts) {
-    $("#insights").innerHTML = computeInsights(exts).map(c => {
+    const constats = computeInsights(exts);
+    const nav = $("#insights-nav");
+    nav.hidden = constats.length < 2;
+    nav.innerHTML = constats.length < 2 ? "" :
+      '<span class="insights-pos"></span>' +
+      '<button type="button" class="btn-carre-petit" data-insight="-1" aria-label="' + attrTitre(I18N.t("ins_precedent")) + '">' + UI.icone("gauche") + "</button>" +
+      '<button type="button" class="btn-carre-petit" data-insight="1" aria-label="' + attrTitre(I18N.t("ins_suivant")) + '">' + UI.icone("chevron") + "</button>";
+    $("#insights").innerHTML = constats.map(c => {
       if (!c.haut) return '<li class="constat constat-vide"><p>' + c.texte + "</p></li>";
       return '<li class="constat"><p>' + c.texte + "</p>" +
         '<div class="preuve">' + reglette(c) +
@@ -256,6 +280,7 @@
         '<span class="preuve-pied">' + I18N.t("ins_" + c.confiance) + " · " +
         I18N.t("ins_effectifs", { h: c.haut.n, b: c.bas.n }) + "</span></div></li>";
     }).join("");
+    montrerInsight(insightCourant);
   }
 
   // ---------- Calendrier d'activité ----------
@@ -458,6 +483,84 @@
     return items;
   }
 
+  /* LES LECTURES DES ANALYSES (v8.39). Une phrase par onglet, à côté du
+     graphique, pour ne pas avoir à l'interpréter. Chacune se tait (chaîne
+     vide) quand ses données ne permettent pas de conclure : mêmes seuils que
+     partout, trois tasses par groupe. */
+  function lectureClassement(items, cleUn, cleDeux) {
+    const ok = items.filter(i => i.n >= MIN_SAMPLE);
+    if (ok.length < 2) return "";
+    const haut = ok[0], bas = ok[ok.length - 1];
+    return I18N.t(ok.length > 2 ? cleDeux : cleUn, {
+      a: haut.label, ma: note1(haut.value), b: bas.label, mb: note1(bas.value),
+    });
+  }
+
+  function lectureMachines(nB, nS) {
+    if (nB.length < MIN_SAMPLE || nS.length < MIN_SAMPLE) return "";
+    const mB = moyenne(nB), mS = moyenne(nS), ecart = Math.abs(mB - mS);
+    if (ecart < MIN_GAP) return I18N.t("lec_machines_egal", { mb: note1(mB), ms: note1(mS) });
+    return I18N.t(mS > mB ? "lec_switch_devant" : "lec_brikka_devant", {
+      x: note1(ecart), s: ecart >= 2 ? "s" : "",
+      souvent: nB.length === nS.length ? ""
+        : I18N.t(nB.length > nS.length ? "lec_souvent_brikka" : "lec_souvent_switch"),
+    });
+  }
+
+  function lectureDiagnostics(parDiag) {
+    const total = Object.values(parDiag).reduce((a, b) => a + b, 0);
+    const tri = Object.entries(parDiag).sort((a, b) => b[1] - a[1]);
+    if (!tri.length) return "";
+    return I18N.t("lec_diag", { d: diagsAffiches(tri[0][0]), n: tri[0][1], t: total });
+  }
+
+  function lectureMouture(analysables) {
+    let meilleur = null;
+    ["Brikka", "Switch"].forEach(m => {
+      const parDial = {};
+      analysables.filter(e => e.methode === m && e.note_sur_10 !== "" && e.mouture_dial)
+        .forEach(e => (parDial[e.mouture_dial] = parDial[e.mouture_dial] || []).push(e.note_sur_10));
+      Object.entries(parDial).filter(([, ns]) => ns.length >= MIN_SAMPLE).forEach(([dial, ns]) => {
+        const moy = moyenne(ns);
+        if (!meilleur || moy > meilleur.moy) meilleur = { m, dial, moy, n: ns.length };
+      });
+    });
+    return meilleur ? I18N.t(meilleur.m === "Brikka" ? "lec_mouture_brikka" : "lec_mouture_switch", {
+      d: meilleur.dial, x: note1(meilleur.moy), n: meilleur.n,
+    }) : "";
+  }
+
+  function lectureGouts(items, moyenneGlobale) {
+    if (items.length < 2) return "";
+    const bons = items.filter(i => i.value >= moyenneGlobale).slice(0, 2).map(i => i.label);
+    const pire = items[items.length - 1];
+    if (!bons.length) return "";
+    return I18N.t(pire.value < moyenneGlobale ? "lec_gouts" : "lec_gouts_sans_pire", {
+      a: bons.join(I18N.t("lec_et")), p: pire.label,
+    });
+  }
+
+  /* Les ONGLETS. L'onglet choisi est retenu dans ce navigateur : on revient
+     sur la question qu'on se posait. Les panneaux ne sont jamais en
+     display: none (voir .analyses-pile) : ils sont inertes et invisibles, pour
+     que chaque graphe garde sa taille. */
+  const CLE_ONGLET = "analyse-onglet";
+  function montrerAnalyse(nom, focus) {
+    const boutons = $$(".onglets-analyses [role=tab]");
+    if (!boutons.some(b => b.dataset.analyse === nom)) nom = "cafes";
+    boutons.forEach(b => {
+      const actif = b.dataset.analyse === nom;
+      b.setAttribute("aria-selected", String(actif));
+      b.tabIndex = actif ? 0 : -1;
+      if (actif && focus) b.focus();
+      const panneau = $("#analyse-" + b.dataset.analyse);
+      panneau.classList.toggle("courant", actif);
+      panneau.inert = !actif;
+      panneau.setAttribute("aria-hidden", String(!actif));
+    });
+    try { localStorage.setItem(CLE_ONGLET, nom); } catch (e) { /* sans stockage, on repart sur Cafés */ }
+  }
+
   function causeDuelVide(notees) {
     if (!notees.length) return "vide_rien";
     const machines = new Set(notees.map(e => e.methode).filter(Boolean));
@@ -634,6 +737,8 @@
     });
     const accentCafes = couleursCafes.some(Boolean) ? couleursCafes.map(c => c || getComputedStyle(document.documentElement).getPropertyValue("--accent").trim()) : null;
     CHARTS.barresHorizontales("g-cafes", itemsCafes, accentCafes, I18N.t("axe_note_moy"), 10);
+    $("#lecture-cafes").textContent = lectureClassement(
+      itemsCafes.map(i => ({ ...i, n: parCafe[i.nomBrut].length })), "lec_cafes_deux", "lec_cafes");
 
     // Duel Brikka contre Switch
     const brikka = analysables.filter(e => e.methode === "Brikka");
@@ -665,6 +770,9 @@
 
     const notees = analysables.filter(e => e.note_sur_10 !== "");
     const gouts = rendreGouts(notees);
+    $("#lecture-gouts").textContent = lectureGouts(gouts, moyenne(notees.map(e => e.note_sur_10)) || 0);
+    $("#lecture-machines").textContent = lectureMachines(nB, nS);
+    $("#lecture-mouture").textContent = lectureMouture(analysables);
 
     // Les trois cartes qui peuvent rester vides avec des données valides.
     majCarteVide("mouture", pts("Brikka").length + pts("Switch").length, causeMoutureVide(notees));
@@ -678,6 +786,7 @@
     }));
     const diagLabels = DIAGNOSTICS.filter(d => parDiag[d]);
     CHARTS.anneauDiagnostics("g-diagnostics", diagLabels, diagLabels.map(d => parDiag[d]));
+    $("#lecture-diagnostics").textContent = lectureDiagnostics(parDiag);
 
     // Note par recette
     const parRecette = {};
@@ -693,6 +802,8 @@
       return r ? (r.methode === "Brikka" ? CHARTS.C_BRIKKA : CHARTS.C_SWITCH) : CHARTS.C_DEUX;
     });
     CHARTS.barresHorizontales("g-recettes", itemsRecettes, couleursRecettes, I18N.t("axe_note_moy"), 10);
+    $("#lecture-recettes").textContent = lectureClassement(
+      itemsRecettes.map(i => ({ ...i, label: I18N.tr(i.label), n: parRecette[i.label].length })), "lec_recettes_deux", "lec_recettes");
 
     // 5 dernières
     /* HUIT et non cinq : la carte s'etire a la hauteur de sa rangee, et cinq
@@ -752,8 +863,7 @@
     const contexte = [];
     if (e.recette) contexte.push(I18N.tr(e.recette));
     if (e.dose_g > 0 && e.eau_g) contexte.push(e.dose_g + " → " + e.eau_g + " g");
-    const t = fmtTemps(e.temps_total_s);
-    if (t) contexte.push(t);
+    // Le temps total est au PIED (v8.39), à côté de la cible de la recette.
     if (e.temperature_c !== "" && e.temperature_c !== undefined) contexte.push(e.temperature_c + " °C");
     if (e.methode === "Brikka" && e.puissance_feu !== "" && e.puissance_feu !== undefined) {
       contexte.push(I18N.t("rg_feu", { f: e.puissance_feu }));
@@ -773,6 +883,7 @@
         "</p>" +
         goutsDerniere(e) +
         (e.commentaire ? '<p class="derniere-grande-commentaire">' + attrTitre(e.commentaire) + "</p>" : "") +
+        placeDerniere(e) +
         piedDerniere(e) +
       "</div>" +
       '<div class="derniere-grande-note">' +
@@ -788,19 +899,110 @@
       "</div>";
   }
 
-  /* LE PIED de la carte : ratio, mouture, ecoulement, cout. Quatre chiffres
-     deja calcules, ceux qu'on compare d'une tasse a l'autre, qui occupent la
-     hauteur que la carte gagne en s'alignant sur les chiffres cles. Chaque
-     case n'apparait que si la valeur existe : une case vide est un trou. */
+  /* LA PLACE DE LA TASSE PARMI CELLES DU MÊME CAFÉ (v8.39). La carte prend la
+     hauteur des chiffres clés et laissait une bande vide d'environ 85 px entre
+     les goûts et le pied. Elle sert maintenant à répondre à la question qu'on
+     se pose devant une note : c'est un coup de chance, ou mon niveau ?
+     Chaque tasse notée du café est un point sur l'échelle des notes, celle-ci
+     en grand, la moyenne du café en trait. Sous trois tasses notées, rien :
+     une place parmi deux ne dit rien. */
+  function placeDerniere(e) {
+    if (e.note_sur_10 === "" || e.note_sur_10 === undefined) return "";
+    const soeurs = extAnalysables().filter(x => x.cafe_id === e.cafe_id && x.note_sur_10 !== "");
+    if (!soeurs.some(x => x.id === e.id)) soeurs.push(e);
+    if (soeurs.length < 3) return "";
+    const note = Number(e.note_sur_10);
+    const notes = soeurs.map(x => Number(x.note_sur_10));
+    const moy = moyenne(notes);
+    const devant = notes.filter(n => n > note).length;
+    const egales = notes.filter(n => n === note).length - 1;
+    const rang = devant === 0
+      ? I18N.t(egales ? "pl_ex_aequo" : "pl_meilleure")
+      : I18N.t("pl_rang", { k: devant + 1, n: notes.length });
+    const ecart = note - moy;
+    const situe = Math.abs(ecart) < 0.2 ? I18N.t("pl_dans_moyenne")
+      : I18N.t(ecart > 0 ? "pl_au_dessus" : "pl_au_dessous", { x: note1(Math.abs(ecart)) });
+
+    // L'échelle : de la note entière sous la plus basse jusqu'à 10.
+    const bas = Math.max(0, Math.floor(Math.min(...notes)) - 1);
+    const G = 12, D = 588, base = 34, pas = 6.5;
+    const x = n => G + ((n - bas) / (10 - bas)) * (D - G);
+    let svg = '<line x1="' + G + '" y1="' + (base + 8) + '" x2="' + D + '" y2="' + (base + 8) + '" stroke="var(--lignes)"></line>';
+    for (let n = Math.ceil(bas); n <= 10; n += (10 - bas > 6 ? 2 : 1)) {
+      svg += '<text x="' + x(n) + '" y="' + (base + 19) + '" text-anchor="middle">' + n + "</text>";
+    }
+    const xm = x(moy);
+    svg += '<line x1="' + xm + '" y1="12" x2="' + xm + '" y2="' + (base + 8) + '" stroke="var(--attenue)" stroke-dasharray="3 3"></line>' +
+      '<text x="' + (xm > D * 0.7 ? xm - 5 : xm + 5) + '" y="10" text-anchor="' + (xm > D * 0.7 ? "end" : "start") + '">' +
+      I18N.t("pl_moyenne", { m: note1(moy) }) + "</text>";
+    // Les autres tasses, empilées quand elles ont la même note.
+    const piles = {};
+    soeurs.forEach(s => {
+      if (s.id === e.id) return;
+      const n = Number(s.note_sur_10);
+      const k = (piles[n] = (piles[n] || 0) + 1) - 1;
+      svg += '<circle cx="' + x(n) + '" cy="' + (base - Math.min(k, 3) * pas) + '" r="2.6" fill="var(--texte)" opacity="0.55"></circle>';
+    });
+    // Celle-ci, par dessus, cernée de la couleur du panneau pour se détacher.
+    svg += '<circle cx="' + x(note) + '" cy="' + (base - 3) + '" r="6.5" fill="var(--accent)" stroke="var(--panneau-2)" stroke-width="2"></circle>';
+    return '<div class="derniere-place" role="img" aria-label="' + attrTitre(I18N.t("pl_aria", {
+      n: notes.length, cafe: I18N.tr(e._c.cafe_nom), note: note1(note), m: note1(moy) })) + '">' +
+      '<p class="derniere-place-tete"><span>' + I18N.t("pl_parmi", { n: notes.length, cafe: I18N.tr(e._c.cafe_nom) }) + "</span>" +
+      "<span><b>" + rang + "</b>, " + situe + "</span></p>" +
+      '<svg viewBox="0 0 600 ' + (base + 22) + '" aria-hidden="true">' + svg + "</svg></div>";
+  }
+
+  /* La CIBLE d'un chiffre du pied : ce que la recette visait, sinon ta moyenne
+     sur ce café et cette recette. Une valeur sans repère ne dit pas si elle
+     est bonne. */
+  function cibleTempsRecette(r) {
+    const m = /^total\s+(.+)$/.exec(String((r && r.totalTexte) || "").trim());
+    if (!m) return "";
+    return m[1].replace(/^environ\s+/, "≈ ").replace(/,.*$/, "");
+  }
+
+  /* LE PIED de la carte : ratio, temps, écoulement, mouture, coût, chacun avec
+     sa cible dessous (v8.39). Chaque case n'apparait que si la valeur existe :
+     une case vide est un trou. */
   function piedDerniere(e) {
+    const r = trouverRecette(e.recette);
+    const memes = extAnalysables().filter(x => x.id !== e.id && x.cafe_id === e.cafe_id && x.recette === e.recette);
+    const moyTemps = champ => {
+      const v = memes.map(x => Number(x[champ])).filter(n => n > 0);
+      return v.length >= 2 ? fmtTemps(Math.round(moyenne(v))) : "";
+    };
     const cases = [];
-    const carre = (libelle, valeur) => cases.push("<div><span>" + libelle + "</span><b>" + valeur + "</b></div>");
-    if (e._c.ratioTexte) carre(I18N.t("d_ratio"), e._c.ratioTexte);
-    if (e.mouture_dial) carre(I18N.t("d_mouture"), e.mouture_dial + (e._c.microns ? " <small>" + e._c.microns + " µm</small>" : ""));
-    else if (e._c.moulu) carre(I18N.t("d_mouture"), I18N.t("paquet"));
+    const carre = (libelle, valeur, cible, ok) => cases.push("<div><span>" + libelle + "</span><b>" + valeur + "</b>" +
+      (cible ? '<small class="' + (ok ? "cible-tenue" : "") + '">' + cible + "</small>" : "") + "</div>");
+
+    if (e._c.ratioTexte) {
+      let cible = "", ok = false;
+      /* Au SWITCH seulement : l'eau de la recette est l'eau versée, la même
+         grandeur que celle de la tasse. Sur la Brikka, c'est l'eau de la
+         chaudière (150 g) pour un ratio d'environ 1:7 dans la tasse : les
+         comparer annoncerait un écart qui n'existe pas. */
+      if (e.methode === "Switch" && r && r.dose > 0 && r.eau > 0) {
+        const vise = r.eau / r.dose;
+        cible = I18N.t("pl_recette", { v: "1:" + vise.toFixed(1) });
+        ok = Math.abs(Number(e.eau_g) / Number(e.dose_g) - vise) <= 0.3;
+      }
+      carre(I18N.t("d_ratio"), e._c.ratioTexte, cible, ok);
+    }
+    const total = fmtTemps(e.temps_total_s);
+    if (total) {
+      const vise = cibleTempsRecette(r);
+      const moy = moyTemps("temps_total_s");
+      carre(I18N.t("d_temps"), total,
+        vise ? I18N.t("pl_recette", { v: vise }) : moy ? I18N.t("pl_ta_moyenne", { v: moy }) : "", false);
+    }
     const ecoulement = fmtTemps(e.temps_ecoulement_s);
-    if (ecoulement) carre(I18N.t("d_ecoulement"), ecoulement);
-    if (e._c.cout_tasse_vnd !== "") carre(I18N.t("d_cout"), fmtVND(e._c.cout_tasse_vnd));
+    if (ecoulement) {
+      const moy = moyTemps("temps_ecoulement_s");
+      carre(I18N.t("d_ecoulement"), ecoulement, moy ? I18N.t("pl_ta_moyenne", { v: moy }) : "", false);
+    }
+    if (e.mouture_dial) carre(I18N.t("d_mouture"), e.mouture_dial, e._c.microns ? e._c.microns + " µm" : "", false);
+    else if (e._c.moulu) carre(I18N.t("d_mouture"), I18N.t("paquet"), "", false);
+    if (e._c.cout_tasse_vnd !== "") carre(I18N.t("d_cout"), fmtVND(e._c.cout_tasse_vnd), I18N.t("pl_la_tasse"), false);
     return cases.length ? '<div class="derniere-grande-pied">' + cases.join("") + "</div>" : "";
   }
 
@@ -886,6 +1088,28 @@
   // Mis à disposition des autres écrans.
   /* Câblage des contrôles du tableau de bord. Appelé une fois par app.js. */
   function cablerTableau() {
+    $("#insights-nav").addEventListener("click", ev => {
+      const b = ev.target.closest("[data-insight]");
+      if (b) montrerInsight(insightCourant + Number(b.dataset.insight));
+    });
+    const onglets = $(".onglets-analyses");
+    onglets.addEventListener("click", ev => {
+      const b = ev.target.closest("[role=tab]");
+      if (b) montrerAnalyse(b.dataset.analyse);
+    });
+    // Flèches gauche et droite, Début et Fin : le clavier d'une vraie liste d'onglets.
+    onglets.addEventListener("keydown", ev => {
+      const liste = $$(".onglets-analyses [role=tab]");
+      const i = liste.findIndex(b => b.getAttribute("aria-selected") === "true");
+      const cible = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: liste.length - 1 }[ev.key];
+      if (cible === undefined) return;
+      ev.preventDefault();
+      montrerAnalyse(liste[(cible + liste.length) % liste.length].dataset.analyse, true);
+    });
+    let depart = "cafes";
+    try { depart = localStorage.getItem(CLE_ONGLET) || depart; } catch (e) { /* idem */ }
+    montrerAnalyse(depart);
+
     // Délégué sur la liste : son contenu est réécrit à chaque rendu, un handler
     // par ligne fuirait à chaque rafraîchissement du tableau de bord.
     const ouvrirDerniere = cible => {

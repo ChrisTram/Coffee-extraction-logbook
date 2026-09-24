@@ -7,8 +7,8 @@
 <!-- Version du site, source unique : le pied de page la lit, et les fichiers
      chargés à la demande la mettent dans leur URL. Se pose avec
      node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="8.38">
-<link rel="stylesheet" href="css/styles.css?v=8.38">
+<meta name="app-version" content="8.39">
+<link rel="stylesheet" href="css/styles.css?v=8.39">
 <!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
      SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
      parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
@@ -148,14 +148,20 @@
         <ul class="kpi-secondaires" id="kpis-secondaires"></ul>
       </article>
 
-      <!-- RANGEE 2 : le graphe 30 jours, INCHANGE, et les insights -->
+      <!-- RANGEE 2 : le graphe 30 jours et les insights. Le graphe a une
+           HAUTEUR FIXE (v8.39) : il s'etirait a la hauteur des insights, et
+           chaque constat de plus l'allongeait. Les constats defilent un par un
+           dans la carte voisine, qui ne pousse donc plus rien. -->
       <article class="carte col-2">
-        <h3>Extractions, note et tendance, 30 derniers jours</h3>
-        <div class="canvas-h240"><canvas id="g-30jours"></canvas></div>
+        <h3>Note et tasses, 30 derniers jours</h3>
+        <div class="canvas-30j"><canvas id="g-30jours"></canvas></div>
       </article>
 
       <article class="carte carte-sombre">
-        <h3>Ce que tes données disent</h3>
+        <div class="carte-tete">
+          <h3>Ce que tes données disent</h3>
+          <div class="insights-nav" id="insights-nav" hidden></div>
+        </div>
         <ul class="insights" id="insights"></ul>
         <button type="button" class="lien-carte" data-va="reglages">Voir mes meilleurs réglages</button>
       </article>
@@ -190,42 +196,67 @@
         <div class="mini-stats" id="heatmap-stats"></div>
       </article>
 
-      <!-- RANGEE 4 : les analyses -->
-      <article class="carte">
-        <h3>Note moyenne par café</h3>
-        <div class="canvas-h240"><canvas id="g-cafes"></canvas></div>
-      </article>
+      <!-- RANGEE 4 : LES ANALYSES, EN ONGLETS (v8.39). Six graphiques
+           s'empilaient ici en six cartes : on les faisait defiler sans les
+           lire. Une carte, un onglet par question, et a cote de chaque
+           graphique sa lecture en une phrase. Les identifiants des canvas et des
+           messages de carte vide n'ont pas change : le rendu ne sait rien des
+           onglets. -->
+      <article class="carte carte-analyses col-plein">
+        <div class="carte-tete">
+          <h3>Analyses</h3>
+          <div class="onglets-analyses" role="tablist" aria-label="Analyses">
+            <button type="button" role="tab" id="onglet-cafes" aria-controls="analyse-cafes" aria-selected="true" data-analyse="cafes">Cafés</button>
+            <button type="button" role="tab" id="onglet-recettes" aria-controls="analyse-recettes" aria-selected="false" tabindex="-1" data-analyse="recettes">Recettes</button>
+            <button type="button" role="tab" id="onglet-machines" aria-controls="analyse-machines" aria-selected="false" tabindex="-1" data-analyse="machines">Machines</button>
+            <button type="button" role="tab" id="onglet-gouts" aria-controls="analyse-gouts" aria-selected="false" tabindex="-1" data-analyse="gouts">Goûts</button>
+            <button type="button" role="tab" id="onglet-diagnostics" aria-controls="analyse-diagnostics" aria-selected="false" tabindex="-1" data-analyse="diagnostics">Diagnostics</button>
+            <button type="button" role="tab" id="onglet-mouture" aria-controls="analyse-mouture" aria-selected="false" tabindex="-1" data-analyse="mouture">Mouture</button>
+          </div>
+        </div>
 
-      <article class="carte">
-        <h3>Brikka contre Switch</h3>
-        <div class="duel" id="duel-machines"></div>
-        <div class="canvas-h200" id="boite-duel"><canvas id="g-duel"></canvas></div>
-        <p class="carte-vide" id="vide-duel" hidden></p>
-      </article>
-
-      <article class="carte">
-        <h3>Quels goûts font tes bonnes tasses</h3>
-        <div class="canvas-h240" id="boite-gouts"><canvas id="g-gouts"></canvas></div>
-        <p class="carte-vide" id="vide-gouts" hidden></p>
-        <p class="carte-note" id="note-gouts"></p>
-      </article>
-
-      <article class="carte">
-        <h3>Diagnostics</h3>
-        <div class="canvas-h240"><canvas id="g-diagnostics"></canvas></div>
-      </article>
-
-      <!-- Ces deux la ne figurent dans aucune rangee du brief. Ce sont des
-           oublis, pas des suppressions : rien ne se perd. -->
-      <article class="carte">
-        <h3>Note contre mouture</h3>
-        <div class="canvas-h240" id="boite-mouture"><canvas id="g-mouture"></canvas></div>
-        <p class="carte-vide" id="vide-mouture" hidden></p>
-      </article>
-
-      <article class="carte">
-        <h3>Note moyenne par recette</h3>
-        <div class="canvas-h240"><canvas id="g-recettes"></canvas></div>
+        <!-- La PILE : les six panneaux dans la meme case de grille, un seul
+             visible. Tous restent dessines, donc chaque graphe nait a sa vraie
+             taille ; un panneau en display: none donnait un canvas de 0 x 0. -->
+        <div class="analyses-pile">
+        <div class="analyse courant" role="tabpanel" id="analyse-cafes" aria-labelledby="onglet-cafes">
+          <div class="analyse-graphe"><div class="canvas-h240"><canvas id="g-cafes"></canvas></div></div>
+          <p class="analyse-lecture" id="lecture-cafes"></p>
+        </div>
+        <div class="analyse" role="tabpanel" id="analyse-recettes" aria-labelledby="onglet-recettes" aria-hidden="true" inert>
+          <div class="analyse-graphe"><div class="canvas-h240"><canvas id="g-recettes"></canvas></div></div>
+          <p class="analyse-lecture" id="lecture-recettes"></p>
+        </div>
+        <div class="analyse" role="tabpanel" id="analyse-machines" aria-labelledby="onglet-machines" aria-hidden="true" inert>
+          <div class="analyse-graphe">
+            <div class="duel" id="duel-machines"></div>
+            <div class="canvas-h200" id="boite-duel"><canvas id="g-duel"></canvas></div>
+            <p class="carte-vide" id="vide-duel" hidden></p>
+          </div>
+          <p class="analyse-lecture" id="lecture-machines"></p>
+        </div>
+        <div class="analyse" role="tabpanel" id="analyse-gouts" aria-labelledby="onglet-gouts" aria-hidden="true" inert>
+          <div class="analyse-graphe">
+            <div class="canvas-h240" id="boite-gouts"><canvas id="g-gouts"></canvas></div>
+            <p class="carte-vide" id="vide-gouts" hidden></p>
+          </div>
+          <div class="analyse-lecture">
+            <p id="lecture-gouts"></p>
+            <p class="carte-note" id="note-gouts"></p>
+          </div>
+        </div>
+        <div class="analyse" role="tabpanel" id="analyse-diagnostics" aria-labelledby="onglet-diagnostics" aria-hidden="true" inert>
+          <div class="analyse-graphe"><div class="canvas-h240"><canvas id="g-diagnostics"></canvas></div></div>
+          <p class="analyse-lecture" id="lecture-diagnostics"></p>
+        </div>
+        <div class="analyse" role="tabpanel" id="analyse-mouture" aria-labelledby="onglet-mouture" aria-hidden="true" inert>
+          <div class="analyse-graphe">
+            <div class="canvas-h240" id="boite-mouture"><canvas id="g-mouture"></canvas></div>
+            <p class="carte-vide" id="vide-mouture" hidden></p>
+          </div>
+          <p class="analyse-lecture" id="lecture-mouture"></p>
+        </div>
+        </div>
       </article>
 
     </div>
@@ -1488,29 +1519,29 @@ Cảm ơn shop.</pre>
 <!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
      et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
      desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=8.38"></script>
-<script defer src="js/i18n.js?v=8.38"></script>
-<script defer src="js/grind.js?v=8.38"></script>
-<script defer src="js/recettes.js?v=8.38"></script>
+<script defer src="js/outils.js?v=8.39"></script>
+<script defer src="js/i18n.js?v=8.39"></script>
+<script defer src="js/grind.js?v=8.39"></script>
+<script defer src="js/recettes.js?v=8.39"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=8.38"></script>
-<script defer src="js/data-csv.js?v=8.38"></script>
-<script defer src="js/data-schema.js?v=8.38"></script>
-<script defer src="js/data-store.js?v=8.38"></script>
-<script defer src="js/data-calculs.js?v=8.38"></script>
-<script defer src="js/data-migrations.js?v=8.38"></script>
-<script defer src="js/data.js?v=8.38"></script>
-<script defer src="js/reglages.js?v=8.38"></script>
-<script defer src="js/charts.js?v=8.38"></script>
-<script defer src="js/ui-noyau.js?v=8.38"></script>
-<script defer src="js/ui-tableau.js?v=8.38"></script>
-<script defer src="js/ui-saisie.js?v=8.38"></script>
-<script defer src="js/ui-chrono.js?v=8.38"></script>
-<script defer src="js/ui-brouillon.js?v=8.38"></script>
-<script defer src="js/ui-rapide.js?v=8.38"></script>
-<script defer src="js/ui-historique.js?v=8.38"></script>
-<script defer src="js/ui-guide.js?v=8.38"></script>
-<script defer src="js/ui-catalogue.js?v=8.38"></script>
-<script defer src="js/app.js?v=8.38"></script>
+<script defer src="js/sync.js?v=8.39"></script>
+<script defer src="js/data-csv.js?v=8.39"></script>
+<script defer src="js/data-schema.js?v=8.39"></script>
+<script defer src="js/data-store.js?v=8.39"></script>
+<script defer src="js/data-calculs.js?v=8.39"></script>
+<script defer src="js/data-migrations.js?v=8.39"></script>
+<script defer src="js/data.js?v=8.39"></script>
+<script defer src="js/reglages.js?v=8.39"></script>
+<script defer src="js/charts.js?v=8.39"></script>
+<script defer src="js/ui-noyau.js?v=8.39"></script>
+<script defer src="js/ui-tableau.js?v=8.39"></script>
+<script defer src="js/ui-saisie.js?v=8.39"></script>
+<script defer src="js/ui-chrono.js?v=8.39"></script>
+<script defer src="js/ui-brouillon.js?v=8.39"></script>
+<script defer src="js/ui-rapide.js?v=8.39"></script>
+<script defer src="js/ui-historique.js?v=8.39"></script>
+<script defer src="js/ui-guide.js?v=8.39"></script>
+<script defer src="js/ui-catalogue.js?v=8.39"></script>
+<script defer src="js/app.js?v=8.39"></script>
 </body>
 </html>

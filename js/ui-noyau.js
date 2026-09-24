@@ -269,6 +269,7 @@ const UI = (() => {
      nom est une cle, pas du texte : ce qui se lit est le title du bouton. */
   const ICONES = {
     chevron: '<path d="m9 6 6 6-6 6"/>',
+    gauche: '<path d="m15 6-6 6 6 6"/>',
     comparer: '<path d="M4 8h13"/><path d="m14 5 3 3-3 3"/><path d="M20 16H7"/><path d="m10 13-3 3 3 3"/>',
     ratee: '<path d="M12 4 3 19h18z"/><path d="M12 10v4"/><path d="M12 17h.01"/>',
     dupliquer: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',

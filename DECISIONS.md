@@ -13,6 +13,32 @@ introduit est dans le changelog.
 
 ## Architecture et code
 
+### Le tableau de bord resserré (v8.39)
+
+**La place de la dernière tasse.** La carte prend la hauteur des chiffres
+clés et laissait une bande vide d'environ 85 px. Plutôt qu'un chiffre de
+plus, une réponse : cette note est-elle un coup de chance ou ton niveau ?
+Chaque tasse notée du même café est un point sur l'échelle des notes. Sous
+trois tasses la bande se tait. Les repères du pied viennent de la recette
+quand elle en donne un comparable (ratio au Switch seulement : sur la Brikka
+l'eau de la recette est celle de la chaudière, pour environ 1:7 en tasse), et
+sinon de ta moyenne sur ce café et cette recette.
+
+**Le graphe des 30 jours en deux bandes.** Il superposait barres et ligne
+sur deux axes, l'un à gauche, l'autre à droite : il fallait deviner quelle
+graduation lisait quoi, et Chris ne lisait pas le nombre de tasses du jour.
+Deux bandes empilées sur le même axe des jours (`stack` et `stackWeight`
+de Chart.js), la note sur deux tiers, les tasses sur un tiers. Sa hauteur
+est fixe : c'est la carte des constats, trop haute, qui l'étirait. Les
+constats défilent donc dans la même case de grille, un seul visible.
+
+**Les analyses en onglets.** Six cartes empilées se faisaient défiler sans
+être lues. Une carte, un onglet par question, une phrase de lecture par
+graphique, qui se tait sous les seuils habituels. Les panneaux ne sont
+jamais en `display: none` : un graphe Chart.js créé dans un conteneur caché
+naît à 0 x 0 et ne se remesurait pas de façon fiable. Ils sont empilés dans
+la même case de grille, invisibles et `inert` sauf le courant.
+
 ### La preuve sous chaque constat (v8.36)
 
 Les sept règles d’insight se taisent tant qu’un écart n’atteint pas 0,4 point
