@@ -461,6 +461,14 @@ les autres sur quatre (`.col-2` vaut `span 8`, le défaut `span 4`).
   plage `GRIND.METHODES`, zone dorée = les trois crans à la meilleure moyenne dès
   trois tasses). Rendus par `UI.rendreDessins()`, appelé par `rendreEcranCourant` et
   à chaque notification de données sur le tableau de bord.
+  Depuis la v8.53, trois de plus : la frise des sachets (`UI.donneesFrise()` : un ruban
+  par sachet des 90 derniers jours, de l'ouverture ou l'achat à la dernière tasse de
+  ce café avant le sachet suivant, ou à aujourd'hui s'il est en cours et pas vide ;
+  teinte = note moyenne ; un ruban ouvre la fiche), le podium des recettes
+  (`UI.donneesPodium()` : les trois meilleures moyennes dès trois tasses notées ; une
+  marche porte `data-guide-recette` et ouvre la recette par `UI.montrerRecette()`), et
+  ta progression (`REGLAGES.moyenneGlissante` sur cinq tasses, jalons = sachets
+  ouverts et premières tasses de chaque recette, les trois derniers nommés).
 - **Analyses** : note par café, Brikka contre Switch, goûts, arômes, diagnostics,
   note contre mouture, note par recette. L'onglet Arômes (v8.45) est la roue
   `CHARTS.roueAromes()`, SVG maison : familles de `DESCRIPTEURS_GROUPES` au centre,

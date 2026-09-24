@@ -443,6 +443,19 @@ const I18N = (() => {
     br_recommencer: { fr: "Recommencer" },
     bi_chez_toi: { fr: "Chez toi : {m} de moyenne sur {n} tasses" },
     bi_pas_essayee: { fr: "Pas encore essayée chez toi" },
+    de_podium_vide: { fr: "Il faut {n} tasses notées sur une même recette pour monter sur le podium." },
+    de_podium_aria: { fr: "{r}, {m} de moyenne, ouvrir dans le Guide" },
+    de_podium_n: { fr: "{n} tasses" },
+    de_podium_lecture: { fr: "Ta meilleure recette : {r}, {m} de moyenne sur {n} tasses." },
+    de_progression_vide: { fr: "Il faut au moins six tasses notées pour tracer ta progression." },
+    de_jalon_sachet: { fr: "{c} ouvert" },
+    de_jalon_recette: { fr: "1re {r}" },
+    de_progression_monte: { fr: "Sur cinq tasses, ta moyenne est passée de {a} à {b} depuis le {d}." },
+    de_progression_baisse: { fr: "Sur cinq tasses, ta moyenne est descendue de {a} à {b} depuis le {d}." },
+    de_frise_vide: { fr: "Aucun sachet ces trois derniers mois : ajoute tes achats dans Mes cafés." },
+    de_ruban_aria: { fr: "Sachet de {c}, {n} tasses, ouvrir sa fiche" },
+    de_frise_lecture: { fr: "Ton meilleur sachet : {a}, {x}. Le moins bon : {b}, {y}." },
+    de_frise_courte: { fr: "Un ruban par sachet, de son ouverture à sa fin ; plus il est plein, mieux ses tasses étaient notées." },
     rc_titre: { fr: "Ta semaine, du {a} au {b}" },
     rc_fermer: { fr: "Refermer" },
     rc_tasses: { fr: "tasses" },
@@ -704,7 +717,8 @@ const I18N = (() => {
     "#br-go,#br-note-dite," +
     "#dessin-etagere,#dessin-horloge,#dessin-spectre,#dessin-moulin," +
     "#dessin-etagere-lecture,#dessin-horloge-lecture,#dessin-spectre-lecture,#dessin-moulin-lecture," +
-    "#carte-recap,#fiche-empreinte,#fiche-trajectoire,#fiche-moulin";
+    "#carte-recap,#fiche-empreinte,#fiche-trajectoire,#fiche-moulin," +
+    "#dessin-frise,#dessin-podium,#dessin-progression,#dessin-frise-lecture,#dessin-podium-lecture,#dessin-progression-lecture";
 
   function scanner() {
     const marche = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {

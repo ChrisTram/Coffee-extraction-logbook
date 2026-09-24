@@ -2966,6 +2966,24 @@ input[type="range"].curseur-inactif::-moz-range-thumb { opacity: 0; }
 .de-plage { fill: var(--panneau-3); }
 .de-doree { fill: none; stroke: var(--accent-fort); stroke-width: 1.5; }
 .de-grain { fill: var(--accent); }
+.de-marche, .de-ruban { cursor: pointer; }
+.de-marche:focus-visible, .de-ruban:focus-visible { outline: none; }
+.de-marche-bloc { fill: var(--accent); }
+.de-rang-1 .de-marche-bloc { fill-opacity: 0.95; }
+.de-rang-2 .de-marche-bloc { fill-opacity: 0.62; }
+.de-rang-3 .de-marche-bloc { fill-opacity: 0.4; }
+.de-marche:hover .de-marche-bloc, .de-marche:focus-visible .de-marche-bloc { stroke: var(--encre); stroke-width: 2; }
+.dessin-svg .de-marche-note { font-family: var(--serif); font-size: 22px; fill: var(--sur-accent); }
+.de-aire { fill: var(--accent-fond); }
+.de-courbe { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linejoin: round; }
+.de-jalon { fill: var(--accent-fort); }
+.de-jalon-trait { stroke: var(--accent-fort); stroke-dasharray: 3 3; stroke-opacity: 0.6; }
+.de-ruban-bloc { fill: var(--accent); }
+.de-ruban.en-cours .de-ruban-bloc { stroke: var(--accent-fort); stroke-width: 1.5; }
+.de-ruban:hover .de-ruban-bloc, .de-ruban:focus-visible .de-ruban-bloc { stroke: var(--encre); stroke-width: 2; }
+.dessin-svg .de-ruban-texte { fill: var(--encre); font-weight: 700; }
+/* Une recette ouverte depuis le podium, soulignée un instant. */
+.recette-carte.recette-montree { box-shadow: 0 0 0 2px var(--accent); }
 .de-derniere { stroke: var(--encre); stroke-width: 2; }
 .de-chemin { fill: none; stroke: var(--barre-neutre); stroke-width: 1.4; stroke-linejoin: round; }
 .de-toile { fill: none; stroke: var(--lignes); }

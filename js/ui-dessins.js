@@ -420,12 +420,169 @@
     });
   }
 
+  // ---------- Le podium des recettes (v8.53) ----------
+
+  /* Les trois recettes à la meilleure moyenne, dès trois tasses notées chacune :
+     une recette essayée une fois ne monte pas. La plus haute marche au milieu,
+     comme un vrai podium. Toucher une marche ouvre la recette dans le Guide. */
+  function donneesPodium() {
+    const par = {};
+    extAnalysables().filter(e => e.note_sur_10 !== "" && e.recette)
+      .forEach(e => (par[e.recette] = par[e.recette] || []).push(Number(e.note_sur_10)));
+    return Object.entries(par).filter(([, n]) => n.length >= MIN)
+      .map(([nom, n]) => ({ nom, moy: moyenne(n), n: n.length, r: UI.trouverRecette(nom) }))
+      .sort((a, b) => b.moy - a.moy || b.n - a.n).slice(0, 3);
+  }
+
+  function dessinerPodium(id) {
+    const p = donneesPodium();
+    if (!p.length) { muet(id, "de_podium_vide", { n: MIN }); return; }
+    // Ordre des marches : deuxième, premier, troisième.
+    const places = [p[1], p[0], p[2]];
+    const hauteurs = [70, 96, 52];
+    let s = '<line x1="14" y1="130" x2="306" y2="130" class="de-planche"></line>';
+    places.forEach((m, i) => {
+      if (!m) return;
+      const rang = i === 1 ? 1 : i === 0 ? 2 : 3;
+      const x = 22 + i * 96, w = 84, h = hauteurs[i], top = 130 - h;
+      const lien = m.r ? ' data-guide-recette="' + echap(m.r.id) + '" tabindex="0" role="button" aria-label="' +
+        echap(I18N.t("de_podium_aria", { r: I18N.tr(m.nom), m: note1(m.moy) })) + '"' : "";
+      s += '<g class="de-marche de-rang-' + rang + '"' + lien + "><title>" + echap(I18N.tr(m.nom)) + "</title>" +
+        '<rect x="' + x + '" y="' + top + '" width="' + w + '" height="' + h + '" rx="6" class="de-marche-bloc"></rect>' +
+        '<text x="' + (x + w / 2) + '" y="' + (top + 26) + '" text-anchor="middle" class="de-marche-note">' + note1(m.moy) + "</text>" +
+        '<text x="' + (x + w / 2) + '" y="' + (top - 7) + '" text-anchor="middle" class="de-fort">' + echap(court(I18N.tr(m.nom), 17)) + "</text>" +
+        '<text x="' + (x + w / 2) + '" y="144" text-anchor="middle">' + echap(I18N.t("de_podium_n", { n: m.n })) + "</text></g>";
+    });
+    poserDessin(id, s, I18N.t("de_podium_lecture", { r: I18N.tr(p[0].nom), m: note1(p[0].moy), n: p[0].n }));
+  }
+
+  // ---------- Ta progression (v8.54) ----------
+
+  /* La moyenne glissante sur cinq tasses notées (REGLAGES.moyenneGlissante), sur
+     tout l'historique, avec ses JALONS : chaque sachet ouvert, et chaque recette
+     faite pour la première fois. On voit ce qui a fait bouger la courbe. Les trois
+     jalons les plus récents portent leur nom, les autres restent des points. */
+  function dessinerProgression(id) {
+    const notees = extAnalysables().filter(e => e.note_sur_10 !== "");
+    const serie = REGLAGES.moyenneGlissante(notees, 5).filter(p => p.valeur !== null);
+    if (serie.length < 2) { muet(id, "de_progression_vide"); return; }
+    const t = d => new Date(d).getTime();
+    const t0 = t(serie[0].date), t1 = Math.max(t(serie[serie.length - 1].date), t0 + 86400000);
+    const vals = serie.map(p => p.valeur);
+    const v0 = Math.floor(Math.min(...vals)) , v1 = Math.ceil(Math.max(...vals));
+    const bas = v1 - v0 < 2 ? v1 - 2 : v0;
+    const x = d => 26 + ((t(d) - t0) / (t1 - t0)) * 284, y = v => 112 - ((v - bas) / (v1 - bas)) * 96;
+    let s = "";
+    for (let v = bas; v <= v1; v += 1) {
+      s += '<line x1="26" y1="' + y(v).toFixed(1) + '" x2="310" y2="' + y(v).toFixed(1) + '" class="de-grille"></line>' +
+        '<text x="20" y="' + (y(v) + 3).toFixed(1) + '" text-anchor="end">' + v + "</text>";
+    }
+    const d = "M" + serie.map(p => x(p.date).toFixed(1) + " " + y(p.valeur).toFixed(1)).join(" L");
+    s += '<path d="' + d + " L" + x(serie[serie.length - 1].date).toFixed(1) + " 112 L26 112 Z" + '" class="de-aire"></path>' +
+      '<path d="' + d + '" class="de-courbe"></path>';
+    // Les jalons, dans la période de la courbe.
+    const jalons = [];
+    DATA.state.achats.forEach(a => {
+      const quand = a.date_ouverture || "";
+      const c = DATA.state.cafes.find(x => x.id === a.cafe_id);
+      if (quand && c) jalons.push({ date: quand + "T12:00", lib: I18N.t("de_jalon_sachet", { c: court(c.nom, 16) }) });
+    });
+    const vues = new Set();
+    notees.slice().sort((a, b) => String(a.date_heure).localeCompare(String(b.date_heure))).forEach(e => {
+      if (!e.recette || vues.has(e.recette)) return;
+      vues.add(e.recette);
+      jalons.push({ date: e.date_heure, lib: I18N.t("de_jalon_recette", { r: court(I18N.tr(e.recette), 16) }) });
+    });
+    const dans = jalons.filter(j => t(j.date) > t0 && t(j.date) <= t1).sort((a, b) => t(a.date) - t(b.date));
+    const valeurA = d => { let v = serie[0].valeur; serie.forEach(p => { if (t(p.date) <= t(d)) v = p.valeur; }); return v; };
+    const nommes = dans.slice(-3);
+    dans.forEach(j => {
+      const jx = x(j.date), jy = y(valeurA(j.date));
+      s += '<line x1="' + jx.toFixed(1) + '" y1="' + jy.toFixed(1) + '" x2="' + jx.toFixed(1) + '" y2="118" class="de-jalon-trait"></line>' +
+        '<circle cx="' + jx.toFixed(1) + '" cy="' + jy.toFixed(1) + '" r="3.6" class="de-jalon"><title>' + echap(j.lib) + "</title></circle>";
+    });
+    nommes.forEach((j, k) => {
+      s += '<text x="' + x(j.date).toFixed(1) + '" y="' + (130 + k * 10) + '" text-anchor="' + (x(j.date) > 250 ? "end" : "middle") + '">' + echap(j.lib) + "</text>";
+    });
+    const el = document.getElementById(id);
+    if (el) el.setAttribute("viewBox", "0 0 320 " + (132 + nommes.length * 10));
+    const debut = serie[0], fin = serie[serie.length - 1];
+    const jour = s2 => new Date(s2).toLocaleDateString(I18N.locale(), { day: "numeric", month: "long" });
+    poserDessin(id, s, I18N.t(fin.valeur >= debut.valeur ? "de_progression_monte" : "de_progression_baisse", {
+      a: note1(debut.valeur), b: note1(fin.valeur), d: jour(debut.date),
+    }));
+  }
+
+  // ---------- La frise des sachets (v8.55) ----------
+
+  /* Un ruban par sachet, de son ouverture (ou de son achat) à sa fin : le jour de
+     la dernière tasse de ce café avant le sachet suivant du même café, ou
+     aujourd'hui pour un sachet en cours qui n'est pas vide. La teinte est la note
+     moyenne de ses tasses. Les trois derniers mois, huit sachets au plus. Un ruban
+     ouvre la fiche de son café. */
+  function donneesFrise(maintenant) {
+    const auj = maintenant ? new Date(maintenant) : new Date();
+    const depuis = new Date(auj); depuis.setDate(depuis.getDate() - 90);
+    const jourDe = s => new Date(String(s).slice(0, 10) + "T12:00");
+    return DATA.state.achats.map(a => {
+      const debut = jourDe(a.date_ouverture || a.date_achat);
+      if (isNaN(debut)) return null;
+      const suivants = DATA.state.achats.filter(b => b.cafe_id === a.cafe_id && b !== a &&
+        jourDe(b.date_ouverture || b.date_achat) > debut).map(b => jourDe(b.date_ouverture || b.date_achat)).sort((x, y) => x - y);
+      const limite = suivants[0] || null;
+      const tasses = DATA.state.extractions.filter(e => e.cafe_id === a.cafe_id && new Date(e.date_heure) >= debut &&
+        (!limite || new Date(e.date_heure) < limite));
+      const derniere = tasses.reduce((m, e) => (new Date(e.date_heure) > m ? new Date(e.date_heure) : m), debut);
+      const stock = limite ? null : DATA.stockSachet(a.cafe_id, replis.dose);
+      const enCours = !limite && stock && stock.restant > 0;
+      const fin = enCours ? auj : derniere;
+      if (fin < depuis) return null;
+      const notes = extAnalysables().filter(e => tasses.some(t => t.id === e.id) && e.note_sur_10 !== "").map(e => Number(e.note_sur_10));
+      const cafe = DATA.state.cafes.find(c => c.id === a.cafe_id);
+      return cafe ? { cafe, debut, fin, enCours, n: tasses.length, moy: notes.length ? moyenne(notes) : null } : null;
+    }).filter(Boolean).sort((a, b) => a.debut - b.debut).slice(-8);
+  }
+
+  function dessinerFrise(id) {
+    const sachets = donneesFrise();
+    if (!sachets.length) { muet(id, "de_frise_vide"); return; }
+    const auj = new Date();
+    const t0 = Math.min(...sachets.map(s => s.debut.getTime())), t1 = Math.max(auj.getTime(), ...sachets.map(s => s.fin.getTime()));
+    const x = d => 10 + ((d.getTime() - t0) / Math.max(1, t1 - t0)) * 300;
+    const H = 16 + sachets.length * 18;
+    let s = "";
+    // Un repère par début de mois.
+    const m = new Date(t0); m.setDate(1); m.setMonth(m.getMonth() + 1); m.setHours(12);
+    for (; m.getTime() < t1; m.setMonth(m.getMonth() + 1)) {
+      s += '<line x1="' + x(m).toFixed(1) + '" y1="6" x2="' + x(m).toFixed(1) + '" y2="' + H + '" class="de-grille"></line>' +
+        '<text x="' + x(m).toFixed(1) + '" y="' + (H + 12) + '" text-anchor="middle">' + echap(m.toLocaleDateString(I18N.locale(), { month: "short" })) + "</text>";
+    }
+    sachets.forEach((b, i) => {
+      const y = 10 + i * 18, a = x(b.debut), w = Math.max(10, x(b.fin) - a);
+      const lib = court(b.cafe.nom, 18) + (b.moy !== null ? " · " + note1(b.moy) : "");
+      s += '<g class="de-ruban' + (b.enCours ? " en-cours" : "") + '" data-fiche="' + echap(b.cafe.id) + '" tabindex="0" role="button" aria-label="' +
+        echap(I18N.t("de_ruban_aria", { c: b.cafe.nom, n: b.n })) + '"><title>' + echap(b.cafe.nom) + "</title>" +
+        '<rect x="' + a.toFixed(1) + '" y="' + y + '" width="' + w.toFixed(1) + '" height="13" rx="6.5" class="de-ruban-bloc" style="fill-opacity:' +
+        (b.moy === null ? 0.18 : opacite(b.moy)) + '"></rect>' +
+        '<text x="' + Math.min(a + 6, 250).toFixed(1) + '" y="' + (y + 10) + '" class="de-ruban-texte">' + echap(lib) + "</text></g>";
+    });
+    const el = document.getElementById(id);
+    if (el) el.setAttribute("viewBox", "0 0 320 " + (H + 18));
+    const notes = sachets.filter(b => b.moy !== null && b.n >= MIN).sort((a, b) => b.moy - a.moy);
+    poserDessin(id, s, notes.length >= 2
+      ? I18N.t("de_frise_lecture", { a: notes[0].cafe.nom, x: note1(notes[0].moy), b: notes[notes.length - 1].cafe.nom, y: note1(notes[notes.length - 1].moy) })
+      : I18N.t("de_frise_courte"));
+  }
+
   // ---------- Le tableau de bord ----------
 
   function rendreDessins() {
     rendreRecap();
     if (!$("#carte-dessins")) return;
     dessinerEtagere("dessin-etagere");
+    dessinerFrise("dessin-frise");
+    dessinerPodium("dessin-podium");
+    dessinerProgression("dessin-progression");
     dessinerHorloge("dessin-horloge");
     dessinerSpectre("dessin-spectre");
     dessinerMoulin("dessin-moulin");
@@ -436,6 +593,7 @@
   const RACCOURCIS = {
     cafes: () => UI.ouvrirModaleCafes(),
     historique: () => activerEcran("historique"),
+    guide: () => { activerEcran("guide"); UI.montrerGuide("ref-recettes"); },
     diagnostics: () => {
       const onglet = $("#onglet-diagnostics");
       if (onglet) { onglet.click(); onglet.scrollIntoView({ behavior: "smooth", block: "start" }); }
@@ -451,6 +609,9 @@
     if (!carte) return;
     carte.addEventListener("click", ev => {
       if (ev.target.closest("[data-fiche]")) return;
+      // Une marche du podium ouvre SA recette dans le Guide.
+      const marche = ev.target.closest("[data-guide-recette]");
+      if (marche) { activerEcran("guide"); UI.montrerRecette(marche.dataset.guideRecette); return; }
       const zone = ev.target.closest("[data-raccourci]");
       if (zone && RACCOURCIS[zone.dataset.raccourci]) RACCOURCIS[zone.dataset.raccourci]();
     });
@@ -458,13 +619,15 @@
     carte.addEventListener("keydown", ev => {
       if (ev.key !== "Enter" && ev.key !== " ") return;
       const b = ev.target.closest("[data-fiche]");
-      if (b) { ev.preventDefault(); UI.ouvrirFiche(b.dataset.fiche); }
+      if (b) { ev.preventDefault(); UI.ouvrirFiche(b.dataset.fiche); return; }
+      const m = ev.target.closest("[data-guide-recette]");
+      if (m) { ev.preventDefault(); activerEcran("guide"); UI.montrerRecette(m.dataset.guideRecette); }
     });
     DATA.abonner(() => { if (nav.ecran === "tableau") rendreDessins(); });
   }
 
   Object.assign(UI, {
-    cablerDessins, donneesRecap, dessinerEmpreinte, dessinerMoulin, dessinerTrajectoire, donneesEtagere, donneesMoulin, donneesSpectre, positionDiagnostic: position,
+    cablerDessins, donneesFrise, donneesPodium, donneesRecap, dessinerEmpreinte, dessinerMoulin, dessinerTrajectoire, donneesEtagere, donneesMoulin, donneesSpectre, positionDiagnostic: position,
     rendreDessins,
   });
 })();

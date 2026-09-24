@@ -72,6 +72,23 @@
     if (el && el !== panneau.querySelector("h2, .ref-titre-ligne h2")) el.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  /* Ouvre UNE recette dans le Guide (v8.53, le podium du tableau de bord) : sa
+     variante affichée si elle est d'une famille, le filtre remis sur « Toutes »
+     pour qu'elle ne soit pas cachée, puis la carte au centre, un instant soulignée. */
+  function montrerRecette(id) {
+    const r = DATA.state.recettes.find(x => x.id === id);
+    if (!r) { montrerGuide("ref-recettes"); return; }
+    if (r.famille) familleSelection[r.famille] = r.id;
+    filtre.valeur = "tout";
+    rendreRecettes();
+    montrerGuide("ref-recettes");
+    const carte = $('#grille-recettes [data-recette="' + id + '"]');
+    if (!carte) return;
+    carte.scrollIntoView({ behavior: "smooth", block: "center" });
+    carte.classList.add("recette-montree");
+    setTimeout(() => carte.classList.remove("recette-montree"), 1800);
+  }
+
   function carteRecette(r, groupe) {
     const badges = (r.parDefaut ? '<span class="badge-defaut">' + I18N.t("badge_defaut") + "</span>" : "") +
       (r.avancee ? '<span class="badge-avancee">' + I18N.t("badge_avancee") + "</span>" : "");
@@ -422,7 +439,7 @@
   }
 
   Object.assign(UI, {
-    cablerGuide, carteRecette, chezToi, conseilMouture, montrerGuide, profilsRecette, etapesPour, facteurEau, familleSelection, ouvrirPasAPas,
+    cablerGuide, carteRecette, chezToi, conseilMouture, montrerGuide, montrerRecette, profilsRecette, etapesPour, facteurEau, familleSelection, ouvrirPasAPas,
     pap, papDemarrer, papSuivant, papTic, rendreConvertisseur, rendreConvertisseurDifferee,
     rendrePapEtapes, rendreRecettes, rendreReperesMouture, rendreTablePlages, rendreTetsu,
     tetsuChoix, versementsTetsu,

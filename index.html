@@ -7,8 +7,8 @@
 <!-- Version du site, source unique : le pied de page la lit, et les fichiers
      chargés à la demande la mettent dans leur URL. Se pose avec
      node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="8.52">
-<link rel="stylesheet" href="css/styles.css?v=8.52">
+<meta name="app-version" content="8.53">
+<link rel="stylesheet" href="css/styles.css?v=8.53">
 <!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
      SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
      parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
@@ -210,6 +210,21 @@
             <header class="dessin-tete"><h4>L'étagère</h4><button type="button" class="dessin-lien" data-raccourci="cafes">Mes cafés<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button></header>
             <svg id="dessin-etagere" class="dessin-svg" viewBox="0 0 320 160" role="img" aria-label="Tes sachets en bocaux, remplis de ce qui reste"></svg>
             <p class="dessin-lecture" id="dessin-etagere-lecture"></p>
+          </section>
+          <section class="dessin" data-raccourci="cafes">
+            <header class="dessin-tete"><h4>La frise des sachets</h4><button type="button" class="dessin-lien" data-raccourci="cafes">Mes cafés<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button></header>
+            <svg id="dessin-frise" class="dessin-svg" viewBox="0 0 320 150" role="img" aria-label="Tes sachets des trois derniers mois, de leur ouverture à leur fin, teintés par leur note"></svg>
+            <p class="dessin-lecture" id="dessin-frise-lecture"></p>
+          </section>
+          <section class="dessin" data-raccourci="guide">
+            <header class="dessin-tete"><h4>Le podium des recettes</h4><button type="button" class="dessin-lien" data-raccourci="guide">Le Guide<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button></header>
+            <svg id="dessin-podium" class="dessin-svg" viewBox="0 0 320 150" role="img" aria-label="Tes trois recettes les mieux notées"></svg>
+            <p class="dessin-lecture" id="dessin-podium-lecture"></p>
+          </section>
+          <section class="dessin" data-raccourci="historique">
+            <header class="dessin-tete"><h4>Ta progression</h4><button type="button" class="dessin-lien" data-raccourci="historique">Historique<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button></header>
+            <svg id="dessin-progression" class="dessin-svg" viewBox="0 0 320 160" role="img" aria-label="Ta moyenne glissante sur cinq tasses, avec les sachets ouverts et les recettes essayées"></svg>
+            <p class="dessin-lecture" id="dessin-progression-lecture"></p>
           </section>
           <section class="dessin" data-raccourci="historique">
             <header class="dessin-tete"><h4>L'horloge du café</h4><button type="button" class="dessin-lien" data-raccourci="historique">Historique<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button></header>
@@ -1684,32 +1699,32 @@ Cảm ơn shop.</pre>
 <!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
      et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
      desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=8.52"></script>
-<script defer src="js/i18n.js?v=8.52"></script>
-<script defer src="js/grind.js?v=8.52"></script>
-<script defer src="js/recettes.js?v=8.52"></script>
+<script defer src="js/outils.js?v=8.53"></script>
+<script defer src="js/i18n.js?v=8.53"></script>
+<script defer src="js/grind.js?v=8.53"></script>
+<script defer src="js/recettes.js?v=8.53"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=8.52"></script>
-<script defer src="js/data-csv.js?v=8.52"></script>
-<script defer src="js/data-schema.js?v=8.52"></script>
-<script defer src="js/data-store.js?v=8.52"></script>
-<script defer src="js/data-calculs.js?v=8.52"></script>
-<script defer src="js/data-migrations.js?v=8.52"></script>
-<script defer src="js/data.js?v=8.52"></script>
-<script defer src="js/reglages.js?v=8.52"></script>
-<script defer src="js/charts.js?v=8.52"></script>
-<script defer src="js/ui-noyau.js?v=8.52"></script>
-<script defer src="js/ui-tableau.js?v=8.52"></script>
-<script defer src="js/ui-saisie.js?v=8.52"></script>
-<script defer src="js/ui-chrono.js?v=8.52"></script>
-<script defer src="js/ui-brouillon.js?v=8.52"></script>
-<script defer src="js/ui-rapide.js?v=8.52"></script>
-<script defer src="js/ui-historique.js?v=8.52"></script>
-<script defer src="js/ui-guide.js?v=8.52"></script>
-<script defer src="js/ui-catalogue.js?v=8.52"></script>
-<script defer src="js/ui-fiche.js?v=8.52"></script>
-<script defer src="js/ui-brassage.js?v=8.52"></script>
-<script defer src="js/ui-dessins.js?v=8.52"></script>
-<script defer src="js/app.js?v=8.52"></script>
+<script defer src="js/sync.js?v=8.53"></script>
+<script defer src="js/data-csv.js?v=8.53"></script>
+<script defer src="js/data-schema.js?v=8.53"></script>
+<script defer src="js/data-store.js?v=8.53"></script>
+<script defer src="js/data-calculs.js?v=8.53"></script>
+<script defer src="js/data-migrations.js?v=8.53"></script>
+<script defer src="js/data.js?v=8.53"></script>
+<script defer src="js/reglages.js?v=8.53"></script>
+<script defer src="js/charts.js?v=8.53"></script>
+<script defer src="js/ui-noyau.js?v=8.53"></script>
+<script defer src="js/ui-tableau.js?v=8.53"></script>
+<script defer src="js/ui-saisie.js?v=8.53"></script>
+<script defer src="js/ui-chrono.js?v=8.53"></script>
+<script defer src="js/ui-brouillon.js?v=8.53"></script>
+<script defer src="js/ui-rapide.js?v=8.53"></script>
+<script defer src="js/ui-historique.js?v=8.53"></script>
+<script defer src="js/ui-guide.js?v=8.53"></script>
+<script defer src="js/ui-catalogue.js?v=8.53"></script>
+<script defer src="js/ui-fiche.js?v=8.53"></script>
+<script defer src="js/ui-brassage.js?v=8.53"></script>
+<script defer src="js/ui-dessins.js?v=8.53"></script>
+<script defer src="js/app.js?v=8.53"></script>
 </body>
 </html>
