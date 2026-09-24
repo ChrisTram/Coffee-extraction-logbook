@@ -9,13 +9,68 @@
 (() => {
 
   // Emprunté au noyau, chargé avant nous.
-  const { $, $$, antiRebond, attrTitre, ecrireReplis, fmtTemps, peindreCurseur, recetteAvecVariantes, recettesVivantes,
-    replis, toast } = UI;
+  const { $, $$, antiRebond, attrTitre, basculerEtat, ecrireReplis, extAnalysables, fmtDecimal, fmtTemps, moyenne,
+    peindreCurseur, recetteAvecVariantes, recettesVivantes, replis, toast } = UI;
 
   // ---------- Référence : recettes ----------
 
   const tetsuChoix = { p40: "sucre", p60: "plein" };
   const familleSelection = {}; // famille -> id de la variante affichée
+
+  /* LE GUIDE EN BIBLIOTHÈQUE (v8.52). Deux choses nouvelles sur chaque recette,
+     toutes deux calculées, rien d'écrit à la main :
+
+     - ses PROFILS de café, pour les filtres : lavés ou fermentés, lus dans son
+       texte « Pour qui », la première phrase d'abord (« Les lavés propres… »,
+       « Les fermentés, natural, honey… »), le texte entier sinon. Une recette qui
+       ne vise aucun profil (les Brikka) vaut pour tous et paraît sous les deux.
+       Les cafés associés ont été essayés et écartés : le Balanced, lavé, figure
+       dans presque toutes les listes et rendait tout « lavé ». Changer le texte
+       d'une recette change son filtre ;
+     - « Chez toi » : la moyenne de tes tasses notées sur CETTE recette. */
+  const LAVE = /lav|wash/i, FERMENTE = /natur|honey|ana[eé]ro|ferment/i;
+  function profilsRecette(r) {
+    const texte = String(r.pourQui || "");
+    const lire = t => [LAVE.test(t) ? "lave" : "", FERMENTE.test(t) ? "fermente" : ""].filter(Boolean);
+    const premiere = lire(texte.split(/[.:]/)[0]);
+    const p = premiere.length ? premiere : lire(texte);
+    return p.length ? p : ["lave", "fermente"];
+  }
+  function chezToi(r) {
+    const notes = extAnalysables().filter(e => e.recette === r.nom && e.note_sur_10 !== "").map(e => Number(e.note_sur_10));
+    return '<p class="recette-chez-toi">' + (notes.length
+      ? I18N.t("bi_chez_toi", { m: fmtDecimal(moyenne(notes), 1), n: notes.length })
+      : I18N.t("bi_pas_essayee")) + "</p>";
+  }
+  const filtre = { valeur: "tout" };
+  try { filtre.valeur = localStorage.getItem("guide-filtre") || "tout"; } catch (e) { /* sans stockage, tout */ }
+  function appliquerFiltre() {
+    $$("#grille-recettes .recette-carte").forEach(c => {
+      const v = filtre.valeur;
+      c.hidden = !(v === "tout" || c.classList.contains(v.toLowerCase()) || (c.dataset.profils || "").split(" ").includes(v));
+    });
+    $$("#biblio-filtres [data-filtre]").forEach(b => basculerEtat(b, b.dataset.filtre === filtre.valeur));
+    const vide = $("#biblio-vide");
+    if (vide) vide.hidden = $$("#grille-recettes .recette-carte").some(c => !c.hidden);
+  }
+
+  /* LES ONGLETS DU GUIDE (v8.52). Le sommaire montre UN panneau à la fois, celui
+     qui contient la cible du lien ; les ancres restent, et une cible qui n'est pas
+     en tête de son panneau (Quoi acheter, Règles d'achat) y défile. Recettes
+     d'abord, et l'onglet choisi est retenu. */
+  function montrerGuide(cible) {
+    const el = cible ? document.getElementById(cible) : null;
+    const panneau = el ? el.closest(".guide-panneau") : $("#gp-" + (cible || "recettes"));
+    if (!panneau) return;
+    $$(".guide-panneau").forEach(p => { p.hidden = p !== panneau; });
+    $$(".guide-onglets [data-guide]").forEach(a => {
+      const actif = a.dataset.guide === panneau.dataset.panneau;
+      a.classList.toggle("courant", actif);
+      if (actif) a.setAttribute("aria-current", "true"); else a.removeAttribute("aria-current");
+    });
+    try { localStorage.setItem("guide-onglet", panneau.dataset.panneau); } catch (e) { /* tant pis */ }
+    if (el && el !== panneau.querySelector("h2, .ref-titre-ligne h2")) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   function carteRecette(r, groupe) {
     const badges = (r.parDefaut ? '<span class="badge-defaut">' + I18N.t("badge_defaut") + "</span>" : "") +
@@ -41,7 +96,8 @@
         '" data-var-fam="' + r.famille + '" data-var-id="' + x.id + '">' +
         I18N.tr(x.variante || x.nom) + "</button>").join("") + "</div>";
     }
-    return '<article class="carte recette-carte ' + r.methode.toLowerCase() + '" data-recette="' + r.id + '">' +
+    return '<article class="carte recette-carte ' + r.methode.toLowerCase() + '" data-recette="' + r.id + '" data-profils="' +
+      profilsRecette(r).join(" ") + '">' +
       '<div class="recette-entete">' +
       (r.numero ? '<span class="recette-numero">' + r.numero + "</span>" : '<span class="recette-numero">' + r.methode + "</span>") +
       badges + "</div>" +
@@ -49,6 +105,7 @@
       pilules +
       '<p class="recette-sous">' + r.sousTitre + "</p>" +
       '<div class="recette-params">' + params + "</div>" +
+      chezToi(r) +
       etapes + tetsu +
       (r.pourQui ? '<p class="recette-pourqui"><b>' + I18N.t("r_pourqui") + "</b> " + r.pourQui + "</p>" : "") +
       (r.cafesAssocies.length ? '<p class="recette-cafes"><b>' + I18N.t("r_cafes") + "</b> " + r.cafesAssocies.join(", ") + "</p>" : "") +
@@ -79,6 +136,7 @@
       cartes.push(carteRecette(r, null));
     });
     $("#grille-recettes").innerHTML = cartes.join("");
+    appliquerFiltre();
 
     rendreTetsu();
 
@@ -328,6 +386,21 @@
     $("#pap-suivant").addEventListener("click", papSuivant);
     $("#modale-pas-a-pas").addEventListener("close", () => clearInterval(pap.interval));
     $("#btn-gerer-recettes").addEventListener("click", () => UI.ouvrirModaleRecettes());
+    $$("#biblio-filtres [data-filtre]").forEach(b => b.addEventListener("click", () => {
+      filtre.valeur = b.dataset.filtre;
+      try { localStorage.setItem("guide-filtre", filtre.valeur); } catch (e) { /* tant pis */ }
+      appliquerFiltre();
+    }));
+    $$(".guide-onglets [data-guide]").forEach(a => a.addEventListener("click", ev => {
+      ev.preventDefault();
+      montrerGuide(a.getAttribute("href").slice(1));
+    }));
+    // Au démarrage : l'onglet retenu, sinon les recettes.
+    let onglet = "recettes";
+    try { onglet = localStorage.getItem("guide-onglet") || "recettes"; } catch (e) { /* recettes */ }
+    const panneau = $("#gp-" + onglet) || $("#gp-recettes");
+    const titre = panneau && panneau.querySelector("h2");
+    montrerGuide(titre && titre.id ? titre.id : null);
 
     // Boutons de copie des messages vietnamiens
     $$("[data-copier]").forEach(b => b.addEventListener("click", async () => {
@@ -349,7 +422,7 @@
   }
 
   Object.assign(UI, {
-    cablerGuide, carteRecette, conseilMouture, etapesPour, facteurEau, familleSelection, ouvrirPasAPas,
+    cablerGuide, carteRecette, chezToi, conseilMouture, montrerGuide, profilsRecette, etapesPour, facteurEau, familleSelection, ouvrirPasAPas,
     pap, papDemarrer, papSuivant, papTic, rendreConvertisseur, rendreConvertisseurDifferee,
     rendrePapEtapes, rendreRecettes, rendreReperesMouture, rendreTablePlages, rendreTetsu,
     tetsuChoix, versementsTetsu,

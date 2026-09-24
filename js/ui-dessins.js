@@ -442,8 +442,7 @@
     },
     moulin: () => {
       activerEcran("guide");
-      const cible = $("#ref-moulin");
-      if (cible) cible.scrollIntoView({ behavior: "smooth", block: "start" });
+      UI.montrerGuide("ref-moulin");
     },
   };
 

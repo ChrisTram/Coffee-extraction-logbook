@@ -7,8 +7,8 @@
 <!-- Version du site, source unique : le pied de page la lit, et les fichiers
      chargés à la demande la mettent dans leur URL. Se pose avec
      node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="8.51">
-<link rel="stylesheet" href="css/styles.css?v=8.51">
+<meta name="app-version" content="8.52">
+<link rel="stylesheet" href="css/styles.css?v=8.52">
 <!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
      SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
      parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
@@ -752,20 +752,21 @@
       <h2 class="titre-page">Guide</h2>
     </div>
   </div>
-  <nav class="sommaire" aria-label="Sommaire du guide">
-    <a href="#ref-moulin">Moulin</a>
-    <a href="#ref-diagnostic">Diagnostic du goût</a>
-    <a href="#ref-regles">Règles</a>
-    <a href="#ref-recettes">Recettes</a>
-    <a href="#ref-vocabulaire">Vocabulaire</a>
+  <nav class="sommaire guide-onglets" aria-label="Sommaire du guide">
+    <!-- LES ONGLETS DU GUIDE (v8.52). Chaque lien montre le panneau qui contient
+         sa cible ; les ancres restent, pour le clavier et les liens internes. -->
+    <a href="#ref-recettes" data-guide="recettes">Recettes</a>
+    <a href="#ref-moulin" data-guide="moulin">Moulin</a>
+    <a href="#ref-diagnostic" data-guide="diagnostic">Diagnostic du goût</a>
+    <a href="#ref-regles" data-guide="regles">Règles</a>
+    <a href="#ref-vocabulaire" data-guide="vocabulaire">Vocabulaire</a>
     <span class="sommaire-sep" aria-hidden="true"></span>
-    <a href="#gd-boutiques">Boutiques</a>
-    <a href="#gd-acheter">Quoi acheter</a>
-    <a href="#gd-regles">Règles d'achat</a>
-    <a href="#gd-materiel">Matériel</a>
-    <a href="#gd-messages">Messages à copier</a>
+    <a href="#gd-boutiques" data-guide="boutiques">Boutiques et achats</a>
+    <a href="#gd-materiel" data-guide="materiel">Matériel</a>
+    <a href="#gd-messages" data-guide="messages">Messages à copier</a>
   </nav>
 
+  <div class="guide-panneau" id="gp-moulin" data-panneau="moulin">
   <h2 id="ref-moulin" class="ref-titre">Le moulin : réglage et conversions</h2>
   <div class="carte ref-bloc">
     <p>Le C5 ESP se lit en trois parties : <b>rotation.numéro.cran</b>. Exemple : <code>1.3.2</code> se lit "1 rotation depuis le zéro, 3e numéro, 2e cran".</p>
@@ -828,7 +829,9 @@
     <p><b>Bandes de granulométrie :</b> extra fine moins de 200, fine 200 à 400, medium fine 400 à 600, medium 600 à 800, medium coarse 800 à 1000, coarse 1000 à 1200, extra coarse plus de 1200.</p>
     <p class="encadre">Pas de correction utile : <b>un numéro entier</b>, soit 5 crans, soit environ 41 microns. Un seul cran ne se sent pas en tasse.</p>
   </div>
+  </div>
 
+  <div class="guide-panneau" id="gp-diagnostic" data-panneau="diagnostic">
   <h2 id="ref-diagnostic" class="ref-titre">Diagnostic du goût</h2>
   <div class="grille-diagnostic">
     <article class="carte diag-carte">
@@ -861,7 +864,9 @@
       <p>Trois verres d'eau : un avec du jus de citron (acidité pure), un avec un sachet de thé noir infusé 10 minutes (amertume et astringence), un avec une pincée de sel (la sensation creuse de la sous-extraction).</p>
     </article>
   </div>
+  </div>
 
+  <div class="guide-panneau" id="gp-regles" data-panneau="regles">
   <h2 id="ref-regles" class="ref-titre">Règles d'exécution</h2>
   <div class="carte ref-bloc">
     <h3>Valables partout</h3>
@@ -874,14 +879,25 @@
     <h3>La question de la double infusion, tranchée</h3>
     <p>Fractionner l'infusion augmente l'extraction et l'intensité, <b>pas le corps</b>. Le corps vient des huiles et des fines, et le papier les retient quel que soit le nombre de cycles. Ce que les recettes 4 et 5 apportent, c'est de la clarté avec de la puissance. Dans le Switch, les trois vrais leviers de corps sont, dans l'ordre : resserrer le ratio vers 1:14, moudre plus fin, remuer davantage.</p>
   </div>
+  </div>
 
-
+  <div class="guide-panneau" id="gp-recettes" data-panneau="recettes">
   <!-- Recettes : descendu ici, un onglet entier leur est consacré. -->
   <div class="ref-titre-ligne">
     <h2 id="ref-recettes" class="ref-titre">Recettes</h2>
     <button class="btn btn-petit" id="btn-gerer-recettes">Gérer les recettes</button>
   </div>
   <p class="ref-intro">Trois recettes Brikka et huit recettes Switch. Le principe qui les gouverne toutes : le Switch ne doit pas refaire ce que la Brikka fait mieux. Toutes portent maintenant ma molette unique, 1.5.0, et chaque recette garde dans sa note la mouture que sa source recommandait. Chaque recette est éditable, et les recettes d'origine restent restaurables à tout moment.</p>
+  <!-- Filtres de la bibliothèque (v8.52) : par machine, et par profil de café
+       déduit des cafés associés à chaque recette. -->
+  <div class="biblio-filtres" id="biblio-filtres" role="group" aria-label="Filtrer les recettes">
+    <button type="button" class="pilule" data-filtre="tout" aria-pressed="true">Toutes</button>
+    <button type="button" class="pilule" data-filtre="Brikka" aria-pressed="false"><span class="pastille-methode brikka"></span>Brikka</button>
+    <button type="button" class="pilule" data-filtre="Switch" aria-pressed="false"><span class="pastille-methode switch"></span>Switch</button>
+    <button type="button" class="pilule" data-filtre="lave" aria-pressed="false">Cafés lavés</button>
+    <button type="button" class="pilule" data-filtre="fermente" aria-pressed="false">Naturels et fermentés</button>
+  </div>
+  <p class="carte-vide" id="biblio-vide" hidden>Aucune recette ne correspond à ce filtre.</p>
   <div class="grille-recettes" id="grille-recettes"></div>
 
   <div class="carte ref-bloc encadre-costaud">
@@ -898,7 +914,9 @@
   </div>
 
   <!-- Bloc Tetsu variantes, rempli par JS dans la carte de la recette 5 -->
+  </div>
 
+  <div class="guide-panneau" id="gp-vocabulaire" data-panneau="vocabulaire">
   <h2 id="ref-vocabulaire" class="ref-titre">Vocabulaire et culture</h2>
   <div class="fiches" id="fiches-vocabulaire">
 
@@ -1023,7 +1041,9 @@
       </div>
     </details>
   </div>
+  </div>
 
+  <div class="guide-panneau" id="gp-boutiques" data-panneau="boutiques">
   <h2 id="gd-boutiques" class="ref-titre">Les boutiques, et quoi y prendre</h2>
   <p class="ref-intro">Tiré de mon guide Brikka et Switch. Sept de ces boutiques vendent principalement sur leur propre site plutôt que sur Shopee, et c'est presque toujours moins cher en direct.</p>
 
@@ -1177,7 +1197,9 @@
       <p>Maintenant : la balance, le seul achat qui améliore toutes les tasses. Ensuite le test croisé, un même café dans les deux machines le même jour. Ensuite seulement, un café Brikka et un café Switch selon ce que le test a appris.</p>
     </article>
   </div>
+  </div>
 
+  <div class="guide-panneau" id="gp-materiel" data-panneau="materiel">
   <h2 id="gd-materiel" class="ref-titre">Matériel et entretien</h2>
   <div class="carte ref-bloc">
     <h3>Le joint Brikka, confirmé</h3>
@@ -1191,7 +1213,9 @@
     <h3>Bouilloire</h3>
     <p>Si le modèle a un thermostat variable, cibler 92 à 94 °C pour les medium. Sinon, faire bouillir puis attendre 45 secondes à 1 minute couvercle ouvert : l'eau retombe vers 94 à 95, ce qui est la valeur par défaut du champ température en saisie.</p>
   </div>
+  </div>
 
+  <div class="guide-panneau" id="gp-messages" data-panneau="messages">
   <h2 id="gd-messages" class="ref-titre">Messages prêts à copier</h2>
   <p class="ref-intro">À envoyer avant toute commande. La qualité de la réponse dit déjà tout sur le sérieux du vendeur.</p>
   <div class="messages-vn">
@@ -1242,6 +1266,7 @@ Cảm ơn shop.</pre>
       <li><a href="https://dripped.coffee/moka-pot-aluminum-vs-stainless-steel/" target="_blank" rel="noopener">Dripped Coffee : aluminium et corrosion des moka pots ↗</a></li>
       <li><a href="https://www.cuppers.ca/blog/complete-guide-to-moka-pot-gasket-sizes/" target="_blank" rel="noopener">Cupper's : tailles de joints moka ↗</a></li>
     </ul>
+  </div>
   </div>
 </section>
 
@@ -1659,32 +1684,32 @@ Cảm ơn shop.</pre>
 <!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
      et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
      desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=8.51"></script>
-<script defer src="js/i18n.js?v=8.51"></script>
-<script defer src="js/grind.js?v=8.51"></script>
-<script defer src="js/recettes.js?v=8.51"></script>
+<script defer src="js/outils.js?v=8.52"></script>
+<script defer src="js/i18n.js?v=8.52"></script>
+<script defer src="js/grind.js?v=8.52"></script>
+<script defer src="js/recettes.js?v=8.52"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=8.51"></script>
-<script defer src="js/data-csv.js?v=8.51"></script>
-<script defer src="js/data-schema.js?v=8.51"></script>
-<script defer src="js/data-store.js?v=8.51"></script>
-<script defer src="js/data-calculs.js?v=8.51"></script>
-<script defer src="js/data-migrations.js?v=8.51"></script>
-<script defer src="js/data.js?v=8.51"></script>
-<script defer src="js/reglages.js?v=8.51"></script>
-<script defer src="js/charts.js?v=8.51"></script>
-<script defer src="js/ui-noyau.js?v=8.51"></script>
-<script defer src="js/ui-tableau.js?v=8.51"></script>
-<script defer src="js/ui-saisie.js?v=8.51"></script>
-<script defer src="js/ui-chrono.js?v=8.51"></script>
-<script defer src="js/ui-brouillon.js?v=8.51"></script>
-<script defer src="js/ui-rapide.js?v=8.51"></script>
-<script defer src="js/ui-historique.js?v=8.51"></script>
-<script defer src="js/ui-guide.js?v=8.51"></script>
-<script defer src="js/ui-catalogue.js?v=8.51"></script>
-<script defer src="js/ui-fiche.js?v=8.51"></script>
-<script defer src="js/ui-brassage.js?v=8.51"></script>
-<script defer src="js/ui-dessins.js?v=8.51"></script>
-<script defer src="js/app.js?v=8.51"></script>
+<script defer src="js/sync.js?v=8.52"></script>
+<script defer src="js/data-csv.js?v=8.52"></script>
+<script defer src="js/data-schema.js?v=8.52"></script>
+<script defer src="js/data-store.js?v=8.52"></script>
+<script defer src="js/data-calculs.js?v=8.52"></script>
+<script defer src="js/data-migrations.js?v=8.52"></script>
+<script defer src="js/data.js?v=8.52"></script>
+<script defer src="js/reglages.js?v=8.52"></script>
+<script defer src="js/charts.js?v=8.52"></script>
+<script defer src="js/ui-noyau.js?v=8.52"></script>
+<script defer src="js/ui-tableau.js?v=8.52"></script>
+<script defer src="js/ui-saisie.js?v=8.52"></script>
+<script defer src="js/ui-chrono.js?v=8.52"></script>
+<script defer src="js/ui-brouillon.js?v=8.52"></script>
+<script defer src="js/ui-rapide.js?v=8.52"></script>
+<script defer src="js/ui-historique.js?v=8.52"></script>
+<script defer src="js/ui-guide.js?v=8.52"></script>
+<script defer src="js/ui-catalogue.js?v=8.52"></script>
+<script defer src="js/ui-fiche.js?v=8.52"></script>
+<script defer src="js/ui-brassage.js?v=8.52"></script>
+<script defer src="js/ui-dessins.js?v=8.52"></script>
+<script defer src="js/app.js?v=8.52"></script>
 </body>
 </html>

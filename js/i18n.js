@@ -441,6 +441,8 @@ const I18N = (() => {
     br_vanne_fermee: { fr: "Vanne fermée" },
     br_suivante: { fr: "Dans {d} s : {texte}" },
     br_recommencer: { fr: "Recommencer" },
+    bi_chez_toi: { fr: "Chez toi : {m} de moyenne sur {n} tasses" },
+    bi_pas_essayee: { fr: "Pas encore essayée chez toi" },
     rc_titre: { fr: "Ta semaine, du {a} au {b}" },
     rc_fermer: { fr: "Refermer" },
     rc_tasses: { fr: "tasses" },

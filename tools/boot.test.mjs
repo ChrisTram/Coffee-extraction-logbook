@@ -1043,6 +1043,15 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
   check("les dessins se rendent sans lever", (() => { try { api.UI.rendreDessins(); return true; } catch (e) { return false; } })());
 }
 
+/* LE GUIDE EN BIBLIOTHEQUE (v8.52) lit le profil d'une recette dans son texte
+   « Pour qui », la premiere phrase d'abord. */
+{
+  const p = r => api.UI.profilsRecette(r).sort().join(",");
+  check("les laves propres visent les laves", p({ pourQui: "Les lavés propres, quand je cherche la clarté. Plus que la natural." }) === "lave");
+  check("les fermentes visent les fermentes", p({ pourQui: "Les fermentés, natural, honey et anaerobic en torréfaction medium." }) === "fermente");
+  check("sans profil, la recette vaut pour tous", p({ pourQui: "L'usage quotidien de la Brikka." }) === "fermente,lave");
+}
+
 /* LE MODE BRASSAGE lit la cible CUMULEE d'un versement dans le texte de la
    recette, sans jamais le reecrire (v8.47). */
 {

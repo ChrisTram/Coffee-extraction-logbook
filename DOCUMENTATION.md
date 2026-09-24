@@ -468,6 +468,22 @@ les autres sur quatre (`.col-2` vaut `span 8`, le défaut `span 4`).
   note moyenne (5 pâle, 8,5 plein). La famille choisie est gardée par roue, entre
   deux rendus. Rend le nombre de goûts dessinés, zéro montre la carte vide.
 
+## 6 ter. Le Guide en bibliothèque (js/ui-guide.js, v8.52)
+
+Le sommaire (`.guide-onglets`) est la barre d'onglets du Guide : chaque section
+est enveloppée dans un `.guide-panneau` (`#gp-recettes`, `#gp-moulin`,
+`#gp-diagnostic`, `#gp-regles`, `#gp-vocabulaire`, `#gp-boutiques` qui porte aussi
+Quoi acheter et Règles d'achat, `#gp-materiel`, `#gp-messages`), un seul visible.
+`UI.montrerGuide(idCible)` montre le panneau qui contient la cible et y défile si
+elle n'est pas son titre ; l'onglet est retenu (localStorage `guide-onglet`),
+Recettes par défaut. L'ordre du HTML ne change pas, un test le garde.
+
+Les recettes ont des filtres (`#biblio-filtres` : machine, cafés lavés, naturels et
+fermentés, localStorage `guide-filtre`). Le profil d'une recette
+(`UI.profilsRecette`) se lit dans son « Pour qui », la première phrase d'abord ;
+sans profil lisible elle paraît sous les deux. Chaque carte porte « Chez toi » :
+la moyenne des tasses notées de cette recette (`UI.chezToi`).
+
 ## 7. Graphiques (js/charts.js)
 
 Chart.js pour : barres + note + grammes 30 jours (3 datasets, tooltip avec
