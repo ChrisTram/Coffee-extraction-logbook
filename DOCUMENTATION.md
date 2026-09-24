@@ -547,6 +547,11 @@ Points fixés depuis, chacun expliqué dans `DECISIONS.md` :
 - Les cinq dernières extractions du tableau de bord montrent, sous les mesures,
   les goûts cochés (quatre au plus, puis « +n ») et le commentaire tronqué à
   110 caractères ; le texte complet reste au survol (v7.94).
+- Le commentaire se DICTE (v8.43) : `UI.brancherDictee()` pose la reconnaissance
+  vocale du navigateur (`SpeechRecognition`, préfixée `webkit` sur Chrome et Safari)
+  sur `#f-dicter`. Le bouton n'existe que si l'API est là ET que `navigator.onLine`
+  est vrai, la reconnaissance passant par les serveurs du navigateur ; il se cache
+  hors ligne. Le texte dicté s'ajoute au commentaire et reste modifiable.
 - La saisie rapide enregistre SANS note par défaut, comme le formulaire complet :
   curseur sans pouce à chaque ouverture, même mécanisme (`UI.brancherNote`).
 

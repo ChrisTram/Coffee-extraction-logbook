@@ -286,6 +286,46 @@ const UI = (() => {
     curseur.addEventListener("keydown", ev => { if (TOUCHES_CURSEUR.includes(ev.key)) toucher(); });
   }
 
+  /* LA DICTÉE DU COMMENTAIRE (v8.43). Parler pendant que la tasse refroidit,
+     les mains prises. La reconnaissance vocale de Chrome et de Safari passe par
+     leurs serveurs : le bouton n'existe que si le navigateur la connaît ET
+     qu'on est en ligne, et il se cache dès que la connexion tombe. Le texte
+     dicté S'AJOUTE à ce qui est déjà écrit et reste modifiable : rien ne part
+     en base avant Enregistrer. */
+  function brancherDictee(bouton, champ, libelle) {
+    const Reco = typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
+    if (!bouton || !champ || !Reco) return;
+    const visible = () => { bouton.hidden = typeof navigator !== "undefined" && navigator.onLine === false; };
+    visible();
+    window.addEventListener("online", visible);
+    window.addEventListener("offline", visible);
+    let reco = null;
+    const etat = actif => {
+      bouton.setAttribute("aria-pressed", String(actif));
+      if (libelle) libelle.textContent = I18N.t(actif ? "dictee_ecoute" : "dictee");
+    };
+    bouton.addEventListener("click", () => {
+      if (reco) { reco.stop(); return; }
+      reco = new Reco();
+      reco.lang = I18N.locale();
+      reco.interimResults = false;
+      reco.continuous = false;
+      const avant = champ.value.trim();
+      reco.onresult = ev => {
+        const dit = Array.from(ev.results).map(r => r[0].transcript).join(" ").trim();
+        if (!dit) return;
+        champ.value = (avant ? avant + " " : "") + dit;
+        champ.dispatchEvent(new Event("input", { bubbles: true }));
+      };
+      reco.onerror = ev => {
+        if (ev.error === "not-allowed" || ev.error === "service-not-allowed") toast(I18N.t("dictee_refusee"));
+        else if (ev.error === "network") toast(I18N.t("dictee_reseau"));
+      };
+      reco.onend = () => { reco = null; etat(false); };
+      try { reco.start(); etat(true); } catch (e) { reco = null; etat(false); }
+    });
+  }
+
   /* LES ICONES EN TRAIT. Meme dessin que la navigation : 1,8 px, bouts ronds,
      couleur du texte. Elles remplacent les glyphes Unicode (⇄ ⚠ ⧉ ✎ 🗑) des
      boutons d'action, qui changeaient de dessin selon la plateforme et que la
@@ -618,7 +658,7 @@ const UI = (() => {
     basculerRatees, chargerReplis, cleLocale, confirmer, detailRatio, diagsAffiches, ecartMoyen,
     ecrireReplis, estRatee, extAnalysables, inclureRatees,
     extAvecCalculs, fmtDateCourte, fmtDateHeure, fmtDecimal, fmtTemps, fmtVND, icone,
-    maintenantLocal, marquerNote, brancherNote, noteVide, peindreCurseur, moyenne, nav, normaliserEcran, oublierSignatures, poser, poserTexte,
+    maintenantLocal, marquerNote, brancherDictee, brancherNote, noteVide, peindreCurseur, moyenne, nav, normaliserEcran, oublierSignatures, poser, poserTexte,
     recetteAvecVariantes, recettesDeMethode, recettesVivantes, rendreEcranCourant, replis,
     reprendreReplisLocaux, siChange, signatureTable, signatures,
     supprimerExtractionAvecRetour, toast, toastAction, trouverRecette,

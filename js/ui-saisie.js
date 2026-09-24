@@ -11,7 +11,7 @@
 
   // Emprunté au noyau, chargé avant nous.
   const { $, $$, $f, activerAppuiLong, activerEcran, attrTitre, basculerEtat, detailRatio, fmtTemps,
-    fmtVND, icone, maintenantLocal, brancherNote, marquerNote, nav, noteVide, peindreCurseur, poser, poserTexte, recettesDeMethode, replis, toast,
+    fmtVND, icone, maintenantLocal, brancherDictee, brancherNote, marquerNote, nav, noteVide, peindreCurseur, poser, poserTexte, recettesDeMethode, replis, toast,
     trouverRecette } = UI;
 
   // ---------- Saisie ----------
@@ -988,6 +988,7 @@
      quatre cents lignes dans app.js n'existe plus. */
 
   function cablerSaisie() {
+    brancherDictee($("#f-dicter"), $("#f-commentaire"), $("#f-dicter-texte"));
     $$(".btn-methode").forEach(b => b.addEventListener("click", () => {
       choisirMethode(b.dataset.methode);
       prefillDepuisRecette($("#f-recette").value);

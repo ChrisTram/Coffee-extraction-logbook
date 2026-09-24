@@ -1808,6 +1808,16 @@ input:focus, select:focus, textarea:focus {
   text-decoration: underline; text-underline-offset: 3px;
 }
 .note-effacer:hover { color: var(--encre); }
+/* L'étiquette du commentaire et le bouton de dictée sur une ligne (v8.43). */
+.comm-tete { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.dicter {
+  display: inline-flex; align-items: center; gap: 6px;
+  font: inherit; font-size: 0.8rem; font-weight: 600; color: var(--texte);
+  background: var(--panneau-2); border: 1px solid var(--lignes); border-radius: 99px;
+  padding: 4px 12px; cursor: pointer;
+}
+.dicter:hover { color: var(--encre); }
+.dicter[aria-pressed="true"] { color: var(--accent-fort); border-color: var(--accent); background: var(--accent-fond); }
 .note-aide { display: block; margin-top: 2px; font-size: 0.8rem; color: var(--attenue); }
 
 /* Âge du paquet sous le choix du café : une information, pas une alerte. */
