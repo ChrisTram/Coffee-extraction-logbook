@@ -128,6 +128,46 @@ function constatsParCafe(cafes, extractions, options) {
     .filter(Boolean);
 }
 
+/* LES TASSES JUMELLES (v8.44). Au moment de brasser : ce réglage, qu'a-t-il
+   donné les fois d'avant ?
+
+   Jumelle ne veut PAS dire identique. La première version comparait tout
+   (température, dose, feu), et Chris l'a corrigée avant même qu'elle existe :
+   une tasse à 94 °C au lieu de 92 reste la même tasse. Une jumelle, c'est donc
+   la MÊME RECETTE et une molette à JUMELLE_CRANS crans près (3 crans, 25 µm).
+   Le café n'est pas exigé, mais les tasses du même café passent devant, puis
+   la molette la plus proche, puis la plus récente. Un café déjà moulu n'a pas
+   de molette : ses jumelles sont alors les tasses de la même recette sur ce
+   même café.
+
+   Seules les tasses NOTÉES comptent (une jumelle sans note ne dit rien), et
+   l'appelant écarte les ratées comme partout ailleurs dans ce qui conseille. */
+const JUMELLE_CRANS = 3;
+function jumelles(extractions, cible, combien) {
+  if (!cible || !cible.recette) return [];
+  const moulu = !!cible.moulu;
+  const pc = moulu ? null : GRIND.parseDial(String(cible.mouture_dial || ""));
+  const trouvees = [];
+  extractions.forEach(e => {
+    if (e.note_sur_10 === "" || e.note_sur_10 === undefined || e.recette !== cible.recette) return;
+    const memeCafe = e.cafe_id === cible.cafe_id;
+    let ecart = 0;
+    if (pc) {
+      const pe = GRIND.parseDial(String(e.mouture_dial || ""));
+      if (!pe) return;
+      ecart = pe.crans - pc.crans;
+      if (Math.abs(ecart) > JUMELLE_CRANS) return;
+    } else if (!memeCafe) {
+      return;
+    }
+    trouvees.push({ ext: e, memeCafe, ecart });
+  });
+  trouvees.sort((a, b) =>
+    (b.memeCafe - a.memeCafe) || (Math.abs(a.ecart) - Math.abs(b.ecart)) ||
+    String(b.ext.date_heure).localeCompare(String(a.ext.date_heure)));
+  return trouvees.slice(0, combien || 3);
+}
+
 const REGLAGES = (() => {
   // Même seuil que les insights : sous trois tasses, une moyenne est du hasard.
   const MIN_TASSES = 3;
@@ -236,5 +276,6 @@ const REGLAGES = (() => {
       });
   }
 
-  return { MIN_TASSES, signature, pourCafe, tous, moyenneGlissante, meilleurLevier, constatsParCafe, LEVIERS };
+  return { MIN_TASSES, signature, pourCafe, tous, moyenneGlissante, meilleurLevier, constatsParCafe, LEVIERS,
+    JUMELLE_CRANS, jumelles };
 })();

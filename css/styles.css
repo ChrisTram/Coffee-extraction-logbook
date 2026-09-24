@@ -1768,6 +1768,17 @@ input:focus, select:focus, textarea:focus {
 .aside-titre h4 { margin: 0; font-size: 1.05rem; }
 .aside-sous { color: var(--attenue); font-style: italic; font-size: 0.82rem; margin: 3px 0 8px; }
 .aside-carte p { font-size: 0.85rem; margin: 0 0 7px; }
+/* Tasses jumelles (v8.44) : une ligne par tasse, date, écart, note. */
+.jumelles { list-style: none; margin: 4px 0 8px; padding: 0; }
+.jumelles li {
+  display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 10px; align-items: baseline;
+  padding: 7px 0; border-top: 1px solid var(--lignes-douces); font-size: 0.84rem;
+}
+.jumelles .j-date { color: var(--attenue); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+.jumelles .j-ecart { color: var(--texte); min-width: 0; overflow-wrap: anywhere; }
+.jumelles .j-meme { color: var(--accent-fort); }
+.jumelles .j-note { font-family: var(--serif); font-weight: 400; font-size: 1.35rem; line-height: 1; color: var(--encre); font-variant-numeric: tabular-nums; }
+.aside-carte .j-moyenne { color: var(--attenue); font-size: 0.8rem; margin: 0; }
 .aside-notes { color: var(--attenue); }
 .aside-reco { color: var(--accent-fort); font-weight: 600; }
 .aside-age { border-top: 1px dashed var(--lignes); padding-top: 7px; }

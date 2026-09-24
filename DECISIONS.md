@@ -1554,6 +1554,18 @@ d'application installée. Le choix SÛR reçoit le focus, Échap annule. Un test
 refuse tout `confirm()` natif dans l'interface. La suppression d'extraction, elle,
 n'a pas de confirmation du tout : elle a un retour arrière (voir « Historique »).
 
+### Les tasses jumelles : proches, pas identiques (v8.44)
+
+La maquette proposait une proximité sur tout (café, machine, molette, température,
+dose, recette). Chris l'a corrigée avant le code : « jumelle veut pas dire exactement
+même température ». Une tasse à 94 °C au lieu de 92 reste la même tasse pour lui, et
+un critère trop fin vide la carte : sur la démo, la Chronicler au Switch n'aurait
+presque jamais deux voisines. Le critère est donc la RECETTE, qui fixe déjà dose,
+eau et gestes, et la MOLETTE à trois crans près (25 µm, moins que l'écart entre deux
+chiffres du C5). Le café n'est pas exigé mais passe devant : une recette tient
+d'un café à l'autre, et la ligne le dit quand ce n'est pas le même. Ce qui diffère
+sans compter (température, feu) s'écrit sur la ligne au lieu de trier.
+
 ## Tableau de bord et analyses
 
 ### Insights automatiques du tableau de bord

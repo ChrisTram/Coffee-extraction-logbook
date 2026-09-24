@@ -11,7 +11,7 @@
 
   // Emprunté au noyau, chargé avant nous.
   const { $, $$, $f, activerAppuiLong, activerEcran, attrTitre, basculerEtat, detailRatio, fmtTemps,
-    fmtVND, icone, maintenantLocal, brancherDictee, brancherNote, marquerNote, nav, noteVide, peindreCurseur, poser, poserTexte, recettesDeMethode, replis, toast,
+    fmtDecimal, fmtVND, icone, maintenantLocal, brancherDictee, brancherNote, marquerNote, nav, noteVide, peindreCurseur, poser, poserTexte, recettesDeMethode, replis, toast,
     trouverRecette } = UI;
 
   // ---------- Saisie ----------
@@ -456,7 +456,57 @@
       }
       zoneC.innerHTML = '<div class="aside-titre"><h4>' + cafe.nom + "</h4>" + pastille + "</div>" + lignes.join("");
     }
+    majJumelles();
     UI.majEtapesChrono(false);
+  }
+
+  /* LES TASSES JUMELLES (v8.44) : ce que ce réglage a donné les fois d'avant.
+     Le calcul est dans REGLAGES.jumelles (même recette, molette à trois crans
+     près). Chaque ligne dit en quoi elle DIFFÈRE du formulaire, et seulement
+     ça : même café et même molette ne s'écrivent pas. Sous deux jumelles, la
+     carte se cache, une seule tasse n'est pas un repère. */
+  function majJumelles() {
+    const zone = $("#aside-jumelles");
+    if (!zone) return;
+    const cible = {
+      cafe_id: $("#f-cafe").value, recette: $("#f-recette").value,
+      mouture_dial: $("#f-mouture").value.trim(), moulu: cafeCourantMoulu(),
+    };
+    const exts = UI.extAnalysables().filter(e => e.id !== saisie.editId);
+    const liste = REGLAGES.jumelles(exts, cible, 3);
+    if (liste.length < 2) { zone.hidden = true; zone.innerHTML = ""; return; }
+    const temp = $("#f-temp").value, feu = $("#f-puissance").value;
+    const lignes = liste.map(j => {
+      const e = j.ext;
+      const ecarts = [];
+      if (!j.memeCafe) {
+        const autre = DATA.state.cafes.find(c => c.id === e.cafe_id);
+        ecarts.push(autre ? autre.nom : I18N.t("j_autre_cafe"));
+      }
+      if (j.ecart) {
+        ecarts.push(I18N.t("j_molette", {
+          d: e.mouture_dial,
+          c: I18N.t(Math.abs(j.ecart) > 1 ? "j_crans" : "j_cran", { n: (j.ecart > 0 ? "+" : "") + j.ecart }),
+        }));
+      }
+      if (e.methode === "Switch" && e.temperature_c !== "" && String(e.temperature_c) !== String(temp)) {
+        ecarts.push(e.temperature_c + " °C");
+      }
+      if (e.methode === "Brikka" && e.puissance_feu !== "" && e.puissance_feu !== undefined &&
+        String(e.puissance_feu) !== String(feu)) ecarts.push(I18N.t("j_feu", { f: e.puissance_feu }));
+      const [a, m, jour] = String(e.date_heure).slice(0, 10).split("-").map(Number);
+      const date = new Date(a, m - 1, jour).toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" });
+      return '<li><span class="j-date">' + date + '</span><span class="j-ecart' + (ecarts.length ? "" : " j-meme") + '">' +
+        (ecarts.length ? ecarts.join(" · ") : I18N.t(cible.moulu ? "j_meme_moulu" : "j_meme")) + '</span><b class="j-note">' +
+        fmtDecimal(Number(e.note_sur_10), 1) + "</b></li>";
+    });
+    const moy = liste.reduce((s, j) => s + Number(j.ext.note_sur_10), 0) / liste.length;
+    zone.hidden = false;
+    zone.innerHTML = '<div class="aside-titre"><h4>' + I18N.t("j_titre") + "</h4></div>" +
+      '<p class="aside-sous">' + I18N.t(cible.moulu ? "j_regle_moulu" : "j_regle", { c: REGLAGES.JUMELLE_CRANS }) +
+      "</p>" +
+      '<ol class="jumelles">' + lignes.join("") + "</ol>" +
+      '<p class="j-moyenne">' + I18N.t("j_moyenne", { m: fmtDecimal(moy, 1), n: liste.length }) + "</p>";
   }
 
   /* Explique le ratio affiché : quelle formule a servi, et pourquoi. Le calcul
@@ -1001,6 +1051,7 @@
     ["input", "change"].forEach(ev => $("#f-date").addEventListener(ev, marquerDateTouchee));
     $("#f-date").addEventListener("change", majAgePaquet);
     $("#f-recette").addEventListener("change", () => { prefillDepuisRecette($("#f-recette").value); majAvertissements(); });
+    ["f-temp", "f-puissance"].forEach(id => $("#" + id).addEventListener("input", majJumelles));
     ["f-dose", "f-eau", "f-mouture", "f-volume"].forEach(id =>
       $("#" + id).addEventListener("input", () => { majLive(); majAvertissements(); }));
     // majAvertissements redessine le panneau latéral, le chrono a besoin d'un

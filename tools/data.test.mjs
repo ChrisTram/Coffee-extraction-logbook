@@ -377,6 +377,27 @@ const eparpille = REGLAGES.pourCafe("c3", ["1.2.0", "1.3.0", "1.4.0", "1.5.0"]
 check("assez de tasses mais toutes differentes : rien", eparpille.meilleure === null);
 check("la raison distingue ce cas", eparpille.raison === "eparpille", eparpille.raison);
 
+/* Les tasses jumelles (v8.44) : meme recette, molette a trois crans pres, le
+   meme cafe devant. Pas la meme temperature : Chris ne veut pas d'une
+   comparaison trop precise. */
+{
+  const t = [
+    brew("31", "c1", "R", "1.4.2", 3, false, 7),
+    brew("32", "c2", "R", "1.4.4", 3, false, 8),    // autre cafe, 2 crans
+    brew("33", "c1", "R", "1.5.1", 3, false, 6),    // meme cafe, 4 crans : trop loin
+    brew("34", "c1", "R", "1.4.0", 3, false, 6.5),  // meme cafe, 2 crans
+    brew("35", "c1", "Autre", "1.4.2", 3, false, 9), // autre recette
+    brew("36", "c1", "R", "1.4.2", 3, false, ""),   // pas notee
+  ];
+  const j = REGLAGES.jumelles(t, { cafe_id: "c1", recette: "R", mouture_dial: "1.4.2" });
+  check("les jumelles gardent la meme recette et la molette a 3 crans",
+    j.map(x => x.ext.id).join(",") === "31,34,32", j.map(x => x.ext.id).join(","));
+  check("le meme cafe passe devant, et l'ecart est en crans", j[0].memeCafe && j[1].ecart === -2 && !j[2].memeCafe);
+  const moulu = REGLAGES.jumelles(t, { cafe_id: "c2", recette: "R", moulu: true });
+  check("un cafe deja moulu cherche la meme recette sur le meme cafe", moulu.length === 1 && moulu[0].ext.id === "32");
+  check("sans recette, pas de jumelle", REGLAGES.jumelles(t, { cafe_id: "c1", mouture_dial: "1.4.2" }).length === 0);
+}
+
 const prech = [false, false, false, true, true, true]
   .map((p, k) => brew("3" + k, "c4", "R", "1.2.0", 3, p, p ? 9 : 6));
 const avecPrech = REGLAGES.pourCafe("c4", prech);

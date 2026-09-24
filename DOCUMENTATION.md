@@ -547,6 +547,13 @@ Points fixés depuis, chacun expliqué dans `DECISIONS.md` :
 - Les cinq dernières extractions du tableau de bord montrent, sous les mesures,
   les goûts cochés (quatre au plus, puis « +n ») et le commentaire tronqué à
   110 caractères ; le texte complet reste au survol (v7.94).
+- TASSES JUMELLES (v8.44) : `#aside-jumelles`, entre la fiche recette et la fiche
+  café, montre les trois tasses notées les plus proches du formulaire, calculées par
+  `REGLAGES.jumelles()` : même recette et molette à `JUMELLE_CRANS` (3) crans près,
+  même café devant ; pour un café déjà moulu, même recette sur le même café. PAS de
+  critère de température ni de dose, à la demande de Chris. Chaque ligne dit en quoi
+  elle diffère (autre café, molette, température du Switch, feu de la Brikka). Sous
+  deux jumelles la carte se cache. Ratées exclues, tasse en cours d'édition aussi.
 - Le commentaire se DICTE (v8.43) : `UI.brancherDictee()` pose la reconnaissance
   vocale du navigateur (`SpeechRecognition`, préfixée `webkit` sur Chrome et Safari)
   sur `#f-dicter`. Le bouton n'existe que si l'API est là ET que `navigator.onLine`
