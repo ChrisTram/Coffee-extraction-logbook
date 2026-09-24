@@ -51,7 +51,9 @@ LE CADRE (v8.27). Tout écran est borné et centré par UNE règle, `.ecran
 d'identifiant bat la classe, et c'est ainsi que l'historique s'est retrouvé calé
 à gauche. La grille de saisie a son propre plafond de 1400 px, centré.
 
-LES INSIGHTS (« Ce que tes données disent »). Sept règles dans `ui-tableau.js`,
+LES INSIGHTS (« Ce que tes données disent »). Dix règles dans `ui-tableau.js`
+(dont, depuis la v8.42, la température de l'eau du Switch par tranches, l'eau
+préchauffée de la Brikka et l'agitation du Switch, chacune limitée à sa machine),
 chacune rendant `{ texte, haut, bas, confiance }` ou `null` via `constat()`,
 où `haut` et `bas` sont `{ libelle, note, n }`. `rendreInsights()` en fait une
 phrase et une ligne de preuve : réglette de 0 à 10, les deux moyennes, la confiance et les effectifs. Les seuils

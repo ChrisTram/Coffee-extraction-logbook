@@ -996,5 +996,26 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
   api.UI.reinitialiserSaisie();
 }
 
+/* LES TROIS CONSTATS DE LA v8.42 parlent quand l'ecart est net, se taisent
+   sinon, et ne regardent que leur machine. */
+{
+  const tasse = (methode, note, champs) => ({ methode, note_sur_10: note, temperature_c: "", agitation_nb: "",
+    eau_prechauffee: "", ...champs });
+  const chaudes = [7, 7.5, 8].map(n => tasse("Switch", n, { temperature_c: 95 }));
+  const tiedes = [5, 5.5, 6].map(n => tasse("Switch", n, { temperature_c: 89 }));
+  const t = api.UI.insightTemperature([...chaudes, ...tiedes]);
+  check("la temperature du Switch parle sur un ecart net", t && t.haut.note === 7.5 && t.bas.n === 3,
+    JSON.stringify(t));
+  check("et se tait sur trois tasses d'un seul cote", api.UI.insightTemperature(chaudes) === null);
+  const brikkas = [7, 7, 8].map(n => tasse("Brikka", n, { eau_prechauffee: 1 }))
+    .concat([6, 6, 5.5].map(n => tasse("Brikka", n)));
+  const p = api.UI.insightPrechauffe(brikkas);
+  check("l'eau prechauffee de la Brikka oppose les deux groupes", p && p.bas.n === 3 && p.haut.n === 3,
+    JSON.stringify(p));
+  check("et ignore les tasses du Switch", api.UI.insightPrechauffe(chaudes.concat(tiedes)) === null);
+  const remuees = [8, 7.5, 8].map(n => tasse("Switch", n, { agitation_nb: 1 }));
+  check("l'agitation du Switch parle aussi", !!api.UI.insightAgitation([...remuees, ...tiedes]));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

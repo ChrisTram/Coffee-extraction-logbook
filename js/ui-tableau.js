@@ -204,6 +204,57 @@
       { libelle: I18N.t("ins_reste_reglages"), note: res.moyReste, n: res.nReste });
   }
 
+  /* TROIS CONSTATS DE PLUS (v8.42). Des données saisies à chaque tasse,
+     qu'aucune règle ne lisait : la température de l'eau du Switch, l'eau
+     préchauffée de la Brikka, l'agitation du Switch. Même moule que les règles
+     au dessus, mêmes seuils de silence (MIN_SAMPLE, MIN_GAP). Chacune ne regarde
+     QUE la machine concernée : l'eau préchauffée d'un Switch ne veut rien dire. */
+
+  // Les tranches suivent ce que la bouilloire donne vraiment, pas la cible des
+  // recettes : sous 91, l'eau a eu le temps de refroidir ; 94 et plus, juste
+  // sortie du feu.
+  function trancheTemp(t) {
+    return t <= 90 ? "ins_temp_basse" : t <= 93 ? "ins_temp_moyenne" : "ins_temp_haute";
+  }
+  function insightTemperature(notees) {
+    const groupes = { ins_temp_basse: [], ins_temp_moyenne: [], ins_temp_haute: [] };
+    notees.forEach(e => {
+      const t = Number(e.temperature_c);
+      if (e.methode !== "Switch" || e.temperature_c === "" || !Number.isFinite(t)) return;
+      groupes[trancheTemp(t)].push(e.note_sur_10);
+    });
+    const res = bestOfGroups(groupes);
+    if (!res) return null;
+    return constat(
+      I18N.t("ins_temp", { plage: I18N.t(res.gagnant.cle) }),
+      { libelle: I18N.t(res.gagnant.cle), note: res.gagnant.moy, n: res.gagnant.notes.length },
+      { libelle: I18N.t("ins_reste_temp"), note: res.moyReste, n: res.nReste });
+  }
+
+  /* Deux groupes seulement : le reste EST l'autre groupe, on le nomme. */
+  function duel(groupes, texte) {
+    const res = bestOfGroups(groupes);
+    if (!res) return null;
+    const autre = Object.keys(groupes).find(k => k !== res.gagnant.cle);
+    return constat(
+      texte(I18N.t(res.gagnant.cle)),
+      { libelle: I18N.t(res.gagnant.cle), note: res.gagnant.moy, n: res.gagnant.notes.length },
+      { libelle: I18N.t(autre), note: res.moyReste, n: res.nReste });
+  }
+  function insightPrechauffe(notees) {
+    const groupes = { ins_prech_oui: [], ins_prech_non: [] };
+    notees.filter(e => e.methode === "Brikka").forEach(e =>
+      groupes[Number(e.eau_prechauffee) === 1 ? "ins_prech_oui" : "ins_prech_non"].push(e.note_sur_10));
+    return duel(groupes, quoi => I18N.t("ins_prechauffe", { quoi }));
+  }
+  function insightAgitation(notees) {
+    const groupes = { ins_agit_oui: [], ins_agit_non: [] };
+    notees.filter(e => e.methode === "Switch").forEach(e =>
+      groupes[e.agitation_nb !== "" && e.agitation_nb !== undefined && Number(e.agitation_nb) > 0
+        ? "ins_agit_oui" : "ins_agit_non"].push(e.note_sur_10));
+    return duel(groupes, quoi => I18N.t("ins_agitation", { quoi }));
+  }
+
   function computeInsights(exts) {
     const notees = exts.filter(e => e.note_sur_10 !== "");
     /* Les constats PAR CAFÉ d'abord : ils sont plus précis, donc plus
@@ -214,6 +265,9 @@
       insightRecettes(notees),
       insightMoment(notees),
       insightPuissance(notees),
+      insightTemperature(notees),
+      insightPrechauffe(notees),
+      insightAgitation(notees),
     ].filter(Boolean).map(c => ({ ...c, texte: I18N.t("ins_global", { p: c.texte }) })));
 
     if (constats.length) return constats;
@@ -1136,7 +1190,8 @@
     rendreDerniereTasse, rendreLegendeHeatmap, semainesVisibles,
     MIN_GAP, MIN_SAMPLE, MIN_TASSES_GOUT, PIRES_GOUTS, SEMAINES_HEATMAP, TOP_GOUTS,
     bestOfGroups, cablerTableau, causeDuelVide, causeGoutsVide, causeMoutureVide, computeInsights,
-    insightAgePaquet, insightMoment, insightPuissance, insightRecettes, insightsParCafe,
+    insightAgePaquet, insightAgitation, insightMoment, insightPrechauffe, insightPuissance,
+    insightRecettes, insightTemperature, insightsParCafe,
     DERNIERES_AFFICHEES, majCarteVide, mesuresCourtes, note1, rendreGouts, rendreInsights, rendreStatsHeatmap, rendreTableau,
     statsHeatmap,
   });

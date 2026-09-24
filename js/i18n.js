@@ -76,6 +76,19 @@ const I18N = (() => {
 
 
     ins_puissance: { fr: "Sur la Brikka, une puissance de feu de {feu} te réussit mieux." },
+    /* Trois constats de plus (v8.42) : des données déjà saisies, qu'aucune règle
+       ne lisait. */
+    ins_temp: { fr: "Au Switch, l'eau {plage} te réussit mieux." },
+    ins_temp_basse: { fr: "sous 91 °C" },
+    ins_temp_moyenne: { fr: "entre 91 et 93 °C" },
+    ins_temp_haute: { fr: "à 94 °C et plus" },
+    ins_reste_temp: { fr: "les autres températures" },
+    ins_prechauffe: { fr: "Sur la Brikka, l'eau {quoi} te réussit mieux." },
+    ins_prech_oui: { fr: "préchauffée" },
+    ins_prech_non: { fr: "froide au départ" },
+    ins_agitation: { fr: "Au Switch, tes tasses {quoi} sortent mieux." },
+    ins_agit_oui: { fr: "remuées" },
+    ins_agit_non: { fr: "sans agitation" },
 
     /* La preuve sous la phrase (v8.36). */
     ins_reste: { fr: "le reste" },
