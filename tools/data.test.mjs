@@ -747,7 +747,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   /* Et cet endroit doit regarder la case, sinon la fonction officielle ment
      autant que la ligne qu'elle remplace. */
   check("l'affichage de la note tient compte de « pas encore notee »",
-    /function majAffichageNote\(\)[\s\S]{0,400}f-note-vide/.test(saisie));
+    /function majAffichageNote\(\)[\s\S]{0,400}noteVide\(/.test(saisie));
 }
 /* LE BASCULEMENT D'ECRAN NE TIENT QU'A LA SPECIFICITE.
 
@@ -1345,8 +1345,13 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
    surtout ne jamais devenir 0, qui serait la pire des notes. */
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
-  check("la case pas encore notee existe et est cochee par defaut",
-    /<input[^>]*id="f-note-vide"[^>]*checked/.test(html));
+  /* Depuis la v8.40, « pas encore notée » est l'etat du curseur lui meme :
+     pas de pouce tant qu'on n'y a pas touche. Il doit partir dans cet etat,
+     dans la saisie comme dans la saisie rapide, et la case a disparu. */
+  check("le curseur de note part sans pouce, dans les deux saisies",
+    /<input[^>]*id="f-note"[^>]*class="[^"]*curseur-inactif/.test(html) &&
+    /<input[^>]*id="q-note"[^>]*class="[^"]*curseur-inactif/.test(html));
+  check("la case pas encore notee a disparu", !/note-vide/.test(html));
   check("le curseur ne suggere plus 7",
     /<input[^>]*id="f-note"[^>]*value="5"/.test(html));
 
@@ -1960,7 +1965,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
      seule etiquette. Les paires legitimes (minutes et secondes, valeur et
      preselection) sont listees : elles forment un seul controle aux yeux de
      l'utilisateur, et partagent donc une etiquette a juste titre. */
-  const PAIRES = ["f-chauffe-min", "f-chauffe-sec", "f-total-sec", "f-ecoulement-sec", "f-note-vide", "q-note-vide",
+  const PAIRES = ["f-chauffe-min", "f-chauffe-sec", "f-total-sec", "f-ecoulement-sec",
     "param-ebullition-sec"];
   /* Un curseur nomme "X-curseur" pilote le champ "X" : c'est la MEME valeur
      montree deux fois, donc une paire legitime par construction. La regle vaut

@@ -9,7 +9,7 @@
 (() => {
 
   // Emprunté au noyau, chargé avant nous.
-  const { $, activerEcran, maintenantLocal, peindreCurseur, recettesDeMethode, replis, toast, trouverRecette } = UI;
+  const { $, activerEcran, brancherNote, maintenantLocal, marquerNote, noteVide, peindreCurseur, recettesDeMethode, replis, toast, trouverRecette } = UI;
 
   let rapideOuvert = false;
 
@@ -40,7 +40,8 @@
        écraser une sélection en cours. */
     if (!selCafe.value && cafes[0]) selCafe.value = cafes[0].id;
     // Chaque ouverture repart SANS note : on note après avoir bu.
-    $("#q-note-vide").checked = true;
+    $("#q-note").value = 5;
+    marquerNote($("#q-note"), true);
     /* L'heure de l'enregistrement, affichee parce qu'elle n'est pas modifiable
        ici : la feuille enregistre MAINTENANT, autant le montrer. */
     $("#q-quand").textContent = I18N.t("q_maintenant", {
@@ -51,17 +52,21 @@
     majReprisRapide();
   }
 
-  /* Même règle que le formulaire complet : une note vide s'affiche comme telle,
-     et le curseur se grise pour ne pas avoir l'air de proposer une valeur. */
+  /* Même règle que le formulaire complet : pas de pouce tant qu'on n'a pas
+     touché, et une note vide s'affiche comme telle. */
   function majAffichageNoteRapide() {
-    const vide = $("#q-note-vide").checked;
-    $("#q-note-affichee").textContent = vide ? I18N.t("n_pas_notee") : $("#q-note").value;
-    $("#q-note").classList.toggle("curseur-inactif", vide);
-    peindreCurseur($("#q-note"));
+    const curseur = $("#q-note");
+    const vide = noteVide(curseur);
+    const dit = vide ? I18N.t("n_pas_notee") : curseur.value + " / 10";
+    $("#q-note-affichee").textContent = dit;
+    curseur.setAttribute("aria-valuetext", dit);
+    $("#q-note-aide").hidden = !vide;
+    $("#q-note-effacer").hidden = vide;
+    peindreCurseur(curseur);
   }
 
   function noteRapide() {
-    return $("#q-note-vide").checked ? "" : $("#q-note").value;
+    return noteVide($("#q-note")) ? "" : $("#q-note").value;
   }
 
   function majRecettesRapide() {
@@ -151,14 +156,13 @@
     $("#q-cafe").addEventListener("change", surChoixCafeRapide);
     $("#q-recette").addEventListener("change", majAvertRapide);
     $("#voile-rapide").addEventListener("click", () => basculerRapide(false));
-    /* pointerdown en plus d'input, comme sur le formulaire complet : poser le
-       doigt sur le curseur là où il est déjà ne déclenche aucun input. */
-    ["input", "pointerdown", "keydown"].forEach(ev =>
-      $("#q-note").addEventListener(ev, () => {
-        $("#q-note-vide").checked = false;
-        majAffichageNoteRapide();
-      }));
-    $("#q-note-vide").addEventListener("change", majAffichageNoteRapide);
+    brancherNote($("#q-note"), majAffichageNoteRapide);
+    $("#q-note-effacer").addEventListener("click", () => {
+      $("#q-note").value = 5;
+      marquerNote($("#q-note"), true);
+      majAffichageNoteRapide();
+      $("#q-note").focus();
+    });
     $("#q-enregistrer").addEventListener("click", enregistrerRapide);
     $("#q-complet").addEventListener("click", () => { basculerRapide(false); activerEcran("saisie"); });
   }

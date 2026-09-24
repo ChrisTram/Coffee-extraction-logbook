@@ -505,8 +505,10 @@ Points fixés depuis, chacun expliqué dans `DECISIONS.md` :
 
 - Le blocage des cafés non purs en Switch a été RETIRÉ (v7.34) : le carnet ne
   refuse jamais une saisie, il informe.
-- La note est FACULTATIVE (`#f-note-vide`, cochée par défaut) : une note vide ne
-  devient jamais 0.
+- La note est FACULTATIVE : le curseur part SANS POUCE (classe `curseur-inactif`,
+  lue par `UI.noteVide()`, posée par `UI.marquerNote()`, v8.40), et un curseur
+  sans pouce enregistre une note vide, qui ne devient jamais 0. Le premier
+  toucher sur la piste note ; « Effacer la note » y ramène.
 - Le champ mouture préremplit le RÉGLAGE RÉEL du broyeur (`replis.molette`), pas
   la cible de la recette.
 - Pas d'estimation de volume extrait sur la Brikka ; le Switch garde
@@ -543,8 +545,8 @@ Points fixés depuis, chacun expliqué dans `DECISIONS.md` :
 - Les cinq dernières extractions du tableau de bord montrent, sous les mesures,
   les goûts cochés (quatre au plus, puis « +n ») et le commentaire tronqué à
   110 caractères ; le texte complet reste au survol (v7.94).
-- La saisie rapide enregistre SANS note par défaut, comme le formulaire complet
-  (`#q-note-vide`, coché à chaque ouverture) ; toucher le curseur décoche.
+- La saisie rapide enregistre SANS note par défaut, comme le formulaire complet :
+  curseur sans pouce à chaque ouverture, même mécanisme (`UI.brancherNote`).
 
 ## 8 bis. Historique (js/ui-historique.js)
 

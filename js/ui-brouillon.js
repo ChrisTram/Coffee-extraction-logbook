@@ -10,7 +10,7 @@
 (() => {
 
   // Emprunté au noyau, et l'état de la saisie, exposé par ui-saisie.js.
-  const { $, $$, basculerEtat, saisie } = UI;
+  const { $, $$, basculerEtat, marquerNote, noteVide, saisie } = UI;
 
   /* ---------- Brouillon de saisie ----------
      Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
@@ -53,6 +53,10 @@
         methode: saisie.methode,
         diagnostics: [...saisie.diagnostics],
         descripteurs: [...saisie.descripteurs],
+        /* La note vit dans la valeur du curseur ET dans son état « pas encore
+           notée » (v8.40). Sans l'état, une note donnée avant que la page soit
+           déchargée revenait non notée. */
+        noteVide: noteVide($("#f-note")),
         valeurs,
       }));
     } catch (e) { /* stockage plein ou refusé, tant pis */ }
@@ -74,7 +78,7 @@
   function brouillonUtile(b) {
     const v = b.valeurs || {};
     return Boolean(v["f-cafe"] || (v["f-commentaire"] || "").trim() ||
-      b.diagnostics.length || b.descripteurs.length ||
+      b.diagnostics.length || b.descripteurs.length || b.noteVide === false ||
       v["f-total-min"] || v["f-total-sec"] || v["f-volume"] || v["f-eau"]);
   }
 
@@ -126,7 +130,9 @@
         que l'enregistrement allait ranger comme NON NOTEE. Le curseur etant lui
         aussi pose sur 5, rien ne trahissait l'ecart. Elle oubliait aussi le
         « / 10 » et l'etat inactif du stepper. */
-     UI.majAffichageNote();
+    // Un brouillon d'avant la v8.40 n'a pas l'état : il reste non noté.
+    marquerNote($("#f-note"), b.noteVide !== false);
+    UI.majAffichageNote();
     $("#f-eau-ajoutee").hidden = !$("#f-ajout-eau-oui").checked;
     UI.majCorrectionDiagnostic();
     UI.majAvertissements();

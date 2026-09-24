@@ -262,6 +262,30 @@ const UI = (() => {
     curseur.style.setProperty("--pc", Math.max(0, Math.min(100, pc)) + "%");
   }
 
+  /* LA NOTE SANS POUCE (v8.40). Un curseur ne peut pas être vide : l'absence de
+     note vivait dans une case « pas encore notée », à décocher EN PLUS de régler
+     la note. Elle vit maintenant sur le curseur lui même, par la classe
+     curseur-inactif : piste en pointillé, pas de pouce, tant qu'on n'y a pas
+     touché. Poser le doigt n'importe où sur la piste note, en un seul geste.
+     Même mécanisme dans la saisie et dans la saisie rapide. */
+  function noteVide(curseur) {
+    return !!curseur && curseur.classList.contains("curseur-inactif");
+  }
+  function marquerNote(curseur, vide) {
+    if (curseur) curseur.classList.toggle("curseur-inactif", vide);
+  }
+  /* Les touches qui CHANGENT la valeur. Tabuler à travers le curseur ne doit pas
+     noter la tasse : l'ancien keydown sans filtre le faisait. */
+  const TOUCHES_CURSEUR = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"];
+  /* pointerdown en plus d'input : poser le doigt là où le curseur est déjà ne
+     déclenche aucun input, et la note serait restée vide sans le savoir. */
+  function brancherNote(curseur, apres) {
+    const toucher = () => { marquerNote(curseur, false); apres(); };
+    curseur.addEventListener("input", toucher);
+    curseur.addEventListener("pointerdown", toucher);
+    curseur.addEventListener("keydown", ev => { if (TOUCHES_CURSEUR.includes(ev.key)) toucher(); });
+  }
+
   /* LES ICONES EN TRAIT. Meme dessin que la navigation : 1,8 px, bouts ronds,
      couleur du texte. Elles remplacent les glyphes Unicode (⇄ ⚠ ⧉ ✎ 🗑) des
      boutons d'action, qui changeaient de dessin selon la plateforme et que la
@@ -594,7 +618,7 @@ const UI = (() => {
     basculerRatees, chargerReplis, cleLocale, confirmer, detailRatio, diagsAffiches, ecartMoyen,
     ecrireReplis, estRatee, extAnalysables, inclureRatees,
     extAvecCalculs, fmtDateCourte, fmtDateHeure, fmtDecimal, fmtTemps, fmtVND, icone,
-    maintenantLocal, peindreCurseur, moyenne, nav, normaliserEcran, oublierSignatures, poser, poserTexte,
+    maintenantLocal, marquerNote, brancherNote, noteVide, peindreCurseur, moyenne, nav, normaliserEcran, oublierSignatures, poser, poserTexte,
     recetteAvecVariantes, recettesDeMethode, recettesVivantes, rendreEcranCourant, replis,
     reprendreReplisLocaux, siChange, signatureTable, signatures,
     supprimerExtractionAvecRetour, toast, toastAction, trouverRecette,

@@ -11,7 +11,7 @@
 
   // Emprunté au noyau, chargé avant nous.
   const { $, $$, $f, activerAppuiLong, activerEcran, attrTitre, basculerEtat, detailRatio, fmtTemps,
-    fmtVND, icone, maintenantLocal, nav, peindreCurseur, poser, poserTexte, recettesDeMethode, replis, toast,
+    fmtVND, icone, maintenantLocal, brancherNote, marquerNote, nav, noteVide, peindreCurseur, poser, poserTexte, recettesDeMethode, replis, toast,
     trouverRecette } = UI;
 
   // ---------- Saisie ----------
@@ -325,27 +325,26 @@
     }
   }
 
-  /* La note est facultative. Le curseur ne peut pas être vide, donc l'absence de
-     note vit dans une case à cocher : cochée, on enregistre "" et l'extraction
+  /* La note est facultative. Tant que le curseur n'a pas été touché, il n'a
+     pas de pouce (noteVide, dans le noyau) : on enregistre "" et l'extraction
      compte comme non notée partout (moyennes, insights, meilleurs réglages, qui
-     filtrent déjà sur note_sur_10 !== ""). Toucher le curseur décoche la case,
-     y compris quand il ne bouge pas, d'où le pointerdown en plus de l'input. */
+     filtrent déjà sur note_sur_10 !== ""). Le bouton Effacer ramène à cet état. */
   function majAffichageNote() {
-    const vide = $("#f-note-vide").checked;
-    $("#note-affichee").textContent = vide
-      ? I18N.t("n_pas_notee")
-      : $("#f-note").value + " / 10";
-    /* Le curseur se grise tant que la tasse n'est pas notee : il ne doit pas
-       avoir l'air de proposer la valeur sur laquelle il est pose. */
-    $("#f-note").classList.toggle("curseur-inactif", vide);
-    peindreCurseur($("#f-note"));
+    const curseur = $("#f-note");
+    const vide = noteVide(curseur);
+    const dit = vide ? I18N.t("n_pas_notee") : curseur.value + " / 10";
+    $("#note-affichee").textContent = dit;
+    curseur.setAttribute("aria-valuetext", dit);
+    $("#f-note-aide").hidden = !vide;
+    $("#f-note-effacer").hidden = vide;
+    peindreCurseur(curseur);
   }
 
   /* Ce qui part en base : une chaine vide quand la tasse n est pas notee, pour
      que les moyennes, les insights et les meilleurs reglages l ecartent tous de
      la meme facon. Ils filtrent deja sur note_sur_10 !== "". */
   function noteSaisie() {
-    return $("#f-note-vide").checked ? "" : $("#f-note").value;
+    return noteVide($("#f-note")) ? "" : $("#f-note").value;
   }
 
   /* Âge du paquet au moment de la tasse, affiché sous le choix du café. En
@@ -828,9 +827,9 @@
       $("#f-cafe").value = premierCafe ? premierCafe.id : "";
     }
     $("#f-commentaire").value = "";
-    // Milieu de course et case cochée : le curseur ne doit suggérer aucune note.
+    // Sans pouce : le curseur ne doit suggérer aucune note.
     $("#f-note").value = 5;
-    $("#f-note-vide").checked = true;
+    marquerNote($("#f-note"), true);
     majAffichageNote();
     ecrireDuree("f-total", "");
     ecrireDuree("f-ecoulement", "");
@@ -894,7 +893,7 @@
     ecrireDuree("f-total", ext.temps_total_s);
     ecrireDuree("f-ecoulement", ext.temps_ecoulement_s);
     $("#f-note").value = ext.note_sur_10 === "" ? 5 : ext.note_sur_10;
-    $("#f-note-vide").checked = ext.note_sur_10 === "";
+    marquerNote($("#f-note"), ext.note_sur_10 === "");
     majAffichageNote();
     $("#f-commentaire").value = ext.commentaire;
     saisie.diagnostics = new Set((ext.diagnostic || "").split("|").filter(Boolean));
@@ -987,17 +986,14 @@
     $("#f-prechauffe").addEventListener("change", surPrechauffe);
     // Une saisie manuelle du degré a toujours le dernier mot ; l'aide suit.
     $("#f-temp").addEventListener("input", majTempHint);
-    /* pointerdown en plus d'input : poser le doigt sur le curseur là où il est
-       déjà ne déclenche aucun input, la note serait restée vide sans le savoir. */
-    /* pointerdown en plus d'input : poser le doigt sur le curseur la ou il est
-       deja ne declenche aucun input, et la note serait restee vide sans le
-       savoir. */
-    ["input", "pointerdown", "keydown"].forEach(ev =>
-      $("#f-note").addEventListener(ev, () => {
-        $("#f-note-vide").checked = false;
-        majAffichageNote();
-      }));
-    $("#f-note-vide").addEventListener("change", majAffichageNote);
+    brancherNote($("#f-note"), majAffichageNote);
+    $("#f-note-effacer").addEventListener("click", () => {
+      $("#f-note").value = 5;
+      marquerNote($("#f-note"), true);
+      majAffichageNote();
+      UI.planifierBrouillon();
+      $("#f-note").focus();
+    });
     $("#chrono-basculer").addEventListener("click", () => UI.basculerChrono());
     /* Demarrer OUVRE le chrono : on vient de lancer une extraction, les paliers
        et le bouton d'arret doivent etre sous la main sans un clic de plus. */

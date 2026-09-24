@@ -821,6 +821,23 @@ enregistrer la tasse en la sortant, avant de l'avoir bue. Case « pas encore
 notée » cochée à chaque ouverture, curseur à 5 et grisé, toucher le curseur
 décoche, et le toast dit « pas encore notée » au lieu d'un chiffre.
 
+**La case disparaît en v8.40 : c'est le curseur qui n'a pas de pouce.** Noter
+demandait deux gestes, régler ET décocher, et le curseur grisé posé sur 5 avait
+quand même l'air d'une valeur. Dix cases à toucher ont été maquettées puis
+écartées : c'est un stepper de plus, et Chris a déjà choisi le curseur contre le
+stepper (v8.12). Le curseur reste donc, mais tant qu'on n'y a pas touché il n'a
+ni pouce ni piste remplie, seulement un pointillé et « Touche la piste pour
+noter ». L'état vit dans la classe `curseur-inactif`, lue par `UI.noteVide()`,
+posée par `UI.marquerNote()` : UNE source de vérité, pas une classe plus une case
+qui peuvent diverger. « Effacer la note » ramène à cet état. Deux corrections au
+passage : tabuler à travers le curseur le notait (le `keydown` n'était pas
+filtré, il ne réagit plus qu'aux touches qui changent la valeur), et le brouillon
+perdait une note donnée avant le déchargement de la page (il garde maintenant
+`noteVide`). Les règles CSS de l'état inactif ne s'appliquaient pas non plus :
+`.curseur-inactif::-webkit-slider-runnable-track` perdait contre
+`input[type="range"]::…`, plus spécifique ; elles portent maintenant le même
+préfixe.
+
 ### Le brouillon a son fichier
 
 `ui-saisie.js` a repassé le plafond de 1 200 lignes en v7.93 avec le temps de

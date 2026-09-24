@@ -1798,9 +1798,17 @@ input:focus, select:focus, textarea:focus {
   background: var(--accent-fond);
 }
 
-/* Curseur de note quand aucune note n'est encore donnée : il reste utilisable,
-   il ne doit juste pas avoir l'air de proposer une valeur. */
-.curseur-note.curseur-inactif { opacity: 0.45; }
+/* Curseur de note quand aucune note n'est encore donnée (v8.40) : pas de
+   pouce, une piste en pointillé. Il ne propose aucune valeur, et le premier
+   toucher, n'importe où sur la piste, pose la note. */
+.note-tete { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.note-effacer {
+  font: inherit; font-size: 0.8rem; font-weight: 600; color: var(--attenue);
+  background: none; border: none; padding: 4px 0; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.note-effacer:hover { color: var(--encre); }
+.note-aide { display: block; margin-top: 2px; font-size: 0.8rem; color: var(--attenue); }
 
 /* Âge du paquet sous le choix du café : une information, pas une alerte. */
 .age-paquet { margin: 0 0 12px; font-size: 0.85rem; color: var(--attenue); }
@@ -2386,9 +2394,17 @@ input[type="range"]::-moz-range-thumb {
   border: 2px solid var(--accent);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
-/* Non notee : la piste ne se remplit pas, elle ne propose rien. */
-.curseur-inactif::-webkit-slider-runnable-track { background: var(--lignes); }
-.curseur-inactif::-moz-range-progress { background: var(--lignes); }
+/* Non notee : la piste ne se remplit pas, se dessine en pointillé et perd son
+   pouce. Elle ne propose rien. */
+input[type="range"].curseur-inactif::-webkit-slider-runnable-track {
+  background: repeating-linear-gradient(90deg, var(--attenue) 0 6px, transparent 6px 12px);
+}
+input[type="range"].curseur-inactif::-moz-range-track {
+  background: repeating-linear-gradient(90deg, var(--attenue) 0 6px, transparent 6px 12px);
+}
+input[type="range"].curseur-inactif::-moz-range-progress { background: transparent; }
+input[type="range"].curseur-inactif::-webkit-slider-thumb { opacity: 0; }
+input[type="range"].curseur-inactif::-moz-range-thumb { opacity: 0; }
 
 /* ---------- L'interrupteur ----------
    Autour d'une case a cocher ORDINAIRE, qui reste la source de verite : le
