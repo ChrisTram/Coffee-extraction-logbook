@@ -432,6 +432,36 @@ const I18N = (() => {
     roue_fois: { fr: "{n} fois" },
     roue_lecture: { fr: "Ta famille la plus cochée : {f}, {n} fois. Celle de tes meilleures tasses : {m}, {x} de moyenne." },
     roue_lecture_seule: { fr: "Ta famille la plus cochée : {f}, {n} fois, et c'est aussi celle de tes meilleures tasses." },
+    fi_voir: { fr: "Fiche du café" },
+    fi_surligne: { fr: "Fiche café" },
+    fi_moyenne: { fr: "moyenne, {n} tasses notées" },
+    fi_pas_notee: { fr: "pas encore de tasse notée" },
+    fi_surtout: { fr: "{m} surtout" },
+    fi_sachet: { fr: "Sachet en cours" },
+    fi_jauge: { fr: "{r} g restants sur {f}" },
+    fi_sur: { fr: "sur {f}" },
+    fi_tasses: { fr: "environ {n} tasses" },
+    fi_reachat: { fr: "Réachat conseillé." },
+    fi_boutique: { fr: "Chez {t}" },
+    fi_sans_stock: { fr: "Pas de sachet enregistré : ajoute-le dans Mes cafés pour suivre le stock." },
+    fi_jour: { fr: "jour {n}" },
+    fi_fenetre_leg: { fr: "ta fenêtre, jours {a} à {b}" },
+    fi_ouvert: { fr: "Jour {n} du sachet, ouvert le {d}." },
+    fi_fenetre: { fr: "Tes tasses sont meilleures du jour {a} au jour {b} : {x} de moyenne, contre {y} en dehors." },
+    fi_avant: { fr: "Ta fenêtre s'ouvre dans {n} jour(s)." },
+    fi_dedans: { fr: "Tu es dedans, encore {n} jour(s)." },
+    fi_dedans_bord: { fr: "Tu es dedans, au dernier jour que tes tasses documentent." },
+    fi_apres: { fr: "Tu en es sorti depuis {n} jour(s)." },
+    fi_pas_de_fenetre: { fr: "Pas encore de fenêtre : il faut {n} tasses notées sur au moins deux périodes du sachet." },
+    fi_courbe: { fr: "Note selon le jour du sachet" },
+    fi_courbe_vide: { fr: "Il faut au moins deux tasses notées sur un sachet ouvert pour tracer la courbe." },
+    fi_courbe_aria: { fr: "Note de chaque tasse selon le jour du sachet, {n} tasses, avec la moyenne par période" },
+    fi_gouts: { fr: "Goûts qui reviennent" },
+    fi_gouts_vide: { fr: "Aucun goût coché sur ce café pour l'instant." },
+    fi_roue_aria: { fr: "Roue des arômes de ce café" },
+    fi_reglage: { fr: "Meilleur réglage" },
+    fi_dernieres: { fr: "Dernières tasses" },
+    fi_inactif: { fr: "Ce café est désactivé : réactive-le dans Mes cafés pour le brasser" },
     t_refaire: { fr: "Les réglages de ta dernière tasse sont repris, la note reste à donner" },
     t_refaire_vide: { fr: "Pas encore de tasse à refaire : voici une saisie neuve" },
     t_cafe: { fr: "Café enregistré" },
@@ -607,7 +637,8 @@ const I18N = (() => {
     "#h-cafe,#h-diagnostic,#q-cafe,#q-recette,#c-recette,#donnees-statut,#toast,#pap-params," +
     "#insights,#sync-statut,#heatmap-stats,#version-site,#comparaison-compte,#reglages-liste," +
     "#comparaison-resume,#comparaison-titres,#comparaison-corps," +
-    "#vide-mouture,#vide-gouts,#vide-duel,#note-gouts,#param-recettes,#note-affichee";
+    "#vide-mouture,#vide-gouts,#vide-duel,#note-gouts,#param-recettes,#note-affichee," +
+    "#aside-jumelles,#roue-detail,#lecture-aromes,#vide-aromes,#f-dicter-texte,#fiche-contenu";
 
   function scanner() {
     const marche = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {

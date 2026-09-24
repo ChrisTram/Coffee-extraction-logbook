@@ -425,6 +425,10 @@
   /* ---------- Mes meilleurs réglages ----------
      Le calcul vit dans js/reglages.js, sans DOM, pour être testable sans
      navigateur. Ici, uniquement l'affichage. */
+  // Ouvre la fiche du café (js/ui-fiche.js), par délégation sur data-fiche.
+  const boutonFiche = c => '<button type="button" class="btn btn-petit btn-discret" data-fiche="' + c.id + '">' +
+    I18N.t("fi_voir") + "</button>";
+
   function carteReglage(bilan) {
     const c = bilan.cafe;
     const entete = '<div class="reglage-entete"><b>' + c.nom + "</b>" +
@@ -439,14 +443,15 @@
         '<p class="carte-vide">' + I18N.t("rg_sous_moyenne", {
           s: REGLAGES.MIN_TASSES, note: fmtDecimal(t.note, 1), k: t.fois, n: bilan.manque,
         }) + "</p>" +
-        '<button type="button" class="btn btn-petit" data-refaire="' + t.id + '">' +
-        I18N.t("rg_refaire") + "</button></article>";
+        '<div class="reglage-actions"><button type="button" class="btn btn-petit" data-refaire="' + t.id + '">' +
+        I18N.t("rg_refaire") + "</button>" + boutonFiche(c) + "</div></article>";
     }
     if (!bilan.meilleure) {
       const cle = bilan.raison === "aucune" ? "rg_aucune"
         : bilan.raison === "pas_assez" ? "rg_pas_assez" : "rg_eparpille";
       return '<article class="carte reglage' + (c.actif === 0 ? " inactif" : "") + '">' + entete +
-        '<p class="carte-vide">' + I18N.t(cle, { n: bilan.manque, s: REGLAGES.MIN_TASSES }) + "</p></article>";
+        '<p class="carte-vide">' + I18N.t(cle, { n: bilan.manque, s: REGLAGES.MIN_TASSES }) + "</p>" +
+        '<div class="reglage-actions">' + boutonFiche(c) + "</div></article>";
     }
 
     const m = bilan.meilleure;
@@ -467,8 +472,8 @@
       (Math.abs(ecart) >= 0.2 ? ", " + I18N.t(ecart > 0 ? "rg_mieux" : "rg_moins",
         { x: fmtDecimal(Math.abs(ecart), 1) }) : "") + "</span></div>" +
       '<div class="reglage-chips">' + chips + "</div>" +
-      '<button type="button" class="btn btn-petit" data-refaire="' + m.referenceId + '">' +
-      I18N.t("rg_refaire") + "</button></article>";
+      '<div class="reglage-actions"><button type="button" class="btn btn-petit" data-refaire="' + m.referenceId + '">' +
+      I18N.t("rg_refaire") + "</button>" + boutonFiche(c) + "</div></article>";
   }
 
   function rendreReglages() {
@@ -482,7 +487,7 @@
     $$("[data-refaire]").forEach(b => b.addEventListener("click", () => {
       const ext = DATA.state.extractions.find(e => e.id === b.dataset.refaire);
       if (!ext) return;
-      UI.chargerExtractionDansSaisie(ext, true);
+      UI.refaireTasse(ext);
       toast(I18N.t("rg_preremplie"));
     }));
   }

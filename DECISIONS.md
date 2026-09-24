@@ -1566,6 +1566,26 @@ chiffres du C5). Le café n'est pas exigé mais passe devant : une recette tient
 d'un café à l'autre, et la ligne le dit quand ce n'est pas le même. Ce qui diffère
 sans compter (température, feu) s'écrit sur la ligne au lieu de trier.
 
+### La fiche café, et une fenêtre de fraîcheur apprise (v8.46)
+
+La fiche est un DIALOGUE, pas un septième écran : elle s'ouvre depuis deux listes qui
+existent déjà (Mes meilleurs réglages, Mes cafés) et se referme sur elles, là où un
+écran de plus aurait demandé une place dans le rail et une navigation retour.
+
+La fraîcheur ne vient pas d'une règle générique (dégazage, six semaines) : elle est
+APPRISE des notes de ce café. Les jours depuis l'ouverture sont découpés en tranches
+serrées au début (0 à 3, 4 à 7, 8 à 11, 12 à 15) puis plus larges ; une tranche ne compte
+qu'à partir de trois tasses notées, comme partout. La fenêtre va de la première tranche
+au-dessus de la moyenne du café à la dernière : un creux isolé au milieu est du bruit.
+Deux garde-fous : il faut au moins deux tranches documentées et au moins une sous la
+moyenne (sinon il n'y a pas de fenêtre, seulement un café régulier), et la fin s'arrête
+au dernier jour qu'une tasse documente. La première version annonçait « encore 19 jours »
+sur un sachet goûté jusqu'au jour 42, parce que la dernière tranche court jusqu'au jour 60.
+
+La démonstration n'avait pas de date d'ouverture : ses sachets naissent de la migration.
+Aucune de ses tasses n'avait donc de jour du sachet, et la fiche comme la règle « âge du
+paquet » y restaient muettes. Elle ouvre maintenant chaque sachet le jour de l'achat.
+
 ## Tableau de bord et analyses
 
 ### Insights automatiques du tableau de bord

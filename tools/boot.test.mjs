@@ -261,7 +261,7 @@ Chart.defaults = creuse();
 const SCRIPTS = ["js/outils.js", "js/i18n.en.js", "js/i18n.js", "js/grind.js", "js/recettes.js", "js/demo-data.js",
   "js/sync.js", "js/data-csv.js", "js/data-schema.js", "js/data-store.js", "js/data-calculs.js",
   "js/data-migrations.js", "js/data.js", "js/reglages.js", "js/charts.js",
-  "js/ui-noyau.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-chrono.js", "js/ui-brouillon.js", "js/ui-rapide.js", "js/ui-historique.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/app.js"];
+  "js/ui-noyau.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-chrono.js", "js/ui-brouillon.js", "js/ui-rapide.js", "js/ui-historique.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/ui-fiche.js", "js/app.js"];
 const source = SCRIPTS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 
 // console.error interceptée : c'est par là que sortent les erreurs de rendu.
@@ -1015,6 +1015,21 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
   check("et ignore les tasses du Switch", api.UI.insightPrechauffe(chaudes.concat(tiedes)) === null);
   const remuees = [8, 7.5, 8].map(n => tasse("Switch", n, { agitation_nb: 1 }));
   check("l'agitation du Switch parle aussi", !!api.UI.insightAgitation([...remuees, ...tiedes]));
+}
+
+/* LA FENETRE DE FRAICHEUR DE LA FICHE CAFE (v8.46) est apprise des notes du
+   cafe : les tranches du sachet au-dessus de sa moyenne, bornees au dernier
+   jour qu'une tasse documente. */
+{
+  const t = (j, n) => ({ _c: { jours_ouvert: j }, note_sur_10: n });
+  const notees = [t(1, 5), t(2, 5), t(3, 5), t(5, 8), t(6, 8), t(7, 8), t(9, 8), t(10, 8), t(11, 8)];
+  const moy = notees.reduce((s, e) => s + e.note_sur_10, 0) / notees.length;
+  const f = api.UI.fenetreFraicheur(notees, moy).fenetre;
+  check("la fenetre part de la premiere bonne tranche", f && f.debut === 4, JSON.stringify(f));
+  check("et s'arrete au dernier jour goute", f && f.fin === 11, JSON.stringify(f));
+  check("elle compare dedans et dehors", f && f.dedans === 8 && f.dehors === 5, JSON.stringify(f));
+  check("sans deux tranches documentees, pas de fenetre",
+    api.UI.fenetreFraicheur(notees.slice(0, 4), moy).fenetre === null);
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);

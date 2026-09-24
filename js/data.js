@@ -287,6 +287,11 @@ const DATA = (() => {
     // implicite par cafe, ce qui suffit a faire vivre le stock en demonstration.
     state.achats = [];
     migrerDonnees();
+    /* Ces sachets implicites n'ont pas de date d'ouverture, et sans elle aucune
+       tasse n'a de jour du sachet : la fiche café montrait une courbe vide et la
+       règle « âge du paquet » ne parlait jamais en démonstration (v8.46). La
+       démo ouvre donc chaque sachet le jour où elle l'achète. */
+    state.achats.forEach(a => { if (!a.date_ouverture) a.date_ouverture = a.date_achat; });
     state.demoActive = true;
     await sauverLocal();
     notifier();

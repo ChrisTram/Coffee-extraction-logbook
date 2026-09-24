@@ -23,7 +23,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
    sinon ils repassent au vert dès qu'un bout de code change de fichier, ce qui
    est exactement le moment où on aimerait qu'ils regardent. */
 const SOURCE_UI = ["js/ui-noyau.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-chrono.js", "js/ui-brouillon.js", "js/ui-rapide.js",
-  "js/ui-historique.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/app.js"]
+  "js/ui-historique.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/ui-fiche.js", "js/app.js"]
   .map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 /* demo-data.js n'est plus une balise script depuis la v7.56, mais le harnais le
    charge quand meme : chargerDemo() en a besoin et il n'y a pas de reseau ici. */

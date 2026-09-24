@@ -118,6 +118,7 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/ui-historique.js` | tableau, filtres, tri, comparateur, écran Mes meilleurs réglages |
 | `js/ui-guide.js` | recettes de référence, pas à pas, moulin interactif |
 | `js/ui-catalogue.js` | modales cafés, sachets, recettes, écran Paramètres |
+| `js/ui-fiche.js` | la fiche d'un café (v8.46), dialogue `#modale-fiche` |
 | `js/app.js` | démarrage, navigation, thème, langue, modales d'accueil et de données, abonnement aux données |
 | `css/fonts/` | les deux polices de la DA, embarquées en woff2, sous OFL (section 10) |
 | `sw.js`, `manifest.json`, `icons/` | PWA et hors ligne (section 10) |
@@ -565,6 +566,33 @@ Points fixés depuis, chacun expliqué dans `DECISIONS.md` :
   hors ligne. Le texte dicté s'ajoute au commentaire et reste modifiable.
 - La saisie rapide enregistre SANS note par défaut, comme le formulaire complet :
   curseur sans pouce à chaque ouverture, même mécanisme (`UI.brancherNote`).
+
+## 8 ter. La fiche d'un café (js/ui-fiche.js)
+
+Dialogue `#modale-fiche`, ouvert par tout bouton `data-fiche="<id café>"` (clic
+délégué sur le document) : les cartes de « Mes meilleurs réglages » et les lignes de
+« Mes cafés » en portent un. `UI.ouvrirFiche(id)` rend `#fiche-contenu`, re-rendu à
+chaque notification de données et à la bascule de langue tant qu'il est ouvert.
+
+- **Sachet en cours** : `DATA.stockSachet`, tasses restantes à la dose moyenne du
+  café, « Réachat conseillé » sous `REACHAT_TASSES` (3) avec le lien de la boutique du
+  Guide retrouvé par le torréfacteur (`.boutique h3`).
+- **Fenêtre de fraîcheur APPRISE** (`UI.fenetreFraicheur`) : les tasses notées par
+  tranche de jours depuis l'ouverture (`TRANCHES_SACHET`, jours_ouvert de
+  `DATA.calculs`), les tranches d'au moins `MIN_TRANCHE` (3) tasses au-dessus de la
+  moyenne du café, de la première à la dernière, bornées au dernier jour goûté. Il faut
+  deux tranches documentées et au moins une en dessous, sinon pas de fenêtre. Les jours
+  s'affichent à partir de 1 (jours_ouvert + 1).
+- **Courbe** SVG maison : chaque tasse en point, la moyenne par tranche en ligne, la
+  fenêtre en fond, aujourd'hui en pointillé.
+- **Goûts** : la roue `CHARTS.roueAromes` en petit, sur les tasses de ce café.
+- **Meilleur réglage** : `UI.carteReglage` sur `REGLAGES.pourCafe`, son entête masqué.
+- **Dernières tasses** : les cinq plus récentes, ratées comprises.
+- Pied : Brasser ce café (saisie neuve sur ce café, `surChoixCafe`), Modifier le café,
+  Fermer.
+
+La démo ouvre chaque sachet le jour de son achat (`chargerDemo`) : sans date
+d'ouverture aucune tasse n'avait de jour du sachet.
 
 ## 8 bis. Historique (js/ui-historique.js)
 
