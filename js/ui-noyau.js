@@ -497,6 +497,9 @@ const UI = (() => {
     replis.feu = r.puissance_feu;
     replis.molette = r.mouture_dial;
     replis.ebullition = r.ebullition_s;
+    // Les pas de la correction chiffrée (v8.48), tels quels : les colonnes de la ligne.
+    replis.pas = { pas_crans: r.pas_crans, pas_degres: r.pas_degres, pas_feu: r.pas_feu,
+      pas_eau_g: r.pas_eau_g, pas_dose_g: r.pas_dose_g };
   }
 
   /* Reprise unique des réglages posés avant la synchro. Sans elle, Chris
@@ -525,6 +528,7 @@ const UI = (() => {
       puissance_feu: replis.feu,
       mouture_dial: replis.molette,
       ebullition_s: replis.ebullition,
+      ...(replis.pas || {}),
     });
   }
 

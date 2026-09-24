@@ -1554,6 +1554,26 @@ d'application installée. Le choix SÛR reçoit le focus, Échap annule. Un test
 refuse tout `confirm()` natif dans l'interface. La suppression d'extraction, elle,
 n'a pas de confirmation du tout : elle a un retour arrière (voir « Historique »).
 
+### La correction chiffrée : un sens écrit une fois, des pas réglables (v8.48)
+
+Chris l'a demandé ainsi : « si je modifie un truc, ça doit être dynamique sans modifier
+dans le code ». Trois choses entrent dans le calcul, et chacune a UN endroit :
+
+- le SENS (plus fin, moins chaud, resserrer) vient des phrases de correction, qu'il
+  traduit. Il vit dans `DIAGNOSTIC_LEVIERS`, juste sous `DIAGNOSTIC_CORRECTIONS`, et
+  un test lit les deux : « plus fin » dans la phrase veut une mouture négative, et
+  ainsi de suite. Changer la phrase sans le sens casse le test.
+- les PAS sont des préférences, pas du code : réglables dans Paramètres et rangés dans
+  la ligne de réglages synchronisée, comme la molette. Leurs défauts sortent des
+  phrases (« un ou deux crans », « 2 à 3 degrés », « un gramme de café »).
+- la valeur de départ est celle de la tasse, et la borne de la molette celle de la
+  plage de sa machine dans `GRIND.METHODES`.
+
+Pas trop invasif, l'autre consigne : la proposition s'écrit sous les corrections déjà
+affichées, et le seul geste qui modifie quelque chose est un bouton dans le message
+d'enregistrement, qui disparaît seul. La tasse préparée passe par `refaireTasse`,
+donc sans la note ni les goûts de celle d'avant.
+
 ### Le mode Brassage : une vue du chrono, pas un chrono de plus (v8.47)
 
 Le Guide a déjà un « pas à pas » avec son propre chrono, et la saisie le sien. Un

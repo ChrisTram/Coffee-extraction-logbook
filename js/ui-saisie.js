@@ -647,7 +647,35 @@
       return;
     }
 
-    $("#diagnostic-correction").innerHTML = lignes.join("<br>");
+    const chiffree = texteCorrection(REGLAGES.correctionChiffree(extDuFormulaire(), replis.pas, cafeCourantMoulu()));
+    $("#diagnostic-correction").innerHTML = lignes.join("<br>") +
+      (chiffree ? '<span class="corr-chiffree">' + chiffree + "</span>" : "");
+  }
+
+  /* LA CORRECTION CHIFFRÉE (v8.48), en mots. Le calcul est REGLAGES.correctionChiffree ;
+     ici seulement la phrase : le premier levier, puis les autres « si ça ne
+     suffit pas ». Vide quand il n'y a rien à chiffrer. */
+  function texteLevier(l) {
+    if (l.levier === "mouture") {
+      return I18N.t("cc_mouture", { de: l.de, vers: l.vers, e: (l.ecart > 0 ? "+" : "") + l.ecart,
+        a: l.microns[0], b: l.microns[1] });
+    }
+    return I18N.t("cc_" + l.levier, { de: fmtDecimal(l.de, 1), vers: fmtDecimal(l.vers, 1) });
+  }
+  function texteCorrection(leviers, court) {
+    if (!leviers.length) return "";
+    const [premier, ...autres] = leviers;
+    return I18N.t("cc_prochaine", { q: texteLevier(premier) }) +
+      (autres.length && !court ? " " + I18N.t("cc_ensuite", { q: autres.map(texteLevier).join(", ") }) : "");
+  }
+  // Les champs que la correction lit, tels que le formulaire les porte.
+  function extDuFormulaire() {
+    return {
+      methode: saisie.methode, mouture_dial: $("#f-mouture").value.trim().replace(/,/g, "."),
+      temperature_c: $("#f-temp").value, puissance_feu: $("#f-puissance").value,
+      eau_g: $("#f-eau").value, dose_g: $("#f-dose").value,
+      diagnostic: DIAGNOSTICS.filter(d => saisie.diagnostics.has(d)).join("|"),
+    };
   }
 
   /* Bulle d'un diagnostic : QUAND le cocher, puis QUOI faire. Deux lignes, la
@@ -1026,7 +1054,19 @@
     } else {
       await DATA.ajouterExtraction(ext);
       UI.effacerBrouillon();
-      toast(I18N.t("t_enregistree"));
+      /* Un diagnostic chiffrable : le message propose de préparer la prochaine
+         tasse avec la correction appliquée. Rien ne change sans ce clic, et le
+         message disparaît de lui-même. */
+      const leviers = REGLAGES.correctionChiffree(ext, replis.pas, cafeCourantMoulu());
+      if (leviers.length) {
+        UI.toastAction(I18N.t("t_enregistree") + ". " + texteCorrection(leviers, true), I18N.t("cc_preparer"), () => {
+          refaireTasse({ ...ext, [leviers[0].champ]: leviers[0].vers });
+          UI.planifierBrouillon();
+          toast(I18N.t("cc_prete"));
+        });
+      } else {
+        toast(I18N.t("t_enregistree"));
+      }
       reinitialiserSaisie(true);
       activerEcran("tableau");
     }
@@ -1052,6 +1092,8 @@
     $("#f-date").addEventListener("change", majAgePaquet);
     $("#f-recette").addEventListener("change", () => { prefillDepuisRecette($("#f-recette").value); majAvertissements(); });
     ["f-temp", "f-puissance"].forEach(id => $("#" + id).addEventListener("input", majJumelles));
+    ["f-mouture", "f-temp", "f-puissance", "f-eau", "f-dose"].forEach(id =>
+      $("#" + id).addEventListener("input", majCorrectionDiagnostic));
     ["f-dose", "f-eau", "f-mouture", "f-volume"].forEach(id =>
       $("#" + id).addEventListener("input", () => { majLive(); majAvertissements(); }));
     // majAvertissements redessine le panneau latéral, le chrono a besoin d'un

@@ -353,6 +353,7 @@
     $("#param-feu-defaut").value = replis.feu;
     $("#param-molette").value = replis.molette;
     UI.ecrireDuree("param-ebullition", replis.ebullition);
+    PAS_PARAM.forEach(([id, cle]) => { $("#" + id).value = (replis.pas || {})[cle]; });
     majDetailMolette();
     $("#param-bips").checked = $("#chrono-bip").checked;
     majRatees();
@@ -374,6 +375,10 @@
       : "";
   }
 
+  // Les champs de la carte « Mes pas de correction » et leur colonne de réglages.
+  const PAS_PARAM = [["param-pas-crans", "pas_crans"], ["param-pas-degres", "pas_degres"],
+    ["param-pas-feu", "pas_feu"], ["param-pas-eau", "pas_eau_g"], ["param-pas-dose", "pas_dose_g"]];
+
   async function enregistrerParametres() {
     const dose = Number($("#param-dose-defaut").value);
     const feu = Number($("#param-feu-defaut").value);
@@ -387,7 +392,11 @@
     replis.feu = Math.round(feu);
     replis.molette = molette;
     replis.ebullition = ebullition;
+    /* Les pas de correction : une valeur hors bornes ne se refuse pas, la
+       normalisation la ramène au défaut, comme pour le feu d'une recette. */
+    replis.pas = Object.fromEntries(PAS_PARAM.map(([id, cle]) => [cle, Number($("#" + id).value)]));
     await ecrireReplis();
+    UI.chargerReplis();
 
     /* On ne réécrit que les recettes réellement touchées : chaque écriture
        estampille maj_le et gagnerait la fusion contre un autre appareil. */

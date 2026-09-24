@@ -42,9 +42,9 @@ const charger = new Function(
   "location",
   "indexedDB",
   "console",
-  source + "\nreturn { DATA, SYNC, GRIND, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND, REGLAGES, echelleVersements, SEUIL_VERSEMENT_G, temperatureDepuisChauffe, chauffePourTemperature };"
+  source + "\nreturn { DATA, SYNC, GRIND, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND, DIAGNOSTIC_LEVIERS, REGLAGES, echelleVersements, SEUIL_VERSEMENT_G, temperatureDepuisChauffe, chauffePourTemperature };"
 );
-const { DATA, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND, REGLAGES,
+const { DATA, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND, DIAGNOSTIC_LEVIERS, REGLAGES,
   echelleVersements, SEUIL_VERSEMENT_G, temperatureDepuisChauffe, chauffePourTemperature } =
   charger(undefined, { protocol: "file:" }, undefined, console);
 
@@ -376,6 +376,46 @@ const eparpille = REGLAGES.pourCafe("c3", ["1.2.0", "1.3.0", "1.4.0", "1.5.0"]
   .map((m, k) => brew("2" + k, "c3", "R", m, 3, false, 7)));
 check("assez de tasses mais toutes differentes : rien", eparpille.meilleure === null);
 check("la raison distingue ce cas", eparpille.raison === "eparpille", eparpille.raison);
+
+/* LA CORRECTION CHIFFREE (v8.48). Le sens des leviers est ecrit a cote des
+   phrases de correction : ce controle verifie qu'ils disent la meme chose, pour
+   qu'on ne puisse pas changer l'un en oubliant l'autre. */
+{
+  const groupe = nom => (DIAGNOSTICS_GROUPES.find(g => g.nom === nom) || { diags: [] }).diags;
+  const chiffrables = [...groupe("Réglage d'extraction"), ...groupe("Ratio café et eau")];
+  check("chaque diagnostic de reglage ou de ratio a ses leviers",
+    chiffrables.every(d => DIAGNOSTIC_LEVIERS[d]), chiffrables.filter(d => !DIAGNOSTIC_LEVIERS[d]).join(", "));
+  check("et aucun autre n'en a", Object.keys(DIAGNOSTIC_LEVIERS).every(d => chiffrables.includes(d)));
+  const incoherents = Object.entries(DIAGNOSTIC_LEVIERS).filter(([d, l]) => {
+    const t = DIAGNOSTIC_CORRECTIONS[d].toLowerCase();
+    return (l.mouture < 0) !== /plus fin/.test(t) || (l.mouture > 0) !== /grossier/.test(t) ||
+      (l.chaleur > 0) !== /plus chaud/.test(t) || (l.chaleur < 0) !== /moins chaud/.test(t) ||
+      (l.ratio < 0) !== /resserrer|moins d'eau/.test(t) || (l.ratio > 0) !== /élargir|plus d'eau/.test(t);
+  }).map(([d]) => d);
+  check("les leviers disent ce que disent les phrases de correction", incoherents.length === 0, incoherents.join(", "));
+
+  const pas = { pas_crans: 2, pas_degres: 2, pas_feu: 1, pas_eau_g: 15, pas_dose_g: 1 };
+  const sw = (diag, champs) => ({ methode: "Switch", mouture_dial: "1.4.2", temperature_c: 92, eau_g: 240, dose_g: 15, diagnostic: diag, ...champs });
+  const c = REGLAGES.correctionChiffree(sw("Un peu amer"), pas, false);
+  check("un peu amer : la molette d'abord, deux crans plus grossier", c[0] && c[0].levier === "mouture" && c[0].vers === "1.4.4" && c[0].ecart === 2,
+    JSON.stringify(c));
+  check("puis l'eau deux degres moins chaude", c[1] && c[1].levier === "temperature" && c[1].vers === 90, JSON.stringify(c[1]));
+  const f = REGLAGES.correctionChiffree(sw("Sur-extrait (amer)"), pas, false);
+  check("un diagnostic franc double le pas", f[0].vers === "1.5.1" && f[1].vers === 88, JSON.stringify(f));
+  check("les pas viennent des reglages", REGLAGES.correctionChiffree(sw("Un peu amer"), { ...pas, pas_crans: 3 }, false)[0].vers === "1.5.0");
+  check("la molette reste dans la plage de la machine",
+    REGLAGES.correctionChiffree(sw("Astringent", { mouture_dial: "1.9.4" }), pas, false).length === 0);
+  check("acide et amer ensemble ne se chiffrent pas", REGLAGES.correctionChiffree(sw("Un peu acide|Un peu amer"), pas, false).length === 0);
+  check("un cafe deja moulu passe a la chaleur", REGLAGES.correctionChiffree(sw("Un peu amer"), pas, true)[0].levier === "temperature");
+  const br = REGLAGES.correctionChiffree({ methode: "Brikka", mouture_dial: "", dose_g: 14, puissance_feu: 3, diagnostic: "Un peu léger|Un peu acide" }, pas, true);
+  check("a la Brikka, la chaleur est le feu et le ratio la dose",
+    br.length === 2 && br[0].levier === "feu" && br[0].vers === 4 && br[1].levier === "dose" && br[1].vers === 15, JSON.stringify(br));
+  check("sans diagnostic, rien", REGLAGES.correctionChiffree(sw(""), pas, false).length === 0);
+  // Une ligne d'avant la v8.48 n'a pas les colonnes : elle prend les defauts, sans migration.
+  const vieux = DATA.normaliserReglages({ id: "moi", dose_g: 15 });
+  check("une ligne sans pas prend les defauts", vieux.pas_crans === 2 && vieux.pas_degres === 2 && vieux.pas_eau_g === 15);
+  check("un pas hors bornes retombe au defaut", DATA.normaliserReglages({ pas_crans: 40 }).pas_crans === 2);
+}
 
 /* Les tasses jumelles (v8.44) : meme recette, molette a trois crans pres, le
    meme cafe devant. Pas la meme temperature : Chris ne veut pas d'une
@@ -1428,7 +1468,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
 
   // Et surtout : maj_le ne doit pas fuir dans le CSV.
   const csv = DATA.csvSerialiser([{ id: "moi", maj_le: 1699999999999, dose_g: 16 }], DATA.REGLAGE_COLS);
-  check("entete reglages.csv", csv.split("\n")[0] === "id,dose_g,puissance_feu,mouture_dial,schema_version,ebullition_s",
+  check("entete reglages.csv", csv.split("\n")[0] === "id,dose_g,puissance_feu,mouture_dial,schema_version,ebullition_s,pas_crans,pas_degres,pas_feu,pas_eau_g,pas_dose_g",
     csv.split("\n")[0]);
   check("maj_le absent du CSV reglages", !csv.includes("1699999999999"));
 }

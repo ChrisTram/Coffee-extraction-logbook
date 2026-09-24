@@ -497,6 +497,33 @@ const DIAGNOSTIC_CORRECTIONS = {
   "Brûlé (défaut du sachet)": "Torréfaction trop foncée, aucun réglage ne l'enlèvera.",
 };
 
+/* LA CORRECTION CHIFFRÉE (v8.48) : le SENS de chaque levier, et rien d'autre.
+   Écrit ici, à côté des phrases de DIAGNOSTIC_CORRECTIONS qu'il traduit, pour
+   qu'on ne puisse pas changer l'un sans voir l'autre (un test vérifie qu'ils
+   disent la même chose). Aucune QUANTITÉ ici : les pas (crans, degrés, feu,
+   grammes) vivent dans Paramètres, carte « Mes pas de correction », et les
+   valeurs de départ viennent de la tasse elle-même.
+
+   mouture : négatif plus fin, positif plus grossier.
+   chaleur : positif plus chaud (degrés au Switch, feu à la Brikka).
+   ratio   : négatif resserrer (moins d'eau au Switch, plus de café à la Brikka),
+             positif élargir.
+   1 pour un diagnostic « un peu », 2 pour un franc : le pas est doublé.
+   Les diagnostics du café lui-même et l'extraction inégale n'ont pas de levier
+   chiffrable : un réglage n'y change rien, ou pas dans un seul sens. */
+const DIAGNOSTIC_LEVIERS = {
+  "Un peu acide": { mouture: -1, chaleur: 1 },
+  "Sous-extrait (acide)": { mouture: -2, chaleur: 2 },
+  "Un peu amer": { mouture: 1, chaleur: -1 },
+  "Sur-extrait (amer)": { mouture: 2, chaleur: -2 },
+  "Un peu astringent": { mouture: 1 },
+  "Astringent": { mouture: 2 },
+  "Un peu léger": { ratio: -1 },
+  "Trop léger (aqueux)": { ratio: -2 },
+  "Un peu concentré": { ratio: 1 },
+  "Trop fort (concentré)": { ratio: 2 },
+};
+
 // Estimation de caféine : pourcentage massique selon l'espèce, et environ
 // 90 pour cent de la caféine passe dans la tasse. Pour un café non pur,
 // seule la part de vrai café compte.

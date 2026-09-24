@@ -553,6 +553,18 @@ Points fixés depuis, chacun expliqué dans `DECISIONS.md` :
 - Les cinq dernières extractions du tableau de bord montrent, sous les mesures,
   les goûts cochés (quatre au plus, puis « +n ») et le commentaire tronqué à
   110 caractères ; le texte complet reste au survol (v7.94).
+- CORRECTION CHIFFRÉE (v8.48) : `REGLAGES.correctionChiffree(ext, replis.pas, moulu)`
+  transforme les diagnostics cochés en réglages. Trois sources, aucune en dur dans le
+  calcul : le SENS de chaque levier dans `DIAGNOSTIC_LEVIERS` (recettes.js, à côté
+  des phrases qu'il traduit ; un test vérifie qu'ils disent la même chose), les PAS
+  dans la ligne de réglages (`pas_crans`, `pas_degres`, `pas_feu`, `pas_eau_g`,
+  `pas_dose_g`, carte Paramètres « Mes pas de correction », doublés pour un
+  diagnostic franc), et la valeur de départ de la tasse, la molette bornée à la
+  plage de sa machine (`GRIND.METHODES`). Leviers dans l'ordre mouture, chaleur
+  (degrés au Switch, feu à la Brikka), ratio (eau au Switch, dose à la Brikka).
+  Affichée en direct sous les corrections (`.corr-chiffree`), et proposée après
+  l'enregistrement par un message à action « Préparer la prochaine », qui charge les
+  réglages corrigés dans la saisie (brouillon). Rien ne change sans ce clic.
 - TASSES JUMELLES (v8.44) : `#aside-jumelles`, entre la fiche recette et la fiche
   café, montre les trois tasses notées les plus proches du formulaire, calculées par
   `REGLAGES.jumelles()` : même recette et molette à `JUMELLE_CRANS` (3) crans près,

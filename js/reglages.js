@@ -168,6 +168,68 @@ function jumelles(extractions, cible, combien) {
   return trouvees.slice(0, combien || 3);
 }
 
+/* LA CORRECTION CHIFFRÉE (v8.48). D'un diagnostic à un réglage : « Un peu
+   amer » sur une molette 1.4.2 devient « 1.4.2 → 1.5.0 ».
+
+   Rien n'est écrit en dur ici : le SENS vient de DIAGNOSTIC_LEVIERS (recettes.js),
+   les PAS de la ligne de réglages (Paramètres), la valeur de départ de la tasse,
+   et les bornes de la mouture de la plage de sa machine (GRIND). Changer un pas,
+   une plage ou une recette change la proposition sans toucher au code.
+
+   Plusieurs diagnostics cochés : pour chaque levier, le plus franc l'emporte ; deux
+   diagnostics qui tirent un levier en sens contraires l'annulent, c'est le cas de
+   l'extraction inégale. Un café déjà moulu n'a pas de molette. Rend la liste des
+   leviers dans l'ordre où les appliquer (mouture, chaleur, ratio), vide s'il n'y a
+   rien à chiffrer. Le premier est la proposition, les autres « si ça ne suffit
+   pas ». */
+function correctionChiffree(ext, pas, moulu) {
+  const p = Object.assign({ pas_crans: 2, pas_degres: 2, pas_feu: 1, pas_eau_g: 15, pas_dose_g: 1 }, pas || {});
+  const sens = {};
+  String(ext && ext.diagnostic || "").split("|").filter(Boolean).forEach(d => {
+    const l = (typeof DIAGNOSTIC_LEVIERS !== "undefined" && DIAGNOSTIC_LEVIERS[d]) || {};
+    Object.entries(l).forEach(([k, v]) => {
+      if (sens[k] === undefined) sens[k] = v;
+      else if (Math.sign(sens[k]) !== Math.sign(v)) sens[k] = 0;
+      else if (Math.abs(v) > Math.abs(sens[k])) sens[k] = v;
+    });
+  });
+  const nb = v => (v === "" || v === undefined || v === null || !Number.isFinite(Number(v)) ? null : Number(v));
+  const borne = (v, a, b) => Math.max(a, Math.min(b, v));
+  const leviers = [];
+  if (sens.mouture && !moulu) {
+    const d = GRIND.parseDial(String(ext.mouture_dial || ""));
+    const plage = GRIND.METHODES.find(m => m.id === String(ext.methode || "").toLowerCase());
+    if (d) {
+      let c = d.crans + sens.mouture * p.pas_crans;
+      if (plage) c = borne(c, plage.minC, plage.maxC);
+      c = borne(c, 0, GRIND.CRANS_MAX);
+      if (c !== d.crans) {
+        leviers.push({ levier: "mouture", champ: "mouture_dial", de: ext.mouture_dial, vers: GRIND.dialDepuisCrans(c),
+          ecart: c - d.crans, microns: [Math.round(d.microns), Math.round(c * GRIND.MICRONS_PAR_CRAN)] });
+      }
+    }
+  }
+  if (sens.chaleur) {
+    if (ext.methode === "Switch" && nb(ext.temperature_c) !== null) {
+      const t = borne(nb(ext.temperature_c) + sens.chaleur * p.pas_degres, 80, 100);
+      if (t !== nb(ext.temperature_c)) leviers.push({ levier: "temperature", champ: "temperature_c", de: nb(ext.temperature_c), vers: t });
+    } else if (ext.methode === "Brikka" && nb(ext.puissance_feu) !== null) {
+      const f = borne(nb(ext.puissance_feu) + sens.chaleur * p.pas_feu, 1, 10);
+      if (f !== nb(ext.puissance_feu)) leviers.push({ levier: "feu", champ: "puissance_feu", de: nb(ext.puissance_feu), vers: f });
+    }
+  }
+  if (sens.ratio) {
+    if (ext.methode === "Switch" && nb(ext.eau_g) > 0) {
+      const e = Math.max(nb(ext.dose_g) > 0 ? nb(ext.dose_g) * 8 : 60, nb(ext.eau_g) + sens.ratio * p.pas_eau_g);
+      if (e !== nb(ext.eau_g)) leviers.push({ levier: "eau", champ: "eau_g", de: nb(ext.eau_g), vers: e });
+    } else if (ext.methode === "Brikka" && nb(ext.dose_g) > 0) {
+      const g = borne(Math.round((nb(ext.dose_g) - sens.ratio * p.pas_dose_g) * 10) / 10, 5, 30);
+      if (g !== nb(ext.dose_g)) leviers.push({ levier: "dose", champ: "dose_g", de: nb(ext.dose_g), vers: g });
+    }
+  }
+  return leviers;
+}
+
 const REGLAGES = (() => {
   // Même seuil que les insights : sous trois tasses, une moyenne est du hasard.
   const MIN_TASSES = 3;
@@ -277,5 +339,5 @@ const REGLAGES = (() => {
   }
 
   return { MIN_TASSES, signature, pourCafe, tous, moyenneGlissante, meilleurLevier, constatsParCafe, LEVIERS,
-    JUMELLE_CRANS, jumelles };
+    JUMELLE_CRANS, jumelles, correctionChiffree };
 })();

@@ -1850,6 +1850,8 @@ input:focus, select:focus, textarea:focus {
 }
 .dicter:hover { color: var(--encre); }
 .dicter[aria-pressed="true"] { color: var(--accent-fort); border-color: var(--accent); background: var(--accent-fond); }
+/* La correction chiffrée (v8.48), sous les phrases de correction. */
+.corr-chiffree { display: block; margin-top: 6px; color: var(--accent-fort); font-weight: 600; }
 .note-aide { display: block; margin-top: 2px; font-size: 0.8rem; color: var(--attenue); }
 
 /* Âge du paquet sous le choix du café : une information, pas une alerte. */
