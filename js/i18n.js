@@ -441,6 +441,16 @@ const I18N = (() => {
     br_vanne_fermee: { fr: "Vanne fermée" },
     br_suivante: { fr: "Dans {d} s : {texte}" },
     br_recommencer: { fr: "Recommencer" },
+    rc_titre: { fr: "Ta semaine, du {a} au {b}" },
+    rc_fermer: { fr: "Refermer" },
+    rc_tasses: { fr: "tasses" },
+    rc_moyenne: { fr: "de moyenne, {n} notées" },
+    rc_meilleure: { fr: "la meilleure, {c}, {j}" },
+    rc_barres: { fr: "Tasses par jour, du lundi au dimanche" },
+    rc_mieux: { fr: "{x} point{s} de mieux que la semaine d'avant." },
+    rc_moins: { fr: "{x} point{s} de moins que la semaine d'avant." },
+    rc_cafe: { fr: "Semaine surtout {c} : {n} tasses sur {t}." },
+    rc_ouvert: { fr: "Sachet de {c} ouvert {j}." },
     fi_empreinte: { fr: "Son empreinte, contre tes autres cafés" },
     fi_trajectoire: { fr: "Ta trajectoire sur ce café" },
     fi_moulin: { fr: "Ce café sur le moulin" },
@@ -691,7 +701,8 @@ const I18N = (() => {
     "#br-machine,#br-titre,#br-dose,#br-sur,#br-cible,#br-vanne,#br-consigne,#br-suivante,#br-frise," +
     "#br-go,#br-note-dite," +
     "#dessin-etagere,#dessin-horloge,#dessin-spectre,#dessin-moulin," +
-    "#dessin-etagere-lecture,#dessin-horloge-lecture,#dessin-spectre-lecture,#dessin-moulin-lecture";
+    "#dessin-etagere-lecture,#dessin-horloge-lecture,#dessin-spectre-lecture,#dessin-moulin-lecture," +
+    "#carte-recap,#fiche-empreinte,#fiche-trajectoire,#fiche-moulin";
 
   function scanner() {
     const marche = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {

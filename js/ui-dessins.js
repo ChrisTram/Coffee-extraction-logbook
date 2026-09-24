@@ -332,9 +332,98 @@
     }));
   }
 
+  // ---------- Le récap de la semaine (v8.51) ----------
+
+  /* La semaine PASSÉE, lundi à dimanche, en tête du tableau de bord pendant la
+     semaine suivante, jusqu'à ce qu'on la referme. Seulement des FAITS, et chacun
+     ne s'écrit que s'il est vrai : l'écart avec la semaine d'avant (0,4 point et
+     trois tasses notées de chaque côté, les seuils des constats), le café de la
+     semaine s'il en fait la moitié, les sachets ouverts ou finis, la meilleure
+     tasse. Moins de deux tasses dans la semaine : pas de récap. */
+  const CLE_RECAP = "recap-ferme";
+  function lundiDe(d) {
+    const l = new Date(d); l.setHours(0, 0, 0, 0);
+    l.setDate(l.getDate() - ((l.getDay() + 6) % 7));
+    return l;
+  }
+  const dansSemaine = (e, debut) => {
+    const t = new Date(e.date_heure), fin = new Date(debut); fin.setDate(fin.getDate() + 7);
+    return t >= debut && t < fin;
+  };
+
+  function donneesRecap(maintenant) {
+    const debut = lundiDe(maintenant || new Date()); debut.setDate(debut.getDate() - 7);
+    const avant = new Date(debut); avant.setDate(avant.getDate() - 7);
+    const tasses = DATA.state.extractions.filter(e => dansSemaine(e, debut));
+    if (tasses.length < 2) return null;
+    const notees = extAnalysables().filter(e => e.note_sur_10 !== "" && dansSemaine(e, debut));
+    const noteesAvant = extAnalysables().filter(e => e.note_sur_10 !== "" && dansSemaine(e, avant));
+    const moy = notees.length ? moyenne(notees.map(e => Number(e.note_sur_10))) : null;
+    const moyAvant = noteesAvant.length ? moyenne(noteesAvant.map(e => Number(e.note_sur_10))) : null;
+    const jours = Array.from({ length: 7 }, (_, i) => {
+      const j = new Date(debut); j.setDate(j.getDate() + i);
+      return { date: j, n: tasses.filter(e => String(e.date_heure).slice(0, 10) === UI.cleLocale(j)).length };
+    });
+    const faits = [];
+    if (moy !== null && moyAvant !== null && notees.length >= MIN && noteesAvant.length >= MIN && Math.abs(moy - moyAvant) >= 0.4) {
+      faits.push(I18N.t(moy > moyAvant ? "rc_mieux" : "rc_moins", { x: note1(Math.abs(moy - moyAvant)), s: Math.abs(moy - moyAvant) >= 2 ? "s" : "" }));
+    }
+    const parCafe = {};
+    tasses.forEach(e => { parCafe[e.cafe_id] = (parCafe[e.cafe_id] || 0) + 1; });
+    const [cafeId, nCafe] = Object.entries(parCafe).sort((a, b) => b[1] - a[1])[0];
+    const cafe = DATA.state.cafes.find(c => c.id === cafeId);
+    if (cafe && nCafe * 2 >= tasses.length && Object.keys(parCafe).length > 1) {
+      faits.push(I18N.t("rc_cafe", { c: cafe.nom, n: nCafe, t: tasses.length }));
+    }
+    const finSemaine = new Date(debut); finSemaine.setDate(finSemaine.getDate() + 7);
+    DATA.state.achats.filter(a => a.date_ouverture && new Date(a.date_ouverture + "T12:00") >= debut &&
+      new Date(a.date_ouverture + "T12:00") < finSemaine).forEach(a => {
+      const c = DATA.state.cafes.find(x => x.id === a.cafe_id);
+      if (c) faits.push(I18N.t("rc_ouvert", { c: c.nom, j: new Date(a.date_ouverture + "T12:00").toLocaleDateString(I18N.locale(), { weekday: "long" }) }));
+    });
+    const meilleure = notees.slice().sort((a, b) => Number(b.note_sur_10) - Number(a.note_sur_10))[0];
+    return { debut, tasses: tasses.length, notees: notees.length, moy, moyAvant, jours, faits, meilleure };
+  }
+
+  function rendreRecap() {
+    const carte = $("#carte-recap");
+    if (!carte) return;
+    const r = donneesRecap();
+    let ferme = null;
+    try { ferme = localStorage.getItem(CLE_RECAP); } catch (e) { /* sans stockage, on la montre */ }
+    if (!r || ferme === UI.cleLocale(r.debut)) { carte.hidden = true; carte.innerHTML = ""; return; }
+    const fin = new Date(r.debut); fin.setDate(fin.getDate() + 6);
+    const jour = d => d.toLocaleDateString(I18N.locale(), { day: "numeric", month: "long" });
+    const max = Math.max(1, ...r.jours.map(j => j.n));
+    const barres = r.jours.map(j =>
+      '<span class="rc-jour' + (j.n ? "" : " vide") + '" title="' + echap(j.date.toLocaleDateString(I18N.locale(), { weekday: "long" }) + " : " + j.n) + '">' +
+      '<i style="height:' + (j.n ? Math.max(12, (j.n / max) * 100) : 6).toFixed(0) + '%"></i><small>' +
+      echap(j.date.toLocaleDateString(I18N.locale(), { weekday: "narrow" })) + "</small></span>").join("");
+    const m = r.meilleure;
+    const cafeM = m ? DATA.state.cafes.find(c => c.id === m.cafe_id) : null;
+    carte.hidden = false;
+    carte.innerHTML =
+      '<div class="rc-tete"><h3>' + echap(I18N.t("rc_titre", {
+        // « du 14 au 20 septembre » : le mois ne s'écrit qu'une fois s'il est le même.
+        a: r.debut.getMonth() === fin.getMonth() ? String(r.debut.getDate()) : jour(r.debut), b: jour(fin) })) + "</h3>" +
+      '<button type="button" class="dessin-lien" id="recap-fermer">' + echap(I18N.t("rc_fermer")) + "</button></div>" +
+      '<div class="rc-corps">' +
+      '<div class="rc-chiffre"><b>' + r.tasses + "</b><span>" + echap(I18N.t("rc_tasses")) + "</span></div>" +
+      (r.moy !== null ? '<div class="rc-chiffre"><b>' + note1(r.moy) + "</b><span>" + echap(I18N.t("rc_moyenne", { n: r.notees })) + "</span></div>" : "") +
+      (m ? '<div class="rc-chiffre"><b>' + note1(Number(m.note_sur_10)) + "</b><span>" + echap(I18N.t("rc_meilleure", {
+        c: cafeM ? cafeM.nom : "", j: new Date(m.date_heure).toLocaleDateString(I18N.locale(), { weekday: "long" }) })) + "</span></div>" : "") +
+      '<div class="rc-semaine" aria-label="' + echap(I18N.t("rc_barres")) + '">' + barres + "</div></div>" +
+      (r.faits.length ? '<ul class="rc-faits">' + r.faits.map(f => "<li>" + echap(f) + "</li>").join("") + "</ul>" : "");
+    $("#recap-fermer").addEventListener("click", () => {
+      try { localStorage.setItem(CLE_RECAP, UI.cleLocale(r.debut)); } catch (e) { /* tant pis, elle reviendra */ }
+      carte.hidden = true;
+    });
+  }
+
   // ---------- Le tableau de bord ----------
 
   function rendreDessins() {
+    rendreRecap();
     if (!$("#carte-dessins")) return;
     dessinerEtagere("dessin-etagere");
     dessinerHorloge("dessin-horloge");
@@ -376,7 +465,7 @@
   }
 
   Object.assign(UI, {
-    cablerDessins, dessinerEmpreinte, dessinerMoulin, dessinerTrajectoire, donneesEtagere, donneesMoulin, donneesSpectre, positionDiagnostic: position,
+    cablerDessins, donneesRecap, dessinerEmpreinte, dessinerMoulin, dessinerTrajectoire, donneesEtagere, donneesMoulin, donneesSpectre, positionDiagnostic: position,
     rendreDessins,
   });
 })();

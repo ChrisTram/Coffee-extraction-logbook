@@ -443,6 +443,13 @@ les autres sur quatre (`.col-2` vaut `span 8`, le défaut `span 4`).
   aux cinq chiffres du dessous. Légende de l'échelle, puis les mini statistiques
   en deux colonnes. Un rattrapage unique recompte après la mise en page, et `app.js`
   redemande un rendu au redimensionnement.
+- **Récap de la semaine** (v8.51, `#carte-recap`, `UI.donneesRecap()` dans
+  js/ui-dessins.js) : la semaine passée, lundi à dimanche, en tête du tableau de bord
+  pendant la semaine suivante, jusqu'à « Refermer » (localStorage `recap-ferme`, clé
+  = le lundi de la semaine résumée). Tasses, moyenne, meilleure tasse, barres par
+  jour, et des FAITS seulement s'ils sont vrais : écart avec la semaine d'avant (0,4
+  point, trois notées de chaque côté), café qui fait la moitié des tasses, sachets
+  ouverts. Rien sous deux tasses.
 - **Tes cafés en dessins** (v8.49, `#carte-dessins`, js/ui-dessins.js) : quatre
   dessins, chacun raccourci vers la page qu'il résume (`data-raccourci` : cafes,
   historique, diagnostics, moulin). L'étagère (un bocal par café actif avec sachet,
