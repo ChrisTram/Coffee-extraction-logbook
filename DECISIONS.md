@@ -1876,6 +1876,16 @@ déclenchera si des dates de torréfaction apparaissent un jour. Mais le message
 réclamait ces dates a été retiré : Chris a dit qu'il ne les aurait quasi jamais, le
 rappel serait un reproche permanent.
 
+### Régularité à café égal (v8.54)
+
+Le calcul ci-dessous prenait l'écart à la moyenne de TOUT l'historique. Relu avec
+Chris à propos d'une jauge « constance » qu'il ne comprenait pas : un Liberica à 8 et
+un Strong à 4, chacun parfaitement refait, faisaient ± 2. La tuile mesurait la
+variété des cafés. `REGLAGES.ecartACafeEgal` prend maintenant l'écart moyen de chaque
+tasse à la moyenne de son couple (café, recette), sur les couples qui ont au moins
+deux tasses notées. La jauge « constance » a été abandonnée : elle aurait doublé ce
+chiffre avec le même défaut.
+
 ### Régularité, et pourquoi pas l'écart type
 
 Le KPI de régularité utilise l'ÉCART MOYEN à la moyenne, pas l'écart type.

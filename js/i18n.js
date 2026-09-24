@@ -287,7 +287,7 @@ const I18N = (() => {
     rt_boisson_court: { fr: "boisson" },
     rt_rien: { fr: "Renseigne la dose et l eau, ou le volume extrait, pour voir le ratio." },
 
-    kpi_regularite: { fr: "régularité, écart moyen à ta moyenne" },
+    kpi_regularite: { fr: "régularité, à café et recette égaux" },
     /* Les trois chiffres sortis des tuiles : ils se lisent en ligne. */
     tb_derniere: { fr: "Dernière tasse, {q}" },
     tb_sur10: { fr: "sur 10" },

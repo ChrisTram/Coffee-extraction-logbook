@@ -230,6 +230,27 @@ function correctionChiffree(ext, pas, moulu) {
   return leviers;
 }
 
+/* LA RÉGULARITÉ, À CAFÉ ÉGAL (v8.54). L'écart moyen de chaque tasse à la moyenne
+   des tasses du MÊME café sur la MÊME recette, sur toutes les tasses qui ont au
+   moins une jumelle. L'ancien calcul prenait l'écart à la moyenne de tout
+   l'historique : un Liberica à 8 et un Strong à 4, chacun refait à l'identique,
+   donnaient un gros écart. C'était la variété des cafés, pas la régularité du
+   geste. Rend null tant qu'aucun couple café et recette n'a deux tasses notées. */
+function ecartACafeEgal(tasses) {
+  const groupes = {};
+  tasses.forEach(e => {
+    if (e.note_sur_10 === "" || e.note_sur_10 === undefined) return;
+    const k = e.cafe_id + "|" + e.recette;
+    (groupes[k] = groupes[k] || []).push(Number(e.note_sur_10));
+  });
+  let somme = 0, n = 0;
+  Object.values(groupes).filter(g => g.length >= 2).forEach(g => {
+    const m = g.reduce((a, b) => a + b, 0) / g.length;
+    g.forEach(x => { somme += Math.abs(x - m); n += 1; });
+  });
+  return n ? somme / n : null;
+}
+
 const REGLAGES = (() => {
   // Même seuil que les insights : sous trois tasses, une moyenne est du hasard.
   const MIN_TASSES = 3;
@@ -339,5 +360,5 @@ const REGLAGES = (() => {
   }
 
   return { MIN_TASSES, signature, pourCafe, tous, moyenneGlissante, meilleurLevier, constatsParCafe, LEVIERS,
-    JUMELLE_CRANS, jumelles, correctionChiffree };
+    JUMELLE_CRANS, jumelles, correctionChiffree, ecartACafeEgal };
 })();

@@ -377,6 +377,17 @@ const eparpille = REGLAGES.pourCafe("c3", ["1.2.0", "1.3.0", "1.4.0", "1.5.0"]
 check("assez de tasses mais toutes differentes : rien", eparpille.meilleure === null);
 check("la raison distingue ce cas", eparpille.raison === "eparpille", eparpille.raison);
 
+/* LA REGULARITE A CAFE EGAL (v8.54) : deux cafes tres differents, chacun refait
+   a l'identique, sont parfaitement reguliers. */
+{
+  const t = (cafe, recette, n) => ({ cafe_id: cafe, recette, note_sur_10: n });
+  const stables = [t("a", "R", 8), t("a", "R", 8), t("b", "R", 4), t("b", "R", 4)];
+  check("deux cafes differents mais refaits pareil : regularite parfaite", REGLAGES.ecartACafeEgal(stables) === 0);
+  check("l'ecart se mesure dans chaque couple cafe et recette",
+    REGLAGES.ecartACafeEgal([t("a", "R", 7), t("a", "R", 9), t("b", "S", 5)]) === 1);
+  check("sans jumelle, pas de regularite", REGLAGES.ecartACafeEgal([t("a", "R", 7), t("b", "R", 5)]) === null);
+}
+
 /* LA CORRECTION CHIFFREE (v8.48). Le sens des leviers est ecrit a cote des
    phrases de correction : ce controle verifie qu'ils disent la meme chose, pour
    qu'on ne puisse pas changer l'un en oubliant l'autre. */

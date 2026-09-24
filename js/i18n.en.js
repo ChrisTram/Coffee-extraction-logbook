@@ -231,7 +231,7 @@ const I18N_EN = {
     rt_infusion: "Brew ratio: {e} g of water divided by {d} g of coffee. On the Switch the poured water goes through the coffee, so this is the right measure.",
     rt_boisson_court: "drink",
     rt_rien: "Fill in the dose and the water, or the volume out, to see the ratio.",
-    kpi_regularite: "consistency, average gap from your mean",
+    kpi_regularite: "consistency, same coffee and recipe",
     tb_derniere: "Last cup, {q}",
     tb_sur10: "out of 10",
     q_maintenant: "now, {h}",

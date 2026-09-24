@@ -10,7 +10,7 @@
 
   // Emprunté au noyau, chargé avant nous.
   const { $, $$, animerCompteur, attrTitre, cleLocale, detailRatio, diagsAffiches,
-    ecartMoyen, estRatee, extAnalysables, extAvecCalculs, fmtDateHeure, fmtDecimal, fmtTemps,
+    estRatee, extAnalysables, extAvecCalculs, fmtDateHeure, fmtDecimal, fmtTemps,
     fmtVND, inclureRatees, moyenne, nav, trouverRecette } = UI;
 
   // ---------- Insights automatiques ----------
@@ -663,7 +663,7 @@
       { valeur: exts.filter(e => e.date_heure.slice(0, 10) === auj).length, label: I18N.t("kpi_auj"), dec: 0 },
       { valeur: exts.filter(e => e.date_heure.slice(0, 10) >= cleLundi).length, label: I18N.t("kpi_semaine"), dec: 0 },
       { valeur: moyenne(notes7j) || 0, label: I18N.t("kpi_note7"), dec: 1, sur10: true },
-      { valeur: ecartMoyen(notes) || 0, label: I18N.t("kpi_regularite"), dec: 1, plusMoins: true },
+      { valeur: REGLAGES.ecartACafeEgal(analysables) || 0, label: I18N.t("kpi_regularite"), dec: 1, plusMoins: true },
     ];
     $("#kpis").innerHTML = kpis.map(k =>
       '<div class="kpi"><div class="kpi-valeur"><span class="kpi-nombre"></span>' +
