@@ -240,6 +240,98 @@
     }) : I18N.t("de_moulin_sans_zone", { n: MIN }));
   }
 
+  // ---------- L'empreinte d'un café (fiche café, v8.50) ----------
+
+  /* Un radar des familles du vocabulaire (DESCRIPTEURS_GROUPES) : la part de
+     chaque famille dans les goûts cochés sur ce café, contre la même part sur
+     tous tes cafés. Chaque profil est ramené à sa famille la plus cochée, pour
+     comparer des formes et pas des volumes. */
+  function profil(tasses) {
+    const n = {};
+    let total = 0;
+    tasses.forEach(e => String(e.descripteurs || "").split("|").filter(Boolean).forEach(t => {
+      const g = DESCRIPTEURS_GROUPES.find(x => x.tags.includes(t));
+      if (!g) return;
+      n[g.nom] = (n[g.nom] || 0) + 1;
+      total += 1;
+    }));
+    const parts = DESCRIPTEURS_GROUPES.map(g => (total ? (n[g.nom] || 0) / total : 0));
+    const max = Math.max(...parts, 0.0001);
+    return { parts, norm: parts.map(p => p / max), total };
+  }
+
+  function dessinerEmpreinte(id, cafeId) {
+    const toutes = extAnalysables();
+    const aTags = e => String(e.descripteurs || "").trim() !== "";
+    const siennes = toutes.filter(e => e.cafe_id === cafeId && aTags(e));
+    if (siennes.length < MIN) { muet(id, "de_empreinte_vide", { n: MIN }); return; }
+    const a = profil(siennes), b = profil(toutes.filter(aTags));
+    const N = DESCRIPTEURS_GROUPES.length, C = [160, 104], R = 72;
+    const pt = (i, r) => { const ang = -Math.PI / 2 + (i / N) * Math.PI * 2; return [C[0] + Math.cos(ang) * r, C[1] + Math.sin(ang) * r]; };
+    let s = "";
+    [0.5, 1].forEach(k => {
+      s += '<polygon points="' + DESCRIPTEURS_GROUPES.map((_, i) => pt(i, R * k).map(v => v.toFixed(1)).join(",")).join(" ") + '" class="de-toile"></polygon>';
+    });
+    DESCRIPTEURS_GROUPES.forEach((g, i) => {
+      const [x, y] = pt(i, R + 13);
+      s += '<line x1="' + C[0] + '" y1="' + C[1] + '" x2="' + pt(i, R)[0].toFixed(1) + '" y2="' + pt(i, R)[1].toFixed(1) + '" class="de-rayon"></line>' +
+        '<text x="' + x.toFixed(1) + '" y="' + (y + 3).toFixed(1) + '" text-anchor="' + (x < C[0] - 8 ? "end" : x > C[0] + 8 ? "start" : "middle") + '">' +
+        echap(I18N.groupe(g.nom).split(" ")[0]) + "</text>";
+    });
+    const poly = (v, cls) => '<polygon points="' + v.map((k, i) => pt(i, R * k).map(n => n.toFixed(1)).join(",")).join(" ") + '" class="' + cls + '"></polygon>';
+    s += poly(b.norm, "de-empreinte-tous") + poly(a.norm, "de-empreinte-cafe");
+    // La lecture : la famille où ce café dépasse le plus tes autres, et celle où il manque.
+    const ecarts = a.parts.map((p, i) => ({ g: DESCRIPTEURS_GROUPES[i].nom, d: p - b.parts[i] })).sort((x, y) => y.d - x.d);
+    const plus = ecarts[0], moins = ecarts[ecarts.length - 1];
+    poserDessin(id, s, plus.d >= 0.05 && moins.d <= -0.05
+      ? I18N.t("de_empreinte_lecture", { p: I18N.groupe(plus.g).toLowerCase(), m: I18N.groupe(moins.g).toLowerCase() })
+      : I18N.t("de_empreinte_proche"));
+  }
+
+  // ---------- Ta trajectoire (fiche café, v8.50) ----------
+
+  /* Les tasses d'un café dans le plan molette × chaleur (degrés au Switch, feu à la
+     Brikka), reliées dans l'ordre où tu les as faites, sur la recette la plus
+     faite sur ce café : d'une recette à l'autre la molette change de sens, et une
+     Sherrycipe à 2.0.2 écrasait l'échelle de tout le reste. La teinte est la note,
+     la dernière tasse cerclée. */
+  function dessinerTrajectoire(id, cafeId) {
+    const avecDial = extAnalysables().filter(e => e.cafe_id === cafeId && e.note_sur_10 !== "" && GRIND.parseDial(String(e.mouture_dial || "")));
+    const compte = {};
+    avecDial.forEach(e => { if (e.recette) compte[e.recette] = (compte[e.recette] || 0) + 1; });
+    const recette = Object.keys(compte).sort((a, b) => compte[b] - compte[a])[0];
+    const machine = (avecDial.find(e => e.recette === recette) || {}).methode;
+    const chaleur = e => Number(machine === "Switch" ? e.temperature_c : e.puissance_feu);
+    const tasses = avecDial.filter(e => e.recette === recette)
+      .filter(e => Number.isFinite(chaleur(e)) && chaleur(e) > 0)
+      .sort((a, b) => String(a.date_heure).localeCompare(String(b.date_heure)))
+      .map(e => ({ c: GRIND.parseDial(String(e.mouture_dial)).crans, y: chaleur(e), n: Number(e.note_sur_10), dial: e.mouture_dial }));
+    if (tasses.length < MIN) { muet(id, "de_trajectoire_vide", { n: MIN }); return; }
+    const cs = tasses.map(t => t.c), ys = tasses.map(t => t.y);
+    const c0 = Math.min(...cs) - 2, c1 = Math.max(...cs) + 2, y0 = Math.min(...ys) - 1, y1 = Math.max(...ys) + 1;
+    const x = c => 36 + ((c - c0) / (c1 - c0)) * 270, y = v => 150 - ((v - y0) / (y1 - y0)) * 130;
+    let s = "";
+    const pasC = Math.max(1, Math.round((c1 - c0) / 4));
+    for (let c = Math.ceil(c0); c <= c1; c += pasC) {
+      s += '<line x1="' + x(c).toFixed(1) + '" y1="16" x2="' + x(c).toFixed(1) + '" y2="152" class="de-grille"></line>' +
+        '<text x="' + x(c).toFixed(1) + '" y="166" text-anchor="middle">' + GRIND.dialDepuisCrans(c) + "</text>";
+    }
+    [y0 + 1, (y0 + y1) / 2, y1 - 1].forEach(v => {
+      s += '<text x="30" y="' + (y(v) + 3).toFixed(1) + '" text-anchor="end">' + fmtDecimal(v, 0) + (machine === "Switch" ? "°" : "") + "</text>";
+    });
+    s += '<path d="M' + tasses.map(t => x(t.c).toFixed(1) + " " + y(t.y).toFixed(1)).join(" L") + '" class="de-chemin"></path>';
+    tasses.forEach((t, i) => {
+      const der = i === tasses.length - 1;
+      s += '<circle cx="' + x(t.c).toFixed(1) + '" cy="' + y(t.y).toFixed(1) + '" r="' + (der ? 6.5 : 4.2) + '" class="de-grain' + (der ? " de-derniere" : "") +
+        '" style="fill-opacity:' + opacite(t.n) + '"></circle>';
+    });
+    const meilleure = tasses.slice().sort((a, b) => b.n - a.n)[0];
+    const unite = v => machine === "Switch" ? I18N.t("de_degres", { v: fmtDecimal(v, 0) }) : I18N.t("j_feu", { f: v });
+    poserDessin(id, s, I18N.t("de_trajectoire_lecture", {
+      r: I18N.tr(recette || ""), n: tasses.length, d: meilleure.dial, c: unite(meilleure.y), x: note1(meilleure.n),
+    }));
+  }
+
   // ---------- Le tableau de bord ----------
 
   function rendreDessins() {
@@ -284,7 +376,7 @@
   }
 
   Object.assign(UI, {
-    cablerDessins, dessinerMoulin, donneesEtagere, donneesMoulin, donneesSpectre, positionDiagnostic: position,
+    cablerDessins, dessinerEmpreinte, dessinerMoulin, dessinerTrajectoire, donneesEtagere, donneesMoulin, donneesSpectre, positionDiagnostic: position,
     rendreDessins,
   });
 })();

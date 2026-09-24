@@ -632,6 +632,11 @@ chaque notification de données et à la bascule de langue tant qu'il est ouvert
 - **Courbe** SVG maison : chaque tasse en point, la moyenne par tranche en ligne, la
   fenêtre en fond, aujourd'hui en pointillé.
 - **Goûts** : la roue `CHARTS.roueAromes` en petit, sur les tasses de ce café.
+- **Dessins** (v8.50, js/ui-dessins.js) : l'empreinte (radar des familles de goûts,
+  part de chaque famille sur ce café contre tous les cafés, chaque profil ramené à
+  sa famille la plus cochée), la trajectoire (molette contre degrés au Switch ou feu
+  à la Brikka, dans l'ordre des tasses, sur la recette la plus faite de ce café) et
+  la carte du moulin restreinte à ce café.
 - **Meilleur réglage** : `UI.carteReglage` sur `REGLAGES.pourCafe`, son entête masqué.
 - **Dernières tasses** : les cinq plus récentes, ratées comprises.
 - Pied : Brasser ce café (saisie neuve sur ce café, `surChoixCafe`), Modifier le café,

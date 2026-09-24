@@ -1032,6 +1032,17 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
     api.UI.fenetreFraicheur(notees.slice(0, 4), moy).fenetre === null);
 }
 
+/* LE SPECTRE D'EXTRACTION place un diagnostic par le sens de mouture de
+   DIAGNOSTIC_LEVIERS (v8.49) : rien n'y est ecrit en double. */
+{
+  const p = api.UI.positionDiagnostic;
+  check("equilibre au centre du spectre", p("Équilibré") === 0);
+  check("un peu amer penche d'un cran vers le sur-extrait", p("Un peu amer") === 1);
+  check("sous-extrait franc tout a gauche", p("Sous-extrait (acide)") === -2);
+  check("un diagnostic de ratio n'a pas de place", p("Un peu léger") === null);
+  check("les dessins se rendent sans lever", (() => { try { api.UI.rendreDessins(); return true; } catch (e) { return false; } })());
+}
+
 /* LE MODE BRASSAGE lit la cible CUMULEE d'un versement dans le texte de la
    recette, sans jamais le reecrire (v8.47). */
 {

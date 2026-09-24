@@ -235,7 +235,20 @@
       '<p class="fc-muet" id="fiche-roue-vide" hidden>' + I18N.t("fi_gouts_vide") + "</p></section>" +
       '<section class="fc-bloc fc-reglage"><h3 class="fc-h">' + I18N.t("fi_reglage") + "</h3>" +
       UI.carteReglage({ cafe, ...bilan }) + "</section>" +
+      /* Les dessins de ce café (v8.50), rendus par js/ui-dessins.js. */
+      '<section class="fc-bloc"><h3 class="fc-h">' + I18N.t("fi_empreinte") + "</h3>" +
+      '<svg id="fiche-empreinte" class="fc-dessin" viewBox="0 0 320 210" role="img" aria-label="' + echap(I18N.t("fi_empreinte")) + '"></svg>' +
+      '<p class="fc-texte" id="fiche-empreinte-lecture"></p></section>' +
+      '<section class="fc-bloc"><h3 class="fc-h">' + I18N.t("fi_trajectoire") + "</h3>" +
+      '<svg id="fiche-trajectoire" class="fc-dessin" viewBox="0 0 320 172" role="img" aria-label="' + echap(I18N.t("fi_trajectoire")) + '"></svg>' +
+      '<p class="fc-texte" id="fiche-trajectoire-lecture"></p></section>' +
+      '<section class="fc-bloc"><h3 class="fc-h">' + I18N.t("fi_moulin") + "</h3>" +
+      '<svg id="fiche-moulin" class="fc-dessin" viewBox="0 0 320 126" role="img" aria-label="' + echap(I18N.t("fi_moulin")) + '"></svg>' +
+      '<p class="fc-texte" id="fiche-moulin-lecture"></p></section>' +
       blocDernieres(exts) + "</div>";
+    UI.dessinerEmpreinte("fiche-empreinte", cafe.id);
+    UI.dessinerTrajectoire("fiche-trajectoire", cafe.id);
+    UI.dessinerMoulin("fiche-moulin", cafe.id);
     const nbGouts = CHARTS.roueAromes(notees, { svg: "fiche-roue", detail: "fiche-roue-detail", lecture: "" });
     $("#fiche-roue-vide").hidden = nbGouts > 0;
     $(".fc-roue").hidden = nbGouts === 0;
