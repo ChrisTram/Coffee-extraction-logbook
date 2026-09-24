@@ -831,6 +831,7 @@
     // Les trois cartes qui peuvent rester vides avec des données valides.
     majCarteVide("mouture", pts("Brikka").length + pts("Switch").length, causeMoutureVide(notees));
     majCarteVide("gouts", gouts.length, causeGoutsVide(notees));
+    majCarteVide("aromes", CHARTS.roueAromes(notees), causeGoutsVide(notees));
     majCarteVide("duel", cafesDeux.length, causeDuelVide(notees));
 
     // Diagnostics

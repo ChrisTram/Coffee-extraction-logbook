@@ -1398,6 +1398,27 @@ html[data-theme="sombre"] .carte-sombre {
   align-items: center;
 }
 .analyse-graphe { min-width: 0; }
+/* La roue des arômes (v8.45) : la roue, et la famille choisie à côté. */
+.roue-boite { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 20px; align-items: center; }
+.roue { width: 100%; max-width: 300px; height: auto; display: block; }
+.roue .roue-famille { fill: var(--panneau-3); cursor: pointer; }
+.roue .roue-famille.choisie { stroke: var(--accent-fort); stroke-width: 2; }
+.roue .roue-famille:focus-visible { outline: none; stroke: var(--accent); stroke-width: 3; }
+.roue .roue-gout { fill: var(--accent); cursor: pointer; }
+.roue .roue-centre-nom { font-family: var(--sans); font-size: 12px; font-weight: 700; fill: var(--encre); pointer-events: none; }
+.roue .roue-centre-note { font-family: var(--serif); font-size: 22px; fill: var(--encre); pointer-events: none; }
+.roue-detail { display: grid; gap: 2px; align-content: start; min-width: 0; }
+.roue-titre { margin: 0 0 6px; font-size: 1.1rem; }
+.roue-ligne {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto 2.4em; gap: 10px;
+  padding: 5px 0; border-top: 1px solid var(--lignes-douces); font-size: 0.85rem;
+}
+.roue-ligne span:nth-child(2) { color: var(--attenue); font-variant-numeric: tabular-nums; }
+.roue-ligne b { text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 700px) {
+  .roue-boite { grid-template-columns: 1fr; }
+  .roue { margin: 0 auto; }
+}
 .analyse-lecture {
   margin: 0;
   padding-left: 14px;

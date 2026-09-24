@@ -581,8 +581,122 @@ const CHARTS = (() => {
     });
   }
 
+  /* LA ROUE DES ARÔMES (v8.45), en SVG maison comme le calendrier.
+
+     Les dix familles du vocabulaire (DESCRIPTEURS_GROUPES) au centre, leurs
+     goûts autour. La part de chaque arc : combien de fois il a été coché sur
+     les tasses notées. Sa teinte : la note moyenne de ces tasses, en opacité
+     de l'accent, de ROUE_NOTE_BASSE (pâle) à ROUE_NOTE_HAUTE (plein). Toucher
+     une famille la déplie et liste ses goûts, avec leur note et leur effectif.
+
+     Rend le nombre de goûts dessinés : zéro, et l'appelant montre la carte vide.
+     L'état « famille choisie » vit ici, par identifiant de roue, pour survivre
+     aux re-rendus du tableau de bord. */
+  const ROUE_NOTE_BASSE = 5, ROUE_NOTE_HAUTE = 8.5;
+  const roueChoix = new Map();
+  function roueAromes(notees, ids) {
+    const o = Object.assign({ svg: "roue-aromes", detail: "roue-detail", lecture: "lecture-aromes" }, ids || {});
+    const svg = document.getElementById(o.svg);
+    if (!svg) return 0;
+    const parTag = {};
+    notees.forEach(e => String(e.descripteurs || "").split("|").filter(Boolean).forEach(t => {
+      (parTag[t] = parTag[t] || []).push(Number(e.note_sur_10));
+    }));
+    const moy = a => a.reduce((s, x) => s + x, 0) / a.length;
+    const familles = DESCRIPTEURS_GROUPES.map(g => {
+      const gouts = g.tags.filter(t => parTag[t]).map(t => ({ tag: t, n: parTag[t].length, note: moy(parTag[t]) }));
+      const n = gouts.reduce((s, x) => s + x.n, 0);
+      return { nom: g.nom, gouts, n, note: n ? gouts.reduce((s, x) => s + x.n * x.note, 0) / n : 0 };
+    }).filter(f => f.n > 0);
+    const total = familles.reduce((s, f) => s + f.n, 0);
+    const detail = document.getElementById(o.detail), lecture = document.getElementById(o.lecture);
+    if (!total) {
+      svg.innerHTML = "";
+      if (detail) detail.innerHTML = "";
+      if (lecture) lecture.textContent = "";
+      return 0;
+    }
+    const plusCochee = familles.slice().sort((a, b) => b.n - a.n)[0];
+    if (!familles.some(f => f.nom === roueChoix.get(o.svg))) roueChoix.set(o.svg, plusCochee.nom);
+
+    const C = 150, TOUR = Math.PI * 2, JEU = 0.01;
+    const opacite = note => Math.max(0.16, Math.min(1,
+      0.16 + ((note - ROUE_NOTE_BASSE) / (ROUE_NOTE_HAUTE - ROUE_NOTE_BASSE)) * 0.84));
+    const pt = (r, a) => (C + r * Math.sin(a)).toFixed(2) + " " + (C - r * Math.cos(a)).toFixed(2);
+    const secteur = (r0, r1, a0, a1) => {
+      const g = a1 - a0 > Math.PI ? 1 : 0;
+      return "M" + pt(r1, a0) + " A" + r1 + " " + r1 + " 0 " + g + " 1 " + pt(r1, a1) +
+        " L" + pt(r0, a1) + " A" + r0 + " " + r0 + " 0 " + g + " 0 " + pt(r0, a0) + " Z";
+    };
+    const note1 = n => Number(n.toFixed(1)).toLocaleString(I18N.locale(), { maximumFractionDigits: 1 });
+    const echap = s => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+
+    function peindre() {
+      const choisie = roueChoix.get(o.svg);
+      let a = 0, html = "";
+      familles.forEach(f => {
+        // Une famille seule fait le tour complet : on laisse un jeu pour que
+        // l'arc reste un arc et ne se referme pas sur lui même.
+        const af = Math.min((f.n / total) * TOUR, TOUR - 0.001);
+        const actif = f.nom === choisie;
+        const nomF = I18N.groupe(f.nom);
+        html += '<path d="' + secteur(46, 92, a + JEU, a + af - JEU) + '" class="roue-famille' + (actif ? " choisie" : "") +
+          '" data-famille="' + echap(f.nom) + '" tabindex="0" role="button" aria-pressed="' + actif +
+          '" aria-label="' + echap(nomF + ", " + note1(f.note)) + '"><title>' + echap(nomF) + "</title></path>";
+        let b = a;
+        f.gouts.forEach(g => {
+          const ag = (g.n / total) * TOUR;
+          html += '<path d="' + secteur(96, actif ? 146 : 138, b + JEU, b + ag - JEU) + '" class="roue-gout" style="fill-opacity:' +
+            opacite(g.note).toFixed(2) + '" data-famille="' + echap(f.nom) + '"><title>' +
+            echap(I18N.tag(g.tag) + " : " + note1(g.note) + ", " + I18N.t("roue_fois", { n: g.n })) + "</title></path>";
+          b += ag;
+        });
+        a += af;
+      });
+      const f = familles.find(x => x.nom === choisie);
+      const court = I18N.groupe(f.nom);
+      html += '<text x="150" y="146" text-anchor="middle" class="roue-centre-nom">' +
+        echap(court.length > 14 ? court.split(" ")[0] : court) + "</text>" +
+        '<text x="150" y="170" text-anchor="middle" class="roue-centre-note">' + note1(f.note) + "</text>";
+      svg.innerHTML = html;
+      if (detail) {
+        detail.innerHTML = '<h4 class="roue-titre">' + echap(I18N.groupe(f.nom)) + "</h4>" +
+          f.gouts.slice().sort((x, y) => y.note - x.note).map(g =>
+            '<div class="roue-ligne"><span>' + echap(I18N.tag(g.tag)) + "</span><span>" +
+            I18N.t("roue_fois", { n: g.n }) + "</span><b>" + note1(g.note) + "</b></div>").join("");
+      }
+    }
+    peindre();
+    if (lecture) {
+      const mieux = familles.filter(x => x.n >= 3).sort((x, y) => y.note - x.note)[0];
+      lecture.textContent = I18N.t(mieux && mieux.nom !== plusCochee.nom ? "roue_lecture" : "roue_lecture_seule", {
+        f: I18N.groupe(plusCochee.nom), n: plusCochee.n, m: mieux ? I18N.groupe(mieux.nom) : "", x: mieux ? note1(mieux.note) : "",
+      });
+    }
+    // Branché UNE fois par roue : le SVG survit aux re-rendus, seul son contenu change.
+    if (!svg.dataset.branche) {
+      svg.dataset.branche = "1";
+      const choisir = ev => {
+        const p = ev.target.closest(".roue-famille, .roue-gout");
+        if (!p) return;
+        if (ev.type === "keydown" && ev.key !== "Enter" && ev.key !== " ") return;
+        ev.preventDefault();
+        roueChoix.set(o.svg, p.dataset.famille);
+        svg._peindre();
+        if (ev.type === "keydown") {
+          const cible = [...svg.querySelectorAll(".roue-famille")].find(x => x.dataset.famille === p.dataset.famille);
+          if (cible) cible.focus();
+        }
+      };
+      svg.addEventListener("click", choisir);
+      svg.addEventListener("keydown", choisir);
+    }
+    svg._peindre = peindre;
+    return familles.reduce((s, x) => s + x.gouts.length, 0);
+  }
+
   return {
-    C_BRIKKA, C_SWITCH, C_DEUX, C_DIAG,
+    C_BRIKKA, C_SWITCH, C_DEUX, C_DIAG, roueAromes,
     appliquerDefauts, toutDetruire, chargerChart,
     barresEtLigne30j, barresHorizontales, comparatifMachines, nuage, anneauDiagnostics,
     heatmap, diagramme,

@@ -440,8 +440,12 @@ les autres sur quatre (`.col-2` vaut `span 8`, le défaut `span 4`).
   aux cinq chiffres du dessous. Légende de l'échelle, puis les mini statistiques
   en deux colonnes. Un rattrapage unique recompte après la mise en page, et `app.js`
   redemande un rendu au redimensionnement.
-- **Analyses** : note par café, Brikka contre Switch, goûts, diagnostics, note
-  contre mouture, note par recette.
+- **Analyses** : note par café, Brikka contre Switch, goûts, arômes, diagnostics,
+  note contre mouture, note par recette. L'onglet Arômes (v8.45) est la roue
+  `CHARTS.roueAromes()`, SVG maison : familles de `DESCRIPTEURS_GROUPES` au centre,
+  goûts autour, arc proportionnel au nombre de coches, opacité de l'accent selon la
+  note moyenne (5 pâle, 8,5 plein). La famille choisie est gardée par roue, entre
+  deux rendus. Rend le nombre de goûts dessinés, zéro montre la carte vide.
 
 ## 7. Graphiques (js/charts.js)
 
