@@ -123,6 +123,21 @@ const CHARTS = (() => {
   function barresEtLigne30j(idCanvas, labels, comptes, moyennes, details, tendance) {
     const plusBasse = Math.min(...moyennes.filter(n => n !== null), 10);
     const plancher = plusBasse < 4 ? Math.max(0, Math.floor(plusBasse / 2) * 2) : 4;
+    /* UN PAVÉ PAR TASSE (v8.58). Une barre pleine dans une bande de soixante pixels
+       graduée jusqu'à 3 : une journée à une tasse et une à deux se ressemblaient,
+       et Chris en fait une ou deux presque tous les jours. Chaque tasse est
+       maintenant un pavé empilé, séparé du suivant par un filet de la couleur de la
+       carte : on les COMPTE au lieu de lire une hauteur. L'échelle s'arrête au
+       plus gros jour du mois (au moins 2), avec un repère par tasse. */
+    const plusGros = Math.max(2, ...comptes.map(Number).filter(Number.isFinite));
+    const filet = cssVar("--panneau");
+    const paves = Array.from({ length: plusGros }, (_, k) => ({
+      type: "bar", label: I18N.t("l_tasses_jour"), pave: k + 1, yAxisID: "y", stack: "tasses",
+      data: comptes.map(c => (Number(c) > k ? 1 : null)),
+      // Le filet entre deux pavés est la couleur de la carte, pas celle d'une série.
+      backgroundColor: cssVar("--barre-neutre"), borderColor: filet,
+      borderWidth: 1.5, borderSkipped: false, borderRadius: 3, maxBarThickness: 16,
+    }));
     creer(idCanvas, {
       data: {
         labels,
@@ -144,17 +159,21 @@ const CHARTS = (() => {
             spanGaps: true, tension: 0.4, pointRadius: 0, pointHoverRadius: 4, borderWidth: 3,
             fill: false,
           },
-          {
-            type: "bar", label: I18N.t("l_tasses_jour"), data: comptes, yAxisID: "y",
-            backgroundColor: cssVar("--barre-neutre"), borderRadius: 3, maxBarThickness: 16,
-          },
+          ...paves,
         ],
       },
       options: {
         interaction: { mode: "index", intersect: false },
         plugins: {
+          // Un seul libellé « tasses du jour » dans la légende, pas un par pavé.
+          legend: { labels: { filter: (item, data) => !(data.datasets[item.datasetIndex].pave > 1) } },
           tooltip: {
+            // Dans l'infobulle aussi : le premier pavé porte le total du jour.
+            filter: item => !(item.dataset.pave > 1) && !(item.dataset.pave === 1 && !Number(comptes[item.dataIndex])),
             callbacks: {
+              label: item => (item.dataset.pave
+                ? I18N.t("l_tasses_jour") + " : " + comptes[item.dataIndex]
+                : item.dataset.label + " : " + (item.formattedValue || "")),
               afterBody: items => {
                 const i = items.length ? items[0].dataIndex : -1;
                 if (i < 0 || !details || !details[i]) return "";
@@ -171,13 +190,13 @@ const CHARTS = (() => {
            en bas sur un tiers, chacune avec sa graduation à gauche, le même
            axe des jours dessous. */
         scales: {
-          x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } },
+          x: { stacked: true, grid: { display: false }, ticks: { maxTicksLimit: 8 } },
           /* Chart.js empile les axes d'une même pile dans l'ordre où ils sont
              déclarés, du bas vers le haut : les tasses d'abord, la note ensuite. */
           y: {
-            stack: "trente", stackWeight: 1, position: "left", beginAtZero: true, offset: true,
-            suggestedMax: 3, ticks: { stepSize: 1 },
-            grid: { display: false },
+            stack: "trente", stackWeight: 1, position: "left", stacked: true, min: 0, max: plusGros,
+            ticks: { stepSize: 1 },
+            grid: { color: cssVar("--lignes-douces"), drawTicks: false },
             title: { display: true, text: I18N.t("axe_tasses") },
           },
           y2: {

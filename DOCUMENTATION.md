@@ -434,7 +434,12 @@ les autres sur quatre (`.col-2` vaut `span 8`, le défaut `span 4`).
 - **Chiffres clés** : quatre tuiles (aujourd'hui, cette semaine, note sur
   7 jours, régularité) plus trois lignes alignées en bas de carte pour le total,
   la note globale et la caféine (`#kpis-secondaires`, un `<ul>`).
-- **Graphe 30 jours** : Chart.js, inchangé depuis la v7.x.
+- **Graphe 30 jours** : Chart.js, deux bandes sur le même axe des jours (v8.39), la
+  note en haut, les tasses dessous. Depuis la v8.58 les tasses sont UN PAVÉ PAR TASSE :
+  un jeu de barres empilées par rang de tasse (`pave: 1, 2, …`), séparées par un
+  filet de la couleur de la carte ; l'échelle s'arrête au plus gros jour (au moins 2)
+  avec un repère par tasse. Légende et infobulle ne montrent que le premier pavé,
+  qui porte le total du jour.
 - **Ce que tes données disent** : les insights, sur carte sombre.
 - **Les 5 dernières** : une table, une ligne par tasse plus le commentaire
   tronqué sur une seconde ligne. Largeurs imposées par `<colgroup>`.
