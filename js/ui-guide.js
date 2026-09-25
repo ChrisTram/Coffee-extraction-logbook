@@ -89,6 +89,30 @@
     setTimeout(() => carte.classList.remove("recette-montree"), 1800);
   }
 
+  /* LA VIDÉO DE LA RECETTE (v8.64). Un lien YouTube devient « Voir la vidéo » :
+     le lecteur ne se charge qu'au clic, dans la carte, depuis youtube-nocookie
+     (pas de cookie tant qu'on ne lance rien, et pas de son surprise à
+     l'ouverture du Guide). Tout autre lien reste un lien. */
+  const idYoutube = url => (String(url || "").match(/(?:youtu\.be\/|[?&]v=|\/embed\/|\/shorts\/)([\w-]{11})/) || [])[1] || "";
+  const attr = s => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  function blocVideo(r) {
+    if (!r.video) return "";
+    const id = idYoutube(r.video);
+    return '<div class="recette-video">' +
+      (id ? '<button type="button" class="btn btn-petit" data-video="' + id + '">' + I18N.t("bi_video") + "</button>" : "") +
+      '<a class="recette-video-lien" href="' + attr(r.video) + '" target="_blank" rel="noopener">' +
+      I18N.t(id ? "bi_youtube" : "bi_source") + "</a></div>";
+  }
+  function lancerVideo(bouton) {
+    const cadre = document.createElement("iframe");
+    cadre.className = "recette-lecteur";
+    cadre.src = "https://www.youtube-nocookie.com/embed/" + bouton.dataset.video + "?autoplay=1&rel=0";
+    cadre.title = I18N.t("bi_video");
+    cadre.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+    cadre.allowFullscreen = true;
+    bouton.replaceWith(cadre);
+  }
+
   function carteRecette(r, groupe) {
     const badges = (r.parDefaut ? '<span class="badge-defaut">' + I18N.t("badge_defaut") + "</span>" : "") +
       (r.avancee ? '<span class="badge-avancee">' + I18N.t("badge_avancee") + "</span>" : "");
@@ -122,6 +146,7 @@
       pilules +
       '<p class="recette-sous">' + r.sousTitre + "</p>" +
       '<div class="recette-params">' + params + "</div>" +
+      blocVideo(r) +
       chezToi(r) +
       etapes + tetsu +
       (r.pourQui ? '<p class="recette-pourqui"><b>' + I18N.t("r_pourqui") + "</b> " + r.pourQui + "</p>" : "") +
@@ -162,6 +187,7 @@
       rendreRecettes();
     }));
     $$("[data-pasapas]").forEach(b => b.addEventListener("click", () => ouvrirPasAPas(b.dataset.pasapas)));
+    $$("#grille-recettes [data-video]").forEach(b => b.addEventListener("click", () => lancerVideo(b)));
     $$("[data-recette-edit]").forEach(b => b.addEventListener("click", () => {
       UI.ouvrirModaleRecettes();
       UI.ouvrirFormRecette(b.dataset.recetteEdit);

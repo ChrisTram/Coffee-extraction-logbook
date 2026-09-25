@@ -29,7 +29,7 @@ const DATA_SCHEMA = (() => {
   const RECETTE_COLS = ["id", "nom", "numero", "methode", "famille", "variante", "sous_titre", "dose_g", "eau_g",
     "temperature_c", "temp_texte", "mouture_dial", "ratio_texte", "total_texte", "lait",
     "etapes", "pour_qui", "cafes_associes", "note", "par_defaut", "avancee", "variantes", "actif",
-    "puissance_feu", "volume_typique"];
+    "puissance_feu", "volume_typique", "video"];
 
   const TASSE_COLS = ["id", "nom", "contenance_ml"];
 
@@ -267,6 +267,10 @@ const DATA_SCHEMA = (() => {
       cafesAssocies: Array.isArray(r.cafesAssocies) ? r.cafesAssocies
         : String(r.cafes_associes || "").split(";").map(s => s.trim()).filter(Boolean),
       note: r.note || "",
+      /* La vidéo de la recette (v8.64) : un lien, YouTube ou autre. Le Guide
+         intègre le lecteur quand c'est YouTube, sinon il donne le lien. Seuls
+         http et https passent : un lien « javascript: » ne s'écrit jamais. */
+      video: /^https?:\/\//i.test(String(r.video || "").trim()) ? String(r.video).trim().slice(0, 300) : "",
       parDefaut: r.par_defaut !== undefined ? Number(r.par_defaut) === 1 : !!r.parDefaut,
       avancee: r.avancee !== undefined && r.avancee !== "" ? (Number(r.avancee) === 1 || r.avancee === true) : false,
       variantes: r.variantes !== undefined && r.variantes !== "" ? (Number(r.variantes) === 1 || r.variantes === true) : false,
@@ -297,6 +301,7 @@ const DATA_SCHEMA = (() => {
          couvertes, dans tools/data.test.mjs, empeche desormais l'oubli. */
       puissance_feu: r.puissance_feu,
       volume_typique: r.volumeTypique,
+      video: r.video,
     };
   }
 

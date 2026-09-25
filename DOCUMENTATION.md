@@ -597,6 +597,7 @@ Points fixés depuis, chacun expliqué dans `DECISIONS.md` :
 - Une extraction peut être marquée RATÉE : elle compte dans ce qui décrit ce qui
   s'est passé, pas dans ce qui conseille (`extAnalysables()`). La bascule qui
   les réintègre vit dans Paramètres, section Cet appareil (préférence locale).
+- Chaque recette porte un lien `video` (v8.64, colonne de `RECETTE_COLS`, http ou https seulement). Dans le Guide, un lien YouTube donne « Voir la vidéo », qui remplace le bouton par un lecteur youtube-nocookie au clic, et « Ouvrir sur YouTube » ; tout autre lien donne « Voir la source ». Le pas de schéma v16 donne leur vidéo aux recettes d'origine déjà stockées, sans écraser un lien posé à la main.
 - La température du SWITCH se déduit du temps passé par la bouilloire sur le
   feu (`f-chauffe-min` et `-sec`, stocké dans `chauffe_s`) : une courbe de
   28 à 100 °C (v8.59, montée qui ralentit près de l'ébullition) calée sur deux

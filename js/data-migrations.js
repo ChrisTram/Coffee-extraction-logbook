@@ -37,7 +37,7 @@ const DATA_MIGRATIONS = (() => {
 
        Chaque pas ne touche QUE la valeur semée d'avant. Un pas qui écraserait un
        réglage choisi volontairement serait un bug, pas une migration. */
-    const SCHEMA_ACTUEL = 15;
+    const SCHEMA_ACTUEL = 16;
 
     // Rattrapage de la puissance de feu des recettes Brikka : l'échelle de Chris a
     // bougé deux fois, 3 puis 4 puis 2.
@@ -327,6 +327,21 @@ const DATA_MIGRATIONS = (() => {
         if (courbe === "" || courbe === droite) return;
         x.temperature_c = courbe;
         estampiller(x);
+        touche = true;
+      });
+      return touche;
+    } },
+
+    /* Les vidéos des recettes (v8.64) : une recette d'origine déjà stockée
+       reçoit le lien de sa graine. Ciblé sur un champ VIDE : un lien posé à la
+       main n'est pas remplacé. */
+    { v: 16, nom: "videos des recettes", appliquer: () => {
+      let touche = false;
+      state.recettes.forEach(rec => {
+        const graine = RECETTES_DEPART.find(d => d.id === rec.id);
+        if (!graine || !graine.video || rec.video) return;
+        rec.video = graine.video;
+        estampiller(rec);
         touche = true;
       });
       return touche;

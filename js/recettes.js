@@ -121,6 +121,7 @@ const RECETTES_DEPART = [
     pourQui: "Les fermentés, natural, honey et anaerobic en torréfaction medium. Grains poreux et solubles, la percolation d'attaque capte les esters volatils, l'immersion va chercher la sucrosité.",
     cafesAssocies: ["Ethiopia Banko Anaerobic (Amigo)", "Fine Robusta Whisky (Home Roast)", "Fine Robusta Anaerobic (Ritachi)", "Anaerobic Fine Robusta (Soul)", "Serie 4 D'ran (Là Việt)", "Cà Phê Mít Liberica (Fine Coffee Agency)", "Fine Robusta Cư M'Gar (Every Half)", "Là Việt Balanced"],
     note: "La source recommande 600 à 700 microns, soit 1.4.2 à 1.6.4 sur mon moulin. Les volumes sont cumulés : compléter à 240 g veut dire que la balance affiche 240.",
+    video: "https://www.youtube.com/watch?v=68ZOXrXbVHc",
     parDefaut: true, avancee: false, variantes: false, actif: 1,
   },
   {
@@ -147,6 +148,7 @@ const RECETTES_DEPART = [
     pourQui: "Les lavés propres, quand je cherche la clarté. Plus de clarté et d'acidité que la Chronicler, qui garde plus de sucre et de corps avec moins de risque : sur un lavé et un C5 bien réglé, celle-ci ; sur un natural ou un grain que je découvre, la Chronicler. Les cinq verses courtes gardent le lit sous une lame d'eau fine et constante, donc ni gros volume qui creuse le lit ni canalisation, et les pauses rallongent le contact sans avoir à resserrer la molette. Percolation pure, donc plus sensible à la mouture. C'est presque le Five Pour de Matt Winton, Hoffmann le reconnaît : rien de magique, juste bien calibré.",
     cafesAssocies: ["Là Việt Balanced", "Cầu Đất lavé (The Married Beans)", "Guji Uraga lavé (Greenfields)", "Serie 1 The 1893 (Là Việt)", "Specialty Arabica Cầu Đất (Ritachi)"],
     note: "Better 1 Cup V60 Technique de James Hoffmann, novembre 2022, qui remplace son Ultimate 500 ml de 2020 pour une tasse (youtube.com/watch?v=1oB1oDrDkHM ; la partie 2 corrige des points, il dit coarse à 10:13 en voulant dire finer). Il conseille medium-fine, un cran plus fin qu'en 500 ml. Dans la Part 2 il accepte la cuillère à la place du tourbillon final, en douceur. Écoulement fini après 3:30 ou tasse amère : un numéro plus gros, 1.6.0, sans toucher au rythme. Fini avant 2:30 ou tasse aigre : un numéro plus fin, 1.4.0. Pour deux tasses, 30 g et 500 g, garder plutôt l'ancienne Ultimate, faite pour ça.",
+    video: "https://www.youtube.com/watch?v=1oB1oDrDkHM",
     parDefaut: false, avancee: false, variantes: false, actif: 1,
   },
   {
@@ -170,6 +172,7 @@ const RECETTES_DEPART = [
     pourQui: "Les lavés clairs, où elle est excellente. La plus simple à mémoriser et la plus tolérante des percolations pures : le second bloom chasse le CO2 que le premier n'a pas sorti, donc la grosse verse traverse un lit déjà dégazé, sans bulles qui creusent des canaux. Extraction plus basse que la Hoffmann, TDS autour de 1,3 : plus de clarté et de fruit, moins de corps. Sur un café qui a besoin de sucre et de rondeur elle paraît fine, là je passe à la Chronicler.",
     cafesAssocies: ["Là Việt Balanced", "Cầu Đất lavé (The Married Beans)", "Guji Uraga lavé (Greenfields)", "Serie 1 The 1893 (Là Việt)"],
     note: "Chercher « Lance Hedrick One and Done V60 » sur YouTube. Zéro tourbillon sur les blooms : les fines restent en place et le filtre ne se bouche pas. La mouture se règle sur le temps TOTAL, 2:00 à 2:30, pas sur des crans : trop lent, un numéro plus gros ; trop rapide, un numéro plus fin. Un peu trop rapide mais bon en bouche : un mini tourbillon après la grosse verse ajoute dix à quinze secondes au lieu de toucher la mouture. Tasse trop légère : monter à 1:14, soit 16 g, avant de rallonger le temps.",
+    video: "https://www.youtube.com/watch?v=PNFVCmxBjQQ",
     parDefaut: false, avancee: false, variantes: false, actif: 1,
   },
   {
@@ -233,6 +236,7 @@ const RECETTES_DEPART = [
     pourQui: "Les cafés complexes et chers que je ne veux pas rater, et ceux dont je veux régler moi même l'équilibre. Vanne OUVERTE du début à la fin. Verser dès que le lit vient de s'assécher en surface, environ toutes les 30 à 45 secondes.",
     cafesAssocies: ["Ethiopia Banko Anaerobic (Amigo)", "Mít Liberica Khe Sanh (Father Coffee)", "Serie 2 Datanla (Là Việt)", "Serie 4 D'ran (Là Việt)", "Proud (Bosgaurus)"],
     note: "Mouture medium coarse, 2.0.0 : deux numéros plus ouverts que la zone commune avec la Brikka.",
+    video: "https://www.youtube.com/watch?v=Xm4bDaioAjg",
     parDefaut: false, avancee: false, variantes: true, actif: 1,
   },
   {
@@ -256,6 +260,7 @@ const RECETTES_DEPART = [
     pourQui: "Les mediums et les fermentés solubles, et le matin en semaine quand je veux quelque chose de bon en deux minutes.",
     cafesAssocies: ["Là Việt Balanced", "Fine Robusta Whisky (Home Roast)", "Cà Phê Mít Liberica (Fine Coffee Agency)", "Fine Robusta Cư M'Gar (Every Half)", "Serie 2 Datanla (Là Việt)", "Serie 4 D'ran (Là Việt)"],
     note: "Les deux premiers versements sont CIRCULAIRES, le troisième est AU CENTRE. La source ne donne pas de température, 92 degrés est mon choix. La source indique 7.0 sur un moulin 1zpresso K-Ultra : ne pas convertir ce chiffre, les échelles entre moulins ne sont pas transposables. On retient uniquement son descriptif medium-coarse, 800 à 1000 microns, soit 2.0.0 sur mon Timemore C5 ESP.",
+    video: "https://www.youtube.com/watch?v=wCNxPYyGWoo",
     parDefaut: false, avancee: false, variantes: false, actif: 1,
   },
   /* Variante de la Chronicler : elle partage sa CARTE dans le Guide (famille
@@ -284,6 +289,7 @@ const RECETTES_DEPART = [
     pourQui: "Les mêmes cafés que la recette 1. C'est la version à prendre quand la 1 sort trop vive. Particulièrement adaptée aux honey. Moins d'eau s'échappe en percolation, donc plus de volume reste en immersion.",
     cafesAssocies: ["Serie 2 Datanla (Là Việt)", "Honey Red (The Married Beans)", "plus toute la liste de la recette 1"],
     note: "",
+    video: "https://www.youtube.com/watch?v=68ZOXrXbVHc",
     parDefaut: false, avancee: false, variantes: false, actif: 1,
   },
   /* LA TETSU NEO BREW (v8.63). La recette « The Neo Brew » de Tetsu Kasuya, mai
@@ -320,6 +326,7 @@ const RECETTES_DEPART = [
     pourQui: "Les torréfactions claires, les lavés comme les naturels et les anaérobies : Tetsu la conçoit pour aller chercher tout le sucré et une texture épaisse, pas seulement pour éviter les défauts. Rien à décider, rien à surveiller : le même versement de 30 g toutes les 15 secondes, vanne ouverte du début à la fin, l'eau ne doit jamais stagner dans le lit. Le mode Brassage bipe à chaque versement. Sur un medium, 96 degrés peuvent tirer vers l'amer, la mouture très grosse compense en partie.",
     cafesAssocies: ["Ethiopia Banko Anaerobic (Amigo)", "Serie 2 Datanla (Là Việt)", "Serie 4 D'ran (Là Việt)", "Guji Uraga lavé (Greenfields)"],
     note: "Source : Tetsu Kasuya, « The Neo Brew », mai 2026 (youtube.com/watch?v=k0nsShguOsU). Sa version : 20 g, 300 g, dix versements de 30 g toutes les 15 secondes, 40 à 45 clics sur un Comandante, extra gros. Ne pas convertir ces clics : on retient l'extra gros, 1200 microns et plus, soit la butée de mon Timemore C5 (3.0.0, 1248 microns). Départ à 2.8.0 (1165 microns) parce que 16 g font un lit moins épais que ses 20 g, où l'eau passe plus vite. Amer ou râpeux : monter vers 3.0.0. Il conseille un Hario NEO, accepte le V60 ; le Switch vanne ouverte est un V60. Il ne donne pas de temps final, 2:30 est mon estimation. À 96 °C la bouilloire se prend au gros bouillon : deux minutes de versement la refroidissent en route.",
+    video: "https://www.youtube.com/watch?v=k0nsShguOsU",
     parDefaut: false, avancee: false, variantes: false, actif: 1,
   },
 ];

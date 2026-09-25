@@ -254,6 +254,7 @@
     $("#r-pourqui").value = r ? r.pourQui : "";
     $("#r-cafes").value = r ? r.cafesAssocies.join("\n") : "";
     $("#r-note").value = r ? r.note : "";
+    $("#r-video").value = r ? r.video || "" : "";
     $("#r-defaut").checked = r ? !!r.parDefaut : false;
     $("#r-avancee").checked = r ? !!r.avancee : false;
     $("#r-actif").checked = r ? r.actif !== 0 : true;
@@ -284,6 +285,7 @@
       pourQui: $("#r-pourqui").value.trim(),
       cafesAssocies: $("#r-cafes").value.split("\n").map(s => s.trim()).filter(Boolean),
       note: $("#r-note").value.trim(),
+      video: $("#r-video").value.trim(),
       parDefaut: $("#r-defaut").checked,
       avancee: $("#r-avancee").checked,
       actif: $("#r-actif").checked ? 1 : 0,

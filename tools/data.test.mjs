@@ -656,6 +656,24 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("un degre corrige a la main n'est pas touche", Number(deg("x-main")) === 91, String(deg("x-main")));
   check("une Brikka n'est pas touchee", Number(deg("x-brikka")) === 82, String(deg("x-brikka")));
 
+  /* Pas v16 : une recette d'origine deja stockee recoit la video de sa graine ;
+     un lien pose a la main n'est pas remplace. */
+  avant();
+  DATA.state.reglages = [DATA.normaliserReglages({ schema_version: 15 })];
+  DATA.state.recettes = RECETTES_DEPART.map(d => DATA.normaliserRecette({ ...d, video: "" }));
+  const hofV = DATA.state.recettes.find(r => r.id === "hoffmann-1cup");
+  hofV.video = "https://exemple.org/ma-video";
+  DATA.migrerDonnees();
+  check("une recette d'origine sans video recoit celle de sa graine",
+    DATA.state.recettes.find(r => r.id === "neo-brew").video === "https://www.youtube.com/watch?v=k0nsShguOsU");
+  check("un lien pose a la main n'est pas remplace", hofV.video === "https://exemple.org/ma-video");
+  check("la video fait l'aller-retour dans la ligne stockee",
+    DATA.normaliserRecette(DATA.recetteVersLigne ? DATA.recetteVersLigne(hofV) : hofV).video === "https://exemple.org/ma-video");
+  check("un lien qui n'est pas http ne s'ecrit jamais",
+    DATA.normaliserRecette({ nom: "x", video: "javascript:alert(1)" }).video === "");
+  check("sept recettes d'origine ont leur video",
+    RECETTES_DEPART.filter(r => /^https:\/\/www\.youtube\.com\/watch\?v=[\w-]{11}$/.test(r.video || "")).length === 7);
+
   /* Un carnet NEUF joue tous les pas, dont v5 (molette unique) : la Neo Brew,
      semee apres avec son extra gros, doit le garder. */
   avant();
