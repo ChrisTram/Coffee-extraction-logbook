@@ -412,6 +412,8 @@
       '<div class="rc-tete"><h3>' + echap(I18N.t("rc_titre", {
         // « du 14 au 20 septembre » : le mois ne s'écrit qu'une fois s'il est le même.
         a: r.debut.getMonth() === fin.getMonth() ? String(r.debut.getDate()) : jour(r.debut), b: jour(fin) })) + "</h3>" +
+      // Les faits dans la ligne du titre (v8.67) : dans la tête de page, une ligne de moins.
+      (r.faits.length ? '<ul class="rc-faits">' + r.faits.map(f => "<li>" + echap(f) + "</li>").join("") + "</ul>" : "") +
       '<button type="button" class="dessin-lien" id="recap-fermer">' + echap(I18N.t("rc_fermer")) + "</button></div>" +
       '<div class="rc-corps">' +
       '<div class="rc-chiffre"><b>' + r.tasses + "</b><span>" + echap(I18N.t("rc_tasses")) + "</span></div>" +
@@ -423,8 +425,7 @@
         echap(I18N.t("rc_meilleure", { j: new Date(m.date_heure).toLocaleDateString(I18N.locale(), { weekday: "long" }) })) +
         "</span><em>" + echap(cafeM ? cafeM.nom : I18N.t("rc_sans_cafe")) + "</em><em>" +
         echap(m.recette ? I18N.tr(m.recette) : I18N.t("rc_sans_recette")) + "</em></div>" : "") +
-      '<div class="rc-semaine" aria-label="' + echap(I18N.t("rc_barres")) + '">' + barres + "</div></div>" +
-      (r.faits.length ? '<ul class="rc-faits">' + r.faits.map(f => "<li>" + echap(f) + "</li>").join("") + "</ul>" : "");
+      '<div class="rc-semaine" aria-label="' + echap(I18N.t("rc_barres")) + '">' + barres + "</div></div>";
     $("#recap-fermer").addEventListener("click", () => {
       try { localStorage.setItem(CLE_RECAP, UI.cleLocale(r.debut)); } catch (e) { /* tant pis, elle reviendra */ }
       carte.hidden = true;
