@@ -44,7 +44,7 @@ const charger = new Function(
   "console",
   source + "\nreturn { DATA, SYNC, GRIND, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND, DIAGNOSTIC_LEVIERS, REGLAGES, echelleVersements, SEUIL_VERSEMENT_G, temperatureDepuisChauffe, chauffePourTemperature };"
 );
-const { DATA, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND, DIAGNOSTIC_LEVIERS, REGLAGES,
+const { DATA, GRIND, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND, DIAGNOSTIC_LEVIERS, REGLAGES,
   echelleVersements, SEUIL_VERSEMENT_G, temperatureDepuisChauffe, chauffePourTemperature } =
   charger(undefined, { protocol: "file:" }, undefined, console);
 
@@ -655,6 +655,16 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("une temperature estimee sous la droite passe sur la courbe", Number(deg("x-droite")) === 88, String(deg("x-droite")));
   check("un degre corrige a la main n'est pas touche", Number(deg("x-main")) === 91, String(deg("x-main")));
   check("une Brikka n'est pas touchee", Number(deg("x-brikka")) === 82, String(deg("x-brikka")));
+
+  /* Un carnet NEUF joue tous les pas, dont v5 (molette unique) : la Neo Brew,
+     semee apres avec son extra gros, doit le garder. */
+  avant();
+  DATA.state.reglages = [DATA.normaliserReglages({ schema_version: 0 })];
+  DATA.migrerDonnees();
+  const neo = DATA.state.recettes.find(r => r.id === "neo-brew");
+  check("sur un carnet neuf, la Neo Brew garde sa molette extra grosse", neo && neo.dial === "2.8.0", neo && neo.dial);
+  check("et les autres recettes restent a 1.5.0",
+    DATA.state.recettes.filter(r => r.id !== "neo-brew").every(r => r.dial === "1.5.0"));
 
   // Plus aucun drapeau par appareil dans la couche de donnees.
   const data = SOURCE_DATA;
@@ -1301,8 +1311,12 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("Parametres porte le reglage du broyeur", html.includes('id="param-molette"'));
 
   const app = SOURCE_UI;
+  /* Sauf la recette dont la mouture sort EXPRES de la plage de sa machine
+     (la Neo Brew, v8.63) : son extra gros est la recette elle-meme. */
   check("le prefill lit le reglage du broyeur, pas le dial de la recette",
-    app.includes('$("#f-mouture").value = cafeCourantMoulu() ? "" : replis.molette;'));
+    app.includes('$("#f-mouture").value = cafeCourantMoulu() ? "" : moletteVoulue(r) ? r.dial : replis.molette;'));
+  check("et seule une recette hors plage de sa machine impose sa molette",
+    app.includes("!GRIND.verifierPlage(r.methode, r.dial).ok"));
   check("le reglage d'usine est le compromis des deux machines",
     app.includes('MOLETTE_REPLI_USINE = "1.5.0"'));
 }
@@ -1342,9 +1356,14 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
 
 /* Molette unique : Chris ne recompte pas les crans a chaque machine. */
 {
-  const dials = [...new Set(RECETTES_DEPART.map(r => r.dial))];
-  check("toutes les recettes semees portent 1.5.0",
-    dials.length === 1 && dials[0] === "1.5.0", dials.join(", "));
+  /* Une exception, voulue : la Tetsu Neo Brew (v8.63), extra grosse, hors de la
+     plage du Switch. Toute autre recette porte 1.5.0, et l'exception doit
+     vraiment sortir de la plage, sinon elle n'aurait aucune raison d'etre. */
+  const exceptions = RECETTES_DEPART.filter(r => r.dial !== "1.5.0");
+  check("toutes les recettes semees portent 1.5.0, sauf la Neo Brew",
+    exceptions.map(r => r.id).join() === "neo-brew", exceptions.map(r => r.id + " " + r.dial).join(", "));
+  check("et la Neo Brew sort vraiment de la plage du Switch",
+    exceptions.every(r => GRIND.parseDial(r.dial).crans > GRIND.METHODES.find(m => m.id === "switch").maxC));
 
   // Changer la graine ne suffit jamais : les recettes STOCKEES doivent suivre.
   const data = SOURCE_DATA;

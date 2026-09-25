@@ -7,8 +7,8 @@
 <!-- Version du site, source unique : le pied de page la lit, et les fichiers
      chargés à la demande la mettent dans leur URL. Se pose avec
      node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="8.62">
-<link rel="stylesheet" href="css/styles.css?v=8.62">
+<meta name="app-version" content="8.63">
+<link rel="stylesheet" href="css/styles.css?v=8.63">
 <!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
      SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
      parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
@@ -911,7 +911,7 @@
     <h2 id="ref-recettes" class="ref-titre">Recettes</h2>
     <button class="btn btn-petit" id="btn-gerer-recettes">Gérer les recettes</button>
   </div>
-  <p class="ref-intro">Trois recettes Brikka et huit recettes Switch. Le principe qui les gouverne toutes : le Switch ne doit pas refaire ce que la Brikka fait mieux. Toutes portent maintenant ma molette unique, 1.5.0, et chaque recette garde dans sa note la mouture que sa source recommandait. Chaque recette est éditable, et les recettes d'origine restent restaurables à tout moment.</p>
+  <p class="ref-intro">Trois recettes Brikka et neuf recettes Switch. Le principe qui les gouverne toutes : le Switch ne doit pas refaire ce que la Brikka fait mieux. Toutes portent ma molette unique, 1.5.0, sauf la Tetsu Neo Brew, extra grosse, et chaque recette garde dans sa note la mouture que sa source recommandait. Chaque recette est éditable, et les recettes d'origine restent restaurables à tout moment.</p>
   <!-- Filtres de la bibliothèque (v8.52) : par machine, et par profil de café
        déduit des cafés associés à chaque recette. -->
   <div class="biblio-filtres" id="biblio-filtres" role="group" aria-label="Filtrer les recettes">
@@ -933,7 +933,7 @@
 
   <div class="carte ref-bloc">
     <h3>Une seule mouture pour tout</h3>
-    <p>Les dix recettes portent <code>1.5.0</code>, mon réglage unique. Chacune avait la cible de sa source, entre 1.4.0 et 2.0.0, mais je ne recompte pas les crans à chaque changement de machine : une cible par recette décrivait un geste que je ne fais jamais.</p>
+    <p>Les recettes portent <code>1.5.0</code>, mon réglage unique. Chacune avait la cible de sa source, entre 1.4.0 et 2.0.0, mais je ne recompte pas les crans à chaque changement de machine : une cible par recette décrivait un geste que je ne fais jamais. Seule exception, la Tetsu Neo Brew à <code>2.8.0</code> : sa mouture extra grosse est la recette elle-même, la saisie la reprend.</p>
     <p class="carte-note">Les recommandations d'origine restent dans la note de chaque recette, par exemple 600 à 700 microns pour la Chronicler. Pour changer de réglage, le curseur du moulin plus haut, ou l'écran Paramètres.</p>
   </div>
 
@@ -1719,32 +1719,32 @@ Cảm ơn shop.</pre>
 <!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
      et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
      desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=8.62"></script>
-<script defer src="js/i18n.js?v=8.62"></script>
-<script defer src="js/grind.js?v=8.62"></script>
-<script defer src="js/recettes.js?v=8.62"></script>
+<script defer src="js/outils.js?v=8.63"></script>
+<script defer src="js/i18n.js?v=8.63"></script>
+<script defer src="js/grind.js?v=8.63"></script>
+<script defer src="js/recettes.js?v=8.63"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=8.62"></script>
-<script defer src="js/data-csv.js?v=8.62"></script>
-<script defer src="js/data-schema.js?v=8.62"></script>
-<script defer src="js/data-store.js?v=8.62"></script>
-<script defer src="js/data-calculs.js?v=8.62"></script>
-<script defer src="js/data-migrations.js?v=8.62"></script>
-<script defer src="js/data.js?v=8.62"></script>
-<script defer src="js/reglages.js?v=8.62"></script>
-<script defer src="js/charts.js?v=8.62"></script>
-<script defer src="js/ui-noyau.js?v=8.62"></script>
-<script defer src="js/ui-tableau.js?v=8.62"></script>
-<script defer src="js/ui-saisie.js?v=8.62"></script>
-<script defer src="js/ui-chrono.js?v=8.62"></script>
-<script defer src="js/ui-brouillon.js?v=8.62"></script>
-<script defer src="js/ui-rapide.js?v=8.62"></script>
-<script defer src="js/ui-historique.js?v=8.62"></script>
-<script defer src="js/ui-guide.js?v=8.62"></script>
-<script defer src="js/ui-catalogue.js?v=8.62"></script>
-<script defer src="js/ui-fiche.js?v=8.62"></script>
-<script defer src="js/ui-brassage.js?v=8.62"></script>
-<script defer src="js/ui-dessins.js?v=8.62"></script>
-<script defer src="js/app.js?v=8.62"></script>
+<script defer src="js/sync.js?v=8.63"></script>
+<script defer src="js/data-csv.js?v=8.63"></script>
+<script defer src="js/data-schema.js?v=8.63"></script>
+<script defer src="js/data-store.js?v=8.63"></script>
+<script defer src="js/data-calculs.js?v=8.63"></script>
+<script defer src="js/data-migrations.js?v=8.63"></script>
+<script defer src="js/data.js?v=8.63"></script>
+<script defer src="js/reglages.js?v=8.63"></script>
+<script defer src="js/charts.js?v=8.63"></script>
+<script defer src="js/ui-noyau.js?v=8.63"></script>
+<script defer src="js/ui-tableau.js?v=8.63"></script>
+<script defer src="js/ui-saisie.js?v=8.63"></script>
+<script defer src="js/ui-chrono.js?v=8.63"></script>
+<script defer src="js/ui-brouillon.js?v=8.63"></script>
+<script defer src="js/ui-rapide.js?v=8.63"></script>
+<script defer src="js/ui-historique.js?v=8.63"></script>
+<script defer src="js/ui-guide.js?v=8.63"></script>
+<script defer src="js/ui-catalogue.js?v=8.63"></script>
+<script defer src="js/ui-fiche.js?v=8.63"></script>
+<script defer src="js/ui-brassage.js?v=8.63"></script>
+<script defer src="js/ui-dessins.js?v=8.63"></script>
+<script defer src="js/app.js?v=8.63"></script>
 </body>
 </html>

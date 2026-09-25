@@ -456,8 +456,9 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
   // Chris a demande le 24 aout que TOUTES les recettes portent son reglage
   // unique : il ne recompte pas les crans a chaque changement de machine, donc
   // une cible par recette decrivait un geste qu'il ne fait jamais.
-  check("toutes les recettes portent la meme molette que le broyeur",
-    api.DATA.state.recettes.every(r => r.dial === "1.5.0"),
+  // Seule exception voulue, la Neo Brew (v8.63) : son extra gros est la recette.
+  check("toutes les recettes portent la meme molette que le broyeur, sauf la Neo Brew",
+    api.DATA.state.recettes.every(r => r.dial === "1.5.0" || r.id === "neo-brew"),
     [...new Set(api.DATA.state.recettes.map(r => r.dial))].join(", "));
   check("1.5.0 reste valide sur les deux machines",
     api.GRIND.verifierPlage("Brikka", "1.5.0").ok && api.GRIND.verifierPlage("Switch", "1.5.0").ok);

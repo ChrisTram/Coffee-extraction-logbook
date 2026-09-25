@@ -286,6 +286,42 @@ const RECETTES_DEPART = [
     note: "",
     parDefaut: false, avancee: false, variantes: false, actif: 1,
   },
+  /* LA TETSU NEO BREW (v8.63). La recette « The Neo Brew » de Tetsu Kasuya, mai
+     2026 (youtube.com/watch?v=k0nsShguOsU) : 20 g pour 300 g à 95 ou 96 °C,
+     mouture extra grosse, dix versements de 30 g toutes les 15 secondes, sur un
+     Hario NEO ou un V60. Ramenée à une tasse en gardant ce qui la fait, le
+     versement de 30 g et le rythme de 15 secondes : 16 g pour 240 g, huit
+     versements. C'est la seule recette dont la molette n'est pas 1.5.0 : sa
+     mouture extra grosse EST la recette, la saisie la reprend (voir ui-saisie). */
+  {
+    id: "neo-brew",
+    nom: "Tetsu Neo Brew",
+    numero: "Recette 9",
+    methode: "Switch",
+    famille: "",
+    variante: "",
+    sousTitre: "Huit fois le même versement, toutes les 15 secondes : la plus simple à suivre",
+    dose: 16, eau: 240, temp: 96, tempTexte: "95 à 96 °C, bouilloire prise au gros bouillon",
+    dial: "2.8.0",
+    ratioTexte: "ratio 1:15, environ 205 ml en tasse",
+    totalTexte: "total environ 2:30",
+    lait: false,
+    etapes: [
+      { t: 0  , texte: "Verser 30 g, vanne OUVERTE, en spirale rapide." },
+      { t: 15 , texte: "Verser jusqu'à 60 g." },
+      { t: 30 , texte: "Verser jusqu'à 90 g." },
+      { t: 45 , texte: "Verser jusqu'à 120 g." },
+      { t: 60 , texte: "Verser jusqu'à 150 g." },
+      { t: 75 , texte: "Verser jusqu'à 180 g." },
+      { t: 90 , texte: "Verser jusqu'à 210 g." },
+      { t: 105, texte: "Dernier versement, jusqu'à 240 g." },
+      { t: 120, texte: "Laisser s'écouler entièrement, fin vers 2:30." },
+    ],
+    pourQui: "Les torréfactions claires, les lavés comme les naturels et les anaérobies : Tetsu la conçoit pour aller chercher tout le sucré et une texture épaisse, pas seulement pour éviter les défauts. Rien à décider, rien à surveiller : le même versement de 30 g toutes les 15 secondes, vanne ouverte du début à la fin, l'eau ne doit jamais stagner dans le lit. Le mode Brassage bipe à chaque versement. Sur un medium, 96 degrés peuvent tirer vers l'amer, la mouture très grosse compense en partie.",
+    cafesAssocies: ["Ethiopia Banko Anaerobic (Amigo)", "Serie 2 Datanla (Là Việt)", "Serie 4 D'ran (Là Việt)", "Guji Uraga lavé (Greenfields)"],
+    note: "Source : Tetsu Kasuya, « The Neo Brew », mai 2026 (youtube.com/watch?v=k0nsShguOsU). Sa version : 20 g, 300 g, dix versements de 30 g toutes les 15 secondes, 40 à 45 clics sur un Comandante, extra gros. Ne pas convertir ces clics : on retient l'extra gros, 1200 microns et plus, soit la butée de mon Timemore C5 (3.0.0, 1248 microns). Départ à 2.8.0 (1165 microns) parce que 16 g font un lit moins épais que ses 20 g, où l'eau passe plus vite. Amer ou râpeux : monter vers 3.0.0. Il conseille un Hario NEO, accepte le V60 ; le Switch vanne ouverte est un V60. Il ne donne pas de temps final, 2:30 est mon estimation. À 96 °C la bouilloire se prend au gros bouillon : deux minutes de versement la refroidissent en route.",
+    parDefaut: false, avancee: false, variantes: false, actif: 1,
+  },
 ];
 
 // Anciens noms de recettes : migration automatique de l'historique.

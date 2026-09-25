@@ -241,6 +241,9 @@
     }));
   }
 
+  /* Une recette dont la mouture sort EXPRÈS de la plage de sa machine (la Neo
+     Brew, extra grosse) porte son réglage : la saisie le reprend et ne crie pas. */
+  const moletteVoulue = r => !!r && !!GRIND.parseDial(r.dial) && !GRIND.verifierPlage(r.methode, r.dial).ok;
   function prefillDepuisRecette(nomRecette) {
     const r = trouverRecette(nomRecette);
     if (!r) return;
@@ -259,7 +262,7 @@
     ecrireDuree("f-chauffe", "");
     majTempHint();
     // Le RÉGLAGE du broyeur, pas la cible de la recette : voir MOLETTE_REPLI_USINE.
-    $("#f-mouture").value = cafeCourantMoulu() ? "" : replis.molette;
+    $("#f-mouture").value = cafeCourantMoulu() ? "" : moletteVoulue(r) ? r.dial : replis.molette;
     if (r.methode === "Brikka") $("#f-puissance").value = r.puissance_feu || replis.feu;
     majAgitationDepuisRecette();
     majChampPrechauffe();
@@ -369,7 +372,7 @@
     const av = avertissementsCombinaison(cafe, saisie.methode, $("#f-recette").value, DATA.state.recettes);
     const msgs = av.msgs.slice();
     const dial = $("#f-mouture").value.trim();
-    if (dial && !cafeCourantMoulu()) {
+    if (dial && !cafeCourantMoulu() && !moletteVoulue(trouverRecette($("#f-recette").value))) {
       const v = GRIND.verifierPlage(saisie.methode, dial);
       if (!v.ok) msgs.push(v.message);
     }
@@ -560,7 +563,7 @@
 
     const dial = champMouture.value.trim();
     const p = GRIND.parseDial(dial);
-    const horsPlage = !moulu && p && !GRIND.verifierPlage(saisie.methode, dial).ok;
+    const horsPlage = !moulu && p && !GRIND.verifierPlage(saisie.methode, dial).ok && !moletteVoulue(trouverRecette($f("#f-recette").value));
     poser($f("#live-mouture"), I18N.t("lv_mouture") + " <b>" +
       (moulu ? I18N.t("paquet")
         : p ? I18N.t("lv_detail", { c: p.crans, u: Math.round(p.microns) })

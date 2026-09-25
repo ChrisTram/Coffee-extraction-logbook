@@ -74,11 +74,16 @@ const DATA_MIGRATIONS = (() => {
       } },
       /* Molette unique. Le Timemore de Chris reste posé sur 1.5.0, le compromis qui
          marche sur les deux machines : une cible par recette décrivait un geste
-         qu'il ne fait jamais. Concerne les dix recettes, Switch comprises. */
+         qu'il ne fait jamais. Concerne les dix recettes, Switch comprises.
+         Une recette semée APRÈS ce pas avec une autre molette (la Neo Brew,
+         v8.63, extra grosse) n'est pas concernée : sur un carnet neuf, qui joue
+         tous les pas, elle retombait à 1.5.0. */
       { v: 5, nom: "molette unique a 1.5.0", appliquer: () => {
         let touche = false;
         state.recettes.forEach(rec => {
           if (rec.dial === "1.5.0") return;
+          const graine = RECETTES_DEPART.find(d => d.id === rec.id);
+          if (graine && graine.dial !== "1.5.0") return;
           rec.dial = "1.5.0";
           estampiller(rec);
           touche = true;

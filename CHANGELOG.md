@@ -5,6 +5,7 @@ de page du site est celui du `<meta name="app-version">` d'`index.html`, posé
 par `node tools/bump_version.mjs X`. Chaque entrée dit CE QUI a changé ; le
 pourquoi est dans `DECISIONS.md`.
 
+- v8.63 : nouvelle recette 9, la Tetsu Neo Brew, d'après « The Neo Brew » de Tetsu Kasuya (mai 2026), ramenée à une tasse : 16 g pour 240 g à 95 ou 96 °C, huit versements de 30 g toutes les 15 secondes, vanne ouverte, fin vers 2:30. C'est la seule recette dont la molette n'est pas 1.5.0 : sa mouture extra grosse (2.8.0, 1165 µm) est la recette elle-même. La saisie la pré-remplit et ne signale pas une mouture « trop grosse pour le Switch » sur cette recette.
 - v8.62 : dans la saisie, la date et l'heure s'alignent sur le bord droit du formulaire, au niveau du titre, au lieu de flotter en haut de la colonne du chrono où elles passaient inaperçues.
 - v8.61 : le graphe « Note et tasses, 30 derniers jours » montre quel café tu as bu. Chaque pavé, une tasse depuis la v8.58, prend la couleur de son café : une teinte pour chacun des cinq cafés les plus bus du mois, le gris pour le reste. Sous le graphe, une pastille par café avec son nombre de tasses ; toucher une pastille ouvre la fiche du café.
 - v8.60 : la meilleure tasse de « ta semaine » dit son café ET sa recette, chacun sur sa ligne sous la note : « la meilleure, jeudi / Là Việt Balanced / Brikka classique ». Le même café passe par plusieurs recettes, le café seul ne permettait pas de la refaire. Toucher le bloc ouvre la tasse en bulle, avec « Refaire ».
