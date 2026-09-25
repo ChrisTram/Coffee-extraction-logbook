@@ -353,6 +353,7 @@
     $("#param-feu-defaut").value = replis.feu;
     $("#param-molette").value = replis.molette;
     UI.ecrireDuree("param-ebullition", replis.ebullition);
+    UI.ecrireDuree("param-bulles", replis.bulles);
     PAS_PARAM.forEach(([id, cle]) => { $("#" + id).value = (replis.pas || {})[cle]; });
     majDetailMolette();
     $("#param-bips").checked = $("#chrono-bip").checked;
@@ -388,10 +389,14 @@
     if (!GRIND.parseDial(molette)) { toast(I18N.t("t_mouture_invalide")); return; }
     const ebullition = UI.lireDuree("param-ebullition");
     if (ebullition === "" || !(ebullition >= 30 && ebullition <= 1800)) { toast(I18N.t("t_param_ebullition")); return; }
+    // Les premières bulles viennent AVANT le gros bouillon, sinon la courbe n'a pas de sens.
+    const bulles = UI.lireDuree("param-bulles");
+    if (bulles === "" || !(bulles >= 10 && bulles < ebullition)) { toast(I18N.t("t_param_bulles")); return; }
     replis.dose = dose;
     replis.feu = Math.round(feu);
     replis.molette = molette;
     replis.ebullition = ebullition;
+    replis.bulles = bulles;
     /* Les pas de correction : une valeur hors bornes ne se refuse pas, la
        normalisation la ramène au défaut, comme pour le feu d'une recette. */
     replis.pas = Object.fromEntries(PAS_PARAM.map(([id, cle]) => [cle, Number($("#" + id).value)]));

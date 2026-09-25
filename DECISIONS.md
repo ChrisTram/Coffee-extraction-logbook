@@ -966,6 +966,23 @@ et reste la valeur stockée ; le temps est stocké aussi (`chauffe_s`), c'est la
 mesure d'origine, et l'aide sous le champ fait l'inverse : « pour 92 °C, laisse
 la bouilloire 3:35 ».
 
+**La droite devient une courbe (v8.59).** Le paragraphe ci-dessus se trompait
+de sens : une bouilloire perd de plus en plus de chaleur à mesure que l'eau
+chauffe, sa montée RALENTIT vers la fin, donc à deux bouts fixés la vraie
+courbe passe AU-DESSUS de la droite, et la droite sous-estime en milieu de
+chauffe. Chris l'a vu de lui-même : à 1:30 ses premières bulles remontent déjà,
+85 à 90 degrés, quand le carnet annonçait 82. Le modèle est maintenant celui du
+refroidissement de Newton, calé sur deux repères chronométrés : premières bulles
+qui remontent (88 °C, nouveau réglage synchronisé `bulles_s`, 1:30 par défaut)
+et gros bouillon (100 °C). Deux repères plutôt qu'un paramètre de courbe à
+deviner : Chris sait les regarder, pas estimer une constante de perte. Le degré
+du repère (88) reste une constante du code, parce qu'il décrit l'eau et non le
+matériel. Un repère placé après l'ébullition ne se refuse pas au modèle, qui
+retombe aux trois quarts du temps d'ébullition ; Paramètres, lui, le refuse à
+l'enregistrement. Le pas de schéma v15 fait passer sur la courbe les tasses dont
+le degré valait exactement l'ancienne droite, donc jamais retouché : sans lui, les
+analyses par température auraient mêlé deux modèles.
+
 **Rien pour la Brikka**, et c'est Chris qui l'a précisé : elle part à l'eau
 froide, la seule option est la case « eau préchauffée », décochée par défaut.
 La ligne de chauffe est masquée dès qu'on choisit la Brikka, et la saisie

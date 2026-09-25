@@ -549,27 +549,68 @@ function cafeineMg(dose, espece, pctCafeReel) {
 
    Chris n'a pas de thermomètre et utilise toujours la même bouilloire sur le
    même feu. Le temps passé sur le feu est donc une mesure REPRODUCTIBLE, là où
-   « petites bulles » ou « frémissement » sont des jugements à l'oeil. Le modèle
-   est volontairement le plus simple : montée linéaire depuis l'eau du robinet
-   (28 °C, l'eau ambiante au Vietnam) jusqu'à 100 °C au temps d'ébullition de la
-   bouilloire, réglé dans Paramètres. C'est une estimation, pas une mesure ; le
-   degré reste modifiable à la main et c'est lui qui est stocké comme
-   température. La Brikka n'est pas concernée : elle part à l'eau froide. */
-const EAU_AMBIANTE_C = 28;
+   « petites bulles » ou « frémissement » sont des jugements à l'oeil. C'est une
+   estimation, pas une mesure ; le degré reste modifiable à la main et c'est lui
+   qui est stocké comme température. La Brikka n'est pas concernée : elle part à
+   l'eau froide.
 
-function temperatureDepuisChauffe(secondes, ebullitionS) {
-  const s = Number(secondes), e = Number(ebullitionS);
-  if (secondes === "" || !Number.isFinite(s) || s < 0 || !(e > 0)) return "";
-  return Math.round(EAU_AMBIANTE_C + (100 - EAU_AMBIANTE_C) * Math.min(1, s / e));
+   UNE COURBE, PAS UNE DROITE (v8.59). Jusqu'ici la montée était linéaire, de
+   l'eau du robinet (28 °C, l'eau ambiante au Vietnam) à 100 °C au temps
+   d'ébullition. Chris l'a trouvée trop basse : à 1:30 ses premières bulles
+   remontent déjà, soit 85 à 90 degrés, et la droite n'en donnait que 82. Une
+   bouilloire ne chauffe pas en ligne droite : elle perd de plus en plus de
+   chaleur à mesure que l'eau s'approche de l'ébullition, la montée ralentit à la
+   fin. Le modèle est celui du refroidissement de Newton,
+     T(t) = 28 + 72 · (1 − e^(−k·t)) / (1 − e^(−k·E)),
+   calé sur DEUX repères que Chris chronomètre dans Paramètres : les premières
+   bulles qui remontent (88 °C) et le gros bouillon (100 °C, au temps E). k se
+   cherche par dichotomie pour que la courbe passe par le premier repère ; si ce
+   repère tombe pile sur la droite, k vaut zéro et on retrouve l'ancien modèle.
+   Un repère absent, ou pas avant l'ébullition, retombe aux trois quarts du temps
+   d'ébullition : 1:30 pour 2:00, ce que Chris a mesuré. */
+const EAU_AMBIANTE_C = 28;
+const BULLES_C = 88;
+const BULLES_PART_DEFAUT = 0.75;
+
+/* La constante de la courbe, en « par seconde », pour ces deux repères. On
+   cherche a = k·E sans dimension : la part de la montée faite au repère,
+   (1 − e^(−a·r)) / (1 − e^(−a)), croît avec a, de r (la droite, a = 0) vers 1. */
+function constanteChauffe(ebullitionS, bullesS) {
+  const e = Number(ebullitionS), f = Number(bullesS);
+  const r = f > 0 && f < e ? f / e : BULLES_PART_DEFAUT;
+  const cible = (BULLES_C - EAU_AMBIANTE_C) / (100 - EAU_AMBIANTE_C);
+  const part = x => (Math.abs(x) < 1e-9 ? r : (1 - Math.exp(-x * r)) / (1 - Math.exp(-x)));
+  let bas = -40, haut = 40;
+  for (let i = 0; i < 60; i++) {
+    const m = (bas + haut) / 2;
+    if (part(m) < cible) bas = m; else haut = m;
+  }
+  return (bas + haut) / 2 / e;
 }
 
-/* L'inverse, arrondi aux 5 secondes : « pour 92 °C, laisse la bouilloire 3:35 ». */
-function chauffePourTemperature(tempC, ebullitionS) {
+// La part de la montée faite à s secondes, de 0 (robinet) à 1 (ébullition).
+function partChauffe(s, e, k) {
+  return Math.abs(k * e) < 1e-6 ? s / e : (1 - Math.exp(-k * s)) / (1 - Math.exp(-k * e));
+}
+
+function temperatureDepuisChauffe(secondes, ebullitionS, bullesS) {
+  const s = Number(secondes), e = Number(ebullitionS);
+  if (secondes === "" || !Number.isFinite(s) || s < 0 || !(e > 0)) return "";
+  if (s >= e) return 100;
+  const k = constanteChauffe(e, bullesS);
+  return Math.round(EAU_AMBIANTE_C + (100 - EAU_AMBIANTE_C) * partChauffe(s, e, k));
+}
+
+/* L'inverse, arrondi aux 5 secondes : « pour 92 °C, laisse la bouilloire 1:40 ». */
+function chauffePourTemperature(tempC, ebullitionS, bullesS) {
   const t = Number(tempC), e = Number(ebullitionS);
   if (tempC === "" || !Number.isFinite(t) || !(e > 0)) return "";
   if (t >= 100) return Math.round(e);
   if (t <= EAU_AMBIANTE_C) return 0;
-  return Math.round((t - EAU_AMBIANTE_C) / (100 - EAU_AMBIANTE_C) * e / 5) * 5;
+  const k = constanteChauffe(e, bullesS);
+  const part = (t - EAU_AMBIANTE_C) / (100 - EAU_AMBIANTE_C);
+  const s = Math.abs(k * e) < 1e-6 ? part * e : -Math.log(1 - part * (1 - Math.exp(-k * e))) / k;
+  return Math.round(s / 5) * 5;
 }
 
 const JAMAIS_SWITCH_NOMS = [

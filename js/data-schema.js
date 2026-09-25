@@ -24,7 +24,7 @@ const DATA_SCHEMA = (() => {
   const REGLAGE_ID = "moi";
 
   const REGLAGE_COLS = ["id", "dose_g", "puissance_feu", "mouture_dial", "schema_version", "ebullition_s",
-    "pas_crans", "pas_degres", "pas_feu", "pas_eau_g", "pas_dose_g", "dessins"];
+    "pas_crans", "pas_degres", "pas_feu", "pas_eau_g", "pas_dose_g", "dessins", "bulles_s"];
 
   const RECETTE_COLS = ["id", "nom", "numero", "methode", "famille", "variante", "sous_titre", "dose_g", "eau_g",
     "temperature_c", "temp_texte", "mouture_dial", "ratio_texte", "total_texte", "lait",
@@ -196,6 +196,13 @@ const DATA_SCHEMA = (() => {
          inventée, et le raisonnement d'origine ne s'applique plus. C'est CE
          défaut qui alimente replis.ebullition, pas la constante d'interface. */
       ebullition_s: nombre(r && r.ebullition_s, 30, 1800, 120),
+      /* Le second repère de la bouilloire (v8.59) : les premières bulles qui
+         REMONTENT, vers 88 °C. Il courbe l'estimation du degré (recettes.js).
+         1:30 par défaut, ce que Chris a chronométré ; une ligne d'avant la
+         v8.59 le prend sans migration. Un repère posé après l'ébullition n'est
+         pas refusé ici : le modèle le remplace par les trois quarts du temps
+         d'ébullition. */
+      bulles_s: nombre(r && r.bulles_s, 10, 1790, 90),
       /* Les PAS de la correction chiffrée (v8.48), pour un diagnostic « un peu » ;
          un diagnostic franc les double. Des défauts tirés des phrases de
          correction (« un ou deux crans », « 2 à 3 degrés », « un gramme de café »),

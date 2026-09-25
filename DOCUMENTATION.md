@@ -594,10 +594,13 @@ Points fixés depuis, chacun expliqué dans `DECISIONS.md` :
   s'est passé, pas dans ce qui conseille (`extAnalysables()`). La bascule qui
   les réintègre vit dans Paramètres, section Cet appareil (préférence locale).
 - La température du SWITCH se déduit du temps passé par la bouilloire sur le
-  feu (`f-chauffe-min` et `-sec`, stocké dans `chauffe_s`) : montée linéaire de
-  28 à 100 °C au temps d'ébullition de la bouilloire (`reglages.ebullition_s`,
-  Paramètres, carte Ma bouilloire, zéro par défaut ; le pas de schéma v11 recale
-  le 4:00 inventé des premières versions sur 2:00). Fonctions pures
+  feu (`f-chauffe-min` et `-sec`, stocké dans `chauffe_s`) : une courbe de
+  28 à 100 °C (v8.59, montée qui ralentit près de l'ébullition) calée sur deux
+  repères de la carte Ma bouilloire, les premières bulles qui remontent à 88 °C
+  (`reglages.bulles_s`, 1:30 par défaut) et le gros bouillon à 100 °C
+  (`reglages.ebullition_s`, 2:00 par défaut ; le pas de schéma v11 recale le
+  4:00 inventé des premières versions sur 2:00, le pas v15 fait passer sur la
+  courbe les degrés estimés sous l'ancienne droite et jamais retouchés). Fonctions pures
   `temperatureDepuisChauffe` et `chauffePourTemperature` dans `recettes.js`. Le
   degré estimé s'écrit dans `f-temp`, reste modifiable et reste la valeur
   stockée ; l'aide sous le champ dit combien de temps viser pour la cible de la

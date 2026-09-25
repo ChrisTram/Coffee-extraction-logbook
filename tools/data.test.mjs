@@ -641,6 +641,21 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("le dernier pas Hoffmann n'interdit plus la cuillere",
     !hof().etapes[0].texte.includes("AUCUNE") && hof().etapes[0].texte.includes("cuillère"), hof().etapes[0].texte);
 
+  /* Pas v15 : la bouilloire en courbe. Une tasse dont le degre vaut l'ancienne
+     droite prend la courbe ; un degre retouche a la main, ou une Brikka, non. */
+  avant();
+  DATA.state.reglages = [DATA.normaliserReglages({ schema_version: 14, ebullition_s: 120, bulles_s: 90 })];
+  const tasse = (id, methode, temperature_c) => DATA.state.extractions.push(DATA.normaliserExtraction(
+    { id, date: "2026-09-20", methode, cafe_id: "", chauffe_s: 90, temperature_c, maj_le: 0 }));
+  tasse("x-droite", "Switch", 82);
+  tasse("x-main", "Switch", 91);
+  tasse("x-brikka", "Brikka", 82);
+  DATA.migrerDonnees();
+  const deg = id => DATA.state.extractions.find(e => e.id === id).temperature_c;
+  check("une temperature estimee sous la droite passe sur la courbe", Number(deg("x-droite")) === 88, String(deg("x-droite")));
+  check("un degre corrige a la main n'est pas touche", Number(deg("x-main")) === 91, String(deg("x-main")));
+  check("une Brikka n'est pas touchee", Number(deg("x-brikka")) === 82, String(deg("x-brikka")));
+
   // Plus aucun drapeau par appareil dans la couche de donnees.
   const data = SOURCE_DATA;
   const bloc = data.slice(data.indexOf("const PAS_DE_SCHEMA"), data.indexOf("function migrerDonnees"));
@@ -978,8 +993,8 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("et vaut les 2 minutes mesurees par Chris", repli === 120, String(repli));
 
   const t90 = temperatureDepuisChauffe(90, repli);
-  check("a 1 min 30, le modele tombe dans la bande des petites bulles (80 a 90)",
-    t90 >= 78 && t90 <= 90, String(t90));
+  check("a 1 min 30, le modele tombe dans la bande des petites bulles (85 a 90)",
+    t90 >= 85 && t90 <= 90, String(t90));
   check("et a 2 minutes il annonce l'ebullition",
     temperatureDepuisChauffe(repli, repli) === 100,
     String(temperatureDepuisChauffe(repli, repli)));
@@ -1143,17 +1158,39 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     DATA.normaliserReglages({ ebullition_s: 5 }).ebullition_s === 120 &&
     DATA.normaliserReglages({ ebullition_s: 300 }).ebullition_s === 300);
 
-  // Le modele : lineaire de l'eau du robinet (28) a l'ebullition (100).
-  check("zero seconde sur le feu, c'est l'eau du robinet", temperatureDepuisChauffe(0, 240) === 28);
-  check("le temps d'ebullition donne 100", temperatureDepuisChauffe(240, 240) === 100);
-  check("au dela, l'eau ne depasse pas 100", temperatureDepuisChauffe(600, 240) === 100);
-  check("a mi chemin, 64 degres", temperatureDepuisChauffe(120, 240) === 64);
-  check("sans temps, pas d'estimation", temperatureDepuisChauffe("", 240) === "");
+  /* Le modele (v8.59) : une courbe de l'eau du robinet (28) a l'ebullition
+     (100), qui passe a 88 par le repere des premieres bulles. Chris trouvait la
+     droite trop basse : a 1:30 ses bulles remontent deja, elle disait 82. */
+  check("zero seconde sur le feu, c'est l'eau du robinet", temperatureDepuisChauffe(0, 120, 90) === 28);
+  check("le temps d'ebullition donne 100", temperatureDepuisChauffe(120, 120, 90) === 100);
+  check("au dela, l'eau ne depasse pas 100", temperatureDepuisChauffe(600, 120, 90) === 100);
+  check("le repere des premieres bulles donne 88", temperatureDepuisChauffe(90, 120, 90) === 88,
+    String(temperatureDepuisChauffe(90, 120, 90)));
+  check("et il est reglable : a 1:40 sur 2:00, c'est 1:40 qui donne 88",
+    temperatureDepuisChauffe(100, 120, 100) === 88 && temperatureDepuisChauffe(90, 120, 100) < 88);
+  check("la courbe monte vite puis ralentit : a mi chemin, au dessus de la droite",
+    temperatureDepuisChauffe(60, 120, 90) > 64, String(temperatureDepuisChauffe(60, 120, 90)));
+  const montee = [0, 15, 30, 45, 60, 75, 90, 105, 120].map(s => temperatureDepuisChauffe(s, 120, 90));
+  check("la courbe ne redescend jamais", montee.every((v, i) => !i || v >= montee[i - 1]), montee.join(","));
+  check("un repere pile sur la droite redonne l'ancien modele",
+    temperatureDepuisChauffe(120, 240, 200) === 64);
+  check("un repere absent ou apres l'ebullition tombe aux trois quarts",
+    temperatureDepuisChauffe(90, 120, "") === 88 && temperatureDepuisChauffe(90, 120, 150) === 88);
+  check("sans temps, pas d'estimation", temperatureDepuisChauffe("", 120, 90) === "");
   check("l'inverse retombe sur le temps, aux 5 secondes pres",
-    Math.abs(chauffePourTemperature(92, 240) - 213) <= 5 &&
-    Math.abs(temperatureDepuisChauffe(chauffePourTemperature(92, 240), 240) - 92) <= 2,
-    String(chauffePourTemperature(92, 240)));
-  check("100 degres, c'est tout le temps d'ebullition", chauffePourTemperature(100, 240) === 240);
+    Math.abs(chauffePourTemperature(92, 120, 90) - 100) <= 5 &&
+    Math.abs(temperatureDepuisChauffe(chauffePourTemperature(92, 120, 90), 120, 90) - 92) <= 2,
+    String(chauffePourTemperature(92, 120, 90)));
+  check("88 degres, c'est le repere des bulles", chauffePourTemperature(88, 120, 90) === 90);
+  check("100 degres, c'est tout le temps d'ebullition", chauffePourTemperature(100, 120, 90) === 120);
+  check("le repere des bulles est un reglage synchronise, 1:30 par defaut",
+    DATA.REGLAGE_COLS.includes("bulles_s") && DATA.normaliserReglages({}).bulles_s === 90);
+  check("et Parametres le saisit en minutes et secondes",
+    html.includes('id="param-bulles-min"') && html.includes('id="param-bulles-sec"'));
+  const saisieJs = readFileSync(join(ROOT, "js/ui-saisie.js"), "utf8");
+  check("chaque estimation de la saisie passe le repere des bulles",
+    (saisieJs.match(/(temperatureDepuisChauffe|chauffePourTemperature)\(/g) || []).length ===
+    (saisieJs.match(/(temperatureDepuisChauffe|chauffePourTemperature)\([^)]*replis\.bulles\)/g) || []).length);
 
   // Une extraction normalisee garde le temps, et une Brikka n'en a jamais.
   const n = DATA.normaliserExtraction({ chauffe_s: "215.4" });
@@ -1479,7 +1516,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
 
   // Et surtout : maj_le ne doit pas fuir dans le CSV.
   const csv = DATA.csvSerialiser([{ id: "moi", maj_le: 1699999999999, dose_g: 16 }], DATA.REGLAGE_COLS);
-  check("entete reglages.csv", csv.split("\n")[0] === "id,dose_g,puissance_feu,mouture_dial,schema_version,ebullition_s,pas_crans,pas_degres,pas_feu,pas_eau_g,pas_dose_g,dessins",
+  check("entete reglages.csv", csv.split("\n")[0] === "id,dose_g,puissance_feu,mouture_dial,schema_version,ebullition_s,pas_crans,pas_degres,pas_feu,pas_eau_g,pas_dose_g,dessins,bulles_s",
     csv.split("\n")[0]);
   check("maj_le absent du CSV reglages", !csv.includes("1699999999999"));
 }
@@ -2046,7 +2083,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
      preselection) sont listees : elles forment un seul controle aux yeux de
      l'utilisateur, et partagent donc une etiquette a juste titre. */
   const PAIRES = ["f-chauffe-min", "f-chauffe-sec", "f-total-sec", "f-ecoulement-sec",
-    "param-ebullition-sec"];
+    "param-ebullition-sec", "param-bulles-sec"];
   /* Un curseur nomme "X-curseur" pilote le champ "X" : c'est la MEME valeur
      montree deux fois, donc une paire legitime par construction. La regle vaut
      mieux qu'une liste a rallonger a chaque curseur ajoute, puisque c'est le

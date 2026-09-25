@@ -489,7 +489,7 @@ const UI = (() => {
      donc JAMAIS tant qu'on n'etait pas alle la regler dans Parametres. Un repli
      d'usine juste vaut mieux qu'un repli neutre qui desactive la fonction. */
   const EBULLITION_USINE = 120;
-  const replis = { dose: DOSE_REPLI_USINE, feu: FEU_REPLI_USINE, molette: MOLETTE_REPLI_USINE, ebullition: EBULLITION_USINE };
+  const replis = { dose: DOSE_REPLI_USINE, feu: FEU_REPLI_USINE, molette: MOLETTE_REPLI_USINE, ebullition: EBULLITION_USINE, bulles: "" };
 
   function chargerReplis() {
     const r = DATA.reglagesCourants();
@@ -497,6 +497,7 @@ const UI = (() => {
     replis.feu = r.puissance_feu;
     replis.molette = r.mouture_dial;
     replis.ebullition = r.ebullition_s;
+    replis.bulles = r.bulles_s;
     // Les pas de la correction chiffrée (v8.48), tels quels : les colonnes de la ligne.
     replis.dessins = r.dessins || "";
     replis.pas = { pas_crans: r.pas_crans, pas_degres: r.pas_degres, pas_feu: r.pas_feu,
@@ -529,6 +530,7 @@ const UI = (() => {
       puissance_feu: replis.feu,
       mouture_dial: replis.molette,
       ebullition_s: replis.ebullition,
+      bulles_s: replis.bulles,
       ...(replis.pas || {}),
       dessins: replis.dessins || "",
     });

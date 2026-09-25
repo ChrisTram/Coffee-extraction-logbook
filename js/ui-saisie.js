@@ -297,7 +297,7 @@
   function surChauffe() {
     const s = lireDuree("f-chauffe");
     if (s !== "") {
-      const t = temperatureDepuisChauffe(s, replis.ebullition);
+      const t = temperatureDepuisChauffe(s, replis.ebullition, replis.bulles);
       if (t !== "") $("#f-temp").value = t;
     }
     majTempHint();
@@ -317,9 +317,9 @@
        réglage qu'on fait une fois. */
     if (!(e > 0)) { poserTexte(hint, ""); return; }
     if (s !== "") {
-      poserTexte(hint, I18N.t("temp_estimee", { d: fmtTemps(s), t: temperatureDepuisChauffe(s, e) }));
+      poserTexte(hint, I18N.t("temp_estimee", { d: fmtTemps(s), t: temperatureDepuisChauffe(s, e, replis.bulles) }));
     } else if (t !== "") {
-      poserTexte(hint, I18N.t("temp_conseil", { t, d: fmtTemps(chauffePourTemperature(t, e)) }));
+      poserTexte(hint, I18N.t("temp_conseil", { t, d: fmtTemps(chauffePourTemperature(t, e, replis.bulles)) }));
     } else {
       poserTexte(hint, "");
     }

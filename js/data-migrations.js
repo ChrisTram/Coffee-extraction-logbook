@@ -37,7 +37,7 @@ const DATA_MIGRATIONS = (() => {
 
        Chaque pas ne touche QUE la valeur semée d'avant. Un pas qui écraserait un
        réglage choisi volontairement serait un bug, pas une migration. */
-    const SCHEMA_ACTUEL = 14;
+    const SCHEMA_ACTUEL = 15;
 
     // Rattrapage de la puissance de feu des recettes Brikka : l'échelle de Chris a
     // bougé deux fois, 3 puis 4 puis 2.
@@ -298,6 +298,34 @@ const DATA_MIGRATIONS = (() => {
        Chris aurait lui-meme reglee ailleurs garde son chiffre. */
     { v: 14, nom: "feu 2 redevient 3",
       appliquer: majFeuBrikka(r => Number(r.puissance_feu) === 2, 3) },
+
+    /* La bouilloire chauffe en courbe (v8.59), plus en droite : les degrés
+       estimés sous l'ancien modèle étaient trop bas en milieu de chauffe (82 au
+       lieu de 88 à 1:30). Une tasse Switch dont la température vaut EXACTEMENT
+       l'ancienne estimation depuis son temps de chauffe n'a pas été corrigée à
+       la main : elle prend la nouvelle. Un degré retouché ne correspond plus à
+       la droite et n'est pas touché. Idempotent : après passage, la tasse ne
+       correspond plus à la droite, sauf aux deux bouts, où les deux modèles
+       disent la même chose. */
+    { v: 15, nom: "bouilloire en courbe", appliquer: () => {
+      const r = reglagesCourants();
+      const e = Number(r.ebullition_s);
+      if (!(e > 0)) return false;
+      let touche = false;
+      state.extractions.forEach(x => {
+        if (x.methode !== "Switch" || x.chauffe_s === "" || x.chauffe_s === undefined) return;
+        const s = Number(x.chauffe_s);
+        if (!Number.isFinite(s) || s < 0 || x.temperature_c === "" || x.temperature_c === undefined) return;
+        const droite = Math.round(28 + 72 * Math.min(1, s / e));
+        if (Number(x.temperature_c) !== droite) return;
+        const courbe = temperatureDepuisChauffe(s, e, r.bulles_s);
+        if (courbe === "" || courbe === droite) return;
+        x.temperature_c = courbe;
+        estampiller(x);
+        touche = true;
+      });
+      return touche;
+    } },
     ];
 
     /* Applique les pas manquants et écrit la nouvelle version. Renvoie vrai si
