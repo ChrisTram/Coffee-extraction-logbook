@@ -386,7 +386,7 @@ const I18N_EN = {
     de_frise_vide: "No bag in the last three months: add your purchases in My coffees.",
     de_ruban_aria: "Bag of {c}, {n} cups, open its sheet",
     de_frise_lecture: "Your best bag: {a}, {x}. The weakest: {b}, {y}.",
-    de_frise_courte: "One ribbon per bag, from opening to end; the fuller it is, the better its cups were rated.",
+    de_frise_courte: "One ribbon per bag, from opening to its last cup; the fuller it is, the better its cups were rated.",
     dp_aide: "Tick the ones you want to see, and order them with the arrows. The choice follows on all your devices.",
     dp_monter: "Move {d} up",
     dp_descendre: "Move {d} down",

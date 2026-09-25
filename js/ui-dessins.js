@@ -530,7 +530,17 @@
      la dernière tasse de ce café avant le sachet suivant du même café, ou
      aujourd'hui pour un sachet en cours qui n'est pas vide. La teinte est la note
      moyenne de ses tasses. Les trois derniers mois, huit sachets au plus. Un ruban
-     ouvre la fiche de son café. */
+     ouvre la fiche de son café.
+
+     EN COURS = UNE TASSE RÉCENTE (v8.66). « Pas vide » ne suffisait pas : le
+     stock est calculé depuis les doses saisies, et un sachet fini sans tasse
+     notée jusqu'au dernier gramme, donné, jeté ou rangé, restait « en cours »
+     et s'étirait jusqu'à aujourd'hui. Chris ne buvait que du Là Việt Balanced
+     depuis des semaines et la frise montrait trois cafés ouverts. Un sachet est
+     en cours s'il lui reste du café ET qu'il a servi dans les SACHET_DORMANT_J
+     derniers jours (ou vient d'être ouvert) ; sinon son ruban s'arrête à sa
+     dernière tasse. Un sachet ancien sans aucune tasse n'est pas dessiné. */
+  const SACHET_DORMANT_J = 14;
   function donneesFrise(maintenant) {
     const auj = maintenant ? new Date(maintenant) : new Date();
     const depuis = new Date(auj); depuis.setDate(depuis.getDate() - 90);
@@ -545,7 +555,9 @@
         (!limite || new Date(e.date_heure) < limite));
       const derniere = tasses.reduce((m, e) => (new Date(e.date_heure) > m ? new Date(e.date_heure) : m), debut);
       const stock = limite ? null : DATA.stockSachet(a.cafe_id, replis.dose);
-      const enCours = !limite && stock && stock.restant > 0;
+      const recent = (auj - derniere) / 86400000 <= SACHET_DORMANT_J;
+      const enCours = !limite && !!stock && stock.restant > 0 && recent;
+      if (!tasses.length && !enCours) return null;
       const fin = enCours ? auj : derniere;
       if (fin < depuis) return null;
       const notes = extAnalysables().filter(e => tasses.some(t => t.id === e.id) && e.note_sur_10 !== "").map(e => Number(e.note_sur_10));

@@ -456,7 +456,7 @@ const I18N = (() => {
     de_frise_vide: { fr: "Aucun sachet ces trois derniers mois : ajoute tes achats dans Mes cafés." },
     de_ruban_aria: { fr: "Sachet de {c}, {n} tasses, ouvrir sa fiche" },
     de_frise_lecture: { fr: "Ton meilleur sachet : {a}, {x}. Le moins bon : {b}, {y}." },
-    de_frise_courte: { fr: "Un ruban par sachet, de son ouverture à sa fin ; plus il est plein, mieux ses tasses étaient notées." },
+    de_frise_courte: { fr: "Un ruban par sachet, de son ouverture à sa dernière tasse ; plus il est plein, mieux ses tasses étaient notées." },
     dp_aide: { fr: "Coche ceux que tu veux voir, et range-les avec les flèches. Le choix suit sur tous tes appareils." },
     dp_monter: { fr: "Monter {d}" },
     dp_descendre: { fr: "Descendre {d}" },
