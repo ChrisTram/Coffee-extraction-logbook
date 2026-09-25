@@ -674,6 +674,19 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("sept recettes d'origine ont leur video",
     RECETTES_DEPART.filter(r => /^https:\/\/www\.youtube\.com\/watch\?v=[\w-]{11}$/.test(r.video || "")).length === 7);
 
+  /* Pas v17 : « The Tetsu Devil » devient « Tetsu 4:6 », la recette et ses
+     tasses, estampillees pour que la synchro porte le nouveau nom. */
+  avant();
+  DATA.state.reglages = [DATA.normaliserReglages({ schema_version: 16 })];
+  DATA.state.recettes = RECETTES_DEPART.map(d => DATA.normaliserRecette(d.id === "tetsu-devil" ? { ...d, nom: "The Tetsu Devil" } : d));
+  DATA.state.extractions.push(DATA.normaliserExtraction(
+    { id: "x-devil", date: "2026-08-05", methode: "Switch", recette: "The Tetsu Devil", maj_le: 5 }));
+  DATA.migrerDonnees();
+  const x46 = DATA.state.extractions.find(e => e.id === "x-devil");
+  check("la recette Devil s'appelle maintenant Tetsu 4:6",
+    DATA.state.recettes.find(r => r.id === "tetsu-devil").nom === "Tetsu 4:6");
+  check("et ses tasses suivent, estampillees", x46.recette === "Tetsu 4:6" && Number(x46.maj_le) > 5, x46.recette + " " + x46.maj_le);
+
   /* Un carnet NEUF joue tous les pas, dont v5 (molette unique) : la Neo Brew,
      semee apres avec son extra gros, doit le garder. */
   avant();

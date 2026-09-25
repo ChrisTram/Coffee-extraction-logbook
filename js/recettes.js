@@ -222,7 +222,7 @@ const RECETTES_DEPART = [
   },
   {
     id: "tetsu-devil",
-    nom: "The Tetsu Devil",
+    nom: "Tetsu 4:6",
     numero: "Recette 6",
     methode: "Switch",
     famille: "",
@@ -235,7 +235,7 @@ const RECETTES_DEPART = [
     etapes: [],
     pourQui: "Les cafés complexes et chers que je ne veux pas rater, et ceux dont je veux régler moi même l'équilibre. Vanne OUVERTE du début à la fin. Verser dès que le lit vient de s'assécher en surface, environ toutes les 30 à 45 secondes.",
     cafesAssocies: ["Ethiopia Banko Anaerobic (Amigo)", "Mít Liberica Khe Sanh (Father Coffee)", "Serie 2 Datanla (Là Việt)", "Serie 4 D'ran (Là Việt)", "Proud (Bosgaurus)"],
-    note: "Mouture medium coarse, 2.0.0 : deux numéros plus ouverts que la zone commune avec la Brikka.",
+    note: "La méthode 4:6 de Tetsu Kasuya, champion du monde 2016 : 40 pour cent de l'eau règle l'acidité et le sucre, 60 pour cent le corps. Ne pas confondre avec sa recette « Devil », à deux températures (90 puis 70 °C), dont elle portait le nom jusqu'à la v8.65. Mouture medium coarse, 2.0.0 : deux numéros plus ouverts que la zone commune avec la Brikka. La vidéo est une démonstration de TALES COFFEE, pas de Tetsu lui même.",
     video: "https://www.youtube.com/watch?v=Xm4bDaioAjg",
     parDefaut: false, avancee: false, variantes: true, actif: 1,
   },
@@ -340,12 +340,13 @@ const RENOMMAGES_RECETTES = {
   "Le Fruité": "The Coffee Chronicler's Recipe",
   "Le Costaud": "Le Costaud (Bloom)",
   "L'Adoucisseur": "Le Costaud (Immersion)",
-  "Le 4:6 de Tetsu": "The Tetsu Devil",
+  "Le 4:6 de Tetsu": "Tetsu 4:6",
+  "The Tetsu Devil": "Tetsu 4:6",
   "The Sweet Variation": "The Coffee Chronicler's Recipe (Sweet)",
 };
 const ANCIENS_SEED_IDS = ["brikka-ref", "brikka-rangbo", "fruite", "costaud", "adoucisseur", "complet", "tetsu"];
 
-// Variantes du Tetsu Devil. Les versements se recalculent depuis l'eau totale.
+// Variantes du Tetsu 4:6. Les versements se recalculent depuis l'eau totale.
 // Pour 225 g : bloom 30, puis 60 (40 pour cent a 90 g), puis 3 x 45.
 const TETSU = {
   premier40: [

@@ -61,7 +61,7 @@ e49,2026-08-03T07:14,c4,Brikka,Brikka classique,14,100,1.1.1,90,264,40,90,20,,,L
 e50,2026-08-03T16:05,c3,Switch,Le Costaud (Bloom),15,225,1.3.3,94,226,56,191,,,3,Classic Mug,,8.5,Équilibré,banane|jacquier,
 e51,2026-08-04T16:25,c4,Brikka,Brikka classique,14,100,1.1.1,90,299,36,90,,,,Loveramics Espresso Egg,1,8.5,Équilibré,miel|noisette|rond,
 e52,2026-08-05T13:07,c1,Brikka,Brikka classique,14,100,,90,250,31,90,10,,,Loveramics Flat White Egg,1,8.5,Équilibré,rond|sucre roux,
-e53,2026-08-05T15:18,c3,Switch,The Tetsu Devil,15,225,2.0.1,92,199,62,189,,,,Classic Mug,,8.0,Équilibré,banane|fruits mûrs|jacquier|rond,
+e53,2026-08-05T15:18,c3,Switch,Tetsu 4:6,15,225,2.0.1,92,199,62,189,,,,Classic Mug,,8.0,Équilibré,banane|fruits mûrs|jacquier|rond,
 e54,2026-08-05T16:26,c2,Brikka,Brikka classique,12,85,,80,266,45,78,,,,Loveramics Espresso Egg,1,8.5,Équilibré,chocolat noir|sirupeux|rond,
 e55,2026-08-06T09:55,c1,Brikka,Brikka classique,14,100,,90,279,29,90,,,,Loveramics Espresso Egg,1,9.0,Équilibré,sucre roux|rond,
 e56,2026-08-06T13:02,c1,Brikka,Brikka classique,14,100,,80,286,25,90,20,,,Loveramics Espresso Egg,1,9.0,Équilibré,sucre roux|caramel|rond,

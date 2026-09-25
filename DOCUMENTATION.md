@@ -292,7 +292,7 @@ etapes, pour_qui, cafes_associes, note, par_defaut, avancee, variantes, actif`
 - `lait` 0/1 : affiche le champ lait en saisie, prérempli contenance de la
   tasse moins volume de café estimé.
 - `variantes` 0/1 : active le bloc Tetsu (versements pilotables) : réservé au
-  Tetsu Devil, préservé à l'édition.
+  Tetsu 4:6, préservé à l'édition.
 - Les 11 recettes d'origine (RECETTES_DEPART dans recettes.js) sont
   restaurables une par une via "Rétablir la version d'origine".
 
@@ -302,7 +302,7 @@ dans l'ordre d'affichage : The Coffee Chronicler's Recipe et (Sweet), famille
 chronicler, 15 g / 240 g ; Better 1 Cup (Hoffmann), 15 g / 250 g, percolation
 pure en cinq versements ; One and Done (Lance Hedrick), 15 g / 225 g, deux
 blooms puis un versement ; Le Costaud (Bloom) et (Immersion), famille costaud ;
-The Tetsu Devil (variantes) ; La Sherrycipe. Toutes portent la molette 1.5.0,
+Tetsu 4:6 (variantes ; « The Tetsu Devil » jusqu'à la v8.65, pas de schéma v17) ; La Sherrycipe. Toutes portent la molette 1.5.0,
 la mouture que leur source recommandait est dans leur `note`. L'ordre
 d'affichage suit `RECETTES_DEPART` pour les recettes d'origine, les personnelles
 viennent après : `migrerDonnees` le rétablit à chaque chargement.

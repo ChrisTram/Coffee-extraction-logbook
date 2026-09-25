@@ -37,7 +37,7 @@ const DATA_MIGRATIONS = (() => {
 
        Chaque pas ne touche QUE la valeur semée d'avant. Un pas qui écraserait un
        réglage choisi volontairement serait un bug, pas une migration. */
-    const SCHEMA_ACTUEL = 16;
+    const SCHEMA_ACTUEL = 17;
 
     // Rattrapage de la puissance de feu des recettes Brikka : l'échelle de Chris a
     // bougé deux fois, 3 puis 4 puis 2.
@@ -346,6 +346,23 @@ const DATA_MIGRATIONS = (() => {
       });
       return touche;
     } },
+
+    /* « The Tetsu Devil » devient « Tetsu 4:6 » (v8.65, demande de Chris) : la
+       recette est la méthode 4:6, pas la « Devil » de Tetsu, qui se fait à deux
+       températures. La recette stockée change de nom si elle porte encore
+       l'ancien (un nom retouché à la main n'est pas touché). Ses tasses et ses
+       cafés suivent par RENOMMAGES_RECETTES, à l'étape 1 de migrerDonnees. */
+    { v: 17, nom: "Tetsu Devil devient Tetsu 4:6", appliquer: () => {
+      const avant = "The Tetsu Devil", apres = "Tetsu 4:6";
+      let touche = false;
+      state.recettes.forEach(rec => {
+        if (rec.id !== "tetsu-devil" || rec.nom !== avant) return;
+        rec.nom = apres;
+        estampiller(rec);
+        touche = true;
+      });
+      return touche;
+    } },
     ];
 
     /* Applique les pas manquants et écrit la nouvelle version. Renvoie vrai si
@@ -363,11 +380,16 @@ const DATA_MIGRATIONS = (() => {
 
     function migrerDonnees() {
       // 1. Renomme les anciennes recettes dans l'historique et les cafés.
+      /* ESTAMPILLÉ (v8.65) : sans nouvelle date de mise à jour, la synchro
+         gardait la ligne du serveur, à l'ancien nom, et chaque appareil
+         renommait de son côté à chaque chargement sans jamais le publier. Une
+         ligne renommée ne porte plus un nom de la table, donc elle n'est
+         estampillée qu'une fois. */
       state.extractions.forEach(e => {
-        if (RENOMMAGES_RECETTES[e.recette]) e.recette = RENOMMAGES_RECETTES[e.recette];
+        if (RENOMMAGES_RECETTES[e.recette]) { e.recette = RENOMMAGES_RECETTES[e.recette]; estampiller(e); }
       });
       state.cafes.forEach(c => {
-        if (RENOMMAGES_RECETTES[c.recette_recommandee]) c.recette_recommandee = RENOMMAGES_RECETTES[c.recette_recommandee];
+        if (RENOMMAGES_RECETTES[c.recette_recommandee]) { c.recette_recommandee = RENOMMAGES_RECETTES[c.recette_recommandee]; estampiller(c); }
       });
       // 2. Retire les recettes d'origine de l'ancienne génération, garde les
       //    recettes personnelles, et garantit la présence des nouvelles.
