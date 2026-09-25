@@ -416,8 +416,13 @@
       '<div class="rc-corps">' +
       '<div class="rc-chiffre"><b>' + r.tasses + "</b><span>" + echap(I18N.t("rc_tasses")) + "</span></div>" +
       (r.moy !== null ? '<div class="rc-chiffre"><b>' + note1(r.moy) + "</b><span>" + echap(I18N.t("rc_moyenne", { n: r.notees })) + "</span></div>" : "") +
-      (m ? '<div class="rc-chiffre"><b>' + note1(Number(m.note_sur_10)) + "</b><span>" + echap(I18N.t("rc_meilleure", {
-        c: cafeM ? cafeM.nom : "", j: new Date(m.date_heure).toLocaleDateString(I18N.locale(), { weekday: "long" }) })) + "</span></div>" : "") +
+      /* La meilleure tasse dit son café ET sa recette (v8.60) : « Là Việt Balanced,
+         mercredi » seul ne permettait pas de la refaire, le même café passant
+         par plusieurs recettes. Le tout ouvre la tasse en bulle. */
+      (m ? '<div class="rc-chiffre rc-meilleure" data-tasse="' + echap(m.id) + '"><b>' + note1(Number(m.note_sur_10)) + "</b><span>" +
+        echap(I18N.t("rc_meilleure", { j: new Date(m.date_heure).toLocaleDateString(I18N.locale(), { weekday: "long" }) })) +
+        "</span><em>" + echap(cafeM ? cafeM.nom : I18N.t("rc_sans_cafe")) + "</em><em>" +
+        echap(m.recette ? I18N.tr(m.recette) : I18N.t("rc_sans_recette")) + "</em></div>" : "") +
       '<div class="rc-semaine" aria-label="' + echap(I18N.t("rc_barres")) + '">' + barres + "</div></div>" +
       (r.faits.length ? '<ul class="rc-faits">' + r.faits.map(f => "<li>" + echap(f) + "</li>").join("") + "</ul>" : "");
     $("#recap-fermer").addEventListener("click", () => {
@@ -773,6 +778,9 @@
     carte.addEventListener("click", surPoint, true);
     const fiche = $("#fiche-contenu");
     if (fiche) fiche.addEventListener("click", surPoint, true);
+    // Et la meilleure tasse du récap de la semaine.
+    const recap = $("#carte-recap");
+    if (recap) recap.addEventListener("click", surPoint, true);
     const bulle = $("#bulle-tasse");
     if (bulle) bulle.addEventListener("click", surBulle);
     document.addEventListener("click", ev => {
