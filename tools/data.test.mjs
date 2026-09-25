@@ -2016,6 +2016,13 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   const teintes = [...bloc30j.matchAll(/borderColor: cssVar\("(--[\w-]+)"\)/g)].map(m => m[1]);
   check("chaque courbe a sa propre couleur",
     teintes.length === 2 && new Set(teintes).size === 2, teintes.join(", "));
+  /* Les paves prennent la couleur de leur cafe (v8.61) : cinq jetons, lus par le
+     graphe ET par la legende, pour que les deux disent la meme chose. */
+  const cssCafes = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  check("les cinq teintes de cafe sont des jetons",
+    [1, 2, 3, 4, 5].every(n => cssCafes.includes("--cafe-" + n + ":")) && bloc30j.includes('cssVar("--cafe-" + n)'));
+  check("et le tableau de bord passe les cafes au graphe, avec leur legende",
+    SOURCE_UI.includes("UI.rendreCafes30j(exts)") && readFileSync(join(ROOT, "index.html"), "utf8").includes('id="legende-30j"'));
   /* La courbe des grammes est partie : quatrieme serie sur un graphique qui en
      portait deja trois, sur un axe cache de surcroit, elle chargeait la vue sans
      etre lisible. Le chiffre vit maintenant dans l'infobulle. */

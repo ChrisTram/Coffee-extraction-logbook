@@ -438,8 +438,12 @@ les autres sur quatre (`.col-2` vaut `span 8`, le défaut `span 4`).
   note en haut, les tasses dessous. Depuis la v8.58 les tasses sont UN PAVÉ PAR TASSE :
   un jeu de barres empilées par rang de tasse (`pave: 1, 2, …`), séparées par un
   filet de la couleur de la carte ; l'échelle s'arrête au plus gros jour (au moins 2)
-  avec un repère par tasse. Légende et infobulle ne montrent que le premier pavé,
-  qui porte le total du jour.
+  avec un repère par tasse. L'infobulle ne montre que le premier pavé, qui porte le
+  total du jour. Depuis la v8.61 chaque pavé a la couleur de SON café (jetons
+  `--cafe-1` à `--cafe-5`, les cinq cafés les plus bus du mois, gris pour le reste) :
+  `UI.rendreCafes30j(exts)` (ui-dessins.js) calcule le rang de couleur de chaque
+  tasse et écrit la légende `#legende-30j`, une pastille par café qui ouvre sa fiche
+  (`data-fiche`). Les pavés sortent de la légende Chart.js.
 - **Ce que tes données disent** : les insights, sur carte sombre.
 - **Les 5 dernières** : une table, une ligne par tasse plus le commentaire
   tronqué sur une seconde ligne. Largeurs imposées par `<colgroup>`.

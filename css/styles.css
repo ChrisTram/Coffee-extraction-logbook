@@ -76,6 +76,15 @@
 /* ---------- Variables ---------- */
 
 :root {
+  /* Les cafés du graphe des 30 jours (v8.61), dans l'ordre du nombre de tasses.
+     Tons moyens, lisibles sur les trois fonds, et loin des trois couleurs de
+     machine (bleu, vermillon, rose) comme du cuivre de la note, et sans vert,
+     que la DA Comptoir interdit. */
+  --cafe-1: #5fa8d3;
+  --cafe-2: #d0806a;
+  --cafe-3: #d8b73e;
+  --cafe-4: #9d8ec4;
+  --cafe-5: #9aa05a;
   --brikka: #2a78d6;
   --switch: #eb6834;
   /* Rose poudré et non plus vert émeraude. Le trio bleu / vermillon / rose-violet
@@ -1344,6 +1353,15 @@ html[data-theme="sombre"] .carte-sombre {
 /* Le graphe des 30 jours a SA hauteur (v8.39), il ne suit plus sa voisine :
    il s'etirait a la hauteur des constats et montait a 272 px de dessin. */
 .canvas-30j { position: relative; height: 210px; min-width: 0; }
+/* La légende des cafés sous le graphe : une pastille par café, qui ouvre sa fiche. */
+.legende-cafes { display: flex; flex-wrap: wrap; gap: 6px 8px; margin-top: 10px; }
+.lc-cafe { display: inline-flex; align-items: center; gap: 7px; min-height: 30px; padding: 4px 10px; border-radius: 99px;
+  background: var(--panneau-2); border: 1px solid var(--lignes); color: var(--encre); font: inherit; font-size: 0.8rem; cursor: pointer; }
+button.lc-cafe:hover { background: var(--panneau-3); }
+.lc-cafe i { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.lc-cafe small { color: var(--attenue); font-variant-numeric: tabular-nums; }
+.lc-autres { cursor: default; color: var(--attenue); }
+.lc-autres i { background: var(--barre-neutre); }
 
 /* L'EN-TETE DE CARTE : le titre et un controle sur la meme ligne (le
    carrousel des constats, les onglets des analyses). */

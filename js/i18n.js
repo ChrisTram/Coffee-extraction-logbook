@@ -469,6 +469,8 @@ const I18N = (() => {
     rc_tasses: { fr: "tasses" },
     rc_moyenne: { fr: "de moyenne, {n} notées" },
     rc_meilleure: { fr: "la meilleure, {j}" },
+    lc_fiche: { fr: "Ouvrir la fiche de ce café" },
+    lc_autres: { fr: "autres cafés" },
     rc_sans_cafe: { fr: "café non renseigné" },
     rc_sans_recette: { fr: "sans recette" },
     rc_barres: { fr: "Tasses par jour, du lundi au dimanche" },
@@ -743,7 +745,7 @@ const I18N = (() => {
     "#br-go,#br-note-dite," +
     "#dessin-etagere,#dessin-horloge,#dessin-spectre,#dessin-moulin," +
     "#dessin-etagere-lecture,#dessin-horloge-lecture,#dessin-spectre-lecture,#dessin-moulin-lecture," +
-    "#carte-recap,#fiche-comparaison,#fiche-duo,#fiche-empreinte,#fiche-trajectoire,#fiche-moulin," +
+    "#carte-recap,#legende-30j,#fiche-comparaison,#fiche-duo,#fiche-empreinte,#fiche-trajectoire,#fiche-moulin," +
     "#dessins-panneau,#bulle-tasse,#dessin-frise,#dessin-podium,#dessin-progression,#dessin-frise-lecture,#dessin-podium-lecture,#dessin-progression-lecture";
 
   function scanner() {

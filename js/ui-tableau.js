@@ -742,7 +742,7 @@
         (new Date(cle + "T12:00") - new Date(derniereDate + "T12:00")) / 86400000 > 7;
       tendance.push(vieille ? null : derniere);
     }
-    CHARTS.barresEtLigne30j("g-30jours", labels, comptes, moyennes, details, tendance);
+    CHARTS.barresEtLigne30j("g-30jours", labels, comptes, moyennes, details, tendance, UI.rendreCafes30j(exts));
 
     // Heatmap
     const parJour = {}, infoParJour = {};

@@ -120,7 +120,7 @@ const CHARTS = (() => {
      quatrième ligne sur un graphique qui en portait déjà trois, sur un axe caché
      de surcroît : elle chargeait la vue sans être lisible. Le chiffre est passé
      dans l'infobulle, où il se consulte quand on le cherche. */
-  function barresEtLigne30j(idCanvas, labels, comptes, moyennes, details, tendance) {
+  function barresEtLigne30j(idCanvas, labels, comptes, moyennes, details, tendance, cafesParJour) {
     const plusBasse = Math.min(...moyennes.filter(n => n !== null), 10);
     const plancher = plusBasse < 4 ? Math.max(0, Math.floor(plusBasse / 2) * 2) : 4;
     /* UN PAVÉ PAR TASSE (v8.58). Une barre pleine dans une bande de soixante pixels
@@ -131,11 +131,20 @@ const CHARTS = (() => {
        plus gros jour du mois (au moins 2), avec un repère par tasse. */
     const plusGros = Math.max(2, ...comptes.map(Number).filter(Number.isFinite));
     const filet = cssVar("--panneau");
+    /* LA COULEUR DU CAFÉ (v8.61) : le k-ième pavé d'un jour prend la teinte du
+       café de la k-ième tasse de ce jour (rang calculé par UI.rendreCafes30j,
+       qui écrit la légende avec les mêmes jetons). Sans rang, le gris neutre. */
+    const neutre = cssVar("--barre-neutre");
+    const teintes = [1, 2, 3, 4, 5].map(n => cssVar("--cafe-" + n));
+    const teinte = (i, k) => {
+      const r = cafesParJour && cafesParJour[i] ? cafesParJour[i][k] : -1;
+      return r >= 0 && teintes[r] ? teintes[r] : neutre;
+    };
     const paves = Array.from({ length: plusGros }, (_, k) => ({
       type: "bar", label: I18N.t("l_tasses_jour"), pave: k + 1, yAxisID: "y", stack: "tasses",
       data: comptes.map(c => (Number(c) > k ? 1 : null)),
       // Le filet entre deux pavés est la couleur de la carte, pas celle d'une série.
-      backgroundColor: cssVar("--barre-neutre"), borderColor: filet,
+      backgroundColor: comptes.map((_, i) => teinte(i, k)), borderColor: filet,
       borderWidth: 1.5, borderSkipped: false, borderRadius: 3, maxBarThickness: 16,
     }));
     creer(idCanvas, {
@@ -165,8 +174,9 @@ const CHARTS = (() => {
       options: {
         interaction: { mode: "index", intersect: false },
         plugins: {
-          // Un seul libellé « tasses du jour » dans la légende, pas un par pavé.
-          legend: { labels: { filter: (item, data) => !(data.datasets[item.datasetIndex].pave > 1) } },
+          /* Les pavés sortent de la légende : leur couleur est celle des cafés,
+             nommés sous le graphe par la légende des cafés. */
+          legend: { labels: { filter: (item, data) => !data.datasets[item.datasetIndex].pave } },
           tooltip: {
             // Dans l'infobulle aussi : le premier pavé porte le total du jour.
             filter: item => !(item.dataset.pave > 1) && !(item.dataset.pave === 1 && !Number(comptes[item.dataIndex])),

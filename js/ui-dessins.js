@@ -648,6 +648,40 @@
     montrerBulle(p.dataset.tasse, ev);
   }
 
+  /* LES CAFÉS DES 30 JOURS (v8.61). Chaque pavé du graphe « Note et tasses » est
+     une tasse depuis la v8.58 ; il prend maintenant la couleur de SON café. Les
+     cinq cafés les plus bus du mois ont chacun leur teinte (--cafe-1 à 5, dans
+     l'ordre du nombre de tasses), le reste et les tasses sans café partagent le
+     gris neutre. La légende sous le graphe les nomme, avec leur compte, et chaque
+     nom ouvre la fiche de son café. Renvoie, jour par jour et dans l'ordre des
+     tasses, le rang de couleur de chacune (-1 = neutre). */
+  const TEINTES_CAFES = 5;
+  function rendreCafes30j(exts) {
+    const jours = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const cle = UI.cleLocale(d);
+      jours.push(exts.filter(e => String(e.date_heure).slice(0, 10) === cle)
+        .sort((a, b) => String(a.date_heure).localeCompare(String(b.date_heure))));
+    }
+    const comptes = new Map();
+    jours.flat().forEach(e => { const c = DATA.cafeDe(e); if (c) comptes.set(c.id, (comptes.get(c.id) || 0) + 1); });
+    const classes = [...comptes.entries()].sort((a, b) => b[1] - a[1]);
+    const rang = new Map(classes.slice(0, TEINTES_CAFES).map(([id], i) => [id, i]));
+    const autres = jours.flat().length - classes.slice(0, TEINTES_CAFES).reduce((s, [, n]) => s + n, 0);
+    const zone = $("#legende-30j");
+    if (zone) {
+      zone.hidden = !classes.length;
+      zone.innerHTML = classes.slice(0, TEINTES_CAFES).map(([id, n], i) => {
+        const c = DATA.state.cafes.find(x => x.id === id) || {};
+        return '<button type="button" class="lc-cafe" data-fiche="' + echap(id) + '" title="' + echap(I18N.t("lc_fiche")) + '">' +
+          '<i style="background:var(--cafe-' + (i + 1) + ')"></i>' + echap(c.nom || "") + "<small>" + n + "</small></button>";
+      }).join("") + (autres > 0
+        ? '<span class="lc-cafe lc-autres"><i></i>' + echap(I18N.t("lc_autres")) + "<small>" + autres + "</small></span>" : "");
+    }
+    return jours.map(j => j.map(e => { const c = DATA.cafeDe(e); return c && rang.has(c.id) ? rang.get(c.id) : -1; }));
+  }
+
   // ---------- Le tableau de bord ----------
 
   /* TES DESSINS, À TA FAÇON (v8.57). L'ordre et les masqués vivent dans la ligne
@@ -792,6 +826,6 @@
 
   Object.assign(UI, {
     cablerDessins, ordreDessins, donneesFrise, donneesPodium, donneesRecap, dessinerEmpreinte, dessinerMoulin, dessinerTrajectoire, donneesEtagere, donneesMoulin, donneesSpectre, positionDiagnostic: position,
-    rendreDessins,
+    rendreDessins, rendreCafes30j,
   });
 })();
