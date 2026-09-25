@@ -3560,6 +3560,21 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
    parce qu'on les LIT pendant qu'on remplit le formulaire, on ne les remplit pas. */
 /* La tete de page precede la grille, elle couvre donc toute la largeur. */
 #ecran-saisie .saisie-entete { max-width: 1400px; margin-inline: auto; }
+/* LA DATE AU BORD DU FORMULAIRE (v8.62), pas au-dessus du chrono. Au bout de la
+   tête de page, elle se retrouvait en haut de la colonne de droite, loin de ce
+   qu'on remplit, et Chris ne la voyait pas. La tête garde toute la largeur (le
+   titre ne bouge pas), mais réserve à droite la place de la colonne du chrono :
+   la date s'aligne sur le bord droit des cartes du formulaire. Sur une colonne,
+   la tête prend la largeur du formulaire, pour la même raison. */
+@media (min-width: 1400px) {
+  #ecran-saisie .saisie-entete { padding-right: calc(380px + var(--ecart-cartes)); }
+}
+@media (min-width: 1024px) and (max-width: 1399px) {
+  #ecran-saisie .saisie-entete { max-width: 860px; }
+}
+@media (max-width: 980px) {
+  #ecran-saisie .saisie-entete { max-width: 720px; }
+}
 
 /* Le numero du bloc : un rond d'encre. Il dit l'ORDRE, ce qu'un titre seul ne
    fait pas, et c'est un formulaire qu'on remplit de haut en bas. */
