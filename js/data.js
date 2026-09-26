@@ -64,9 +64,19 @@ const DATA = (() => {
     state.tombes[table][id] = maintenant();
   }
 
+  /* LA RÉVISION (v8.75) : elle change à chaque notification qui touche les
+     données. L'interface garde ses calculs par tasse tant qu'elle ne bouge pas,
+     au lieu de tout recalculer à chaque rendu et à chaque frappe. Une
+     notification « sync » (l'état de la synchro seul) ne la change pas, et les
+     abonnés savent qu'ils n'ont rien à redessiner que la pastille. */
   const abonnes = [];
+  let revision = 0;
   function abonner(fn) { abonnes.push(fn); }
-  function notifier() { abonnes.forEach(fn => { try { fn(); } catch (e) { console.error(e); } }); }
+  function notifier(genre) {
+    if (genre !== "sync") revision++;
+    abonnes.forEach(fn => { try { fn(genre); } catch (e) { console.error(e); } });
+  }
+  function revisionDonnees() { return revision; }
 
   function reglagesCourants() {
     return state.reglages[0] || normaliserReglages({});
@@ -467,11 +477,13 @@ const DATA = (() => {
     syncEnCours = true;
     syncRedemandee = false;
     state.syncEtat = "encours";
-    notifier();
+    notifier("sync");
+    let tablesAvant = null;
 
     const generationEnvoyee = generation;
     try {
       const recu = await SYNC.echanger(chargeUtileLocale());
+      tablesAvant = JSON.stringify(chargeUtileLocale().tables);
       reglerDecalage((Number(recu.serverTime) || Date.now()) - Date.now());
       /* FUSIONNÉE avec l'état tel qu'il est au retour, plus substituée : ce qui
          a été saisi pendant l'échange reste. */
@@ -498,7 +510,8 @@ const DATA = (() => {
       }
     } finally {
       syncEnCours = false;
-      notifier();
+      // Rien n'a bougé dans les tables : seule la pastille de synchro change.
+      notifier(tablesAvant !== null && tablesAvant !== JSON.stringify(chargeUtileLocale().tables) ? undefined : "sync");
       if (syncRedemandee) planifierSync();
     }
     return state.syncEtat;
@@ -727,7 +740,7 @@ const DATA = (() => {
   }
 
   return {
-    state, abonner, notifier, init,
+    state, abonner, notifier, init, revisionDonnees,
     synchroniser, syncPossible, reporterHorodatage,
     /* csvRecettes est exposee pour que l aller-retour CSV soit testable sur le
        VRAI chemin d export : c est lui qui perdait puissance_feu. */

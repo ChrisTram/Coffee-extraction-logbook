@@ -786,8 +786,10 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   const meta = (html.match(/<meta name="app-version" content="([^"]+)">/) || [])[1];
   check("la page declare sa version dans un meta", /^\d+\.\d+/.test(meta || ""), String(meta));
   const versions = [...html.matchAll(/(?:src|href)="(?:js|css)\/[^"?]+\?v=([^"]*)"/g)].map(m => m[1]);
-  check("chaque script et la feuille de style portent ?v=", versions.length === scripts.length + 1,
-    versions.length + " sur " + (scripts.length + 1));
+  // + 1 pour la feuille de style, + 1 pour le préchargement des graphiques (v8.75).
+  check("chaque script et la feuille de style portent ?v=", versions.length === scripts.length + 2,
+    versions.length + " sur " + (scripts.length + 2));
+  check("les polices prechargees gardent l'URL de la feuille, sans ?v=", !/fonts\/[^"]+\?v=/.test(html));
   check("et tous portent la version du meta", versions.every(v => v === meta),
     [...new Set(versions)].join(", "));
   const swVersion = (sw.match(/const VERSION = "([^"]+)"/) || [])[1];
@@ -1841,7 +1843,9 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
    tout ca : la heatmap et la reglette du moulin sont du SVG maison. */
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
-  check("Chart.js n'est plus une balise script", !html.includes("chart.umd.js"));
+  // Un préchargement (v8.75) n'exécute rien : seule une balise script le ferait.
+  check("Chart.js n'est plus une balise script", !/<script[^>]*chart.umd.js/.test(html));
+  check("mais il est precharge pour le tableau de bord", html.includes('<link rel="preload" href="js/vendor/chart.umd.js?v='));
 
   const sw = readFileSync(join(ROOT, "sw.js"), "utf8");
   /* Toujours PRECACHEE : le chargement differe doit marcher hors ligne, il lit
@@ -2757,6 +2761,26 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("la fraicheur tient compte des 30 degres", html.includes("Par 30 °C et l'humidité"));
   check("la norme SCA de l'eau est la bonne", html.includes("68 mg/L (17 à 85)"));
   check("la Brikka au lait n'affiche plus un numero de recette", RECETTES_DEPART.find(r => r.id === "brikka-flatwhite").numero === "");
+}
+
+/* LOT 6 DE L'AUDIT (v8.75) : PLUS RAPIDE. */
+{
+  const noyau = readFileSync(join(ROOT, "js/ui-noyau.js"), "utf8");
+  const charts = readFileSync(join(ROOT, "js/charts.js"), "utf8");
+  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  check("les calculs par tasse sont gardes en memoire", noyau.includes("memoParTasse") && noyau.includes("revisionDonnees"));
+  check("une notification de synchro seule ne redessine que la pastille", app.includes('if (genre === "sync")'));
+  check("les graphiques se mettent a jour au lieu d'etre recrees", charts.includes('ancien.update("none")'));
+  check("les dessins ne sont plus redessines deux fois", !readFileSync(join(ROOT, "js/ui-dessins.js"), "utf8").includes('DATA.abonner(() => { if (nav.ecran === "tableau") rendreDessins(); });'));
+  check("l'historique se dessine par tranches de cent", SOURCE_UI.includes("TRANCHE_HISTORIQUE = 100") && bilingue("h_plus"));
+  const worker = readFileSync(join(ROOT, "worker/index.js"), "utf8");
+  check("le serveur retire les commentaires de la feuille et de la page", worker.includes("function allegerCss") && worker.includes("function allegerHtml"));
+  // La revision change avec les donnees, pas avec l'etat de synchro seul.
+  const r0 = DATA.revisionDonnees();
+  DATA.notifier("sync");
+  check("un etat de synchro ne change pas la revision", DATA.revisionDonnees() === r0);
+  DATA.notifier();
+  check("une vraie modification la change", DATA.revisionDonnees() === r0 + 1);
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);

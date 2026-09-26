@@ -750,10 +750,9 @@
       const cle = e.date_heure.slice(0, 10);
       parJour[cle] = (parJour[cle] || 0) + 1;
     });
-    Object.keys(parJour).forEach(cle => {
-      const nJour = analysables.filter(e => e.date_heure.slice(0, 10) === cle && e.note_sur_10 !== "").map(e => e.note_sur_10);
-      if (nJour.length) infoParJour[cle] = "note moyenne " + moyenne(nJour).toFixed(1);
-    });
+    const notesParJour = {};
+    analysables.forEach(e => { if (e.note_sur_10 !== "") (notesParJour[e.date_heure.slice(0, 10)] = notesParJour[e.date_heure.slice(0, 10)] || []).push(e.note_sur_10); });
+    Object.keys(parJour).forEach(cle => { if (notesParJour[cle]) infoParJour[cle] = I18N.t("d_note") + " " + moyenne(notesParJour[cle]).toFixed(1); });
     /* Autant de semaines que la carte peut en montrer, sans defilement. Le meme
        nombre part aux cinq chiffres du dessous : la grille et son resume
        decrivent la meme fenetre. */

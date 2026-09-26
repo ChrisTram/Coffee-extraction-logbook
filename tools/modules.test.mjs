@@ -150,7 +150,7 @@ const AUTRES_COUCHES = ["js/outils.js", "js/i18n.js", "js/grind.js", "js/recette
   "js/data.js", "js/reglages.js", "js/charts.js", "js/demo-data.js"];
 const GLOBAUX = new Set(["Chart",
   "UI","document","window","location","history","navigator","localStorage","sessionStorage",
-  "console","Math","JSON","Date","Number","String","Boolean","Array","Object","Set","Map","Promise",
+  "console","Math","JSON","Date","Number","String","Boolean","Array","Object","Set","Map","WeakMap","Promise",
   "RegExp","Error","Intl","Blob","URL","File","FileReader","FormData","Headers","Request","Response",
   "AbortController","TextEncoder","TextDecoder","IntersectionObserver","ResizeObserver",
   "MutationObserver","NodeFilter","AudioContext","webkitAudioContext","Image","Event","CustomEvent",

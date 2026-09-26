@@ -91,6 +91,22 @@
     return typeof matchMedia === "function" && matchMedia("(max-width: 1023px)").matches;
   }
 
+  /* PAR TRANCHES DE 100 (v8.75). L'historique dessinait toutes les tasses à
+     chaque rendu ; il en montre cent, puis cent de plus à la demande. Le compte
+     et le résumé, eux, portent toujours sur toute la liste filtrée. */
+  const TRANCHE_HISTORIQUE = 100;
+  let limiteHistorique = TRANCHE_HISTORIQUE;
+  function boutonPlus(reste) {
+    return reste > 0
+      ? '<button type="button" class="btn btn-petit h-plus" id="h-plus">' +
+        I18N.t("h_plus", { n: Math.min(reste, TRANCHE_HISTORIQUE), t: reste }) + "</button>"
+      : "";
+  }
+  function cablerPlus() {
+    const b = $("#h-plus");
+    if (b) b.addEventListener("click", () => { limiteHistorique += TRANCHE_HISTORIQUE; rendreHistorique(); });
+  }
+
   function rendreHistorique() {
     const liste = filtrerHistorique().sort((a, b) => {
       const va = valeurTri(a, tri.colonne), vb = valeurTri(b, tri.colonne);
@@ -126,15 +142,20 @@
        date complete se lit au debut de chaque ligne, comme partout ailleurs. */
     /* Les cartes du telephone. On vide l'autre conteneur : deux rendus vivants
        en meme temps, ce sont deux fois les memes identifiants dans la page. */
+    const visibles = liste.slice(0, limiteHistorique);
+    const reste = liste.length - visibles.length;
     if (enCartes()) {
       $("#h-corps").innerHTML = "";
-      $("#h-cartes").innerHTML = rendreCartes(liste);
+      $("#h-cartes").innerHTML = rendreCartes(visibles) + boutonPlus(reste);
+      cablerPlus();
       majBarreComparaison();
       return;
     }
     $("#h-cartes").innerHTML = "";
-    $("#h-corps").innerHTML = liste.map(e => ligneHistorique(e)).join("");
-    affichees = new Map(liste.map(e => [e.id, e]));
+    $("#h-corps").innerHTML = visibles.map(e => ligneHistorique(e)).join("") +
+      (reste > 0 ? '<tr class="h-ligne-plus"><td colspan="10">' + boutonPlus(reste) + "</td></tr>" : "");
+    cablerPlus();
+    affichees = new Map(visibles.map(e => [e.id, e]));
     majBarreComparaison();
   }
 

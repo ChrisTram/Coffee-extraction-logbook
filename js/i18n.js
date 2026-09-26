@@ -355,6 +355,7 @@ const I18N = (() => {
 
     w_rangbo: { fr: "Café rang bơ : le filtre papier retient le beurre qui fait son intérêt, il est fait pour la Brikka ou le phin. À tenter quand même au Switch, en baissant la température, et à noter." },
     mx_autre: { fr: "ou" },
+    h_plus: { fr: "Afficher {n} de plus ({t} restantes)" },
     mx_chez_toi: { fr: "chez toi : {m} sur {n} tasses" },
     mx_meilleure: { fr: "ta meilleure ici : {r}, {m}" },
     w_profil_brikka: { fr: "Café noté pour la Brikka : son corps et son chocolat, le papier du Switch les aplatit. À tenter quand même pour comparer, et à noter." },

@@ -47,7 +47,8 @@ const CHARTS = (() => {
     Chart.defaults.plugins.tooltip.bodyColor = cssVar("--tooltip-texte");
     Chart.defaults.plugins.tooltip.padding = 10;
     Chart.defaults.plugins.tooltip.cornerRadius = 8;
-    Chart.defaults.animation.duration = 700;
+    // Pas d'animation quand le système demande moins de mouvement (v8.75).
+    Chart.defaults.animation.duration = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 700;
     Chart.defaults.animation.easing = "easeOutQuart";
     Chart.defaults.maintainAspectRatio = false;
   }
@@ -104,7 +105,18 @@ const CHARTS = (() => {
       chargerChart().then(ok => { if (ok) viderFile(); else enAttente.clear(); });
       return null;
     }
-    if (registre[idCanvas]) registre[idCanvas].destroy();
+    /* METTRE À JOUR PLUTÔT QUE RECRÉER (v8.75). Chaque rendu détruisait puis
+       reconstruisait les graphiques, avec 700 ms d'animation, même dans les
+       onglets fermés. Même toile, même type : on change les données et les
+       options, sans animation. */
+    const ancien = registre[idCanvas];
+    if (ancien && ancien.canvas === el && ancien.config.type === config.type) {
+      ancien.data = config.data;
+      ancien.options = config.options || {};
+      ancien.update("none");
+      return ancien;
+    }
+    if (ancien) ancien.destroy();
     registre[idCanvas] = new Chart(el.getContext("2d"), config);
     return registre[idCanvas];
   }

@@ -279,6 +279,7 @@ const I18N_EN = {
     g_grosse: "Grind coarser than the {m} range ({mol}). Risk of under-extraction and a sour, hollow cup.",
     w_rangbo: "Rang bơ coffee: the paper filter holds back the butter that makes it worthwhile, it is made for the Brikka or the phin. Worth trying in the Switch anyway, at a lower temperature, and worth logging.",
     mx_autre: "or",
+    h_plus: "Show {n} more ({t} left)",
     mx_chez_toi: "at home: {m} over {n} cups",
     mx_meilleure: "your best here: {r}, {m}",
     w_profil_brikka: "Coffee rated for the Brikka: its body and chocolate get flattened by the Switch paper. Worth trying anyway to compare, and worth logging.",

@@ -482,8 +482,30 @@ const UI = (() => {
     return inclureRatees() ? tout : tout.filter(e => !estRatee(e));
   }
 
+  /* GARDÉES EN MÉMOIRE (v8.75). Chaque rendu, et chaque frappe dans la saisie,
+     recalculait ratio, âge du sachet et le reste pour tout l'historique, des
+     dizaines de fois par rendu du tableau de bord. Le calcul est refait quand
+     les données bougent : révision de DATA, ou tables remplacées ou allongées
+     (chargement, synchro, ajout). Une copie du tableau est rendue à chaque
+     appel : un appelant qui trie ne dérange pas les autres. */
+  /* Chaque tasse garde son calcul tant que SON contenu ne change pas (même
+     modifiée sur place, par un chemin qui ne notifie pas), et tant que les cafés
+     et les sachets dont il dépend n'ont pas bougé (révision de DATA, tables
+     remplacées ou allongées). Le tableau rendu est neuf à chaque appel. */
+  let memoGlobal = null, memoVersion = 0;
+  const memoParTasse = new WeakMap();
   function extAvecCalculs() {
-    return DATA.state.extractions.map(e => ({ ...e, _c: DATA.calculs(e) }));
+    const s = DATA.state;
+    const cle = [DATA.revisionDonnees ? DATA.revisionDonnees() : 0, s.cafes, s.cafes.length, s.achats, s.achats.length];
+    if (!memoGlobal || cle.some((v, i) => v !== memoGlobal[i])) { memoGlobal = cle; memoVersion++; }
+    return s.extractions.map(e => {
+      const sig = JSON.stringify(e);
+      const m = memoParTasse.get(e);
+      if (m && m.v === memoVersion && m.sig === sig) return m.obj;
+      const obj = { ...e, _c: DATA.calculs(e) };
+      memoParTasse.set(e, { sig, v: memoVersion, obj });
+      return obj;
+    });
   }
 
   // Dose prise quand rien ne la preremplit (recette sans dose, formulaire

@@ -290,7 +290,9 @@
     });
 
     // Les changements de données rafraîchissent l'interface.
-    DATA.abonner(() => {
+    DATA.abonner(genre => {
+      // Un changement d'état de la synchro seul ne redessine que sa pastille (v8.75).
+      if (genre === "sync") { majBadges(); majStatutSync(); return; }
       // Les réglages peuvent arriver d'un autre appareil : on relit avant de rendre.
       chargerReplis();
       // Toujours : ces deux là sont minuscules et reflètent l'état courant.

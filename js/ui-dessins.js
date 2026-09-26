@@ -545,13 +545,16 @@
     const auj = maintenant ? new Date(maintenant) : new Date();
     const depuis = new Date(auj); depuis.setDate(depuis.getDate() - 90);
     const jourDe = s => new Date(String(s).slice(0, 10) + "T12:00");
+    // Les tasses rangées par café une fois, au lieu d'un filtre sur tout l'historique par sachet (v8.75).
+    const parCafe = {};
+    DATA.state.extractions.forEach(e => { (parCafe[e.cafe_id] = parCafe[e.cafe_id] || []).push(e); });
     return DATA.state.achats.map(a => {
       const debut = jourDe(a.date_ouverture || a.date_achat);
       if (isNaN(debut)) return null;
       const suivants = DATA.state.achats.filter(b => b.cafe_id === a.cafe_id && b !== a &&
         jourDe(b.date_ouverture || b.date_achat) > debut).map(b => jourDe(b.date_ouverture || b.date_achat)).sort((x, y) => x - y);
       const limite = suivants[0] || null;
-      const tasses = DATA.state.extractions.filter(e => e.cafe_id === a.cafe_id && new Date(e.date_heure) >= debut &&
+      const tasses = (parCafe[a.cafe_id] || []).filter(e => new Date(e.date_heure) >= debut &&
         (!limite || new Date(e.date_heure) < limite));
       const derniere = tasses.reduce((m, e) => (new Date(e.date_heure) > m ? new Date(e.date_heure) : m), debut);
       const stock = limite ? null : DATA.stockSachet(a.cafe_id, replis.dose);
@@ -817,7 +820,7 @@
       const m = ev.target.closest("[data-guide-recette]");
       if (m) { ev.preventDefault(); activerEcran("guide"); UI.montrerRecette(m.dataset.guideRecette); }
     });
-    DATA.abonner(() => { if (nav.ecran === "tableau") rendreDessins(); });
+    // Pas d'abonnement ici (v8.75) : rendreEcranCourant redessine déjà les dessins avec le tableau de bord.
     cablerPanneau();
 
     // Les points des dessins, sur le tableau de bord et dans la fiche café.

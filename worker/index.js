@@ -73,7 +73,7 @@ export default {
       return redirectTo(`${LOGIN_PATH}?next=${wanted}`, url);
     }
 
-    return servePrivately(await env.ASSETS.fetch(request), url);
+    return servePrivately(await allegerSiUtile(await env.ASSETS.fetch(request), url), url);
   },
 };
 
@@ -281,6 +281,36 @@ const IMMUTABLE_PATH = /^\/(js|css)\//;
    .woff2 sous le meme nom, on en publie un autre. Sans cette ligne, les cinq
    polices repartaient revalider a chaque ouverture. */
 const FONT_PATH = /\.woff2?$/;
+
+/* ALLÉGER SANS ÉTAPE DE BUILD (v8.75). La feuille de style porte 45 Ko de
+   commentaires, et la page 14 Ko : ils documentent le dépôt mais n'ont rien à
+   faire dans le téléphone. Ils sont retirés au moment de servir, rien ne change
+   dans les sources. Seulement les commentaires : pas d'espaces touchés dans le
+   HTML (les messages à copier sont en <pre>), et la feuille garde ses lignes.
+   Les fichiers versionnés sont immuables : leur version allégée est mise en
+   cache par URL, calculée une fois. */
+export function allegerCss(texte) {
+  return texte.replace(/\/\*[\s\S]*?\*\//g, "").split("\n").map(l => l.trim()).filter(Boolean).join("\n");
+}
+export function allegerHtml(texte) {
+  return texte.replace(/<!--[\s\S]*?-->/g, "");
+}
+async function allegerSiUtile(response, url) {
+  if (!response.ok) return response;
+  const type = String(response.headers.get("Content-Type") || "");
+  const css = type.includes("text/css"), html = type.includes("text/html");
+  if (!css && !html) return response;
+  const cache = typeof caches !== "undefined" && url.searchParams.has("v") ? caches.default : null;
+  if (cache) {
+    const deja = await cache.match(url.toString());
+    if (deja) return deja;
+  }
+  const texte = await response.text();
+  const allege = new Response(css ? allegerCss(texte) : allegerHtml(texte), response);
+  allege.headers.delete("Content-Length");
+  if (cache) await cache.put(url.toString(), allege.clone());
+  return allege;
+}
 
 /* LA POLITIQUE DE SÉCURITÉ DE L'APPLI (v8.73). Deuxième verrou derrière
    l'échappement : aucun script ne s'exécute s'il ne vient pas du site, sauf le

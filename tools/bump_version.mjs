@@ -43,8 +43,9 @@ console.log("Version " + version);
 
 reecrire("index.html", html => html
   .replace(/<meta name="app-version" content="[^"]*">/, `<meta name="app-version" content="${version}">`)
-  // Les balises de la page : css/… et js/… avec ou sans ?v= existant.
-  .replace(/(href|src)="((?:css|js)\/[^"?]+)(?:\?v=[^"]*)?"/g, `$1="$2?v=${version}"`));
+  // Les balises de la page : css/… et js/… avec ou sans ?v= existant. Les .js et .css
+  // seulement (v8.75) : une police préchargée doit garder l'URL exacte de la feuille.
+  .replace(/(href|src)="((?:css|js)\/[^"?]+\.(?:js|css))(?:\?v=[^"]*)?"/g, `$1="$2?v=${version}"`));
 
 reecrire("sw.js", sw => sw.replace(/const VERSION = "[^"]*";/, `const VERSION = "${version}";`));
 

@@ -2786,6 +2786,10 @@ input[type="range"]::-moz-range-thumb {
 .recette-pourqui { font-size: 0.84rem; color: var(--attenue); margin: 0 0 10px; }
 .recette-pourqui b { color: var(--encre); }
 .recette-cafes { font-size: 0.8rem; color: var(--attenue); margin: 0 0 12px; }
+/* L'historique par tranches (v8.75) : le bouton sous la dernière ligne. */
+.h-plus { margin: 10px auto; display: block; }
+.h-ligne-plus td { text-align: center; border-bottom: none; }
+
 /* Quel café, quelle recette (v8.74) : une case, une recette et ce que disent tes tasses. */
 .matrice-carte > summary { font-family: var(--serif); font-size: 1.35rem; color: var(--encre); cursor: pointer; }
 .matrice-carte .carte-note { margin: 8px 0 12px; }

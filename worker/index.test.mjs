@@ -1,4 +1,4 @@
-import worker, { EMPREINTE_SCRIPT_THEME, POLITIQUE_SECURITE } from "./index.js";
+import worker, { EMPREINTE_SCRIPT_THEME, POLITIQUE_SECURITE, allegerCss, allegerHtml } from "./index.js";
 
 const env = {
   AUTH_USERNAME: "Chris",
@@ -217,6 +217,25 @@ check("session expiree rejetee", expired.status === 302, `status ${expired.statu
   const bloque = await essai();
   check("au-dela de la limite, la connexion repond 429", bloque.status === 429, String(bloque.status));
   check("avec un message lisible", (await bloque.text()).includes("Trop d'essais"));
+}
+
+// v8.75 : la feuille et la page servies sans commentaires, le contenu intact.
+{
+  const css = "/* un commentaire\n sur deux lignes */\n.a { color: red; }\n\n  .b { content: \"x\"; }\n";
+  check("la feuille perd ses commentaires et ses lignes vides", allegerCss(css) === '.a { color: red; }\n.b { content: "x"; }');
+  const html = "<p>a</p><!-- note -->\n<pre>ligne 1\n  ligne 2</pre>";
+  check("la page perd ses commentaires sans toucher aux espaces du <pre>", allegerHtml(html) === "<p>a</p>\n<pre>ligne 1\n  ligne 2</pre>");
+  const { readFileSync } = await import("node:fs");
+  const { dirname, join } = await import("node:path");
+  const { fileURLToPath } = await import("node:url");
+  const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+  const vraie = readFileSync(join(root, "css/styles.css"), "utf8");
+  const allegee = allegerCss(vraie);
+  check("la vraie feuille garde toutes ses accolades", (allegee.match(/\{/g) || []).length === (vraie.replace(/\/\*[\s\S]*?\*\//g, "").match(/\{/g) || []).length);
+  check("et fond d'au moins un quart", allegee.length < vraie.length * 0.75, allegee.length + " / " + vraie.length);
+  const index = readFileSync(join(root, "index.html"), "utf8");
+  const debut = index.indexOf("<script>"), fin = index.indexOf("</script>", debut);
+  check("le script du theme reste identique (son empreinte ne change pas)", allegerHtml(index).includes(index.slice(debut, fin)));
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
