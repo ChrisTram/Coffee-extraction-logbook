@@ -37,7 +37,7 @@ const DATA_MIGRATIONS = (() => {
 
        Chaque pas ne touche QUE la valeur semée d'avant. Un pas qui écraserait un
        réglage choisi volontairement serait un bug, pas une migration. */
-    const SCHEMA_ACTUEL = 17;
+    const SCHEMA_ACTUEL = 18;
 
     // Rattrapage de la puissance de feu des recettes Brikka : l'échelle de Chris a
     // bougé deux fois, 3 puis 4 puis 2.
@@ -358,6 +358,19 @@ const DATA_MIGRATIONS = (() => {
       state.recettes.forEach(rec => {
         if (rec.id !== "tetsu-devil" || rec.nom !== avant) return;
         rec.nom = apres;
+        estampiller(rec);
+        touche = true;
+      });
+      return touche;
+    } },
+
+    /* La Brikka au lait portait le numéro 3, affiché à côté de la « Recette 3 »
+       (One and Done) du Guide (v8.74). Ciblé sur la valeur d'origine. */
+    { v: 18, nom: "Brikka au lait sans numero", appliquer: () => {
+      let touche = false;
+      state.recettes.forEach(rec => {
+        if (rec.id !== "brikka-flatwhite" || String(rec.numero) !== "3") return;
+        rec.numero = "";
         estampiller(rec);
         touche = true;
       });

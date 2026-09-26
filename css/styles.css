@@ -2786,6 +2786,19 @@ input[type="range"]::-moz-range-thumb {
 .recette-pourqui { font-size: 0.84rem; color: var(--attenue); margin: 0 0 10px; }
 .recette-pourqui b { color: var(--encre); }
 .recette-cafes { font-size: 0.8rem; color: var(--attenue); margin: 0 0 12px; }
+/* Quel café, quelle recette (v8.74) : une case, une recette et ce que disent tes tasses. */
+.matrice-carte > summary { font-family: var(--serif); font-size: 1.35rem; color: var(--encre); cursor: pointer; }
+.matrice-carte .carte-note { margin: 8px 0 12px; }
+.matrice th[scope="row"] { white-space: nowrap; vertical-align: top; }
+.matrice td { vertical-align: top; min-width: 150px; }
+@media (max-width: 700px) { .matrice td { min-width: 128px; } }
+.matrice td > span { display: block; font-size: 0.76rem; color: var(--attenue); line-height: 1.35; margin-top: 2px; }
+.matrice .m-chez-toi { color: var(--accent-fort); font-weight: 600; }
+.matrice .m-meilleure { color: var(--encre); }
+.lien-recette { background: none; border: 0; padding: 0; font: inherit; font-weight: 700; color: var(--encre); cursor: pointer; text-align: left; text-decoration: underline; text-decoration-color: var(--lignes); text-underline-offset: 3px; }
+.lien-recette:hover { color: var(--accent-fort); }
+.m-autre .lien-recette { font-weight: 500; color: var(--texte); }
+
 /* La vidéo de la recette (v8.64) : le bouton et le lien, puis le lecteur 16:9 à sa place. */
 .recette-video { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 12px; }
 .recette-video-lien { font-size: 0.8rem; color: var(--accent-fort); }
@@ -3915,7 +3928,9 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 .h-cartes { display: none; }
 
 @media (max-width: 1023px) {
-  .table-conteneur { display: none; }
+  /* L'HISTORIQUE seulement (v8.74) : la règle visait tous les tableaux et
+     masquait sur téléphone ceux du Guide et la comparaison de deux tasses. */
+  #ecran-historique .table-conteneur { display: none; }
   .h-cartes { display: flex; flex-direction: column; gap: 10px; }
 }
 

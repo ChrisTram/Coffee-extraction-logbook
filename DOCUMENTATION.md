@@ -539,7 +539,7 @@ couleur, une série ».
 ## 8. Saisie (js/ui-saisie.js, js/ui-chrono.js, js/ui-rapide.js)
 
 - Préremplissage au choix du café : méthode et recette recommandées, dose et
-  molette de la recette. L'EAU RESTE VIDE (pas de balance) et la température
+  molette de la recette. L'EAU RESTE VIDE (elle se lit sur la balance, Chris en a une) et la température
   part sur 95 (eau bouillie qui a fini de buller). Les cibles de la recette
   restent visibles dans le panneau latéral (fiche recette complète : chips,
   étapes, pour quels cafés, cafés associés, note, pas à pas) et la fiche du
@@ -659,7 +659,7 @@ qu'il est ouvert.
 
 - La cible du palier courant est le volume CUMULÉ lu dans le texte de l'étape
   (`UI.cibleVersement` : « jusqu'à N g », « à N g », sinon le premier « N g »),
-  affiché en ml par défaut (pas de balance), en g par la bascule `.br-unite`, retenue
+  affiché en g par défaut depuis la v8.74 (Chris a une balance), en ml par la bascule `.br-unite`, retenue
   en localStorage (`brassage-unite`). Le texte des recettes n'est jamais réécrit. Une
   étape sans volume met sa consigne en grand.
 - Badge de vanne au Switch, déduit des étapes passées (« OUVERTE », « FERMÉE »,

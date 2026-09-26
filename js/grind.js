@@ -36,7 +36,8 @@ const GRIND = (() => {
     m("aeropress","Aeropress",                     319, 959,  38,  115),
     m("pourover", "Pour Over",                     409, 929,  49,  112),
     m("siphon",   "Siphon",                        371, 803,  45,  96),
-    m("switch",   "Steep-and-release (Switch)",    447, 825,  54,  99),
+    // Jusqu'à 100 crans (v8.74) : 2.0.0, la mouture du 4:6 et de la Sherrycipe, restait hors plage.
+    m("switch",   "Steep-and-release (Switch)",    447, 832,  54,  100),
     m("filtermachine", "Filter Coffee Machine",    299, 896,  36,  108),
     m("cupping",  "Cupping",                       457, 849,  55,  102),
     m("colddrip", "Cold Drip",                     815, 1268, 98,  152),
@@ -60,8 +61,8 @@ const GRIND = (() => {
   const REFERENCES = [
     { dial: "1.2.0", crans: 60,  usage: "Brikka", couleur: "#2a78d6" },
     { dial: "1.5.0", crans: 75,  usage: "Réglage commun aux deux machines", couleur: "#cc79a7" },
-    { dial: "1.6.0", crans: 80,  usage: "Switch recettes 1 et 2", couleur: "#eb6834" },
-    { dial: "2.0.0", crans: 100, usage: "Switch recettes 5 et 6", couleur: "#eb6834" },
+    { dial: "1.6.0", crans: 80,  usage: "Switch, percolation puis immersion", couleur: "#eb6834" },
+    { dial: "2.0.0", crans: 100, usage: "Switch, Tetsu 4:6 et Sherrycipe", couleur: "#eb6834" },
   ];
 
   // Plage utilisee par le tracker pour valider une extraction selon la methode choisie.

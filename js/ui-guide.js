@@ -130,6 +130,60 @@
     if (b) b.addEventListener("click", () => lancerVideo(b));
   }
 
+  /* QUEL CAFÉ, QUELLE RECETTE (v8.74). La table de recettes.js, et dans chaque
+     case ce que disent tes tasses : ta moyenne avec la recette conseillée sur
+     les cafés de ce profil, et ta meilleure recette ici quand une autre fait
+     mieux sur trois tasses au moins. */
+  function rendreMatrice() {
+    const table = $("#matrice-recettes");
+    if (!table || typeof MATRICE_CAFE_RECETTE === "undefined") return;
+    const M = MATRICE_CAFE_RECETTE;
+    const recette = id => DATA.state.recettes.find(r => r.id === id);
+    const profils = new Map(DATA.state.cafes.map(c => [c.id, profilCafe(c)]));
+    const tasses = extAnalysables().filter(e => e.note_sur_10 !== "");
+    const statsCase = (l, c) => {
+      const par = {};
+      tasses.forEach(e => {
+        const p = profils.get(e.cafe_id);
+        if (!p || p.ligne !== l || p.colonne !== c) return;
+        (par[e.recette] = par[e.recette] || []).push(Number(e.note_sur_10));
+      });
+      return par;
+    };
+    const lienRecette = r => '<button type="button" class="lien-recette" data-matrice="' + attr(r.id) + '">' + attr(I18N.tr(r.nom)) + "</button>";
+    const note1 = n => fmtDecimal(n, 1);
+    let html = "<thead><tr><th></th>" + M.colonnes.map(c => "<th>" + attr(I18N.tr(c.nom)) + "</th>").join("") + "</tr></thead><tbody>";
+    M.lignes.forEach(l => {
+      html += '<tr><th scope="row">' + attr(I18N.tr(l.nom)) + "</th>";
+      M.colonnes.forEach(c => {
+        const k = M.cases[l.id + "|" + c.id];
+        const r = k && recette(k.recette);
+        if (!r) { html += "<td></td>"; return; }
+        const stats = statsCase(l.id, c.id);
+        const miennes = stats[r.nom] || [];
+        const meilleure = Object.entries(stats).filter(([nom, n]) => nom !== r.nom && n.length >= 3)
+          .map(([nom, n]) => ({ nom, moy: moyenne(n), n: n.length })).sort((a, b) => b.moy - a.moy)[0];
+        const autre = k.autre && recette(k.autre);
+        html += "<td>" + lienRecette(r) +
+          (k.temp ? '<span class="m-temp">' + attr(k.temp) + "</span>" : "") +
+          (autre ? '<span class="m-autre">' + I18N.t("mx_autre") + " " + lienRecette(autre) + "</span>" : "") +
+          (miennes.length ? '<span class="m-chez-toi">' + I18N.t("mx_chez_toi", { m: note1(moyenne(miennes)), n: miennes.length }) + "</span>" : "") +
+          (meilleure && (miennes.length < 3 || meilleure.moy > moyenne(miennes))
+            ? '<span class="m-meilleure">' + I18N.t("mx_meilleure", { r: attr(I18N.tr(meilleure.nom)), m: note1(meilleure.moy) }) + "</span>" : "") +
+          "</td>";
+      });
+      html += "</tr>";
+    });
+    table.innerHTML = html + "</tbody>";
+    if (!table.dataset.cable) {
+      table.dataset.cable = "1";
+      table.addEventListener("click", ev => {
+        const b = ev.target.closest("[data-matrice]");
+        if (b) UI.montrerRecette(b.dataset.matrice);
+      });
+    }
+  }
+
   function carteRecette(r, groupe) {
     const badges = (r.parDefaut ? '<span class="badge-defaut">' + I18N.t("badge_defaut") + "</span>" : "") +
       (r.avancee ? '<span class="badge-avancee">' + I18N.t("badge_avancee") + "</span>" : "");
@@ -176,6 +230,7 @@
   }
 
   function rendreRecettes() {
+    rendreMatrice();
     const liste = recettesVivantes();
     const rendues = new Set();
     const cartes = [];

@@ -353,7 +353,11 @@ const I18N = (() => {
     g_fine: { fr: "Mouture plus fine que la plage {m} ({mol}). Risque de sur-extraction, amertume et écoulement bouché." },
     g_grosse: { fr: "Mouture plus grossière que la plage {m} ({mol}). Risque de sous-extraction et de tasse acide et creuse." },
 
-    w_rangbo: { fr: "Café rang bơ : le filtre papier retient une partie du beurre. À tenter quand même, en baissant la température, et à noter." },
+    w_rangbo: { fr: "Café rang bơ : le filtre papier retient le beurre qui fait son intérêt, il est fait pour la Brikka ou le phin. À tenter quand même au Switch, en baissant la température, et à noter." },
+    mx_autre: { fr: "ou" },
+    mx_chez_toi: { fr: "chez toi : {m} sur {n} tasses" },
+    mx_meilleure: { fr: "ta meilleure ici : {r}, {m}" },
+    w_profil_brikka: { fr: "Café noté pour la Brikka : son corps et son chocolat, le papier du Switch les aplatit. À tenter quand même pour comparer, et à noter." },
     w_wethulled: { fr: "Wet hulled dans le Switch : déconseillé, le papier écrase ce profil. La Brikka lui va mieux." },
     w_foncee: { fr: "Torréfaction foncée dans le Switch : déconseillé, le papier accentue l'amertume sèche. La Brikka lui va mieux." },
     w_brikka_reco: { fr: "Ce café est noté pour la Brikka. Le Switch marchera mais ce n'est pas là qu'il donne le meilleur." },
@@ -727,11 +731,18 @@ const I18N = (() => {
     "rhum": "Alcool sucré et boisé, canne à sucre fermentée.",
     "fumé": "Fumée de bois, feu de camp, thé lapsang : marqué mais pas âcre.",
     "tabac": "Feuille de tabac blond séchée, sucré-boisé, plutôt noble.",
+    "cuir": "Cuir, selle, un peu animal : fréquent sur les robustas et les vieux natural.",
+    "salé": "Une sensation salée et creuse, comme l'eau salée de la calibration : la signature d'une sous-extraction.",
+    "métallique": "Goût de fer, de pièce de monnaie. À la Brikka : flamme trop forte en fin d'écoulement, ou panier mal rincé.",
+    "cassis": "Baie noire acidulée, typique des lavés du Kenya.",
+    "prune": "Fruit à noyau sombre et juteux, entre la cerise et le pruneau.",
+    "orange": "Agrume doux et sucré, moins mordant que le citron.",
+    "sucre de canne": "Sucré clair et propre, moins profond que la cassonade.",
     "brûlé": "Torréfaction poussée trop loin : âcre, carbonisé, désagréable.",
     "cendre": "Cendre froide, sec et poussiéreux : défaut net.",
     "caoutchouc": "Pneu ou gomme, défaut classique des robustas poussés.",
-    "terreux": "Terre humide, sous-bois, champignon : courant sur les robustas.",
-    "boisé": "Bois sec, crayon, tonneau : souvent un café vieilli.",
+    "terreux": "Terre humide, sous-bois, champignon : un trait courant des robustas, pas forcément un défaut.",
+    "boisé": "Bois sec, crayon, tonneau : un trait du liberica, ou le signe d'un café vieilli.",
     "moisi": "Humidité et moisissure, défaut de stockage du grain.",
     "papier": "Carton ou papier mouillé, café éventé ou filtre mal rincé.",
   };
@@ -767,7 +778,7 @@ const I18N = (() => {
     "#br-go,#br-note-dite," +
     "#dessin-etagere,#dessin-horloge,#dessin-spectre,#dessin-moulin," +
     "#dessin-etagere-lecture,#dessin-horloge-lecture,#dessin-spectre-lecture,#dessin-moulin-lecture," +
-    "#carte-recap,#legende-30j,#aside-video,#fiche-comparaison,#fiche-duo,#fiche-empreinte,#fiche-trajectoire,#fiche-moulin," +
+    "#carte-recap,#legende-30j,#aside-video,#matrice-recettes,#fiche-comparaison,#fiche-duo,#fiche-empreinte,#fiche-trajectoire,#fiche-moulin," +
     "#dessins-panneau,#bulle-tasse,#dessin-frise,#dessin-podium,#dessin-progression,#dessin-frise-lecture,#dessin-podium-lecture,#dessin-progression-lecture";
 
   function scanner() {

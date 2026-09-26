@@ -43,10 +43,10 @@ const charger = new Function(
   "location",
   "indexedDB",
   "console",
-  source + "\nreturn { DATA, SYNC, GRIND, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND, DIAGNOSTIC_LEVIERS, REGLAGES, echelleVersements, SEUIL_VERSEMENT_G, temperatureDepuisChauffe, chauffePourTemperature };"
+  source + "\nreturn { DATA, SYNC, GRIND, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND, DIAGNOSTIC_LEVIERS, REGLAGES, echelleVersements, SEUIL_VERSEMENT_G, temperatureDepuisChauffe, chauffePourTemperature, MATRICE_CAFE_RECETTE, profilCafe, DESCRIPTEURS_GROUPES };"
 );
 const { DATA, SYNC, GRIND, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND, DIAGNOSTIC_LEVIERS, REGLAGES,
-  echelleVersements, SEUIL_VERSEMENT_G, temperatureDepuisChauffe, chauffePourTemperature } =
+  echelleVersements, SEUIL_VERSEMENT_G, temperatureDepuisChauffe, chauffePourTemperature, MATRICE_CAFE_RECETTE, profilCafe, DESCRIPTEURS_GROUPES } =
   charger(undefined, { protocol: "file:" }, undefined, console);
 
 let failures = 0;
@@ -415,13 +415,17 @@ check("la raison distingue ce cas", eparpille.raison === "eparpille", eparpille.
   const f = REGLAGES.correctionChiffree(sw("Sur-extrait (amer)"), pas, false);
   check("un diagnostic franc double le pas", f[0].vers === "1.5.1" && f[1].vers === 88, JSON.stringify(f));
   check("les pas viennent des reglages", REGLAGES.correctionChiffree(sw("Un peu amer"), { ...pas, pas_crans: 3 }, false)[0].vers === "1.5.0");
+  // Au bout de la plage du Switch (100 crans, 2.0.0, depuis la v8.74), plus rien a proposer.
   check("la molette reste dans la plage de la machine",
-    REGLAGES.correctionChiffree(sw("Astringent", { mouture_dial: "1.9.4" }), pas, false).length === 0);
+    REGLAGES.correctionChiffree(sw("Astringent", { mouture_dial: "2.0.0" }), pas, false).length === 0);
   check("acide et amer ensemble ne se chiffrent pas", REGLAGES.correctionChiffree(sw("Un peu acide|Un peu amer"), pas, false).length === 0);
   check("un cafe deja moulu passe a la chaleur", REGLAGES.correctionChiffree(sw("Un peu amer"), pas, true)[0].levier === "temperature");
+  /* A la Brikka (v8.74) : le feu seulement vers le bas (monter la flamme surchauffe
+     l'aluminium, le Guide le dit), et jamais de dose (le panier est plein). */
   const br = REGLAGES.correctionChiffree({ methode: "Brikka", mouture_dial: "", dose_g: 14, puissance_feu: 3, diagnostic: "Un peu léger|Un peu acide" }, pas, true);
-  check("a la Brikka, la chaleur est le feu et le ratio la dose",
-    br.length === 2 && br[0].levier === "feu" && br[0].vers === 4 && br[1].levier === "dose" && br[1].vers === 15, JSON.stringify(br));
+  check("a la Brikka, ni plus de feu ni plus de cafe", br.length === 0, JSON.stringify(br));
+  const brAmer = REGLAGES.correctionChiffree({ methode: "Brikka", mouture_dial: "", dose_g: 14, puissance_feu: 3, diagnostic: "Un peu amer" }, pas, true);
+  check("mais un cran de feu en moins quand c'est amer", brAmer.length === 1 && brAmer[0].levier === "feu" && brAmer[0].vers === 2, JSON.stringify(brAmer));
   check("sans diagnostic, rien", REGLAGES.correctionChiffree(sw(""), pas, false).length === 0);
   // Une ligne d'avant la v8.48 n'a pas les colonnes : elle prend les defauts, sans migration.
   const vieux = DATA.normaliserReglages({ id: "moi", dose_g: 15 });
@@ -2472,11 +2476,14 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
   check("le guide traite le niveau de torrefaction a l'extraction",
     html.includes("Clair, medium, foncé, quoi changer"));
-  check("et la difference d'eau entre les deux machines",
-    html.includes("Eau froide ou eau chaude, ça dépend de la machine"));
-  // Les deux fiches doivent porter la meme consigne que les recettes.
+  /* v8.74 : Bialetti indique l'eau froide pour TOUTES ses cafetieres, l'eau
+     prechauffee est une astuce de barista. L'ancien texte disait l'inverse pour
+     la Moka Express, et que la soupape lachait trop tot a l'eau chaude. */
+  check("et l'eau froide ou chaude a la Brikka", html.includes("Eau froide ou eau chaude à la Brikka"));
   check("le guide et les recettes disent la meme chose sur l'eau",
-    /La Brikka se remplit à l'EAU FROIDE/.test(html) && /Moka Express/.test(html));
+    /Bialetti indique l'EAU FROIDE pour toutes ses cafetières/.test(html) &&
+    /Bialetti indique l'eau FROIDE pour toutes ses cafetières/.test(readFileSync(join(ROOT, "js/recettes.js"), "utf8")));
+  check("et plus aucune soupape qui lacherait trop tot a l'eau chaude", !html.includes("fait lâcher la soupape trop tôt"));
 }
 
 /* TOUTE COLONNE DECLAREE DOIT ETRE SERIALISEE.
@@ -2703,6 +2710,53 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("un commentaire en = est neutralise dans le CSV", csv.includes("'=HYPERLINK"));
   check("un nombre negatif n'est pas touche", csv.trim().endsWith(",-1"));
   check("et la relecture rend le texte d'origine", DATA.csvParse(csv)[0].commentaire === "=HYPERLINK(\"x\")");
+}
+
+/* LOTS 4 ET 5 DE L'AUDIT (v8.74) : UN GUIDE QUI DIT VRAI, ET EXACT. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  const rec = readFileSync(join(ROOT, "js/recettes.js"), "utf8");
+  // La matrice ne pointe que vers des recettes qui existent, et couvre toutes les cases.
+  const ids = new Set(RECETTES_DEPART.map(r => r.id));
+  const cases = Object.values(MATRICE_CAFE_RECETTE.cases);
+  check("la matrice couvre ses quinze cases",
+    Object.keys(MATRICE_CAFE_RECETTE.cases).length === MATRICE_CAFE_RECETTE.lignes.length * MATRICE_CAFE_RECETTE.colonnes.length);
+  const inconnues = cases.flatMap(c => [c.recette, c.autre]).filter(id => id && !ids.has(id));
+  check("chaque recette de la matrice existe", inconnues.length === 0, inconnues.join(", "));
+  // Le profil d'un cafe se lit dans sa fiche.
+  const p = (procede, torrefaction, espece) => { const r = profilCafe({ procede, torrefaction, espece }); return r.ligne + "|" + r.colonne; };
+  check("un lave medium tombe dans sa case", p("Lavé", "Medium", "Arabica") === "lave|medium");
+  check("un natural clair aussi", p("Natural", "Light", "Arabica") === "natural|clair");
+  check("un anaerobic n'est pas pris pour un natural", p("Anaerobic natural", "Light medium", "Arabica") === "anaerobic|medium");
+  check("un robusta rang bơ fonce va chez les robustas", p("Rang bơ", "Foncée", "Robusta") === "robusta|fonce");
+  check("un cafe sans procede ne compte dans aucune case", profilCafe({}).ligne === null);
+  check("la matrice est dessinee dans le Guide", html.includes('id="matrice-recettes"') && SOURCE_UI.includes("function rendreMatrice"));
+
+  // Les gouts qui manquaient, traduits et decrits.
+  const tous = DESCRIPTEURS_GROUPES.flatMap(g => g.tags);
+  const nouveaux = ["salé", "métallique", "cassis", "prune", "orange", "sucre de canne", "cuir"];
+  check("les gouts qui manquaient existent", nouveaux.every(t => tous.includes(t)), nouveaux.filter(t => !tous.includes(t)).join(", "));
+  check("terreux et boise ne sont plus des defauts",
+    !DESCRIPTEURS_GROUPES.find(g => g.nom === "Torréfaction et défauts").tags.some(t => ["terreux", "boisé", "tabac"].includes(t)));
+  check("aucun gout en double", new Set(tous).size === tous.length);
+  const enSrc = readFileSync(join(ROOT, "js/i18n.en.js"), "utf8");
+  check("chaque nouveau gout a sa traduction anglaise", nouveaux.every(t => enSrc.includes(JSON.stringify(t) + ": ")));
+  check("et la nouvelle famille aussi", enSrc.includes('"Terre et bois": "Earth and wood"'));
+
+  // Coherences relevees par l'audit.
+  check("plus de « la plus chaude des dix »", !html.includes("la plus chaude des dix"));
+  check("plus de « les dix recettes portent 1.5.0 »", !rec.includes("les dix recettes portent 1.5.0"));
+  check("plus de recettes citees par numero dans les regles", !html.includes("les recettes 4 et 5"));
+  check("le Guide ne dit plus que la balance manque", !html.includes("Le vrai manque") && !html.includes("Maintenant : la balance"));
+  check("le mode Brassage affiche les grammes par defaut",
+    readFileSync(join(ROOT, "js/ui-brassage.js"), "utf8").includes('=== "ml" ? "ml" : "g"'));
+  check("les corrections parlent de deux crans, comme les pas par defaut", !rec.includes("un ou deux crans"));
+  check("les cafes non rang bơ ont leur propre message", rec.includes('I18N.t("w_profil_brikka")') && bilingue("w_profil_brikka"));
+  check("la Brikka prechauffee n'annonce plus une mouture qu'elle n'a pas", !rec.includes("mouture plus grossière\","));
+  check("l'aigreur, pas l'acidite, signe la sous-extraction", html.includes("<h3>Aigreur</h3>"));
+  check("la fraicheur tient compte des 30 degres", html.includes("Par 30 °C et l'humidité"));
+  check("la norme SCA de l'eau est la bonne", html.includes("68 mg/L (17 à 85)"));
+  check("la Brikka au lait n'affiche plus un numero de recette", RECETTES_DEPART.find(r => r.id === "brikka-flatwhite").numero === "");
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);

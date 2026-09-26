@@ -213,7 +213,8 @@ function correctionChiffree(ext, pas, moulu) {
     if (ext.methode === "Switch" && nb(ext.temperature_c) !== null) {
       const t = borne(nb(ext.temperature_c) + sens.chaleur * p.pas_degres, 80, 100);
       if (t !== nb(ext.temperature_c)) leviers.push({ levier: "temperature", champ: "temperature_c", de: nb(ext.temperature_c), vers: t });
-    } else if (ext.methode === "Brikka" && nb(ext.puissance_feu) !== null) {
+    } else if (ext.methode === "Brikka" && nb(ext.puissance_feu) !== null && sens.chaleur < 0) {
+      // À la Brikka, jamais plus de feu (v8.74) : il surchauffe l'aluminium.
       const f = borne(nb(ext.puissance_feu) + sens.chaleur * p.pas_feu, 1, 10);
       if (f !== nb(ext.puissance_feu)) leviers.push({ levier: "feu", champ: "puissance_feu", de: nb(ext.puissance_feu), vers: f });
     }
@@ -222,10 +223,8 @@ function correctionChiffree(ext, pas, moulu) {
     if (ext.methode === "Switch" && nb(ext.eau_g) > 0) {
       const e = Math.max(nb(ext.dose_g) > 0 ? nb(ext.dose_g) * 8 : 60, nb(ext.eau_g) + sens.ratio * p.pas_eau_g);
       if (e !== nb(ext.eau_g)) leviers.push({ levier: "eau", champ: "eau_g", de: nb(ext.eau_g), vers: e });
-    } else if (ext.methode === "Brikka" && nb(ext.dose_g) > 0) {
-      const g = borne(Math.round((nb(ext.dose_g) - sens.ratio * p.pas_dose_g) * 10) / 10, 5, 30);
-      if (g !== nb(ext.dose_g)) leviers.push({ levier: "dose", champ: "dose_g", de: nb(ext.dose_g), vers: g });
     }
+    // Pas de ratio chiffré à la Brikka (v8.74) : son panier est plein et arasé.
   }
   return leviers;
 }

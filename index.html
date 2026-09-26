@@ -7,8 +7,8 @@
 <!-- Version du site, source unique : le pied de page la lit, et les fichiers
      chargés à la demande la mettent dans leur URL. Se pose avec
      node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="8.73">
-<link rel="stylesheet" href="css/styles.css?v=8.73">
+<meta name="app-version" content="8.74">
+<link rel="stylesheet" href="css/styles.css?v=8.74">
 <!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
      SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
      parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
@@ -853,13 +853,13 @@
           <tr><td>Optimum moka pot, Brikka seule</td><td><code>1.2.0</code></td><td>60</td><td>environ 500</td></tr>
           <tr><td><b>Mon réglage unique, marche sur les deux</b></td><td><code>1.5.0</code></td><td>75</td><td>environ 624</td></tr>
           <tr><td>Optimum Switch, percolation puis immersion</td><td><code>1.6.0</code></td><td>80</td><td>environ 666</td></tr>
-          <tr><td>Switch en percolation pure</td><td><code>2.0.0</code></td><td>100</td><td>environ 832</td></tr>
+          <tr><td>Tetsu 4:6 et Sherrycipe, selon leur source</td><td><code>2.0.0</code></td><td>100</td><td>environ 832</td></tr>
         </tbody>
       </table>
     </div>
 
     <p><b>Bandes de granulométrie :</b> extra fine moins de 200, fine 200 à 400, medium fine 400 à 600, medium 600 à 800, medium coarse 800 à 1000, coarse 1000 à 1200, extra coarse plus de 1200.</p>
-    <p class="encadre">Pas de correction utile : <b>un numéro entier</b>, soit 5 crans, soit environ 41 microns. Un seul cran ne se sent pas en tasse.</p>
+    <p class="encadre">Pas de correction : <b>deux crans</b> pour un diagnostic « un peu », quatre pour un franc, presque un numéro entier (5 crans, environ 41 microns). Un seul cran ne se sent pas en tasse. Ces pas se règlent dans Paramètres.</p>
   </div>
   </div>
 
@@ -867,8 +867,8 @@
   <h2 id="ref-diagnostic" class="ref-titre">Diagnostic du goût</h2>
   <div class="grille-diagnostic">
     <article class="carte diag-carte">
-      <h3>Acidité</h3>
-      <p>Arrive tout de suite, sur les côtés et l'avant de la langue, fait saliver, pincement sous les oreilles, disparaît vite.</p>
+      <h3>Aigreur</h3>
+      <p>Acidité piquante et courte, sur les côtés de la langue, sans sucre derrière : elle fait saliver puis disparaît. Une acidité vive ET sucrée, elle, est une qualité, pas un défaut.</p>
       <p class="diag-action">Signifie sous-extraction. Moudre plus fin, plus chaud, plus longtemps.</p>
     </article>
     <article class="carte diag-carte">
@@ -879,7 +879,7 @@
     <article class="carte diag-carte">
       <h3>Astringence</h3>
       <p>Sensation tactile et non gustative, bouche qui se resserre, comme un kaki pas mûr.</p>
-      <p class="diag-action">Signal de sur-extraction le plus fiable de tous.</p>
+      <p class="diag-action">Souvent une sur-extraction, mais aussi une canalisation (fines, lit inégal) : égaliser le lit d'abord, puis ouvrir la mouture.</p>
     </article>
     <article class="carte diag-carte">
       <h3>Acide ET amer dans la même gorgée</h3>
@@ -888,8 +888,8 @@
     </article>
     <article class="carte diag-carte">
       <h3>Goût de brûlé, cendre, fumée</h3>
-      <p>Ce n'est pas la méthode, c'est le sachet. Torréfaction trop foncée.</p>
-      <p class="diag-action">Aucun réglage ne l'enlèvera.</p>
+      <p>Cendre dès la première gorgée : c'est le sachet, une torréfaction trop foncée. Aucun réglage ne l'enlèvera.</p>
+      <p class="diag-action">Un grillé métallique en fin d'écoulement à la Brikka vient de la flamme : la baisser, retirer du feu plus tôt.</p>
     </article>
     <article class="carte diag-carte diag-calibration">
       <h3>Calibration maison</h3>
@@ -902,14 +902,13 @@
   <h2 id="ref-regles" class="ref-titre">Règles d'exécution</h2>
   <div class="carte ref-bloc">
     <h3>Valables partout</h3>
-    <p>Pour une ouverture partielle, regarder le <b>niveau d'eau</b> et non le chronomètre. Le débit dépend de la mouture, de la dose et du café. Un chrono n'est pas reproductible, un niveau l'est.</p>
-    <p>Remuer pendant la première infusion seulement, jamais pendant la seconde. Sur un lit déjà tassé, remuer déplace les fines vers le bas et bouche l'écoulement.</p>
+    <p>Dans les recettes qui font percolation puis immersion (Chronicler, Sweet, Tetsu Devil), remuer pendant la percolation seulement, jamais une fois la vanne fermée. Sur un lit déjà tassé, remuer déplace les fines vers le bas et bouche l'écoulement.</p>
 
     <h3>Ce qui passe mal dans le Switch</h3>
     <p>Bana Cofe G4 (rang bơ, le papier retiendrait le beurre qui fait tout l'intérêt), Fine Robusta Honey (Every Half), Midnight Chocolate (Every Half), Proud of Việt Nam (Every Half), Robusta Honey (The Married Beans), Signature Blend (Ritachi), et tout café en wet hulled ou en torréfaction foncée. Le site t'avertit si tu tentes la combinaison.</p>
 
     <h3>La question de la double infusion, tranchée</h3>
-    <p>Fractionner l'infusion augmente l'extraction et l'intensité, <b>pas le corps</b>. Le corps vient des huiles et des fines, et le papier les retient quel que soit le nombre de cycles. Ce que les recettes 4 et 5 apportent, c'est de la clarté avec de la puissance. Dans le Switch, les trois vrais leviers de corps sont, dans l'ordre : resserrer le ratio vers 1:14, moudre plus fin, remuer davantage.</p>
+    <p>Fractionner l'infusion augmente l'extraction et l'intensité, <b>pas le corps</b>. Le corps vient des huiles et des fines, et le papier les retient quel que soit le nombre de cycles. Ce que la Chronicler et la Tetsu Devil apportent en mêlant percolation et immersion, c'est de la clarté avec de la puissance. Dans le Switch, les trois vrais leviers de corps sont, dans l'ordre : resserrer le ratio vers 1:14, moudre plus fin, remuer davantage.</p>
   </div>
   </div>
 
@@ -919,7 +918,14 @@
     <h2 id="ref-recettes" class="ref-titre">Recettes</h2>
     <button class="btn btn-petit" id="btn-gerer-recettes">Gérer les recettes</button>
   </div>
-  <p class="ref-intro">Trois recettes Brikka et dix recettes Switch. Le principe qui les gouverne toutes : le Switch ne doit pas refaire ce que la Brikka fait mieux. Toutes portent ma molette unique, 1.5.0, sauf la Tetsu Neo Brew, extra grosse, et chaque recette garde dans sa note la mouture que sa source recommandait. Chaque recette est éditable, et les recettes d'origine restent restaurables à tout moment.</p>
+  <p class="ref-intro">Trois recettes Brikka et dix recettes Switch. Le principe qui les gouverne toutes : le Switch ne doit pas refaire ce que la Brikka fait mieux. Toutes portent ma molette unique, 1.5.0, sauf la Tetsu Neo Brew, extra grosse, et la plupart gardent dans leur note la mouture que leur source recommandait. Chaque recette est éditable, et les recettes d'origine restent restaurables à tout moment.</p>
+  <!-- Quel café, quelle recette (v8.74) : la table vit dans recettes.js
+       (MATRICE_CAFE_RECETTE), ui-guide.js la dessine avec tes moyennes. -->
+  <details class="carte matrice-carte" id="matrice-carte" open>
+    <summary>Quel café, quelle recette</summary>
+    <p class="carte-note">Le procédé en ligne, la torréfaction en colonne. Chaque case donne la recette de départ, sa température et une autre à essayer ; « chez toi », c'est ta moyenne sur les cafés de ce profil. Touche une recette pour l'ouvrir.</p>
+    <div class="table-conteneur"><table class="table-ref matrice" id="matrice-recettes"></table></div>
+  </details>
   <!-- Filtres de la bibliothèque (v8.52) : par machine, et par profil de café
        déduit des cafés associés à chaque recette. -->
   <div class="biblio-filtres" id="biblio-filtres" role="group" aria-label="Filtrer les recettes">
@@ -955,8 +961,8 @@
     <details class="fiche carte">
       <summary>Les trois espèces</summary>
       <div class="fiche-corps">
-        <p><b>Arabica</b> : environ 1,2 pour cent de caféine, sucres et acides organiques élevés, plante fragile qui exige de l'altitude, 60 à 70 pour cent de la production mondiale.</p>
-        <p><b>Robusta</b> : environ 2,4 pour cent de caféine, deux fois plus, plus de corps, moins de sucre, résistant, pousse en plaine. Le Vietnam en est le premier producteur mondial.</p>
+        <p><b>Arabica</b> : environ 1,2 pour cent de caféine, sucres et acides organiques élevés, plante fragile qui exige de l'altitude, environ 55 à 60 pour cent de la production mondiale.</p>
+        <p><b>Robusta</b> : environ 2,4 pour cent de caféine, deux fois plus, plus de corps, moins de sucre, résistant, pousse en basse et moyenne altitude, 500 à 800 m sur les hauts plateaux du Tây Nguyên. Le Vietnam en est le premier producteur mondial.</p>
         <p><b>Liberica et Excelsa</b> : moins de 2 pour cent de la production mondiale, gros grain asymétrique, arôme porté par l'espèce elle même, jacquier, fruit mûr, bois.</p>
         <p><b>Fine Robusta</b> : du robusta trié, récolté mûr, traité avec le soin d'un arabica de spécialité. Seuil de qualité à 80 points CQI.</p>
       </div>
@@ -977,8 +983,8 @@
         <p><b>Natural, les risques</b> : fraise, myrtille, fruits tropicaux, parfois vineux. Plus de corps, moins d'acidité, plus variable d'un lot à l'autre, et un goût de ferment ou de moisi si le séchage est mal fait.</p>
         <p><b>Anaerobic, en tasse</b> : cannelle, bubble gum, banane, rhum. Certains adorent, d'autres trouvent ça artificiel. Cher.</p>
         <p><b>Co-ferment ou infusé</b> : fruits, levures ou épices ajoutés dans la cuve. Goût de mangue ou de fraise très marqué, et un débat dans le milieu sur ce qui est encore du café.</p>
-        <p><b>Décaféiné</b> : un retrait de caféine, pas une fermentation. Swiss Water, sucre de canne (EA) et CO2 supercritique sont les plus propres. Plus poreux, il se brasse un peu plus chaud et un peu plus fin.</p>
-        <p><b>Ce que ça change pour mes recettes</b> : un lavé va vers la percolation pure, Better 1 Cup ou One and Done, eau chaude, je cherche la clarté. Un honey va vers la Chronicler, sucre et corps sans perdre le détail. Un natural aussi, ou en immersion, à 90 ou 92 degrés, sinon le ferment et l'amertume ressortent, et un numéro plus gros à la molette, il est moins dense. Un anaerobic : Chronicler à 88 ou 90 degrés, ses arômes sont volatils et ça vire vite au sucré écœurant.</p>
+        <p><b>Décaféiné</b> : un retrait de caféine, pas une fermentation. Swiss Water, sucre de canne (EA) et CO2 supercritique sont les plus propres. Plus poreux, il s'extrait plus vite : un peu moins chaud et un peu plus gros.</p>
+        <p><b>Ce que ça change pour mes recettes</b> : un lavé va vers la percolation pure, Better 1 Cup ou One and Done, eau chaude, je cherche la clarté. Un honey va vers la Chronicler, sucre et corps sans perdre le détail. Un natural aussi, ou en immersion, à 90 ou 92 degrés, sinon le ferment et l'amertume ressortent, et un numéro plus gros à la molette, il est moins dense. Un anaerobic : Chronicler à 88 ou 90 degrés, ses arômes sont volatils et ça vire vite au sucré écœurant ; la Neo Brew les vise aussi, mais sur un anaerobic, partir à 93 degrés plutôt que 96.</p>
         <p><b>Rang bơ ou tẩm bơ</b> : beurre, souvent avec sucre et sel, incorporés à la torréfaction. Tradition vietnamienne. Jamais en filtre papier, jamais au moulin.</p>
         <p><b>Rang mộc</b> : torréfaction nue, rien d'ajouté. C'est un gage de pureté, pas un niveau de torréfaction.</p>
       </div>
@@ -989,7 +995,7 @@
       <div class="fiche-corps">
         <p>Séchage, puis réaction de Maillard entre 140 et 165 degrés (noisette, pain, cacao), puis caramélisation à partir de 170 degrés (sucre brun, caramel), premier crack vers 196 degrés, deuxième crack vers 224 degrés.</p>
         <p>Le temps passé après le premier crack s'appelle le development time : plus il est long, plus le café est rond et sucré, moins il garde de fruit.</p>
-        <p>Un café foncé n'est pas un café fort, il contient même un peu moins de caféine, il est juste plus amer.</p>
+        <p>Un café foncé n'est pas un café fort : au gramme, il a à peu près autant de caféine, il est juste plus amer. À la cuillère il en a un peu moins, le grain étant plus léger.</p>
       </div>
     </details>
 
@@ -999,19 +1005,19 @@
         <p>Le niveau de torréfaction change la SOLUBILITÉ du grain. Un clair est dense et peu poreux, ses composés sortent difficilement, donc le risque est la sous-extraction : acide, creux, court. Un foncé est cassant et poreux, il donne tout très vite et porte déjà de l'amertume de pyrolyse, donc le risque est la sur-extraction : amer, cendré.</p>
         <p>Les leviers, du plus fort au plus faible : la mouture, la température, le temps de contact et l'agitation, le ratio. La mouture pèse plus lourd que les trois autres réunis.</p>
         <p>Pour un clair, aller vers plus fin, plus chaud, plus long. Pour un foncé, vers plus grossier, moins chaud, plus court. C'est toujours le même axe, dans un sens ou dans l'autre.</p>
-        <p>Sur le Switch, tout est réglable et Le Costaud (Bloom) est déjà la recette des torréfactions claires : 95 degrés, la plus chaude des dix, et un bloom qui sert à saturer un grain dense. Pour un medium, la Chronicler ou la Sherrycipe.</p>
+        <p>Sur le Switch, tout est réglable et Le Costaud (Bloom) est déjà la recette des torréfactions claires : 95 degrés, parmi les plus chaudes, et un bloom qui sert à saturer un grain dense. Pour un medium, la Chronicler ou la Sherrycipe.</p>
         <p>Sur la Brikka, la température n'est pas réglable, c'est la flamme qui décide, et monter la flamme surchauffe l'aluminium avant même que l'eau soit passée. Le seul vrai levier y est donc la mouture : descendre d'un cran allonge l'écoulement sans ajouter de chaleur. Un cran à la fois, trop fin fait lâcher la soupape d'un coup.</p>
         <p>D'où la règle simple : les clairs au Switch, les foncés à la Brikka. Le carnet dit déjà l'inverse dans l'autre sens, un foncé ne va pas dans le Switch parce que le papier retient ce qui fait son intérêt.</p>
       </div>
     </details>
 
     <details class="fiche carte">
-      <summary>Eau froide ou eau chaude, ça dépend de la machine</summary>
+      <summary>Eau froide ou eau chaude à la Brikka</summary>
       <div class="fiche-corps">
-        <p>La Brikka se remplit à l'EAU FROIDE. C'est la consigne Bialetti pour ce modèle : sa soupape lestée est calibrée sur la montée en pression que produit l'eau froide, et la remplir chaud fait lâcher la soupape trop tôt.</p>
-        <p>La Moka Express, elle, se remplit à l'eau préchauffée. C'est de là que vient le conseil qu'on lit partout, et il ne se transpose pas à la Brikka.</p>
-        <p>Conséquence directe : sur une Brikka, un temps total de 6 à 8 minutes est normal. La mouture ne cuit pas pendant tout ce temps, elle reste tiède tant que l'eau du dessous n'est pas près de bouillir. Le temps qui compte est celui qui sépare les premières gouttes des premiers gargouillis, pas le temps total.</p>
-        <p>La recette Brikka classique du carnet part donc à l'eau froide. La variante eau préchauffée applique volontairement la méthode de la Moka Express, pour pouvoir comparer les deux en connaissance de cause.</p>
+        <p>Bialetti indique l'EAU FROIDE pour toutes ses cafetières, Brikka comme Moka Express. L'eau préchauffée est une astuce de barista (James Hoffmann, Blue Bottle) : elle raccourcit le temps où la mouture chauffe sur le feu.</p>
+        <p>La soupape lestée de la Brikka s'ouvre à la même pression quelle que soit la vitesse de montée : l'eau chaude ne la fait pas lâcher plus tôt, elle y arrive juste plus vite. Les deux méthodes se défendent.</p>
+        <p>À l'eau froide, un temps total de 6 à 8 minutes est normal. Pendant la montée, la mouture chauffe par le métal du panier : ce temps n'est pas anodin, c'est tout l'argument de l'eau préchauffée. Le temps à surveiller reste celui qui sépare les premières gouttes des premiers gargouillis.</p>
+        <p>La Brikka classique du carnet part à l'eau froide, sa variante à l'eau bouillante : même dose, même mouture, pour que la comparaison tranche.</p>
       </div>
     </details>
 
@@ -1027,7 +1033,7 @@
     <details class="fiche carte">
       <summary>L'eau</summary>
       <div class="fiche-corps">
-        <p><b>Standard SCA</b> : matières dissoutes totales 150 mg/L (fourchette 75 à 250), dureté calcique 68 mg/L (50 à 175), alcalinité totale 40 mg/L (40 à 70), pH 7 (6,5 à 7,5), sodium 10 mg/L, chlore zéro absolu.</p>
+        <p><b>Standard SCA</b> : matières dissoutes totales 150 mg/L (fourchette 75 à 250), dureté calcique 68 mg/L (17 à 85), alcalinité totale autour de 40 mg/L, pH 7 (6,5 à 7,5), sodium 10 mg/L, chlore zéro absolu.</p>
         <p><b>Au Vietnam</b> : jamais d'eau du robinet, elle est chlorée. Jamais d'eau osmosée pure en bonbonne, elle est trop pauvre en minéraux et donne une tasse creuse et acide. Eau minérale en bouteille autour de 100 à 200 mg/L de résidu sec.</p>
       </div>
     </details>
@@ -1035,8 +1041,8 @@
     <details class="fiche carte">
       <summary>La fraîcheur</summary>
       <div class="fiche-corps">
-        <p>Attendre 3 à 7 jours après torréfaction. Fenêtre utile de 1 à 6 semaines après la date de torréfaction, pas après l'achat. Chercher la mention "ngày rang" sur le sachet.</p>
-        <p>Conserver en grains, à l'abri de l'air, de la lumière et de la chaleur, jamais au réfrigérateur. Le café moulu perd l'essentiel de son arôme en 15 à 30 minutes.</p>
+        <p>Laisser reposer après torréfaction : 7 à 14 jours pour un clair au filtre, 3 à 5 pour un foncé ou la Brikka. Par 30 °C et l'humidité, la fenêtre utile raccourcit : compter 3 à 4 semaines après la date de torréfaction, pas après l'achat. Chercher la mention « ngày rang » sur le sachet.</p>
+        <p>Conserver en grains, dans le sachet à valve bien refermé ou un bocal opaque, à l'abri de la chaleur, jamais au réfrigérateur. Ce qui ne sera pas bu dans les deux semaines se congèle en portions fermées, à moudre encore froid. Le café moulu perd vite ses arômes les plus volatils : moudre juste avant.</p>
       </div>
     </details>
 
@@ -1077,13 +1083,13 @@
 
   <div class="guide-panneau" id="gp-boutiques" data-panneau="boutiques">
   <h2 id="gd-boutiques" class="ref-titre">Les boutiques, et quoi y prendre</h2>
-  <p class="ref-intro">Tiré de mon guide Brikka et Switch. Sept de ces boutiques vendent principalement sur leur propre site plutôt que sur Shopee, et c'est presque toujours moins cher en direct.</p>
+  <p class="ref-intro">Tiré de mon guide Brikka et Switch. Plusieurs de ces boutiques vendent surtout sur leur propre site plutôt que sur Shopee, et c'est presque toujours moins cher en direct.</p>
 
   <div class="grille-boutiques">
     <article class="carte boutique">
       <h3>Là Việt <a href="https://shopee.vn/product/254908605/18380543598" target="_blank" rel="noopener">laviet.coffee ↗</a></h3>
       <p class="boutique-meta">Đà Lạt · gamme lisible : Balanced, Rich, Strong</p>
-      <p>Le meilleur rapport qualité prix de toute la liste, deux à deux fois et demie moins cher que le reste, chez le torréfacteur dont j'aime déjà le Balanced. Premier choix : Serie 2 Datanla, honey light medium, nougat et chocolat noir, 165 000 ₫ les 250 g, recette imprimée sur la fiche.</p>
+      <p>Parmi les meilleurs rapports qualité prix de la liste, chez le torréfacteur dont j'aime déjà le Balanced. Premier choix : Serie 2 Datanla, honey light medium, nougat et chocolat noir, 165 000 ₫ les 250 g, recette imprimée sur la fiche.</p>
     </article>
     <article class="carte boutique">
       <h3>Soul Specialty Coffee <a href="https://beans.voicaphe.com/product/anaerobic-fine-robusta-soul-coffee-250g-/145" target="_blank" rel="noopener">fiche ↗</a></h3>
@@ -1154,7 +1160,6 @@
       <table class="table-ref table-achats">
         <thead><tr><th>Pour quoi</th><th>Article</th><th>Prix</th><th>Lien</th></tr></thead>
         <tbody>
-          <tr class="ligne-perso"><td><b>Le vrai manque</b>, rien n'est reproductible sans</td><td>Balance 0,1 g, plateau assez large pour le Switch</td><td>150 à 400 k ₫</td><td>n'importe quel vendeur</td></tr>
           <tr><td>Remplacer joint et plaque filtre</td><td>Joint Bialetti Brikka, Procaffe, variante Ron Brikka 2 cup, à changer tous les six mois</td><td>175 000 ₫</td><td><a href="https://shopee.vn/product/85940655/5640768494" target="_blank" rel="noopener">Produit ↗</a></td></tr>
           <tr><td>Ne plus mettre du café partout</td><td>Bague de dosage Ventozi, Size nhỏ : Moka 3/4c. Égalise seulement, ne tasse jamais</td><td>99 000 ₫</td><td><a href="https://shopee.vn/product/889284108/21795381726" target="_blank" rel="noopener">Produit ↗</a></td></tr>
           <tr><td>Le consommable</td><td>Papiers V60 format 02, blanc de préférence, rincer dans tous les cas. Sur Shopee, taper <code>giấy lọc V60 02</code> ou <code>Hario VCF-02</code></td><td>quelques dizaines de k ₫</td><td><a href="https://shopee.vn/search?keyword=gi%E1%BA%A5y%20l%E1%BB%8Dc%20v60%2002" target="_blank" rel="noopener">Recherche ↗</a></td></tr>
@@ -1218,7 +1223,7 @@
     </article>
     <article class="carte diag-carte">
       <h3>Commander hors Shopee</h3>
-      <p>On perd l'escrow (préférer le paiement à la livraison, COD), les vouchers et la messagerie de l'app. On gagne des prix 25 à 36 pour cent plus bas, le choix de la mouture et la date de torréfaction. Le canal de contact réel au Vietnam est Zalo.</p>
+      <p>On perd l'escrow (préférer le paiement à la livraison, COD), les vouchers et la messagerie de l'app. On gagne des prix 25 à 40 pour cent plus bas, le choix de la mouture et la date de torréfaction. Le canal de contact réel au Vietnam est Zalo.</p>
     </article>
     <article class="carte diag-carte">
       <h3>Regrouper par boutique</h3>
@@ -1226,7 +1231,7 @@
     </article>
     <article class="carte diag-carte">
       <h3>L'ordre à suivre</h3>
-      <p>Maintenant : la balance, le seul achat qui améliore toutes les tasses. Ensuite le test croisé, un même café dans les deux machines le même jour. Ensuite seulement, un café Brikka et un café Switch selon ce que le test a appris.</p>
+      <p>D'abord le test croisé, un même café dans les deux machines le même jour. Ensuite seulement, un café Brikka et un café Switch selon ce que le test a appris.</p>
     </article>
   </div>
   </div>
@@ -1243,7 +1248,7 @@
     <h3>Les filtres du Switch</h3>
     <p>Le Switch SSD-200-B prend les papiers coniques <b>V60 taille 02</b>, Hario ou compatibles (CAFEC, Timemore). C'est le format le plus répandu du Vietnam. Sur Shopee, taper <code>giấy lọc V60 02</code>, ou <code>Hario VCF-02</code> pour la boîte officielle de 100 (VCF-02-100W en blanc). Le blanc est plus neutre au goût que le brun, mais rincer le papier dans les deux cas. <a href="https://shopee.vn/search?keyword=gi%E1%BA%A5y%20l%E1%BB%8Dc%20v60%2002" target="_blank" rel="noopener">Lancer la recherche sur Shopee ↗</a></p>
     <h3>Bouilloire</h3>
-    <p>Si le modèle a un thermostat variable, cibler 92 à 94 °C pour les medium. Sinon, faire bouillir puis attendre 45 secondes à 1 minute couvercle ouvert : l'eau retombe vers 94 à 95, ce qui est la valeur par défaut du champ température en saisie.</p>
+    <p>Ma bouilloire va sur le feu : la température se déduit du temps de chauffe, sur une courbe calée dans Paramètres (premières bulles vers 88 °C, gros bouillon à 100). Avec les repères d'origine, 1:00 donne environ 73 °C, 1:30 donne 88, 1:40 donne 92 et 2:00 donne 100. En saisie, l'aide sous le champ température dit combien de temps viser pour la cible de la recette. Au-dessus de 1000 m d'altitude, l'eau bout sous 100 °C (vers 95 à Đà Lạt).</p>
   </div>
   </div>
 
@@ -1274,7 +1279,7 @@ Mình pha moka pot và pour over. Cảm ơn shop.</pre>
       <pre class="message-vn-texte" id="msg-ritachi">Chào shop,
 Mình muốn đặt |250G| FINE ROBUSTA (SKU RTCFR4250). Cho mình hỏi 2 điều ạ:
 1. Lô hàng hiện tại là Anaerobic Natural hay Red Honey ạ? Trên bao bì mình thấy có 2 ô đánh dấu, mình muốn loại lên men yếm khí.
-2. Sản phẩm là nguyên hạt hay bột ạ? Nếu là bột thì shop xay ở mức nào? Mình pha Brikka (moka pot), cần mức medium-coarse tương đương pha phin, không cần mịn như espresso.
+2. Sản phẩm là nguyên hạt hay bột ạ? Nếu là bột thì shop xay ở mức nào? Mình pha Brikka (moka pot), cần xay mịn vừa, mịn hơn pha phin một chút, không mịn như espresso.
 Cảm ơn shop.</pre>
     </article>
     <article class="carte message-carte">
@@ -1360,7 +1365,7 @@ Cảm ơn shop.</pre>
 
   <article class="carte">
     <h3>Ma bouilloire</h3>
-    <p class="param-aide">Deux repères à chronométrer une fois, sur le feu habituel, depuis l'eau du robinet. Les premières bulles : beaucoup de petites bulles au fond et quelques-unes qui remontent, vers 88 degrés. Le gros bouillon : toute la surface roule, 100 degrés. En saisie Switch, le temps passé sur le feu donne la température estimée, sur une courbe qui passe par ces deux repères : la montée ralentit en approchant de l'ébullition. Une estimation, pas une mesure : le degré reste modifiable.</p>
+    <p class="param-aide">Deux repères à chronométrer une fois, sur le feu habituel, depuis ton eau à température ambiante. Les premières bulles : beaucoup de petites bulles au fond et quelques-unes qui remontent, vers 88 degrés. Le gros bouillon : toute la surface roule, 100 degrés. En saisie Switch, le temps passé sur le feu donne la température estimée, sur une courbe qui passe par ces deux repères : la montée ralentit en approchant de l'ébullition. Une estimation, pas une mesure : le degré reste modifiable.</p>
     <div class="grille-nombres">
       <div class="champ">
         <label for="param-ebullition-min">Temps pour bouillir</label>
@@ -1526,7 +1531,7 @@ Cảm ơn shop.</pre>
 
 <dialog id="modale-recettes" class="modale modale-large">
   <h2>Mes recettes</h2>
-  <p class="modale-note">Tout est éditable : les valeurs préremplies en saisie viennent d'ici. Les 7 recettes d'origine peuvent toujours être rétablies à leur version vérifiée.</p>
+  <p class="modale-note">Tout est éditable : les valeurs préremplies en saisie viennent d'ici. Les recettes d'origine peuvent toujours être rétablies à leur version vérifiée.</p>
   <div class="cafes-liste" id="recettes-liste"></div>
   <button class="btn btn-primaire" id="recette-nouvelle">Ajouter une recette</button>
   <form id="form-recette" class="form-cafe" hidden>
@@ -1729,32 +1734,32 @@ Cảm ơn shop.</pre>
 <!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
      et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
      desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=8.73"></script>
-<script defer src="js/i18n.js?v=8.73"></script>
-<script defer src="js/grind.js?v=8.73"></script>
-<script defer src="js/recettes.js?v=8.73"></script>
+<script defer src="js/outils.js?v=8.74"></script>
+<script defer src="js/i18n.js?v=8.74"></script>
+<script defer src="js/grind.js?v=8.74"></script>
+<script defer src="js/recettes.js?v=8.74"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=8.73"></script>
-<script defer src="js/data-csv.js?v=8.73"></script>
-<script defer src="js/data-schema.js?v=8.73"></script>
-<script defer src="js/data-store.js?v=8.73"></script>
-<script defer src="js/data-calculs.js?v=8.73"></script>
-<script defer src="js/data-migrations.js?v=8.73"></script>
-<script defer src="js/data.js?v=8.73"></script>
-<script defer src="js/reglages.js?v=8.73"></script>
-<script defer src="js/charts.js?v=8.73"></script>
-<script defer src="js/ui-noyau.js?v=8.73"></script>
-<script defer src="js/ui-tableau.js?v=8.73"></script>
-<script defer src="js/ui-saisie.js?v=8.73"></script>
-<script defer src="js/ui-chrono.js?v=8.73"></script>
-<script defer src="js/ui-brouillon.js?v=8.73"></script>
-<script defer src="js/ui-rapide.js?v=8.73"></script>
-<script defer src="js/ui-historique.js?v=8.73"></script>
-<script defer src="js/ui-guide.js?v=8.73"></script>
-<script defer src="js/ui-catalogue.js?v=8.73"></script>
-<script defer src="js/ui-fiche.js?v=8.73"></script>
-<script defer src="js/ui-brassage.js?v=8.73"></script>
-<script defer src="js/ui-dessins.js?v=8.73"></script>
-<script defer src="js/app.js?v=8.73"></script>
+<script defer src="js/sync.js?v=8.74"></script>
+<script defer src="js/data-csv.js?v=8.74"></script>
+<script defer src="js/data-schema.js?v=8.74"></script>
+<script defer src="js/data-store.js?v=8.74"></script>
+<script defer src="js/data-calculs.js?v=8.74"></script>
+<script defer src="js/data-migrations.js?v=8.74"></script>
+<script defer src="js/data.js?v=8.74"></script>
+<script defer src="js/reglages.js?v=8.74"></script>
+<script defer src="js/charts.js?v=8.74"></script>
+<script defer src="js/ui-noyau.js?v=8.74"></script>
+<script defer src="js/ui-tableau.js?v=8.74"></script>
+<script defer src="js/ui-saisie.js?v=8.74"></script>
+<script defer src="js/ui-chrono.js?v=8.74"></script>
+<script defer src="js/ui-brouillon.js?v=8.74"></script>
+<script defer src="js/ui-rapide.js?v=8.74"></script>
+<script defer src="js/ui-historique.js?v=8.74"></script>
+<script defer src="js/ui-guide.js?v=8.74"></script>
+<script defer src="js/ui-catalogue.js?v=8.74"></script>
+<script defer src="js/ui-fiche.js?v=8.74"></script>
+<script defer src="js/ui-brassage.js?v=8.74"></script>
+<script defer src="js/ui-dessins.js?v=8.74"></script>
+<script defer src="js/app.js?v=8.74"></script>
 </body>
 </html>

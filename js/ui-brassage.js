@@ -28,7 +28,8 @@
   const echap = OUTILS.echap;
 
   function unite() {
-    try { return localStorage.getItem(CLE_UNITE) === "g" ? "g" : "ml"; } catch (e) { return "ml"; }
+    // En grammes par défaut depuis la v8.74 : Chris a une balance. Les millilitres restent à un toucher.
+    try { return localStorage.getItem(CLE_UNITE) === "ml" ? "ml" : "g"; } catch (e) { return "g"; }
   }
 
   /* La cible d'un palier : le volume CUMULÉ à atteindre. « jusqu'à 120 g » et

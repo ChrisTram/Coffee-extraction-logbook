@@ -45,7 +45,7 @@ const RECETTES_DEPART = [
     methode: "Brikka",
     famille: "brikka-classique",
     variante: "Eau préchauffée",
-    sousTitre: "Eau bouillante, flamme forte au départ, mouture plus grossière",
+    sousTitre: "Eau bouillante, flamme forte au départ",
     dose: 14, eau: 150, temp: "", tempTexte: "eau bouillante au départ, la suite dépend du feu",
     puissance_feu: 3,
     dial: "1.5.0",
@@ -61,9 +61,9 @@ const RECETTES_DEPART = [
       { t: null, texte: "Baisser la flamme dès que ça coule, pour allonger l'écoulement." },
       { t: null, texte: "Retirer du feu dès les premiers gargouillis." },
     ],
-    pourQui: "L'alternative à tester contre la Standard : même dose, même eau, seuls la température de départ, la flamme et la mouture changent. À savoir avant de comparer : Bialetti recommande l'eau FROIDE pour la Brikka, l'eau préchauffée étant la méthode de la Moka Express. Cette recette applique donc volontairement l'autre méthode.",
+    pourQui: "L'alternative à tester contre la Standard : même dose, même eau, même mouture, seules la température de départ et la flamme changent. À savoir avant de comparer : Bialetti indique l'eau FROIDE pour toutes ses cafetières, Brikka comme Moka Express ; l'eau préchauffée est une astuce de barista, qui raccourcit le temps où la mouture chauffe sur le feu. Cette recette applique donc volontairement l'autre méthode.",
     cafesAssocies: ["Trung Nguyên Sáng Tạo 4", "Bana Cofe G4", "Là Việt Balanced"],
-    note: "Si l'écoulement dure moins de 10 secondes, la mouture est trop fine et la soupape lâche d'un coup : passer à 1.6.0, plus grossier. Noter le temps total ET le temps d'écoulement, c'est leur écart qui dit combien de temps la mouture a cuit.",
+    note: "Si l'écoulement dure moins de 10 secondes, la mouture est trop fine et la soupape lâche d'un coup : passer à 1.5.4, le plus gros de la plage Brikka. Noter le temps total ET le temps d'écoulement, c'est leur écart qui dit combien de temps la mouture a cuit.",
     parDefaut: false, avancee: false, variantes: false, actif: 1,
   },
   /* UNE seule recette au lait. Le flat white et le cappuccino partageaient la
@@ -74,7 +74,7 @@ const RECETTES_DEPART = [
      apprendre. */
   {
     id: "brikka-flatwhite",
-    numero: 3,
+    numero: "",
     nom: "Brikka au lait",
     methode: "Brikka",
     sousTitre: "Flat white ou cappuccino, même extraction",
@@ -193,7 +193,7 @@ const RECETTES_DEPART = [
       { t: 45,  texte: "Compléter à 225 g, vanne FERMÉE." },
       { t: 150, texte: "Ouvrir, laisser s'écouler." },
     ],
-    pourQui: "Les lavés d'altitude et les torréfactions claires, grains fermés qui résistent et sortent ACIDES ET CREUX avec les autres recettes. Plus chaud et plus long. Pour le plus fin, descendre d'un cran à la main : les dix recettes portent 1.5.0 depuis que je ne recompte plus les crans à chaque changement de machine. Le bloom sert à saturer un grain dense, pas à dégazer.",
+    pourQui: "Les lavés d'altitude et les torréfactions claires, grains fermés qui résistent et sortent ACIDES ET CREUX avec les autres recettes. Plus chaud et plus long. Pour le plus fin, descendre d'un cran à la main : les recettes portent 1.5.0, sauf la Neo Brew, depuis que je ne recompte plus les crans à chaque changement de machine. Le bloom sert à saturer un grain dense, pas à dégazer.",
     cafesAssocies: ["Mít Liberica Khe Sanh (Father Coffee)", "Guji Uraga lavé (Greenfields)", "Serie 1 The 1893 (Là Việt)", "Cầu Đất lavé (The Married Beans)", "Specialty Arabica Cầu Đất (Ritachi)", "Arabica Sơn La (Every Half)", "Hung's Farm (Bosgaurus)"],
     note: "",
     parDefaut: false, avancee: false, variantes: false, actif: 1,
@@ -235,7 +235,7 @@ const RECETTES_DEPART = [
     etapes: [],
     pourQui: "Les cafés complexes et chers que je ne veux pas rater, et ceux dont je veux régler moi même l'équilibre. Vanne OUVERTE du début à la fin. Verser dès que le lit vient de s'assécher en surface, environ toutes les 30 à 45 secondes.",
     cafesAssocies: ["Ethiopia Banko Anaerobic (Amigo)", "Mít Liberica Khe Sanh (Father Coffee)", "Serie 2 Datanla (Là Việt)", "Serie 4 D'ran (Là Việt)", "Proud (Bosgaurus)"],
-    note: "La méthode 4:6 de Tetsu Kasuya, champion du monde 2016 : 40 pour cent de l'eau règle l'acidité et le sucre, 60 pour cent le corps. Ne pas confondre avec sa recette « Devil », à deux températures (90 puis 70 °C), dont elle portait le nom jusqu'à la v8.65. Mouture medium coarse, 2.0.0 : deux numéros plus ouverts que la zone commune avec la Brikka. La vidéo est une démonstration de TALES COFFEE, pas de Tetsu lui même.",
+    note: "La méthode 4:6 de Tetsu Kasuya, champion du monde 2016 : 40 pour cent de l'eau règle l'acidité et le sucre, 60 pour cent le corps. Ne pas confondre avec sa recette « Devil », à deux températures (90 puis 70 °C), dont elle portait le nom jusqu'à la v8.65. Mouture medium coarse, 2.0.0 : cinq numéros plus ouverts que la zone commune avec la Brikka (25 crans). La vidéo est une démonstration de TALES COFFEE, pas de Tetsu lui même.",
     video: "https://www.youtube.com/watch?v=Xm4bDaioAjg",
     parDefaut: false, avancee: false, variantes: true, actif: 1,
   },
@@ -455,8 +455,8 @@ const CAFES_DEPART = [
 const DESCRIPTEURS_GROUPES = [
   { nom: "Corps et texture", tags: ["rond", "sirupeux", "crémeux", "beurré", "gras", "velouté", "soyeux", "liquoreux", "sec", "léger", "astringent", "rugueux", "aqueux"] },
   { nom: "Cacao et noix", tags: ["chocolat noir", "chocolat au lait", "cacao", "noisette", "amande", "cacahuète"] },
-  { nom: "Sucré", tags: ["caramel", "sucre roux", "miel", "vanille", "mélasse", "praliné"] },
-  { nom: "Fruité", tags: ["banane", "jacquier", "fruits tropicaux", "fruit de la passion", "fruits mûrs", "fruits rouges", "cerise", "fruits secs", "raisin", "pomme", "agrume", "pêche"] },
+  { nom: "Sucré", tags: ["caramel", "sucre roux", "sucre de canne", "miel", "vanille", "mélasse", "praliné"] },
+  { nom: "Fruité", tags: ["banane", "jacquier", "fruits tropicaux", "fruit de la passion", "fruits mûrs", "fruits rouges", "cassis", "cerise", "prune", "fruits secs", "raisin", "pomme", "agrume", "orange", "pêche"] },
   // L'acidité manquait entièrement comme AXE : seul "agrume" existait, et c'est
   // un arôme, pas une structure. Or acide et aigre sont les mêmes acides pour
   // deux verdicts opposés, et c'est la confusion la plus coûteuse en dégustation.
@@ -465,7 +465,13 @@ const DESCRIPTEURS_GROUPES = [
   { nom: "Épices", tags: ["épices", "cannelle", "clou de girofle", "réglisse", "poivre"] },
   { nom: "Céréales et malt", tags: ["malt", "pain grillé", "biscuit"] },
   { nom: "Fermentation", tags: ["vineux", "fermenté", "rhum"] },
-  { nom: "Torréfaction et défauts", tags: ["fumé", "tabac", "brûlé", "cendre", "caoutchouc", "terreux", "boisé", "moisi", "papier", "rance", "phénolique"] },
+  /* Terre et bois (v8.74) : terreux, boisé et tabac étaient rangés dans les
+     défauts, alors que ce sont des traits du robusta et du liberica. */
+  { nom: "Terre et bois", tags: ["terreux", "boisé", "tabac", "cuir"] },
+  /* « salé » (la signature de la sous-extraction, que le Guide fait goûter avec
+     une pincée de sel) et « métallique » (le défaut typique de la moka)
+     manquaient (v8.74). */
+  { nom: "Torréfaction et défauts", tags: ["fumé", "brûlé", "cendre", "caoutchouc", "métallique", "salé", "moisi", "papier", "rance", "phénolique"] },
 ];
 const DESCRIPTEURS = DESCRIPTEURS_GROUPES.flatMap(g => g.tags);
 
@@ -564,17 +570,17 @@ const DIAGNOSTIC_QUAND = {
 
 const DIAGNOSTIC_CORRECTIONS = {
   "Équilibré": "Rien à changer, note le réglage.",
-  "Un peu acide": "Presque bon : un ou deux crans plus fin, ou 2 à 3 degrés plus chaud.",
+  "Un peu acide": "Presque bon : deux crans plus fin, ou 2 à 3 degrés plus chaud au Switch.",
   "Sous-extrait (acide)": "Moudre plus fin, plus chaud, plus longtemps.",
-  "Un peu amer": "Presque bon : un ou deux crans plus grossier, ou 2 à 3 degrés moins chaud.",
+  "Un peu amer": "Presque bon : deux crans plus grossier, ou 2 à 3 degrés moins chaud (à la Brikka, un cran de feu en moins).",
   "Sur-extrait (amer)": "Moudre plus grossier, moins chaud, moins longtemps.",
-  "Un peu astringent": "Presque bon : un ou deux crans plus grossier, et remuer moins.",
+  "Un peu astringent": "Presque bon : deux crans plus grossier, et remuer moins.",
   "Astringent": "Sur-extraction : plus grossier, et remuer moins.",
   "Acide ET amer (extraction inégale)": "Répartition : égaliser le lit sans jamais tasser. En Brikka, ne pas trop remplir le panier. Au Switch, remuer et verser en spirale.",
-  "Un peu léger": "Presque bon : un peu moins d'eau, ou un gramme de café en plus.",
-  "Trop léger (aqueux)": "Resserrer le ratio (moins d'eau ou plus de café).",
-  "Un peu concentré": "Presque bon : un peu plus d'eau, ou un gramme de café en moins.",
-  "Trop fort (concentré)": "Élargir le ratio (plus d'eau ou moins de café).",
+  "Un peu léger": "Presque bon : un peu moins d'eau au Switch. À la Brikka le panier est déjà plein : retirer du feu un peu plus tôt.",
+  "Trop léger (aqueux)": "Resserrer le ratio : moins d'eau au Switch ; à la Brikka, retirer du feu plus tôt.",
+  "Un peu concentré": "Presque bon : un peu plus d'eau au Switch ; à la Brikka, allonger la tasse d'un peu d'eau chaude.",
+  "Trop fort (concentré)": "Élargir le ratio : plus d'eau au Switch ; à la Brikka, allonger la tasse d'eau chaude.",
   "Un peu éventé": "Le sachet commence à fatiguer : bien le refermer, et le finir plus vite.",
   "Creux, plat (café éventé)": "Fraîcheur : vérifier la date de torréfaction, resserrer le sachet.",
   "Un peu brûlé": "Note de torréfaction un peu poussée : baisser la flamme, et retirer du feu plus tôt.",
@@ -589,9 +595,11 @@ const DIAGNOSTIC_CORRECTIONS = {
    valeurs de départ viennent de la tasse elle-même.
 
    mouture : négatif plus fin, positif plus grossier.
-   chaleur : positif plus chaud (degrés au Switch, feu à la Brikka).
-   ratio   : négatif resserrer (moins d'eau au Switch, plus de café à la Brikka),
-             positif élargir.
+   chaleur : positif plus chaud (degrés au Switch, feu à la Brikka). À la
+             Brikka, seulement vers le bas (v8.74) : monter la flamme surchauffe
+             l'aluminium, le Guide le dit, la correction ne le propose plus.
+   ratio   : négatif resserrer, positif élargir. Au Switch seulement (v8.74) :
+             le panier de la Brikka est plein et arasé, on n'y ajoute pas de café.
    1 pour un diagnostic « un peu », 2 pour un franc : le pas est doublé.
    Les diagnostics du café lui-même et l'extraction inégale n'ont pas de levier
    chiffrable : un réglage n'y change rien, ou pas dans un seul sens. */
@@ -697,6 +705,66 @@ function chauffePourTemperature(tempC, ebullitionS, bullesS) {
   return Math.round(s / 5) * 5;
 }
 
+/* QUEL CAFÉ, QUELLE RECETTE (v8.74). Le conseil était éparpillé entre cinq
+   endroits du Guide et le « Pour qui » de chaque recette. Ici une seule table :
+   le procédé en ligne, la torréfaction en colonne, et dans chaque case la
+   recette de départ (par identifiant : son nom et ses réglages viennent de la
+   recette elle-même), la température conseillée, et une autre recette à
+   essayer. Le Guide la dessine avec, dans chaque case, ta propre moyenne sur
+   les cafés de ce profil. */
+const MATRICE_CAFE_RECETTE = {
+  lignes: [
+    { id: "lave", nom: "Lavé" },
+    { id: "honey", nom: "Honey" },
+    { id: "natural", nom: "Natural" },
+    { id: "anaerobic", nom: "Anaerobic, fermenté" },
+    { id: "robusta", nom: "Robusta, rang bơ" },
+  ],
+  colonnes: [
+    { id: "clair", nom: "Clair" },
+    { id: "medium", nom: "Medium" },
+    { id: "fonce", nom: "Foncé" },
+  ],
+  cases: {
+    "lave|clair": { recette: "one-and-done", temp: "93 à 96 °C", autre: "costaud-bloom" },
+    "lave|medium": { recette: "chronicler", temp: "92 °C", autre: "hoffmann-1cup" },
+    "lave|fonce": { recette: "costaud-immersion", temp: "88 à 90 °C", autre: "brikka-classique" },
+    "honey|clair": { recette: "sweet", temp: "92 °C", autre: "chronicler" },
+    "honey|medium": { recette: "sweet", temp: "92 °C", autre: "sherrycipe" },
+    "honey|fonce": { recette: "brikka-classique", temp: "", autre: "costaud-immersion" },
+    "natural|clair": { recette: "neo-brew", temp: "95 à 96 °C", autre: "chronicler" },
+    "natural|medium": { recette: "chronicler", temp: "90 à 92 °C", autre: "devil-switch" },
+    "natural|fonce": { recette: "brikka-classique", temp: "", autre: "devil-switch" },
+    "anaerobic|clair": { recette: "neo-brew", temp: "93 °C", autre: "chronicler" },
+    "anaerobic|medium": { recette: "chronicler", temp: "88 à 90 °C", autre: "devil-switch" },
+    "anaerobic|fonce": { recette: "brikka-classique", temp: "", autre: "" },
+    "robusta|clair": { recette: "sherrycipe", temp: "92 °C", autre: "devil-switch" },
+    "robusta|medium": { recette: "brikka-classique", temp: "", autre: "brikka-flatwhite" },
+    "robusta|fonce": { recette: "brikka-classique", temp: "", autre: "brikka-flatwhite" },
+  },
+};
+
+/* Le profil d'un café pour cette table, lu dans sa fiche : l'espèce et le
+   procédé donnent la ligne, la torréfaction la colonne. Un champ vide ou
+   inconnu donne null : le café ne compte dans aucune case. */
+function profilCafe(cafe) {
+  const p = String((cafe && cafe.procede) || "").toLowerCase();
+  const e = String((cafe && cafe.espece) || "").toLowerCase();
+  const t = String((cafe && cafe.torrefaction) || "").toLowerCase();
+  const ligne = /robusta|rang b|tẩm b/.test(e + " " + p) ? "robusta"
+    : /anaer|ferment|yếm khí|lên men/.test(p) ? "anaerobic"
+    : /natur|tự nhiên/.test(p) ? "natural"
+    : /honey|mật ong/.test(p) ? "honey"
+    : /lav|wash|ướt/.test(p) ? "lave" : null;
+  const colonne = /fonc|dark|đậm/.test(t) ? "fonce"
+    : /medium|vừa/.test(t) ? "medium"
+    : /clair|light|sáng/.test(t) ? "clair" : null;
+  return { ligne, colonne };
+}
+
+/* Cafés notés pour la Brikka (corps, chocolat), à qui le papier du Switch ne
+   rend pas justice. Ce ne sont PAS des rang bơ (v8.74) : ils ont leur propre
+   message, w_profil_brikka, au lieu de celui du beurre. */
 const JAMAIS_SWITCH_NOMS = [
   "Fine Robusta Honey",
   "Midnight Chocolate",
@@ -750,9 +818,10 @@ function avertissementsCombinaison(cafe, methode, recetteNom, recettes) {
     const procede = (cafe.procede || "").toLowerCase();
     if (pct < 100 || (cafe.tag || "").toLowerCase().includes("aromatisé")) {
       msgs.push(I18N.t("w_aromatise", { pct }));
-    } else if (procede.includes("rang bơ") || procede.includes("rang bo") || procede.includes("tẩm bơ") ||
-               JAMAIS_SWITCH_NOMS.some(n => (cafe.nom || "").toLowerCase().includes(n.toLowerCase()))) {
+    } else if (procede.includes("rang bơ") || procede.includes("rang bo") || procede.includes("tẩm bơ")) {
       msgs.push(I18N.t("w_rangbo"));
+    } else if (JAMAIS_SWITCH_NOMS.some(n => (cafe.nom || "").toLowerCase().includes(n.toLowerCase()))) {
+      msgs.push(I18N.t("w_profil_brikka"));
     } else if (procede.includes("wet hulled") || procede.includes("giling basah")) {
       msgs.push(I18N.t("w_wethulled"));
     } else if ((cafe.torrefaction || "").toLowerCase().includes("fonc")) {
