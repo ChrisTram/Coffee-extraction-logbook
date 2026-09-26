@@ -23,7 +23,11 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
    contrôles qui cherchent une chaîne dans "l'interface" doivent les lire tous :
    sinon ils repassent au vert dès qu'un bout de code change de fichier, ce qui
    est exactement le moment où on aimerait qu'ils regardent. */
-const SOURCE_UI = ["js/ui-noyau.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-chrono.js", "js/ui-brouillon.js", "js/ui-rapide.js",
+/* Le style tient en quatre feuilles depuis la v8.78 : les contrôles les lisent
+   bout à bout, dans l'ordre de chargement, comme le navigateur. */
+const FEUILLES_CSS = ["css/socle.css", "css/ecrans.css", "css/fenetres.css", "css/finitions.css"];
+const lireCss = () => FEUILLES_CSS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
+const SOURCE_UI = ["js/ui-noyau.js", "js/ui-constats.js", "js/ui-derniere.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-saisie-aside.js", "js/ui-pilules.js", "js/ui-chrono.js", "js/ui-brouillon.js", "js/ui-rapide.js",
   "js/ui-historique.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/ui-fiche.js", "js/ui-brassage.js", "js/ui-dessins.js", "js/app.js"]
   .map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 /* demo-data.js n'est plus une balise script depuis la v7.56, mais le harnais le
@@ -787,7 +791,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("la page declare sa version dans un meta", /^\d+\.\d+/.test(meta || ""), String(meta));
   const versions = [...html.matchAll(/(?:src|href)="(?:js|css)\/[^"?]+\?v=([^"]*)"/g)].map(m => m[1]);
   // + 1 pour la feuille de style, + 1 pour le préchargement des graphiques (v8.75).
-  check("chaque script et la feuille de style portent ?v=", versions.length === scripts.length + 2,
+  check("chaque script et la feuille de style portent ?v=", versions.length === scripts.length + 1 + FEUILLES_CSS.length,
     versions.length + " sur " + (scripts.length + 2));
   check("les polices prechargees gardent l'URL de la feuille, sans ?v=", !/fonts\/[^"]+\?v=/.test(html));
   check("et tous portent la version du meta", versions.every(v => v === meta),
@@ -808,7 +812,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
 
   // La feuille de style et le manifeste comptent autant : sans eux la PWA
   // s'ouvre hors ligne en page blanche non stylee.
-  ["./css/styles.css", "./manifest.json", "./index.html"].forEach(f =>
+  [...FEUILLES_CSS.map(f => "./" + f), "./manifest.json", "./index.html"].forEach(f =>
     check("precache : " + f, sw.includes('"' + f + '"')));
 }
 
@@ -911,7 +915,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
 
    Le controle porte sur la REGLE : n'importe quel ecran referait la panne. */
 {
-  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8")
+  const css = lireCss()
     .replace(/\/\*[\s\S]*?\*\//g, " ");
   const fautifs = [];
   /* Chaque bloc du fichier : son selecteur, puis ses declarations. */
@@ -1012,7 +1016,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   /* SUR ORDINATEUR le CSS remet le chrono en haut de la colonne de droite.
      L'ordre du DOM sert le telephone, la grille sert l'ecran large, et aucun
      des deux ne depend d'un ordre de lecture accidentel. */
-  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  const css = lireCss();
   check("le chrono est place en haut de la colonne de droite sur ordinateur",
     /#chrono-widget\s*\{[^}]*grid-column:\s*2[^}]*grid-row:\s*1/.test(css));
   check("et la colonne des fiches passe en seconde rangee",
@@ -1425,7 +1429,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
    etaient centres. Regle generale, pas correction ponctuelle. */
 {
   // Sans les commentaires : un commentaire qui cite #ecran-saisie n'est pas une regle.
-  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+  const css = lireCss().replace(/\/\*[\s\S]*?\*\//g, "");
   const cadre =(css.match(/\.ecran \{([^}]*)\}/g) || []).join(" ");
   check("le cadre commun borne et centre tous les ecrans",
     /max-width:\s*var\(--cadre\)/.test(cadre) && /margin-inline:\s*auto/.test(cadre), cadre);
@@ -1504,7 +1508,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
    touche a la largeur du texte reorganise la ligne au clic : cocher un
    descripteur envoyait le groupe suivant a la ligne, sous les doigts. */
 {
-  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  const css = lireCss();
   const metriques = /font-weight|font-size|letter-spacing|padding|border-width/;
   const fautives = [];
   const re = /([^{}]*\.actif[^{}]*)\{([^}]*)\}/g;
@@ -1535,7 +1539,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("la case pas encore notee a disparu", !/note-vide/.test(html));
   /* Mais plus de second look (v8.68) : la classe est un etat, pas un style.
      Pointille et pouce cache faisaient deux curseurs differents. */
-  const cssNote = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  const cssNote = lireCss();
   check("la note non donnee n'a plus de style a part", !/\.curseur-inactif\s*[:{,]/.test(cssNote));
   check("le curseur ne suggere plus 7",
     /<input[^>]*id="f-note"[^>]*value="5"/.test(html));
@@ -1827,7 +1831,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
 
   /* Les bulles au survol etaient inatteignables au doigt : sur telephone le
      survol n'existe pas et un tap ne declenche pas :focus-visible. */
-  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  const css = lireCss();
   check("les bulles s'ouvrent aussi sans survol", css.includes(".info-ouverte::after"));
   check("un appui long les declenche", app.includes("APPUI_LONG_MS"));
   /* Attache UNE FOIS : les conteneurs survivent aux reconstructions de pilules,
@@ -1970,7 +1974,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
    pour marcher : chaque ajout a un repli, et le repli est le comportement
    d'avant, pas une version degradee. */
 {
-  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  const css = lireCss();
   const app = SOURCE_UI;
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
 
@@ -2089,7 +2093,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     teintes.length === 2 && new Set(teintes).size === 2, teintes.join(", "));
   /* Les paves prennent la couleur de leur cafe (v8.61) : cinq jetons, lus par le
      graphe ET par la legende, pour que les deux disent la meme chose. */
-  const cssCafes = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  const cssCafes = lireCss();
   check("les cinq teintes de cafe sont des jetons",
     [1, 2, 3, 4, 5].every(n => cssCafes.includes("--cafe-" + n + ":")) && bloc30j.includes('cssVar("--cafe-" + n)'));
   check("et le tableau de bord passe les cafes au graphe, avec leur legende",
@@ -2105,7 +2109,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   /* La tendance LISSE la ligne des notes : meme mesure, meme axe. Elle doit
      porter la teinte de l'accent, sinon elle se lit comme une donnee de plus.
      C'est ce que disait deja son commentaire, et que sa couleur contredisait. */
-  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  const css = lireCss();
   check("et la reglette du convertisseur garde sa couleur de defaut",
     css.includes("--tendance"));
   const tendances = [...css.matchAll(/--tendance: ([^;]+);/g)].map(m => m[1].trim());
@@ -2232,7 +2236,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
    rien a faire dans cette liste. */
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
-  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  const css = lireCss();
   const APART = ["button", "submit", "checkbox", "radio", "range", "file", "hidden"];
 
   const utilises = [...new Set([...html.matchAll(/<input\b[^>]*\btype="([a-z-]+)"/g)].map(m => m[1]))]
@@ -2271,7 +2275,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
    trois endroits a corriger le jour ou la bulle change. La regle porte
    maintenant sur l'ATTRIBUT data-info, et tout element qui le porte l'obtient. */
 {
-  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  const css = lireCss();
   const copies = (css.match(/content: attr\(data-info\)/g) || []).length;
   check("l'infobulle n'est definie qu'une fois", copies === 1, copies + " copies");
   check("et elle porte sur l'attribut, pas sur des classes",
@@ -2319,13 +2323,13 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
 {
   const charts = readFileSync(join(ROOT, "js/charts.js"), "utf8");
   const grind = readFileSync(join(ROOT, "js/grind.js"), "utf8");
-  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  const css = lireCss();
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
 
   /* On cherche la couleur ECRITE, pas citee : les deux commentaires qui
      expliquent pourquoi elle est partie ont le droit de la nommer. */
   const enDur = [["js/charts.js", charts], ["js/grind.js", grind],
-    ["css/styles.css", css], ["index.html", html]]
+    ["css", css], ["index.html", html]]
     .flatMap(([nom, src]) => src.split("\n")
       .filter(l => /#1baf7a/i.test(l) && !/^\s*(\/\/|\*|\/\*)/.test(l) && !/piquait|criard/.test(l))
       .map(l => nom + " : " + l.trim().slice(0, 60)));
@@ -2354,7 +2358,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
        ou sombres par la luminosite : la, la teinte ne se voit plus. */
     return h >= 75 && h <= 165 && S > 0.15 && L > 0.15 && L < 0.85;
   };
-  const vert = [["js/charts.js", charts], ["css/styles.css", css], ["index.html", html]]
+  const vert = [["js/charts.js", charts], ["css", css], ["index.html", html]]
     .flatMap(([nom, source]) => sansCommentaires(source).split("\n")
       .flatMap((l, i) => [...l.matchAll(/#([0-9a-f]{6})\b/gi)]
         .filter(m => estVert(m[1]))
@@ -2386,7 +2390,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     check("aucune police ne traine sans etre declaree",
       orphelines.length === 0, orphelines.join(" | "));
 
-    const cdn = [["css/styles.css", css], ["index.html", html]]
+    const cdn = [["css", css], ["index.html", html]]
       .filter(([, source]) => /fonts\.googleapis\.com|fonts\.gstatic\.com/.test(source))
       .map(([nom]) => nom);
     check("aucune police n'est chargee depuis un CDN", cdn.length === 0, cdn.join(" | "));
@@ -2541,7 +2545,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
    redéfinit que ce qui change, le reste lui vient de Graphite, exactement comme
    dans le navigateur. */
 {
-  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  const css = lireCss();
   const bloc = sel => {
     const i = css.indexOf(sel + " {");
     if (i < 0) return {};
@@ -2682,7 +2686,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("le premier affichage n'attend plus la synchro", !/if \(syncPossible\(\)\) await synchroniser/.test(SOURCE_DATA));
   check("les fichiers lies ne demandent plus la permission hors d'un geste",
     SOURCE_DATA.includes('queryPermission({ mode: "readwrite" }) === "granted"') && SOURCE_DATA.includes("reautoriserDossier"));
-  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  const css = lireCss();
   check("« Nouvelle tasse » n'apparait plus en double dans le menu Plus", css.includes(".rail .rail-nouvelle"));
   check("les regles de l'ancien en-tete sont parties", !/\.nav \{/.test(css) && !/\.nav-btn \{ padding: 8px/.test(css));
   const brouillon = readFileSync(join(ROOT, "js/ui-brouillon.js"), "utf8");
@@ -2786,7 +2790,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
 /* LOT 7 DE L'AUDIT (v8.76) : POUR TOUS LES DOIGTS. */
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
-  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  const css = lireCss();
   const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
   const dialogues = [...html.matchAll(/<dialog id="([^"]+)"([^>]*)>/g)];
   const sansNom = dialogues.filter(m => !/aria-label(ledby)?=/.test(m[2])).map(m => m[1]);

@@ -34,5 +34,5 @@ caractères comme ạ, ế, ữ retombent donc sur Georgia, glyphe par glyphe. V
 Ne jamais réécrire le contenu d'un `.woff2` sous le même nom : `worker/index.js`
 les sert avec un cache d'un an et sans `?v=`, précisément parce qu'un fichier de
 police ne bouge pas. Pour en changer, ajouter un fichier sous un nouveau nom et
-mettre à jour `@font-face` dans `css/styles.css` ainsi que la liste de précache
+mettre à jour `@font-face` dans `css/socle.css` ainsi que la liste de précache
 de `sw.js`.

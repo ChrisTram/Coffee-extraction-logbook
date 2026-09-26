@@ -1,0 +1,878 @@
+/* Carnet d'extraction, feuille 1 sur 4 : polices, jetons, base, navigation.
+   Le style tient en quatre feuilles chargées dans cet ordre (v8.78) : socle,
+   ecrans, fenetres, finitions. Découpées sans rien déplacer : la cascade est
+   celle de l'ancienne styles.css, d'un seul tenant.
+
+   Direction « Comptoir » : papier chaud, encre espresso, un seul accent en
+   terre cuite. Aucune teinte verte nulle part, y compris pour le « bon ».
+   Couleurs de données (validées daltonisme, palette Okabe-Ito) :
+   Brikka #2a78d6, Switch #eb6834, les deux machines #cc79a7.
+
+   CONTRASTES. Toute couleur de TEXTE tient au moins 4,5:1 sur les quatre
+   surfaces où elle peut se poser (--panneau, --fond, --panneau-2, --rail) et
+   non sur la seule qui arrangeait. Plusieurs valeurs de la maquette ont dû
+   être assombries pour ça, de très peu, la teinte est conservée : le détail et
+   les ratios sont dans DECISIONS.md, « La refonte Comptoir ». Les couleurs de
+   DONNÉES échappent à la règle : ce sont des aplats et des traits, pas du
+   texte, et leur seuil est celui des objets graphiques, 3:1. */
+
+/* ---------- Polices embarquées ----------
+
+   Instrument Serif et Manrope, toutes deux sous licence OFL (voir
+   css/fonts/LICENCE.md). Elles sont DANS le dépôt et jamais chargées depuis un
+   CDN : le site doit s'ouvrir en file:// et hors ligne, une dépendance réseau
+   afficherait le repli à la première ouverture et ferait clignoter la page.
+
+   Sous-ensembles retenus : latin et latin étendu pour les deux, plus le
+   VIETNAMIEN pour Manrope, parce que les cafés de Chris s'appellent « Trung
+   Nguyên Sáng Tạo » et « Là Việt ». Cyrillique et grec écartés, ils ne servent
+   à rien ici et pèsent pour rien.
+
+   Instrument Serif n'a PAS de sous-ensemble vietnamien chez Google Fonts : les
+   caractères comme ạ, ế, ữ retombent glyphe par glyphe sur Georgia. Un nom de
+   café vietnamien affiché en serif est donc typographiquement mixte. C'est
+   assumé, documenté dans DECISIONS.md, et ça ne concerne que les titres.
+
+   Manrope est une police VARIABLE : un seul fichier par sous-ensemble couvre
+   les graisses 400 à 700, d'où le font-weight en plage. */
+
+@font-face {
+  font-family: "Instrument Serif";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/instrument-serif-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Instrument Serif";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/instrument-serif-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Manrope";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("fonts/manrope-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Manrope";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("fonts/manrope-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Manrope";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("fonts/manrope-vietnamese.woff2") format("woff2");
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+
+/* ---------- Variables ---------- */
+
+:root {
+  /* Les cafés du graphe des 30 jours (v8.61), dans l'ordre du nombre de tasses.
+     Tons moyens, lisibles sur les trois fonds, et loin des trois couleurs de
+     machine (bleu, vermillon, rose) comme du cuivre de la note, et sans vert,
+     que la DA Comptoir interdit. */
+  --cafe-1: #5fa8d3;
+  --cafe-2: #d0806a;
+  --cafe-3: #d8b73e;
+  --cafe-4: #9d8ec4;
+  --cafe-5: #9aa05a;
+  --brikka: #2a78d6;
+  --switch: #eb6834;
+  /* Rose poudré et non plus vert émeraude. Le trio bleu / vermillon / rose-violet
+     est celui d'Okabe-Ito, sûr pour le daltonisme ; l'émeraude l'était aussi mais
+     criait sur une palette entièrement chaude. */
+  --deux: #cc79a7;
+
+  --serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --sans: Manrope, "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* Rayons de la DA Comptoir : cartes 18, contrôles 12, pastilles rondes. Les
+     deux premiers noms existaient déjà et gardent leur nom, c'est la valeur qui
+     change, donc tout le site suit sans qu'on touche aux règles. */
+  --rayon: 18px;
+  --rayon-petit: 12px;
+  --rayon-pastille: 999px;
+
+  /* Espaces et hauteurs de la DA, pour cesser de les réécrire à chaque bloc. */
+  --ecart-cartes: 18px;
+  --carte-padding: 22px 26px;
+  --hauteur-controle: 48px;
+  --rail-large: 232px;
+  --barre-basse: 62px;
+  /* Le cadre : largeur maximale de TOUT ecran, centre dans main. Un seul jeton,
+     une seule regle (.ecran), aucun ecran ne le redefinit. */
+  --cadre: 1560px;
+
+  --transition: 220ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Seule couleur qui ne suit pas le thème : le texte sombre posé sur la
+     pastille rose des deux machines, dont le fond est le même dans les deux.
+     --sur-accent, lui, a dû devenir une couleur de thème : le crème du thème
+     clair posé sur l'accent du thème sombre ne donnait que 2,66:1. */
+  --encre-sur-clair: #2e211a;
+
+  /* Échelle des plans, une seule liste lue de bas en haut. Un z-index écrit en
+     dur ailleurs est une régression : c'est ici qu'on décide qui passe devant. */
+  --z-sommaire: 20;
+  --z-entete: 50;
+  --z-tag: 60;
+  /* Le voile passe SOUS la feuille de navigation et SOUS le bouton flottant :
+     il assombrit le contenu, pas la navigation. */
+  --z-voile-nav: 148;
+  --z-panneau-rapide: 149;
+  --z-fab: 150;
+  --z-bulle: 200;
+  /* La feuille « Plus » passe devant le bouton flottant, sinon la tasse
+     flotterait par dessus le menu qu'elle est censee laisser tranquille. */
+  --z-rail: 152;
+  --z-toast: 300;
+  /* Le voile sous une fenêtre ou la feuille du téléphone (v8.78). */
+  --voile: rgba(38, 25, 15, 0.35);
+}
+
+/* LES DEUX THÈMES SOMBRES (v8.34), choisis par Chris sur maquette le 19
+   septembre 2026, à la place de l'« Espresso » brun qu'il n'aimait pas du tout.
+   data-theme="sombre" reste l'interrupteur de la FAMILLE : toutes les règles
+   écrites pour le sombre continuent de s'appliquer aux deux. data-sombre choisit
+   la palette, Graphite par défaut. Le bouton de thème fait le tour clair,
+   Graphite, Nuit.
+
+   Même grammaire dans les deux : quatre surfaces à pas nets, filets en alpha,
+   relief par ombre douce et filet clair d'un pixel, le brun seulement dans
+   l'accent. Tous les textes tiennent au moins 4,5:1 sur le fond, le rail et les
+   trois panneaux ; un test le vérifie (data.test, « thèmes sombres »). Les
+   couleurs de machines sont éclaircies d'un cran : sur un fond presque noir, le
+   bleu Brikka d'origine tombait sous 4:1.
+
+   GRAPHITE : presque noir, neutre à peine chaud, un seul accent, la crème d'un
+   espresso. La direction « app moderne ». */
+html[data-theme="sombre"] {
+  --fond: #111113;
+  --rail: #141416;
+  --fond-degrade: radial-gradient(1100px 520px at 85% -8%, rgba(232, 187, 133, 0.07) 0%, #111113 60%);
+  --panneau: #18181b;
+  --panneau-2: #212125;
+  /* Surface de survol et d'etat enfonce, un pas au dessus de --panneau-2. */
+  --panneau-3: #2b2b30;
+  --encre: #f4f1ec;
+  --texte: #d2cdc6;
+  /* 5,82:1 sur --panneau, 4,63:1 sur --panneau-3, la plus claire. */
+  --attenue: #99938b;
+  --accent: #e8bb85;
+  --accent-fort: #f4cd9d;
+  --accent-fond: rgba(232, 187, 133, 0.12);
+  /* Encre sombre sur l'accent : 10,3:1. */
+  --sur-accent: #1b140c;
+  /* Filets en ALPHA : une seule valeur reste visible sur toutes les surfaces. */
+  --lignes: rgba(255, 255, 255, 0.08);
+  --lignes-douces: rgba(255, 255, 255, 0.05);
+  --lignes-graphe: rgba(255, 255, 255, 0.08);
+  --barre-neutre: #4a4640;
+  /* Le relief du theme sombre : une ombre douce sous chaque carte, et un filet
+     clair d'un pixel en haut. Le theme clair pose ses cartes a plat sur une
+     bordure, ces deux jetons y sont vides. */
+  --ombre-carte: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 10px 30px rgba(0, 0, 0, 0.35);
+  --ombre-haut: 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+  --ombre: 0 16px 40px rgba(0, 0, 0, 0.55);
+  --tooltip-fond: #f4f1ec;
+  --tooltip-texte: #18181b;
+  --avert-fond: rgba(232, 187, 133, 0.10);
+  --avert-bord: rgba(232, 187, 133, 0.40);
+  --danger: #ef8a78;
+  /* PLUS DE VERT, nulle part, y compris pour dire « bon » : c'est une demande
+     explicite de Chris. Le statut favorable prend donc l'accent, le défavorable
+     garde le rouge. Le nom --ok est conservé pour ne pas réécrire les trente
+     règles qui l'utilisent. */
+  --ok: #e8bb85;
+  --tendance: rgba(232, 187, 133, 0.45);
+  /* Fond de la carte sombre (le chrono) : une carte secondaire avec un trait
+     d'accent a gauche. Ses sous-surfaces et son attenue vivent dans --cs-*. */
+  --carte-sombre-fond: #212125;
+  --cs-panneau: #18181b;
+  --cs-panneau-2: #2b2b30;
+  --cs-attenue: #a29c94;
+
+  --brikka: #4f93e6;
+  --switch: #ef7440;
+  --deux: #d58ab3;
+
+  --hm0: #212125;
+  --hm1: #3d3326;
+  --hm2: #6b5335;
+  --hm3: #a67e4f;
+  --hm4: #e8bb85;
+  color-scheme: dark;
+}
+
+/* NUIT : un bleu encre très profond, presque noir, et un accent cuivre de moka
+   chauffée. Froid dessous, chaud dessus : le contraste le plus franc. Le bleu
+   Brikka monte encore d'un cran pour ne pas se fondre dans le fond. Ne
+   redéfinit que ce qui change, le reste vient du bloc Graphite. */
+html[data-theme="sombre"][data-sombre="nuit"] {
+  --fond: #0b1017;
+  --rail: #0e141d;
+  --fond-degrade: radial-gradient(1100px 520px at 88% -10%, rgba(91, 156, 240, 0.10) 0%, #0b1017 60%);
+  --panneau: #121a25;
+  --panneau-2: #192331;
+  --panneau-3: #212e3f;
+  --encre: #eef2f6;
+  --texte: #c7d0db;
+  /* 6,33:1 sur --panneau, 4,98:1 sur --panneau-3. */
+  --attenue: #8e9db0;
+  --accent: #e5935a;
+  --accent-fort: #f3aa74;
+  --accent-fond: rgba(229, 147, 90, 0.13);
+  /* 7,7:1. */
+  --sur-accent: #1c0f06;
+  --lignes: rgba(200, 220, 255, 0.09);
+  --lignes-douces: rgba(200, 220, 255, 0.05);
+  --lignes-graphe: rgba(200, 220, 255, 0.09);
+  --barre-neutre: #3a4a60;
+  --ombre-carte: 0 1px 0 rgba(200, 220, 255, 0.05) inset, 0 12px 32px rgba(0, 0, 0, 0.45);
+  --ombre-haut: 0 1px 0 rgba(200, 220, 255, 0.05) inset;
+  --ombre: 0 16px 40px rgba(0, 0, 0, 0.6);
+  --tooltip-fond: #eef2f6;
+  --tooltip-texte: #121a25;
+  --avert-fond: rgba(229, 147, 90, 0.10);
+  --avert-bord: rgba(229, 147, 90, 0.40);
+  --danger: #f08a7a;
+  --ok: #e5935a;
+  --tendance: rgba(229, 147, 90, 0.45);
+  --carte-sombre-fond: #192331;
+  --cs-panneau: #121a25;
+  --cs-panneau-2: #212e3f;
+  --cs-attenue: #95a4b6;
+
+  --brikka: #5b9cf0;
+
+  --hm0: #192331;
+  --hm1: #3a2e2a;
+  --hm2: #6c4630;
+  --hm3: #a8683f;
+  --hm4: #e5935a;
+}
+
+/* Thème clair « Comptoir ». Papier chaud, encre espresso, accent terre cuite.
+   Les valeurs suivies d'un ratio ont été assombries par rapport à la maquette
+   pour tenir 4,5:1 sur la plus sombre des surfaces où elles se posent. */
+html[data-theme="clair"] {
+  --fond: #f4ede3;
+  --fond-degrade: radial-gradient(1200px 600px at 80% -10%, #faf4ea 0%, #f4ede3 55%);
+  --panneau: #fcf8f2;
+  --panneau-2: #ebe1d4;
+  /* Plus clair (v8.76) : l'atténué, l'accent et l'erreur y tombaient à 4,0:1. */
+  --panneau-3: #e8ddcf;
+  --rail: #f0e7db;
+  --encre: #26190f;
+  --texte: #5e4b3c;
+  /* Maquette #8a7462 : 3,42:1 sur --panneau-2, sous le seuil. #6d5a4b depuis la
+     v8.76 : 5,06:1 sur --panneau-2 et 4,88:1 sur --panneau-3, la surface de survol. */
+  --attenue: #6d5a4b;
+  /* Maquette #a85a1e : 4,00:1 sur --accent-fond. #924d1a depuis la v8.76 :
+     5,03:1 sur --accent-fond, 4,75:1 sur --panneau-3. */
+  --accent: #924d1a;
+  --accent-fort: #8a4716;
+  --accent-fond: #f2e2d2;
+  /* Crème sur l'accent : 5,02:1. */
+  --sur-accent: #f4ede3;
+  --lignes: #dccdbb;
+  --lignes-douces: #ede4d8;
+  --lignes-graphe: rgba(116, 97, 82, 0.18);
+  --barre-neutre: #cbb8a2;
+  /* Aucune ombre sur les cartes du thème clair : la DA les pose à plat, sur
+     bordure. --ombre ne sert plus qu'au bouton flottant et à la feuille. */
+  --ombre: 0 10px 30px rgba(38, 25, 15, 0.14);
+  --ombre-carte: none;
+  --ombre-haut: none;
+  --tooltip-fond: #26190f;
+  --tooltip-texte: #f4ede3;
+  --avert-fond: #f2e2d2;
+  --avert-bord: rgba(154, 82, 28, 0.42);
+  /* Maquette #c4503b : 3,57:1 sur --panneau-2. #a0412f depuis la v8.76 :
+     4,76:1 sur --panneau-3. */
+  --danger: #a0412f;
+  /* La bordure d'un champ (v8.76) : 3,3:1 sur le panneau, le minimum d'une limite
+     de contrôle est 3:1. --lignes, à 1,5:1, laissait deviner les champs. */
+  --lignes-champ: #9a8570;
+  /* Pas de vert : « bon » prend l'accent. Voir le thème sombre. */
+  --ok: #9a521c;
+  --tendance: rgba(154, 82, 28, 0.34);
+  /* Fond de la carte sombre. Un jeton dedie et non --encre : a l'interieur de
+     la carte, --encre change de sens et devient la couleur du TEXTE. */
+  --carte-sombre-fond: #26190f;
+
+  /* Rampe caramel du calendrier, du vide au plus actif. La DA en donne quatre
+     pour cinq niveaux : le pas manquant est interpolé entre les deux derniers.
+     Ce sont des aplats, pas du texte, aucun seuil de contraste ne s'y applique. */
+  --hm0: #ebe1d4;
+  --hm1: #ecd3b5;
+  --hm2: #cf9a5f;
+  --hm3: #bc7a3e;
+  --hm4: #9a521c;
+  color-scheme: light;
+}
+
+/* ---------- Base ---------- */
+
+* { box-sizing: border-box; }
+
+/* L'attribut hidden doit toujours gagner, même contre display: flex. */
+[hidden] { display: none !important; }
+
+html {
+  scroll-behavior: smooth;
+  /* La place de la barre de defilement est TOUJOURS reservee. Sans ca, un ecran
+     court (Mes reglages) est 15 px plus large qu un ecran long (le tableau de
+     bord), et le contenu saute lateralement a chaque changement d onglet. */
+  scrollbar-gutter: stable;
+}
+
+/* Au doigt : pas de zoom au double appui sur un bouton ni de halo gris au tap,
+   les deux font "page web" la ou on veut "application". */
+button, .pilule, .tag, .nav-btn, input[type="range"] { touch-action: manipulation; }
+/* Application installée : tirer vers le bas en haut de page ne recharge pas le
+   site. Le service worker et le versionnage livrent la nouvelle version à
+   l'ouverture suivante de toute façon. */
+body {
+  overscroll-behavior-y: contain;
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--texte);
+  background: var(--fond);
+  background-image: var(--fond-degrade);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+button, a, .pilule, .tag { -webkit-tap-highlight-color: transparent; }
+
+/* CONTRASTE FORCE (Windows). Les couleurs de fond disparaissent : un etat actif
+   qui ne tenait qu'a sa couleur devient invisible. On lui rend un trait. */
+@media (forced-colors: active) {
+  [aria-pressed="true"], [aria-current="page"], .btn-methode.actif, .nav-btn.actif {
+    outline: 2px solid CanvasText;
+    outline-offset: 2px;
+  }
+}
+
+/* 400 et pas 600 (v8.78) : Instrument Serif n'existe qu'en un seul poids, et le
+   navigateur fabriquait un faux gras en épaississant le trait. */
+h1, h2, h3, h4 {
+  font-family: var(--serif);
+  color: var(--encre);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+code {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  background: var(--panneau-2);
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-size: 0.92em;
+  color: var(--accent-fort);
+}
+
+a { color: var(--accent); }
+
+button { font-family: inherit; }
+
+::selection { background: var(--accent); color: var(--panneau); }
+
+/* ---------- Entête ---------- */
+
+/* ---------- Navigation : rail, barre du bas, feuille ----------
+
+   Un SEUL element .rail. Sur ordinateur c'est le rail de gauche ; sous 1024 px
+   il devient la feuille « Plus » qui monte du bas, et les trois ecrans
+   quotidiens passent dans .barre-bas. Voir le commentaire d'index.html. */
+
+.rail {
+  background: var(--rail);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.rail-marque {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  text-decoration: none;
+  color: inherit;
+  border-radius: var(--rayon-petit);
+  padding: 4px;
+}
+.rail-marque:hover { background: var(--accent-fond); }
+.rail-marque:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.rail-logo {
+  width: 38px; height: 38px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--encre);
+  color: var(--fond);
+}
+.rail-titres { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.rail-nom {
+  font-family: var(--serif);
+  font-size: 1.35rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: var(--encre);
+}
+.rail-sous { font-size: 0.74rem; color: var(--attenue); }
+
+.rail-nouvelle {
+  width: 100%;
+  height: var(--hauteur-controle);
+  justify-content: center;
+  gap: 8px;
+}
+
+.rail-entrees { display: flex; flex-direction: column; gap: 2px; }
+
+/* Une entree de rail : icone en trait plus libelle, jamais d'emoji. */
+.rail-entree {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  color: var(--texte);
+  font: inherit;
+  font-size: 0.92rem;
+  text-align: left;
+  border-radius: var(--rayon-petit);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.rail-entree .ico { flex: none; color: var(--attenue); transition: color var(--transition); }
+.rail-entree:hover { background: var(--panneau-3); color: var(--encre); }
+.rail-entree:hover .ico { color: var(--encre); }
+/* L'entree active prend le FOND de la page, pas l'accent : la DA veut un rail
+   ou l'ecran courant a l'air decoupe dedans, pas surligne. */
+.rail-entree.actif { background: var(--fond); color: var(--encre); }
+.rail-entree.actif .ico { color: var(--accent); }
+
+.rail-pied {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--lignes);
+}
+.rail-sync {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--attenue);
+}
+/* Le point d'etat. C'est le seul endroit ou la synchro se voit sans ouvrir un
+   panneau, donc il porte la couleur plutot qu'un simple rond gris. */
+.rail-point {
+  width: 8px; height: 8px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--barre-neutre);
+}
+.rail-point[data-etat="ok"] { background: var(--accent); }
+.rail-point[data-etat="encours"] { background: var(--accent); opacity: 0.55; }
+.rail-point[data-etat="erreur"],
+.rail-point[data-etat="session-expiree"] { background: var(--danger); }
+
+.rail-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.rail-badges:empty { display: none; }
+.rail-outils { display: flex; flex-wrap: wrap; gap: 6px; }
+.rail-donnees { flex: 1 0 100%; justify-content: center; }
+
+/* ---------- Barre du bas, telephone ---------- */
+.barre-bas {
+  display: none;
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: var(--z-entete);
+  background: color-mix(in srgb, var(--rail) 92%, transparent);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--lignes);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.barre-entree {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: var(--barre-basse);
+  border: none;
+  background: transparent;
+  color: var(--attenue);
+  font: inherit;
+  font-size: 0.68rem;
+  cursor: pointer;
+}
+.barre-entree.actif { color: var(--accent); }
+.barre-entree[aria-expanded="true"] { color: var(--encre); }
+
+/* Voile du telephone quand la feuille est ouverte. */
+.voile-nav {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-voile-nav);
+  background: var(--voile);
+}
+
+/* Ecran Mes meilleurs reglages : une carte par cafe. */
+#reglages-liste {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--ecart-cartes);
+}
+.reglage { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.reglage.inactif { opacity: 0.6; }
+.reglage-entete { display: flex; flex-direction: column; gap: 2px; }
+.reglage-entete b { font-family: var(--serif); font-size: 1.05rem; color: var(--encre); }
+.reglage-moyenne { font-size: 0.78rem; color: var(--attenue); }
+.reglage-note { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.reglage-note b { font-family: var(--serif); font-size: 2rem; color: var(--ok); line-height: 1; }
+.reglage-note span { font-size: 0.78rem; color: var(--attenue); }
+.reglage-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.reglage-chip {
+  font-size: 0.78rem; padding: 3px 10px; border-radius: 999px;
+  background: var(--panneau-2); border: 1px solid var(--lignes); color: var(--texte);
+}
+.ecran-intro { color: var(--attenue); max-width: 70ch; margin: 0 0 18px; }
+
+/* Lignes des dernieres extractions : cliquables vers l edition. */
+.derniere-cliquable { cursor: pointer; border-radius: var(--rayon-petit); transition: background var(--transition); }
+.derniere-cliquable:hover { background: var(--panneau-2); }
+.derniere-cliquable:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Ecran Parametres : un tableau d edition compact, une ligne par recette. */
+/* Colonne de lecture bornee, mais CENTREE : sans la marge auto elle se collait
+   a gauche de main, qui fait 1180 px, et la page paraissait de travers. */
+/* La largeur des ecrans est posee UNE fois, dans le bloc de mise en page.
+   Un plafond propre a un ecran le decalait des autres : Parametres tenait 780 px
+   pendant que ses voisins en faisaient 993, et le saut se voyait a chaque
+   changement d'onglet. Seule la LONGUEUR DE LIGNE des textes est bridee, par
+   .ecran-intro et les paragraphes, pas le cadre. */
+#ecran-parametres .carte { margin-bottom: 18px; }
+.param-aide { color: var(--attenue); font-size: 0.85rem; margin: 0 0 12px; max-width: 72ch; }
+.param-tableau-zone { overflow-x: auto; margin-bottom: 14px; }
+.param-tableau { min-width: 560px; }
+.param-tableau td { padding: 5px 8px; }
+.param-tableau input { width: 100%; min-width: 70px; padding: 5px 7px; }
+.param-tableau tr.param-groupe td {
+  font-family: var(--serif); color: var(--encre); font-weight: 400;
+  background: var(--panneau-2); padding: 7px 8px;
+}
+.param-sans { color: var(--attenue); }
+
+/* Le ratio de la ligne live porte son explication au survol. La bulle est
+   commune, voir [data-info] ; il ne reste ici que son propre soulignement. */
+.aide-ratio { cursor: help; border-bottom: 1px dotted var(--attenue); }
+
+/* Alerte de contradiction sous les pilules de diagnostic. */
+.diag-alerte { display: block; color: var(--accent-fort); margin-bottom: 4px; }
+
+/* Barre de selection du comparateur. */
+.barre-comparaison {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin: 0 0 10px; padding: 8px 12px;
+  background: var(--accent-fond); border: 1px solid var(--avert-bord);
+  border-radius: var(--rayon-petit); font-size: 0.85rem;
+}
+
+.ligne-histo.comparee { background: var(--accent-fond); }
+.btn-ligne.actif { color: var(--accent-fort); background: var(--accent-fond); }
+
+/* LA FICHE AU SURVOL de l'historique (v8.33) : le detail d'une tasse, flottant
+   sous sa ligne. Posee en fixed par ui-historique.js, qui la place ; elle ne
+   capte jamais la souris, sinon elle volerait le survol a la ligne dessous. */
+.h-fiche {
+  position: fixed;
+  z-index: var(--z-bulle);
+  width: min(460px, calc(100vw - 24px));
+  padding: 16px 18px;
+  background: var(--panneau);
+  border: 1px solid var(--lignes);
+  border-radius: var(--rayon-petit);
+  box-shadow: var(--ombre);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 140ms ease-out, transform 140ms ease-out;
+}
+.h-fiche.visible { opacity: 1; transform: none; }
+.h-fiche .detail-grille { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.h-fiche .detail-tags { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--lignes-douces); }
+@media (prefers-reduced-motion: reduce) {
+  .h-fiche { transition: none; transform: none; }
+}
+.detail-grille {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px 14px;
+}
+.detail-item { display: flex; flex-direction: column; min-width: 0; }
+.detail-item span {
+  font-size: 0.7rem;
+  color: var(--attenue);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.detail-item b { font-size: 0.9rem; color: var(--encre); font-weight: 600; }
+.detail-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.detail-tag {
+  font-size: 0.75rem; padding: 2px 9px; border-radius: 999px;
+  background: var(--panneau); border: 1px solid var(--lignes); color: var(--texte);
+}
+.detail-commentaire {
+  margin: 12px 0 0; padding-left: 12px; font-style: italic;
+  border-left: 2px solid var(--accent); color: var(--texte);
+}
+.detail-vide { margin: 0; color: var(--attenue); font-size: 0.85rem; }
+
+/* Tableau de comparaison : seules les lignes qui DIFFÈRENT sont surlignées,
+   c'est là que se trouve l'explication de l'écart de note. */
+.table-comparaison { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.table-comparaison th, .table-comparaison td {
+  padding: 8px 12px; border-bottom: 1px solid var(--lignes);
+  text-align: left; vertical-align: top;
+}
+.table-comparaison thead th { color: var(--attenue); font-size: 0.78rem; }
+.table-comparaison tbody th {
+  color: var(--attenue); font-weight: 600; font-size: 0.78rem;
+  text-transform: uppercase; letter-spacing: 0.04em; width: 30%;
+}
+.table-comparaison tr.differe td { background: var(--accent-fond); color: var(--encre); font-weight: 600; }
+
+/* Duree en minutes et secondes : deux champs etroits sur une ligne. */
+.duree { display: flex; align-items: center; gap: 6px; }
+/* Deux chiffres, pas plus. Les fleches du champ numerique mangeaient 13 px et
+   coupaient le « 45 » des secondes dans une colonne de 175 px ; on les retire,
+   elles ne servent a rien sur un champ qu'on tape, et la marge interne se
+   resserre. inputmode="numeric" donne deja le bon clavier au telephone. */
+.duree input {
+  width: 4.2rem;
+  min-width: 0;
+  padding-inline: 8px;
+  text-align: center;
+  appearance: textfield;
+}
+.duree input::-webkit-outer-spin-button,
+.duree input::-webkit-inner-spin-button { appearance: none; margin: 0; }
+.duree span { font-size: 0.8rem; color: var(--attenue); }
+
+/* Stock du sachet en cours, dans la liste des cafes. */
+.badge-stock {
+  font-size: 0.7rem;
+  padding: 2px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.badge-stock-ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); background: color-mix(in srgb, var(--ok) 12%, transparent); }
+.badge-stock-bas { color: var(--accent-fort); border-color: var(--avert-bord); background: var(--avert-fond); }
+.badge-stock-vide { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, transparent); background: color-mix(in srgb, var(--danger) 12%, transparent); }
+.cafe-ligne.epuise b { text-decoration: line-through; text-decoration-thickness: 1px; }
+
+/* Mini statistiques, sous le calendrier d'activite : le nombre a gauche, le
+   libelle a droite, en DEUX colonnes. En une colonne de cinq lignes elles
+   creusaient la carte ; en boites, « tasses par semaine » se coupait en deux. */
+.mini-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 16px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--lignes-douces);
+}
+.mini-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 3px 0;
+  min-width: 0;
+}
+.mini-stat b {
+  min-width: 2.2rem;
+  text-align: right;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 1.2rem;
+  color: var(--encre);
+  font-variant-numeric: tabular-nums;
+}
+.mini-stat span { font-size: 0.76rem; color: var(--attenue); }
+
+/* Message qui remplace un graphique legitimement vide. */
+.carte-vide {
+  margin: 0;
+  padding: 16px 14px;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--attenue);
+  background: var(--panneau-2);
+  border: 1px dashed var(--lignes);
+  border-radius: var(--rayon-petit);
+}
+
+/* Pied de page : numero de version, pour savoir ce qui tourne sur l'appareil. */
+.pied-site {
+  max-width: 1180px;
+  margin: 8px auto 24px;
+  padding: 0 20px;
+  text-align: right;
+  font-size: 0.72rem;
+  color: var(--attenue);
+}
+
+/* Ligne d'etat de la synchronisation, dans le panneau Donnees. */
+.sync-ligne {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: -6px 0 16px;
+  font-size: 0.85rem;
+  color: var(--attenue);
+}
+
+/* Insights du tableau de bord : des phrases, pas des graphiques. */
+.insights { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.insights li {
+  position: relative;
+  padding: 10px 14px 10px 34px;
+  background: var(--panneau-2);
+  border: 1px solid var(--lignes);
+  border-radius: var(--rayon-petit);
+  line-height: 1.45;
+}
+.insights li::before {
+  content: "\2022";
+  position: absolute;
+  left: 14px;
+  color: var(--accent);
+  font-weight: 700;
+}
+/* LA PREUVE, SUR UNE LIGNE (v8.37) : une réglette de 0 à 10 avec le réglage
+   en accent et le reste en neutre, les deux moyennes, puis la confiance et
+   les effectifs. Une ligne et non trois : la carte, plus haute que le graphe
+   voisin, le faisait grandir avec elle. */
+.insights .constat p { margin: 0; }
+.insights .constat .preuve {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin-top: 3px;
+  font-size: 0.76rem;
+  color: var(--attenue);
+}
+.reglette {
+  position: relative;
+  flex: 1 1 48px;
+  max-width: 130px;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--panneau-3);
+}
+.reglette i { position: absolute; top: 0; height: 100%; }
+.reglette-trait { background: var(--accent-fond); border-radius: 99px; }
+.reglette .reglette-point {
+  width: 10px; height: 10px; top: -2px;
+  margin-left: -5px;
+  border-radius: 50%;
+}
+.reglette-point.haut { background: var(--accent); }
+.reglette-point.bas { background: var(--barre-neutre); }
+.preuve-chiffres { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.preuve-chiffres b { color: var(--encre); font-size: 0.86rem; }
+.preuve-pied {
+  margin-left: auto;
+  white-space: nowrap;
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* .marque, .nav et .nav-icone ont disparu avec l'entete (refonte Comptoir,
+   etape 2). .nav-btn reste, mais comme simple crochet de comportement : c'est
+   .rail-entree et .barre-entree qui portent le dessin. */
+.nav-btn {
+  font: inherit;
+  border: none;
+  background: transparent;
+  color: var(--attenue);
+  font-size: 0.92rem;
+  padding: 9px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition), color var(--transition);
+}
+
+
+.nav-btn:hover { color: var(--encre); background: var(--panneau-2); }
+/* Un état sélectionné ne change QUE des couleurs : voir le commentaire sur
+   .tag.actif plus bas. Le gras élargissait le libellé et décalait les voisins. */
+.nav-btn.actif { background: var(--accent-fond); color: var(--accent-fort); }
+
+.badge {
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--lignes);
+  color: var(--attenue);
+  background: var(--panneau);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.badge-demo { color: var(--accent-fort); border-color: var(--avert-bord); background: var(--avert-fond); }
+
+.btn-icone {
+  border: 1px solid var(--lignes);
+  background: var(--panneau);
+  color: var(--texte);
+  border-radius: 999px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  transition: border-color var(--transition), background var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  /* ZONE D'APPUI de 44 px sans changer le dessin : le pseudo-element ::after
+     deborde de 6 px en hauteur et 2 px sur les cotes. Ce sont les boutons qu'on
+     tape plusieurs fois par jour les doigts mouilles, et 30 px passent le
+     minimum WCAG (24) mais pas le confort (44). */
+  position: relative;
+}
+.btn-icone:hover { border-color: var(--accent); }
+
+.btn-icone::after { content: ""; position: absolute; inset: -6px -2px; }

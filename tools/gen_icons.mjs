@@ -6,7 +6,7 @@
  * Ecrit icons/icon-192.png, icon-512.png, icon-maskable-512.png et
  * apple-touch-icon-180.png. A relancer seulement si le dessin change.
  *
- * Les couleurs viennent du theme sombre de css/styles.css : fond #221709,
+ * Les couleurs viennent du theme sombre de css/socle.css : fond #221709,
  * porcelaine #f3e8d8, cafe #d98741. Le dessin est decrit en coordonnees
  * relatives (0 a 1) puis echantillonne en 4x4 par pixel pour l'antialiasing.
  */

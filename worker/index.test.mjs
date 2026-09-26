@@ -146,7 +146,7 @@ check("session expiree rejetee", expired.status === 302, `status ${expired.statu
   const versioned = await call("/js/app.js?v=7.82", { headers: { Cookie: cookie } });
   check("un script versionne est immutable", (versioned.headers.get("Cache-Control") || "").includes("immutable"));
   check("et toujours prive", (versioned.headers.get("Cache-Control") || "").includes("private"));
-  const css = await call("/css/styles.css?v=7.82", { headers: { Cookie: cookie } });
+  const css = await call("/css/socle.css?v=7.82", { headers: { Cookie: cookie } });
   check("la feuille de style versionnee aussi", (css.headers.get("Cache-Control") || "").includes("immutable"));
   const bare = await call("/js/app.js", { headers: { Cookie: cookie } });
   check("sans version, un script se revalide", (bare.headers.get("Cache-Control") || "").includes("no-cache"));
@@ -229,7 +229,7 @@ check("session expiree rejetee", expired.status === 302, `status ${expired.statu
   const { dirname, join } = await import("node:path");
   const { fileURLToPath } = await import("node:url");
   const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-  const vraie = readFileSync(join(root, "css/styles.css"), "utf8");
+  const vraie = ["socle", "ecrans", "fenetres", "finitions"].map(f => readFileSync(join(root, "css/" + f + ".css"), "utf8")).join("\n");
   const allegee = allegerCss(vraie);
   check("la vraie feuille garde toutes ses accolades", (allegee.match(/\{/g) || []).length === (vraie.replace(/\/\*[\s\S]*?\*\//g, "").match(/\{/g) || []).length);
   check("et fond d'au moins un quart", allegee.length < vraie.length * 0.75, allegee.length + " / " + vraie.length);

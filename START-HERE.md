@@ -89,7 +89,7 @@ jamais à la main dans les CSV.
 | `AUDIT.md` | L'audit courant du projet et son backlog chiffré. |
 | `README.md` | La présentation pour Chris, côté usage. |
 | `index.html` | La page unique, tout le HTML statique, et la version du site (`<meta name="app-version">`) |
-| `css/styles.css` | Styles, thèmes sombre (défaut) et clair |
+| `css/socle.css`, `ecrans.css`, `fenetres.css`, `finitions.css` | Styles en quatre feuilles chargées dans cet ordre : jetons et thèmes dans socle, les écrasements responsives en dernier |
 | `js/outils.js` | Fonctions pures partagées par toutes les couches |
 | `js/i18n.js`, `js/i18n.en.js` | Traduction FR/EN, à toucher dès qu'un texte change |
 | `js/grind.js` | Moteur du moulin : conversions, plages, validation |

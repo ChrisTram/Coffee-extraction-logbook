@@ -51,7 +51,7 @@ LE CADRE (v8.27). Tout écran est borné et centré par UNE règle, `.ecran
 d'identifiant bat la classe, et c'est ainsi que l'historique s'est retrouvé calé
 à gauche. La grille de saisie a son propre plafond de 1400 px, centré.
 
-LES INSIGHTS (« Ce que tes données disent »). Dix règles dans `ui-tableau.js`
+LES INSIGHTS (« Ce que tes données disent »). Dix règles dans `ui-constats.js`
 (dont, depuis la v8.42, la température de l'eau du Switch par tranches, l'eau
 préchauffée de la Brikka et l'agitation du Switch, chacune limitée à sa machine),
 chacune rendant `{ texte, haut, bas, confiance }` ou `null` via `constat()`,
@@ -66,7 +66,7 @@ sélecteur maison est `.champ-pas` + `.pas` dans la feuille de style, et
 `brancherPas()` dans `ui-saisie.js` : tout champ nombre peut l’avoir en posant
 deux boutons `data-pas="1|-1" data-pas-champ="<id>"` à côté de lui.
 
-LES THÈMES. Trois palettes dans `css/styles.css` (v8.34) : `html[data-theme="clair"]`,
+LES THÈMES. Trois palettes dans `css/socle.css` (v8.34) : `html[data-theme="clair"]`,
 `html[data-theme="sombre"]` (Graphite, le sombre par défaut) et
 `html[data-theme="sombre"][data-sombre="nuit"]` (Nuit, qui ne redéfinit que ce qui
 change). `data-theme` dit la famille, `data-sombre` la palette ; les deux sont
@@ -110,8 +110,12 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/reglages.js` | meilleurs réglages par café, moyenne glissante, constats : calcul pur |
 | `js/charts.js` | graphiques Chart.js (chargée à la demande), heatmap et réglette en SVG maison |
 | `js/ui-noyau.js` | outils d'interface partagés, thème, navigation. Définit `UI`. |
-| `js/ui-tableau.js` | tableau de bord, insights, calendrier |
+| `js/ui-constats.js` | les phrases calculées et leur carrousel |
+| `js/ui-derniere.js` | la carte de la dernière tasse, et ses briques partagées avec la table |
+| `js/ui-tableau.js` | tableau de bord : calendrier, analyses, dernières extractions |
 | `js/ui-saisie.js` | formulaire, chronomètre |
+| `js/ui-saisie-aside.js` | panneau latéral de la saisie, tasses jumelles |
+| `js/ui-pilules.js` | pilules des diagnostics et des goûts, repli des familles |
 | `js/ui-chrono.js` | chronomètre de la saisie : paliers, bips, verrou d’écran, widget repliable |
 | `js/ui-brouillon.js` | brouillon de saisie en localStorage, chargé après ui-saisie.js |
 | `js/ui-rapide.js` | panneau de saisie rapide |
@@ -237,8 +241,8 @@ diagnostic, descripteurs, commentaire, puissance_feu, ratee, chauffe_s`
   est purement d'affichage). La liste vit dans DESCRIPTEURS_GROUPES
   (recettes.js), 69 tags en 10 familles. Chaque tag a une définition
   courte dans TAGS_INFO (i18n.js, fr et en), affichée dans une bulle CSS au
-  survol ou au focus (attribut data-info, styles ".pilule[data-info]" dans
-  styles.css). Ne pas mettre de guillemets doubles dans ces définitions
+  survol ou au focus (attribut data-info, styles « [data-info] » dans
+  ecrans.css). Ne pas mettre de guillemets doubles dans ces définitions
   (elles partent dans un attribut HTML).
 - `diagnostic` : zéro, une ou PLUSIEURS valeurs de DIAGNOSTICS (recettes.js)
   séparées par `|` (choix multiple depuis la v7.2, une tasse peut être un
@@ -869,7 +873,7 @@ double clic sur `index.html` marche exactement comme avant.
   découpe la forme qu'il veut. Régénérer si le dessin change, pas autrement.
 - `css/fonts/` : Instrument Serif (titres, chiffres) et Manrope (tout le
   reste), en woff2, sous licence OFL, déclarées en `@font-face` dans
-  `css/styles.css` et précachées. Sous-ensembles latin et latin étendu pour les
+  `css/socle.css` et précachées. Sous-ensembles latin et latin étendu pour les
   deux, plus le VIETNAMIEN pour Manrope (les cafés s'appellent « Trung Nguyên
   Sáng Tạo », « Là Việt »). Elles n'ont pas de `?v=` et n'en auront pas : elles
   sont immuables PAR CONTRAT, on ne réécrit jamais un `.woff2` sous le même

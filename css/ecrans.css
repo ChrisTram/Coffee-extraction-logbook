@@ -1,0 +1,2089 @@
+/* Carnet d'extraction, feuille 2 sur 4. Les écrans : structure, tableau de bord, boutons, formulaires, historique, référence. */
+
+/* ---------- Structure ---------- */
+
+main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
+
+/* ORDINATEUR : le rail est fixe a gauche, le contenu se decale de sa largeur.
+   Le seuil est celui de la DA, 1024 px. */
+@media (min-width: 1024px) {
+  .rail {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: var(--rail-large);
+    z-index: var(--z-entete);
+    padding: 18px 14px;
+    border-right: 1px solid var(--lignes);
+    overflow-y: auto;
+  }
+  main {
+    max-width: none;
+    margin: 0;
+    margin-inline-start: var(--rail-large);
+    padding: 28px clamp(20px, 2.6vw, 40px) 80px;
+  }
+  /* Les ecrans gardent une largeur lisible, et TOUS LA MEME : un plafond propre
+     a un ecran le decale des autres, et le saut se voit a chaque changement
+     d'onglet. La longueur de ligne des textes se bride ailleurs, sur les
+     paragraphes, pas sur le cadre. */
+  .ecran { max-width: var(--cadre); margin-inline: auto; }
+  /* Les textes longs du guide gardent une longueur de ligne lisible. */
+  #ecran-guide p, #ecran-guide li, #ecran-parametres p { max-width: 78ch; }
+  .pied-site { margin-inline-start: var(--rail-large); }
+  /* Le bouton flottant de saisie rapide DISPARAIT : « Nouvelle tasse » du rail
+     ouvre la saisie complete, qui est ce qu'on veut au clavier. */
+  .fab, .barre-bas { display: none; }
+}
+
+/* TELEPHONE : le rail devient la feuille « Plus », la barre du bas prend les
+   trois ecrans quotidiens. */
+@media (max-width: 1023px) {
+  .barre-bas { display: flex; }
+  .rail {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: var(--z-rail);
+    padding: 10px 14px calc(18px + env(safe-area-inset-bottom));
+    border-radius: 22px 22px 0 0;
+    border-top: 1px solid var(--lignes);
+    box-shadow: var(--ombre);
+    transform: translateY(101%);
+    transition: transform var(--transition);
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .rail.ouverte { transform: none; }
+  /* La poignee de la feuille, dessinee plutot qu'ajoutee au HTML : elle n'a de
+     sens que dans cette mise en page. */
+  .rail::before {
+    content: "";
+    display: block;
+    width: 40px; height: 4px;
+    margin: 0 auto 12px;
+    border-radius: 999px;
+    background: var(--lignes);
+  }
+  /* Ce que la barre du bas porte deja n'a pas a figurer deux fois. */
+  /* .rail .rail-nouvelle et non .rail-nouvelle (v8.72) : .btn, déclaré plus bas
+     avec le même poids, remettait « Nouvelle tasse » en double dans le menu. */
+  .rail-marque,
+  .rail .rail-nouvelle,
+  .rail-entree[data-ecran="tableau"],
+  .rail-entree[data-ecran="saisie"],
+  .rail-entree[data-ecran="historique"] { display: none; }
+  .rail-pied { border-top: none; padding-top: 4px; }
+  main { padding-bottom: calc(var(--barre-basse) + 34px); }
+  .pied-site { margin-bottom: calc(var(--barre-basse) + 16px); }
+  /* Le bouton flottant remonte au dessus de la barre. */
+  .fab { bottom: calc(var(--barre-basse) + 16px + env(safe-area-inset-bottom)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail { transition: none; }
+}
+
+.ecran { display: none; }
+.ecran.actif { display: block; animation: apparition 320ms ease-out; }
+
+@keyframes apparition {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.carte {
+  background: var(--panneau);
+  border: 1px solid var(--lignes);
+  border-radius: var(--rayon);
+  padding: var(--carte-padding);
+  /* En theme clair --ombre-carte est vide : la DA pose les cartes a plat, sur
+     un filet. En theme sombre c'est ce jeton qui donne le relief. */
+  box-shadow: var(--ombre-carte);
+}
+
+/* Les intertitres de bloc : petites capitales espacees, attenuees. */
+.carte h3 {
+  margin: 0 0 14px;
+  /* MANROPE, pas la serif heritee de la regle globale h1..h4. Une serif a 11 px
+     en capitales est illisible : ses pleins et delies sont dessines pour de
+     grandes tailles, et a cette echelle ils se remplissent. La serif reste aux
+     titres de page, aux chiffres et aux notes, ou elle a la place de respirer. */
+  font-family: var(--sans);
+  font-size: 0.69rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--attenue);
+}
+
+/* Une carte SOMBRE dans le theme clair : les insights et le chrono. En theme
+   sombre l'inversion ne veut plus rien dire, elle devient une carte secondaire
+   bordee d'un filet accent, ce qui la distingue sans l'eteindre. */
+/* LA CARTE SOMBRE REDEFINIT SES JETONS, elle n'habille pas ses descendants un
+   par un. C'est la seule facon de couvrir aussi ce qu'on y ajoutera plus tard :
+   la premiere version ne traitait que le titre et les liens, et tout le reste
+   ecrivait en --encre sur un fond --encre, soit du texte invisible. */
+.carte-sombre {
+  --encre: #f6efe5;
+  --texte: #ede2d4;
+  --attenue: #c2ad98;
+  --accent: #e0bd97;
+  --accent-fort: #f0d3b4;
+  --accent-fond: rgba(224, 189, 151, 0.16);
+  --lignes: rgba(246, 239, 229, 0.2);
+  --lignes-douces: rgba(246, 239, 229, 0.12);
+  --panneau: rgba(246, 239, 229, 0.06);
+  --panneau-2: rgba(246, 239, 229, 0.1);
+  --barre-neutre: rgba(246, 239, 229, 0.3);
+  background: var(--carte-sombre-fond);
+  border-color: var(--carte-sombre-fond);
+  color: var(--texte);
+}
+/* En theme sombre il n'y a rien a inverser : la carte devient une carte
+   secondaire bordee d'un filet accent, et garde donc les jetons du theme. */
+html[data-theme="sombre"] .carte-sombre {
+  /* inherit : on ANNULE l inversion posee par .carte-sombre pour le theme clair,
+     et la carte reprend les jetons de la palette sombre active, quelle qu elle
+     soit. Seules ses sous-surfaces et son attenue ont des valeurs a elles. */
+  --encre: inherit;
+  --texte: inherit;
+  --attenue: var(--cs-attenue);
+  --accent: inherit;
+  --accent-fort: inherit;
+  --accent-fond: inherit;
+  --lignes: inherit;
+  --lignes-douces: inherit;
+  --panneau: var(--cs-panneau);
+  --panneau-2: var(--cs-panneau-2);
+  --barre-neutre: inherit;
+  --carte-sombre-fond: inherit;
+  border-color: var(--lignes);
+  box-shadow: var(--ombre-carte), inset 3px 0 0 var(--accent);
+}
+
+/* Le lien de bas de carte : « Voir mes meilleurs reglages », « Tout
+   l'historique ». Un bouton, parce que ce sont des changements d'ecran. */
+.lien-carte {
+  margin-top: 12px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.84rem;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.lien-carte:hover { color: var(--accent-fort); }
+
+/* Cache a l'oeil, lu par les lecteurs d'ecran. Pas display:none, qui le
+   retirerait aussi de l'arbre d'accessibilite. */
+.hors-ecran {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Tete de page ----------
+   Le nom de l'ecran, qui vivait dans l'entete, vit maintenant dans l'ecran. */
+.tete-page {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+.tete-titres { min-width: 0; }
+.surligne {
+  margin: 0 0 2px;
+  font-size: 0.69rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--attenue);
+}
+.titre-page {
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(1.7rem, 3.4vw, 2.38rem);
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  color: var(--encre);
+}
+.tete-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* ---------- Grille du tableau de bord ----------
+   Trois colonnes egales, la carte principale sur deux. */
+.grille-tableau {
+  display: grid;
+  /* DOUZE colonnes et non trois : la carte principale prend 8, les autres 4.
+     Meme rapport qu'avant (deux tiers, un tiers), mais une grille de douze
+     permet de le changer carte par carte sans toucher aux voisines. */
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--ecart-cartes);
+  /* Les cartes d'une meme rangee s'ETIRENT a la hauteur de la plus haute.
+     Alignees sur le haut, elles laissaient un trou sous les plus courtes, et un
+     tableau de bord troue se lit comme un tableau de bord casse. */
+  align-items: stretch;
+}
+/* Etirer la carte ne suffit pas : son contenu doit occuper la place gagnee,
+   sinon on a deplace le trou a l'interieur. */
+.grille-tableau > .carte { display: flex; flex-direction: column; }
+.grille-tableau > .carte > .canvas-h240,
+.grille-tableau > .carte > .canvas-h200 { flex: 1; min-height: 200px; }
+/* Le lien SUIT son contenu, il n'est plus pousse en bas de la carte etiree :
+   margin-top: auto creusait un grand blanc entre la derniere ligne et le lien. */
+.grille-tableau > .carte > .lien-carte { margin-top: 12px; align-self: flex-start; }
+/* La derniere tasse est la seule carte en LIGNE : le corps a gauche, la note a
+   droite derriere un filet. La regle generale ci-dessus la mettait en colonne
+   et la note tombait sous le corps, centree dans le vide. */
+.grille-tableau > .carte-derniere { flex-direction: row; }
+.grille-tableau > * { min-width: 0; grid-column: span 4; }
+.col-2 { grid-column: span 8; }
+
+@media (max-width: 1100px) {
+  .grille-tableau { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grille-tableau > * { grid-column: span 1; }
+  .col-2 { grid-column: span 2; }
+}
+@media (max-width: 700px) {
+  .grille-tableau { grid-template-columns: 1fr; }
+  .grille-tableau > *, .col-2 { grid-column: span 1; }
+}
+
+/* ---------- Carte « Derniere tasse » ---------- */
+.carte-derniere {
+  display: flex;
+  gap: 26px;
+  align-items: stretch;
+  cursor: pointer;
+}
+.carte-derniere:hover { border-color: var(--accent); }
+.carte-derniere:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.derniere-grande-corps { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.derniere-grande-cafe {
+  margin: 2px 0 6px;
+  font-family: var(--serif);
+  font-size: 1.6rem;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--encre);
+}
+.derniere-grande-contexte {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  color: var(--texte);
+}
+.derniere-grande-contexte .sep { color: var(--lignes); }
+.derniere-grande-machine { font-weight: 600; }
+.derniere-grande-commentaire {
+  margin: 10px 0 0;
+  font-style: italic;
+  color: var(--attenue);
+  font-size: 0.86rem;
+}
+/* LE PIED : ratio, mouture, ecoulement, cout. La carte s'etire a la hauteur de
+   la carte des chiffres cles et laissait 200 px de vide sous les gouts ; ces
+   quatre valeurs sont deja calculees et c'est ce qu'on compare d'une tasse a
+   l'autre. margin-top: auto le pousse en bas, quelle que soit la hauteur. */
+.derniere-grande-pied {
+  margin-top: auto;
+  padding-top: 8px;
+  /* En GRILLE (v8.39) : cinq cases et leur cible dessous tiennent sur une
+     ligne ; en flex elles passaient a la ligne et la carte grandissait. */
+  display: grid;
+  /* 70 px (v8.67) : à 84 px les cinq cases passaient sur deux lignes dans la
+     carte, et la carte prenait 70 px de haut pour quatre chiffres. */
+  grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+  gap: 6px 12px;
+  font-size: 0.72rem;
+  color: var(--attenue);
+}
+/* Libellé et valeur sur UNE ligne, le repère dessous (v8.67) : trois lignes par
+   case faisaient 56 px de haut pour quatre chiffres. */
+.derniere-grande-pied > div { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 5px; line-height: 1.25; }
+.derniere-grande-pied > div > small { flex-basis: 100%; }
+.derniere-grande-pied b {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 1.05rem;
+  line-height: 1.05;
+  color: var(--encre);
+  font-variant-numeric: tabular-nums;
+}
+.derniere-grande-pied small { font-size: 0.68rem; color: var(--attenue); }
+/* La note, separee par un filet vertical : c'est la reponse a « c'etait bien ? ». */
+.derniere-grande-note {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding-left: 24px;
+  border-left: 1px solid var(--lignes);
+  min-width: 118px;
+}
+.grande-note {
+  font-family: var(--serif);
+  font-size: 3.9rem;
+  line-height: 1;
+  color: var(--encre);
+  font-variant-numeric: tabular-nums;
+}
+.grande-note-sur { font-size: 0.72rem; color: var(--attenue); }
+.grande-note-sans { font-size: 0.8rem; color: var(--attenue); text-align: center; }
+.pastille-diag {
+  padding: 4px 10px;
+  border-radius: var(--rayon-pastille);
+  background: var(--accent-fond);
+  color: var(--accent-fort);
+  font-size: 0.74rem;
+  text-align: center;
+}
+@media (max-width: 560px) {
+  /* Meme specificite que la regle qui la met en ligne (.grille-tableau >
+     .carte-derniere) : sans elle, la carte restait en ligne au telephone et
+     son corps tombait a 166 px, a cote de la note. */
+  .grille-tableau > .carte-derniere { flex-direction: column; gap: 16px; }
+  .derniere-grande-note {
+    flex-direction: row;
+    padding-left: 0; padding-top: 14px;
+    border-left: none; border-top: 1px solid var(--lignes);
+    justify-content: flex-start; gap: 12px;
+  }
+  .grande-note { font-size: 2.7rem; }
+}
+
+/* ---------- Table des cinq dernieres ---------- */
+.table-enveloppe { overflow-x: auto; }
+.table-dernieres {
+  width: 100%;
+  /* Largeurs IMPOSEES : sans elles, la recette et le cafe poussaient la table
+     au dela de sa carte et la carte defilait. Chaque cellule se tronque avec
+     des points de suspension, le texte entier reste au survol. */
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.table-dernieres col.c-quand { width: 14%; }
+.table-dernieres col.c-machine { width: 4%; }
+.table-dernieres col.c-cafe { width: 21%; }
+.table-dernieres col.c-mesures { width: 33%; }
+.table-dernieres col.c-gouts { width: 20%; }
+.table-dernieres col.c-note { width: 8%; }
+/* UNE LIGNE PAR TASSE. Tout ce qui est ici tient sur une ligne et se tronque
+   proprement : une table dont chaque ligne fait six lignes n'est plus une table. */
+.table-dernieres td {
+  padding: 11px 10px;
+  border-top: 1px solid var(--lignes-douces);
+  vertical-align: top;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.table-dernieres tr:first-child td { border-top: none; }
+.table-dernieres tr { cursor: pointer; }
+.table-dernieres tr:hover td { background: var(--panneau-2); }
+.table-dernieres tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.d-quand { white-space: nowrap; color: var(--attenue); font-variant-numeric: tabular-nums; }
+.d-machine { width: 18px; }
+.d-cafe b { color: var(--encre); }
+.d-recette { color: var(--attenue); }
+.d-chiffres { color: var(--texte); margin-left: 8px; }
+.d-diag { color: var(--accent-fort); margin-left: 8px; }
+/* Les gouts ne s'empilent plus : ils defilent hors champ si la place manque,
+   et la ligne garde sa hauteur. */
+.d-gouts .derniere-gouts { display: flex; flex-wrap: nowrap; gap: 4px; overflow: hidden; }
+
+/* La ligne de commentaire : une seule ligne, tronquee, texte entier au survol si coupe. */
+.derniere-commentaire td {
+  border-top: none;
+  padding: 0 10px 9px 30px;
+  font-style: italic;
+  font-size: 0.8rem;
+  color: var(--attenue);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 0;
+}
+.derniere-commentaire:hover td { background: var(--panneau-2); }
+.d-gouts { max-width: 210px; }
+.d-note {
+  text-align: right;
+  font-family: var(--serif);
+  font-size: 1.25rem;
+  color: var(--encre);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+/* Une tasse ratee s'efface, et le dit en rouge. Elle reste lisible : elle est
+   dans l'historique pour etre relue, pas pour etre cachee. */
+.ligne-ratee td { color: var(--attenue); }
+.ligne-ratee .d-cafe b, .ligne-ratee .d-note { color: var(--attenue); }
+.mention-ratee { margin-left: 7px; color: var(--danger); font-size: 0.76rem; }
+
+/* ---------- Chiffres cles : deux sur deux ---------- */
+.carte-chiffres .kpis {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 0;
+  /* Resserrée (v8.67) : elle fixe la hauteur de la rangée avec la dernière
+     tasse, et cette rangée poussait les dernières extractions sous l'écran. */
+  gap: 8px 12px;
+}
+.carte-chiffres .kpi-valeur { font-size: 1.5rem; }
+/* Total, note globale et cafeine : trois lignes alignees sous un filet, au bas
+   de la carte. En une phrase, ils se lisaient comme une note de bas de page ;
+   en lignes, le chiffre se trouve du premier coup d'oeil. */
+.kpi-secondaires {
+  list-style: none;
+  margin: auto 0 0;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--lignes-douces);
+  display: grid;
+  gap: 3px;
+  font-size: 0.8rem;
+  color: var(--attenue);
+}
+.kpi-secondaires li { display: flex; justify-content: space-between; gap: 10px; }
+.kpi-secondaires b { color: var(--encre); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.carte-note { font-size: 0.8rem; color: var(--attenue); margin: 10px 0 0; }
+
+/* ---------- KPIs ---------- */
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.kpi {
+  /* Plus de fond ni de bordure : les tuiles vivent DANS la carte « Chiffres
+     cles », une carte dans une carte ferait deux cadres pour une information. */
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  animation: apparition 400ms ease-out backwards;
+}
+.kpi:nth-child(2) { animation-delay: 40ms; }
+.kpi:nth-child(3) { animation-delay: 80ms; }
+.kpi:nth-child(4) { animation-delay: 120ms; }
+.kpi:nth-child(5) { animation-delay: 160ms; }
+.kpi:nth-child(6) { animation-delay: 200ms; }
+
+.kpi-valeur {
+  font-family: var(--serif);
+  font-size: 1.75rem;
+  color: var(--encre);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+.kpi-valeur small { font-size: 0.95rem; color: var(--attenue); }
+.kpi-label { font-size: 0.78rem; color: var(--attenue); margin-top: 2px; }
+
+.canvas-h240 { position: relative; height: 250px; min-width: 0; }
+.canvas-h200 { position: relative; height: 200px; min-width: 0; }
+/* Le graphe des 30 jours a SA hauteur (v8.39), il ne suit plus sa voisine :
+   il s'etirait a la hauteur des constats et montait a 272 px de dessin. */
+.canvas-30j { position: relative; height: 210px; min-width: 0; }
+/* La légende des cafés sous le graphe : une pastille par café, qui ouvre sa fiche. */
+.legende-cafes { display: flex; flex-wrap: wrap; gap: 6px 8px; margin-top: 10px; }
+.lc-cafe { display: inline-flex; align-items: center; gap: 7px; min-height: 30px; padding: 4px 10px; border-radius: 99px;
+  background: var(--panneau-2); border: 1px solid var(--lignes); color: var(--encre); font: inherit; font-size: 0.8rem; cursor: pointer; }
+button.lc-cafe:hover { background: var(--panneau-3); }
+.lc-cafe i { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.lc-cafe small { color: var(--attenue); font-variant-numeric: tabular-nums; }
+.lc-autres { cursor: default; color: var(--attenue); }
+.lc-autres i { background: var(--barre-neutre); }
+
+/* L'EN-TETE DE CARTE : le titre et un controle sur la meme ligne (le
+   carrousel des constats, les onglets des analyses). */
+.carte-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 14px;
+}
+.carte .carte-tete h3 { margin: 0; }
+
+/* LE CARROUSEL DES CONSTATS (v8.39). Tous dans la meme case de grille, un
+   seul visible : la carte prend la hauteur du plus long, jamais leur somme. */
+.insights > li { grid-area: 1 / 1; visibility: hidden; }
+.insights > li.courant { visibility: visible; }
+.insights-nav { display: flex; align-items: center; gap: 4px; }
+.insights-pos { font-size: 0.72rem; color: var(--attenue); margin-right: 6px; font-variant-numeric: tabular-nums; }
+.btn-carre-petit {
+  width: 28px; height: 28px; padding: 0;
+  display: grid; place-items: center;
+  border-radius: 8px; border: 1px solid var(--lignes);
+  background: var(--panneau-2); color: var(--texte); cursor: pointer;
+}
+.btn-carre-petit:hover { background: var(--panneau-3); color: var(--accent-fort); }
+.btn-carre-petit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn-carre-petit .ico { width: 14px; height: 14px; }
+
+/* LES ANALYSES EN ONGLETS (v8.39) : une carte sur toute la largeur, le
+   graphique a gauche, sa lecture en une phrase a droite. */
+.grille-tableau > .col-plein { grid-column: 1 / -1; }
+.onglets-analyses {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  padding: 4px; border-radius: 12px; background: var(--panneau-2);
+}
+.onglets-analyses [role="tab"] {
+  font: inherit; font-size: 0.82rem; font-weight: 600;
+  border: none; background: transparent; color: var(--attenue);
+  padding: 7px 13px; border-radius: 9px; cursor: pointer;
+}
+.onglets-analyses [role="tab"]:hover { color: var(--encre); }
+.onglets-analyses [role="tab"][aria-selected="true"] { background: var(--panneau-3); color: var(--encre); box-shadow: var(--ombre-haut); }
+.onglets-analyses [role="tab"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.analyses-pile { display: grid; }
+.analyses-pile > .analyse { grid-area: 1 / 1; visibility: hidden; }
+.analyses-pile > .analyse.courant { visibility: visible; }
+.analyse {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(200px, 300px);
+  gap: 16px 28px;
+  align-items: center;
+}
+.analyse-graphe { min-width: 0; }
+/* La roue des arômes (v8.45) : la roue, et la famille choisie à côté. */
+.roue-boite { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 20px; align-items: center; }
+.roue { width: 100%; max-width: 300px; height: auto; display: block; }
+.roue .roue-famille { fill: var(--panneau-3); cursor: pointer; }
+.roue .roue-famille.choisie { stroke: var(--accent-fort); stroke-width: 2; }
+.roue .roue-famille:focus-visible { outline: none; stroke: var(--accent); stroke-width: 3; }
+.roue .roue-gout { fill: var(--accent); cursor: pointer; }
+.roue .roue-centre-nom { font-family: var(--sans); font-size: 12px; font-weight: 700; fill: var(--encre); pointer-events: none; }
+.roue .roue-centre-note { font-family: var(--serif); font-size: 22px; fill: var(--encre); pointer-events: none; }
+.roue-detail { display: grid; gap: 2px; align-content: start; min-width: 0; }
+.roue-titre { margin: 0 0 6px; font-size: 1.1rem; }
+.roue-ligne {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto 2.4em; gap: 10px;
+  padding: 5px 0; border-top: 1px solid var(--lignes-douces); font-size: 0.85rem;
+}
+.roue-ligne span:nth-child(2) { color: var(--attenue); font-variant-numeric: tabular-nums; }
+.roue-ligne b { text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 700px) {
+  .roue-boite { grid-template-columns: 1fr; }
+  .roue { margin: 0 auto; }
+}
+.analyse-lecture {
+  margin: 0;
+  padding-left: 14px;
+  border-left: 2px solid var(--accent);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--texte);
+}
+p.analyse-lecture:empty { display: none; }
+div.analyse-lecture p { margin: 0; }
+div.analyse-lecture p + p { margin-top: 8px; }
+@media (max-width: 900px) {
+  .analyse { grid-template-columns: 1fr; }
+}
+
+/* LA PLACE DE LA DERNIERE TASSE parmi celles de son cafe (v8.39) : elle
+   remplit la bande vide entre les gouts et le pied. */
+.derniere-place {
+  margin-top: 8px;
+  padding: 7px 14px 0;
+  border-radius: var(--rayon-petit);
+  background: var(--panneau-2);
+}
+.derniere-place-tete {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px;
+  margin: 0 0 4px;
+  font-size: 0.76rem; color: var(--attenue);
+}
+.derniere-place-tete b { color: var(--accent-fort); font-weight: 700; }
+.derniere-place svg { display: block; width: 100%; height: auto; overflow: visible; }
+.derniere-place text { font-family: var(--sans); font-size: 10px; fill: var(--attenue); }
+.derniere-grande-pied small.cible-tenue { color: var(--accent-fort); }
+
+/* Duel Brikka contre Switch */
+.duel { display: flex; gap: 12px; margin-bottom: 12px; }
+.duel-col {
+  flex: 1;
+  border-radius: var(--rayon-petit);
+  padding: 10px 12px;
+  border: 1px solid var(--lignes);
+  border-left: 4px solid var(--barre-neutre);
+}
+.duel-col.brikka { border-left-color: var(--brikka); }
+.duel-col.switch { border-left-color: var(--switch); }
+.duel-col b { font-family: var(--serif); font-size: 1.3rem; color: var(--encre); }
+.duel-col span { display: block; font-size: 0.75rem; color: var(--attenue); }
+
+/* Heatmap */
+/* Une carte ne defile pas horizontalement. Si le contenu ne tient pas, c'est le
+   contenu qui s'adapte, pas le lecteur qui fait glisser. */
+.heatmap-conteneur { overflow-x: hidden; }
+/* PAS de min-width : c'est elle qui faisait defiler la carte. Le nombre de
+   semaines s'adapte a la place disponible (voir semainesVisibles), donc le SVG
+   n'a plus jamais besoin de deborder. */
+.heatmap-svg { width: 100%; max-width: 820px; height: auto; display: block; margin: 0 auto; }
+.hm-label { font-size: 10.5px; fill: var(--attenue); font-family: var(--sans); }
+/* Un filet sur chaque case : sans lui les jours sans extraction se fondent dans
+   le fond et la grille ne se lit plus comme un calendrier. */
+.hm-cell {
+  cursor: pointer;
+  transition: opacity 150ms;
+  stroke: var(--lignes);
+  stroke-width: 0.5;
+}
+.hm-cell:hover, .hm-cell:focus-visible { opacity: 0.75; stroke: var(--accent); stroke-width: 1.5; outline: none; }
+/* Repère du jour courant. */
+.hm-aujourdhui { stroke: var(--encre); stroke-width: 1.6; }
+.hm-n0 { fill: var(--hm0); }
+.hm-n1 { fill: var(--hm1); }
+.hm-n2 { fill: var(--hm2); }
+.hm-n3 { fill: var(--hm3); }
+.hm-n4 { fill: var(--hm4); }
+
+.legende-heatmap {
+  display: flex; align-items: center; gap: 4px; justify-content: flex-end;
+  font-size: 0.75rem; color: var(--attenue); margin: 8px 0 0;
+}
+.hm-i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+.hm-i.hm-n0 { background: var(--hm0); }
+.hm-i.hm-n1 { background: var(--hm1); }
+.hm-i.hm-n2 { background: var(--hm2); }
+.hm-i.hm-n3 { background: var(--hm3); }
+.hm-i.hm-n4 { background: var(--hm4); }
+
+/* Dernières extractions */
+.dernieres { list-style: none; margin: 0; padding: 0; }
+/* Trois colonnes : pastille, corps qui prend toute la largeur, note à droite.
+   En flex, le corps ne s'étirait pas et chaque ligne restait vide au milieu. */
+.dernieres li {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  column-gap: 12px;
+  align-items: start;
+  padding: 10px 6px;
+  border-bottom: 1px solid var(--lignes);
+}
+.dernieres li .pastille-methode { margin-top: 6px; }
+.dernieres li:last-child { border-bottom: none; }
+.pastille-methode {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+.pastille-methode.brikka { background: var(--brikka); }
+.pastille-methode.switch { background: var(--switch); }
+/* Goûts cochés et commentaire, sous les mesures : la carte avait la place et ne
+   disait rien de la tasse en bouche. */
+.derniere-gouts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.derniere-tag {
+  font-size: 0.7rem; line-height: 1.2;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--lignes);
+  background: var(--panneau-2);
+  color: var(--texte);
+}
+.derniere-tag-plus { color: var(--attenue); border-style: dashed; }
+.derniere-commentaire {
+  margin-top: 5px;
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--attenue);
+  line-height: 1.4;
+}
+/* Les mesures sur leur propre ligne, plus lisibles que le contexte au-dessus :
+   ce sont elles qu'on compare d'une tasse à l'autre. Chiffres à chasse fixe pour
+   qu'ils s'alignent d'une ligne sur l'autre, et séparateurs en flex plutôt qu'en
+   texte pour que le retour à la ligne sur téléphone ne laisse pas un point
+   médian orphelin en début de ligne. */
+.derniere-mesures {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 7px;
+  margin-top: 2px;
+  font-size: 0.82rem;
+  color: var(--texte);
+  font-variant-numeric: tabular-nums;
+}
+.derniere-mesures b { color: var(--encre); font-weight: 600; }
+.derniere-mesures small { color: var(--attenue); }
+.derniere-mesures > span { color: var(--lignes-graphe); }
+
+/* ---------- États vides ---------- */
+
+.etat-vide {
+  text-align: center;
+  padding: 60px 24px;
+  color: var(--attenue);
+}
+.etat-vide-icone { font-size: 3rem; margin: 0; }
+.etat-vide h2 { color: var(--encre); }
+.etat-vide p { max-width: 460px; margin: 10px auto; }
+.etat-vide-actions { display: flex; gap: 10px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
+.etat-vide-mini { padding: 28px; }
+
+/* ---------- Boutons ---------- */
+
+.btn {
+  border: 1px solid var(--lignes);
+  background: var(--panneau);
+  color: var(--texte);
+  padding: 9px 16px;
+  border-radius: var(--rayon-petit);
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition), transform 120ms;
+  /* A la hauteur des champs : cote a cote dans une meme ligne, deux hauteurs
+     differentes se voient immediatement. */
+  min-height: var(--hauteur-controle);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.btn:hover { border-color: var(--accent); }
+.btn:active { transform: scale(0.98); }
+.btn-primaire {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--sur-accent);
+  font-weight: 600;
+}
+.btn-primaire:hover { background: var(--accent-fort); border-color: var(--accent-fort); }
+.btn-grand {
+  padding: 14px 26px;
+  font-size: 1.02rem;
+  border-radius: var(--rayon-petit);
+  min-height: 52px;
+  padding-inline: 26px;
+}
+.btn-petit { padding: 6px 11px; font-size: 0.82rem; min-height: 34px; }
+.btn-discret { border-color: transparent; background: transparent; color: var(--attenue); }
+.btn-discret:hover { color: var(--encre); border-color: var(--lignes); }
+/* Modale de confirmation : courte, boutons a droite, le choix sur en premier. */
+.modale-confirmer { max-width: 440px; }
+.modale-confirmer p { margin: 8px 0 0; line-height: 1.5; }
+.confirmer-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
+
+.btn-danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
+.btn-danger:hover { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, transparent); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ---------- Formulaires ---------- */
+
+.champ { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+.champ label, .champ .label, .label {
+  font-size: 0.8rem;
+  color: var(--attenue);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.label-inline { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--texte); }
+
+/* "search" manquait à cette liste, et un champ de recherche tombait donc sur le
+   rendu par défaut du navigateur, sans fond, sans bordure et sans rayon, au
+   milieu de champs habillés. */
+input[type="text"], input[type="number"], input[type="date"], input[type="datetime-local"],
+input[type="search"], select, textarea {
+  background: var(--panneau);
+  border: 1px solid var(--lignes-champ, var(--lignes));
+  color: var(--encre);
+  border-radius: var(--rayon-petit);
+  /* Hauteur de la DA : 46 px, 48 au doigt. Elle se pose ICI, sur la ligne de
+     base des champs, et non ecran par ecran : un controle plus court qu'un
+     autre a cote de lui est la premiere chose qu'on voit. textarea garde sa
+     hauteur propre, elle se mesure en lignes. */
+  min-height: var(--hauteur-controle);
+  padding: 10px 13px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  width: 100%;
+}
+textarea { min-height: 56px; }
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-fond);
+}
+
+/* LA mise en page de la saisie, et la seule. Le formulaire a gauche, la colonne
+   fixe de 360 px a droite. Elle vit ICI et pas sur #ecran-saisie, qui n'a qu'un
+   enfant et n'a donc rien a repartir. */
+.saisie-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: var(--ecart-cartes);
+  /* Plafonnee ET centree : a 1240 px sans marge automatique, le formulaire
+     s'arretait a gauche du cadre de 1560 et laissait une bande vide a droite. */
+  max-width: 1400px;
+  margin-inline: auto;
+  align-items: start;
+}
+/* PLACEMENT EXPLICITE sur ordinateur. Le chrono est premier dans le DOM pour le
+   telephone ; ici on le remet en haut de la colonne de droite, le formulaire
+   tient la colonne de gauche sur les deux rangees, et les deux fiches passent
+   sous le chrono. Sans ce placement, l'ordre du DOM le mettrait a gauche. */
+@media (min-width: 1024px) {
+  /* auto puis 1fr : sans cette ligne, le formulaire qui couvre les DEUX rangees
+     repartit sa hauteur entre elles, la premiere gonfle a 1 300 px et les fiches
+     recette et cafe tombent au milieu de nulle part. La premiere rangee tient la
+     hauteur du chrono, la seconde prend tout le reste. */
+  .saisie-layout { grid-template-rows: auto 1fr; }
+  #chrono-widget { grid-column: 2; grid-row: 1; }
+  #form-saisie { grid-column: 1; grid-row: 1 / span 2; }
+  .saisie-aside { grid-column: 2; grid-row: 2; }
+}
+/* ENTRE 1024 ET 1399 PX, UNE SEULE COLONNE. Le rail prend 232 px et la colonne
+   de droite 380 : a 1024 il restait 326 px au formulaire, le menu des cafes
+   tombait a 30 px et les curseurs a zero ; a 1280, encore 116 et 74. Deux
+   colonnes ne valent que si la premiere garde environ 700 px, ce qui arrive vers
+   1400. En dessous, l'ordre du DOM, celui du telephone : chrono, formulaire,
+   fiches. */
+@media (min-width: 1024px) and (max-width: 1399px) {
+  .saisie-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; max-width: 860px; }
+  #chrono-widget, #form-saisie, .saisie-aside { grid-column: 1; grid-row: auto; }
+  .saisie-aside { position: static; }
+}
+#form-saisie { min-width: 0; }
+
+/* BLOCS DE SAISIE. Trois cartes titrées au lieu d'une colonne de dix-huit
+   champs : le café et la recette, les réglages, en bouche. Le titre est une
+   petite capitale discrète, pas un h3 de page : c'est un intertitre de formulaire. */
+.saisie-bloc {
+  background: var(--panneau);
+  border: 1px solid var(--lignes);
+  border-radius: var(--rayon);
+  padding: var(--carte-padding);
+  margin-bottom: var(--ecart-cartes);
+  box-shadow: var(--ombre-carte);
+}
+.saisie-bloc-titre {
+  margin: 0 0 18px;
+  font-family: var(--serif);
+  font-size: 1.35rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--encre);
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+/* Café, méthode et recette sur UNE rangée : ce sont les trois choix qui
+   décident de tout le reste, ils se lisent d'un regard. Alignés en bas pour que
+   les contrôles soient à la même hauteur malgré des libellés différents. */
+.saisie-tete {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 14px;
+  align-items: end;
+}
+.saisie-tete .champ { margin-bottom: 14px; }
+@media (max-width: 860px) {
+  .saisie-tete { grid-template-columns: 1fr; }
+}
+/* La ligne live devient le PIED du bloc des réglages : c'est le résumé de ce
+   qu'on vient de régler, à sa place juste dessous. */
+.saisie-bloc .bandeau-live {
+  margin: 12px -18px 0;
+  padding: 12px 18px;
+  /* Un pied de carte, pas un second bandeau : fond transparent, un filet en
+     haut, les libellés discrets et les valeurs en serif comme les chiffres clés
+     du tableau de bord. */
+  background: transparent;
+  border-radius: 0;
+  border-top: 1px solid var(--lignes);
+  gap: 8px 30px;
+  font-size: 0.82rem;
+}
+.saisie-bloc .bandeau-live b {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-left: 2px;
+}
+/* Les options à cocher, sur UNE ligne discrète : case, libellé, aide grise, au
+   lieu d'une carte pleine qui pesait autant que la grille au-dessus. */
+.saisie-bloc .option-saisie {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px dashed var(--lignes);
+}
+.saisie-bloc .option-saisie .label-inline { font-weight: 600; }
+.saisie-bloc .option-saisie .champ-hint { flex: 1 1 200px; }
+.saisie-bloc .grille-nombres {
+  margin-bottom: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px 18px;
+}
+.saisie-bloc .options-saisie { margin-bottom: 4px; }
+.saisie-bloc .tasses-editeur { margin-bottom: 14px; }
+
+.saisie-aside {
+  position: sticky;
+  top: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ecart-cartes);
+  min-width: 0;
+}
+.aside-carte { padding: 15px 17px; }
+.aside-titre { display: flex; align-items: center; gap: 9px; }
+.aside-titre h4 { margin: 0; font-size: 1.05rem; }
+.aside-sous { color: var(--attenue); font-style: italic; font-size: 0.82rem; margin: 3px 0 8px; }
+.aside-carte p { font-size: 0.85rem; margin: 0 0 7px; }
+/* Tasses jumelles (v8.44) : une ligne par tasse, date, écart, note. */
+.jumelles { list-style: none; margin: 4px 0 8px; padding: 0; }
+.jumelles li {
+  display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 10px; align-items: baseline;
+  padding: 7px 0; border-top: 1px solid var(--lignes-douces); font-size: 0.84rem;
+}
+.jumelles .j-date { color: var(--attenue); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+.jumelles .j-ecart { color: var(--texte); min-width: 0; overflow-wrap: anywhere; }
+.jumelles .j-meme { color: var(--accent-fort); }
+.jumelles .j-note { font-family: var(--serif); font-weight: 400; font-size: 1.35rem; line-height: 1; color: var(--encre); font-variant-numeric: tabular-nums; }
+.aside-carte .j-moyenne { color: var(--attenue); font-size: 0.8rem; margin: 0; }
+.aside-notes { color: var(--attenue); }
+.aside-reco { color: var(--accent-fort); font-weight: 600; }
+.aside-age { border-top: 1px dashed var(--lignes); padding-top: 7px; }
+.aside-vide { color: var(--attenue); font-size: 0.85rem; margin: 0; }
+/* Les pas s'affichent EN ENTIER : une boite de 220 px a faire defiler cachait la
+   moitie d'une recette a six pas, et la recette est ce que Chris lit pendant la
+   verse. Le panneau colle en haut ; ce qui depasse en bas (pour qui, note,
+   fiche cafe) se decouvre en descendant dans le formulaire. */
+.aside-carte .recette-etapes { margin: 8px 0 10px; }
+.aside-carte .recette-etapes li { font-size: 0.83rem; padding: 4px 0; }
+
+@media (max-width: 980px) {
+  .saisie-layout { max-width: 720px; }
+}
+
+.saisie-entete {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap; margin-bottom: 8px;
+}
+.saisie-entete h2 { margin: 0; }
+.champ-datetime { margin-bottom: 0; min-width: 220px; }
+
+/* Signale que les paliers affichés ne sont plus ceux de la fiche : ils suivent
+   l'eau saisie. Sans marqueur, l'écart serait incompréhensible. */
+.param-chip-adapte, .param-chip.param-chip-adapte {
+  border-color: var(--accent);
+  color: var(--accent-fort);
+  background: var(--accent-fond);
+}
+
+/* Curseur de note quand aucune note n'est encore donnée (v8.40) : pas de
+   pouce, une piste en pointillé. Il ne propose aucune valeur, et le premier
+   toucher, n'importe où sur la piste, pose la note. */
+.note-tete { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.note-effacer {
+  font: inherit; font-size: 0.8rem; font-weight: 600; color: var(--attenue);
+  background: none; border: none; padding: 4px 0; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.note-effacer:hover { color: var(--encre); }
+/* L'étiquette du commentaire et le bouton de dictée sur une ligne (v8.43). */
+.comm-tete { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.dicter {
+  display: inline-flex; align-items: center; gap: 6px;
+  font: inherit; font-size: 0.8rem; font-weight: 600; color: var(--texte);
+  background: var(--panneau-2); border: 1px solid var(--lignes); border-radius: 99px;
+  padding: 4px 12px; cursor: pointer;
+}
+.dicter:hover { color: var(--encre); }
+.dicter[aria-pressed="true"] { color: var(--accent-fort); border-color: var(--accent); background: var(--accent-fond); }
+/* La correction chiffrée (v8.48), sous les phrases de correction. */
+.corr-chiffree { display: block; margin-top: 6px; color: var(--accent-fort); font-weight: 600; }
+.note-aide { display: block; margin-top: 2px; font-size: 0.8rem; color: var(--attenue); }
+
+/* Âge du paquet sous le choix du café : une information, pas une alerte. */
+.age-paquet { margin: 0 0 12px; font-size: 0.85rem; color: var(--attenue); }
+
+/* Bouton d'annulation dans le message : il doit se voir sans écraser le texte. */
+.toast-action {
+  margin-left: 4px;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 0.85em;
+  cursor: pointer;
+}
+.toast-action:hover { background: rgba(255, 255, 255, 0.15); }
+
+/* Moulin : le convertisseur se manipule au curseur, l'unité du pas est le cran
+   du moulin lui-même pour que ce qu'on lit se reproduise à la main. */
+.conv-ligne { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+.conv-ligne .champ { flex: 0 0 160px; margin-bottom: 0; }
+.conv-slider { width: 100%; margin: 10px 0 4px; }
+.conv-slider-reperes { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.conv-repere {
+  border: 1px solid var(--lignes); background: var(--panneau); color: var(--texte);
+  border-radius: 999px; padding: 3px 10px; font-size: 0.78rem; cursor: pointer;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+.conv-repere:hover { border-color: var(--accent); color: var(--accent-fort); }
+.conv-conseil { margin-top: 12px; }
+.conv-conseil p { margin: 0 0 7px; font-size: 0.87rem; color: var(--texte); }
+.conv-conseil p:last-child { margin-bottom: 0; }
+.conv-hors { color: var(--danger); }
+
+/* Le zéro du moulin de Chris : un encadré, pas une note en passant. */
+.encadre-zero { border-left: 3px solid var(--accent); }
+.encadre-zero h3 { margin-top: 0; }
+
+/* Trait du réglage enregistré sur le diagramme, distinct du curseur noir. */
+.dg-defaut { stroke: var(--ok); stroke-width: 3; opacity: 0.75; }
+
+/* Estimation de température et degré côte à côte, voir index.html. */
+/* Temps de chauffe (minutes et secondes) puis degré, sur une seule ligne. */
+.ligne-temp { display: flex; gap: 6px; align-items: center; }
+.ligne-temp .duree { flex: 1; min-width: 0; }
+.ligne-temp .duree input { flex: 0 0 3.4rem; width: 3.4rem; }
+.ligne-temp > .champ-pas { flex: 0 0 92px; }
+
+/* LE SELECTEUR HAUT ET BAS d'un champ nombre (v8.35). Chrome n'affiche ses
+   propres fleches qu'a partir d'une certaine largeur, et le champ Temperature
+   fait 66 px : il n'en avait aucune, contrairement au champ Volume juste a
+   cote. Deux boutons dessines, collés au champ, du coup identiques sur les deux
+   moteurs et dans les deux themes. tabindex="-1" sur les boutons : au clavier
+   les fleches du champ font deja le travail, et deux arrets de tabulation par
+   champ nombre alourdiraient tout le formulaire. */
+.champ-pas { display: flex; align-items: stretch; min-width: 0; }
+.champ-pas input[type="number"] {
+  flex: 1; min-width: 0; width: 100%;
+  border-top-right-radius: 0; border-bottom-right-radius: 0;
+  padding-inline: 10px;
+  appearance: textfield;
+}
+.champ-pas input[type="number"]::-webkit-outer-spin-button,
+.champ-pas input[type="number"]::-webkit-inner-spin-button { appearance: none; margin: 0; }
+.pas {
+  display: flex; flex-direction: column;
+  border: 1px solid var(--lignes); border-left: none;
+  border-radius: 0 var(--rayon-petit) var(--rayon-petit) 0;
+  overflow: hidden;
+  background: var(--panneau-2);
+}
+.pas button {
+  flex: 1; width: 28px; padding: 0;
+  border: none; background: transparent; color: var(--attenue);
+  cursor: pointer; display: grid; place-items: center;
+}
+.pas button + button { border-top: 1px solid var(--lignes-douces); }
+.pas button:hover { background: var(--panneau-3); color: var(--accent-fort); }
+.pas button:active { background: var(--accent-fond); }
+.pas .ico { width: 13px; height: 13px; }
+
+.ligne-cafe { display: flex; gap: 8px; align-items: center; }
+.ligne-cafe select { flex: 1; }
+
+.grille-nombres {
+  display: grid;
+  /* 220px donne QUATRE colonnes sur un ecran large. Ce n est pas arbitraire :
+     en Brikka les champs visibles occupent exactement 8 unites de colonne
+     (7 champs dont la tasse qui en prend 2), soit deux lignes pleines, sans
+     cellule vide au milieu. A 5 colonnes la tasse se retrouvait seule sur sa
+     ligne avec trois trous a cote. */
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px 12px;
+  /* start : tous les champs se calent en HAUT de leur ligne. Sans ca, un champ
+     avec une aide sous l'input etirait sa cellule et decalait ses voisins. */
+  align-items: start;
+}
+/* Le gap de la grille suffit : le margin des champs s'y ajoutait et creait des
+   espacements irreguliers d'une ligne a l'autre. */
+.grille-nombres .champ { margin-bottom: 0; }
+/* Reserve aux formulaires cafe et recette. La grille de SAISIE n en utilise
+   plus : un element large ne tient pas dans une fin de ligne et bascule seul
+   sur la suivante, ce qui creait un trou au MILIEU du formulaire. Toutes ses
+   cellules font une colonne, les trous sont donc toujours en fin. */
+.champ-double { grid-column: span 2; }
+
+/* Options a cocher, hors de la grille chiffree. Elles n'ont pas de libelle au
+   dessus de leur controle, donc melangees aux champs numeriques elles
+   s'alignaient plus haut que leurs voisines. Regroupees, elles se lisent comme
+   ce qu'elles sont. */
+.options-saisie {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.option-saisie {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1 1 240px;
+  min-width: 0;
+  padding: 10px 12px;
+  background: var(--panneau-2);
+  border: 1px solid var(--lignes);
+  border-radius: var(--rayon-petit);
+  border-top: 1px dashed var(--lignes);
+  padding-top: 10px;
+  margin-top: 4px;
+}
+.option-saisie .champ-hint { margin: 0; }
+.option-saisie input[type="number"] { max-width: 110px; }
+/* Rien a afficher : le conteneur ne doit pas laisser un bloc vide. */
+.options-saisie:not(:has(.option-saisie:not([hidden]))) { display: none; }
+
+/* Méthode : deux gros boutons */
+/* Le controle de machine est decrit UNE SEULE FOIS, avec le reste de la saisie
+   en fin de fichier (refonte Comptoir, etape 4). */
+
+/* Avertissements non bloquants */
+.avertissements { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.avertissement {
+  background: var(--avert-fond);
+  border: 1px solid var(--avert-bord);
+  border-radius: var(--rayon-petit);
+  padding: 10px 14px;
+  font-size: 0.87rem;
+  color: var(--encre);
+  animation: apparition 250ms ease-out;
+  position: relative;
+  padding-left: 40px;
+}
+.avertissement::before {
+  content: "";
+  position: absolute; left: 14px; top: 12px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  border: 1.8px solid var(--accent);
+}
+.avertissement::after {
+  content: "!";
+  position: absolute; left: 14px; top: 10px;
+  width: 16px; text-align: center;
+  font-weight: 800; font-size: 0.8rem; line-height: 20px;
+  color: var(--accent);
+}
+
+/* Bandeau live */
+.bandeau-live {
+  display: flex;
+  gap: 10px 26px;
+  flex-wrap: wrap;
+  background: none;
+  border-radius: var(--rayon-petit);
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  font-size: 0.78rem;
+  color: var(--attenue);
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--lignes);
+}
+.bandeau-live b {
+  color: var(--encre);
+  font-variant-numeric: tabular-nums;
+  display: block;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 1.25rem;
+}
+.bandeau-live .hors-plage b { color: var(--danger); }
+
+/* Chronomètre */
+.chrono { margin-bottom: 16px; }
+.chrono-entete-ligne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+  padding: 14px 18px;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.chrono-valeur {
+  font-family: var(--serif);
+  color: var(--encre);
+  font-variant-numeric: tabular-nums;
+}
+.chrono-grand { font-size: 2.6rem; line-height: 1.1; }
+.chrono-bip-label {
+  font-size: 0.8rem;
+  color: var(--attenue);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 12px;
+}
+.chrono-etapes { margin: 6px 0 10px; }
+.chrono-etape-courante {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--encre);
+  margin: 0 0 4px;
+}
+.chrono-etape-suivante { font-size: 0.83rem; color: var(--attenue); margin: 0; }
+.chrono-boutons { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
+.chrono-manuels { margin-top: 6px; }
+.chrono.en-cours .chrono-grand {
+  color: var(--accent-fort);
+  text-shadow: 0 0 24px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.chrono.en-cours .chrono-etape-courante { color: var(--accent-fort); }
+
+/* Tasses */
+.tasses-editeur { margin-bottom: 14px; padding: 12px 14px; }
+.tasse-ligne {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 5px 0; font-size: 0.86rem;
+  border-bottom: 1px dashed var(--lignes);
+}
+.tasses-ajout { display: flex; gap: 8px; margin-top: 10px; }
+.tasses-ajout input[type="number"] { max-width: 90px; }
+/* Deux classes pour passer devant .champ-hint, défini plus bas : la spécificité
+   fait le travail, pas !important. */
+.hint-alerte, .champ-hint.hint-alerte { color: var(--danger); font-weight: 600; }
+
+/* Pastilles cafés */
+.badge-nonpur {
+  font-size: 0.68rem;
+  background: color-mix(in srgb, var(--danger) 16%, var(--panneau));
+  color: var(--danger);
+  border: 1px solid color-mix(in srgb, var(--danger) 45%, transparent);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.badge-reference {
+  font-size: 0.68rem;
+  background: color-mix(in srgb, var(--deux) 15%, var(--panneau));
+  color: var(--deux);
+  border: 1px solid color-mix(in srgb, var(--deux) 45%, transparent);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.badge-note {
+  font-size: 0.68rem;
+  background: color-mix(in srgb, var(--accent) 15%, var(--panneau));
+  color: var(--accent-fort);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.encadre-costaud { border-left: 4px solid var(--switch); margin-top: 4px; }
+
+/* Bascule de variante dans une carte recette */
+.variantes-recette {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 2px 0 10px;
+}
+
+/* Détails de recette dans le panneau latéral de saisie */
+/* Préfixés par .aside-carte pour passer devant `.aside-carte p`, qui pose la
+   marge de tous les paragraphes du panneau : la spécificité, pas !important. */
+.aside-pourqui, .aside-cafes, .aside-carte .aside-pourqui, .aside-carte .aside-cafes {
+  font-size: 0.8rem;
+  color: var(--attenue);
+  margin: 8px 0 0;
+}
+.aside-pourqui b, .aside-cafes b { color: var(--encre); }
+.aside-note-recette, .aside-carte .aside-note-recette {
+  font-size: 0.8rem;
+  border-left: 3px solid var(--accent);
+  padding-left: 9px;
+  margin: 8px 0 10px;
+}
+
+/* Curseur de note */
+.curseur-note { width: 100%; height: 34px; }
+/* La note en grand a cote de son libelle : c'est la valeur qu'on regle, elle
+   ne doit pas se lire comme un mot du libelle. */
+#note-affichee { color: var(--accent-fort); font-family: var(--serif); font-size: 1.5rem; font-weight: 400; line-height: 1; vertical-align: -2px; }
+
+/* Diagnostic en pilules radio */
+.choix-diagnostic { display: flex; flex-wrap: wrap; gap: 8px; }
+.pilule {
+  border: 1px solid var(--lignes);
+  background: var(--panneau);
+  color: var(--texte);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.pilule:hover { border-color: var(--accent); }
+.pilule.actif {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--sur-accent);
+}
+
+/* Champ obligatoire */
+.requis {
+  color: var(--danger);
+  font-weight: 700;
+  margin-left: 3px;
+  font-size: 1em;
+}
+.legende-requis { margin: 0 0 12px; }
+
+/* Petites aides sous les champs */
+.champ-hint {
+  font-size: 0.75rem;
+  color: var(--attenue);
+  font-weight: 400;
+  line-height: 1.4;
+}
+.champ-hint-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  color: var(--accent);
+  text-decoration: underline dotted;
+}
+.champ-hint-btn:hover { color: var(--accent-fort); }
+#diagnostic-correction { min-height: 0; color: var(--accent-fort); }
+
+/* Tags descripteurs */
+.tags { display: flex; flex-wrap: wrap; gap: 7px; }
+.tags-groupe { margin-bottom: 9px; }
+.tags-groupe-nom {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--attenue);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 5px;
+}
+.tag {
+  border: 1px solid var(--lignes);
+  background: var(--panneau-2);
+  color: var(--attenue);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.tag:hover { color: var(--encre); border-color: var(--attenue); }
+/* PAS de font-weight ici, ni ailleurs sur un état sélectionné, et c'est un
+   correctif pas une préférence. Le gras est plus large que le normal : la pilule
+   grandissait au clic, la ligne se réorganisait, et cocher "citronné" envoyait
+   tout le groupe "floral et thé" à la ligne suivante. Le fond et la couleur
+   d'accent suffisent largement à montrer la sélection. Verrouillé par un test
+   qui refuse toute propriété de largeur dans une règle .actif. */
+.tag.actif {
+  background: var(--accent-fond);
+  border-color: var(--accent);
+  color: var(--accent-fort);
+}
+
+/* ---------- L'infobulle maison, definie UNE fois ----------
+
+   Tout element portant data-info l'obtient : pilules de diagnostic, tags
+   descripteurs, ratio de la ligne live, lignes des dernieres extractions. Elle
+   etait ecrite deux fois, aux selecteurs pres ; une troisieme copie aurait
+   garanti la derive, donc la regle porte sur l'ATTRIBUT et non sur des classes.
+
+   Preferee a l'infobulle native : instantanee la ou le title attend une seconde,
+   fidele au theme, et elle respecte les sauts de ligne. Sur telephone, l'appui
+   long pose .info-ouverte, voir activerAppuiLong(). */
+[data-info] { position: relative; }
+[data-info]:hover::after,
+[data-info]:focus-visible::after,
+[data-info].info-ouverte::after {
+  content: attr(data-info);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 300px;
+  padding: 8px 11px;
+  border-radius: 9px;
+  border: 1px solid var(--lignes);
+  background: var(--tooltip-fond);
+  color: var(--tooltip-texte);
+  font-size: 0.76rem;
+  font-weight: 400;
+  line-height: 1.4;
+  text-align: left;
+  /* pre-line : la bulle des diagnostics tient sur deux lignes, quand cocher
+     puis quoi faire. Un commentaire d'extraction peut aussi en compter. */
+  white-space: pre-line;
+  box-shadow: 0 5px 16px rgba(30, 18, 8, 0.25);
+  z-index: var(--z-tag);
+  pointer-events: none;
+}
+/* Un data-info VIDE ne doit pas ouvrir une bulle vide. */
+[data-info=""]:hover::after,
+[data-info=""]:focus-visible::after,
+[data-info=""].info-ouverte::after { content: none; }
+
+/* Les pilules et les tags gardent leur reperage pour la bulle commune. */
+.pilule, .tag { position: relative; }
+
+.saisie-actions { display: flex; gap: 14px; align-items: center; margin-top: 20px; flex-wrap: wrap; }
+
+/* ---------- Historique ---------- */
+
+/* Les filtres, en pastilles. Ce sont des <select> natifs habilles : un select
+   OUVRE deja un menu, sait le clavier, la frappe et la roue du telephone ; un
+   menu ecrit a la main aurait tout cela a reapprendre pour le meme dessin. */
+.historique-filtres {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+  background: none;
+  border: none;
+  padding: 0;
+}
+.historique-filtres .champ {
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0 10px 0 14px;
+  min-height: var(--hauteur-controle);
+  border: 1px solid var(--lignes);
+  border-radius: var(--rayon-pastille);
+  background: var(--panneau);
+}
+/* La recherche prend sa propre ligne, sur toute la largeur. Elle ne filtre pas
+   sur une colonne comme les autres, elle cherche dans le texte libre : lui
+   donner la taille d'un menu déroulant de 150 px la ferait passer pour un
+   filtre de plus, et on n'y taperait pas une phrase confortablement. */
+.historique-filtres .champ-recherche { grid-column: 1 / -1; }
+/* Les actions prennent leur propre ligne, alignées à droite. Elles étaient une
+   cellule de la grille comme les autres, large de 150 px : les deux boutons
+   passaient à la ligne et le libellé "Exporter le filtre en CSV" se coupait
+   dedans, d'où un bloc haut et étroit. Ce ne sont pas des filtres, ils n'ont
+   rien à faire dans le rythme des filtres. */
+.historique-filtres-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+.historique-filtres-actions .btn { white-space: nowrap; }
+
+/* Chrome dessine la croix d'effacement en sombre fixe : illisible sur le thème
+   sombre. On la reprend à la main dans la couleur du texte atténué. */
+.champ-recherche input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 15px;
+  width: 15px;
+  cursor: pointer;
+  background: var(--attenue);
+  /* Le préfixe webkit est là pour une raison, pas par habitude : sans lui, un
+     moteur qui ignore `mask` afficherait un rectangle plein de la couleur du
+     fond, donc pire que la croix d'origine. Les deux couvrent Chrome quel que
+     soit son âge. */
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 4l8 8M12 4l-8 8' stroke='%23000' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 4l8 8M12 4l-8 8' stroke='%23000' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* La case "ratée", sous la note. Le liseré rouge la distingue des autres
+   cases à cocher du formulaire : c'est la seule qui retire la tasse des
+   analyses, donc la seule qui mérite qu'on la remarque avant de la cocher. */
+.champ-ratee {
+  border-left: 3px solid color-mix(in srgb, var(--danger) 55%, transparent);
+  padding-left: 12px;
+  margin-top: -4px;
+}
+.champ-ratee .label-inline { color: var(--texte); }
+
+/* Badge d'une extraction ratée. Rouge assumé : ici le rouge dit bien "mauvaise
+   nouvelle", ce qui est exactement son sens dans le reste du site. */
+/* Bouton de bascule allumé : même rouge que le badge, pour qu'on lise du premier
+   coup d'oeil quelles lignes sont écartées sans avoir à survoler. */
+.btn-ligne.actif-ratee {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+}
+
+/* La ligne entière ouvre l'extraction : le curseur doit le dire. Les boutons
+   d'action reprennent le leur, sinon la nuance se perd au survol. */
+.ligne-histo { cursor: pointer; }
+.ligne-histo .btn-ligne { cursor: pointer; }
+
+/* Curseur et nombre sur UNE ligne. Empilés, chaque cellule de la grille
+   chiffrée doublerait de hauteur, exactement le défaut que la cellule
+   Température documente déjà. Le nombre reste étroit : il affiche et permet la
+   frappe précise, le curseur fait le gros du geste. */
+.ligne-curseur { display: flex; align-items: center; gap: 10px; }
+.ligne-curseur .curseur-champ { flex: 1 1 auto; min-width: 0; }
+.ligne-curseur input[type="number"],
+.ligne-curseur input[type="text"] { flex: 0 0 76px; width: 76px; text-align: center; }
+.curseur-champ { height: 22px; }
+
+/* ---------- Les curseurs, dessines ----------
+   accent-color rendait une piste et un pouce differents sur chaque moteur, et
+   gris fonce en theme sombre. Ici : piste de 4 px remplie jusqu'a la valeur
+   (--pc, posee par UI.peindreCurseur), pouce rond borde d'accent. Les deux
+   moteurs ont chacun leur syntaxe, d'ou les deux jeux de regles. */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  background: transparent;
+  margin: 0;
+  cursor: pointer;
+  padding: 0;
+  border: none;
+  min-height: 0;
+  box-shadow: none;
+}
+input[type="range"]:focus { box-shadow: none; }
+input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 4px; }
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 4px;
+  background: linear-gradient(to right, var(--accent) var(--pc, 0%), var(--lignes) var(--pc, 0%));
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px; height: 18px;
+  margin-top: -7px;
+  border-radius: 50%;
+  background: var(--panneau);
+  border: 2px solid var(--accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+input[type="range"]::-moz-range-track { height: 4px; border-radius: 4px; background: var(--lignes); }
+input[type="range"]::-moz-range-progress { height: 4px; border-radius: 4px; background: var(--accent); }
+input[type="range"]::-moz-range-thumb {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--panneau);
+  border: 2px solid var(--accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+/* UN SEUL LOOK POUR LA NOTE (v8.68). La note non encore donnée avait son propre
+   style, piste en pointillé et pas de pouce, qui basculait au premier toucher :
+   Chris y voyait deux curseurs différents, et aucun sens. Le curseur a
+   maintenant toujours la même allure ; « pas encore notée » se lit dans le
+   libellé au-dessus et dans l'aide dessous. La classe curseur-inactif reste,
+   mais comme ÉTAT seulement (noteVide, ui-noyau.js), sans aucun style. */
+
+/* ---------- L'interrupteur ----------
+   Autour d'une case a cocher ORDINAIRE, qui reste la source de verite : le
+   formulaire, le brouillon et les tests lisent toujours input.checked. Seul le
+   dessin change, pour que les options ne ressemblent pas a des champs. */
+.interrupteur { position: relative; display: inline-block; width: 40px; height: 22px; flex: none; }
+.interrupteur input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; margin: 0; cursor: pointer; }
+.interrupteur i {
+  position: absolute; inset: 0;
+  border-radius: 999px;
+  background: var(--barre-neutre);
+  transition: background var(--transition);
+}
+.interrupteur i::after {
+  content: "";
+  position: absolute; top: 3px; left: 3px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--panneau);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform var(--transition);
+}
+.interrupteur input:checked + i { background: var(--accent); }
+.interrupteur input:checked + i::after { transform: translateX(18px); }
+.interrupteur input:focus-visible + i { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Un bouton carre a icone seule, a la hauteur des champs qu'il accompagne. */
+.btn-carre { width: var(--hauteur-controle); min-height: var(--hauteur-controle); padding: 0; flex: none; }
+
+.badge-ratee {
+  display: inline-block;
+  /* Sans-serif, minuscules, sans espacement : en petites capitales serif avec
+     espacement, l'accent du E se lisait comme des points à côté du mot. */
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 2px 7px;
+  margin-right: 6px;
+  border-radius: 999px;
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 14%, var(--panneau));
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+  vertical-align: middle;
+}
+
+.historique-compte { color: var(--attenue); font-size: 0.85rem; margin: 0 0 10px 4px; }
+
+.table-conteneur { overflow-x: auto; padding: 0; }
+/* table-layout fixed : les colonnes ne s'elargissent PLUS avec leur contenu.
+   C'etait la cause du defilement horizontal, un nom de cafe long poussait toute
+   la table au dela du conteneur. Les largeurs sont maintenant imposees, et le
+   texte trop long est tronque avec des points de suspension.
+   min-width : en dessous (telephone), on defile plutot que d'ecraser neuf
+   colonnes en bouillie. */
+/* AUCUNE regle de largeur ou de marge sur un #ecran-* : le cadre est pose UNE
+   fois sur .ecran (bloc de mise en page). Une regle d'identifiant bat la classe
+   et decentre l'ecran en silence : c'est ce qui est arrive a l'historique, cale
+   a gauche par un margin-left: 0 herite d'un ancien elargissement. Un test le
+   refuse desormais. */
+
+.table-historique {
+  width: 100%;
+  /* 1180 px etait la largeur minimale de TREIZE colonnes. A dix, la table tient
+     dans la carte sans defiler : le plancher descend a 940, de quoi garder les
+     colonnes lisibles sur un ecran etroit sans imposer un defilement a Chris
+     sur le sien. */
+  min-width: 930px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+/* Les largeurs vivent dans le <colgroup> d'index.html : pixels pour les sept
+   colonnes chiffrees et les actions, rien pour cafe, recette et gouts, qui se
+   partagent le reste a parts egales. Ce sont les seules qui peuvent deborder,
+   et elles passent a la ligne (voir .td-texte) au lieu de se tronquer. */
+.table-historique col.c-date { width: 132px; }
+.table-historique col.c-methode { width: 92px; }
+.table-historique col.c-dose { width: 100px; }
+.table-historique col.c-mouture { width: 104px; }
+.table-historique col.c-ratio { width: 94px; }
+.table-historique col.c-note { width: 60px; }
+.table-historique col.c-actions { width: 150px; }
+/* Cafe et recette passent a la LIGNE au lieu de se tronquer : un nom de cafe
+   coupe en « Trung Nguyên Sáng… » ne dit plus lequel des deux c'est. Les
+   colonnes chiffrees, elles, ne passent jamais a la ligne. */
+.table-historique .td-texte { white-space: normal; line-height: 1.3; color: var(--encre); font-weight: 600; }
+.table-historique .td-recette { white-space: normal; line-height: 1.3; }
+.table-historique .td-num { font-variant-numeric: tabular-nums; }
+.table-historique .td-num small.sous { display: block; font-size: 0.72rem; color: var(--attenue); }
+/* La date en deux tons : le jour en encre, l'heure en attenue, le chevron devant. */
+.td-date { display: flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
+.td-date time { color: var(--encre); }
+.td-date .heure { color: var(--attenue); margin-left: 4px; }
+/* La cellule des actions se passe de sa marge interne : mesure faite, elle
+   demandait 137 px pour 129 offerts, et 24 de ces px etaient du vide sur les
+   cotes. Un bouton tronque est INATTEIGNABLE, ce qui est une panne et non un
+   defaut de mise en page : cette cellule ne se tronque jamais. */
+.table-historique td:nth-child(10) { padding-inline: 2px; overflow: visible; }
+
+/* Les gouts s'empilent au lieu de se tronquer : ils sont courts, et une pastille
+   coupee en deux ne dit plus quel gout c'etait. */
+.chip-diagnostic { white-space: normal; font-size: 0.8rem; color: var(--attenue); }
+/* Les cinq boutons d'action doivent TENIR : tronques, ils deviennent
+   inatteignables, ce qui est une panne et pas un defaut de mise en page. */
+.actions-ligne { gap: 2px; justify-content: flex-end; display: flex; }
+
+/* La ligne de commentaire : pleine largeur sous sa tasse, sans bordure haute
+   pour qu'elle se lise comme la suite de la ligne et non comme une ligne de
+   plus. */
+.ligne-commentaire td {
+  border-top: none;
+  padding: 0 12px 10px;
+  font-style: italic;
+  font-size: 0.82rem;
+  color: var(--attenue);
+  white-space: normal;
+  cursor: pointer;
+}
+.ligne-commentaire:hover td { background: var(--panneau-2); }
+.table-historique th {
+  text-align: left;
+  padding: 12px 12px;
+  color: var(--attenue);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--lignes);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  background: var(--panneau);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.table-historique th:hover { color: var(--encre); }
+.table-historique td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--lignes);
+  vertical-align: middle;
+  /* Tronque au lieu d'elargir. L'attribut title pose sur les cellules de texte
+     libre donne la valeur complete au survol et au focus. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.table-historique tbody tr { transition: background 150ms; }
+.table-historique tbody tr:hover { background: var(--panneau-2); }
+.tri { font-size: 0.7rem; }
+
+.note-cellule {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+/* Un POINT de couleur suivi du nom, et non du texte pose sur la couleur de la
+   machine : le creme sur le vermillon du Switch donnait 2,75 et le bleu de la
+   Brikka 3,80. Les couleurs de donnees sont intouchables, mais rien n'obligeait
+   a ecrire dessus, et la DA decrit justement une pastille a point. */
+.chip-methode {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  padding: 3px 10px 3px 8px;
+  border-radius: var(--rayon-pastille);
+  background: var(--panneau-2);
+  color: var(--texte);
+}
+.chip-methode::before {
+  content: "";
+  width: 8px; height: 8px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--barre-neutre);
+}
+.chip-methode.brikka::before { background: var(--brikka); }
+.chip-methode.switch::before { background: var(--switch); }
+.btn-ligne {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  border-radius: 7px;
+  color: var(--attenue);
+  transition: all 150ms;
+}
+.btn-ligne .ico { width: 15px; height: 15px; }
+.btn-ligne:hover { background: var(--panneau-2); color: var(--encre); }
+.btn-ligne.danger:hover { color: var(--danger); }
+
+/* ---------- Référence ---------- */
+
+.sommaire {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  position: sticky;
+  /* Collé en haut (v8.72) : 62 et 108 px dataient de l'ancien en-tête, disparu. */
+  top: calc(env(safe-area-inset-top, 0px) + 8px);
+  z-index: var(--z-sommaire);
+  background: color-mix(in srgb, var(--fond) 82%, transparent);
+  border-radius: var(--rayon-petit);
+  backdrop-filter: blur(8px);
+  padding: 0;
+  margin-bottom: 22px;
+  border: none;
+}
+.sommaire-sep {
+  width: 1px; align-self: stretch; margin: 2px 5px;
+  background: var(--lignes);
+}
+.sommaire a {
+  text-decoration: none;
+  color: var(--texte);
+  font-size: 0.84rem;
+  padding: 7px 14px;
+  border-radius: var(--rayon-pastille);
+  border: 1px solid var(--lignes);
+  background: var(--panneau);
+  transition: all var(--transition);
+}
+.sommaire a:hover { color: var(--accent); border-color: var(--accent); }
+/* Le sommaire est la barre d'onglets du Guide (v8.52) : un panneau à la fois. */
+.sommaire a.courant { color: var(--sur-accent); background: var(--accent); border-color: var(--accent); }
+.biblio-filtres { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 14px; }
+.biblio-filtres .pilule { display: inline-flex; align-items: center; gap: 6px; }
+.recette-chez-toi { margin: 6px 0 2px; font-size: 0.84rem; font-weight: 600; color: var(--accent-fort); }
+
+.ref-titre {
+  font-size: 1.45rem;
+  margin: 34px 0 6px;
+  scroll-margin-top: 120px;
+}
+.ref-intro { color: var(--attenue); max-width: 760px; margin-top: 0; }
+.ref-bloc { margin-bottom: 16px; }
+.ref-bloc h3 { margin: 20px 0 8px; font-size: 1rem; }
+.ref-bloc h3:first-child { margin-top: 0; }
+
+.liste-simple { margin: 8px 0; padding-left: 20px; }
+.liste-simple li { margin-bottom: 3px; }
+
+.formule {
+  background: var(--panneau-2);
+  border-radius: var(--rayon-petit);
+  padding: 10px 14px;
+}
+.formule code { background: transparent; padding: 0; }
+
+.encadre {
+  border-left: 3px solid var(--accent);
+  background: var(--accent-fond);
+  border-radius: 0 var(--rayon-petit) var(--rayon-petit) 0;
+  padding: 10px 14px;
+}
+
+/* Recettes */
+.grille-recettes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 16px;
+  margin-bottom: 10px;
+}
+.recette-carte {
+  border-top: 4px solid var(--barre-neutre);
+  display: flex;
+  flex-direction: column;
+}
+.recette-carte.brikka { border-top-color: var(--brikka); }
+.recette-carte.switch { border-top-color: var(--switch); }
+.recette-entete { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.recette-numero { font-size: 0.72rem; color: var(--attenue); text-transform: uppercase; letter-spacing: 0.06em; }
+.recette-carte h3 { margin: 2px 0 2px; font-size: 1.2rem; }
+.recette-sous { color: var(--attenue); font-style: italic; font-size: 0.86rem; margin: 0 0 10px; }
+.recette-params {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.param-chip {
+  background: var(--panneau-2);
+  border-radius: 7px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  color: var(--encre);
+  font-variant-numeric: tabular-nums;
+}
+.recette-etapes { margin: 0 0 12px; padding-left: 4px; list-style: none; }
+.recette-etapes li {
+  display: flex;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: 0.88rem;
+  align-items: baseline;
+}
+.etape-temps {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.8rem;
+  color: var(--accent-fort);
+  min-width: 40px;
+  flex-shrink: 0;
+  font-weight: 600;
+}
+.recette-pourqui { font-size: 0.84rem; color: var(--attenue); margin: 0 0 10px; }
+.recette-pourqui b { color: var(--encre); }
+.recette-cafes { font-size: 0.8rem; color: var(--attenue); margin: 0 0 12px; }
+/* L'historique par tranches (v8.75) : le bouton sous la dernière ligne. */
+.h-plus { margin: 10px auto; display: block; }
+.h-ligne-plus td { text-align: center; border-bottom: none; }
+
+/* LE FOCUS DANS LES DESSINS (v8.76) : un bocal ou un ruban pris au clavier ne
+   se distinguait du survol que par un trait à peine plus épais. */
+svg [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+/* Au doigt, les entrées du menu font au moins 44 px de haut (v8.76). */
+@media (max-width: 1023px) { .rail-entree { min-height: 44px; } }
+
+.fc-suppr-sachet { margin-top: 10px; }
+
+/* Quel café, quelle recette (v8.74) : une case, une recette et ce que disent tes tasses. */
+.matrice-carte > summary { font-family: var(--serif); font-size: 1.35rem; color: var(--encre); cursor: pointer; }
+.matrice-carte .carte-note { margin: 8px 0 12px; }
+.matrice th[scope="row"] { white-space: nowrap; vertical-align: top; }
+.matrice td { vertical-align: top; min-width: 150px; }
+@media (max-width: 700px) { .matrice td { min-width: 128px; } }
+.matrice td > span { display: block; font-size: 0.76rem; color: var(--attenue); line-height: 1.35; margin-top: 2px; }
+.matrice .m-chez-toi { color: var(--accent-fort); font-weight: 600; }
+.matrice .m-meilleure { color: var(--encre); }
+.lien-recette { background: none; border: 0; padding: 0; font: inherit; font-weight: 700; color: var(--encre); cursor: pointer; text-align: left; text-decoration: underline; text-decoration-color: var(--lignes); text-underline-offset: 3px; }
+.lien-recette:hover { color: var(--accent-fort); }
+.m-autre .lien-recette { font-weight: 500; color: var(--texte); }
+
+/* La vidéo de la recette (v8.64) : le bouton et le lien, puis le lecteur 16:9 à sa place. */
+.recette-video { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 12px; }
+.recette-video-lien { font-size: 0.8rem; color: var(--accent-fort); }
+.aside-video .recette-video { margin: 0; }
+.recette-lecteur { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: var(--rayon-petit); background: #000; }
+.recette-note { font-size: 0.82rem; border-left: 3px solid var(--accent); padding-left: 10px; color: var(--texte); margin: 0 0 12px; }
+.recette-actions { margin-top: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+.badge-defaut {
+  font-size: 0.7rem;
+  background: var(--deux);
+  /* Texte SOMBRE sur ce fond : du blanc n'y atteignait que 2,6:1, et n'atteignait
+     pas mieux sur l'ancien vert. Sur un rose poudré, le sombre monte à 7:1. */
+  color: var(--encre-sur-clair);
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-weight: 700;
+}
+.badge-avancee {
+  font-size: 0.7rem;
+  background: var(--panneau-2);
+  color: var(--attenue);
+  border: 1px solid var(--lignes);
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-weight: 600;
+}
+
+/* Variantes Tetsu */
+.tetsu-variantes { border-top: 1px dashed var(--lignes); padding-top: 12px; margin-bottom: 12px; }
+.tetsu-groupe { margin-bottom: 10px; }
+.tetsu-groupe .label { display: block; margin-bottom: 6px; }
+.tetsu-options { display: flex; gap: 6px; flex-wrap: wrap; }
+.tetsu-versements { margin: 10px 0 0; padding: 0; list-style: none; }
+.tetsu-versements li {
+  display: flex; gap: 10px; align-items: baseline;
+  padding: 4px 0; font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+.tetsu-detail { font-size: 0.8rem; color: var(--attenue); margin: 6px 0 0; }
+
+/* Convertisseur */
+.convertisseur { margin: 18px 0 8px; }
+.convertisseur-resultat {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-height: 40px;
+}
+.conv-chip {
+  background: var(--panneau-2);
+  border-radius: var(--rayon-petit);
+  padding: 8px 14px;
+  font-size: 0.9rem;
+}
+.conv-chip b { color: var(--accent-fort); font-variant-numeric: tabular-nums; }
+.conv-erreur { color: var(--danger); font-size: 0.88rem; padding: 8px 0; }
+
+/* Diagramme officiel de granulométrie */
+.diagramme-conteneur { overflow-x: auto; margin-top: 14px; }
+.diagramme-svg { width: 100%; min-width: 720px; height: auto; }
+.dg-titre-axe { font-size: 11px; fill: var(--attenue); font-family: var(--sans); }
+.dg-axe { font-size: 10px; fill: var(--attenue); font-family: var(--sans); font-variant-numeric: tabular-nums; }
+.dg-tick { stroke: var(--attenue); stroke-width: 0.8; opacity: 0.7; }
+.dg-ligne { stroke: var(--attenue); stroke-width: 1; }
+.dg-hachure { stroke: var(--attenue); stroke-width: 1; opacity: 0.5; }
+.dg-zone-hors { opacity: 0.25; }
+.dg-boite rect {
+  fill: var(--panneau-2);
+  stroke: var(--attenue);
+  stroke-width: 1;
+  transition: opacity 150ms;
+}
+.dg-boite { cursor: pointer; }
+.dg-boite:hover rect { stroke: var(--accent); }
+.dg-nom { font-size: 11px; fill: var(--encre); font-family: var(--sans); pointer-events: none; }
+.dg-boite-perso rect { stroke-width: 2; }
+.dg-boite-eteinte { opacity: 0.35; }
+.dg-boite-compatible { opacity: 1; }
+.dg-boite-compatible rect { stroke: var(--ok); stroke-width: 2; fill: color-mix(in srgb, var(--ok) 12%, var(--panneau-2)); }
+.dg-bande { fill: var(--panneau-2); stroke: var(--lignes); }
+.dg-bande-nom { font-size: 9.5px; fill: var(--attenue); font-family: var(--sans); }
+.dg-ref { stroke-width: 1.6; stroke-dasharray: 4 3; opacity: 0.9; }
+.dg-ref-point { cursor: pointer; stroke: var(--panneau); stroke-width: 1.5; }
+.dg-curseur { stroke: var(--encre); stroke-width: 1.6; }
+.dg-curseur-label { font-size: 11px; fill: var(--encre); font-weight: 700; font-family: var(--sans); }
+
+/* Tables de référence */
+.table-ref { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.table-ref th {
+  text-align: left; padding: 8px 12px; color: var(--attenue);
+  font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--lignes);
+}
+.table-ref td { padding: 7px 12px; border-bottom: 1px solid var(--lignes); }
+.table-ref tr:last-child td { border-bottom: none; }
+.ligne-perso td { background: var(--accent-fond); }
+
+/* Diagnostic du goût */
+.grille-diagnostic {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  margin-bottom: 10px;
+}
+.diag-carte h3 { margin: 0 0 8px; }
+.diag-carte p { font-size: 0.88rem; margin: 0 0 8px; }
+.diag-action {
+  color: var(--accent-fort);
+  font-weight: 600;
+  border-top: 1px dashed var(--lignes);
+  padding-top: 8px;
+}
+.diag-calibration { border-style: dashed; }
+
+/* Fiches vocabulaire */
+.fiches { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.fiche { padding: 0; overflow: hidden; }
+.fiche summary {
+  cursor: pointer;
+  padding: 15px 20px;
+  font-family: var(--serif);
+  font-size: 1.02rem;
+  color: var(--encre);
+  font-weight: 600;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background var(--transition);
+}
+.fiche summary::-webkit-details-marker { display: none; }
+.fiche summary::after { content: "+"; color: var(--attenue); font-size: 1.3rem; transition: transform var(--transition); }
+.fiche[open] summary::after { transform: rotate(45deg); }
+.fiche summary:hover { background: var(--panneau-2); }
+.fiche-corps { padding: 4px 20px 16px; font-size: 0.92rem; }
+.fiche-corps p { margin: 0 0 10px; }
+
+.lexique { display: grid; grid-template-columns: auto 1fr; gap: 4px 18px; margin: 0; }
+.lexique dt { font-weight: 700; color: var(--accent-fort); }
+.lexique dd { margin: 0; color: var(--texte); }

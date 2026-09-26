@@ -1,0 +1,548 @@
+/* Carnet d'extraction, feuille 3 sur 4. Ce qui s'ouvre par-dessus : fenêtres, guide, saisie rapide, infobulles, toasts. */
+
+/* ---------- Modales ---------- */
+
+.modale {
+  border: 1px solid var(--lignes);
+  border-radius: var(--rayon);
+  background: var(--panneau);
+  color: var(--texte);
+  padding: 26px 28px;
+  max-width: 620px;
+  width: calc(100vw - 40px);
+  box-shadow: var(--ombre);
+}
+.modale::backdrop { background: var(--voile); backdrop-filter: blur(3px); }
+/* Les titres de modale en serif, comme les titres de page : une modale est un
+   ecran de plus, pas une boite de dialogue systeme. */
+.modale h2 {
+  margin: 0 0 18px;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 1.65rem;
+  letter-spacing: -0.01em;
+  color: var(--encre);
+}
+.modale-large { max-width: 780px; }
+/* TES CAFÉS EN DESSINS (v8.49), rendus par js/ui-dessins.js. Chaque dessin est
+   un raccourci : toute sa surface mène à la page qu'il résume, le bouton de son
+   entête fait la même chose au clavier. */
+/* Arranger (v8.57) : le panneau n'existe que le temps de ranger. */
+.carte-dessins .carte-tete { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.dessins-panneau { margin-top: 10px; padding: 12px 14px; border-radius: var(--rayon-petit); background: var(--panneau-2); border: 1px solid var(--accent); display: grid; gap: 10px; }
+.dp-aide { margin: 0; font-size: 0.82rem; color: var(--attenue); }
+.dp-liste { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 4px 20px; }
+.dp-liste li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--lignes-douces); font-size: 0.88rem; }
+.dp-liste label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.dp-fleches { display: inline-flex; gap: 4px; }
+.dp-fleches .btn-ligne:disabled { opacity: 0.3; cursor: default; }
+.dp-pied { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.carte-dessins .carte-sous { margin: 2px 0 0; font-size: 0.82rem; color: var(--attenue); }
+.dessins-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-top: 10px; }
+.dessin {
+  display: grid; gap: 8px; align-content: start; padding: 12px 14px; min-width: 0;
+  border-radius: var(--rayon-petit); background: var(--panneau-2); border: 1px solid transparent; cursor: pointer;
+}
+.dessin:hover { border-color: var(--lignes); }
+.dessin-tete { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.dessin-tete h4 { margin: 0; font-size: 0.95rem; color: var(--encre); }
+.dessin-lien {
+  display: inline-flex; align-items: center; gap: 4px; font: inherit; font-size: 0.76rem; font-weight: 600;
+  color: var(--attenue); background: none; border: none; padding: 4px 0; cursor: pointer;
+}
+.dessin-lien:hover, .dessin:hover .dessin-lien { color: var(--accent-fort); }
+.dessin-lien:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.dessin-svg { width: 100%; height: auto; display: block; }
+.dessin-svg:empty { display: none; }
+.dessin-svg text { font-family: var(--sans); font-size: 9.5px; fill: var(--attenue); }
+.dessin-svg .de-fort { fill: var(--encre); font-weight: 700; }
+.dessin-lecture { margin: 0; font-size: 0.8rem; line-height: 1.45; color: var(--texte); }
+.de-planche { stroke: var(--lignes); stroke-width: 2; }
+.de-bocal { cursor: pointer; }
+.de-bocal:focus-visible { outline: none; }
+.de-bocal:focus-visible .de-verre, .de-bocal:hover .de-verre { stroke-width: 2.5; }
+.de-verre { fill: var(--panneau-3); stroke: var(--lignes); stroke-width: 1.5; }
+.de-dedans .de-verre { stroke: var(--accent); }
+.de-apres .de-verre { stroke: var(--danger); }
+.de-avant .de-verre { stroke: var(--attenue); }
+.de-grains { fill: var(--accent); }
+.de-couvercle { fill: var(--barre-neutre); }
+.de-cadran { fill: none; stroke: var(--lignes); }
+.de-cadran-mi { fill: none; stroke: var(--lignes-douces); stroke-dasharray: 3 3; }
+.de-point-brikka { fill: var(--brikka); fill-opacity: 0.85; }
+.de-point-switch { fill: var(--switch); fill-opacity: 0.85; }
+.de-zone { fill: var(--accent-fond); }
+.de-axe, .de-grille { stroke: var(--lignes); }
+.de-juste { fill: var(--accent); }
+.de-ecart { fill: var(--texte); fill-opacity: 0.6; }
+.de-moyenne { fill: var(--accent-fort); }
+.de-plage { fill: var(--panneau-3); }
+.de-doree { fill: none; stroke: var(--accent-fort); stroke-width: 1.5; }
+.de-grain { fill: var(--accent); }
+/* Un point qui est une tasse (v8.55) : il se touche. Le trait transparent élargit
+   la zone de toucher sans grossir le point. */
+[data-tasse] { cursor: pointer; stroke: transparent; stroke-width: 10; }
+[data-tasse]:hover { stroke: var(--encre); stroke-width: 1.5; stroke-opacity: 0.8; }
+.de-derniere[data-tasse] { stroke: var(--encre); stroke-width: 2; }
+.bulle-tasse {
+  position: fixed; z-index: var(--z-bulle); width: min(300px, calc(100vw - 16px));
+  background: var(--panneau-3); color: var(--texte); border: 1px solid var(--lignes); border-radius: var(--rayon-petit);
+  box-shadow: var(--ombre); padding: 10px 12px; display: grid; gap: 8px; font-size: 0.82rem;
+}
+.bt-tete { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.bt-quand { font-size: 0.74rem; color: var(--attenue); }
+.bt-fermer { font: inherit; font-size: 1.1rem; line-height: 1; background: none; border: none; color: var(--attenue); cursor: pointer; padding: 2px 4px; }
+.bt-corps { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: start; }
+.bt-corps > div { display: grid; gap: 2px; min-width: 0; }
+.bt-corps span { display: flex; align-items: center; gap: 6px; overflow-wrap: anywhere; }
+.bt-cafe { color: var(--encre); font-size: 0.92rem; }
+.bt-gouts { color: var(--attenue); }
+.bt-note { font-family: var(--serif); font-weight: 400; font-size: 2rem; line-height: 1; color: var(--encre); }
+.bt-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.de-marche, .de-ruban { cursor: pointer; }
+.de-marche:focus-visible, .de-ruban:focus-visible { outline: none; }
+.de-marche-bloc { fill: var(--accent); }
+.de-rang-1 .de-marche-bloc { fill-opacity: 0.95; }
+.de-rang-2 .de-marche-bloc { fill-opacity: 0.62; }
+.de-rang-3 .de-marche-bloc { fill-opacity: 0.4; }
+.de-marche:hover .de-marche-bloc, .de-marche:focus-visible .de-marche-bloc { stroke: var(--encre); stroke-width: 2; }
+.dessin-svg .de-marche-note { font-family: var(--serif); font-size: 22px; fill: var(--sur-accent); }
+.de-aire { fill: var(--accent-fond); }
+.de-courbe { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linejoin: round; }
+.de-jalon { fill: var(--accent-fort); }
+.de-jalon-trait { stroke: var(--accent-fort); stroke-dasharray: 3 3; stroke-opacity: 0.6; }
+.de-ruban-bloc { fill: var(--accent); }
+.de-ruban.en-cours .de-ruban-bloc { stroke: var(--accent-fort); stroke-width: 1.5; }
+.de-ruban:hover .de-ruban-bloc, .de-ruban:focus-visible .de-ruban-bloc { stroke: var(--encre); stroke-width: 2; }
+.dessin-svg .de-ruban-texte { fill: var(--encre); font-weight: 700; }
+/* Une recette ouverte depuis le podium, soulignée un instant. */
+.recette-carte.recette-montree { box-shadow: 0 0 0 2px var(--accent); }
+.de-derniere { stroke: var(--encre); stroke-width: 2; }
+.de-chemin { fill: none; stroke: var(--barre-neutre); stroke-width: 1.4; stroke-linejoin: round; }
+.de-toile { fill: none; stroke: var(--lignes); }
+.de-rayon { stroke: var(--lignes-douces); }
+.de-empreinte-tous { fill: none; stroke: var(--encre); stroke-width: 1.4; stroke-dasharray: 4 3; }
+.de-empreinte-cafe { fill: var(--accent); fill-opacity: 0.3; stroke: var(--accent); stroke-width: 2; }
+.fc-dessin { width: 100%; height: auto; display: block; }
+/* Deux cafés côte à côte (v8.56), en pied de fiche, sur toute la largeur. */
+.fc-comparer { grid-column: 1 / -1; }
+.fc-comparer-tete { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.fc-comparer-tete select { max-width: 260px; }
+.fc-comparer-corps { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 18px; align-items: start; margin-top: 6px; }
+.fc-duo-leg { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.78rem; color: var(--attenue); }
+.fc-duo-leg i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.fc-duo-a { background: var(--accent); }
+.fc-duo-b { border: 1.5px dashed var(--encre); }
+.fc-duo-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+.fc-duo-table th, .fc-duo-table td { text-align: left; padding: 7px 8px; border-top: 1px solid var(--lignes-douces); vertical-align: top; }
+.fc-duo-table thead th { border-top: none; font-size: 0.78rem; color: var(--encre); }
+.fc-duo-table tbody th { font-weight: 600; color: var(--attenue); white-space: nowrap; }
+@media (max-width: 760px) { .fc-comparer-corps { grid-template-columns: 1fr; } }
+.fc-dessin:empty { display: none; }
+.fc-dessin text { font-family: var(--sans); font-size: 9.5px; fill: var(--attenue); }
+.fc-dessin .de-fort { fill: var(--encre); font-weight: 700; }
+
+/* LE RÉCAP DE LA SEMAINE (v8.51). */
+.carte-recap { gap: 12px; border-color: var(--accent); }
+/* DANS LA TÊTE DE PAGE (v8.67), à droite du titre : la même carte, resserrée.
+   Chiffres plus petits, barres plus basses, les faits en une ligne. Elle prend
+   la place qui reste à côté du titre et passe dessous sur un écran étroit. */
+.tete-recap { flex: 1 1 560px; max-width: 820px; padding: 12px 18px; gap: 8px; }
+.tete-recap .rc-tete { align-items: center; flex-wrap: wrap; row-gap: 4px; }
+@media (max-width: 700px) {
+  /* Sur téléphone : le titre et « Refermer » sur la première ligne, les faits
+     dessous, et la meilleure tasse sur toute la largeur. */
+  .tete-recap .rc-tete #recap-fermer { order: 2; }
+  .tete-recap .rc-tete .rc-faits { order: 3; flex: 1 1 100%; }
+  .tete-recap .rc-corps .rc-meilleure { grid-column: 1 / -1; max-width: none; }
+}
+.tete-recap .rc-tete h3 { font-family: var(--sans); font-size: 0.69rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--attenue); }
+.tete-recap .rc-corps { gap: 8px 22px; }
+.tete-recap .rc-chiffre b { font-size: 1.5rem; }
+.tete-recap .rc-chiffre span { font-size: 0.72rem; }
+.tete-recap .rc-meilleure { max-width: 300px; }
+/* Café et recette sur UNE ligne dans la tête : « Là Việt Balanced · Brikka classique ». */
+.tete-recap .rc-meilleure em { display: inline; font-size: 0.76rem; }
+.tete-recap .rc-meilleure em + em::before { content: " · "; color: var(--attenue); font-weight: 400; }
+.tete-recap .rc-meilleure span { display: block; }
+.tete-recap .rc-semaine { height: 38px; }
+.tete-recap .rc-faits { flex: 1; min-width: 0; list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 2px 14px; font-size: 0.78rem; color: var(--texte); }
+.tete-recap .rc-faits li::before { content: "● "; color: var(--accent); font-size: 0.6rem; vertical-align: middle; }
+.rc-tete { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.rc-tete h3 { margin: 0; }
+.rc-corps { display: grid; grid-template-columns: repeat(3, auto) minmax(160px, 1fr); gap: 12px 28px; align-items: end; }
+.rc-chiffre b { display: block; font-family: var(--serif); font-weight: 400; font-size: 2.1rem; line-height: 1; color: var(--encre); font-variant-numeric: tabular-nums; }
+.rc-chiffre span { font-size: 0.78rem; color: var(--attenue); }
+/* La meilleure tasse : son café et sa recette sous la note, lisibles d un coup. */
+.rc-meilleure { cursor: pointer; max-width: 240px; }
+.rc-meilleure em { display: block; font-style: normal; font-size: 0.82rem; font-weight: 600; color: var(--encre); line-height: 1.3; overflow-wrap: anywhere; }
+.rc-meilleure em + em { font-weight: 500; color: var(--accent-fort); }
+.rc-semaine { display: flex; gap: 6px; align-items: flex-end; height: 58px; }
+.rc-jour { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; height: 100%; justify-content: flex-end; }
+.rc-jour i { display: block; width: 100%; max-width: 26px; border-radius: 4px 4px 0 0; background: var(--accent); }
+.rc-jour.vide i { background: var(--panneau-3); }
+.rc-jour small { font-size: 0.66rem; color: var(--attenue); text-transform: uppercase; }
+.rc-faits { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 0.88rem; }
+.rc-faits li::marker { color: var(--accent); }
+@media (max-width: 700px) {
+  .rc-corps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .rc-semaine { grid-column: 1 / -1; }
+}
+
+/* LE MODE BRASSAGE (v8.47) : le chrono en plein écran, lisible à un mètre.
+   Un dialogue qui couvre tout, sur le fond du thème, sans cadre de carte. */
+.brassage {
+  width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; margin: 0; padding: 0;
+  border: none; border-radius: 0; background: var(--fond); color: var(--texte);
+}
+.brassage[open] { display: flex; flex-direction: column; }
+.brassage::backdrop { background: var(--fond); }
+.br-tete {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: calc(18px + env(safe-area-inset-top, 0px)) clamp(16px, 4vw, 40px) 10px;
+}
+.br-titres { flex: 1; min-width: 0; }
+.br-titres h2 { margin: 2px 0 0; font-family: var(--serif); font-weight: 400; font-size: clamp(1.4rem, 3.5vw, 2rem); color: var(--encre); line-height: 1.1; }
+.br-dose { margin: 4px 0 0; font-size: 0.85rem; color: var(--attenue); font-variant-numeric: tabular-nums; }
+.br-unite { display: inline-flex; padding: 3px; gap: 2px; border-radius: 10px; background: var(--panneau-2); }
+.br-unite button {
+  font: inherit; font-size: 0.82rem; font-weight: 700; min-width: 40px; min-height: 34px;
+  border: none; border-radius: 8px; background: transparent; color: var(--attenue); cursor: pointer;
+}
+.br-unite button[aria-pressed="true"] { background: var(--panneau-3); color: var(--encre); }
+.br-unite button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.br-corps {
+  flex: 1; min-height: 0; overflow-y: auto; display: grid; gap: 22px; align-content: start;
+  padding: 8px clamp(16px, 4vw, 40px) 16px; max-width: 1100px; width: 100%; margin: 0 auto;
+}
+.br-scene { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: clamp(18px, 4vw, 48px); align-items: center; }
+.br-anneau { position: relative; width: 100%; max-width: 340px; aspect-ratio: 1; margin: 0 auto; }
+.br-anneau svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.br-fond-anneau { fill: none; stroke: var(--panneau-3); stroke-width: 7; }
+.br-trace { fill: none; stroke: var(--accent); stroke-width: 7; stroke-linecap: round; transition: stroke-dashoffset 250ms linear; }
+.br-anneau.depasse .br-trace { stroke: var(--accent-fort); }
+.br-centre { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 4px; }
+.br-centre b { font-family: var(--serif); font-weight: 400; font-size: clamp(3.4rem, 11vw, 5.6rem); line-height: 1; color: var(--encre); font-variant-numeric: tabular-nums; }
+.br-centre span { font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--attenue); }
+.br-etape { display: grid; gap: 12px; min-width: 0; }
+.br-cible { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.br-cible b { font-family: var(--serif); font-weight: 400; font-size: clamp(3rem, 10vw, 5.4rem); line-height: 1; color: var(--accent-fort); font-variant-numeric: tabular-nums; }
+.br-vanne {
+  font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 99px; background: var(--accent-fond); color: var(--accent-fort);
+}
+.br-consigne { margin: 0; font-size: clamp(1.05rem, 2.4vw, 1.35rem); line-height: 1.45; color: var(--encre); max-width: 46ch; }
+.br-consigne.seule { font-family: var(--serif); font-size: clamp(1.8rem, 5vw, 2.8rem); line-height: 1.15; }
+.br-cible b:empty { display: none; }
+.br-suivante { margin: 0; font-size: 0.95rem; color: var(--attenue); font-variant-numeric: tabular-nums; }
+.br-frise { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.br-frise li {
+  display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 12px; padding: 10px 0;
+  border-top: 1px solid var(--lignes-douces); font-size: 0.9rem; color: var(--attenue);
+}
+.br-frise li time { font-family: var(--serif); font-size: 1.2rem; color: var(--texte); font-variant-numeric: tabular-nums; }
+.br-frise li.courant { color: var(--encre); }
+.br-frise li.courant time { color: var(--accent-fort); }
+.br-frise li.passe { opacity: 0.55; }
+.br-fin { display: grid; gap: 10px; padding: 16px; border-radius: var(--rayon); background: var(--panneau); border: 1px solid var(--lignes); }
+.br-fin .note-tete b { font-family: var(--serif); font-weight: 400; font-size: 1.6rem; color: var(--encre); }
+.br-fin-boutons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+.br-boutons {
+  display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 10px;
+  padding: 12px clamp(16px, 4vw, 40px) calc(14px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--lignes);
+}
+.br-boutons .btn { min-height: 56px; font-size: 1rem; }
+.br-boutons #br-go { grid-column: 3; }
+.btn-brassage { margin-left: auto; }
+@media (max-width: 760px) {
+  .br-scene { grid-template-columns: 1fr; }
+  .br-anneau { max-width: 250px; }
+  .br-etape { text-align: center; justify-items: center; }
+  .br-cible { justify-content: center; }
+}
+
+/* LA FICHE D'UN CAFÉ (v8.46). Plus large que les autres modales : elle tient
+   une grille de six blocs. En plein écran au téléphone. */
+.modale-fiche { max-width: 1040px; padding: 0; overflow: hidden; }
+.modale-fiche[open] { display: flex; flex-direction: column; max-height: calc(100dvh - 40px); }
+.fc-contenu { overflow-y: auto; padding: 26px 28px 8px; display: grid; gap: 18px; }
+.fc-actions { padding: 14px 28px 20px; margin: 0; border-top: 1px solid var(--lignes); flex-wrap: wrap; }
+.fc-tete { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: start; }
+.fc-tete h2 { margin: 2px 0 10px; font-size: clamp(1.7rem, 3.4vw, 2.3rem); line-height: 1.05; }
+.fc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.fc-chip {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem;
+  padding: 3px 10px; border-radius: 99px; background: var(--panneau-2); border: 1px solid var(--lignes);
+}
+.fc-chip-alerte { color: var(--danger); }
+.fc-note { text-align: right; display: grid; gap: 2px; }
+.fc-note b { font-family: var(--serif); font-weight: 400; font-size: 3.2rem; line-height: 1; color: var(--encre); font-variant-numeric: tabular-nums; }
+.fc-note span { font-size: 0.78rem; color: var(--attenue); }
+.fc-grille { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.fc-bloc { background: var(--panneau-2); border-radius: var(--rayon-petit); padding: 14px 16px; min-width: 0; display: grid; gap: 10px; align-content: start; }
+.fc-h { margin: 0; font-family: var(--sans); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--attenue); }
+.fc-muet { margin: 0; font-size: 0.85rem; color: var(--attenue); }
+.fc-texte { margin: 0; font-size: 0.86rem; line-height: 1.5; }
+.fc-jauge { height: 10px; border-radius: 99px; background: var(--panneau-3); overflow: hidden; }
+.fc-jauge i { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
+.fc-ligne { display: flex; justify-content: space-between; gap: 10px; font-size: 0.84rem; font-variant-numeric: tabular-nums; }
+.fc-ligne b { color: var(--encre); }
+.fc-reachat { margin: 0; font-size: 0.84rem; font-weight: 600; color: var(--accent-fort); }
+.fc-reachat a { color: inherit; }
+.fc-fraicheur { position: relative; height: 22px; }
+.fc-fraicheur::before { content: ""; position: absolute; left: 0; right: 0; top: 8px; height: 6px; border-radius: 99px; background: var(--panneau-3); }
+.fc-fenetre { position: absolute; top: 6px; height: 10px; border-radius: 99px; background: var(--accent-fond); border: 1px solid var(--accent); }
+.fc-aujourdhui { position: absolute; top: 1px; width: 3px; height: 20px; margin-left: -1px; border-radius: 2px; background: var(--encre); }
+.fc-leg { display: flex; justify-content: space-between; gap: 8px; font-size: 0.72rem; color: var(--attenue); }
+.fc-svg { width: 100%; height: auto; display: block; }
+.fc-svg text { font-family: var(--sans); font-size: 10px; fill: var(--attenue); }
+.fc-c-grille { stroke: var(--lignes); stroke-width: 1; }
+.fc-c-fenetre { fill: var(--accent-fond); }
+.fc-c-point { fill: var(--attenue); fill-opacity: 0.7; }
+.fc-c-ligne { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linejoin: round; }
+.fc-c-auj { stroke: var(--encre); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.fc-roue { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 14px; align-items: center; }
+.fc-reglage .reglage { background: transparent; border: none; box-shadow: none; padding: 0; }
+.fc-reglage .reglage-entete, .fc-reglage [data-fiche] { display: none; }
+.reglage-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.fc-liste { list-style: none; margin: 0; padding: 0; }
+.fc-liste li {
+  display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 10px; align-items: baseline;
+  padding: 7px 0; border-top: 1px solid var(--lignes-douces); font-size: 0.84rem;
+}
+.fc-liste li:first-child { border-top: none; }
+.fc-date { color: var(--attenue); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+.fc-quoi { display: flex; align-items: center; gap: 7px; min-width: 0; overflow-wrap: anywhere; }
+.fc-liste b { font-family: var(--serif); font-weight: 400; font-size: 1.3rem; line-height: 1; color: var(--encre); font-variant-numeric: tabular-nums; }
+@media (max-width: 760px) {
+  .modale-fiche { width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; border-radius: 0; margin: 0; }
+  .modale-fiche[open] { max-height: 100dvh; }
+  .fc-contenu { padding: calc(18px + env(safe-area-inset-top, 0px)) 16px 8px; }
+  .fc-actions { padding: 12px 16px calc(14px + env(safe-area-inset-bottom, 0px)); }
+  .fc-grille, .fc-roue { grid-template-columns: 1fr; }
+  .fc-tete { grid-template-columns: 1fr; }
+  .fc-note { text-align: left; }
+  .fc-roue .roue { max-width: 240px; margin: 0 auto; }
+}
+.modale-note { font-size: 0.8rem; color: var(--attenue); }
+.modale-fermer { margin-top: 14px; }
+
+.accueil-choix { display: flex; flex-direction: column; gap: 10px; margin: 18px 0; }
+.carte-choix {
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: var(--texte);
+  font-size: 0.86rem;
+  transition: border-color var(--transition), transform 150ms;
+}
+.carte-choix:hover { border-color: var(--accent); transform: translateY(-1px); }
+.carte-choix b { color: var(--encre); font-size: 1rem; }
+.choix-icone { font-size: 1.4rem; }
+
+.donnees-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+
+/* Gestion des cafés */
+.cafes-liste { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; max-height: 300px; overflow-y: auto; }
+.cafe-ligne {
+  display: flex; align-items: center; gap: 10px;
+  border: 1px solid var(--lignes);
+  border-radius: var(--rayon-petit);
+  padding: 9px 13px;
+}
+.cafe-ligne.inactif { opacity: 0.5; }
+.cafe-ligne b { color: var(--encre); }
+.cafe-ligne .cafe-meta { font-size: 0.78rem; color: var(--attenue); flex: 1; }
+.form-cafe { border-top: 1px solid var(--lignes); margin-top: 16px; padding-top: 14px; }
+
+/* Pas à pas */
+.modale-pasapas { max-width: 560px; }
+.pap-entete { display: flex; justify-content: space-between; align-items: center; gap: 14px; }
+.pap-entete h2 { margin: 0; }
+.pap-chrono {
+  font-family: var(--serif);
+  font-size: 2.1rem;
+  color: var(--accent-fort);
+  font-variant-numeric: tabular-nums;
+}
+.pap-params { color: var(--attenue); font-size: 0.88rem; }
+.pap-etapes { list-style: none; margin: 14px 0; padding: 0; }
+.pap-etapes li {
+  display: flex;
+  gap: 12px;
+  padding: 11px 12px;
+  border-radius: var(--rayon-petit);
+  font-size: 0.95rem;
+  align-items: baseline;
+  border: 1px solid transparent;
+  transition: all var(--transition);
+}
+.pap-etapes li.courante {
+  background: var(--accent-fond);
+  border-color: var(--avert-bord);
+  color: var(--encre);
+  font-weight: 600;
+}
+.pap-etapes li.faite { opacity: 0.45; text-decoration: line-through; }
+.pap-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ---------- Guide ---------- */
+
+.ref-titre-ligne {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.ref-titre-ligne .ref-titre { margin-bottom: 6px; }
+
+.grille-boutiques {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 14px;
+  margin-bottom: 10px;
+}
+.boutique h3 { margin: 0 0 2px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.boutique h3 a { font-size: 0.78rem; font-family: var(--sans); font-weight: 400; text-decoration: none; }
+.boutique h3 a:hover { text-decoration: underline; }
+.boutique-meta { font-size: 0.78rem; color: var(--attenue); margin: 0 0 8px; }
+.boutique p { font-size: 0.88rem; margin: 0; }
+
+.table-achats a { text-decoration: none; white-space: nowrap; }
+.table-achats a:hover { text-decoration: underline; }
+.table-achats td { white-space: normal; }
+
+.messages-vn { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 14px; margin-bottom: 10px; }
+.message-entete { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.message-entete h3 { margin: 0; }
+.message-vn-texte {
+  background: var(--panneau-2);
+  border-radius: var(--rayon-petit);
+  padding: 12px 14px;
+  font-size: 0.84rem;
+  font-family: inherit;
+  white-space: pre-wrap;
+  margin: 10px 0 0;
+  color: var(--encre);
+  line-height: 1.5;
+}
+
+/* ---------- Saisie rapide flottante ---------- */
+
+.fab {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: var(--z-fab);
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: var(--sur-accent);
+  font-size: 1.5rem;
+  cursor: pointer;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.38);
+  transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), background var(--transition);
+}
+.fab:hover { transform: scale(1.07); background: var(--accent-fort); }
+/* Ouverte, la feuille transforme le bouton en CROIX. Une tasse pivotee ne dit
+   pas « fermer » : on echange le dessin, on ne le fait pas tourner. */
+.fab .fab-croix { display: none; }
+.fab.ouvert .fab-tasse { display: none; }
+.fab.ouvert .fab-croix { display: block; }
+
+/* La saisie rapide est une FEUILLE qui monte du bas, et non plus une carte
+   flottante accrochee au coin du bouton. Au pouce, une feuille met les champs a
+   portee et dit ce qu'elle est : une chose qu'on ouvre et qu'on referme. */
+.panneau-rapide {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: var(--z-panneau-rapide);
+  width: auto;
+  max-width: 520px;
+  margin: 0 auto;
+  background: var(--panneau);
+  border: 1px solid var(--lignes);
+  border-radius: 22px 22px 0 0;
+  box-shadow: var(--ombre);
+  padding: 10px 20px calc(20px + env(safe-area-inset-bottom));
+  transform: translateY(101%);
+  pointer-events: none;
+  transition: transform var(--transition);
+}
+.panneau-rapide.ouvert { transform: none; pointer-events: auto; }
+
+/* La poignee : elle dit qu'on peut la refermer, avant qu'on cherche la croix. */
+.feuille-poignee {
+  width: 40px; height: 4px;
+  margin: 0 auto 12px;
+  border-radius: 999px;
+  background: var(--lignes);
+}
+
+.rapide-entete { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+.rapide-entete h3 {
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 1.5rem;
+  letter-spacing: -0.01em;
+  color: var(--encre);
+  text-transform: none;
+}
+.rapide-quand { margin: 0; font-size: 0.78rem; color: var(--attenue); }
+.rapide-repris {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 6px 0 0;
+  font-size: 0.78rem;
+  color: var(--attenue);
+}
+.rapide-actions .btn-primaire { flex: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .panneau-rapide { transition: none; }
+}
+.rapide-avert { font-size: 0.78rem; color: var(--accent-fort); margin: 0 0 8px; min-height: 0; }
+.rapide-actions { display: flex; gap: 8px; }
+.panneau-rapide .carte-note { margin-top: 10px; }
+
+/* ---------- Tooltip SVG et toast ---------- */
+
+.svg-tooltip {
+  position: fixed;
+  z-index: var(--z-bulle);
+  background: var(--tooltip-fond);
+  color: var(--tooltip-texte);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  max-width: 260px;
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--tooltip-fond);
+  color: var(--tooltip-texte);
+  padding: 12px 22px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  z-index: var(--z-toast);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  animation: toast-in 250ms ease-out;
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}

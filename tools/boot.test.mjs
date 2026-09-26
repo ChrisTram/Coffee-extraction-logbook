@@ -261,7 +261,7 @@ Chart.defaults = creuse();
 const SCRIPTS = ["js/outils.js", "js/i18n.en.js", "js/i18n.js", "js/grind.js", "js/recettes.js", "js/demo-data.js",
   "js/sync.js", "js/data-csv.js", "js/data-schema.js", "js/data-store.js", "js/data-calculs.js",
   "js/data-migrations.js", "js/data.js", "js/reglages.js", "js/charts.js",
-  "js/ui-noyau.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-chrono.js", "js/ui-brouillon.js", "js/ui-rapide.js", "js/ui-historique.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/ui-fiche.js", "js/ui-brassage.js", "js/ui-dessins.js", "js/app.js"];
+  "js/ui-noyau.js", "js/ui-constats.js", "js/ui-derniere.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-saisie-aside.js", "js/ui-pilules.js", "js/ui-chrono.js", "js/ui-brouillon.js", "js/ui-rapide.js", "js/ui-historique.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/ui-fiche.js", "js/ui-brassage.js", "js/ui-dessins.js", "js/app.js"];
 const source = SCRIPTS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 
 // console.error interceptée : c'est par là que sortent les erreurs de rendu.
@@ -708,7 +708,7 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
   const colgroup = htmlPage.slice(debutTable, htmlPage.indexOf("</colgroup>", debutTable));
   const cols = [...colgroup.matchAll(/<col class="(c-[a-z]+)"/g)].map(m => m[1]);
   check("chaque colonne a sa <col>", cols.length === entetes, cols.length + " col pour " + entetes + " colonnes");
-  const cssPage = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  const cssPage = ["socle", "ecrans", "fenetres", "finitions"].map(f => readFileSync(join(ROOT, "css/" + f + ".css"), "utf8")).join("\n");
   const fixees = cols.filter(c => cssPage.includes(".table-historique col." + c + " { width: ") &&
     /\d+px/.test(cssPage.split(".table-historique col." + c + " { width: ")[1].split(";")[0]));
   const libres = cols.filter(c => !fixees.includes(c));

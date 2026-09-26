@@ -25,7 +25,7 @@
  *    la deconnexion cessent de fonctionner.
  */
 
-const VERSION = "8.77";
+const VERSION = "8.78";
 const CACHE_NAME = "carnet-extraction";
 
 const versionnee = url => url + "?v=" + VERSION;
@@ -41,7 +41,10 @@ const PRECACHE_URLS = [
   "./icons/icon-192.png",
   "./icons/icon-512.png",
 ].concat([
-  "./css/styles.css",
+  "./css/socle.css",
+  "./css/ecrans.css",
+  "./css/fenetres.css",
+  "./css/finitions.css",
   /* Les polices. Sans elles dans le precache, la premiere ouverture hors ligne
      affiche le repli puis saute a la vraie police des que le reseau revient.
      Leur URL ne porte pas de version : un fichier de police ne change jamais
@@ -74,8 +77,12 @@ const PRECACHE_URLS = [
   "./js/reglages.js",
   "./js/charts.js",
   "./js/ui-noyau.js",
+  "./js/ui-constats.js",
+  "./js/ui-derniere.js",
   "./js/ui-tableau.js",
   "./js/ui-saisie.js",
+  "./js/ui-saisie-aside.js",
+  "./js/ui-pilules.js",
   "./js/ui-chrono.js",
   "./js/ui-brouillon.js",
   "./js/ui-rapide.js",

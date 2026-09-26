@@ -262,7 +262,10 @@ unreadable: it measures the health of your brews, not your taste.
 ```
 tracker/
   index.html            the single page, all the static HTML
-  css/styles.css        styles, dark and light themes
+  css/socle.css         fonts, tokens (dark and light themes), base, navigation
+  css/ecrans.css        the screens
+  css/fenetres.css      dialogs, guide, quick entry, tooltips
+  css/finitions.css     responsive and last overrides, loaded LAST
   css/fonts/            the two bundled fonts, woff2, under the OFL
   js/outils.js          shared pure functions (average, dates, version)
   js/i18n.js            translation, French half and the mechanism
@@ -274,8 +277,12 @@ tracker/
   js/reglages.js        best settings per coffee, pure calculation
   js/charts.js          Chart.js charts (on demand), SVG heatmap and ruler
   js/ui-noyau.js        shared interface tools, theme, navigation
-  js/ui-tableau.js      dashboard and insights
+  js/ui-constats.js     the computed insights and their carousel
+  js/ui-derniere.js     the last cup card
+  js/ui-tableau.js      dashboard: calendar, analyses, recent cups
   js/ui-saisie.js       form and timer
+  js/ui-saisie-aside.js the entry side panel and twin cups
+  js/ui-pilules.js      diagnostic and taste pills
   js/ui-brouillon.js    entry draft (localStorage)
   js/ui-rapide.js       quick entry sheet
   js/ui-historique.js   history, filters, comparator, best settings
