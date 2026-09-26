@@ -329,6 +329,42 @@ const RECETTES_DEPART = [
     video: "https://www.youtube.com/watch?v=k0nsShguOsU",
     parDefaut: false, avancee: false, variantes: false, actif: 1,
   },
+  /* LA TETSU DEVIL (v8.70). La recette Switch de Tetsu Kasuya, février 2023
+     (youtube.com/watch?v=gC8K40kZ_6E, « cette recette est-elle divine ou
+     diabolique ? ») : percolation à 90 °C, puis immersion à 70 °C. Les chiffres
+     sont ceux que reprennent les résumés (20 g, 60 g, 120 g, 280 g), pas relus
+     dans la vidéo. Ramenée à 15 g pour 210 g.
+
+     LE 70 °C SANS THERMOMÈTRE : un mélange PESÉ d'eau à 90 °C et d'eau à
+     température ambiante, dans un verre sur la balance. Ambiante = 28 °C,
+     EAU_AMBIANTE_C, la même hypothèse que la courbe de la bouilloire. 120 g à
+     70 °C = 81 g à 90 + 39 g ambiante, car (90 − 70) / (70 − 28) = 20 / 42.
+     Les grammes du mélange suivent l'eau totale comme les autres versements. */
+  {
+    id: "devil-switch",
+    nom: "Tetsu Devil",
+    numero: "Recette 10",
+    methode: "Switch",
+    famille: "",
+    variante: "",
+    sousTitre: "Percolation à 90 °C, puis immersion à 70 °C : le 70 se fait par un mélange pesé",
+    dose: 15, eau: 210, temp: 90, tempTexte: "90 °C, puis 70 °C par mélange",
+    dial: "1.5.0",
+    ratioTexte: "ratio 1:14, environ 180 ml en tasse",
+    totalTexte: "total environ 3:00",
+    lait: false,
+    etapes: [
+      { t: 0,   texte: "Verser 45 g d'eau à 90 °C, vanne OUVERTE." },
+      { t: 30,  texte: "Verser jusqu'à 90 g, toujours à 90 °C. Puis préparer l'eau à 70 °C : dans un verre sur la balance, 81 g d'eau à 90 °C et 39 g d'eau à température ambiante." },
+      { t: 75,  texte: "FERMER la vanne, compléter jusqu'à 210 g avec l'eau à 70 °C." },
+      { t: 105, texte: "Ouvrir, laisser s'écouler, fin vers 3:00." },
+    ],
+    pourQui: "Tous les cafés : Tetsu la présente comme la recette qui rend n'importe quel grain bon, facilement. La percolation chaude du début va chercher le sucré et les arômes, l'immersion plus froide de la fin arrondit sans tirer l'amertume. Le café sort moins chaud que d'habitude : bien préchauffer la tasse, c'est son conseil.",
+    cafesAssocies: ["Là Việt Balanced", "Cà Phê Mít Liberica (Fine Coffee Agency)", "Serie 2 Datanla (Là Việt)", "et tout café qui me déçoit ailleurs"],
+    note: "Source : Tetsu Kasuya, février 2023 (youtube.com/watch?v=gC8K40kZ_6E). Sa version : 20 g, 60 g puis 120 g à 90 °C vanne ouverte, fermer à 1:15 et compléter à 280 g à 70 °C, ouvrir à 1:45. Chiffres des résumés, pas relus dans la vidéo. Il moud gros : molette laissée à 1.5.0, passer vers 1.8.0 si l'écoulement traîne. Le 70 °C : le mélange pesé de l'étape 2, avec l'eau que je bois (bouteille ou filtrée), pas celle du robinet. Sans eau ambiante sous la main, un glaçon d'eau potable marche aussi : 106 g d'eau à 90 °C et 14 g de glace font 120 g vers 70 °C, la glace qui fond absorbe beaucoup plus qu'elle ne pèse.",
+    video: "https://www.youtube.com/watch?v=gC8K40kZ_6E",
+    parDefaut: false, avancee: false, variantes: false, actif: 1,
+  },
 ];
 
 // Anciens noms de recettes : migration automatique de l'historique.

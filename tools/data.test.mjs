@@ -671,8 +671,15 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     DATA.normaliserRecette(DATA.recetteVersLigne ? DATA.recetteVersLigne(hofV) : hofV).video === "https://exemple.org/ma-video");
   check("un lien qui n'est pas http ne s'ecrit jamais",
     DATA.normaliserRecette({ nom: "x", video: "javascript:alert(1)" }).video === "");
-  check("sept recettes d'origine ont leur video",
-    RECETTES_DEPART.filter(r => /^https:\/\/www\.youtube\.com\/watch\?v=[\w-]{11}$/.test(r.video || "")).length === 7);
+  check("huit recettes d'origine ont leur video",
+    RECETTES_DEPART.filter(r => /^https:\/\/www\.youtube\.com\/watch\?v=[\w-]{11}$/.test(r.video || "")).length === 8);
+  /* La Tetsu Devil (v8.70) : le melange pese de l'etape 2 doit donner 70 degres
+     avec l'eau ambiante de la courbe de la bouilloire, et faire le compte. */
+  const devil = RECETTES_DEPART.find(r => r.id === "devil-switch");
+  const [chaud, froid] = (devil.etapes[1].texte.match(/(\d+) g d'eau à 90 °C et (\d+) g/) || []).slice(1).map(Number);
+  const tMelange = (chaud * 90 + froid * 28) / (chaud + froid);
+  check("le melange de la Devil donne 70 degres a un degre pres", Math.abs(tMelange - 70) <= 1, String(tMelange));
+  check("et fait exactement l'eau de l'immersion", chaud + froid === devil.eau - 90, (chaud + froid) + " / " + (devil.eau - 90));
 
   /* Pas v17 : « The Tetsu Devil » devient « Tetsu 4:6 », la recette et ses
      tasses, estampillees pour que la synchro porte le nouveau nom. */
