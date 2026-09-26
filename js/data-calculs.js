@@ -15,18 +15,27 @@ const DATA_CALCULS = (() => {
     /* Le sachet en vigueur à une DATE donnée, et pas simplement le dernier acheté.
        Sans ça, une extraction du 10 août serait rattachée au sachet acheté le 20 et
        afficherait un âge négatif. */
+    /* LE SACHET AU PLACARD N'EST PAS LE SACHET EN COURS (v8.72). Le sachet était
+       choisi par date d'achat : un sachet acheté d'avance devenait « le sachet
+       courant », le stock repartait à plein et le jour du sachet disparaissait
+       alors que Chris buvait encore l'ancien. Le formulaire dit « laisse la date
+       d'ouverture vide tant qu'il dort » : un sachet ouvert à la date voulue passe
+       donc avant un sachet sans date d'ouverture, et un sachet ouvert PLUS TARD
+       n'est jamais celui d'une tasse d'avant. Sans aucun sachet ouvert, on garde
+       le dernier acheté, comme avant. */
     function sachetALaDate(cafeId, date) {
       const jour = String(date || "").slice(0, 10);
       const candidats = state.achats
         .filter(a => a.cafe_id === cafeId && (!jour || String(a.date_achat).slice(0, 10) <= jour))
-        .sort((a, b) => String(b.date_achat).localeCompare(String(a.date_achat)));
-      return candidats[0] || null;
+        .filter(a => !(jour && a.date_ouverture && String(a.date_ouverture).slice(0, 10) > jour));
+      const ouverts = candidats.filter(a => a.date_ouverture)
+        .sort((a, b) => String(b.date_ouverture).localeCompare(String(a.date_ouverture)));
+      if (ouverts.length) return ouverts[0];
+      return candidats.sort((a, b) => String(b.date_achat).localeCompare(String(a.date_achat)))[0] || null;
     }
 
     function sachetCourant(cafeId) {
-      return state.achats
-        .filter(a => a.cafe_id === cafeId)
-        .sort((a, b) => String(b.date_achat).localeCompare(String(a.date_achat)))[0] || null;
+      return sachetALaDate(cafeId, OUTILS.cleLocale(new Date()));
     }
 
     /* Stock restant du sachet en cours, en grammes.

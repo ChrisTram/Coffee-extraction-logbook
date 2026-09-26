@@ -142,6 +142,12 @@
   }
 
   function chronoPrincipal() {
+    /* Le son se débloque DANS le geste (v8.72) : sur iPhone, un contexte audio
+       créé plus tard par le minuteur reste muet. */
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+    } catch (e) { /* audio indisponible */ }
     if (chrono.etat === "arrete") {
       chrono.accumule = 0;
       chrono.passes.clear();

@@ -2638,5 +2638,45 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
       .every(f => SOURCE_DATA.includes('"' + f + '"')));
 }
 
+/* LOT 2 DE L'AUDIT (v8.72) : LES BUGS QU'ON VOIT. */
+{
+  // Le sachet au placard ne devient pas le sachet en cours.
+  const sauve = DATA.state.achats;
+  DATA.state.achats = [
+    { id: "a-ouvert", cafe_id: "cx", date_achat: "2026-09-01", date_ouverture: "2026-09-02", format_grammes: 250 },
+    { id: "a-placard", cafe_id: "cx", date_achat: "2026-09-20", date_ouverture: "", format_grammes: 250 },
+  ];
+  check("un sachet acheté d'avance, pas encore ouvert, ne remplace pas celui qu'on boit",
+    DATA.sachetCourant("cx").id === "a-ouvert", DATA.sachetCourant("cx").id);
+  DATA.state.achats[1].date_ouverture = "2026-09-25";
+  check("une fois ouvert, il devient le sachet en cours", DATA.sachetCourant("cx").id === "a-placard");
+  const calc = DATA.calculs({ cafe_id: "cx", date_heure: "2026-09-22T08:00", methode: "Switch", dose_g: 15 });
+  check("une tasse d'avant son ouverture reste rattachée à l'ancien sachet", calc.jours_ouvert === 20, String(calc.jours_ouvert));
+  DATA.state.achats = [{ id: "a-seul", cafe_id: "cx", date_achat: "2026-09-01", date_ouverture: "", format_grammes: 250 }];
+  check("sans aucun sachet ouvert, le dernier acheté reste le sachet en cours", DATA.sachetCourant("cx").id === "a-seul");
+  DATA.state.achats = sauve;
+
+  const sw = readFileSync(join(ROOT, "sw.js"), "utf8");
+  check("le service worker sert les fichiers versionnés depuis le cache d'abord", sw.includes('url.searchParams.has("v")'));
+  check("et n'attend pas le réseau plus de trois secondes pour la page", /DELAI_NAVIGATION_MS = 3000/.test(sw) && sw.includes("Promise.race"));
+  check("la coquille hors ligne passe par « ./ »", sw.includes('caches.match("./")') && sw.includes('"./",'));
+
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  const appSrc = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  const noyauSrc = readFileSync(join(ROOT, "js/ui-noyau.js"), "utf8");
+  check("tout bouton Fermer ferme sa fenetre, meme sans data-ferme", appSrc.includes('b.closest("dialog")'));
+  check("les mises a jour se signalent au lieu de demander deux rechargements",
+    noyauSrc.includes("controllerchange") && noyauSrc.includes("reg.update()") && bilingue("maj_prete"));
+  check("la barre d'etat suit la palette des le chargement", /querySelectorAll\('meta\[name="theme-color"\]'\)/.test(html.slice(0, 4000)));
+  check("le premier affichage n'attend plus la synchro", !/if \(syncPossible\(\)\) await synchroniser/.test(SOURCE_DATA));
+  check("les fichiers lies ne demandent plus la permission hors d'un geste",
+    SOURCE_DATA.includes('queryPermission({ mode: "readwrite" }) === "granted"') && SOURCE_DATA.includes("reautoriserDossier"));
+  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  check("« Nouvelle tasse » n'apparait plus en double dans le menu Plus", css.includes(".rail .rail-nouvelle"));
+  check("les regles de l'ancien en-tete sont parties", !/\.nav \{/.test(css) && !/\.nav-btn \{ padding: 8px/.test(css));
+  const brouillon = readFileSync(join(ROOT, "js/ui-brouillon.js"), "utf8");
+  check("le brouillon garde « ratée » et l'agitation", brouillon.includes('"f-ratee"') && brouillon.includes('"f-agitation-oui"'));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

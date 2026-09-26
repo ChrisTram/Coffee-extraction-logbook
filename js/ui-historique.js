@@ -94,6 +94,8 @@
   function rendreHistorique() {
     const liste = filtrerHistorique().sort((a, b) => {
       const va = valeurTri(a, tri.colonne), vb = valeurTri(b, tri.colonne);
+      // Le texte se trie avec ses accents (v8.72) : « Là Việt » ne file plus après « Z ».
+      if (typeof va === "string" && typeof vb === "string") return va.localeCompare(vb, I18N.locale()) * tri.sens;
       if (va < vb) return -tri.sens;
       if (va > vb) return tri.sens;
       return 0;

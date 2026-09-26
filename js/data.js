@@ -127,7 +127,14 @@ const DATA = (() => {
     return new Promise(resolve => {
       ecritureEnAttente = setTimeout(async () => {
         try {
-          if (!await verifierPermission(state.dirHandle)) { resolve(false); return; }
+          /* SANS DEMANDER (v8.72). La demande de permission, faite ici depuis un
+             minuteur, hors de tout geste, était refusée en silence après un
+             redémarrage : les CSV cessaient d'être écrits et le badge disait
+             toujours « lié ». Maintenant on regarde seulement ; si la permission
+             est partie, le badge dit « à réautoriser » et un toucher la redemande. */
+          const ok = await state.dirHandle.queryPermission({ mode: "readwrite" }) === "granted";
+          if (state.fichierAReautoriser !== !ok) { state.fichierAReautoriser = !ok; notifier(); }
+          if (!ok) { resolve(false); return; }
           await ecrireFichier(state.dirHandle, "cafes.csv", csvSerialiser(state.cafes, CAFE_COLS));
           await ecrireFichier(state.dirHandle, "extractions.csv", csvSerialiser(state.extractions, EXT_COLS));
           await ecrireFichier(state.dirHandle, "recettes.csv", csvRecettes());
@@ -190,6 +197,16 @@ const DATA = (() => {
     await sauverLocal();
     notifier();
     return handle.name;
+  }
+
+  // Au toucher du badge « à réautoriser » : un vrai geste, la demande passe.
+  async function reautoriserDossier() {
+    if (!state.dirHandle) return false;
+    const ok = await verifierPermission(state.dirHandle);
+    state.fichierAReautoriser = !ok;
+    if (ok) await sauverFichiers();
+    notifier();
+    return ok;
   }
 
   async function delierDossier() {
@@ -703,12 +720,9 @@ const DATA = (() => {
     migrerDonnees();
     await sauverLocal();
 
-    // Synchro AVANT de conclure qu'il n'y a pas de données : sur un appareil
-    // neuf (le téléphone), tout est encore vide en local et c'est le serveur qui
-    // détient les données. Sans cet ordre, la modale d'accueil s'ouvrirait et
-    // proposerait la démo alors que les vraies données arrivent juste après.
-    if (syncPossible()) await synchroniser(false);
-
+    /* Plus de synchro ici (v8.72) : elle bloquait le premier affichage. C'est
+       app.js qui la lance juste après le premier rendu, et qui n'ouvre l'accueil
+       que si le serveur n'a rien renvoyé non plus. */
     return state.cafes.length > 0 || state.extractions.length > 0;
   }
 
@@ -720,7 +734,7 @@ const DATA = (() => {
     csvParse, csvSerialiser, csvRecettes, CAFE_COLS, EXT_COLS, RECETTE_COLS, ACHAT_COLS,
     sachetCourant, stockSachet, ajouterAchat, supprimerAchat,
     calculs, cafeDe,
-    lierDossier, delierDossier, sauverFichiers,
+    lierDossier, delierDossier, reautoriserDossier, sauverFichiers,
     importerTexteCSV, analyserImport, exporterTout, exporterCafes, exporterExtractions, exporterRecettes,
     chargerDemo, viderDonnees,
     ajouterExtraction, modifierExtraction, supprimerExtraction, restaurerExtraction,

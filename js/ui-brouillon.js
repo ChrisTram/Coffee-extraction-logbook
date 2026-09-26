@@ -36,7 +36,8 @@
     "f-commentaire", "f-total-min", "f-total-sec", "f-ecoulement-min", "f-ecoulement-sec",
     "f-puissance",
   ];
-  const CASES_BROUILLON = ["f-prechauffe", "f-ajout-eau-oui"];
+  // « ratée » et l'agitation étaient oubliées à la reprise (v8.72).
+  const CASES_BROUILLON = ["f-prechauffe", "f-ajout-eau-oui", "f-ratee", "f-agitation-oui"];
   let brouillonMinuteur = null;
 
   function ecrireBrouillon() {

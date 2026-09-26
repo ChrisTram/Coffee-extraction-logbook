@@ -819,7 +819,6 @@ button { font-family: inherit; }
   transition: background var(--transition), color var(--transition);
 }
 
-.nav { display: flex; gap: 4px; flex: 1; justify-content: center; flex-wrap: wrap; }
 
 .nav-btn:hover { color: var(--encre); background: var(--panneau-2); }
 /* Un état sélectionné ne change QUE des couleurs : voir le commentaire sur
@@ -929,8 +928,10 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
     background: var(--lignes);
   }
   /* Ce que la barre du bas porte deja n'a pas a figurer deux fois. */
+  /* .rail .rail-nouvelle et non .rail-nouvelle (v8.72) : .btn, déclaré plus bas
+     avec le même poids, remettait « Nouvelle tasse » en double dans le menu. */
   .rail-marque,
-  .rail-nouvelle,
+  .rail .rail-nouvelle,
   .rail-entree[data-ecran="tableau"],
   .rail-entree[data-ecran="saisie"],
   .rail-entree[data-ecran="historique"] { display: none; }
@@ -2676,9 +2677,11 @@ input[type="range"]::-moz-range-thumb {
   gap: 8px;
   flex-wrap: wrap;
   position: sticky;
-  top: 62px;
+  /* Collé en haut (v8.72) : 62 et 108 px dataient de l'ancien en-tête, disparu. */
+  top: calc(env(safe-area-inset-top, 0px) + 8px);
   z-index: var(--z-sommaire);
-  background: none;
+  background: color-mix(in srgb, var(--fond) 82%, transparent);
+  border-radius: var(--rayon-petit);
   backdrop-filter: blur(8px);
   padding: 0;
   margin-bottom: 22px;
@@ -3474,8 +3477,6 @@ input[type="range"]::-moz-range-thumb {
 /* ---------- Responsive ---------- */
 
 @media (max-width: 860px) {
-  .nav { order: 3; width: 100%; justify-content: space-between; }
-  .nav-btn { padding: 8px 10px; font-size: 0.85rem; flex: 1; text-align: center; }
   main { padding: 16px 12px 70px; }
   .kpi-valeur { font-size: 1.4rem; }
   .chrono-valeur { font-size: 1.6rem; }
@@ -3483,7 +3484,6 @@ input[type="range"]::-moz-range-thumb {
      dézoomer à la main pour retrouver le formulaire. 16 px est le seuil. */
   input[type="text"], input[type="number"], input[type="date"], input[type="datetime-local"],
   input[type="search"], select, textarea { font-size: 1rem; }
-  .sommaire { top: 108px; }
   .modale { padding: 20px 16px; }
   .duel { flex-direction: column; }
 }
@@ -3504,7 +3504,6 @@ input[type="range"]::-moz-range-thumb {
   .btn-icone { padding: 6px 7px; }
   .grille-recettes { grid-template-columns: 1fr; }
   .btn-methode { padding: 14px 8px; }
-  .nav-btn { padding: 8px 6px; font-size: 0.78rem; }
 }
 
 /* ---------- Mouvement, lisibilité, rendu différé ---------- */

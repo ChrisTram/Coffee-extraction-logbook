@@ -830,9 +830,12 @@ recharger après avoir supprimé le site dans les réglages du navigateur).
 En dernier recours, Time Travel de D1 restaure toute la base :
 `npx wrangler d1 time-travel restore coffee-extraction-logbook --timestamp=...`.
 
-`init()` synchronise AVANT de conclure qu'il n'y a pas de données : sur un
-téléphone neuf tout est vide en local et c'est le serveur qui détient tout.
-Sans cet ordre, la modale d'accueil proposerait la démo.
+`init()` ne synchronise plus (v8.72) : il chargeait les données locales puis
+attendait la synchro avant le premier affichage, jusqu'à 15 s d'écran vide en
+réseau faible. `demarrer()` (app.js) affiche d'abord les données locales, lance
+la synchro, et n'ouvre la modale d'accueil que si, APRÈS la synchro, il n'y a
+toujours rien : un téléphone neuf reçoit ses données avant qu'on lui propose la
+démo.
 
 `/api/sync` répond 401 en JSON, jamais une redirection, pour que le client ne
 parse pas la page de connexion comme des données. Tests :

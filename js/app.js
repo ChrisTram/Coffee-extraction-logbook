@@ -20,7 +20,8 @@
     $("#badge-demo").hidden = !DATA.state.demoActive;
     const lie = !!DATA.state.dirHandle;
     $("#badge-fichier").hidden = !lie;
-    if (lie) $("#badge-fichier-nom").textContent = DATA.state.dirHandle.name;
+    // « À réautoriser » quand le navigateur a repris la permission (v8.72) ; toucher le badge la redemande.
+    if (lie) $("#badge-fichier-nom").textContent = DATA.state.fichierAReautoriser ? I18N.t("f_reautoriser") : DATA.state.dirHandle.name;
   }
 
   function majStatutDonnees() {
@@ -128,10 +129,7 @@
       });
     }
     $$("[data-va]").forEach(b => b.addEventListener("click", () => activerEcran(b.dataset.va)));
-    /* Le calendrier compte ses semaines depuis la largeur de sa carte : il doit
-       donc se refaire quand la fenetre change de taille, sinon il garde le
-       compte de l ouverture et laisse un vide ou deborde. Anti rebond, parce
-       qu un redimensionnement tire des dizaines d evenements. */
+    // Le calendrier compte ses semaines sur la largeur de sa carte : il se refait au redimensionnement (anti rebond).
     window.addEventListener("resize", antiRebond(() => {
       if (nav.ecran === "tableau") UI.rendreTableau();
     }, 200));
@@ -164,12 +162,8 @@
     $("#btn-lang").addEventListener("click", () => I18N.basculer());
     I18N.abonner(rafraichirLangue);
 
-    /* CHAQUE ÉCRAN CÂBLE SES PROPRES CONTRÔLES. Cette fonction faisait 401
-       lignes et posait 95 écouteurs sur des champs qu'elle ne connaissait que
-       par leur identifiant ; chaque bouton nouveau l'allongeait, et un écran
-       dépendait d'un fichier tiers pour réagir à ses propres clics. Il ne reste
-       ici que ce qui n'appartient à aucun écran : la navigation, le thème, la
-       langue, les modales d'accueil et de données, et les réflexes globaux. */
+    /* Chaque écran câble ses propres contrôles ; il ne reste ici que ce qui
+       n'appartient à aucun écran (navigation, thème, langue, modales, réflexes). */
     UI.cablerTableau();
     UI.cablerSaisie();
     UI.cablerRapide();
@@ -180,13 +174,7 @@
     UI.cablerBrassage();
     UI.cablerDessins();
 
-    /* REPRISE QUAND LE RÉSEAU REVIENT. Une synchro ratée attendait le prochain
-       geste de Chris : en cuisine, il enregistre sa tasse, range son téléphone, et
-       la synchro ne repartait qu'à l'ouverture suivante. Le navigateur sait dire
-       quand la connexion revient, autant l'écouter.
-
-       DATA.synchroniser gère déjà le cas où une synchro est en cours, il n'y a pas
-       de course à craindre. */
+    // Reprise quand le réseau revient (DATA.synchroniser gère une synchro déjà en cours).
     window.addEventListener("online", () => {
       if (DATA.syncPossible()) DATA.synchroniser(false);
     });
@@ -224,15 +212,19 @@
     });
 
     // Modales génériques
-    $$(".modale-fermer[data-ferme]").forEach(b => b.addEventListener("click", () => $("#" + b.dataset.ferme).close()));
+    // Le badge du dossier lié redemande la permission quand elle est partie (v8.72).
+    $("#badge-fichier").addEventListener("click", async () => {
+      if (!DATA.state.fichierAReautoriser) return;
+      toast(I18N.t(await DATA.reautoriserDossier() ? "f_reautorise" : "f_refuse"));
+      majBadges();
+    });
+    // Tout bouton Fermer ferme sa fenêtre, même sans data-ferme (v8.72) : celui de la comparaison ne faisait rien.
+    $$(".modale-fermer").forEach(b => b.addEventListener("click", () => (b.dataset.ferme ? $("#" + b.dataset.ferme) : b.closest("dialog")).close()));
 
     // Accueil
     $("#acc-creer").addEventListener("click", () => actionLier(true));
     $("#acc-ouvrir").addEventListener("click", () => actionLier(false));
-    /* TROIS boutons chargent la demonstration : celui de l'accueil, celui du
-       panneau Donnees, et celui de l'etat vide du tableau de bord. Ce dernier ne
-       faisait rien depuis la v7.3, il portait un identifiant que personne
-       n'ecoutait. Une seule fonction pour les trois, maintenant. */
+    // Trois boutons chargent la démonstration (accueil, panneau Données, tableau de bord vide) : une seule fonction.
     const chargerLaDemo = async () => {
       await DATA.chargerDemo();
       $("#modale-accueil").close();
@@ -368,12 +360,8 @@
 
   // ---------- Démarrage ----------
 
-  /* Version affichée dans le pied de page. Elle vit dans index.html, balise
-     <meta name="app-version">, et se pose avec `node tools/bump_version.mjs X`
-     en même temps que la ligne de changelog. Sert à savoir d'un coup d'oeil
-     quelle version tourne sur un appareil donné, ce qui devient indispensable
-     depuis qu'un service worker met des fichiers en cache : sans elle, "mon
-     téléphone affiche l'ancienne version" n'est pas diagnosticable. */
+  /* Version du pied de page, lue dans <meta name="app-version"> (posée par
+     tools/bump_version.mjs) : dit quelle version tourne sur un appareil donné. */
   const VERSION = OUTILS.versionSite() || "dev";
 
   async function demarrer() {
@@ -390,7 +378,9 @@
     cabler();
     UI.rendreTablePlages();
 
-    const aDesDonnees = await DATA.init();
+    // Un stockage qui ne s'ouvre pas ne bloque plus l'écran de chargement (v8.72) : le carnet part en mémoire.
+    let aDesDonnees = false;
+    try { aDesDonnees = await DATA.init(); } catch (e) { console.error(e); toast(I18N.t("t_stockage_ko")); }
     majBadges();
     UI.remplirSelectCafes();
     UI.remplirFiltres();
@@ -422,20 +412,22 @@
       if (document.visibilityState === "visible") UI.syncWakeLock();
     });
 
-    // Service worker : uniquement en http(s). En file:// l'enregistrement lève
-    // une exception, et c'est très bien : le double clic n'a pas besoin de lui.
-    if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
-      navigator.serviceWorker.register("sw.js").catch(() => { /* pas critique */ });
-    }
+    // Service worker, et le message quand une nouvelle version est prête.
+    UI.surveillerMisesAJour();
 
-    if (!aDesDonnees) {
+    /* Données locales d'abord, synchro ensuite (v8.72) : l'accueil et sa démo
+       n'apparaissent que si, après la synchro, il n'y a toujours rien. */
+    const accueilSiVide = () => {
+      if (DATA.state.cafes.length || DATA.state.extractions.length) return;
       if (!DATA.state.fsDisponible) {
         $("#acc-note-fs").hidden = false;
         $("#acc-creer").disabled = true;
         $("#acc-ouvrir").disabled = true;
       }
       $("#modale-accueil").showModal();
-    }
+    };
+    if (DATA.syncPossible()) DATA.synchroniser(false).then(accueilSiVide);
+    else if (!aDesDonnees) accueilSiVide();
   }
 
   document.addEventListener("DOMContentLoaded", demarrer);

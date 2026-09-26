@@ -25,7 +25,7 @@
  *    la deconnexion cessent de fonctionner.
  */
 
-const VERSION = "8.71";
+const VERSION = "8.72";
 const CACHE_NAME = "carnet-extraction";
 
 const versionnee = url => url + "?v=" + VERSION;
@@ -89,6 +89,7 @@ const PRECACHE_URLS = [
 ].map(versionnee));
 
 const NEVER_CACHED = ["/login", "/logout"];
+const DELAI_NAVIGATION_MS = 3000;
 
 const isCacheable = response => response && response.ok && !response.redirected && response.type !== "opaque";
 
@@ -140,10 +141,34 @@ self.addEventListener("fetch", event => {
   if (url.origin !== self.location.origin) return;
   if (NEVER_CACHED.includes(url.pathname)) return;
 
+  /* FICHIERS VERSIONNÉS (?v=) : CACHE D'ABORD (v8.72). Ils sont immuables par
+     contrat (même URL, même contenu), inutile d'attendre le réseau pour eux, ni
+     de les réécrire dans le cache à chaque ouverture. */
+  if (url.searchParams.has("v")) {
+    event.respondWith(
+      (async () => {
+        const enCache = await caches.match(request);
+        if (enCache) return enCache;
+        const response = await fetch(request);
+        if (isCacheable(response)) (await caches.open(CACHE_NAME)).put(request, response.clone());
+        return response;
+      })()
+    );
+    return;
+  }
+
   event.respondWith(
     (async () => {
       try {
-        const response = await fetch(request);
+        /* NAVIGATION : TROIS SECONDES AU PLUS (v8.72). En réseau faible, la page
+           attendait le réseau sans limite avant de retomber sur le cache, et le
+           voile de chargement restait des dizaines de secondes. */
+        const response = request.mode === "navigate"
+          ? await Promise.race([
+            fetch(request),
+            new Promise((_, rejeter) => setTimeout(() => rejeter(new Error("lent")), DELAI_NAVIGATION_MS)),
+          ])
+          : await fetch(request);
         // Une redirection vers /login veut dire session expiree : on la laisse
         // passer telle quelle pour que l'utilisateur se reconnecte, et on ne
         // met surtout rien en cache.
@@ -162,7 +187,9 @@ self.addEventListener("fetch", event => {
         // Navigation hors ligne sans correspondance exacte : on retombe sur la
         // coquille de l'application, tout le reste vit en local de toute facon.
         if (request.mode === "navigate") {
-          const coquille = await caches.match("./index.html");
+          // "./" d'abord : Cloudflare redirige /index.html vers /, et une
+          // réponse redirigée n'est jamais mise en cache.
+          const coquille = (await caches.match("./")) || (await caches.match("./index.html"));
           if (coquille) return coquille;
         }
         throw error;

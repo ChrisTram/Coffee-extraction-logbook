@@ -164,7 +164,29 @@ const UI = (() => {
     };
   }
 
-  function toastAction(message, libelle, action) {
+  /* LES MISES À JOUR SE SIGNALENT (v8.72). Il fallait « recharger deux fois » :
+     la PWA installée reprend depuis la mémoire au lieu de recharger, et rien ne
+     surveillait les nouvelles versions. Au retour sur l'appli on demande au
+     service worker de vérifier, et quand un nouveau prend la main, un message
+     propose de recharger, une seule fois, et seulement s'il y avait déjà une
+     version (pas à la toute première installation). */
+  function surveillerMisesAJour() {
+    if (!("serviceWorker" in navigator) || !location.protocol.startsWith("http")) return;
+    const avaitVersion = !!navigator.serviceWorker.controller;
+    let proposee = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!avaitVersion || proposee) return;
+      proposee = true;
+      toastAction(I18N.t("maj_prete"), I18N.t("maj_recharger"), () => location.reload(), true);
+    });
+    navigator.serviceWorker.register("sw.js").then(reg => {
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") reg.update().catch(() => { /* hors ligne */ });
+      });
+    }).catch(() => { /* pas critique */ });
+  }
+
+  function toastAction(message, libelle, action, persistant) {
     const t = $("#toast");
     t.innerHTML = "";
     t.appendChild(document.createTextNode(message + " "));
@@ -180,6 +202,7 @@ const UI = (() => {
     t.appendChild(b);
     t.removeAttribute("hidden");
     clearTimeout(toast._h);
+    if (persistant) return;
     toast._h = setTimeout(() => {
       t.setAttribute("hidden", "");
       t.textContent = "";
@@ -682,6 +705,6 @@ const UI = (() => {
     maintenantLocal, marquerNote, brancherDictee, brancherNote, noteVide, peindreCurseur, moyenne, nav, normaliserEcran, oublierSignatures, poser, poserTexte,
     recetteAvecVariantes, recettesDeMethode, recettesVivantes, rendreEcranCourant, replis,
     reprendreReplisLocaux, siChange, signatureTable, signatures,
-    supprimerExtractionAvecRetour, toast, toastAction, trouverRecette, unSeulALaFois,
+    supprimerExtractionAvecRetour, toast, toastAction, trouverRecette, unSeulALaFois, surveillerMisesAJour,
   };
 })();
