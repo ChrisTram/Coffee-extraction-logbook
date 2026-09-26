@@ -1,4 +1,4 @@
-import worker from "./index.js";
+import worker, { EMPREINTE_SCRIPT_THEME, POLITIQUE_SECURITE } from "./index.js";
 
 const env = {
   AUTH_USERNAME: "Chris",
@@ -185,6 +185,38 @@ check("session expiree rejetee", expired.status === 302, `status ${expired.statu
   const assetsignore = readFileSync(join(root, ".assetsignore"), "utf8");
   check("le cache wrangler est ignore par git", /^\.wrangler\/?$/m.test(gitignore));
   check("le cache wrangler n'est pas televerse comme asset", /^\.wrangler\/?$/m.test(assetsignore));
+}
+
+// v8.73 : politique de securite, en-tetes, limite d'essais de connexion.
+{
+  const { readFileSync } = await import("node:fs");
+  const { createHash } = await import("node:crypto");
+  const { dirname, join } = await import("node:path");
+  const { fileURLToPath } = await import("node:url");
+  const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+  const index = readFileSync(join(root, "index.html"), "utf8");
+  const debut = index.indexOf("<script>") + 8, finScript = index.indexOf("</script>", debut);
+  const empreinte = "sha256-" + createHash("sha256").update(index.slice(debut, finScript), "utf8").digest("base64");
+  check("l'empreinte du script du theme correspond a index.html (sinon il serait bloque)",
+    empreinte === EMPREINTE_SCRIPT_THEME, empreinte + " contre " + EMPREINTE_SCRIPT_THEME);
+  check("un seul script en ligne dans index.html", (index.match(/<script>/g) || []).length === 1);
+  check("aucun script en ligne n'est autorise en dehors de celui-la", !POLITIQUE_SECURITE.includes("'unsafe-inline'; ") || !/script-src[^;]*unsafe-inline/.test(POLITIQUE_SECURITE));
+  check("le lecteur des videos est autorise", /frame-src https:\/\/www\.youtube-nocookie\.com/.test(POLITIQUE_SECURITE));
+  check("personne ne peut encadrer le carnet", POLITIQUE_SECURITE.includes("frame-ancestors 'none'"));
+
+  const bon = await post("/login", { username: "Chris", password: "correct-horse", next: "/" });
+  const cookie = (bon.headers.get("Set-Cookie") || "").split(";")[0];
+  const pageSite = await call("/", { headers: { Cookie: cookie } });
+  check("la page du site porte la politique de securite", (pageSite.headers.get("Content-Security-Policy") || "") === POLITIQUE_SECURITE);
+  check("et nosniff", pageSite.headers.get("X-Content-Type-Options") === "nosniff");
+
+  let essais = 0;
+  const envLimite = { ...env, LOGIN_LIMITER: { limit: async () => ({ success: ++essais <= 2 }) } };
+  const essai = () => worker.fetch(new Request("https://site.test/login", { method: "POST", body: new URLSearchParams({ username: "Chris", password: "faux" }) }), envLimite);
+  await essai(); await essai();
+  const bloque = await essai();
+  check("au-dela de la limite, la connexion repond 429", bloque.status === 429, String(bloque.status));
+  check("avec un message lisible", (await bloque.text()).includes("Trop d'essais"));
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);

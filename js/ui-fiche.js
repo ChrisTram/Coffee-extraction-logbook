@@ -30,8 +30,7 @@
   // Le café d'en face dans « Comparer avec… » (v8.56), remis à zéro à chaque fiche.
   let compareId = "";
 
-  const echap = s => String(s === undefined || s === null ? "" : s)
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+  const echap = OUTILS.echap;
   const note1 = n => fmtDecimal(n, 1);
 
   function dateLocale(s) {

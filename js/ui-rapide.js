@@ -32,7 +32,7 @@
     const v = selCafe.value;
     const cafes = UI.cafesSelectionnables();
     selCafe.innerHTML = '<option value="">' + I18N.t("choisir_cafe") + "</option>" +
-      cafes.map(c => '<option value="' + c.id + '">' + c.nom + "</option>").join("");
+      cafes.map(c => '<option value="' + OUTILS.echap(c.id) + '">' + OUTILS.echap(c.nom) + "</option>").join("");
     if (v && cafes.some(c => c.id === v)) selCafe.value = v;
     /* Même défaut que le formulaire complet : le panneau rapide REFUSE
        d'enregistrer sans café, donc l'ouvrir sur un champ vide garantissait un

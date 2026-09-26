@@ -26,8 +26,7 @@
 
   const { $, activerEcran, extAnalysables, fmtDecimal, moyenne, nav, replis } = UI;
 
-  const echap = s => String(s === undefined || s === null ? "" : s)
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+  const echap = OUTILS.echap;
   const note1 = n => fmtDecimal(n, 1);
   // La teinte d'une note, en opacité de l'accent : 5 pâle, 8,5 plein, comme la roue.
   const opacite = n => Math.max(0.18, Math.min(1, 0.18 + ((n - 5) / 3.5) * 0.82)).toFixed(2);

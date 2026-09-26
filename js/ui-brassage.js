@@ -25,7 +25,7 @@
   let minuteur = null;
   // Vrai entre l'arrêt depuis ce mode et la fermeture : la tasse est faite, on la note.
   let finVisible = false;
-  const echap = t => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  const echap = OUTILS.echap;
 
   function unite() {
     try { return localStorage.getItem(CLE_UNITE) === "g" ? "g" : "ml"; } catch (e) { return "ml"; }

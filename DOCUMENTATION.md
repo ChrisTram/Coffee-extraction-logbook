@@ -1136,6 +1136,8 @@ fichiers d'interface (v7.60) et six de données (v7.87).
 
 ### La porte d'entrée (worker/index.js)
 
+**Sécurité de l'appli (v8.73).** Toute page HTML servie porte une politique de sécurité (`POLITIQUE_SECURITE`, worker/index.js) : scripts du site seulement, plus le script du thème d'index.html autorisé par son empreinte (`EMPREINTE_SCRIPT_THEME`). Modifier ce script oblige à mettre l'empreinte à jour : `worker/index.test.mjs` la recalcule et échoue sinon. Le lecteur YouTube des recettes est autorisé en `frame-src`, et `frame-ancestors 'none'` interdit d'encadrer le carnet. Côté données, les normaliseurs remplacent `<` et `>` par ‹ › dans tous les champs texte et ne gardent que des caractères sûrs dans les identifiants ; l'échappement commun est `OUTILS.echap`. La connexion est limitée par le binding `LOGIN_LIMITER` (10 essais par minute et par adresse, wrangler.jsonc).
+
 Le site déployé est privé : un seul compte, pas d'inscription, pas de
 réinitialisation de mot de passe, pas de base d'utilisateurs.
 

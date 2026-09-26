@@ -94,7 +94,7 @@
      (pas de cookie tant qu'on ne lance rien, et pas de son surprise à
      l'ouverture du Guide). Tout autre lien reste un lien. */
   const idYoutube = url => (String(url || "").match(/(?:youtu\.be\/|[?&]v=|\/embed\/|\/shorts\/)([\w-]{11})/) || [])[1] || "";
-  const attr = s => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  const attr = OUTILS.echap;
   function blocVideo(r) {
     if (!r.video) return "";
     const id = idYoutube(r.video);

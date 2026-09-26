@@ -29,6 +29,12 @@
     }
   ],
 
+  // LIMITE D'ESSAIS DE CONNEXION (v8.73) : dix par minute et par adresse.
+  // Lue par submitLogin dans worker/index.js (env.LOGIN_LIMITER).
+  "ratelimits": [
+    { "name": "LOGIN_LIMITER", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } }
+  ],
+
   // SAUVEGARDE QUOTIDIENNE du document de synchro (v8.71) : 20:00 UTC, soit
   // 3 heures du matin au Vietnam. Voir sauvegarderDocument dans worker/sync.js.
   "triggers": {

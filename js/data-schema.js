@@ -59,6 +59,17 @@ const DATA_SCHEMA = (() => {
     return row;
   }
 
+  /* AUCUNE BALISE NE PEUT ENTRER (v8.73). Les textes saisis (noms, commentaires,
+     recettes) s'affichent en HTML à des dizaines d'endroits : un nom piégé
+     arrivé par un CSV ou la synchro (« <img onerror=…> ») aurait exécuté du code
+     sur le site, avec accès au carnet. Les chevrons sont remplacés à l'entrée
+     par leurs cousins typographiques ‹ ›, qui se lisent pareil et ne forment
+     jamais de balise. Deuxième verrou : la politique de sécurité du Worker
+     interdit tout script en ligne. Les identifiants, eux, ne gardent que des
+     caractères sûrs. */
+  const texte = v => String(v === undefined || v === null ? "" : v).replace(/</g, "‹").replace(/>/g, "›");
+  const idSur = v => String(v === undefined || v === null ? "" : v).trim().replace(/[^\w\-.@]/g, "");
+
   // Un nombre, ou vide quand la valeur manque : jamais 0 par défaut (v8.71).
   // Un CSV sans colonne note donnait des notes de 0/10.
   const nombreOuVide = v => (v === "" || v === undefined || v === null ? "" : Number(v));
@@ -90,25 +101,25 @@ const DATA_SCHEMA = (() => {
 
   function normaliserCafe(r) {
     return {
-      id: String(r.id || "").trim(),
+      id: idSur(r.id),
       // Horodatage de synchronisation. PRÉSERVÉ tel quel ici : normaliser est
       // appelé au chargement comme à l'écriture, et restamper au chargement
       // ferait croire à chaque appareil qu'il est le plus récent. Ce sont les
       // mutations qui estampillent, explicitement. Jamais dans les CSV : les
       // colonnes exportées sont listées à la main (voir csvSerialiser).
       maj_le: Number(r.maj_le) || 0,
-      nom: r.nom || "", torrefacteur: r.torrefacteur || "", origine: r.origine || "",
-      espece: r.espece || "", procede: r.procede || "", torrefaction: r.torrefaction || "",
+      nom: texte(r.nom), torrefacteur: texte(r.torrefacteur), origine: texte(r.origine),
+      espece: texte(r.espece), procede: texte(r.procede), torrefaction: texte(r.torrefaction),
       deja_moulu: Number(r.deja_moulu) === 1 ? 1 : 0,
       pourcentage_cafe_reel: r.pourcentage_cafe_reel === "" || r.pourcentage_cafe_reel === undefined
         ? 100 : Math.max(1, Math.min(100, Number(r.pourcentage_cafe_reel) || 100)),
-      tag: r.tag || "",
-      notes_annoncees: r.notes_annoncees || "",
+      tag: texte(r.tag),
+      notes_annoncees: texte(r.notes_annoncees),
       format_grammes: r.format_grammes === "" || r.format_grammes === undefined ? "" : Number(r.format_grammes),
       prix_vnd: r.prix_vnd === "" || r.prix_vnd === undefined ? "" : Number(r.prix_vnd),
       date_torrefaction: r.date_torrefaction || "",
-      machine_recommandee: r.machine_recommandee || "",
-      recette_recommandee: r.recette_recommandee || "",
+      machine_recommandee: texte(r.machine_recommandee),
+      recette_recommandee: texte(r.recette_recommandee),
       date_ajout: r.date_ajout || "",
       actif: Number(r.actif) === 0 ? 0 : 1,
     };
@@ -122,7 +133,7 @@ const DATA_SCHEMA = (() => {
 
   function normaliserExtraction(r) {
     return {
-      id: String(r.id || "").trim(),
+      id: idSur(r.id),
       // Horodatage de synchronisation. PRÉSERVÉ tel quel ici : normaliser est
       // appelé au chargement comme à l'écriture, et restamper au chargement
       // ferait croire à chaque appareil qu'il est le plus récent. Ce sont les
@@ -131,11 +142,11 @@ const DATA_SCHEMA = (() => {
       maj_le: Number(r.maj_le) || 0,
       date_heure: r.date_heure || "",
       cafe_id: r.cafe_id || "",
-      methode: r.methode || "",
-      recette: r.recette || "",
+      methode: texte(r.methode),
+      recette: texte(r.recette),
       dose_g: nombreOuVide(r.dose_g),
       eau_g: nombreOuVide(r.eau_g),
-      mouture_dial: r.mouture_dial || "",
+      mouture_dial: texte(r.mouture_dial),
       temperature_c: nombreOuVide(r.temperature_c),
       temps_total_s: nombreOuVide(r.temps_total_s),
       temps_ecoulement_s: nombreOuVide(r.temps_ecoulement_s),
@@ -147,16 +158,16 @@ const DATA_SCHEMA = (() => {
       eau_ajoutee_ml: r.eau_ajoutee_ml === "" || r.eau_ajoutee_ml === undefined ? "" : Number(r.eau_ajoutee_ml),
       lait_ml: r.lait_ml === "" || r.lait_ml === undefined ? "" : Number(r.lait_ml),
       agitation_nb: r.agitation_nb === "" || r.agitation_nb === undefined ? "" : Number(r.agitation_nb),
-      tasse: r.tasse || "",
+      tasse: texte(r.tasse),
       eau_prechauffee: Number(r.eau_prechauffee) === 1 ? 1 : "",
       // Puissance de feu, echelle personnelle de 1 a 10. Bornee et arrondie :
       // une valeur hors plage editee au tableur est ramenee dedans, pas jetee.
       puissance_feu: r.puissance_feu === "" || r.puissance_feu === undefined || r.puissance_feu === null
         ? "" : Math.max(1, Math.min(10, Math.round(Number(r.puissance_feu)) || 1)),
       note_sur_10: nombreOuVide(r.note_sur_10),
-      diagnostic: r.diagnostic || "",
-      descripteurs: r.descripteurs || "",
-      commentaire: r.commentaire || "",
+      diagnostic: texte(r.diagnostic),
+      descripteurs: texte(r.descripteurs),
+      commentaire: texte(r.commentaire),
       /* Ratée : 1 ou vide. Vide veut dire "pas dit", pas "réussie", et c'est la
          valeur de toutes les tasses antérieures au drapeau. Aucune migration
          n'est nécessaire pour autant : une colonne absente d'un vieux CSV relit
@@ -237,20 +248,20 @@ const DATA_SCHEMA = (() => {
 
   function normaliserRecette(r) {
     return {
-      id: String(r.id || "").trim(),
+      id: idSur(r.id),
       // Horodatage de synchronisation. PRÉSERVÉ tel quel ici : normaliser est
       // appelé au chargement comme à l'écriture, et restamper au chargement
       // ferait croire à chaque appareil qu'il est le plus récent. Ce sont les
       // mutations qui estampillent, explicitement. Jamais dans les CSV : les
       // colonnes exportées sont listées à la main (voir csvSerialiser).
       maj_le: Number(r.maj_le) || 0,
-      nom: r.nom || "",
-      numero: r.numero || "",
+      nom: texte(r.nom),
+      numero: texte(r.numero),
       methode: r.methode === "Switch" ? "Switch" : "Brikka",
-      famille: r.famille || "",
-      variante: r.variante || "",
+      famille: texte(r.famille),
+      variante: texte(r.variante),
       lait: r.lait !== undefined && r.lait !== "" ? (Number(r.lait) === 1 || r.lait === true) : false,
-      sousTitre: r.sous_titre !== undefined ? r.sous_titre : (r.sousTitre || ""),
+      sousTitre: texte(r.sous_titre !== undefined ? r.sous_titre : r.sousTitre),
       dose: Number(r.dose_g !== undefined ? r.dose_g : r.dose) || 0,
       eau: Number(r.eau_g !== undefined ? r.eau_g : r.eau) || 0,
       // "" veut dire AUCUNE cible, ce qui n'est pas la même chose que 0 degré.
@@ -272,16 +283,16 @@ const DATA_SCHEMA = (() => {
         const v = r.volume_typique !== undefined ? r.volume_typique : r.volumeTypique;
         return v === "" || v === null || v === undefined ? "" : (Number(v) || "");
       })(),
-      tempTexte: r.temp_texte !== undefined ? r.temp_texte : (r.tempTexte || ""),
-      dial: r.mouture_dial !== undefined ? r.mouture_dial : (r.dial || ""),
-      ratioTexte: r.ratio_texte !== undefined ? r.ratio_texte : (r.ratioTexte || ""),
-      totalTexte: r.total_texte !== undefined ? r.total_texte : (r.totalTexte || ""),
-      etapes: Array.isArray(r.etapes) ? r.etapes
-        : texteVersEtapes(String(r.etapes || "").split("||").join("\n")),
-      pourQui: r.pour_qui !== undefined ? r.pour_qui : (r.pourQui || ""),
-      cafesAssocies: Array.isArray(r.cafesAssocies) ? r.cafesAssocies
-        : String(r.cafes_associes || "").split(";").map(s => s.trim()).filter(Boolean),
-      note: r.note || "",
+      tempTexte: texte(r.temp_texte !== undefined ? r.temp_texte : r.tempTexte),
+      dial: texte(r.mouture_dial !== undefined ? r.mouture_dial : r.dial),
+      ratioTexte: texte(r.ratio_texte !== undefined ? r.ratio_texte : r.ratioTexte),
+      totalTexte: texte(r.total_texte !== undefined ? r.total_texte : r.totalTexte),
+      etapes: (Array.isArray(r.etapes) ? r.etapes
+        : texteVersEtapes(String(r.etapes || "").split("||").join("\n"))).map(e => ({ ...e, texte: texte(e.texte) })),
+      pourQui: texte(r.pour_qui !== undefined ? r.pour_qui : r.pourQui),
+      cafesAssocies: (Array.isArray(r.cafesAssocies) ? r.cafesAssocies
+        : String(r.cafes_associes || "").split(";").map(s => s.trim()).filter(Boolean)).map(texte),
+      note: texte(r.note),
       /* La vidéo de la recette (v8.64) : un lien, YouTube ou autre. Le Guide
          intègre le lecteur quand c'est YouTube, sinon il donne le lien. Seuls
          http et https passent : un lien « javascript: » ne s'écrit jamais. */
@@ -330,7 +341,7 @@ const DATA_SCHEMA = (() => {
 
   function normaliserAchat(r) {
     return {
-      id: String(r.id || "").trim(),
+      id: idSur(r.id),
       maj_le: Number(r.maj_le) || 0,
       cafe_id: r.cafe_id || "",
       date_achat: r.date_achat || "",
@@ -345,14 +356,14 @@ const DATA_SCHEMA = (() => {
 
   function normaliserTasse(r) {
     return {
-      id: String(r.id || "").trim(),
+      id: idSur(r.id),
       // Horodatage de synchronisation. PRÉSERVÉ tel quel ici : normaliser est
       // appelé au chargement comme à l'écriture, et restamper au chargement
       // ferait croire à chaque appareil qu'il est le plus récent. Ce sont les
       // mutations qui estampillent, explicitement. Jamais dans les CSV : les
       // colonnes exportées sont listées à la main (voir csvSerialiser).
       maj_le: Number(r.maj_le) || 0,
-      nom: r.nom || "",
+      nom: texte(r.nom),
       contenance_ml: Number(r.contenance_ml) || 0,
     };
   }

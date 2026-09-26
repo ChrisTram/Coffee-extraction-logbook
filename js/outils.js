@@ -56,5 +56,14 @@ const OUTILS = (() => {
     return v ? chemin + "?v=" + encodeURIComponent(v) : chemin;
   }
 
-  return { moyenne, cleLocale, versionSite, urlVersionnee };
+  /* UN SEUL ÉCHAPPEMENT (v8.73). Il en existait six copies inégales (celle du
+     mode Brassage n'échappait pas les guillemets). Pour tout texte qui entre
+     dans du HTML, contenu comme attribut. */
+  function echap(s) {
+    return String(s === undefined || s === null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
+  return { moyenne, cleLocale, versionSite, urlVersionnee, echap };
 })();

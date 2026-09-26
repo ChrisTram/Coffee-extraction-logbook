@@ -69,8 +69,8 @@
     const valeur = garderId || sel.value;
     const inactifGarde = DATA.state.cafes.find(c => c.id === valeur && c.actif === 0);
     sel.innerHTML = '<option value="">' + I18N.t("choisir_cafe") + "</option>" +
-      cafesSelectionnables().map(c => '<option value="' + c.id + '">' + c.nom + "</option>").join("") +
-      (inactifGarde ? '<option value="' + inactifGarde.id + '">' + inactifGarde.nom + " " + I18N.t("inactif") + "</option>" : "");
+      cafesSelectionnables().map(c => '<option value="' + attrTitre(c.id) + '">' + attrTitre(c.nom) + "</option>").join("") +
+      (inactifGarde ? '<option value="' + attrTitre(inactifGarde.id) + '">' + attrTitre(inactifGarde.nom) + " " + I18N.t("inactif") + "</option>" : "");
     if (valeur) sel.value = valeur;
   }
 
@@ -217,7 +217,7 @@
     const sel = $("#f-tasse");
     const v = sel.value;
     sel.innerHTML = '<option value=""></option>' + DATA.state.tasses.map(t =>
-      '<option value="' + t.nom + '">' + t.nom + " · " + t.contenance_ml + " ml</option>").join("");
+      '<option value="' + attrTitre(t.nom) + '">' + attrTitre(t.nom) + " · " + t.contenance_ml + " ml</option>").join("");
     if (v && DATA.state.tasses.some(t => t.nom === v)) sel.value = v;
   }
 

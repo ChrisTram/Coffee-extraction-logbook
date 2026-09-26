@@ -2678,5 +2678,32 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("le brouillon garde « ratée » et l'agitation", brouillon.includes('"f-ratee"') && brouillon.includes('"f-agitation-oui"'));
 }
 
+/* LOT 3 DE L'AUDIT (v8.73) : FERMER A CLE. */
+{
+  const piege = DATA.normaliserCafe ? null : null;
+  const SCHEMA_SRC = readFileSync(join(ROOT, "js/data-schema.js"), "utf8");
+  // Les normaliseurs ne sont pas tous exposes : on passe par un import de cafe.
+  const csvPiege = DATA.csvSerialiser([{ id: "c-piege\"><x", nom: "<img src=x onerror=alert(1)>", torrefacteur: "A & B" }], DATA.CAFE_COLS);
+  await DATA.importerTexteCSV(csvPiege);
+  const c = DATA.state.cafes.find(x => x.nom.includes("img"));
+  check("un nom piege ne garde aucun chevron", c && !/[<>]/.test(c.nom), c && c.nom);
+  check("et son identifiant ne garde que des caracteres surs", c && /^[\w\-.@]+$/.test(c.id), c && c.id);
+  check("le texte reste lisible", c && c.nom === "‹img src=x onerror=alert(1)›");
+  DATA.state.cafes = DATA.state.cafes.filter(x => x !== c);
+
+  // Une seule fonction d'echappement pour tout le site.
+  const copies = ["js/charts.js", "js/ui-brassage.js", "js/ui-dessins.js", "js/ui-fiche.js", "js/ui-guide.js", "js/ui-noyau.js"]
+    .filter(f => /replace\(\/&\/g, "&amp;"\)/.test(readFileSync(join(ROOT, f), "utf8")));
+  check("plus aucune copie locale de l'echappement", copies.length === 0, copies.join(", "));
+  check("l'echappement commun traite les cinq caracteres",
+    /replace\(\/'\/g, "&#39;"\)/.test(readFileSync(join(ROOT, "js/outils.js"), "utf8")));
+
+  // Pas de formule au tableur, et l'aller-retour garde le texte.
+  const csv = DATA.csvSerialiser([{ id: "e-f", commentaire: "=HYPERLINK(\"x\")", dose_g: -1 }], ["id", "commentaire", "dose_g"]);
+  check("un commentaire en = est neutralise dans le CSV", csv.includes("'=HYPERLINK"));
+  check("un nombre negatif n'est pas touche", csv.trim().endsWith(",-1"));
+  check("et la relecture rend le texte d'origine", DATA.csvParse(csv)[0].commentaire === "=HYPERLINK(\"x\")");
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

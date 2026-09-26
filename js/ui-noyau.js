@@ -437,8 +437,9 @@ const UI = (() => {
 
   // Attribut title : la valeur complete d'une cellule tronquee, au survol.
   // Les guillemets doubles casseraient l'attribut, on les neutralise.
+  // L'échappement commun (OUTILS.echap), sous son ancien nom.
   function attrTitre(texte) {
-    return String(texte || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    return OUTILS.echap(texte || "");
   }
 
   // "Sous-extrait (acide)|Astringent" vers un affichage traduit "Under-extracted (sour), Astringent".

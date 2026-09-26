@@ -658,7 +658,7 @@ const CHARTS = (() => {
         " L" + pt(r0, a1) + " A" + r0 + " " + r0 + " 0 " + g + " 0 " + pt(r0, a0) + " Z";
     };
     const note1 = n => Number(n.toFixed(1)).toLocaleString(I18N.locale(), { maximumFractionDigits: 1 });
-    const echap = s => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+    const echap = OUTILS.echap;
 
     function peindre() {
       const choisie = roueChoix.get(o.svg);

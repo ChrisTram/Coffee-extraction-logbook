@@ -498,7 +498,7 @@
     const selCafe = $("#h-cafe");
     const v = selCafe.value;
     selCafe.innerHTML = '<option value="">' + I18N.t("tous") + "</option>" +
-      DATA.state.cafes.map(c => '<option value="' + c.id + '">' + c.nom + "</option>").join("");
+      DATA.state.cafes.map(c => '<option value="' + OUTILS.echap(c.id) + '">' + OUTILS.echap(c.nom) + "</option>").join("");
     selCafe.value = v;
     const selDiag = $("#h-diagnostic");
     const vd = selDiag.value;

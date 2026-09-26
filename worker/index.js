@@ -49,7 +49,7 @@ export default {
     const signedIn = await hasValidSession(request, config);
 
     if (url.pathname === LOGIN_PATH) {
-      if (request.method === "POST") return submitLogin(request, config, url);
+      if (request.method === "POST") return submitLogin(request, config, url, env);
       if (signedIn) return redirectTo("/", url);
       return loginResponse(safeTarget(url.searchParams.get("next")), null, 200);
     }
@@ -205,7 +205,17 @@ function readCookie(request, name) {
 
 /* ---------- Ecrans ---------- */
 
-async function submitLogin(request, config, url) {
+async function submitLogin(request, config, url, env) {
+  /* UNE VRAIE LIMITE D'ESSAIS (v8.73). Le délai de 700 ms après un échec ne
+     freinait pas des essais lancés en parallèle. La limite de Cloudflare
+     (binding LOGIN_LIMITER, wrangler.jsonc) compte les essais par adresse ;
+     sans binding, on garde le seul délai. */
+  if (env && env.LOGIN_LIMITER) {
+    try {
+      const { success } = await env.LOGIN_LIMITER.limit({ key: request.headers.get("CF-Connecting-IP") || "inconnue" });
+      if (!success) return loginResponse("/", "trop", 429);
+    } catch (error) { /* limite indisponible : on continue avec le délai */ }
+  }
   let form;
   try {
     form = await request.formData();
@@ -272,8 +282,37 @@ const IMMUTABLE_PATH = /^\/(js|css)\//;
    polices repartaient revalider a chaque ouverture. */
 const FONT_PATH = /\.woff2?$/;
 
+/* LA POLITIQUE DE SÉCURITÉ DE L'APPLI (v8.73). Deuxième verrou derrière
+   l'échappement : aucun script ne s'exécute s'il ne vient pas du site, sauf le
+   petit script du thème dans index.html, autorisé par son empreinte. Un test
+   recalcule cette empreinte : modifier ce script sans la mettre à jour le
+   bloquerait, le test le signale avant. Le lecteur des vidéos de recettes vient
+   de youtube-nocookie. Et personne ne peut encadrer le carnet dans sa page. */
+export const EMPREINTE_SCRIPT_THEME = "sha256-nY9y9O22i6u8EQ2vZ5f6UkDQTs/tpCtl0HirifsGAJ8=";
+export const POLITIQUE_SECURITE = [
+  "default-src 'self'",
+  "script-src 'self' '" + EMPREINTE_SCRIPT_THEME + "'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self'",
+  "connect-src 'self'",
+  "frame-src https://www.youtube-nocookie.com",
+  "media-src 'self' blob:",
+  "worker-src 'self'",
+  "manifest-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join("; ");
+
 function servePrivately(response, url) {
   const copy = new Response(response.body, response);
+  copy.headers.set("X-Content-Type-Options", "nosniff");
+  copy.headers.set("Referrer-Policy", "same-origin");
+  if (String(copy.headers.get("Content-Type") || "").includes("text/html")) {
+    copy.headers.set("Content-Security-Policy", POLITIQUE_SECURITE);
+  }
   const versioned = url && IMMUTABLE_PATH.test(url.pathname) &&
     (url.searchParams.has("v") || FONT_PATH.test(url.pathname));
   copy.headers.set(
@@ -339,6 +378,10 @@ function loginPage(target, error) {
     invalide: {
       fr: "Formulaire illisible, reessaie.",
       en: "Could not read the form, please try again.",
+    },
+    trop: {
+      fr: "Trop d'essais depuis cette adresse. Attends une minute.",
+      en: "Too many attempts from this address. Wait a minute.",
     },
   };
   const message = messages[error];

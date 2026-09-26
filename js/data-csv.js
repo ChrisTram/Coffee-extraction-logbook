@@ -32,13 +32,21 @@ const DATA_CSV = (() => {
       .filter(l => l.some(c => c !== ""))
       .map(l => {
         const obj = {};
-        entetes.forEach((h, idx) => { obj[h] = l[idx] !== undefined ? l[idx] : ""; });
+        entetes.forEach((h, idx) => {
+          const v = l[idx] !== undefined ? l[idx] : "";
+          obj[h] = /^'[=+\-@\t\r]/.test(v) ? v.slice(1) : v;
+        });
         return obj;
       });
   }
 
+  /* PAS DE FORMULE AU TABLEUR (v8.73). Un texte qui commence par = + - ou @
+     devient une formule à l'ouverture du CSV. Il reçoit une apostrophe devant,
+     que la relecture retire (csvParse). Les nombres ne sont pas touchés. */
+  const FORMULE = /^[=+\-@\t\r]/;
   function csvChamp(v) {
-    const s = v === null || v === undefined ? "" : String(v);
+    const brut = v === null || v === undefined ? "" : String(v);
+    const s = typeof v === "string" && FORMULE.test(brut) ? "'" + brut : brut;
     if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
     return s;
   }
