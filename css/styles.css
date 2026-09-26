@@ -2803,6 +2803,8 @@ svg [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset:
 /* Au doigt, les entrées du menu font au moins 44 px de haut (v8.76). */
 @media (max-width: 1023px) { .rail-entree { min-height: 44px; } }
 
+.fc-suppr-sachet { margin-top: 10px; }
+
 /* Quel café, quelle recette (v8.74) : une case, une recette et ce que disent tes tasses. */
 .matrice-carte > summary { font-family: var(--serif); font-size: 1.35rem; color: var(--encre); cursor: pointer; }
 .matrice-carte .carte-note { margin: 8px 0 12px; }

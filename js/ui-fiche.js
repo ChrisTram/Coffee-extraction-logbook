@@ -124,6 +124,9 @@
     } else {
       html += '<p class="fc-muet">' + I18N.t("fi_sans_stock") + "</p>";
     }
+    // Supprimer le sachet en cours, saisi par erreur (v8.77) : la fonction existait sans bouton.
+    const sachet = DATA.sachetCourant(cafe.id);
+    if (sachet) html += '<button type="button" class="btn btn-petit btn-discret fc-suppr-sachet" data-suppr-sachet="' + echap(sachet.id) + '">' + I18N.t("fi_suppr_sachet") + "</button>";
 
     // La réglette de fraîcheur : jour 1 à gauche, la fenêtre en accent, aujourd'hui en trait.
     const max = Math.max(28, ...notees.map(e => e._c.jours_ouvert === "" ? 0 : e._c.jours_ouvert), jc ? jc.jour : 0);
@@ -327,6 +330,14 @@
   }
 
   function cablerFiche() {
+    $("#fiche-contenu").addEventListener("click", async ev => {
+      const b = ev.target.closest("[data-suppr-sachet]");
+      if (!b) return;
+      const a = DATA.state.achats.find(x => x.id === b.dataset.supprSachet);
+      if (!a || !await UI.confirmer(I18N.t("c_suppr_sachet", { d: a.date_achat || "?" }), { danger: true })) return;
+      await DATA.supprimerAchat(a.id);
+      UI.toast(I18N.t("t_sachet_supprime"));
+    });
     $("#fiche-brasser").addEventListener("click", () => {
       const id = ficheId;
       $("#modale-fiche").close();

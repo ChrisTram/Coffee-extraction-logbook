@@ -484,11 +484,11 @@
   }
 
   Object.assign(UI, {
-    cablerCatalogue, cafeEditId, coutParTasse, enregistrerCafe, enregistrerParametres, enregistrerRecette,
+    cablerCatalogue, coutParTasse, enregistrerCafe, enregistrerParametres, enregistrerRecette,
     majRatees,
     enregistrerSachet, fermerFormSachet, lireFormRecette, majDetailMolette, ouvrirFormCafe,
     ouvrirFormRecette, ouvrirFormSachet, ouvrirModaleCafes, ouvrirModaleRecettes,
-    recetteEditId, rendreListeCafes, rendreListeRecettes, rendreParametres,
-    retablirRecetteCourante, sachetCafeId, supprimerRecetteCourante,
+    rendreListeCafes, rendreListeRecettes, rendreParametres,
+    retablirRecetteCourante, supprimerRecetteCourante,
   });
 })();

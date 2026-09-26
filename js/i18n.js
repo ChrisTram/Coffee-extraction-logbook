@@ -355,6 +355,10 @@ const I18N = (() => {
 
     w_rangbo: { fr: "Café rang bơ : le filtre papier retient le beurre qui fait son intérêt, il est fait pour la Brikka ou le phin. À tenter quand même au Switch, en baissant la température, et à noter." },
     mx_autre: { fr: "ou" },
+    t_delie: { fr: "Dossier délié : les CSV ne sont plus écrits. Tes données restent ici et sur le serveur." },
+    fi_suppr_sachet: { fr: "Supprimer ce sachet" },
+    c_suppr_sachet: { fr: "Supprimer le sachet acheté le {d} ? Ses tasses restent, seul le sachet part." },
+    t_sachet_supprime: { fr: "Sachet supprimé" },
     pc_dose: { fr: "dose (g)" },
     pc_eau: { fr: "eau (g)" },
     pc_temp: { fr: "température (°C)" },
@@ -855,7 +859,8 @@ const I18N = (() => {
     return s;
   }
 
-  function tr(texte) { return lang === "en" ? (UI[texte] || texte) : texte; }
+  // hasOwnProperty (v8.77) : un café nommé « constructor » affichait une fonction en anglais.
+  function tr(texte) { return lang === "en" && Object.prototype.hasOwnProperty.call(UI, texte) ? UI[texte] : texte; }
   // Plage de molette "0.8.3 à 1.5.4" : le "à" devient "to" en anglais.
   function mol(s) { return lang === "en" ? String(s).replace(" à ", " to ") : s; }
   function diag(d) { return lang === "en" ? (DIAG[d] || d) : d; }

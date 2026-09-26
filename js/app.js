@@ -25,6 +25,7 @@
   }
 
   function majStatutDonnees() {
+    $("#don-delier").hidden = !DATA.state.dirHandle;
     let s;
     if (DATA.state.dirHandle) s = I18N.t("statut_lie", { n: DATA.state.dirHandle.name });
     else if (DATA.state.demoActive) s = I18N.t("statut_demo");
@@ -282,6 +283,8 @@
       majStatutDonnees();
       toast(I18N.t("t_demo"));
     });
+    // Délier le dossier (v8.77) : la fonction existait sans bouton.
+    $("#don-delier").addEventListener("click", async () => { await DATA.delierDossier(); majStatutDonnees(); majBadges(); toast(I18N.t("t_delie")); });
     $("#don-vider").addEventListener("click", async () => {
       if (!await UI.confirmer(I18N.t("c_vider"), { danger: true })) return;
       await DATA.viderDonnees();

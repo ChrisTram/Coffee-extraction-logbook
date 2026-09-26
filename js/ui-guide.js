@@ -189,14 +189,14 @@
       (r.avancee ? '<span class="badge-avancee">' + I18N.t("badge_avancee") + "</span>" : "");
     const params =
       '<span class="param-chip">' + r.dose + " g / " + r.eau + " g</span>" +
-      '<span class="param-chip">' + r.ratioTexte + "</span>" +
-      '<span class="param-chip">' + r.tempTexte + "</span>" +
+      '<span class="param-chip">' + attr(I18N.tr(r.ratioTexte)) + "</span>" +
+      '<span class="param-chip">' + attr(I18N.tr(r.tempTexte)) + "</span>" +
       '<span class="param-chip">' + I18N.t("molette") + " " + r.dial + "</span>" +
-      '<span class="param-chip">' + r.totalTexte + "</span>";
+      '<span class="param-chip">' + attr(I18N.tr(r.totalTexte)) + "</span>";
     let etapes = "";
     if (r.etapes.length) {
       etapes = '<ol class="recette-etapes">' + r.etapes.map(e =>
-        "<li><span class=\"etape-temps\">" + (e.t === null ? "·" : fmtTemps(e.t)) + "</span><span>" + e.texte + "</span></li>"
+        "<li><span class=\"etape-temps\">" + (e.t === null ? "·" : fmtTemps(e.t)) + "</span><span>" + attr(I18N.tr(e.texte)) + "</span></li>"
       ).join("") + "</ol>";
     }
     const tetsu = r.variantes ? '<div class="tetsu-variantes" id="tetsu-bloc"></div>' : "";
@@ -215,14 +215,14 @@
       badges + "</div>" +
       "<h3>" + r.nom + "</h3>" +
       pilules +
-      '<p class="recette-sous">' + r.sousTitre + "</p>" +
+      '<p class="recette-sous">' + attr(I18N.tr(r.sousTitre)) + "</p>" +
       '<div class="recette-params">' + params + "</div>" +
       blocVideo(r) +
       chezToi(r) +
       etapes + tetsu +
-      (r.pourQui ? '<p class="recette-pourqui"><b>' + I18N.t("r_pourqui") + "</b> " + r.pourQui + "</p>" : "") +
+      (r.pourQui ? '<p class="recette-pourqui"><b>' + I18N.t("r_pourqui") + "</b> " + attr(I18N.tr(r.pourQui)) + "</p>" : "") +
       (r.cafesAssocies.length ? '<p class="recette-cafes"><b>' + I18N.t("r_cafes") + "</b> " + r.cafesAssocies.join(", ") + "</p>" : "") +
-      (r.note ? '<p class="recette-note">' + r.note + "</p>" : "") +
+      (r.note ? '<p class="recette-note">' + attr(I18N.tr(r.note)) + "</p>" : "") +
       '<div class="recette-actions">' +
       '<button class="btn btn-primaire btn-petit" data-pasapas="' + r.id + '">' + I18N.t("a_pap") + "</button>" +
       '<button class="btn btn-petit" data-recette-edit="' + r.id + '">' + I18N.t("btn_modifier") + "</button>" +
@@ -317,6 +317,8 @@
     const f = facteurEau(recette);
     const mettreAEchelle = liste => f === 1 ? liste
       : liste.map(e => ({ ...e, texte: echelleVersements(e.texte, f) }));
+    // Traduites AVANT la mise à l'échelle (v8.77) : la phrase d'origine sert de clé.
+    const traduire = liste => liste.map(e => ({ ...e, texte: I18N.tr(e.texte) }));
     if (recette.variantes) {
       const { pours } = versementsTetsu();
       let cumul = 0;
@@ -331,7 +333,7 @@
       // L'écoulement, 30 secondes après le dernier versement.
       }).concat([{ t: (pours.length - 1) * TETSU.intervalle + 30, texte: I18N.t("pap_drain") }]));
     }
-    return mettreAEchelle(recette.etapes);
+    return mettreAEchelle(traduire(recette.etapes));
   }
 
   function ouvrirPasAPas(idRecette) {
@@ -344,7 +346,7 @@
     pap.depart = null;
     $("#pap-titre").textContent = r.nom;
     $("#pap-chrono").textContent = "0:00";
-    $("#pap-params").textContent = r.dose + " g / " + r.eau + " g, " + r.tempTexte + ", " + I18N.t("molette") + " " + r.dial + ", " + r.totalTexte;
+    $("#pap-params").textContent = r.dose + " g / " + r.eau + " g, " + I18N.tr(r.tempTexte) + ", " + I18N.t("molette") + " " + r.dial + ", " + I18N.tr(r.totalTexte);
     $("#pap-demarrer").textContent = I18N.t("pap_demarrer");
     $("#pap-suivant").disabled = true;
     rendrePapEtapes();

@@ -395,23 +395,23 @@
       const etapes = UI.etapesPour(r);
       zoneR.innerHTML =
         '<div class="aside-titre"><span class="pastille-methode ' + r.methode.toLowerCase() + '"></span><h4>' + r.nom + "</h4></div>" +
-        (r.sousTitre ? '<p class="aside-sous">' + r.sousTitre + "</p>" : "") +
+        (r.sousTitre ? '<p class="aside-sous">' + attrTitre(I18N.tr(r.sousTitre)) + "</p>" : "") +
         '<div class="recette-params">' +
         '<span class="param-chip">' + r.dose + " g / " + r.eau + " g</span>" +
         (UI.facteurEau(r) !== 1
           ? '<span class="param-chip param-chip-adapte">' + I18N.t("a_adapte", { e: $("#f-eau").value }) + "</span>"
           : "") +
-        (r.ratioTexte ? '<span class="param-chip">' + r.ratioTexte + "</span>" : "") +
-        (r.tempTexte ? '<span class="param-chip">' + r.tempTexte + "</span>" : "") +
+        (r.ratioTexte ? '<span class="param-chip">' + attrTitre(I18N.tr(r.ratioTexte)) + "</span>" : "") +
+        (r.tempTexte ? '<span class="param-chip">' + attrTitre(I18N.tr(r.tempTexte)) + "</span>" : "") +
         '<span class="param-chip">' + I18N.t("molette") + " " + r.dial + "</span>" +
-        (r.totalTexte ? '<span class="param-chip">' + r.totalTexte + "</span>" : "") +
+        (r.totalTexte ? '<span class="param-chip">' + attrTitre(I18N.tr(r.totalTexte)) + "</span>" : "") +
         "</div>" +
         (etapes.length ? '<ol class="recette-etapes">' + etapes.map(e =>
           "<li><span class=\"etape-temps\">" + (e.t === null ? "·" : fmtTemps(e.t)) + "</span><span>" + e.texte + "</span></li>"
         ).join("") + "</ol>" : "") +
-        (r.pourQui ? '<p class="aside-pourqui"><b>' + I18N.t("r_pourqui") + "</b> " + r.pourQui + "</p>" : "") +
+        (r.pourQui ? '<p class="aside-pourqui"><b>' + I18N.t("r_pourqui") + "</b> " + attrTitre(I18N.tr(r.pourQui)) + "</p>" : "") +
         (r.cafesAssocies.length ? '<p class="aside-cafes"><b>' + I18N.t("r_cafes") + "</b> " + r.cafesAssocies.join(", ") + "</p>" : "") +
-        (r.note ? '<p class="aside-note-recette">' + r.note + "</p>" : "") +
+        (r.note ? '<p class="aside-note-recette">' + attrTitre(I18N.tr(r.note)) + "</p>" : "") +
         '<button type="button" class="btn btn-petit" id="aside-pap" data-r="' + r.id + '">' + I18N.t("a_pap") + "</button>";
       const btn = $("#aside-pap");
       if (btn) btn.addEventListener("click", () => UI.ouvrirPasAPas(btn.dataset.r));

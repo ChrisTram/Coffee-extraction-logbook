@@ -417,18 +417,6 @@ const UI = (() => {
     requestAnimationFrame(pas);
   }
 
-  /* Régularité : ÉCART MOYEN à la moyenne, pas écart type.
-     L'écart type est la mesure canonique mais elle ne se lit pas : personne ne
-     sait ce que vaut un sigma de 1,2. L'écart moyen se dit en français exact,
-     "tes tasses s'écartent en moyenne de 1,2 point de ta moyenne", et sur une
-     poignée de notes les deux donnent de toute façon des chiffres très proches.
-     Clarté avant orthodoxie statistique. */
-  function ecartMoyen(liste) {
-    if (liste.length < 2) return null;
-    const m = liste.reduce((a, b) => a + b, 0) / liste.length;
-    return liste.reduce((a, n) => a + Math.abs(n - m), 0) / liste.length;
-  }
-
   // Recettes vivantes (éditables, stockées avec les données).
   function recettesVivantes() { return DATA.state.recettes.filter(r => r.actif !== 0); }
   function recettesDeMethode(m) { return recettesVivantes().filter(r => r.methode === m); }
@@ -722,7 +710,7 @@ const UI = (() => {
     $, $$, $f, APPUI_LONG_MS, CLE_REPLIS, DOSE_REPLI_USINE, EBULLITION_USINE, ECRANS, ECRANS_RENOMMES,
     FEU_REPLI_USINE, MOLETTE_REPLI_USINE, activerAppuiLong, activerEcran, animerCompteur,
     antiRebond, appliquerTheme, attrTitre, avecTransition, basculerEtat, cacheChamps,
-    basculerRatees, chargerReplis, cleLocale, confirmer, detailRatio, diagsAffiches, ecartMoyen,
+    basculerRatees, chargerReplis, cleLocale, confirmer, detailRatio, diagsAffiches,
     ecrireReplis, estRatee, extAnalysables, inclureRatees,
     extAvecCalculs, fmtDateCourte, fmtDateHeure, fmtDecimal, fmtTemps, fmtVND, icone,
     maintenantLocal, marquerNote, brancherDictee, brancherNote, noteVide, peindreCurseur, moyenne, nav, normaliserEcran, oublierSignatures, poser, poserTexte,

@@ -1773,9 +1773,9 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   const code = app.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
   const natifs = [...code.matchAll(/(^|[^.\w])confirm\(/g)];
   check("aucun confirm() natif ne reste dans l'interface", natifs.length === 0, String(natifs.length));
-  // Cinq depuis la v8.71 : l'apercu d'un import demande aussi confirmation.
-  check("les cinq questions passent par le dialogue de la page",
-    (code.match(/await (?:UI\.)?confirmer\(/g) || []).length === 5);
+  // Six : l'apercu d'un import (v8.71) et la suppression d'un sachet (v8.77) demandent aussi confirmation.
+  check("les six questions passent par le dialogue de la page",
+    (code.match(/await (?:UI\.)?confirmer\(/g) || []).length === 6);
   check("les libelles du dialogue sont bilingues", bilingue("c_titre") && bilingue("c_ok"));
   check("le retour arriere restaure sous l'id d'origine", app.includes("DATA.restaurerExtraction"));
 
@@ -2810,6 +2810,23 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   }
   check("la bordure d'un champ passe 3:1 sur le panneau", ratio(jeton("lignes-champ"), jeton("panneau")) >= 3, String(jeton("lignes-champ")));
   check("et les champs l'utilisent", css.includes("border: 1px solid var(--lignes-champ, var(--lignes));"));
+}
+
+/* LOT 8 DE L'AUDIT (v8.77) : LE MENAGE DE FOND. */
+{
+  const enSrc = readFileSync(join(ROOT, "js/i18n.en.js"), "utf8");
+  const manquantes = [];
+  RECETTES_DEPART.forEach(r => {
+    ["sousTitre", "tempTexte", "ratioTexte", "totalTexte", "pourQui", "note"].forEach(k => { if (r[k] && !enSrc.includes(JSON.stringify(r[k]) + ":")) manquantes.push(r.id + "." + k); });
+    (r.etapes || []).forEach((e, i) => { if (!enSrc.includes(JSON.stringify(e.texte) + ":")) manquantes.push(r.id + ".etape" + i); });
+  });
+  check("chaque texte des recettes d'origine a sa traduction anglaise", manquantes.length === 0, manquantes.slice(0, 6).join(", "));
+  check("les etapes sont traduites avant d'etre mises a l'echelle", SOURCE_UI.includes("mettreAEchelle(traduire(recette.etapes))"));
+  check("tr ne confond plus un nom de cafe avec une propriete d'objet", readFileSync(join(ROOT, "js/i18n.js"), "utf8").includes("hasOwnProperty.call(UI, texte)"));
+  check("le code mort est parti", !SOURCE_UI.includes("function ecartMoyen") && !SOURCE_UI.includes("function mesuresDerniere"));
+  check("supprimer un sachet et delier le dossier ont leur bouton",
+    SOURCE_UI.includes("data-suppr-sachet") && readFileSync(join(ROOT, "index.html"), "utf8").includes('id="don-delier"'));
+  check("l'export complet se reimporte : le selecteur accepte le JSON", readFileSync(join(ROOT, "index.html"), "utf8").includes('accept=".csv,.json'));
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
