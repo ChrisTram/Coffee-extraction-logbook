@@ -388,6 +388,7 @@
     if (!zoneR || !zoneC) return;
 
     const r = trouverRecette($("#f-recette").value);
+    UI.majVideoAside(r);
     if (!r) {
       zoneR.innerHTML = '<p class="aside-vide">' + I18N.t("a_choisir_recette") + "</p>";
     } else {

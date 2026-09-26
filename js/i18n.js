@@ -393,13 +393,14 @@ const I18N = (() => {
 
     te_40: { fr: "Les 40 premiers pourcents : sucre contre acidité" },
     te_60: { fr: "Les 60 derniers pourcents : le corps" },
-    te_ligne: { fr: "verser <b>{p} g</b>, total {c} g" },
-    te_fin: { fr: "Verser à chaque fois que le lit vient de s'assécher en surface, environ toutes les 30 à 45 secondes." },
+    te_ligne: { fr: "jusqu'à <b>{c} g</b>, soit {p} g" },
+    te_fin: { fr: "Un versement toutes les {s} secondes, vanne ouverte ; attendre un peu si le lit n'est pas encore sec en surface." },
 
     pap_demarrer: { fr: "Démarrer" },
     pap_arreter: { fr: "Arrêter" },
     pap_reprendre: { fr: "Reprendre à zéro" },
-    pap_verser: { fr: "Verser {p} g{b}, total {c} g. Attendre que le lit s'assèche en surface." },
+    pap_verser: { fr: "Verser jusqu'à {c} g, soit {p} g{b}." },
+    pap_premier: { fr: "Verser {c} g{b}, vanne OUVERTE." },
     pap_bloom: { fr: " (bloom)" },
     pap_drain: { fr: "Laisser s'écouler entièrement." },
 
@@ -748,7 +749,7 @@ const I18N = (() => {
     "#br-go,#br-note-dite," +
     "#dessin-etagere,#dessin-horloge,#dessin-spectre,#dessin-moulin," +
     "#dessin-etagere-lecture,#dessin-horloge-lecture,#dessin-spectre-lecture,#dessin-moulin-lecture," +
-    "#carte-recap,#legende-30j,#fiche-comparaison,#fiche-duo,#fiche-empreinte,#fiche-trajectoire,#fiche-moulin," +
+    "#carte-recap,#legende-30j,#aside-video,#fiche-comparaison,#fiche-duo,#fiche-empreinte,#fiche-trajectoire,#fiche-moulin," +
     "#dessins-panneau,#bulle-tasse,#dessin-frise,#dessin-podium,#dessin-progression,#dessin-frise-lecture,#dessin-podium-lecture,#dessin-progression-lecture";
 
   function scanner() {

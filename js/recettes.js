@@ -349,6 +349,10 @@ const ANCIENS_SEED_IDS = ["brikka-ref", "brikka-rangbo", "fruite", "costaud", "a
 // Variantes du Tetsu 4:6. Les versements se recalculent depuis l'eau totale.
 // Pour 225 g : bloom 30, puis 60 (40 pour cent a 90 g), puis 3 x 45.
 const TETSU = {
+  /* Un versement toutes les 45 secondes (v8.69), le rythme de la méthode 4:6 :
+     cinq versements finissent vers 3:00, fin d'écoulement vers 3:25. Sans
+     horaire, les étapes n'avaient ni bip au chrono ni palier en mode Brassage. */
+  intervalle: 45,
   premier40: [
     { id: "sucre",     nom: "Plus de sucre",  detail: "30 puis 60 g : plus de sucre, moins d'acidité. Mon profil, le réglage par défaut.", parts: [1, 2], defaut: true },
     { id: "equilibre", nom: "Équilibre",      detail: "45 puis 45 g : équilibré.", parts: [1, 1] },

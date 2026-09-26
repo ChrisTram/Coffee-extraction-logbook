@@ -2786,6 +2786,7 @@ input[type="range"]::-moz-range-thumb {
 /* La vidéo de la recette (v8.64) : le bouton et le lien, puis le lecteur 16:9 à sa place. */
 .recette-video { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 12px; }
 .recette-video-lien { font-size: 0.8rem; color: var(--accent-fort); }
+.aside-video .recette-video { margin: 0; }
 .recette-lecteur { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: var(--rayon-petit); background: #000; }
 .recette-note { font-size: 0.82rem; border-left: 3px solid var(--accent); padding-left: 10px; color: var(--texte); margin: 0 0 12px; }
 .recette-actions { margin-top: auto; display: flex; gap: 8px; flex-wrap: wrap; }

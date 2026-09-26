@@ -113,6 +113,23 @@
     bouton.replaceWith(cadre);
   }
 
+  /* LA VIDÉO DANS LA SAISIE (v8.69), sous la fiche recette du panneau de droite.
+     Sa propre carte, et non dans la fiche : la fiche se redessine à chaque
+     frappe, et la vidéo en cours se serait coupée. Elle ne se refait que
+     quand la recette ou son lien changent. */
+  function majVideoAside(r) {
+    const zone = $("#aside-video");
+    if (!zone) return;
+    const cle = r ? r.id + "|" + (r.video || "") : "";
+    if (zone.dataset.pour === cle) return;
+    zone.dataset.pour = cle;
+    const bloc = r ? blocVideo(r) : "";
+    zone.hidden = !bloc;
+    zone.innerHTML = bloc;
+    const b = zone.querySelector("[data-video]");
+    if (b) b.addEventListener("click", () => lancerVideo(b));
+  }
+
   function carteRecette(r, groupe) {
     const badges = (r.parDefaut ? '<span class="badge-defaut">' + I18N.t("badge_defaut") + "</span>" : "") +
       (r.avancee ? '<span class="badge-avancee">' + I18N.t("badge_avancee") + "</span>" : "");
@@ -210,7 +227,7 @@
     const lignes = pours.map((p, i) => {
       cumul += p;
       const phase = i < 2 ? "40 %" : "60 %";
-      return "<li><span class=\"etape-temps\">" + (i + 1) + "</span><span>" +
+      return "<li><span class=\"etape-temps\">" + fmtTemps(i * TETSU.intervalle) + "</span><span>" +
         I18N.t("te_ligne", { p, c: cumul }) + " <small>(" + phase + ")</small></span></li>";
     }).join("");
     bloc.innerHTML =
@@ -223,7 +240,7 @@
         '<button type="button" class="pilule' + (v.id === tetsuChoix.p60 ? " actif" : "") + '" data-t60="' + v.id + '">' + I18N.tr(v.nom) + "</button>").join("") +
       "</div></div>" +
       '<ul class="tetsu-versements">' + lignes + "</ul>" +
-      '<p class="tetsu-detail">' + I18N.tr(v40.detail) + " " + I18N.tr(v60.detail) + " " + I18N.t("te_fin") + "</p>";
+      '<p class="tetsu-detail">' + I18N.tr(v40.detail) + " " + I18N.tr(v60.detail) + " " + I18N.t("te_fin", { s: TETSU.intervalle }) + "</p>";
     $$("[data-t40]").forEach(b => b.addEventListener("click", () => { tetsuChoix.p40 = b.dataset.t40; rendreTetsu(); }));
     $$("[data-t60]").forEach(b => b.addEventListener("click", () => { tetsuChoix.p60 = b.dataset.t60; rendreTetsu(); }));
   }
@@ -248,10 +265,16 @@
     if (recette.variantes) {
       const { pours } = versementsTetsu();
       let cumul = 0;
+      /* Le TOTAL d'abord, comme toutes les autres recettes (« jusqu'à 90 g ») :
+         le versement seul (30, 60, puis 45) ne se lisait pas sur la balance, et
+         le mode Brassage, qui cherche « à X g », affichait 60 au lieu de 90. */
       return mettreAEchelle(pours.map((p, i) => {
         cumul += p;
-        return { t: null, texte: I18N.t("pap_verser", { p, c: cumul, b: i === 0 ? I18N.t("pap_bloom") : "" }) };
-      }).concat([{ t: null, texte: I18N.t("pap_drain") }]));
+        return { t: i * TETSU.intervalle, texte: i === 0
+          ? I18N.t("pap_premier", { c: cumul, b: I18N.t("pap_bloom") })
+          : I18N.t("pap_verser", { p, c: cumul, b: "" }) };
+      // L'écoulement, 30 secondes après le dernier versement.
+      }).concat([{ t: (pours.length - 1) * TETSU.intervalle + 30, texte: I18N.t("pap_drain") }]));
     }
     return mettreAEchelle(recette.etapes);
   }
@@ -464,7 +487,7 @@
     }));
   }
 
-  Object.assign(UI, {
+  Object.assign(UI, { majVideoAside,
     cablerGuide, carteRecette, chezToi, conseilMouture, montrerGuide, montrerRecette, profilsRecette, etapesPour, facteurEau, familleSelection, ouvrirPasAPas,
     pap, papDemarrer, papSuivant, papTic, rendreConvertisseur, rendreConvertisseurDifferee,
     rendrePapEtapes, rendreRecettes, rendreReperesMouture, rendreTablePlages, rendreTetsu,
