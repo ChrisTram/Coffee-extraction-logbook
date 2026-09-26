@@ -2465,17 +2465,12 @@ input[type="range"]::-moz-range-thumb {
   border: 2px solid var(--accent);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
-/* Non notee : la piste ne se remplit pas, se dessine en pointillé et perd son
-   pouce. Elle ne propose rien. */
-input[type="range"].curseur-inactif::-webkit-slider-runnable-track {
-  background: repeating-linear-gradient(90deg, var(--attenue) 0 6px, transparent 6px 12px);
-}
-input[type="range"].curseur-inactif::-moz-range-track {
-  background: repeating-linear-gradient(90deg, var(--attenue) 0 6px, transparent 6px 12px);
-}
-input[type="range"].curseur-inactif::-moz-range-progress { background: transparent; }
-input[type="range"].curseur-inactif::-webkit-slider-thumb { opacity: 0; }
-input[type="range"].curseur-inactif::-moz-range-thumb { opacity: 0; }
+/* UN SEUL LOOK POUR LA NOTE (v8.68). La note non encore donnée avait son propre
+   style, piste en pointillé et pas de pouce, qui basculait au premier toucher :
+   Chris y voyait deux curseurs différents, et aucun sens. Le curseur a
+   maintenant toujours la même allure ; « pas encore notée » se lit dans le
+   libellé au-dessus et dans l'aide dessous. La classe curseur-inactif reste,
+   mais comme ÉTAT seulement (noteVide, ui-noyau.js), sans aucun style. */
 
 /* ---------- L'interrupteur ----------
    Autour d'une case a cocher ORDINAIRE, qui reste la source de verite : le

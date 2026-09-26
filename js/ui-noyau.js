@@ -265,8 +265,9 @@ const UI = (() => {
   /* LA NOTE SANS POUCE (v8.40). Un curseur ne peut pas être vide : l'absence de
      note vivait dans une case « pas encore notée », à décocher EN PLUS de régler
      la note. Elle vit maintenant sur le curseur lui même, par la classe
-     curseur-inactif : piste en pointillé, pas de pouce, tant qu'on n'y a pas
-     touché. Poser le doigt n'importe où sur la piste note, en un seul geste.
+     curseur-inactif, tant qu'on n'y a pas touché. Poser le doigt n'importe où
+     sur la piste note, en un seul geste. Depuis la v8.68 cette classe n'a plus
+     de style : le curseur garde la même allure, le libellé dit l'état.
      Même mécanisme dans la saisie et dans la saisie rapide. */
   function noteVide(curseur) {
     return !!curseur && curseur.classList.contains("curseur-inactif");

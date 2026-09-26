@@ -1519,6 +1519,10 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
     /<input[^>]*id="f-note"[^>]*class="[^"]*curseur-inactif/.test(html) &&
     /<input[^>]*id="q-note"[^>]*class="[^"]*curseur-inactif/.test(html));
   check("la case pas encore notee a disparu", !/note-vide/.test(html));
+  /* Mais plus de second look (v8.68) : la classe est un etat, pas un style.
+     Pointille et pouce cache faisaient deux curseurs differents. */
+  const cssNote = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  check("la note non donnee n'a plus de style a part", !/\.curseur-inactif\s*[:{,]/.test(cssNote));
   check("le curseur ne suggere plus 7",
     /<input[^>]*id="f-note"[^>]*value="5"/.test(html));
 
