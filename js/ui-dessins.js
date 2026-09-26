@@ -623,6 +623,8 @@
     const d = new Date(e.date_heure);
     const quand = isNaN(d) ? "" : d.toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" }) + ", " +
       d.toLocaleTimeString(I18N.locale(), { hour: "2-digit", minute: "2-digit" });
+    // La bulle se nomme d'après sa tasse (v8.76), plus un « Une tasse » générique.
+    b.setAttribute("aria-label", I18N.t("bulle_aria", { q: quand || e.date_heure }) + (cafe ? ", " + cafe.nom : ""));
     const reglages = [e.dose_g ? e.dose_g + " g" : "", e.eau_g ? e.eau_g + " g" : "", e.mouture_dial,
       e.methode === "Switch" && e.temperature_c !== "" ? e.temperature_c + " °C" : "",
       e.methode === "Brikka" && e.puissance_feu !== "" ? I18N.t("j_feu", { f: e.puissance_feu }) : ""].filter(Boolean).join(" · ");

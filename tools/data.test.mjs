@@ -2783,5 +2783,34 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("une vraie modification la change", DATA.revisionDonnees() === r0 + 1);
 }
 
+/* LOT 7 DE L'AUDIT (v8.76) : POUR TOUS LES DOIGTS. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  const css = readFileSync(join(ROOT, "css/styles.css"), "utf8");
+  const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
+  const dialogues = [...html.matchAll(/<dialog id="([^"]+)"([^>]*)>/g)];
+  const sansNom = dialogues.filter(m => !/aria-label(ledby)?=/.test(m[2])).map(m => m[1]);
+  check("chaque fenetre porte un nom accessible", sansNom.length === 0, sansNom.join(", "));
+  const cibles = dialogues.map(m => (m[2].match(/aria-labelledby="([^"]+)"/) || [])[1]).filter(Boolean);
+  // Le titre cité existe dans la page, ou naît avec le contenu (la fiche café écrit le sien).
+  const introuvables = cibles.filter(id => !html.includes('id="' + id + '"') && !SOURCE_UI.includes('id="' + id + '"'));
+  check("et le titre qu'elle cite existe", introuvables.length === 0, introuvables.join(", "));
+  check("le menu Plus ferme est inerte au clavier", app.includes("rail.inert = enFeuille()"));
+  check("les icones decoratives sont cachees aux lecteurs d'ecran", !/class="choix-icone">/.test(html));
+  check("les champs du tableau des recettes sont nommes", readFileSync(join(ROOT, "js/ui-catalogue.js"), "utf8").includes('aria-label="\' + nomChamp(r, "pc_dose")'));
+
+  // Les contrastes du theme clair, calcules comme le fait le WCAG.
+  const bloc = css.slice(css.indexOf('html[data-theme="clair"] {'), css.indexOf("}", css.indexOf('html[data-theme="clair"] {')));
+  const jeton = nom => (bloc.match(new RegExp("--" + nom + ":\\s*(#[0-9a-fA-F]{6})")) || [])[1];
+  const lum = h => { const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(v => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4))); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+  const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  const p3 = jeton("panneau-3");
+  for (const n of ["attenue", "accent", "danger"]) {
+    check("en theme clair, --" + n + " passe 4,5:1 sur la surface de survol", ratio(jeton(n), p3) >= 4.5, jeton(n) + " sur " + p3 + " : " + ratio(jeton(n), p3).toFixed(2));
+  }
+  check("la bordure d'un champ passe 3:1 sur le panneau", ratio(jeton("lignes-champ"), jeton("panneau")) >= 3, String(jeton("lignes-champ")));
+  check("et les champs l'utilisent", css.includes("border: 1px solid var(--lignes-champ, var(--lignes));"));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

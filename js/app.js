@@ -57,9 +57,7 @@
     } else {
       texte = I18N.t(LIBELLES_SYNC[etat] || "sync_jamais");
     }
-    /* Le serveur garde tout l'état dans une seule ligne, et cette ligne a un
-       plafond. On prévient à la moitié : assez tôt pour archiver tranquillement,
-       assez tard pour ne pas alerter pendant des années pour rien. */
+    // Le document serveur a un plafond : on prévient à la moitié, assez tôt pour archiver.
     const { syncTaille: taille, syncPlafond: plafond } = DATA.state;
     if (plafond > 0 && taille / plafond >= 0.5) {
       texte += " " + I18N.t("sync_taille", { p: Math.round(100 * taille / plafond) });
@@ -91,18 +89,28 @@
 
   // ---------- Câblage ----------
 
-  /* Ouvre ou ferme la feuille « Plus » du telephone. Le rail et la feuille sont
-     le meme element : sur ordinateur cette fonction ne sert a rien et ne gene
-     pas, la classe n'a aucun effet au dela de 1024 px. */
+  /* La feuille « Plus » du téléphone (le rail, sans effet au-delà de 1024 px).
+     Fermée, elle est inerte au clavier ; ouverte, le focus la suit (v8.76). */
+  const enFeuille = () => typeof matchMedia === "function" && matchMedia("(max-width: 1023px)").matches;
+  function majInertie() {
+    const rail = $("#rail");
+    if (rail) rail.inert = enFeuille() && !rail.classList.contains("ouverte");
+  }
   function basculerFeuilleNav(ouvrir) {
     const rail = $("#rail");
     if (!rail) return;
     rail.classList.toggle("ouverte", !!ouvrir);
     $("#voile-nav").hidden = !ouvrir;
     $("#btn-plus").setAttribute("aria-expanded", ouvrir ? "true" : "false");
+    majInertie();
+    if (!enFeuille()) return;
+    if (ouvrir) { const e = [...rail.querySelectorAll("button")].find(b => b.offsetParent !== null); if (e) e.focus(); }
+    else if (rail.contains(document.activeElement)) $("#btn-plus").focus();
   }
 
   function cabler() {
+    majInertie();
+    if (typeof matchMedia === "function") matchMedia("(max-width: 1023px)").addEventListener("change", majInertie);
     // Navigation
     $$(".nav-btn").forEach(b => b.addEventListener("click", () => {
       activerEcran(b.dataset.ecran);
@@ -134,9 +142,7 @@
       if (nav.ecran === "tableau") UI.rendreTableau();
     }, 200));
 
-    /* L'historique change de FORME au seuil de 1024 px, table ou cartes.
-       matchMedia et non resize : un seul evenement au franchissement, la ou
-       resize en tire des dizaines pendant qu'on tire le coin de la fenetre. */
+    // L'historique change de forme à 1024 px (table ou cartes) : matchMedia, un seul événement au seuil.
     if (typeof matchMedia === "function") {
       const seuil = matchMedia("(max-width: 1023px)");
       const suivre = () => { if (nav.ecran === "historique") UI.rendreHistorique(); };
@@ -197,9 +203,7 @@
       UI.toastAction(I18N.t("sync_perimee"), I18N.t("maj_recharger"), () => location.reload());
     });
 
-    /* ÉCHAP ferme ce qui est ouvert. Les <dialog> natifs le font tout seuls, mais
-       le panneau de saisie rapide et les formulaires dépliés ne sont pas des
-       dialogues : ils restaient ouverts et il fallait viser leur bouton. */
+    // Échap ferme aussi ce qui n'est pas un <dialog> : panneau rapide, formulaires dépliés, bulles.
     document.addEventListener("keydown", ev => {
       if (ev.key !== "Escape") return;
       if ($("#rail").classList.contains("ouverte")) { basculerFeuilleNav(false); return; }
@@ -298,9 +302,7 @@
       // Toujours : ces deux là sont minuscules et reflètent l'état courant.
       majBadges();
       majStatutSync();
-      /* Le reste ne se refait que si sa table a bougé. Enregistrer une tasse ne
-         change ni les cafés, ni les recettes, ni les tasses : les reconstruire
-         était du travail pur perte, et le coût grossit avec le catalogue. */
+      // Le reste ne se refait que si sa table a bougé (une tasse ne change ni cafés, ni recettes, ni tasses).
       const cafes = DATA.state.cafes, recettes = DATA.state.recettes;
       siChange("cafes", cafes, () => { UI.remplirSelectCafes(); remplirSelectRecetteReco(); });
       siChange("filtres", DATA.state.extractions, UI.remplirFiltres);

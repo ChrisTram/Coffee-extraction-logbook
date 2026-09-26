@@ -267,14 +267,17 @@ html[data-theme="clair"] {
   --fond-degrade: radial-gradient(1200px 600px at 80% -10%, #faf4ea 0%, #f4ede3 55%);
   --panneau: #fcf8f2;
   --panneau-2: #ebe1d4;
-  --panneau-3: #e2d5c4;
+  /* Plus clair (v8.76) : l'atténué, l'accent et l'erreur y tombaient à 4,0:1. */
+  --panneau-3: #e8ddcf;
   --rail: #f0e7db;
   --encre: #26190f;
   --texte: #5e4b3c;
-  /* Maquette #8a7462 : 3,42:1 sur --panneau-2, sous le seuil. 4,55:1 ici. */
-  --attenue: #746152;
-  /* Maquette #a85a1e : 4,00:1 sur --accent-fond. 4,52:1 ici. */
-  --accent: #9a521c;
+  /* Maquette #8a7462 : 3,42:1 sur --panneau-2, sous le seuil. #6d5a4b depuis la
+     v8.76 : 5,06:1 sur --panneau-2 et 4,88:1 sur --panneau-3, la surface de survol. */
+  --attenue: #6d5a4b;
+  /* Maquette #a85a1e : 4,00:1 sur --accent-fond. #924d1a depuis la v8.76 :
+     5,03:1 sur --accent-fond, 4,75:1 sur --panneau-3. */
+  --accent: #924d1a;
   --accent-fort: #8a4716;
   --accent-fond: #f2e2d2;
   /* Crème sur l'accent : 5,02:1. */
@@ -292,8 +295,12 @@ html[data-theme="clair"] {
   --tooltip-texte: #f4ede3;
   --avert-fond: #f2e2d2;
   --avert-bord: rgba(154, 82, 28, 0.42);
-  /* Maquette #c4503b : 3,57:1 sur --panneau-2. 4,50:1 ici. */
-  --danger: #aa4533;
+  /* Maquette #c4503b : 3,57:1 sur --panneau-2. #a0412f depuis la v8.76 :
+     4,76:1 sur --panneau-3. */
+  --danger: #a0412f;
+  /* La bordure d'un champ (v8.76) : 3,3:1 sur le panneau, le minimum d'une limite
+     de contrôle est 3:1. --lignes, à 1,5:1, laissait deviner les champs. */
+  --lignes-champ: #9a8570;
   /* Pas de vert : « bon » prend l'accent. Voir le thème sombre. */
   --ok: #9a521c;
   --tendance: rgba(154, 82, 28, 0.34);
@@ -1665,7 +1672,7 @@ div.analyse-lecture p + p { margin-top: 8px; }
 input[type="text"], input[type="number"], input[type="date"], input[type="datetime-local"],
 input[type="search"], select, textarea {
   background: var(--panneau);
-  border: 1px solid var(--lignes);
+  border: 1px solid var(--lignes-champ, var(--lignes));
   color: var(--encre);
   border-radius: var(--rayon-petit);
   /* Hauteur de la DA : 46 px, 48 au doigt. Elle se pose ICI, sur la ligne de
@@ -2789,6 +2796,12 @@ input[type="range"]::-moz-range-thumb {
 /* L'historique par tranches (v8.75) : le bouton sous la dernière ligne. */
 .h-plus { margin: 10px auto; display: block; }
 .h-ligne-plus td { text-align: center; border-bottom: none; }
+
+/* LE FOCUS DANS LES DESSINS (v8.76) : un bocal ou un ruban pris au clavier ne
+   se distinguait du survol que par un trait à peine plus épais. */
+svg [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+/* Au doigt, les entrées du menu font au moins 44 px de haut (v8.76). */
+@media (max-width: 1023px) { .rail-entree { min-height: 44px; } }
 
 /* Quel café, quelle recette (v8.74) : une case, une recette et ce que disent tes tasses. */
 .matrice-carte > summary { font-family: var(--serif); font-size: 1.35rem; color: var(--encre); cursor: pointer; }

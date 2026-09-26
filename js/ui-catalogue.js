@@ -332,6 +332,9 @@
      déjà synchronisée. Les seuls réglages propres à l'écran sont les deux replis,
      locaux à l'appareil. */
 
+  // Le nom lu par un lecteur d'écran pour un champ du tableau des recettes (v8.76) : « Chronicler · dose (g) ».
+  const nomChamp = (r, cle) => attrTitre(I18N.tr(r.nom) + " · " + I18N.t(cle));
+
   function rendreParametres() {
     const lignes = ["Brikka", "Switch"].map(m => {
       const liste = recettesDeMethode(m);
@@ -340,14 +343,14 @@
         liste.map(r =>
           '<tr data-param-recette="' + r.id + '">' +
           "<td>" + I18N.tr(r.nom) + "</td>" +
-          '<td><input type="number" step="0.5" min="1" data-champ="dose" value="' + (r.dose || "") + '"></td>' +
-          '<td><input type="number" step="1" min="10" data-champ="eau" value="' + (r.eau || "") + '"></td>' +
-          '<td><input type="number" step="1" min="60" max="100" data-champ="temp" value="' + (r.temp === "" ? "" : r.temp) +
+          '<td><input type="number" step="0.5" min="1" data-champ="dose" aria-label="' + nomChamp(r, "pc_dose") + '" value="' + (r.dose || "") + '"></td>' +
+          '<td><input type="number" step="1" min="10" data-champ="eau" aria-label="' + nomChamp(r, "pc_eau") + '" value="' + (r.eau || "") + '"></td>' +
+          '<td><input type="number" step="1" min="60" max="100" data-champ="temp" aria-label="' + nomChamp(r, "pc_temp") + '" value="' + (r.temp === "" ? "" : r.temp) +
             '" placeholder="' + I18N.t("param_vide") + '"></td>' +
           "<td>" + (r.methode === "Brikka"
-            ? '<input type="number" step="1" min="1" max="10" data-champ="puissance_feu" value="' + (r.puissance_feu || "") + '">'
+            ? '<input type="number" step="1" min="1" max="10" data-champ="puissance_feu" aria-label="' + nomChamp(r, "pc_feu") + '" value="' + (r.puissance_feu || "") + '">'
             : '<span class="param-sans">&middot;</span>') + "</td>" +
-          '<td><input type="text" data-champ="dial" value="' + attrTitre(r.dial || "") + '"></td>' +
+          '<td><input type="text" data-champ="dial" aria-label="' + nomChamp(r, "pc_dial") + '" value="' + attrTitre(r.dial || "") + '"></td>' +
           "</tr>").join("");
     }).join("");
     $("#param-recettes").innerHTML = lignes;

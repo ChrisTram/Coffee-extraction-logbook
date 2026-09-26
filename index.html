@@ -7,8 +7,8 @@
 <!-- Version du site, source unique : le pied de page la lit, et les fichiers
      chargés à la demande la mettent dans leur URL. Se pose avec
      node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="8.75">
-<link rel="stylesheet" href="css/styles.css?v=8.75">
+<meta name="app-version" content="8.76">
+<link rel="stylesheet" href="css/styles.css?v=8.76">
 <!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
      SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
      parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
@@ -46,7 +46,7 @@
      les scripts. bump_version.mjs versionne le lien des graphiques. -->
 <link rel="preload" href="css/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="css/fonts/instrument-serif-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="js/vendor/chart.umd.js?v=8.75" as="script">
+<link rel="preload" href="js/vendor/chart.umd.js?v=8.76" as="script">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%98%95%3C/text%3E%3C/svg%3E">
 </head>
 <body>
@@ -1417,29 +1417,29 @@ Cảm ơn shop.</pre>
         <span class="champ-hint" id="compte-ratees"></span>
       </div>
     </div>
-    <p class="param-aide">Le thème et la langue se règlent depuis l'en-tête, en haut à droite.</p>
+    <p class="param-aide">Le thème et la langue se règlent en bas du menu, sous « Plus » sur téléphone.</p>
   </article>
 </section>
 
 </main>
 
 <!-- ================= MODALE PREMIER LANCEMENT ================= -->
-<dialog id="modale-accueil" class="modale">
-  <h2>Bienvenue dans ton carnet d'extraction</h2>
+<dialog id="modale-accueil" aria-labelledby="modale-accueil-titre" class="modale">
+  <h2 id="modale-accueil-titre">Bienvenue dans ton carnet d'extraction</h2>
   <p>Où veux tu garder tes données ? Elles vivent dans deux fichiers CSV que tu peux ouvrir dans un tableur. Une copie de travail reste toujours dans le navigateur.</p>
   <div class="accueil-choix">
     <button class="carte carte-choix" id="acc-creer">
-      <span class="choix-icone">🗂️</span>
+      <span class="choix-icone" aria-hidden="true">🗂️</span>
       <b>Créer un dossier de données</b>
       <span>Choisis un dossier sur ton disque, le site y crée cafes.csv et extractions.csv avec tes 5 cafés de départ.</span>
     </button>
     <button class="carte carte-choix" id="acc-ouvrir">
-      <span class="choix-icone">📂</span>
+      <span class="choix-icone" aria-hidden="true">📂</span>
       <b>Ouvrir un dossier existant</b>
       <span>Reprends un dossier qui contient déjà cafes.csv et extractions.csv.</span>
     </button>
     <button class="carte carte-choix" id="acc-demo">
-      <span class="choix-icone">✨</span>
+      <span class="choix-icone" aria-hidden="true">✨</span>
       <b>Charger la démonstration</b>
       <span>65 extractions sur 6 semaines pour explorer le site. Remplaçable par tes vraies données à tout moment.</span>
     </button>
@@ -1449,8 +1449,8 @@ Cảm ơn shop.</pre>
 </dialog>
 
 <!-- ================= MODALE GESTION DES DONNEES ================= -->
-<dialog id="modale-donnees" class="modale">
-  <h2>Données</h2>
+<dialog id="modale-donnees" aria-labelledby="modale-donnees-titre" class="modale">
+  <h2 id="modale-donnees-titre">Données</h2>
   <p id="donnees-statut"></p>
   <p class="sync-ligne"><span id="sync-statut" class="sync-texte"></span>
     <button class="btn btn-petit" id="don-sync" hidden>Synchroniser maintenant</button></p>
@@ -1469,8 +1469,8 @@ Cảm ơn shop.</pre>
 </dialog>
 
 <!-- ================= MODALE CAFES ================= -->
-<dialog id="modale-cafes" class="modale modale-large">
-  <h2>Mes cafés</h2>
+<dialog id="modale-cafes" aria-labelledby="modale-cafes-titre" class="modale modale-large">
+  <h2 id="modale-cafes-titre">Mes cafés</h2>
   <div class="cafes-liste" id="cafes-liste"></div>
   <button class="btn btn-primaire" id="cafe-nouveau">Ajouter un café</button>
   <form id="form-cafe" class="form-cafe" hidden>
@@ -1535,8 +1535,8 @@ Cảm ơn shop.</pre>
 <!-- ================= MODALE RECETTES ================= -->
 
 
-<dialog id="modale-recettes" class="modale modale-large">
-  <h2>Mes recettes</h2>
+<dialog id="modale-recettes" aria-labelledby="modale-recettes-titre" class="modale modale-large">
+  <h2 id="modale-recettes-titre">Mes recettes</h2>
   <p class="modale-note">Tout est éditable : les valeurs préremplies en saisie viennent d'ici. Les recettes d'origine peuvent toujours être rétablies à leur version vérifiée.</p>
   <div class="cafes-liste" id="recettes-liste"></div>
   <button class="btn btn-primaire" id="recette-nouvelle">Ajouter une recette</button>
@@ -1690,8 +1690,8 @@ Cảm ơn shop.</pre>
   </div>
 </dialog>
 
-<dialog id="modale-comparaison" class="modale modale-large">
-  <h2>Comparer deux extractions</h2>
+<dialog id="modale-comparaison" aria-labelledby="modale-comparaison-titre" class="modale modale-large">
+  <h2 id="modale-comparaison-titre">Comparer deux extractions</h2>
   <p class="modale-note" id="comparaison-resume"></p>
   <div class="table-conteneur">
     <table class="table-comparaison">
@@ -1704,7 +1704,7 @@ Cảm ơn shop.</pre>
   </div>
 </dialog>
 
-<dialog id="modale-pas-a-pas" class="modale modale-pasapas">
+<dialog id="modale-pas-a-pas" aria-labelledby="pap-titre" class="modale modale-pasapas">
   <div class="pap-entete">
     <h2 id="pap-titre">Recette</h2>
     <span class="pap-chrono" id="pap-chrono">0:00</span>
@@ -1740,32 +1740,32 @@ Cảm ơn shop.</pre>
 <!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
      et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
      desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=8.75"></script>
-<script defer src="js/i18n.js?v=8.75"></script>
-<script defer src="js/grind.js?v=8.75"></script>
-<script defer src="js/recettes.js?v=8.75"></script>
+<script defer src="js/outils.js?v=8.76"></script>
+<script defer src="js/i18n.js?v=8.76"></script>
+<script defer src="js/grind.js?v=8.76"></script>
+<script defer src="js/recettes.js?v=8.76"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=8.75"></script>
-<script defer src="js/data-csv.js?v=8.75"></script>
-<script defer src="js/data-schema.js?v=8.75"></script>
-<script defer src="js/data-store.js?v=8.75"></script>
-<script defer src="js/data-calculs.js?v=8.75"></script>
-<script defer src="js/data-migrations.js?v=8.75"></script>
-<script defer src="js/data.js?v=8.75"></script>
-<script defer src="js/reglages.js?v=8.75"></script>
-<script defer src="js/charts.js?v=8.75"></script>
-<script defer src="js/ui-noyau.js?v=8.75"></script>
-<script defer src="js/ui-tableau.js?v=8.75"></script>
-<script defer src="js/ui-saisie.js?v=8.75"></script>
-<script defer src="js/ui-chrono.js?v=8.75"></script>
-<script defer src="js/ui-brouillon.js?v=8.75"></script>
-<script defer src="js/ui-rapide.js?v=8.75"></script>
-<script defer src="js/ui-historique.js?v=8.75"></script>
-<script defer src="js/ui-guide.js?v=8.75"></script>
-<script defer src="js/ui-catalogue.js?v=8.75"></script>
-<script defer src="js/ui-fiche.js?v=8.75"></script>
-<script defer src="js/ui-brassage.js?v=8.75"></script>
-<script defer src="js/ui-dessins.js?v=8.75"></script>
-<script defer src="js/app.js?v=8.75"></script>
+<script defer src="js/sync.js?v=8.76"></script>
+<script defer src="js/data-csv.js?v=8.76"></script>
+<script defer src="js/data-schema.js?v=8.76"></script>
+<script defer src="js/data-store.js?v=8.76"></script>
+<script defer src="js/data-calculs.js?v=8.76"></script>
+<script defer src="js/data-migrations.js?v=8.76"></script>
+<script defer src="js/data.js?v=8.76"></script>
+<script defer src="js/reglages.js?v=8.76"></script>
+<script defer src="js/charts.js?v=8.76"></script>
+<script defer src="js/ui-noyau.js?v=8.76"></script>
+<script defer src="js/ui-tableau.js?v=8.76"></script>
+<script defer src="js/ui-saisie.js?v=8.76"></script>
+<script defer src="js/ui-chrono.js?v=8.76"></script>
+<script defer src="js/ui-brouillon.js?v=8.76"></script>
+<script defer src="js/ui-rapide.js?v=8.76"></script>
+<script defer src="js/ui-historique.js?v=8.76"></script>
+<script defer src="js/ui-guide.js?v=8.76"></script>
+<script defer src="js/ui-catalogue.js?v=8.76"></script>
+<script defer src="js/ui-fiche.js?v=8.76"></script>
+<script defer src="js/ui-brassage.js?v=8.76"></script>
+<script defer src="js/ui-dessins.js?v=8.76"></script>
+<script defer src="js/app.js?v=8.76"></script>
 </body>
 </html>
