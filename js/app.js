@@ -42,6 +42,7 @@
     "hors-ligne": "sync_horsligne",
     "session-expiree": "sync_session",
     "non-configuree": "sync_nonconf",
+    "version-perimee": "sync_perimee",
     erreur: "sync_erreur",
   };
 
@@ -189,6 +190,24 @@
     window.addEventListener("online", () => {
       if (DATA.syncPossible()) DATA.synchroniser(false);
     });
+    // Au retour sur l'appli (v8.71) : un téléphone rouvert se remet à jour tout de suite.
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && DATA.syncPossible()) DATA.synchroniser(false);
+    });
+    /* Une écriture locale ratée ne passe plus en silence (v8.71). */
+    let stockageSignale = false;
+    window.addEventListener("carnet-stockage-ko", () => {
+      if (stockageSignale) return;
+      stockageSignale = true;
+      toast(I18N.t("t_stockage_ko"));
+    });
+    /* Le serveur connaît une version plus récente : on propose de recharger. */
+    let perimeeSignalee = false;
+    DATA.abonner(() => {
+      if (DATA.state.syncEtat !== "version-perimee" || perimeeSignalee) return;
+      perimeeSignalee = true;
+      UI.toastAction(I18N.t("sync_perimee"), I18N.t("maj_recharger"), () => location.reload());
+    });
 
     /* ÉCHAP ferme ce qui est ouvert. Les <dialog> natifs le font tout seuls, mais
        le panneau de saisie rapide et les formulaires dépliés ne sont pas des
@@ -239,17 +258,26 @@
       const f = ev.target.files[0];
       if (!f) return;
       try {
-        const res = await DATA.importerTexteCSV(await f.text());
-        const nomTable = res.table === "cafes" ? I18N.t("tbl_cafes") : res.table === "recettes" ? I18N.t("tbl_recettes") : I18N.t("tbl_extractions");
+        /* Un aperçu AVANT d'importer (v8.71) : la table reconnue, et ce qui
+           arrive, change ou se crée. Rien n'est écrit sans « Importer ». */
+        const texte = await f.text();
+        const a = DATA.analyserImport(texte);
+        const nomTable = I18N.t("tbl_" + a.table);
+        const detail = a.table === "tout"
+          ? I18N.t("imp_apercu_tout", { n: a.n })
+          : I18N.t("imp_apercu", { n: a.n, t: nomTable, nv: a.nouvelles, md: a.modifiees }) +
+            (a.sansId ? " " + I18N.t("imp_sans_id", { n: a.sansId }) : "") +
+            (a.doublons ? " " + I18N.t("imp_doublons", { n: a.doublons }) : "");
+        if (!await UI.confirmer(detail, { libelle: I18N.t("imp_ok") })) { ev.target.value = ""; return; }
+        const res = await DATA.importerTexteCSV(texte);
         toast(I18N.t("t_import", { n: res.n, t: nomTable }));
         majStatutDonnees();
       } catch (e) { toast(e.message); }
       ev.target.value = "";
     });
+    // Les six tables et le fichier complet réimportable (v8.71), plus trois.
     $("#don-exporter").addEventListener("click", () => {
-      DATA.exporterCafes();
-      DATA.exporterExtractions();
-      DATA.exporterRecettes();
+      DATA.exporterTout();
       toast(I18N.t("t_export_tout"));
     });
     $("#don-demo").addEventListener("click", async () => {

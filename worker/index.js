@@ -16,7 +16,7 @@
  * ce fichier n'existe que sur Cloudflare.
  */
 
-import { handleSync } from "./sync.js";
+import { sauvegarderDocument, handleSync } from "./sync.js";
 
 const SESSION_COOKIE = "cel_session";
 const SESSION_DAYS = 30;
@@ -30,6 +30,13 @@ const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
 export default {
+  /* La sauvegarde quotidienne du document (v8.71), declenchee par le cron de
+     wrangler.jsonc. Sans base liee, rien a sauvegarder. */
+  async scheduled(event, env, ctx) {
+    if (!env.DB) return;
+    ctx.waitUntil(sauvegarderDocument(env.DB, Date.now()).catch(e => console.error("sauvegarde", e && e.message)));
+  },
+
   async fetch(request, env) {
     const url = new URL(request.url);
     const missing = missingSecrets(env);

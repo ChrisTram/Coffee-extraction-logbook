@@ -19,10 +19,10 @@ const DATA = (() => {
 
   const { csvParse, csvSerialiser } = DATA_CSV;
   const { CAFE_COLS, EXT_COLS, REGLAGE_ID, REGLAGE_COLS, RECETTE_COLS, TASSE_COLS, ACHAT_COLS,
-    estampiller, reporterHorodatage, nouvelId, dateLocaleAujourdhui,
+    estampiller, reporterHorodatage, nouvelId, dateLocaleAujourdhui, maintenant, reglerDecalage,
     normaliserCafe, normaliserExtraction, normaliserReglages, normaliserRecette, normaliserAchat,
     normaliserTasse, recetteVersLigne, recettesDefaut, tassesDefaut } = DATA_SCHEMA;
-  const { ouvrirDB, kvGet, kvSet, verifierPermission, ecrireFichier, lireFichier, telecharger } = DATA_STORE;
+  const { ouvrirDB, kvGet, kvSet, kvSetPlusieurs, verifierPermission, ecrireFichier, lireFichier, telecharger } = DATA_STORE;
 
   const state = {
     cafes: [],
@@ -61,7 +61,7 @@ const DATA = (() => {
      réécriture de la même ligne sur l'autre appareil. */
   function marquerSupprime(table, id) {
     if (!state.tombes[table]) state.tombes[table] = {};
-    state.tombes[table][id] = Date.now();
+    state.tombes[table][id] = maintenant();
   }
 
   const abonnes = [];
@@ -110,14 +110,11 @@ const DATA = (() => {
   }
 
   async function sauverLocal() {
-    await kvSet("cafes", state.cafes);
-    await kvSet("extractions", state.extractions);
-    await kvSet("recettes", state.recettes);
-    await kvSet("tasses", state.tasses);
-    await kvSet("demoActive", state.demoActive);
-    await kvSet("achats", state.achats);
-    await kvSet("reglages", state.reglages);
-    await kvSet("tombes", state.tombes);
+    await kvSetPlusieurs({
+      cafes: state.cafes, extractions: state.extractions, recettes: state.recettes,
+      tasses: state.tasses, demoActive: state.demoActive, achats: state.achats,
+      reglages: state.reglages, tombes: state.tombes,
+    });
   }
 
   // ---------- File System Access ----------
@@ -150,6 +147,13 @@ const DATA = (() => {
     const handle = await window.showDirectoryPicker({ mode: "readwrite" });
     if (!await verifierPermission(handle)) throw new Error("Permission refusée");
     state.dirHandle = handle;
+    /* Lier un dossier en sortant de la démo (v8.71) : les 62 tasses de démo
+       seraient devenues de vraies données, puis parties au serveur. */
+    if (state.demoActive) {
+      state.extractions = []; state.achats = [];
+      state.cafes = CAFES_DEPART.map(normaliserCafe);
+      state.recettes = recettesDefaut(); state.tasses = tassesDefaut();
+    }
     if (creer) {
       if (!state.cafes.length) state.cafes = CAFES_DEPART.map(normaliserCafe);
       if (!state.recettes.length) state.recettes = recettesDefaut();
@@ -207,22 +211,86 @@ const DATA = (() => {
     return null;
   }
 
-  async function importerTexteCSV(texte) {
+  /* L'IMPORT (v8.71). Trois défauts corrigés d'un coup :
+     - une table sans branche (les achats) tombait dans le « sinon » et
+       ÉCRASAIT toutes les extractions ; chaque table a maintenant sa branche,
+       et une table inconnue est refusée ;
+     - la table était remplacée en entier : l'import FUSIONNE par identifiant,
+       une ligne absente du fichier reste en place ;
+     - une ligne identique à celle qu'on a garde sa date, seules les lignes
+       nouvelles ou changées sont estampillées (reporterHorodatage).
+     Une ligne sans identifiant en reçoit un ; un identifiant en double garde sa
+     dernière ligne. analyserImport décrit tout ça AVANT, pour la confirmation.
+     Le fichier complet exporté (JSON) se réimporte aussi, par la même fusion
+     que la synchro. */
+  const IMPORT = {
+    cafes: { cols: () => CAFE_COLS, norm: r => normaliserCafe(r), pref: "c" },
+    extractions: { cols: () => EXT_COLS, norm: r => normaliserExtraction(r), pref: "e" },
+    recettes: { cols: () => RECETTE_COLS, norm: r => normaliserRecette(r), pref: "r" },
+    tasses: { cols: () => TASSE_COLS, norm: r => normaliserTasse(r), pref: "t" },
+    achats: { cols: () => ACHAT_COLS, norm: r => normaliserAchat(r), pref: "a" },
+    reglages: { cols: () => REGLAGE_COLS, norm: r => normaliserReglages(r), pref: "g" },
+  };
+
+  function preparerImport(texte) {
+    if (/^\s*\{/.test(texte)) {
+      let doc;
+      try { doc = JSON.parse(texte); } catch (e) { throw new Error(I18N.t("imp_json_illisible")); }
+      if (!doc || !doc.tables) throw new Error(I18N.t("imp_json_illisible"));
+      const n = Object.values(doc.tables).reduce((s, l) => s + (Array.isArray(l) ? l.length : 0), 0);
+      return { table: "tout", doc, n, nouvelles: 0, modifiees: 0, sansId: 0, doublons: 0 };
+    }
     const rows = csvParse(texte);
     const table = detecterTable(rows);
-    if (!table) throw new Error("Colonnes non reconnues : ni une table cafés, ni extractions, ni recettes.");
-    // Un import est un geste DÉLIBÉRÉ : les lignes sont estampillées maintenant
-    // pour qu'elles gagnent la fusion contre la version du serveur. Sans ça, un
-    // import serait annulé par la synchro suivante.
-    const importees = normaliser => rows.map(r => estampiller(normaliser(r)));
-    if (table === "cafes") state.cafes = importees(normaliserCafe);
-    else if (table === "recettes") state.recettes = importees(normaliserRecette);
-    else if (table === "tasses") state.tasses = importees(normaliserTasse);
-    else state.extractions = importees(normaliserExtraction);
+    if (!table) throw new Error(I18N.t("imp_inconnue"));
+    const def = IMPORT[table];
+    const actuelles = table === "reglages" ? state.reglages : state[table];
+    const parId = new Map();
+    let sansId = 0, doublons = 0;
+    rows.map(def.norm).forEach(l => {
+      if (!l.id) { l.id = nouvelId(def.pref, [...actuelles, ...parId.values()]); sansId++; }
+      if (parId.has(l.id)) doublons++;
+      parId.set(l.id, l);
+    });
+    const lignes = reporterHorodatage([...parId.values()], actuelles, def.cols());
+    const connues = new Map(actuelles.map(l => [l.id, l]));
+    const nouvelles = lignes.filter(l => !connues.has(l.id)).length;
+    const modifiees = lignes.filter(l => connues.has(l.id) && l.maj_le !== connues.get(l.id).maj_le).length;
+    return { table, lignes, n: lignes.length, nouvelles, modifiees, sansId, doublons };
+  }
+
+  function analyserImport(texte) {
+    const p = preparerImport(texte);
+    return { table: p.table, n: p.n, nouvelles: p.nouvelles, modifiees: p.modifiees, sansId: p.sansId, doublons: p.doublons };
+  }
+
+  async function importerTexteCSV(texte) {
+    const p = preparerImport(texte);
+    if (p.table === "tout") {
+      const fusion = SYNC.fusionner(chargeUtileLocale(), p.doc);
+      adopterTables(fusion);
+    } else {
+      const parId = new Map(state[p.table].map(l => [l.id, l]));
+      p.lignes.forEach(l => parId.set(l.id, l));
+      state[p.table] = [...parId.values()];
+      if (p.table === "reglages") state.reglages = state.reglages.slice(-1);
+    }
     migrerDonnees();
     state.demoActive = false;
     await persister();
-    return { table, n: rows.length };
+    return { table: p.table, n: p.n };
+  }
+
+  // Les tables telles qu'elles sont, et les pierres tombales. Le fichier complet.
+  function exporterTout() {
+    telecharger("cafes.csv", csvSerialiser(state.cafes, CAFE_COLS));
+    telecharger("extractions.csv", csvSerialiser(state.extractions, EXT_COLS));
+    telecharger("recettes.csv", csvRecettes());
+    telecharger("tasses.csv", csvSerialiser(state.tasses, TASSE_COLS));
+    telecharger("achats.csv", csvSerialiser(state.achats, ACHAT_COLS));
+    telecharger("reglages.csv", csvSerialiser(state.reglages, REGLAGE_COLS));
+    telecharger("carnet-complet.json", JSON.stringify({ ...chargeUtileLocale(), exporte_le: new Date().toISOString() }),
+      "application/json;charset=utf-8");
   }
 
   function exporterCafes() { telecharger("cafes.csv", csvSerialiser(state.cafes, CAFE_COLS)); }
@@ -298,6 +366,15 @@ const DATA = (() => {
   }
 
   async function viderDonnees() {
+    /* Des pierres tombales pour tout ce qui part (v8.71) : sans elles, la
+       synchro suivante ramenait tout du serveur, et « vider » ne vidait rien. */
+    const garderSemees = (table, semees) => state[table]
+      .filter(l => !semees.some(s => s.id === l.id)).forEach(l => marquerSupprime(table, l.id));
+    state.extractions.forEach(l => marquerSupprime("extractions", l.id));
+    state.achats.forEach(l => marquerSupprime("achats", l.id));
+    garderSemees("cafes", CAFES_DEPART);
+    garderSemees("recettes", RECETTES_DEPART);
+    garderSemees("tasses", TASSES_DEPART);
     state.extractions = [];
     state.cafes = CAFES_DEPART.map(normaliserCafe);
     state.recettes = recettesDefaut();
@@ -316,6 +393,12 @@ const DATA = (() => {
   const SYNC_DEBOUNCE_MS = 1500;
   let syncMinuteur = null;
   let syncEnCours = false;
+  let syncRedemandee = false;
+  let generation = 0;
+  // Relances après un échec : 5 s, 15 s, 1 min, puis toutes les 5 min.
+  const RELANCES_MS = [5000, 15000, 60000, 300000];
+  let echecsSync = 0;
+  let relanceMinuteur = null;
 
   function chargeUtileLocale() {
     return {
@@ -328,7 +411,23 @@ const DATA = (() => {
         reglages: state.reglages,
       },
       tombes: state.tombes,
+      // L'onglet dit sa version : le serveur refuse un onglet plus ancien que
+      // le document, qui effacerait les colonnes qu'il ne connaît pas (v8.71).
+      schema: SCHEMA_ACTUEL,
     };
+  }
+
+  // Adopte des tables fusionnées, normalisées, avec les recettes et tasses de départ en secours.
+  function adopterTables(fusion) {
+    state.cafes = (fusion.tables.cafes || []).map(normaliserCafe);
+    state.extractions = (fusion.tables.extractions || []).map(normaliserExtraction);
+    state.recettes = (fusion.tables.recettes || []).map(normaliserRecette);
+    state.tasses = (fusion.tables.tasses || []).map(normaliserTasse);
+    state.achats = (fusion.tables.achats || []).map(normaliserAchat);
+    state.reglages = (fusion.tables.reglages || []).map(normaliserReglages).slice(0, 1);
+    state.tombes = fusion.tombes || SYNC.tombesVides();
+    if (!state.recettes.length) state.recettes = recettesDefaut();
+    if (!state.tasses.length) state.tasses = tassesDefaut();
   }
 
   function syncPossible() {
@@ -345,36 +444,45 @@ const DATA = (() => {
       if (manuelle) notifier();
       return state.syncEtat;
     }
-    if (syncEnCours) return state.syncEtat;
+    /* Une synchro demandée pendant qu'une autre est en vol n'est plus perdue
+       (v8.71) : elle repart dès que la première a fini. */
+    if (syncEnCours) { syncRedemandee = true; return state.syncEtat; }
     syncEnCours = true;
+    syncRedemandee = false;
     state.syncEtat = "encours";
     notifier();
 
+    const generationEnvoyee = generation;
     try {
-      const fusion = await SYNC.echanger(chargeUtileLocale());
-      state.cafes = (fusion.tables.cafes || []).map(normaliserCafe);
-      state.extractions = (fusion.tables.extractions || []).map(normaliserExtraction);
-      state.recettes = (fusion.tables.recettes || []).map(normaliserRecette);
-      state.tasses = (fusion.tables.tasses || []).map(normaliserTasse);
-      state.achats = (fusion.tables.achats || []).map(normaliserAchat);
-      state.reglages = (fusion.tables.reglages || []).map(normaliserReglages).slice(0, 1);
-      state.tombes = fusion.tombes || SYNC.tombesVides();
-      state.syncTaille = Number(fusion.taille) || 0;
-      state.syncPlafond = Number(fusion.plafond) || 0;
-      if (!state.recettes.length) state.recettes = recettesDefaut();
-      if (!state.tasses.length) state.tasses = tassesDefaut();
+      const recu = await SYNC.echanger(chargeUtileLocale());
+      reglerDecalage((Number(recu.serverTime) || Date.now()) - Date.now());
+      /* FUSIONNÉE avec l'état tel qu'il est au retour, plus substituée : ce qui
+         a été saisi pendant l'échange reste. */
+      adopterTables(SYNC.fusionner(recu, chargeUtileLocale()));
+      state.syncTaille = Number(recu.taille) || 0;
+      state.syncPlafond = Number(recu.plafond) || 0;
       migrerDonnees();
       await sauverLocal();
       sauverFichiers();
       state.syncEtat = "ok";
       state.syncLe = Date.now();
+      echecsSync = 0;
+      if (generation !== generationEnvoyee) syncRedemandee = true;
     } catch (error) {
       // On garde les données locales telles quelles : une synchro ratée ne doit
-      // jamais faire perdre une saisie. Le prochain échange rattrapera.
+      // jamais faire perdre une saisie. Relance avec un délai croissant (v8.71),
+      // sauf si le serveur dit que cet onglet est trop ancien : il faut recharger.
       state.syncEtat = error && error.code ? error.code : "erreur";
+      if (state.syncEtat !== "version-perimee" && state.syncEtat !== "session-expiree") {
+        const delai = RELANCES_MS[Math.min(echecsSync, RELANCES_MS.length - 1)];
+        echecsSync++;
+        clearTimeout(relanceMinuteur);
+        relanceMinuteur = setTimeout(() => synchroniser(false), delai);
+      }
     } finally {
       syncEnCours = false;
       notifier();
+      if (syncRedemandee) planifierSync();
     }
     return state.syncEtat;
   }
@@ -385,8 +493,18 @@ const DATA = (() => {
     syncMinuteur = setTimeout(() => { synchroniser(false); }, SYNC_DEBOUNCE_MS);
   }
 
+  /* Chaque persistance change la génération : une synchro qui revient sait si
+     quelque chose a bougé pendant son vol. Une écriture locale ratée (stockage
+     plein) est signalée, et la synchro part quand même : la tasse ne vit plus
+     seulement en mémoire (v8.71). */
   async function persister() {
-    await sauverLocal();
+    generation++;
+    try {
+      await sauverLocal();
+    } catch (e) {
+      console.error("Stockage local impossible", e);
+      if (typeof window !== "undefined" && window.dispatchEvent) window.dispatchEvent(new CustomEvent("carnet-stockage-ko"));
+    }
     sauverFichiers();
     notifier();
     planifierSync();
@@ -603,7 +721,7 @@ const DATA = (() => {
     sachetCourant, stockSachet, ajouterAchat, supprimerAchat,
     calculs, cafeDe,
     lierDossier, delierDossier, sauverFichiers,
-    importerTexteCSV, exporterCafes, exporterExtractions, exporterRecettes,
+    importerTexteCSV, analyserImport, exporterTout, exporterCafes, exporterExtractions, exporterRecettes,
     chargerDemo, viderDonnees,
     ajouterExtraction, modifierExtraction, supprimerExtraction, restaurerExtraction,
     ajouterCafe, modifierCafe,

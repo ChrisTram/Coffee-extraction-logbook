@@ -28,6 +28,19 @@ const DATA_STORE = (() => {
     });
   }
 
+  /* Plusieurs clés en UNE transaction (v8.71) : tout est écrit, ou rien. Huit
+     transactions séparées pouvaient laisser la copie locale à moitié à jour. */
+  function kvSetPlusieurs(paires) {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction("kv", "readwrite");
+      const magasin = tx.objectStore("kv");
+      Object.entries(paires).forEach(([cle, valeur]) => magasin.put(valeur, cle));
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+  }
+
   function kvGet(cle) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction("kv", "readonly");
@@ -62,8 +75,8 @@ const DATA_STORE = (() => {
     }
   }
 
-  function telecharger(nomFichier, contenu) {
-    const blob = new Blob([contenu], { type: "text/csv;charset=utf-8" });
+  function telecharger(nomFichier, contenu, type) {
+    const blob = new Blob([contenu], { type: type || "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -74,5 +87,5 @@ const DATA_STORE = (() => {
     setTimeout(() => URL.revokeObjectURL(url), 3000);
   }
 
-  return { ouvrirDB, kvGet, kvSet, verifierPermission, ecrireFichier, lireFichier, telecharger };
+  return { ouvrirDB, kvGet, kvSet, kvSetPlusieurs, verifierPermission, ecrireFichier, lireFichier, telecharger };
 })();

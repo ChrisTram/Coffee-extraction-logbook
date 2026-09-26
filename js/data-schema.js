@@ -41,12 +41,27 @@ const DATA_SCHEMA = (() => {
 
   const ACHAT_COLS = ["id", "cafe_id", "date_achat", "format_grammes", "prix_vnd", "date_torrefaction", "date_ouverture"];
 
+  /* L'HEURE DU CARNET (v8.71) : celle de l'appareil corrigée de son écart avec
+     le serveur, mesuré à chaque synchro. Un téléphone en avance de dix minutes
+     gagnait toutes les fusions pendant dix minutes. Un écart de moins de deux
+     secondes est du bruit de réseau : ignoré. */
+  let decalage = 0;
+  function maintenant() { return Date.now() + decalage; }
+  function reglerDecalage(ms) {
+    const n = Number(ms);
+    decalage = Number.isFinite(n) && Math.abs(n) > 2000 ? n : 0;
+  }
+
   /* Estampille une ligne qu'on vient d'écrire, pour que la fusion sache qui est
      le plus récent. À appeler dans les MUTATIONS uniquement. */
   function estampiller(row) {
-    row.maj_le = Date.now();
+    row.maj_le = maintenant();
     return row;
   }
+
+  // Un nombre, ou vide quand la valeur manque : jamais 0 par défaut (v8.71).
+  // Un CSV sans colonne note donnait des notes de 0/10.
+  const nombreOuVide = v => (v === "" || v === undefined || v === null ? "" : Number(v));
 
   /* Reporte les horodatages connus sur des lignes qui viennent d'un CSV.
      INDISPENSABLE : les CSV ne transportent pas `maj_le`, donc relire le dossier
@@ -68,7 +83,7 @@ const DATA_SCHEMA = (() => {
         const a = avant[c], b = ligne[c];
         return String(a === undefined || a === null ? "" : a) === String(b === undefined || b === null ? "" : b);
       });
-      ligne.maj_le = identique ? (Number(avant.maj_le) || 0) : Date.now();
+      ligne.maj_le = identique ? (Number(avant.maj_le) || 0) : maintenant();
       return ligne;
     });
   }
@@ -118,12 +133,12 @@ const DATA_SCHEMA = (() => {
       cafe_id: r.cafe_id || "",
       methode: r.methode || "",
       recette: r.recette || "",
-      dose_g: r.dose_g === "" ? "" : Number(r.dose_g),
-      eau_g: r.eau_g === "" ? "" : Number(r.eau_g),
+      dose_g: nombreOuVide(r.dose_g),
+      eau_g: nombreOuVide(r.eau_g),
       mouture_dial: r.mouture_dial || "",
-      temperature_c: r.temperature_c === "" ? "" : Number(r.temperature_c),
-      temps_total_s: r.temps_total_s === "" ? "" : Number(r.temps_total_s),
-      temps_ecoulement_s: r.temps_ecoulement_s === "" ? "" : Number(r.temps_ecoulement_s),
+      temperature_c: nombreOuVide(r.temperature_c),
+      temps_total_s: nombreOuVide(r.temps_total_s),
+      temps_ecoulement_s: nombreOuVide(r.temps_ecoulement_s),
       // volume_tasse_ml est l'ancien nom du champ, accepté en lecture.
       volume_extrait_ml: (() => {
         const v = r.volume_extrait_ml !== undefined && r.volume_extrait_ml !== "" ? r.volume_extrait_ml : r.volume_tasse_ml;
@@ -138,7 +153,7 @@ const DATA_SCHEMA = (() => {
       // une valeur hors plage editee au tableur est ramenee dedans, pas jetee.
       puissance_feu: r.puissance_feu === "" || r.puissance_feu === undefined || r.puissance_feu === null
         ? "" : Math.max(1, Math.min(10, Math.round(Number(r.puissance_feu)) || 1)),
-      note_sur_10: r.note_sur_10 === "" ? "" : Number(r.note_sur_10),
+      note_sur_10: nombreOuVide(r.note_sur_10),
       diagnostic: r.diagnostic || "",
       descripteurs: r.descripteurs || "",
       commentaire: r.commentaire || "",
@@ -346,16 +361,24 @@ const DATA_SCHEMA = (() => {
     return TASSES_DEPART.map(t => normaliserTasse(t));
   }
 
+  /* DES IDENTIFIANTS QUI NE SE TÉLESCOPENT PLUS (v8.71). L'identifiant valait
+     « longueur de la liste + 1 » : le téléphone et l'ordinateur fabriquaient
+     tous deux « e124 », et à la synchro l'une des deux tasses écrasait l'autre
+     sans rien dire. Maintenant : l'heure en base 36 et quatre caractères au
+     hasard. Les anciens identifiants restent valides, aucun code ne les lit
+     comme des nombres. */
   function nouvelId(prefixe, liste) {
-    let n = liste.length + 1;
-    while (liste.some(x => x.id === prefixe + n)) n++;
-    return prefixe + n;
+    let id;
+    do {
+      id = prefixe + maintenant().toString(36) + Math.random().toString(36).slice(2, 6);
+    } while (liste.some(x => x.id === id));
+    return id;
   }
 
   return {
     CAFE_COLS, EXT_COLS, REGLAGE_ID, REGLAGE_COLS, RECETTE_COLS, TASSE_COLS, ACHAT_COLS,
     PUISSANCE_FEU_HISTORIQUE,
-    estampiller, reporterHorodatage, nouvelId, dateLocaleAujourdhui,
+    estampiller, reporterHorodatage, nouvelId, dateLocaleAujourdhui, maintenant, reglerDecalage,
     normaliserCafe, normaliserExtraction, normaliserReglages, normaliserRecette, normaliserAchat,
     normaliserTasse, recetteVersLigne, recettesDefaut, tassesDefaut,
   };

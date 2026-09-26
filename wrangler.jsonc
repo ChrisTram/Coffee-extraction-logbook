@@ -29,6 +29,12 @@
     }
   ],
 
+  // SAUVEGARDE QUOTIDIENNE du document de synchro (v8.71) : 20:00 UTC, soit
+  // 3 heures du matin au Vietnam. Voir sauvegarderDocument dans worker/sync.js.
+  "triggers": {
+    "crons": ["0 20 * * *"]
+  },
+
   "observability": {
     "enabled": true
   }

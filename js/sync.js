@@ -30,6 +30,42 @@ const SYNC = (() => {
     return Object.fromEntries(TABLES.map(name => [name, {}]));
   }
 
+  /* LA MÊME FUSION QUE LE SERVEUR, CÔTÉ CLIENT (v8.71). La réponse d'une synchro
+     remplaçait l'état local : une tasse ajoutée, ou restaurée par « Annuler »,
+     pendant l'échange (jusqu'à 15 s) disparaissait. Maintenant la réponse est
+     FUSIONNÉE avec l'état tel qu'il est au retour, avec exactement la règle de
+     worker/sync.js : ligne par ligne le plus récent gagne, union des champs à
+     égalité, et une pierre tombale postérieure supprime. Un test compare les
+     deux fusions. Pas de purge ici : c'est le serveur qui purge. */
+  const horo = v => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : 0; };
+  function fusionnerLigne(a, b) {
+    const ja = JSON.stringify(a), jb = JSON.stringify(b);
+    if (ja === jb) return a;
+    const [petite, grande] = ja < jb ? [a, b] : [b, a];
+    return { ...petite, ...grande };
+  }
+  function fusionner(gauche, droite) {
+    const tables = {}, tombes = {};
+    for (const nom of TABLES) {
+      const marques = { ...((gauche.tombes || {})[nom] || {}) };
+      for (const [id, ts] of Object.entries((droite.tombes || {})[nom] || {})) {
+        if (horo(ts) > horo(marques[id])) marques[id] = horo(ts);
+      }
+      const parId = new Map();
+      for (const ligne of [...((gauche.tables || {})[nom] || []), ...((droite.tables || {})[nom] || [])]) {
+        if (!ligne || !ligne.id) continue;
+        const ex = parId.get(ligne.id);
+        if (!ex) { parId.set(ligne.id, ligne); continue; }
+        const tl = horo(ligne.maj_le), te = horo(ex.maj_le);
+        if (tl > te) parId.set(ligne.id, ligne);
+        else if (tl === te) parId.set(ligne.id, fusionnerLigne(ex, ligne));
+      }
+      tables[nom] = [...parId.values()].filter(l => horo(marques[l.id]) <= horo(l.maj_le));
+      tombes[nom] = marques;
+    }
+    return { tables, tombes };
+  }
+
   /* Echange en un seul aller retour : on envoie l'etat local, le serveur
      fusionne et renvoie le resultat, qui devient la verite des deux cotes.
      Les erreurs sont typees pour que l'appelant sache quoi afficher. */
@@ -61,6 +97,10 @@ const SYNC = (() => {
     if (reponse.status === 503) {
       throw Object.assign(new Error("non configuree"), { code: "non-configuree" });
     }
+    // Le serveur connaît une version plus récente du carnet que cet onglet (v8.71).
+    if (reponse.status === 409) {
+      throw Object.assign(new Error("version perimee"), { code: "version-perimee" });
+    }
     if (!reponse.ok) {
       throw Object.assign(new Error("http " + reponse.status), { code: "erreur" });
     }
@@ -72,5 +112,5 @@ const SYNC = (() => {
     return recu;
   }
 
-  return { disponible, echanger, tombesVides, TABLES };
+  return { disponible, echanger, fusionner, tombesVides, TABLES };
 })();

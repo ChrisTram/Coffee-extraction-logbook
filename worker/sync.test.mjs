@@ -1,6 +1,6 @@
 import {
   mergePayloads, sanitisePayload, emptyPayload, handleSync, documentSize,
-  MAX_DOCUMENT_BYTES, TOMBSTONE_RETENTION_MS, TABLES,
+  MAX_DOCUMENT_BYTES, TOMBSTONE_RETENTION_MS, TABLES, AVANCE_TOLEREE_MS, sauvegarderDocument, JOURS_DE_SAUVEGARDE,
 } from "./sync.js";
 
 let failures = 0;
@@ -147,7 +147,7 @@ check("les recettes survivent", garde.tables.recettes.length === 1);
   check("la reponse porte la taille du document", Number.isInteger(corps.taille) && corps.taille > 0, String(corps.taille));
   check("et le plafond que le serveur accepte", corps.plafond === MAX_DOCUMENT_BYTES);
   check("la taille est celle du document fusionne, en octets",
-    corps.taille === documentSize({ tables: corps.tables, tombes: corps.tombes }));
+    corps.taille === documentSize({ tables: corps.tables, tombes: corps.tombes, schema: corps.schema }));
   check("le plafond est celui de D1, deux millions d'octets par ligne", MAX_DOCUMENT_BYTES === 2_000_000);
 
   const lecture = await handleSync(new Request("https://site.test/api/sync"), env);
@@ -157,6 +157,70 @@ check("les recettes survivent", garde.tables.recettes.length === 1);
 
   // Les accents comptent en octets, pas en caracteres : c'est l'unite du plafond.
   check("la mesure est en octets UTF-8", documentSize({ a: "é" }) === JSON.stringify({ a: "é" }).length + 1);
+}
+
+// 13. v8.71 : a egalite de maj_le, l'union des champs ; la fusion reste commutative.
+{
+  const recente = payload([{ id: "e1", maj_le: NOW, note_sur_10: 7, chauffe_s: 90 }]);
+  const amputee = payload([{ id: "e1", maj_le: NOW, note_sur_10: 7 }]);
+  const ab = mergePayloads(recente, amputee, NOW), ba = mergePayloads(amputee, recente, NOW);
+  check("un vieil onglet n'efface plus une colonne recente a la meme date",
+    ab.tables.extractions[0].chauffe_s === 90 && ba.tables.extractions[0].chauffe_s === 90);
+  const x = payload([{ id: "e1", maj_le: NOW, note_sur_10: 7 }]), y = payload([{ id: "e1", maj_le: NOW, note_sur_10: 8 }]);
+  check("deux valeurs differentes a la meme date donnent le meme gagnant dans les deux sens",
+    JSON.stringify(mergePayloads(x, y, NOW)) === JSON.stringify(mergePayloads(y, x, NOW)));
+}
+
+// 14. v8.71 : un horodatage du futur est ramene a l'heure du serveur.
+{
+  const futur = sanitisePayload({ tables: { extractions: [ext("e1", NOW + AVANCE_TOLEREE_MS + 60000, 7)] },
+    tombes: { extractions: { e2: NOW + 3600000 } } }, NOW);
+  check("une ligne datee du futur revient a maintenant", futur.tables.extractions[0].maj_le === NOW);
+  check("une pierre tombale aussi", futur.tombes.extractions.e2 === NOW);
+  const proche = sanitisePayload({ tables: { extractions: [ext("e1", NOW + 60000, 7)] } }, NOW);
+  check("une petite avance reste toleree", proche.tables.extractions[0].maj_le === NOW + 60000);
+}
+
+// 15. v8.71 : version perimee refusee, document illisible jamais ecrase, corps trop gros refuse,
+//     sauvegarde quotidienne.
+{
+  const base = () => {
+    const docs = new Map();
+    return {
+      docs,
+      exec: async () => {},
+      prepare: sql => ({
+        bind: (...args) => ({
+          first: async () => (docs.has(args[0]) ? { payload: docs.get(args[0]) } : null),
+          run: async () => {
+            if (/^INSERT/.test(sql)) docs.set(args[0], args[1]);
+            else if (/^DELETE/.test(sql)) for (const k of [...docs.keys()]) if (k.startsWith("state@") && k < args[1]) docs.delete(k);
+          },
+        }),
+      }),
+    };
+  };
+  const req = corps => new Request("https://site.test/api/sync", { method: "POST", body: JSON.stringify(corps), headers: { "Content-Type": "application/json" } });
+  const db = base();
+  await handleSync(req({ schema: 17, tables: { extractions: [ext("e1", NOW, 7)] } }), { DB: db });
+  const vieux = await handleSync(req({ schema: 15, tables: { extractions: [ext("e1", NOW + 1, 2)] } }), { DB: db });
+  check("un appareil plus ancien que le document est refuse en 409", vieux.status === 409);
+  check("et le document n'a pas bouge", JSON.parse(db.docs.get("state")).tables.extractions[0].note_sur_10 === 7);
+
+  const casse = base(); casse.docs.set("state", "{pas du json");
+  const r = await handleSync(req({ tables: { extractions: [ext("e1", NOW, 7)] } }), { DB: casse });
+  check("un document illisible rend une erreur claire", r.status === 500 && (await r.json()).erreur === "document-illisible");
+  check("et n'est pas ecrase", casse.docs.get("state") === "{pas du json");
+
+  const gros = await handleSync(new Request("https://site.test/api/sync", { method: "POST", body: "{}",
+    headers: { "Content-Type": "application/json", "Content-Length": "9000000" } }), { DB: base() });
+  check("un corps demesure est refuse en 413", gros.status === 413);
+
+  const sv = base(); sv.docs.set("state", '{"tables":{}}'); sv.docs.set("state@2000-01-01", "{}");
+  const nom = await sauvegarderDocument(sv, NOW);
+  check("la sauvegarde du jour copie le document",
+    nom === "state@" + new Date(NOW).toISOString().slice(0, 10) && sv.docs.get(nom) === sv.docs.get("state"));
+  check("et les copies de plus de " + JOURS_DE_SAUVEGARDE + " jours sont effacees", !sv.docs.has("state@2000-01-01"));
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);

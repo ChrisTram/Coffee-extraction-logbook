@@ -9,7 +9,7 @@
 (() => {
 
   // Emprunté au noyau, chargé avant nous.
-  const { $, activerEcran, brancherNote, maintenantLocal, marquerNote, noteVide, peindreCurseur, recettesDeMethode, replis, toast, trouverRecette } = UI;
+  const { $, activerEcran, brancherNote, maintenantLocal, marquerNote, noteVide, peindreCurseur, recettesDeMethode, replis, toast, trouverRecette, unSeulALaFois } = UI;
 
   let rapideOuvert = false;
 
@@ -163,7 +163,7 @@
       majAffichageNoteRapide();
       $("#q-note").focus();
     });
-    $("#q-enregistrer").addEventListener("click", enregistrerRapide);
+    $("#q-enregistrer").addEventListener("click", unSeulALaFois(enregistrerRapide));
     $("#q-complet").addEventListener("click", () => { basculerRapide(false); activerEcran("saisie"); });
   }
 

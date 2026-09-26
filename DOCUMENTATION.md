@@ -780,17 +780,55 @@ Séquence : modifier une extraction hors ligne, RECHARGER la page avant que la
 synchro passe, et la version du serveur, elle estampillée, écrasait la
 modification. Le test 7 de `tools/data.test.mjs` verrouille les trois cas.
 
-Un IMPORT explicite, lui, estampille tout à maintenant, sinon l'import serait
-annulé par la synchro suivante.
+Un IMPORT explicite (v8.71) FUSIONNE par identifiant au lieu de remplacer la
+table : une ligne absente du fichier reste en place, une ligne identique garde
+sa date, seules les lignes nouvelles ou changées sont estampillées. Chaque
+table a sa branche (les achats écrasaient les extractions avant), une table
+inconnue est refusée, et un aperçu demande confirmation. Le fichier
+`carnet-complet.json` d'« Exporter tout » se réimporte par la même fusion que
+la synchro.
 
 ### Mécanique
 
 `persister()` planifie une synchro débouncée à 1,5 s : une rafale d'édition ne
 produit qu'une requête. `synchroniser()` envoie l'état local, le serveur
-fusionne et renvoie le résultat, adopté des deux côtés en UN aller retour.
-Elle ne rappelle PAS `persister()`, ce qui bouclerait. En cas d'échec les
-données locales sont laissées intactes : une synchro ratée ne doit jamais faire
-perdre une saisie.
+fusionne et renvoie le résultat. Depuis la v8.71 le client FUSIONNE cette
+réponse avec son état tel qu'il est au retour (`SYNC.fusionner`, la même règle
+que le serveur, un test compare les deux) : une tasse saisie pendant l'échange
+n'est plus perdue. Un compteur de génération relance une synchro si quelque
+chose a bougé pendant le vol, et une synchro demandée pendant une autre repart
+à la fin. Elle ne rappelle PAS `persister()`, ce qui bouclerait. En cas
+d'échec les données locales sont laissées intactes et une relance part après
+5 s, 15 s, 1 min, puis toutes les 5 min ; au retour sur l'appli
+(`visibilitychange`) aussi.
+
+**Garde-fous de la v8.71.**
+- Identifiants : `nouvelId` produit l'heure en base 36 et quatre caractères au
+  hasard. « Longueur + 1 » faisait créer « e124 » aux deux appareils, et la
+  fusion écrasait l'une des deux tasses.
+- À égalité de `maj_le`, union des champs (le JSON le plus grand l'emporte sur
+  un conflit, pour rester commutatif) : un onglet sur une ancienne version ne
+  peut plus effacer une colonne récente.
+- Version du schéma : la charge utile porte `schema`, le document garde la
+  plus haute ; un onglet plus ancien reçoit un 409 `version-perimee` et
+  l'appli propose de recharger.
+- Horloges : le serveur ramène tout horodatage de plus de 5 min dans le futur à
+  son heure, et le client corrige son écart (`reglerDecalage`, `maintenant()`).
+- Erreurs : `handleSync` rend un code JSON (500 `document-illisible` ou
+  `serveur`, 413 `trop-gros`), et un document illisible n'est jamais écrasé.
+
+**Sauvegarde quotidienne et restauration.** Le cron de `wrangler.jsonc`
+(20:00 UTC) appelle `sauvegarderDocument` : copie du document sous
+`state@AAAA-MM-JJ`, trente jours gardés. Pour revenir à une copie :
+
+    npx wrangler d1 execute coffee-extraction-logbook --remote --command "SELECT name, updated_at FROM documents ORDER BY name"
+    npx wrangler d1 execute coffee-extraction-logbook --remote --command "UPDATE documents SET payload = (SELECT payload FROM documents WHERE name = 'state@2026-09-26'), updated_at = strftime('%s','now')*1000 WHERE name = 'state'"
+
+Les appareils fusionnent ensuite avec cette copie à leur prochaine synchro :
+pour qu'elle gagne vraiment, vider les données locales des appareils (ou les
+recharger après avoir supprimé le site dans les réglages du navigateur).
+En dernier recours, Time Travel de D1 restaure toute la base :
+`npx wrangler d1 time-travel restore coffee-extraction-logbook --timestamp=...`.
 
 `init()` synchronise AVANT de conclure qu'il n'y a pas de données : sur un
 téléphone neuf tout est vide en local et c'est le serveur qui détient tout.

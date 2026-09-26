@@ -15,6 +15,7 @@
 import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { mergePayloads, sanitisePayload } from "../worker/sync.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -44,7 +45,7 @@ const charger = new Function(
   "console",
   source + "\nreturn { DATA, SYNC, GRIND, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND, DIAGNOSTIC_LEVIERS, REGLAGES, echelleVersements, SEUIL_VERSEMENT_G, temperatureDepuisChauffe, chauffePourTemperature };"
 );
-const { DATA, GRIND, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND, DIAGNOSTIC_LEVIERS, REGLAGES,
+const { DATA, SYNC, GRIND, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND, DIAGNOSTIC_LEVIERS, REGLAGES,
   echelleVersements, SEUIL_VERSEMENT_G, temperatureDepuisChauffe, chauffePourTemperature } =
   charger(undefined, { protocol: "file:" }, undefined, console);
 
@@ -1766,8 +1767,9 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   const code = app.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
   const natifs = [...code.matchAll(/(^|[^.\w])confirm\(/g)];
   check("aucun confirm() natif ne reste dans l'interface", natifs.length === 0, String(natifs.length));
-  check("les quatre questions passent par le dialogue de la page",
-    (code.match(/await (?:UI\.)?confirmer\(/g) || []).length === 4);
+  // Cinq depuis la v8.71 : l'apercu d'un import demande aussi confirmation.
+  check("les cinq questions passent par le dialogue de la page",
+    (code.match(/await (?:UI\.)?confirmer\(/g) || []).length === 5);
   check("les libelles du dialogue sont bilingues", bilingue("c_titre") && bilingue("c_ok"));
   check("le retour arriere restaure sous l'id d'origine", app.includes("DATA.restaurerExtraction"));
 
@@ -2572,6 +2574,68 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
   check("le bouton de theme propose Graphite puis Nuit",
     app.includes('appliquerTheme("sombre", "graphite")') && app.includes('appliquerTheme("sombre", "nuit")'));
+}
+
+/* LOT 1 DE L'AUDIT (v8.71) : NE PLUS RIEN PERDRE. */
+{
+  const SCHEMA = DATA.SCHEMA_ACTUEL;
+  // Des identifiants qui ne dependent plus de la longueur de la liste.
+  const schemaSrc = readFileSync(join(ROOT, "js/data-schema.js"), "utf8");
+  check("les identifiants ne sont plus « longueur + 1 »", !schemaSrc.includes("liste.length + 1"));
+  const avant = DATA.state.extractions.length;
+  const idsVus = new Set();
+  for (let i = 0; i < 50; i++) {
+    const e = await DATA.ajouterExtraction({ date_heure: "2026-09-27T08:00", methode: "Switch", dose_g: 15 });
+    idsVus.add(e.id);
+  }
+  check("cinquante tasses d'affilee, cinquante identifiants differents", idsVus.size === 50);
+  check("et aucun ne ressemble a e + un numero de rang", [...idsVus].every(id => !/^e\d+$/.test(id)));
+  for (const id of idsVus) await DATA.supprimerExtraction(id);
+  check("les tasses de test repartent", DATA.state.extractions.length === avant);
+
+  // La fusion de l'appli est celle du serveur.
+  const g = { tables: { extractions: [{ id: "e1", maj_le: 10, n: 1 }, { id: "e2", maj_le: 20, n: 2, x: 1 }] }, tombes: { extractions: { e3: 30 } } };
+  const d = { tables: { extractions: [{ id: "e1", maj_le: 15, n: 9 }, { id: "e2", maj_le: 20, n: 2, y: 2 }, { id: "e3", maj_le: 25 }] }, tombes: { extractions: {} } };
+  const client = SYNC.fusionner(g, d);
+  const serveur = mergePayloads(sanitisePayload(g), sanitisePayload(d), 40);
+  const trier = l => JSON.stringify([...l].sort((a, b) => a.id.localeCompare(b.id)));
+  check("la fusion de l'appli donne exactement celle du serveur",
+    trier(client.tables.extractions) === trier(serveur.tables.extractions), trier(client.tables.extractions) + " / " + trier(serveur.tables.extractions));
+  check("et une tasse ajoutee pendant l'echange survit a la fusion",
+    SYNC.fusionner({ tables: { extractions: [] }, tombes: {} }, { tables: { extractions: [{ id: "neuve", maj_le: 5 }] }, tombes: {} })
+      .tables.extractions.some(l => l.id === "neuve"));
+
+  // Importer des achats ne touche plus aux extractions.
+  const nbExt = DATA.state.extractions.length;
+  const achatsCsv = DATA.csvSerialiser([{ id: "a-import", cafe_id: "c1", date_achat: "2026-09-01", format_grammes: 250 }], DATA.ACHAT_COLS);
+  const apercu = DATA.analyserImport(achatsCsv);
+  check("un fichier d'achats est reconnu comme tel", apercu.table === "achats" && apercu.nouvelles === 1, JSON.stringify(apercu));
+  await DATA.importerTexteCSV(achatsCsv);
+  check("et son import laisse les extractions intactes", DATA.state.extractions.length === nbExt, DATA.state.extractions.length + " / " + nbExt);
+  check("le sachet est bien arrive dans les achats", DATA.state.achats.some(a => a.id === "a-import"));
+  // Un import fusionne : les lignes absentes du fichier restent.
+  const uneSeule = DATA.csvSerialiser([DATA.state.extractions[0]], DATA.EXT_COLS);
+  await DATA.importerTexteCSV(uneSeule);
+  check("importer un fichier d'une ligne ne supprime pas les autres", DATA.state.extractions.length === nbExt);
+  // Une table inconnue est refusee.
+  let refuse = false;
+  try { DATA.analyserImport("foo,bar\n1,2"); } catch (e) { refuse = true; }
+  check("un fichier aux colonnes inconnues est refuse", refuse);
+
+  // Un champ absent reste vide, jamais 0.
+  const sansNote = DATA.state.extractions.length ? null : null;
+  const n = (await DATA.ajouterExtraction({ date_heure: "2026-09-27T09:00", methode: "Switch" }));
+  check("une note absente reste vide, pas 0/10", n.note_sur_10 === "" && n.dose_g === "" && n.temperature_c === "");
+  await DATA.supprimerExtraction(n.id);
+
+  // La version du schema voyage avec les donnees.
+  check("l'appli envoie sa version de schema au serveur", SOURCE_DATA.includes("schema: SCHEMA_ACTUEL"));
+  check("le serveur refuse un appareil plus ancien", readFileSync(join(ROOT, "worker/sync.js"), "utf8").includes("version-perimee"));
+  check("et l'appli propose alors de recharger", bilingue("sync_perimee") && bilingue("maj_recharger"));
+  // L'export complet couvre les six tables et un fichier JSON.
+  check("exporter tout couvre les six tables et le fichier complet",
+    ["cafes.csv", "extractions.csv", "recettes.csv", "tasses.csv", "achats.csv", "reglages.csv", "carnet-complet.json"]
+      .every(f => SOURCE_DATA.includes('"' + f + '"')));
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);

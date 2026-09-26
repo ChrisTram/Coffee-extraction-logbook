@@ -152,6 +152,18 @@ const UI = (() => {
      suppression, qui est DÉJÀ faite quand ce message s'affiche : voir
      supprimerExtractionAvecRetour. Le bouton disparaît avec le message, il n'y a
      donc pas de suite à gérer. */
+  /* UN SEUL À LA FOIS (v8.71) : deux touches sur « Enregistrer » pendant
+     l'écriture créaient deux tasses. L'appel suivant est ignoré tant que le
+     premier n'a pas fini. */
+  function unSeulALaFois(fn) {
+    let enCours = false;
+    return async (...args) => {
+      if (enCours) return undefined;
+      enCours = true;
+      try { return await fn(...args); } finally { enCours = false; }
+    };
+  }
+
   function toastAction(message, libelle, action) {
     const t = $("#toast");
     t.innerHTML = "";
@@ -670,6 +682,6 @@ const UI = (() => {
     maintenantLocal, marquerNote, brancherDictee, brancherNote, noteVide, peindreCurseur, moyenne, nav, normaliserEcran, oublierSignatures, poser, poserTexte,
     recetteAvecVariantes, recettesDeMethode, recettesVivantes, rendreEcranCourant, replis,
     reprendreReplisLocaux, siChange, signatureTable, signatures,
-    supprimerExtractionAvecRetour, toast, toastAction, trouverRecette,
+    supprimerExtractionAvecRetour, toast, toastAction, trouverRecette, unSeulALaFois,
   };
 })();

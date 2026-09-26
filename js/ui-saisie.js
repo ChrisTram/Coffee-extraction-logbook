@@ -12,7 +12,7 @@
   // Emprunté au noyau, chargé avant nous.
   const { $, $$, $f, activerAppuiLong, activerEcran, attrTitre, basculerEtat, detailRatio, fmtTemps,
     fmtDecimal, fmtVND, icone, maintenantLocal, brancherDictee, brancherNote, marquerNote, nav, noteVide, peindreCurseur, poser, poserTexte, recettesDeMethode, replis, toast,
-    trouverRecette } = UI;
+    trouverRecette, unSeulALaFois } = UI;
 
   // ---------- Saisie ----------
 
@@ -1135,7 +1135,7 @@
     $("#chrono-bip").addEventListener("change", () => {
       try { localStorage.setItem("bips", $("#chrono-bip").checked ? "1" : "0"); } catch (e) { /* tant pis */ }
     });
-    $("#form-saisie").addEventListener("submit", enregistrerSaisie);
+    $("#form-saisie").addEventListener("submit", unSeulALaFois(enregistrerSaisie));
     $("#form-saisie").addEventListener("input", UI.planifierBrouillon);
     $("#form-saisie").addEventListener("change", UI.planifierBrouillon);
     // visibilitychange est le dernier evenement fiable avant qu'un navigateur
