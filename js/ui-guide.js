@@ -248,13 +248,109 @@
       (r.cafesAssocies.length ? '<p class="recette-cafes"><b>' + I18N.t("r_cafes") + "</b> " + r.cafesAssocies.join(", ") + "</p>" : "") +
       (r.note ? '<p class="recette-note">' + attr(I18N.tr(r.note)) + "</p>" : "") +
       '<div class="recette-actions">' +
-      '<button class="btn btn-primaire btn-petit" data-pasapas="' + r.id + '">' + I18N.t("a_pap") + "</button>" +
+      '<button class="btn btn-primaire btn-petit" data-brasser="' + r.id + '">' + I18N.t("g_brasser") + "</button>" +
+      '<button class="btn btn-petit" data-pasapas="' + r.id + '">' + I18N.t("a_pap") + "</button>" +
       '<button class="btn btn-petit" data-recette-edit="' + r.id + '">' + I18N.t("btn_modifier") + "</button>" +
       "</div></div></article>";
   }
 
+  /* L5 (v8.94) : BRASSER UNE RECETTE depuis le Guide. La saisie s'ouvre avec la
+     machine et la recette choisies, et ses valeurs déjà remplies. */
+  function brasserRecette(id) {
+    const r = DATA.state.recettes.find(x => x.id === id);
+    if (!r) return;
+    UI.reinitialiserSaisie(true);
+    UI.choisirMethode(r.methode);
+    const sel = $("#f-recette");
+    sel.value = r.nom;
+    sel.dispatchEvent(new Event("change", { bubbles: true }));
+    UI.activerEcran("saisie");
+  }
+
+  /* L'ACCUEIL DU GUIDE (L5). Les portes : une par rubrique du sommaire, avec ce
+     qu'on y trouve. « Pour ton café » : le café de ta dernière tasse, sa case du
+     tableau café et recette, et ta note sur les deux recettes qu'elle propose. */
+  const PORTES = { recettes: "g_p_recettes", moulin: "g_p_moulin", diagnostic: "g_p_diagnostic", regles: "g_p_regles",
+    vocabulaire: "g_p_vocabulaire", boutiques: "g_p_boutiques", materiel: "g_p_materiel", messages: "g_p_messages" };
+  function rendreAccueilGuide() {
+    const portes = $("#guide-portes");
+    if (!portes) return;
+    const nb = { recettes: recettesVivantes().length, vocabulaire: $$("#fiches-vocabulaire .fiche").length };
+    portes.innerHTML = $$(".guide-onglets [data-guide]").filter(a => a.dataset.guide !== "accueil").map(a =>
+      '<button type="button" class="ga-porte" data-porte="' + attr(a.getAttribute("href").slice(1)) + '"><b>' + attr(a.textContent.trim()) + "</b><span>" +
+      attr(I18N.t(PORTES[a.dataset.guide] || "g_p_autre", { n: nb[a.dataset.guide] || 0 })) + "</span></button>").join("");
+    const zone = $("#guide-pour-toi");
+    const derniere = DATA.state.extractions.slice().sort((a, b) => String(b.date_heure).localeCompare(String(a.date_heure)))[0];
+    const cafe = derniere ? DATA.cafeDe(derniere) : null;
+    const p = cafe && typeof profilCafe === "function" ? profilCafe(cafe) : null;
+    const k = p && p.ligne && p.colonne ? MATRICE_CAFE_RECETTE.cases[p.ligne + "|" + p.colonne] : null;
+    const proposees = k ? [k.recette, k.autre].filter(Boolean).map(id => DATA.state.recettes.find(r => r.id === id)).filter(Boolean) : [];
+    zone.hidden = !proposees.length;
+    if (!proposees.length) { zone.innerHTML = ""; return; }
+    zone.innerHTML = '<h3 id="guide-pour-toi-titre" class="ga-h">' + attr(I18N.t("g_pour_toi", { c: I18N.tr(cafe.nom) })) + "</h3>" +
+      '<div class="ga-cartes">' + proposees.map((r, i) => {
+        const note = noteChezToi(r);
+        return '<button type="button" class="ga-carte' + (i === 0 ? " premiere" : "") + '" data-pour-toi="' + r.id + '">' +
+          '<span class="ga-sur">' + attr(I18N.t(i === 0 ? "g_depart" : "g_essayer")) + "</span>" +
+          "<b>" + attr(I18N.tr(r.nom)) + "</b>" +
+          '<span class="ga-params">' + attr([r.methode, i === 0 && k.temp ? k.temp : r.temp ? r.temp + " °C" : ""].filter(Boolean).join(" · ")) + "</span>" +
+          '<span class="ga-note">' + (note ? I18N.t("g_chez_toi", { m: note }) : I18N.t("rb_jamais")) + "</span></button>";
+      }).join("") + "</div>";
+  }
+
+  /* LA RECHERCHE DU GUIDE (L5). Un index fait une fois, au premier caractère :
+     les recettes, les fiches du vocabulaire et les titres de chaque rubrique.
+     Les accents ne comptent pas : « cafe » trouve « café ». */
+  let indexGuide = null;
+  const sansAccent = s => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  function construireIndex() {
+    const idx = [];
+    recettesVivantes().forEach(r => idx.push({ type: "g_t_recette", titre: I18N.tr(r.nom), detail: [r.methode, I18N.tr(r.sousTitre || "")].filter(Boolean).join(" · "), recette: r.id }));
+    $$("#fiches-vocabulaire .fiche").forEach(f => {
+      const s = f.querySelector("summary");
+      if (s) idx.push({ type: "g_t_mot", titre: s.textContent.trim(), detail: (f.querySelector(".fiche-corps") || f).textContent.trim().replace(/\s+/g, " ").slice(0, 90), el: f });
+    });
+    $$(".guide-panneau").forEach(p => {
+      if (p.id === "gp-accueil" || p.id === "gp-recettes" || p.id === "gp-vocabulaire") return;
+      p.querySelectorAll("h2, h3, h4").forEach(h => {
+        const suite = h.nextElementSibling;
+        idx.push({ type: "g_t_conseil", titre: h.textContent.trim(), detail: suite ? suite.textContent.trim().replace(/\s+/g, " ").slice(0, 90) : "", el: h });
+      });
+    });
+    return idx.map(x => ({ ...x, cle: sansAccent(x.titre + " " + x.detail) }));
+  }
+  let trouves = [];
+  function chercherGuide() {
+    const q = sansAccent($("#guide-recherche").value.trim());
+    const zone = $("#guide-resultats");
+    if (!q) { zone.innerHTML = ""; return; }
+    if (!indexGuide) indexGuide = construireIndex();
+    // Le titre d'abord : un mot trouvé dans le titre passe devant un mot trouvé dans le texte.
+    trouves = indexGuide.filter(x => x.cle.includes(q))
+      .sort((a, b) => Number(!sansAccent(a.titre).includes(q)) - Number(!sansAccent(b.titre).includes(q))).slice(0, 8);
+    zone.innerHTML = trouves.length
+      ? trouves.map((x, i) => '<button type="button" class="ga-resultat" data-resultat="' + i + '"><span class="ga-type">' + attr(I18N.t(x.type)) + "</span><b>" +
+          attr(x.titre) + "</b><span>" + attr(x.detail) + "</span></button>").join("")
+      : '<p class="ga-rien">' + attr(I18N.t("g_rien", { q: $("#guide-recherche").value.trim() })) + "</p>";
+  }
+  function allerAuResultat(i) {
+    const x = trouves[i];
+    if (!x) return;
+    if (x.recette) { montrerRecette(x.recette); return; }
+    const panneau = x.el.closest(".guide-panneau");
+    if (!panneau) return;
+    const titre = panneau.querySelector("h2");
+    montrerGuide(titre && titre.id ? titre.id : null);
+    if (x.el.tagName === "DETAILS") x.el.open = true;
+    x.el.scrollIntoView({ behavior: "smooth", block: "start" });
+    x.el.classList.add("recette-montree");
+    setTimeout(() => x.el.classList.remove("recette-montree"), 1800);
+  }
+
   function rendreRecettes() {
     rendreMatrice();
+    rendreAccueilGuide();
+    indexGuide = null;
     const liste = recettesVivantes();
     const rendues = new Set();
     const cartes = [];
@@ -289,6 +385,7 @@
       b.setAttribute("aria-expanded", String(ouvrir));
       basculerRecette(b.dataset.bascule, ouvrir);
     }));
+    $$("[data-brasser]").forEach(b => b.addEventListener("click", () => brasserRecette(b.dataset.brasser)));
     $$("[data-pasapas]").forEach(b => b.addEventListener("click", () => ouvrirPasAPas(b.dataset.pasapas)));
     $$("#grille-recettes [data-video]").forEach(b => b.addEventListener("click", () => lancerVideo(b)));
     $$("[data-recette-edit]").forEach(b => b.addEventListener("click", () => {
@@ -549,10 +646,23 @@
       ev.preventDefault();
       montrerGuide(a.getAttribute("href").slice(1));
     }));
-    // Au démarrage : l'onglet retenu, sinon les recettes.
-    let onglet = "recettes";
-    try { onglet = localStorage.getItem("guide-onglet") || "recettes"; } catch (e) { /* recettes */ }
-    const panneau = $("#gp-" + onglet) || $("#gp-recettes");
+    // Au démarrage : l'onglet retenu, sinon l'accueil du Guide (L5).
+    let onglet = "accueil";
+    try { onglet = localStorage.getItem("guide-onglet") || "accueil"; } catch (e) { /* accueil */ }
+    const panneau = $("#gp-" + onglet) || $("#gp-accueil");
+    $("#guide-recherche").addEventListener("input", chercherGuide);
+    $("#guide-resultats").addEventListener("click", ev => {
+      const b = ev.target.closest("[data-resultat]");
+      if (b) allerAuResultat(Number(b.dataset.resultat));
+    });
+    $("#guide-portes").addEventListener("click", ev => {
+      const b = ev.target.closest("[data-porte]");
+      if (b) montrerGuide(b.dataset.porte);
+    });
+    $("#guide-pour-toi").addEventListener("click", ev => {
+      const b = ev.target.closest("[data-pour-toi]");
+      if (b) montrerRecette(b.dataset.pourToi);
+    });
     const titre = panneau && panneau.querySelector("h2");
     montrerGuide(titre && titre.id ? titre.id : null);
 

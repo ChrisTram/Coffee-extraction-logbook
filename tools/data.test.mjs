@@ -1470,7 +1470,8 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("le moulin passe avant les recettes", rang("ref-moulin") < rang("ref-recettes"),
     ordre.join(" > "));
   check("le sommaire suit le meme ordre que la page",
-    ordre.filter(k => k !== "ref-recettes").join(",") ===
+    // L5 (v8.94) : l'accueil du Guide passe devant tout, exprès.
+    ordre.filter(k => k !== "ref-recettes" && k !== "ref-accueil").join(",") ===
     ["ref-moulin", "ref-diagnostic", "ref-regles", "ref-vocabulaire"].join(","),
     ordre.join(","));
 }
@@ -2940,6 +2941,15 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("les tasses se rangent par sachet, sachet a la date de la tasse", j.includes("DATA.sachetALaDate(e.cafe_id, e.date_heure)"));
   check("chaque chapitre a son resume et ses cartes", j.includes("function resume(c)") && j.includes("UI.carteExtraction(e)"));
   check("la vue par date reste a un toucher", readFileSync(join(ROOT, "index.html"), "utf8").includes('data-vue="date"'));
+}
+
+/* L5 (v8.94) : LE GUIDE, UNE BIBLIOTHEQUE. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  const g = readFileSync(join(ROOT, "js/ui-guide.js"), "utf8");
+  check("le Guide s'ouvre sur son accueil, avec sa recherche", html.includes('id="gp-accueil" data-panneau="accueil"') && html.includes('id="guide-recherche"') && g.includes('localStorage.getItem("guide-onglet") || "accueil"'));
+  check("la recherche couvre recettes, vocabulaire et conseils", g.includes('type: "g_t_recette"') && g.includes('type: "g_t_mot"') && g.includes('type: "g_t_conseil"'));
+  check("chaque recette se brasse d'un toucher", g.includes('data-brasser="') && g.includes("function brasserRecette"));
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);

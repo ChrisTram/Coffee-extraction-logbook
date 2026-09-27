@@ -879,3 +879,33 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 /* Les tasses d'un chapitre : les cartes de l'historique, à toutes les largeurs. */
 .h-cartes.jn-tasses { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
 .jn-tout { justify-self: start; }
+
+/* ---------- L5 (v8.94) : le Guide, une bibliothèque ---------- */
+#gp-accueil { display: grid; gap: 18px; }
+#gp-accueil[hidden] { display: none; }
+.ga-recherche { display: grid; gap: 8px; }
+#guide-recherche { font: inherit; font-size: 1rem; padding: 13px 16px; border-radius: 14px; border: 1px solid var(--lignes-champ, var(--lignes)); background: var(--panneau); color: var(--encre); width: 100%; }
+#guide-recherche:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ga-resultats { display: grid; gap: 6px; }
+.ga-resultat { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "type titre" "type detail"; gap: 2px 12px; text-align: left; cursor: pointer; font: inherit; color: inherit; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--lignes); background: var(--panneau); }
+.ga-resultat:hover { border-color: var(--accent); }
+.ga-type { grid-area: type; align-self: start; font-size: 0.75rem; font-weight: 700; color: var(--accent-fort); background: var(--accent-fond); border-radius: 99px; padding: 2px 8px; }
+.ga-resultat b { grid-area: titre; color: var(--encre); }
+.ga-resultat > span:last-child { grid-area: detail; font-size: 0.82rem; color: var(--attenue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ga-rien { font-size: 0.88rem; color: var(--attenue); margin: 0; }
+.ga-h { margin: 0 0 8px; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--attenue); font-family: var(--sans); font-weight: 700; }
+.ga-cartes { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.ga-carte { display: grid; gap: 4px; text-align: left; cursor: pointer; font: inherit; color: inherit; padding: 14px 16px; border-radius: var(--rayon); border: 1px solid var(--lignes); background: var(--panneau); }
+.ga-carte.premiere { border-color: var(--accent); background: linear-gradient(160deg, var(--accent-fond), var(--panneau) 70%); }
+.ga-carte:hover { border-color: var(--accent); }
+.ga-sur { font-size: 0.75rem; color: var(--attenue); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 700; }
+.ga-carte b { font-family: var(--serif); font-weight: 400; font-size: 1.4rem; line-height: 1.1; color: var(--encre); }
+.ga-params { font-size: 0.85rem; color: var(--texte); }
+.ga-note { font-size: 0.85rem; color: var(--accent-fort); font-weight: 700; }
+.ga-portes { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.ga-porte { display: grid; gap: 4px; text-align: left; cursor: pointer; font: inherit; color: inherit; padding: 16px; min-height: 84px; border-radius: var(--rayon); border: 1px solid var(--lignes); background: var(--panneau); align-content: start; }
+.ga-porte:hover { border-color: var(--accent); background: var(--panneau-2); }
+.ga-porte:focus-visible, .ga-carte:focus-visible, .ga-resultat:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ga-porte b { font-size: 1rem; color: var(--encre); }
+.ga-porte span { font-size: 0.82rem; color: var(--attenue); }
+@media (max-width: 560px) { .ga-portes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
