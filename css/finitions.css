@@ -820,3 +820,25 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   .param-tableau td[data-l]::before { content: attr(data-l); font-size: 0.75rem; color: var(--attenue); }
   .param-tableau tr.param-groupe, .param-tableau tr.param-groupe td { display: block; padding: 12px 0 2px; }
 }
+
+/* ---------- L4 (v8.92) : la fiche café, un passeport ---------- */
+.fc-passeport { grid-template-columns: 76px minmax(0, 1fr); gap: 16px; align-items: center; }
+.fc-bocal { width: 76px; height: 96px; border-radius: 12px 12px 16px 16px; border: 1px solid var(--lignes); position: relative; overflow: hidden;
+  background: linear-gradient(to top, var(--teinte) var(--niveau), var(--panneau-2) var(--niveau)); }
+.fc-bocal::before { content: ""; position: absolute; top: 0; left: 16px; right: 16px; height: 8px; border-radius: 0 0 4px 4px; background: var(--panneau-3); }
+.fc-bocal i { position: absolute; left: 10px; top: 16px; width: 6px; bottom: 12px; border-radius: 3px; background: linear-gradient(to bottom, rgba(255, 255, 255, 0.18), transparent); }
+.fc-identite h2 { margin: 2px 0 8px; }
+.fc-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding: 12px 14px; border-radius: var(--rayon-petit); background: var(--panneau-2); }
+.fc-kpi b { display: block; font-family: var(--serif); font-weight: 400; font-size: clamp(1.4rem, 4vw, 1.9rem); line-height: 1; color: var(--encre); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fc-kpi span { font-size: 0.75rem; color: var(--attenue); }
+.fc-onglets { display: flex; gap: 4px; border-bottom: 1px solid var(--lignes); overflow-x: auto; scrollbar-width: none; position: sticky; top: -1px; z-index: 2; background: var(--panneau); }
+.fc-onglets::-webkit-scrollbar { display: none; }
+.fc-onglets [role="tab"] { font: inherit; font-size: 0.92rem; flex: none; border: 0; background: none; color: var(--attenue); cursor: pointer; padding: 12px 14px 10px; min-height: 44px; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.fc-onglets [role="tab"][aria-selected="true"] { color: var(--encre); font-weight: 700; border-bottom-color: var(--accent); }
+.fc-onglets [role="tab"]:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fc-panneau[hidden] { display: none; }
+@media (max-width: 560px) {
+  .fc-passeport { grid-template-columns: 58px minmax(0, 1fr); gap: 12px; }
+  .fc-bocal { width: 58px; height: 76px; }
+  .fc-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

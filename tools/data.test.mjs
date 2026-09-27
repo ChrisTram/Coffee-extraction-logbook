@@ -2926,5 +2926,13 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("au telephone la table des valeurs par defaut devient une fiche par recette", (readFileSync(join(ROOT, "js/ui-catalogue.js"), "utf8").match(/data-l="/g) || []).length === 5);
 }
 
+/* L4 (v8.92) : LA FICHE CAFE, UN PASSEPORT EN QUATRE ONGLETS. */
+{
+  const fiche = readFileSync(join(ROOT, "js/ui-fiche.js"), "utf8");
+  check("la fiche range ses blocs en quatre onglets", ["reglage", "gouts", "sachets", "tasses"].every(k => fiche.includes('panneau("' + k + '"')));
+  check("et tous les dessins de la fiche y sont encore", ["fiche-empreinte", "fiche-trajectoire", "fiche-moulin", "fiche-roue"].every(id => fiche.includes('id="' + id + '"')));
+  check("le bouton retour du telephone referme la fiche", fiche.includes("history.pushState({ fiche: cafeId }") && fiche.includes('addEventListener("popstate"'));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

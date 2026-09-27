@@ -27,6 +27,11 @@
   const MIN_TRANCHE = 3;
   const REACHAT_TASSES = 3;
   let ficheId = null;
+  // L4 : l'onglet ouvert, et si l'ouverture a posé une entrée dans l'historique du navigateur.
+  let ongletFiche = "reglage";
+  let entreeFiche = false;
+  // Vrai quand la fiche se ferme pour ouvrir un autre écran : l'entrée d'historique devient alors la sienne.
+  let fermeturePourAller = false;
   // Le café d'en face dans « Comparer avec… » (v8.56), remis à zéro à chaque fiche.
   let compareId = "";
 
@@ -226,30 +231,59 @@
 
     const sachet = blocSachet(cafe, exts, notees, moyCafe);
     const bilan = REGLAGES.pourCafe(cafe.id, extAnalysables());
-    zone.innerHTML =
-      '<header class="fc-tete"><div><p class="surligne">' + I18N.t("fi_surligne") + "</p>" +
-      '<h2 id="fiche-nom">' + echap(cafe.nom) + "</h2>" + '<div class="fc-chips">' + chips + "</div></div>" +
-      '<div class="fc-note">' + (notees.length
-        ? "<b>" + note1(moyCafe) + "</b><span>" + I18N.t("fi_moyenne", { n: notees.length }) + "</span>"
-        : "<span>" + I18N.t("fi_pas_notee") + "</span>") + "</div></header>" +
-      '<div class="fc-grille">' + sachet.html + blocCourbe(notees, sachet.fenetre, sachet.max, sachet.jc) +
-      '<section class="fc-bloc fc-gouts"><h3 class="fc-h">' + I18N.t("fi_gouts") + "</h3>" +
+    /* L4 (v8.92) : LA FICHE, UN PASSEPORT. Neuf blocs l'un sous l'autre faisaient
+       2 750 px au téléphone. En tête, qui est ce café : son bocal au niveau du
+       sachet, sa teinte selon la torréfaction, et quatre chiffres. Dessous, quatre
+       onglets : comment tu le réussis, ce qu'il te donne, ses sachets, ses tasses. */
+    const stock = DATA.stockSachet(cafe.id, replis.dose);
+    const niveau = stock ? Math.max(0, Math.min(100, (stock.restant / stock.format) * 100)) : 60;
+    const torref = String(cafe.torrefaction || "").toLowerCase();
+    const teinte = /clair|light|blond/.test(torref) ? "#c48a4d" : /fonc|dark|brun/.test(torref) ? "#5a3219" : "#8f5a33";
+    const meilleure = notees.length ? Math.max(...notees.map(e => Number(e.note_sur_10))) : null;
+    const doses = exts.filter(e => Number(e.dose_g) > 0).map(e => Number(e.dose_g));
+    const cout = UI.coutParTasse(cafe, doses.length ? moyenne(doses) : replis.dose);
+    const kpi = (v, l) => '<div class="fc-kpi"><b>' + v + "</b><span>" + l + "</span></div>";
+    const ONGLETS = [["reglage", "fi_o_reglage"], ["gouts", "fi_o_gouts"], ["sachets", "fi_o_sachets"], ["tasses", "fi_o_tasses"]];
+    if (!ONGLETS.some(([k]) => k === ongletFiche)) ongletFiche = "reglage";
+    const panneau = (cle, html) => '<div class="fc-panneau" role="tabpanel" id="fc-p-' + cle + '" aria-labelledby="fc-o-' + cle + '"' +
+      (cle === ongletFiche ? "" : " hidden") + '><div class="fc-grille">' + html + "</div></div>";
+    const blocGouts = '<section class="fc-bloc fc-gouts"><h3 class="fc-h">' + I18N.t("fi_gouts") + "</h3>" +
       '<div class="fc-roue"><svg id="fiche-roue" class="roue" viewBox="0 0 300 300" role="img" aria-label="' +
       echap(I18N.t("fi_roue_aria")) + '"></svg><div class="roue-detail" id="fiche-roue-detail" aria-live="polite"></div></div>' +
-      '<p class="fc-muet" id="fiche-roue-vide" hidden>' + I18N.t("fi_gouts_vide") + "</p></section>" +
-      '<section class="fc-bloc fc-reglage"><h3 class="fc-h">' + I18N.t("fi_reglage") + "</h3>" +
-      UI.carteReglage({ cafe, ...bilan }) + "</section>" +
-      /* Les dessins de ce café (v8.50), rendus par js/ui-dessins.js. */
-      '<section class="fc-bloc"><h3 class="fc-h">' + I18N.t("fi_empreinte") + "</h3>" +
+      '<p class="fc-muet" id="fiche-roue-vide" hidden>' + I18N.t("fi_gouts_vide") + "</p></section>";
+    const blocReglage = '<section class="fc-bloc fc-reglage"><h3 class="fc-h">' + I18N.t("fi_reglage") + "</h3>" +
+      UI.carteReglage({ cafe, ...bilan }) + "</section>";
+    /* Les dessins de ce café (v8.50), rendus par js/ui-dessins.js. */
+    const blocEmpreinte = '<section class="fc-bloc"><h3 class="fc-h">' + I18N.t("fi_empreinte") + "</h3>" +
       '<svg id="fiche-empreinte" class="fc-dessin" viewBox="0 0 320 210" role="img" aria-label="' + echap(I18N.t("fi_empreinte")) + '"></svg>' +
-      '<p class="fc-texte" id="fiche-empreinte-lecture"></p></section>' +
-      '<section class="fc-bloc"><h3 class="fc-h">' + I18N.t("fi_trajectoire") + "</h3>" +
+      '<p class="fc-texte" id="fiche-empreinte-lecture"></p></section>';
+    const blocTrajectoire = '<section class="fc-bloc"><h3 class="fc-h">' + I18N.t("fi_trajectoire") + "</h3>" +
       '<svg id="fiche-trajectoire" class="fc-dessin" viewBox="0 0 320 172" role="img" aria-label="' + echap(I18N.t("fi_trajectoire")) + '"></svg>' +
-      '<p class="fc-texte" id="fiche-trajectoire-lecture"></p></section>' +
-      '<section class="fc-bloc"><h3 class="fc-h">' + I18N.t("fi_moulin") + "</h3>" +
+      '<p class="fc-texte" id="fiche-trajectoire-lecture"></p></section>';
+    const blocMoulin = '<section class="fc-bloc"><h3 class="fc-h">' + I18N.t("fi_moulin") + "</h3>" +
       '<svg id="fiche-moulin" class="fc-dessin" viewBox="0 0 320 126" role="img" aria-label="' + echap(I18N.t("fi_moulin")) + '"></svg>' +
-      '<p class="fc-texte" id="fiche-moulin-lecture"></p></section>' +
-      blocDernieres(exts) + blocComparer(cafe) + "</div>";
+      '<p class="fc-texte" id="fiche-moulin-lecture"></p></section>';
+    zone.innerHTML =
+      '<header class="fc-tete fc-passeport">' +
+        '<div class="fc-bocal" aria-hidden="true" style="--niveau:' + niveau.toFixed(0) + "%;--teinte:" + teinte + '"><i></i></div>' +
+        '<div class="fc-identite"><p class="surligne">' + I18N.t("fi_surligne") + "</p>" +
+        '<h2 id="fiche-nom">' + echap(cafe.nom) + "</h2>" + '<div class="fc-chips">' + chips + "</div></div>" +
+      "</header>" +
+      '<div class="fc-kpis">' +
+        kpi(exts.length, I18N.t("fi_k_tasses")) +
+        kpi(notees.length ? note1(moyCafe) : "·", I18N.t("fi_k_moyenne")) +
+        kpi(meilleure !== null ? note1(meilleure) : "·", I18N.t("fi_k_meilleure")) +
+        // Le prix seul : « 7 348 ₫ la tasse de 14,7 g » redirait l'étiquette dessous.
+        kpi(cout ? echap(String(cout).replace(/^([^₫]*₫).*$/, "$1")) : "·", I18N.t("fi_k_cout")) +
+      "</div>" +
+      '<div class="fc-onglets" role="tablist" aria-label="' + echap(I18N.t("fi_onglets")) + '">' +
+        ONGLETS.map(([k, cle]) => '<button type="button" role="tab" id="fc-o-' + k + '" data-onglet="' + k + '" aria-controls="fc-p-' + k +
+          '" aria-selected="' + (k === ongletFiche) + '" tabindex="' + (k === ongletFiche ? 0 : -1) + '">' + I18N.t(cle) + "</button>").join("") +
+      "</div>" +
+      panneau("reglage", blocReglage + blocMoulin + blocTrajectoire) +
+      panneau("gouts", blocGouts + blocEmpreinte) +
+      panneau("sachets", sachet.html + blocCourbe(notees, sachet.fenetre, sachet.max, sachet.jc)) +
+      panneau("tasses", blocDernieres(exts) + blocComparer(cafe));
     UI.dessinerEmpreinte("fiche-empreinte", cafe.id);
     UI.dessinerTrajectoire("fiche-trajectoire", cafe.id);
     UI.dessinerMoulin("fiche-moulin", cafe.id);
@@ -314,11 +348,17 @@
 
   function ouvrirFiche(cafeId) {
     if (!DATA.state.cafes.some(c => c.id === cafeId)) return;
-    if (cafeId !== ficheId) compareId = "";
+    if (cafeId !== ficheId) { compareId = ""; ongletFiche = "reglage"; }
     ficheId = cafeId;
     rendreFiche();
     const m = $("#modale-fiche");
-    if (!m.open) m.showModal();
+    /* Le bouton retour du téléphone referme la fiche au lieu de quitter l'écran :
+       l'ouverture pose une entrée dans l'historique du navigateur (sans toucher
+       à l'adresse, qui pilote les écrans). */
+    if (!m.open) {
+      try { history.pushState({ fiche: cafeId }, ""); entreeFiche = true; } catch (e) { entreeFiche = false; }
+      m.showModal();
+    }
     const haut = $("#fiche-contenu");
     if (haut) haut.scrollTop = 0;
   }
@@ -329,7 +369,45 @@
     if (m && m.open) rendreFiche();
   }
 
+  function montrerOnglet(k, focus) {
+    ongletFiche = k;
+    document.querySelectorAll(".fc-onglets [role=tab]").forEach(b => {
+      const on = b.dataset.onglet === k;
+      b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1;
+      if (on && focus) b.focus();
+    });
+    document.querySelectorAll(".fc-panneau").forEach(p => { p.hidden = p.id !== "fc-p-" + k; });
+  }
+
   function cablerFiche() {
+    // Les onglets de la fiche : le contenu est réécrit à chaque rendu, on délègue.
+    $("#fiche-contenu").addEventListener("click", ev => {
+      const b = ev.target.closest(".fc-onglets [data-onglet]");
+      if (b) montrerOnglet(b.dataset.onglet);
+    });
+    $("#fiche-contenu").addEventListener("keydown", ev => {
+      const b = ev.target.closest(".fc-onglets [data-onglet]");
+      if (!b) return;
+      const liste = [...document.querySelectorAll(".fc-onglets [data-onglet]")];
+      const i = liste.indexOf(b);
+      const j = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: liste.length - 1 }[ev.key];
+      if (j === undefined) return;
+      ev.preventDefault();
+      montrerOnglet(liste[(j + liste.length) % liste.length].dataset.onglet, true);
+    });
+    // Retour du téléphone : on referme ; fermer autrement retire l'entrée posée.
+    window.addEventListener("popstate", () => {
+      const m = $("#modale-fiche");
+      if (m.open && entreeFiche) { entreeFiche = false; m.close(); }
+    });
+    $("#modale-fiche").addEventListener("close", () => {
+      /* Fermer simplement retire l'entrée posée à l'ouverture. Fermer pour aller
+         ailleurs (Brasser, Modifier) la laisse : activerEcran la réécrit à son
+         adresse, et reculer maintenant annulerait ce changement d'écran. */
+      if (entreeFiche && !fermeturePourAller) { try { history.back(); } catch (e) { /* rien à retirer */ } }
+      entreeFiche = false;
+      fermeturePourAller = false;
+    });
     $("#fiche-contenu").addEventListener("click", async ev => {
       const b = ev.target.closest("[data-suppr-sachet]");
       if (!b) return;
@@ -340,6 +418,7 @@
     });
     $("#fiche-brasser").addEventListener("click", () => {
       const id = ficheId;
+      fermeturePourAller = true;
       $("#modale-fiche").close();
       UI.reinitialiserSaisie();
       const sel = $("#f-cafe");
@@ -351,6 +430,7 @@
     });
     $("#fiche-modifier").addEventListener("click", () => {
       const id = ficheId;
+      fermeturePourAller = true;
       $("#modale-fiche").close();
       UI.ouvrirModaleCafes();
       UI.ouvrirFormCafe(id);
