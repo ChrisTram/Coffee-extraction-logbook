@@ -7,7 +7,7 @@
 
   // Emprunté au noyau, chargé avant nous.
   const { $, $$, animerCompteur, attrTitre, cleLocale, diagsAffiches,
-    cleJour, estRatee, extAnalysables, extAvecCalculs, fmtDecimal, fmtHeure, libelleJour, moyenne, nav, trouverRecette } = UI;
+    cleJour, estRatee, extAnalysables, extAvecCalculs, fmtDecimal, fmtHeure, libelleJour, moyenne, nav, replis, trouverRecette } = UI;
   // Et aux deux morceaux sortis d'ici en v8.78, chargés juste avant.
   const { MIN_GAP, MIN_SAMPLE, note1, cablerConstats, rendreInsights,
     DERNIERES_AFFICHEES, commentaireDerniere, goutsDerniere, mesuresCourtes, rendreDerniereTasse } = UI;
@@ -310,6 +310,7 @@
     $("#tableau-vide").hidden = !vide;
     $("#tableau-contenu").hidden = vide;
     if (vide) return;
+    rendreStockCoin();
 
     const auj = cleLocale(new Date());
     const maintenant = new Date();
@@ -583,6 +584,45 @@
     };
   }
 
+  /* LE STOCK DANS LE COIN (v8.89). Combien de grammes restent dans chaque sachet
+     ouvert, le plus bas d'abord, sous le titre du tableau de bord : c'est la
+     question qu'on se pose avant de brasser, et elle ne doit pas demander de
+     descendre jusqu'à l'étagère. Un petit bocal dit le niveau, la couleur passe
+     au rouge sous trois tasses. Un sachet vidé ces dix derniers jours reste
+     affiché « vide », après les autres, pour penser à racheter ; au-delà, il disparaît. */
+  const STOCK_MAX = 4;
+  function donneesStock() {
+    const dix = new Date(); dix.setDate(dix.getDate() - 10);
+    const limite = cleLocale(dix);
+    return DATA.state.cafes.filter(c => c.actif !== 0).map(c => {
+      const stock = DATA.stockSachet(c.id, replis.dose);
+      if (!stock) return null;
+      const siennes = DATA.state.extractions.filter(e => e.cafe_id === c.id);
+      const doses = siennes.filter(e => Number(e.dose_g) > 0).map(e => Number(e.dose_g));
+      const dose = doses.length ? moyenne(doses) : replis.dose;
+      const reste = Math.max(0, stock.restant);
+      const derniere = siennes.reduce((m, e) => (String(e.date_heure) > m ? String(e.date_heure) : m), "");
+      if (reste <= 0 && derniere.slice(0, 10) < limite) return null;
+      return { cafe: c, reste, pc: Math.min(100, (reste / stock.format) * 100), tasses: Math.floor(reste / dose) };
+      // Ce qui reste d'abord, du plus bas au plus haut ; les sachets vides après.
+    }).filter(Boolean).sort((a, b) => (a.reste <= 0) - (b.reste <= 0) || a.reste - b.reste);
+  }
+  function rendreStockCoin() {
+    const zone = $("#stock-coin");
+    if (!zone) return;
+    const tous = donneesStock();
+    zone.hidden = !tous.length;
+    const vus = tous.slice(0, STOCK_MAX);
+    zone.innerHTML = vus.map(s => {
+      const bas = s.tasses < 3;
+      const titre = I18N.t(s.reste <= 0 ? "sc_vide_titre" : "sc_titre", { c: I18N.tr(s.cafe.nom), g: Math.round(s.reste), n: s.tasses, s: s.tasses > 1 ? "s" : "" });
+      return '<button type="button" class="sc-sachet' + (bas ? " bas" : "") + '" data-fiche="' + s.cafe.id + '" title="' + attrTitre(titre) + '" aria-label="' + attrTitre(titre) + '">' +
+        '<span class="sc-verre" style="--pc:' + s.pc.toFixed(0) + '%" aria-hidden="true"></span>' +
+        '<b>' + (s.reste <= 0 ? I18N.t("sc_vide") : Math.round(s.reste) + " g") + "</b>" +
+        '<span class="sc-nom">' + attrTitre(I18N.tr(s.cafe.nom)) + "</span></button>";
+    }).join("") + (tous.length > STOCK_MAX ? '<span class="sc-plus">+' + (tous.length - STOCK_MAX) + "</span>" : "");
+  }
+
   /* Câblage des contrôles du tableau de bord. Appelé une fois par app.js. */
   function cablerTableau() {
     cablerConstats();
@@ -628,7 +668,7 @@
 
   // Mis à disposition des autres écrans.
   Object.assign(UI, {
-    rendreLegendeHeatmap, semainesVisibles,
+    rendreLegendeHeatmap, rendreStockCoin, semainesVisibles,
     MIN_TASSES_GOUT, PIRES_GOUTS, SEMAINES_HEATMAP, TOP_GOUTS,
     cablerTableau, causeDuelVide, causeGoutsVide, causeMoutureVide,
     majCarteVide, rendreGouts, rendreStatsHeatmap, rendreTableau,

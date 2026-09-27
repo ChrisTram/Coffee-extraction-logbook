@@ -730,3 +730,30 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
      .nav-btn et restait à 12 px quand les trois autres passaient à 14,7. */
   .barre-bas .barre-entree { font-size: 0.8rem; }
 }
+
+/* ---------- Le stock dans le coin (v8.89) ---------- */
+.stock-coin { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.stock-coin[hidden] { display: none; }
+.sc-sachet {
+  display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 0.78rem; cursor: pointer;
+  padding: 4px 10px 4px 6px; min-height: 30px; border-radius: 99px; border: 1px solid var(--lignes);
+  background: var(--panneau); color: var(--texte); max-width: 15rem;
+}
+.sc-sachet:hover { border-color: var(--accent); }
+.sc-sachet:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sc-sachet b { color: var(--encre); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sc-nom { color: var(--attenue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+/* Le petit bocal : sa hauteur remplie dit le niveau du sachet. */
+.sc-verre { flex: none; width: 12px; height: 16px; border-radius: 3px 3px 4px 4px; border: 1px solid var(--attenue);
+  background: linear-gradient(to top, var(--accent) var(--pc), transparent var(--pc)); }
+.sc-sachet.bas { border-color: color-mix(in srgb, var(--danger) 55%, transparent); }
+.sc-sachet.bas b { color: var(--danger); }
+.sc-sachet.bas .sc-verre { background: linear-gradient(to top, var(--danger) var(--pc), transparent var(--pc)); border-color: var(--danger); }
+.sc-plus { align-self: center; font-size: 0.75rem; color: var(--attenue); }
+@media (max-width: 699px) {
+  /* Une seule rangée qui défile, pour ne pas pousser le reste vers le bas. */
+  .stock-coin { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -2px; padding: 2px; }
+  .stock-coin::-webkit-scrollbar { display: none; }
+  .sc-sachet { flex: none; }
+}
+@media (pointer: coarse) { .sc-sachet { min-height: 36px; } }

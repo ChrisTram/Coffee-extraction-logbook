@@ -2898,5 +2898,13 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("les quatre onglets du bas ont la meme taille", css.includes(".barre-bas .barre-entree { font-size: 0.8rem; }"));
 }
 
+/* v8.89 : LE STOCK DANS LE COIN DU TABLEAU DE BORD. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  const titres = html.slice(html.indexOf('id="tableau-surligne"'), html.indexOf("</div>", html.indexOf('id="tableau-surligne"')) + 200);
+  check("le stock vit sous le titre du tableau de bord", titres.includes('id="stock-coin"'));
+  check("il dit les grammes et ouvre la fiche du cafe", SOURCE_UI.includes('Math.round(s.reste) + " g"') && SOURCE_UI.includes('class="sc-sachet'));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);
