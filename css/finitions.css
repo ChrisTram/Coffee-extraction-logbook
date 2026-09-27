@@ -842,3 +842,40 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   .fc-bocal { width: 58px; height: 76px; }
   .fc-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* ---------- L3 (v8.93) : le journal, par sachet ---------- */
+.h-vues { display: inline-flex; gap: 2px; padding: 3px; margin: 0 0 12px; border-radius: 12px; background: var(--panneau-2); }
+.h-vues button { font: inherit; font-size: 0.85rem; border: 0; background: none; color: var(--attenue); cursor: pointer; padding: 8px 14px; min-height: 36px; border-radius: 9px; }
+.h-vues button[aria-pressed="true"] { background: var(--panneau-3); color: var(--encre); font-weight: 700; }
+.h-vues button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.h-journal { display: grid; gap: 12px; }
+.h-journal[hidden] { display: none; }
+.jn-chapitre { border-left: 3px solid var(--lignes); padding-left: 12px; display: grid; gap: 10px; }
+.jn-chapitre.en-cours { border-left-color: var(--accent); }
+.jn-tete {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "titre moy" "sous moy"; gap: 3px 14px; align-items: center;
+  width: 100%; text-align: left; cursor: pointer; font: inherit; color: inherit;
+  padding: 12px 14px; border-radius: var(--rayon-petit); border: 1px solid var(--lignes); background: var(--panneau);
+}
+.jn-tete:hover { border-color: var(--accent); }
+.jn-tete:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.jn-titre { grid-area: titre; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; min-width: 0; }
+.jn-titre b { font-size: 1rem; color: var(--encre); }
+.jn-etat { font-size: 0.75rem; color: var(--attenue); padding: 2px 8px; border-radius: 99px; background: var(--panneau-2); }
+.jn-etat.vif { color: var(--accent-fort); background: var(--accent-fond); }
+.jn-sous { grid-area: sous; font-size: 0.8rem; color: var(--attenue); }
+.jn-moy { grid-area: moy; font-family: var(--serif); font-size: 1.9rem; line-height: 1; color: var(--encre); font-variant-numeric: tabular-nums; }
+.jn-moy::after { content: "▾"; font-family: var(--sans); font-size: 0.75rem; color: var(--attenue); margin-left: 8px; vertical-align: 0.4em; }
+.jn-chapitre.ouvert .jn-moy::after { content: "▴"; }
+.jn-corps { display: grid; gap: 10px; }
+.jn-resume { display: grid; gap: 8px; padding: 12px 14px; border-radius: var(--rayon-petit); background: var(--panneau-2); }
+.jn-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.jn-kpi b { display: block; font-family: var(--serif); font-weight: 400; font-size: 1.5rem; line-height: 1; color: var(--encre); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.jn-kpi span { font-size: 0.75rem; color: var(--attenue); }
+.jn-courbe { width: 100%; height: 34px; display: block; }
+.jn-courbe path { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
+.jn-courbe circle { fill: var(--accent-fort); }
+.jn-reglage { margin: 0; font-size: 0.85rem; color: var(--texte); }
+/* Les tasses d'un chapitre : les cartes de l'historique, à toutes les largeurs. */
+.h-cartes.jn-tasses { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+.jn-tout { justify-self: start; }

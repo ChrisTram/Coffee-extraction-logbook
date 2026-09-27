@@ -143,6 +143,20 @@
        date complete se lit au debut de chaque ligne, comme partout ailleurs. */
     /* Les cartes du telephone. On vide l'autre conteneur : deux rendus vivants
        en meme temps, ce sont deux fois les memes identifiants dans la page. */
+    /* L3 (v8.93) : PAR SACHET, le journal remplace la table et les cartes. Les
+       filtres, le résumé et le compte au-dessus restent les mêmes. */
+    UI.majVues();
+    const parSachet = UI.vueHistorique() === "sachet" && liste.length > 0;
+    $("#h-journal").hidden = !parSachet;
+    $("#ecran-historique .table-conteneur").hidden = parSachet;
+    if (parSachet) {
+      $("#h-corps").innerHTML = "";
+      $("#h-cartes").innerHTML = "";
+      UI.rendreJournal(liste);
+      majBarreComparaison();
+      return;
+    }
+    $("#h-journal").innerHTML = "";
     const visibles = liste.slice(0, limiteHistorique);
     const reste = liste.length - visibles.length;
     if (enCartes()) {
@@ -718,7 +732,8 @@
         toast(I18N.t(Number(ext.ratee) === 1 ? "t_deratee" : "t_ratee"));
       }
     };
-    [$("#h-corps"), $("#h-cartes")].forEach(z => z.addEventListener("click", surClicHistorique));
+    [$("#h-corps"), $("#h-cartes"), $("#h-journal")].forEach(z => z.addEventListener("click", surClicHistorique));
+    UI.cablerJournal(rendreHistorique);
     brancherFiche();
 
     /* Le controle segmente de la machine PILOTE le <select>, qui reste la source

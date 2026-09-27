@@ -28,7 +28,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const FEUILLES_CSS = ["css/socle.css", "css/ecrans.css", "css/fenetres.css", "css/finitions.css"];
 const lireCss = () => FEUILLES_CSS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 const SOURCE_UI = ["js/ui-noyau.js", "js/ui-constats.js", "js/ui-derniere.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-saisie-aside.js", "js/ui-pilules.js", "js/ui-chrono.js", "js/ui-brouillon.js", "js/ui-rapide.js",
-  "js/ui-historique.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/ui-fiche.js", "js/ui-brassage.js", "js/ui-dessins.js", "js/app.js"]
+  "js/ui-historique.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/ui-fiche.js", "js/ui-brassage.js", "js/ui-dessins.js", "js/app.js"]
   .map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 /* demo-data.js n'est plus une balise script depuis la v7.56, mais le harnais le
    charge quand meme : chargerDemo() en a besoin et il n'y a pas de reseau ici. */
@@ -2855,7 +2855,7 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("les filtres se replient derriere un bouton Filtrer", html.includes('id="h-filtrer" aria-expanded="false" aria-controls="h-panneau"') && html.includes('id="h-panneau"'));
   check("et les filtres actifs restent visibles, chacun avec sa croix", SOURCE_UI.includes("function majFiltresActifs") && SOURCE_UI.includes('data-vider="'));
   check("les actions d'une carte passent derriere « ⋯ »", SOURCE_UI.includes('data-action="menu"') && SOURCE_UI.includes("(!menu ? \"\" : '<div class=\"h-carte-pied\">'"));
-  check("pas d'intertitre de jour dans l'historique (choix de Chris, v8.29)", !/h-jour/.test(readFileSync(join(ROOT, "js/ui-historique.js"), "utf8")));
+  check("pas d'intertitre de jour dans l'historique (choix de Chris, v8.29)", !/h-jour(?!nal)/.test(readFileSync(join(ROOT, "js/ui-historique.js"), "utf8")));
 }
 
 /* A4 (v8.84) : LA RECETTE SOUS LES YEUX, sous 1 400 px. */
@@ -2932,6 +2932,14 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("la fiche range ses blocs en quatre onglets", ["reglage", "gouts", "sachets", "tasses"].every(k => fiche.includes('panneau("' + k + '"')));
   check("et tous les dessins de la fiche y sont encore", ["fiche-empreinte", "fiche-trajectoire", "fiche-moulin", "fiche-roue"].every(id => fiche.includes('id="' + id + '"')));
   check("le bouton retour du telephone referme la fiche", fiche.includes("history.pushState({ fiche: cafeId }") && fiche.includes('addEventListener("popstate"'));
+}
+
+/* L3 (v8.93) : LE JOURNAL, PAR SACHET. */
+{
+  const j = readFileSync(join(ROOT, "js/ui-journal.js"), "utf8");
+  check("les tasses se rangent par sachet, sachet a la date de la tasse", j.includes("DATA.sachetALaDate(e.cafe_id, e.date_heure)"));
+  check("chaque chapitre a son resume et ses cartes", j.includes("function resume(c)") && j.includes("UI.carteExtraction(e)"));
+  check("la vue par date reste a un toucher", readFileSync(join(ROOT, "index.html"), "utf8").includes('data-vue="date"'));
 }
 
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);

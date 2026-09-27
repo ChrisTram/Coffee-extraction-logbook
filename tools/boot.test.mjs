@@ -261,7 +261,7 @@ Chart.defaults = creuse();
 const SCRIPTS = ["js/outils.js", "js/i18n.en.js", "js/i18n.js", "js/grind.js", "js/recettes.js", "js/demo-data.js",
   "js/sync.js", "js/data-csv.js", "js/data-schema.js", "js/data-store.js", "js/data-calculs.js",
   "js/data-migrations.js", "js/data.js", "js/reglages.js", "js/charts.js",
-  "js/ui-noyau.js", "js/ui-constats.js", "js/ui-derniere.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-saisie-aside.js", "js/ui-pilules.js", "js/ui-chrono.js", "js/ui-brouillon.js", "js/ui-rapide.js", "js/ui-historique.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/ui-fiche.js", "js/ui-brassage.js", "js/ui-dessins.js", "js/app.js"];
+  "js/ui-noyau.js", "js/ui-constats.js", "js/ui-derniere.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-saisie-aside.js", "js/ui-pilules.js", "js/ui-chrono.js", "js/ui-brouillon.js", "js/ui-rapide.js", "js/ui-historique.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/ui-fiche.js", "js/ui-brassage.js", "js/ui-dessins.js", "js/app.js"];
 const source = SCRIPTS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 
 // console.error interceptée : c'est par là que sortent les erreurs de rendu.
@@ -680,6 +680,8 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
   const theadHisto = htmlPage.slice(debutTable, htmlPage.indexOf("</thead>", debutTable));
   const entetes = (theadHisto.match(/<th\b[^>]*>/g) || []).length;
 
+  // Ces controles lisent la TABLE : la vue par date (L3, v8.93, par sachet par defaut).
+  localStorage.setItem("historique-vue", "date");
   api.UI.rendreHistorique();
   /* La premiere ligne du corps est un INTERTITRE de jour depuis que l'historique
      est groupe : un <td> en colspan, pas une extraction. On cherche la premiere
