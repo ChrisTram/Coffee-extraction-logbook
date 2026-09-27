@@ -2906,5 +2906,15 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("il dit les grammes et ouvre la fiche du cafe", SOURCE_UI.includes('Math.round(s.reste) + " g"') && SOURCE_UI.includes('class="sc-sachet'));
 }
 
+/* L7 (v8.90) : LE MODE BRASSAGE, LISIBLE A UN METRE. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  const centre = html.slice(html.indexOf('class="br-centre"'), html.indexOf('class="br-etape"'));
+  check("la cible en grammes vit au centre de l'anneau", centre.includes('id="br-cible"') && centre.includes('id="br-label"'));
+  const br = readFileSync(join(ROOT, "js/ui-brassage.js"), "utf8");
+  check("l'anneau compte jusqu'au prochain versement", br.includes("const finArc = suivant ? suivant.t : duree;"));
+  check("et passe au cuivre les dix dernieres secondes", br.includes("IMMINENT_S = 10") && lireCss().includes(".br-anneau.imminent .br-trace"));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

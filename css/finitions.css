@@ -757,3 +757,27 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   .sc-sachet { flex: none; }
 }
 @media (pointer: coarse) { .sc-sachet { min-height: 36px; } }
+
+/* ---------- L7 (v8.90) : le mode Brassage, lisible à un mètre ---------- */
+.br-centre { gap: 2px; }
+.br-label { font-size: clamp(0.8rem, 2.4vw, 1rem); letter-spacing: 0.1em; text-transform: uppercase; color: var(--attenue); font-weight: 700; }
+.br-centre #br-cible { font-family: var(--serif); font-weight: 400; font-size: clamp(5rem, 24vw, 8.5rem); line-height: 0.95; color: var(--encre); font-variant-numeric: tabular-nums; }
+.br-centre .br-dans { font-size: clamp(0.9rem, 2.6vw, 1.1rem); color: var(--texte); font-variant-numeric: tabular-nums; text-transform: none; letter-spacing: 0; }
+.br-anneau.imminent .br-trace { stroke: var(--accent-fort); animation: br-battement 1s ease-in-out infinite; }
+.br-anneau.imminent #br-cible { color: var(--accent-fort); }
+@keyframes br-battement { 50% { stroke-width: 12px; } }
+@media (prefers-reduced-motion: reduce) { .br-anneau.imminent .br-trace { animation: none; } }
+.br-temps-ligne { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.br-temps-ligne[hidden] { display: none; }
+.br-temps-ligne b { font-family: var(--serif); font-weight: 400; font-size: clamp(2rem, 6vw, 2.8rem); line-height: 1; color: var(--encre); font-variant-numeric: tabular-nums; }
+.br-temps-ligne span { color: var(--attenue); }
+.br-total { display: grid; gap: 6px; width: 100%; max-width: 420px; }
+.br-total[hidden] { display: none; }
+.br-total-piste { height: 10px; border-radius: 99px; background: var(--panneau-3); overflow: hidden; }
+.br-total-piste i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--accent), var(--accent-fort)); transition: width 400ms ease; }
+.br-total span { font-size: 0.85rem; color: var(--attenue); font-variant-numeric: tabular-nums; }
+.br-scene { cursor: default; }
+@media (max-width: 760px) {
+  .br-anneau { max-width: min(330px, 86vw); }
+  .br-etape { justify-items: center; }
+}

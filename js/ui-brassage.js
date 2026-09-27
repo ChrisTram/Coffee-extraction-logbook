@@ -25,6 +25,10 @@
   let minuteur = null;
   // Vrai entre l'arrêt depuis ce mode et la fermeture : la tasse est faite, on la note.
   let finVisible = false;
+  // L7 : les recettes sans heures (la Brikka) avancent d'un toucher ; on retient où l'on en est.
+  let pasManuel = 0;
+  let dernierPalier = -1;
+  const IMMINENT_S = 10;
   const echap = OUTILS.echap;
 
   function unite() {
@@ -86,20 +90,64 @@
       $("#f-eau").value ? $("#f-eau").value + " " + unite() : ""].filter(Boolean).join(" · ");
     $("#br-temps").textContent = fmtTemps(Math.floor(s));
     $("#br-sur").textContent = I18N.t("br_sur", { t: fmtTemps(duree) });
-    $("#br-trace").setAttribute("stroke-dashoffset", String(CIRC * (1 - Math.min(s, duree) / duree)));
-    $("#br-anneau").classList.toggle("depasse", s > duree);
 
     let i = -1;
     paliers.forEach((p, k) => { if (p.t <= s) i = k; });
     const courant = i >= 0 ? paliers[i] : null;
     const suivant = paliers[i + 1] || null;
     const cible = courant ? cibleDe(courant.texte) : null;
+    const libresSeules = !paliers.length ? tout : [];
+    if (pasManuel >= libresSeules.length) pasManuel = Math.max(0, libresSeules.length - 1);
+
+    /* L7 (v8.90) : L'ANNEAU COMPTE JUSQU'AU PROCHAIN VERSEMENT, et non plus
+       jusqu'à la fin : c'est lui qu'on attend, la tasse posée. Il passe au cuivre
+       les dix dernières secondes. Sans versement à venir, il compte jusqu'au
+       total annoncé, comme avant. */
+    const debutArc = courant ? courant.t : 0;
+    const finArc = suivant ? suivant.t : duree;
+    const part = finArc > debutArc ? Math.min(1, Math.max(0, (s - debutArc) / (finArc - debutArc))) : 1;
+    $("#br-trace").setAttribute("stroke-dashoffset", String(CIRC * (1 - part)));
+    const reste = suivant ? suivant.t - s : null;
+    $("#br-anneau").classList.toggle("imminent", reste !== null && reste <= IMMINENT_S && UI.chrono.etat === "encours");
+    $("#br-anneau").classList.toggle("depasse", !suivant && s > duree);
+
+    /* Au centre, EN ÉNORME, ce qu'il faut atteindre sur la balance : c'est la
+       seule chose à lire à un mètre. Sans volume à viser, le temps prend la place. */
+    const u = unite();
+    if (cible) {
+      $("#br-label").textContent = I18N.t("br_verse");
+      $("#br-cible").textContent = String(cible);
+      $("#br-dans").textContent = u + (suivant ? " · " + I18N.t("br_ensuite_dans", { t: fmtTemps(Math.max(0, Math.ceil(reste))) }) : "");
+    } else if (libresSeules.length) {
+      $("#br-label").textContent = I18N.t("br_etape_n", { n: pasManuel + 1, t: libresSeules.length });
+      $("#br-cible").textContent = fmtTemps(Math.floor(s));
+      $("#br-dans").textContent = I18N.t("br_toucher");
+    } else {
+      $("#br-label").textContent = courant ? I18N.t("br_chrono") : I18N.t("br_pret");
+      $("#br-cible").textContent = fmtTemps(Math.floor(s));
+      $("#br-dans").textContent = suivant ? I18N.t("br_ensuite_dans", { t: fmtTemps(Math.max(0, Math.ceil(reste))) }) : "";
+    }
+    $(".br-temps-ligne").hidden = !cible;
+
+    // Le total versé, sur l'eau de la tasse : la carafe, en une barre.
+    const eau = Number($("#f-eau").value) || 0;
+    const verse = paliers.slice(0, i + 1).reduce((m, p) => Math.max(m, cibleDe(p.texte) || 0), 0);
+    $("#br-total").hidden = !(eau > 0 && paliers.some(p => cibleDe(p.texte)));
+    $("#br-total-niveau").style.width = (eau > 0 ? Math.min(100, (verse / eau) * 100) : 0).toFixed(1) + "%";
+    $("#br-total-texte").textContent = I18N.t("br_total", { v: verse, e: eau, u });
+
+    // Un palier franchi pendant que ça tourne : le téléphone vibre, en plus du bip du chrono.
+    if (i !== dernierPalier) {
+      if (i > dernierPalier && dernierPalier !== -2 && UI.chrono.etat === "encours" && navigator.vibrate) { try { navigator.vibrate(160); } catch (e) { /* pas de vibreur */ } }
+      dernierPalier = i;
+    }
+
     /* Une étape sans volume (« Ouvrir, laisser s'écouler ») n'a pas de chiffre à
        viser : c'est alors la consigne qui passe en grand. */
-    $("#br-cible").textContent = cible ? cible + " " + unite() : courant ? "" : I18N.t("br_pret");
-    $("#br-consigne").classList.toggle("seule", !!courant && !cible);
-    $("#br-consigne").textContent = courant ? courant.texte
-      : paliers.length ? I18N.t("br_attente", { texte: paliers[0].texte }) : I18N.t("br_sans_paliers");
+    const consigneManuelle = libresSeules.length ? libresSeules[pasManuel].texte : null;
+    $("#br-consigne").classList.toggle("seule", (!!courant && !cible) || !!consigneManuelle);
+    $("#br-consigne").textContent = consigneManuelle || (courant ? courant.texte
+      : paliers.length ? I18N.t("br_attente", { texte: paliers[0].texte }) : I18N.t("br_sans_paliers"));
     const vanne = i >= 0 ? vanneA(paliers, i) : null;
     const badge = $("#br-vanne");
     badge.hidden = !vanne || UI.saisie.methode !== "Switch";
@@ -114,7 +162,7 @@
     poser($("#br-frise"), paliers.map((p, k) =>
       '<li class="' + (k === i ? "courant" : k < i ? "passe" : "") + '"><time>' + fmtTemps(p.t) + "</time><span>" +
       echap(p.texte) + "</span></li>").join("") +
-      libres.map(p => '<li class="libre"><time aria-hidden="true">·</time><span>' + echap(p.texte) + "</span></li>").join(""));
+      libres.map((p, k) => '<li class="libre' + (!paliers.length ? (k === pasManuel ? " courant" : k < pasManuel ? " passe" : "") : "") + '"><time aria-hidden="true">·</time><span>' + echap(p.texte) + "</span></li>").join(""));
 
     const etat = UI.chrono.etat;
     $("#br-go").textContent = I18N.t(etat === "arrete" ? (s > 0 ? "br_recommencer" : "ch_demarrer")
@@ -130,6 +178,8 @@
   function ouvrirBrassage() {
     const m = $("#modale-brassage");
     finVisible = false;
+    pasManuel = 0;
+    dernierPalier = -2;
     peindre();
     if (!m.open) m.showModal();
     clearInterval(minuteur);
@@ -164,7 +214,16 @@
       majNoteBrassage();
       peindre();
     });
-    $("#br-raz").addEventListener("click", () => { UI.chronoRaz(); finVisible = false; peindre(); });
+    $("#br-raz").addEventListener("click", () => { UI.chronoRaz(); finVisible = false; pasManuel = 0; peindre(); });
+    /* L7 : une recette sans heures (la Brikka) avance d'un toucher n'importe où
+       sur la scène, les mains prises. Les recettes minutées suivent le temps. */
+    $(".br-scene").addEventListener("click", () => {
+      const r = trouverRecette($("#f-recette").value);
+      const tout = r ? UI.etapesPour(r) : [];
+      if (!tout.length || tout.some(e => e.t !== null && e.t !== undefined)) return;
+      pasManuel = (pasManuel + 1) % tout.length;
+      peindre();
+    });
     document.querySelectorAll(".br-unite [data-unite]").forEach(b => b.addEventListener("click", () => {
       try { localStorage.setItem(CLE_UNITE, b.dataset.unite); } catch (e) { /* sans stockage, ml */ }
       peindre();
