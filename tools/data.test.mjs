@@ -2833,5 +2833,11 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("l'export complet se reimporte : le selecteur accepte le JSON", readFileSync(join(ROOT, "index.html"), "utf8").includes('accept=".csv,.json'));
 }
 
+/* v8.80 : UNE NOTE S'ECRIT A LA FRANCAISE PARTOUT, et l'etagere dit ce qui reste. */
+{
+  check("aucune note brute affichee telle quelle", !/note_sur_10 !== "" \? e\.note_sur_10 [:+]/.test(SOURCE_UI));
+  check("un bocal vide dit « sachet vide », pas « 0 tasses »", SOURCE_UI.includes('b.tasses === 0 ? I18N.t("de_vide")'));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

@@ -80,7 +80,7 @@
         Math.max(0, bas - 3 - niveau).toFixed(1) + '" rx="4" class="de-grains" style="fill-opacity:' + (b.tasses <= 3 ? 0.45 : 0.85) + '"></rect>' +
         '<rect x="' + (x + 8).toFixed(1) + '" y="' + (top - 7) + '" width="' + (w - 16).toFixed(1) + '" height="7" rx="2" class="de-couvercle"></rect>' +
         '<text x="' + (x + w / 2).toFixed(1) + '" y="143" text-anchor="middle" class="de-fort">' + echap(court(b.cafe.nom, 11)) + "</text>" +
-        '<text x="' + (x + w / 2).toFixed(1) + '" y="155" text-anchor="middle">' + echap(I18N.t("de_tasses", { n: b.tasses })) + "</text></g>";
+        '<text x="' + (x + w / 2).toFixed(1) + '" y="155" text-anchor="middle">' + echap(b.tasses === 0 ? I18N.t("de_vide") : I18N.t(b.tasses === 1 ? "de_tasse_reste" : "de_tasses", { n: b.tasses })) + "</text></g>";
     });
     const bas = bocaux.filter(b => b.tasses <= 3);
     poserDessin(id, s, bas.length

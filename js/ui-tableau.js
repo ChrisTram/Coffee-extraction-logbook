@@ -562,7 +562,7 @@
         (e.diagnostic ? '<span class="d-diag">' + diagsAffiches(e.diagnostic) + "</span>" : "") +
       "</td>" +
       '<td class="d-gouts">' + goutsDerniere(e) + "</td>" +
-      '<td class="d-note">' + (e.note_sur_10 !== "" ? e.note_sur_10 : "") + "</td></tr>" +
+      '<td class="d-note">' + (e.note_sur_10 !== "" ? fmtDecimal(Number(e.note_sur_10), 1) : "") + "</td></tr>" +
       commentaireDerniere(e)
     ).join("");
     /* Le texte complet au survol, mais SEULEMENT si la ligne l'a coupe : un

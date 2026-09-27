@@ -296,7 +296,7 @@
       (e._c.ratioBoisson ? '<small class="sous">' + I18N.t("rt_boisson_court") + " " + e._c.ratioBoisson + "</small>" : "") + "</td>" +
       '<td class="note-cellule">' + (estRatee(e)
         ? '<span class="badge-ratee" title="' + attrTitre(I18N.t("rt_badge_titre")) + '">' + I18N.t("rt_badge") + "</span>"
-        : "") + (e.note_sur_10 !== "" ? e.note_sur_10 : "") + "</td>" +
+        : "") + (e.note_sur_10 !== "" ? fmtDecimal(Number(e.note_sur_10), 1) : "") + "</td>" +
       /* GOUTS ET DIAGNOSTIC dans la meme cellule, pas dans deux colonnes : une
          colonne de plus demande quatre retouches coordonnees (voir DECISIONS,
          « Le piege des largeurs figees ») et se decale en silence si on en
@@ -343,7 +343,7 @@
       '<div class="h-carte-tete">' +
         '<span class="h-carte-heure">' + fmtDateHeure(e.date_heure) + "</span>" +
         '<span class="chip-methode ' + e.methode.toLowerCase() + '">' + e.methode + "</span>" +
-        '<span class="h-carte-note">' + (e.note_sur_10 !== "" ? e.note_sur_10 : "") + "</span>" +
+        '<span class="h-carte-note">' + (e.note_sur_10 !== "" ? fmtDecimal(Number(e.note_sur_10), 1) : "") + "</span>" +
       "</div>" +
       '<p class="h-carte-cafe">' + I18N.tr(e._c.cafe_nom) +
         (estRatee(e) ? '<span class="mention-ratee">' + I18N.t("rt_badge") + "</span>" : "") + "</p>" +
@@ -412,7 +412,7 @@
       { cle: "d_ecoulement", lire: e => e.temps_ecoulement_s !== "" ? fmtTemps(e.temps_ecoulement_s) : "" },
       { cle: "d_volume", lire: e => e.volume_extrait_ml !== "" ? e.volume_extrait_ml + " ml" : "" },
       { cle: "d_tasse", lire: e => e.tasse },
-      { cle: "d_note", lire: e => e.note_sur_10 !== "" ? e.note_sur_10 + " / 10" : "" },
+      { cle: "d_note", lire: e => e.note_sur_10 !== "" ? fmtDecimal(Number(e.note_sur_10), 1) + " / 10" : "" },
       { cle: "d_diagnostic", lire: e => e.diagnostic ? diagsAffiches(e.diagnostic) : "" },
       { cle: "d_descripteurs", lire: e => (e.descripteurs || "").split("|").filter(Boolean).map(t => I18N.tag(t)).join(", ") },
       { cle: "d_commentaire", lire: e => e.commentaire },
