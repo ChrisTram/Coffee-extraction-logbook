@@ -391,6 +391,28 @@ const UI = (() => {
       d.toLocaleTimeString(I18N.locale(), { hour: "2-digit", minute: "2-digit" });
   }
 
+  /* LE JOUR EN MOTS (v8.82), pour les intertitres des listes groupées par jour :
+     « Aujourd'hui », « Hier », puis « Samedi 26 septembre ». L'année ne s'écrit
+     que si ce n'est pas celle en cours. */
+  function libelleJour(dh) {
+    const d = new Date(dh);
+    if (isNaN(d)) return String(dh);
+    const auj = new Date(); auj.setHours(0, 0, 0, 0);
+    const jour = new Date(d); jour.setHours(0, 0, 0, 0);
+    const ecart = Math.round((auj - jour) / 86400000);
+    if (ecart === 0) return I18N.t("j_aujourdhui");
+    if (ecart === 1) return I18N.t("j_hier");
+    const s = d.toLocaleDateString(I18N.locale(), { weekday: "long", day: "numeric", month: "long",
+      year: d.getFullYear() === auj.getFullYear() ? undefined : "numeric" });
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  // La clé du jour d'une date_heure, pour grouper : "2026-09-26".
+  const cleJour = dh => String(dh).slice(0, 10);
+  function fmtHeure(dh) {
+    const d = new Date(dh);
+    return isNaN(d) ? "" : d.toLocaleTimeString(I18N.locale(), { hour: "2-digit", minute: "2-digit" });
+  }
+
   // "2026-08-12" vers "12 août 2026", en construisant la date en LOCAL
   // (new Date("2026-08-12") serait interprété en UTC).
   function fmtDateCourte(s) {
@@ -712,7 +734,7 @@ const UI = (() => {
     antiRebond, appliquerTheme, attrTitre, avecTransition, basculerEtat, cacheChamps,
     basculerRatees, chargerReplis, cleLocale, confirmer, detailRatio, diagsAffiches,
     ecrireReplis, estRatee, extAnalysables, inclureRatees,
-    extAvecCalculs, fmtDateCourte, fmtDateHeure, fmtDecimal, fmtTemps, fmtVND, icone,
+    cleJour, extAvecCalculs, fmtDateCourte, fmtDateHeure, fmtDecimal, fmtHeure, libelleJour, fmtTemps, fmtVND, icone,
     maintenantLocal, marquerNote, brancherDictee, brancherNote, noteVide, peindreCurseur, moyenne, nav, normaliserEcran, oublierSignatures, poser, poserTexte,
     recetteAvecVariantes, recettesDeMethode, recettesVivantes, rendreEcranCourant, replis,
     reprendreReplisLocaux, siChange, signatureTable, signatures,

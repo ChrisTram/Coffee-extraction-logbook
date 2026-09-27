@@ -2839,5 +2839,15 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("un bocal vide dit « sachet vide », pas « 0 tasses »", SOURCE_UI.includes('b.tasses === 0 ? I18N.t("de_vide")'));
 }
 
+/* A1 (v8.82) : LES DERNIERES EXTRACTIONS SE LISENT, groupees par jour. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  const cols = (html.match(/<table class="table-dernieres">[\s\S]*?<\/colgroup>/) || [""])[0].match(/<col /g) || [];
+  check("la table des dernieres a cinq colonnes, la machine n'en a plus", cols.length === 5 && !html.includes('class="c-machine"'));
+  check("et chaque jour a son intertitre", SOURCE_UI.includes('<tr class="d-jour"><th colspan="5"'));
+  check("le commentaire couvre les cinq colonnes", SOURCE_UI.includes('"derniere-commentaire" data-ext="\' + e.id + \'"><td colspan="5">'));
+  check("dans une carte etroite chaque tasse devient une fiche en grille", lireCss().includes("@container dernieres (max-width: 760px)") && lireCss().includes('grid-template-areas: "cafe cafe note" "quand mesures note" "gouts gouts note"'));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

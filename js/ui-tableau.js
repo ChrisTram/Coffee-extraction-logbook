@@ -7,7 +7,7 @@
 
   // Emprunté au noyau, chargé avant nous.
   const { $, $$, animerCompteur, attrTitre, cleLocale, diagsAffiches,
-    estRatee, extAnalysables, extAvecCalculs, fmtDateHeure, fmtDecimal, moyenne, nav, trouverRecette } = UI;
+    cleJour, estRatee, extAnalysables, extAvecCalculs, fmtDecimal, fmtHeure, libelleJour, moyenne, nav, trouverRecette } = UI;
   // Et aux deux morceaux sortis d'ici en v8.78, chargés juste avant.
   const { MIN_GAP, MIN_SAMPLE, note1, cablerConstats, rendreInsights,
     DERNIERES_AFFICHEES, commentaireDerniere, goutsDerniere, mesuresCourtes, rendreDerniereTasse } = UI;
@@ -548,13 +548,22 @@
        PLUS DE BULLE DU COMMENTAIRE AU SURVOL (v8.33) : il est deja ecrit sur la
        ligne juste dessous, la bulle le repetait mot pour mot. Chris la trouvait
        absurde. Le title dit seulement ce que fait le clic. */
-    $("#dernieres-liste").innerHTML = dernieres.map(e =>
+    /* GROUPEES PAR JOUR (v8.82) : la date devient un intertitre et la colonne
+       ne garde que l'heure. En colonne, « 26 sept. 14:43 » ne tenait ni sur le
+       téléphone (44 px, « 2… ») ni sur un portable de 1 280. La machine n'a plus
+       sa colonne : sa pastille de couleur passe devant le nom du café. */
+    let jourCourant = "";
+    $("#dernieres-liste").innerHTML = dernieres.map(e => {
+      const jour = cleJour(e.date_heure);
+      const tete = jour !== jourCourant
+        ? '<tr class="d-jour"><th colspan="5" scope="colgroup">' + libelleJour(e.date_heure) + "</th></tr>" : "";
+      jourCourant = jour;
+      return tete +
       '<tr class="derniere-cliquable' + (estRatee(e) ? " ligne-ratee" : "") +
       '" data-ext="' + e.id + '" tabindex="0" role="button" title="' + attrTitre(I18N.t("h_editer")) + '">' +
-      '<td class="d-quand">' + fmtDateHeure(e.date_heure) + "</td>" +
-      '<td class="d-machine"><span class="pastille-methode ' + e.methode.toLowerCase() +
-        '" title="' + attrTitre(e.methode) + '"></span></td>' +
-      '<td class="d-cafe"><b>' + I18N.tr(e._c.cafe_nom) + "</b>" +
+      '<td class="d-quand">' + fmtHeure(e.date_heure) + "</td>" +
+      '<td class="d-cafe"><span class="pastille-methode ' + e.methode.toLowerCase() +
+        '" title="' + attrTitre(e.methode) + '"></span><b>' + I18N.tr(e._c.cafe_nom) + "</b>" +
         (estRatee(e) ? '<span class="mention-ratee">' + I18N.t("rt_badge") + "</span>" : "") + "</td>" +
       '<td class="d-mesures">' +
         (e.recette ? '<span class="d-recette">' + I18N.tr(e.recette) + "</span>" : "") +
@@ -563,8 +572,8 @@
       "</td>" +
       '<td class="d-gouts">' + goutsDerniere(e) + "</td>" +
       '<td class="d-note">' + (e.note_sur_10 !== "" ? fmtDecimal(Number(e.note_sur_10), 1) : "") + "</td></tr>" +
-      commentaireDerniere(e)
-    ).join("");
+      commentaireDerniere(e);
+    }).join("");
     /* Le texte complet au survol, mais SEULEMENT si la ligne l'a coupe : un
        commentaire lisible en entier n'a pas besoin d'etre repete. Mesure au
        survol et non au rendu : l'ecran peut se rendre cache, et tout mesure 0. */

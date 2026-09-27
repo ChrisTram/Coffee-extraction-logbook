@@ -5,6 +5,7 @@ de page du site est celui du `<meta name="app-version">` d'`index.html`, posé
 par `node tools/bump_version.mjs X`. Chaque entrée dit CE QUI a changé ; le
 pourquoi est dans `DECISIONS.md`.
 
+- v8.82 : A1, les dernières extractions se lisent. Elles sont groupées par jour (« Aujourd'hui », « Hier », « Vendredi 25 septembre »), la colonne ne garde que l'heure, et la machine devient la pastille de couleur devant le café. Dès que leur carte est étroite (téléphone, et portable de 1 280 où elle ne fait que 640 px), chaque tasse tient en deux lignes : le café et la note en grand, puis l'heure, la recette et les mesures, puis les goûts. Plus rien n'est coupé à trois lettres.
 - v8.81 : les barres de « Ta semaine » comptent de nouveau les tasses. La lettre du jour écrasait la barre pleine, si bien qu'une et deux tasses dessinaient la même hauteur ; la barre se mesure maintenant sur la piste, lettre à part.
 - v8.80 : les notes s'écrivent à la française partout, « 8,5 » et plus « 8.5 », dans les dernières extractions, l'historique et le détail d'une tasse. Sur l'étagère, un bocal dit ce qui RESTE : « 13 restantes », ou « sachet vide » au lieu de « 0 tasses », qui se lisait comme un café jamais bu.
 - v8.79 : sur téléphone et tablette, l'historique s'affiche de nouveau. Les cartes des tasses étaient rangées dans le cadre de la table, et la règle qui cache la table sous 1024 px cachait le cadre entier : l'écran ne montrait que les filtres. On cache maintenant la table seule.

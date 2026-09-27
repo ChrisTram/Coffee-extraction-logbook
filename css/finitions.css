@@ -557,3 +557,34 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   vertical-align: bottom;
   line-height: 1.2;
 }
+
+/* ---------- A1 (v8.82) : les dernières extractions au téléphone ----------
+   Cinq colonnes dans 313 px coupaient tout à trois lettres. Chaque tasse
+   devient une petite fiche : le café en gras et la note à droite, puis l'heure,
+   la recette et les mesures, puis les goûts. Réglé sur la largeur de la CARTE
+   et non de l'écran : à 1 280 px, la carte ne fait que 640 px et coupait encore
+   les noms ; sur un grand écran elle redevient une table d'une ligne par tasse. */
+.table-enveloppe { container: dernieres / inline-size; }
+@container dernieres (max-width: 760px) {
+  .table-dernieres, .table-dernieres tbody { display: block; }
+  .table-dernieres colgroup { display: none; }
+  .table-dernieres tr.d-jour { display: block; }
+  .table-dernieres tr.d-jour th { display: block; padding-left: 2px; }
+  .table-dernieres tr.derniere-cliquable {
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "cafe cafe note" "quand mesures note" "gouts gouts note";
+    column-gap: 8px; row-gap: 3px; padding: 10px 2px; border-top: 1px solid var(--lignes-douces);
+  }
+  .table-dernieres tr.d-jour + tr.derniere-cliquable { border-top: none; }
+  .table-dernieres tr.derniere-cliquable td { display: block; padding: 0; border: 0; }
+  .table-dernieres .d-cafe { grid-area: cafe; font-size: 0.95rem; }
+  .table-dernieres .d-quand { grid-area: quand; font-size: 0.8rem; }
+  .table-dernieres .d-mesures { grid-area: mesures; font-size: 0.8rem; }
+  .table-dernieres .d-mesures .d-chiffres, .table-dernieres .d-mesures .d-diag { margin-left: 0; }
+  .table-dernieres .d-mesures > span + span::before { content: " · "; color: var(--attenue); }
+  .table-dernieres .d-gouts { grid-area: gouts; max-width: none; }
+  .table-dernieres .d-gouts:empty { display: none; }
+  .table-dernieres .d-note { grid-area: note; align-self: center; font-size: 1.7rem; padding-left: 6px; }
+  .table-dernieres tr.derniere-commentaire { display: block; }
+  .table-dernieres tr.derniere-commentaire td { display: block; padding: 0 2px 10px; max-width: none; }
+}

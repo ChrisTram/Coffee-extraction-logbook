@@ -11,6 +11,8 @@ const I18N_EN = {
   T: {
     doc_title: "Brew journal: Brikka and Switch",
     kpi_auj: "today",
+    j_aujourdhui: "Today",
+    j_hier: "Yesterday",
     kpi_semaine: "this week",
     kpi_total: "in total",
     kpi_note: "overall average score",
@@ -722,6 +724,7 @@ const I18N_EN = {
     "Deux repères à chronométrer une fois, sur le feu habituel, depuis ton eau à température ambiante. Les premières bulles : beaucoup de petites bulles au fond et quelques-unes qui remontent, vers 88 degrés. Le gros bouillon : toute la surface roule, 100 degrés. En saisie Switch, le temps passé sur le feu donne la température estimée, sur une courbe qui passe par ces deux repères : la montée ralentit en approchant de l'ébullition. Une estimation, pas une mesure : le degré reste modifiable.": "Two landmarks to time once, on the usual flame, from your water at room temperature. First bubbles: many small bubbles on the bottom with a few rising, around 88 degrees. Rolling boil: the whole surface rolls, 100 degrees. In a Switch entry, the time on the stove gives the estimated temperature, on a curve through both landmarks: the rise slows down as the water nears boiling. An estimate, not a measurement: the degree stays editable.",
     "Premières bulles qui remontent": "First bubbles rising",
     "Délier le dossier": "Unlink the folder",
+    "Heure": "Time",
     "Quel café, quelle recette": "Which coffee, which recipe",
     "Le procédé en ligne, la torréfaction en colonne. Chaque case donne la recette de départ, sa température et une autre à essayer ; « chez toi », c'est ta moyenne sur les cafés de ce profil. Touche une recette pour l'ouvrir.": "Process in rows, roast in columns. Each cell gives the starting recipe, its temperature and another one to try; « at home » is your average on coffees of that profile. Tap a recipe to open it.",
     "Honey": "Honey",

@@ -32,6 +32,8 @@ const I18N = (() => {
     doc_title: { fr: "Carnet d'extraction : Brikka et Switch" },
 
     kpi_auj: { fr: "aujourd'hui" },
+    j_aujourdhui: { fr: "Aujourd'hui" },
+    j_hier: { fr: "Hier" },
     kpi_semaine: { fr: "cette semaine" },
     kpi_total: { fr: "au total" },
     kpi_note: { fr: "note moyenne globale" },

@@ -205,7 +205,7 @@
   function commentaireDerniere(e) {
     const c = String(e.commentaire || "").trim();
     if (!c) return "";
-    return '<tr class="derniere-commentaire" data-ext="' + e.id + '"><td colspan="6">' + attrTitre(c) + "</td></tr>";
+    return '<tr class="derniere-commentaire" data-ext="' + e.id + '"><td colspan="5">' + attrTitre(c) + "</td></tr>";
   }
 
   /* LES MESURES DE LA CARTE, version courte : la dose, l'eau et le temps. La
