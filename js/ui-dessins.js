@@ -402,7 +402,7 @@
     const max = Math.max(1, ...r.jours.map(j => j.n));
     const barres = r.jours.map(j =>
       '<span class="rc-jour' + (j.n ? "" : " vide") + '" title="' + echap(j.date.toLocaleDateString(I18N.locale(), { weekday: "long" }) + " : " + j.n) + '">' +
-      '<i style="height:' + (j.n ? Math.max(12, (j.n / max) * 100) : 6).toFixed(0) + '%"></i><small>' +
+      '<i style="--h:' + (j.n ? Math.max(0.12, j.n / max) : 0.06).toFixed(2) + '"></i><small>' +
       echap(j.date.toLocaleDateString(I18N.locale(), { weekday: "narrow" })) + "</small></span>").join("");
     const m = r.meilleure;
     const cafeM = m ? DATA.state.cafes.find(c => c.id === m.cafe_id) : null;
