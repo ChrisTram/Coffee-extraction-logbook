@@ -717,3 +717,16 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   /* Une case de 17 px : le trait transparent compte pour le doigt, pas pour l'œil. */
   #g-heatmap rect { stroke: transparent; stroke-width: 4px; }
 }
+
+/* ---------- A9 (v8.88) : le bouton flottant ne cache plus rien ---------- */
+.fab { transition: transform 200ms ease, opacity 200ms ease; }
+.fab.fab-cache { transform: translateY(28px) scale(0.6); opacity: 0; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .fab { transition: none; } }
+@media (max-width: 1023px) {
+  /* La page garde une marge en bas de la hauteur de la barre ET du bouton : la
+     dernière ligne ne passe jamais dessous. La règle des 860 px la ramenait à 70 px. */
+  main { padding-bottom: calc(var(--barre-basse) + 96px + env(safe-area-inset-bottom, 0px)); }
+  /* Les quatre onglets du bas à la même taille : « Plus » n'était pas un
+     .nav-btn et restait à 12 px quand les trois autres passaient à 14,7. */
+  .barre-bas .barre-entree { font-size: 0.8rem; }
+}

@@ -2890,5 +2890,13 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("un jour avec des tasses ouvre l'historique de ce jour", dessins.includes('UI.ouvrirHistoriqueSur({ "h-du": b.dataset.jour, "h-au": b.dataset.jour })'));
 }
 
+/* A9 (v8.88) : LE BOUTON FLOTTANT NE CACHE PLUS RIEN. */
+{
+  const css = lireCss();
+  check("le bouton flottant s'efface en descendant", readFileSync(join(ROOT, "js/ui-rapide.js"), "utf8").includes('fab.classList.add("fab-cache")') && css.includes(".fab.fab-cache {"));
+  check("la page garde en bas la place de la barre et du bouton", css.includes("main { padding-bottom: calc(var(--barre-basse) + 96px + env(safe-area-inset-bottom, 0px)); }"));
+  check("les quatre onglets du bas ont la meme taille", css.includes(".barre-bas .barre-entree { font-size: 0.8rem; }"));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

@@ -165,6 +165,22 @@
     });
     $("#q-enregistrer").addEventListener("click", unSeulALaFois(enregistrerRapide));
     $("#q-complet").addEventListener("click", () => { basculerRapide(false); activerEcran("saisie"); });
+
+    /* A9 (v8.88) : LE BOUTON S'EFFACE QUAND ON DESCEND. Posé en bas à droite, il
+       masquait la fin des commentaires et une colonne de la dernière tasse. Il
+       part quand tu fais défiler vers le bas, revient dès que tu remontes, et ne
+       bouge pas tant que son panneau est ouvert. Huit pixels de marge : un doigt
+       qui tremble ne le fait pas clignoter. */
+    const fab = $("#fab-rapide");
+    // Deux lectures et une classe : pas besoin d'attendre une image, le calcul est trop léger.
+    let dernierY = window.scrollY;
+    window.addEventListener("scroll", () => {
+      const y = window.scrollY;
+      if (rapideOuvert || y < 120) fab.classList.remove("fab-cache");
+      else if (y > dernierY + 8) fab.classList.add("fab-cache");
+      else if (y < dernierY - 8) fab.classList.remove("fab-cache");
+      if (Math.abs(y - dernierY) > 8) dernierY = y;
+    }, { passive: true });
   }
 
   // Mis à disposition des autres écrans.
