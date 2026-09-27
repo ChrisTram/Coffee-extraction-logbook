@@ -367,7 +367,10 @@
     const moyAvant = noteesAvant.length ? moyenne(noteesAvant.map(e => Number(e.note_sur_10))) : null;
     const jours = Array.from({ length: 7 }, (_, i) => {
       const j = new Date(debut); j.setDate(j.getDate() + i);
-      return { date: j, n: tasses.filter(e => String(e.date_heure).slice(0, 10) === UI.cleLocale(j)).length };
+      const cle = UI.cleLocale(j);
+      const notesJour = notees.filter(e => String(e.date_heure).slice(0, 10) === cle).map(e => Number(e.note_sur_10));
+      return { date: j, cle, n: tasses.filter(e => String(e.date_heure).slice(0, 10) === cle).length,
+        moy: notesJour.length ? moyenne(notesJour) : null };
     });
     const faits = [];
     if (moy !== null && moyAvant !== null && notees.length >= MIN && noteesAvant.length >= MIN && Math.abs(moy - moyAvant) >= 0.4) {
@@ -400,10 +403,19 @@
     const fin = new Date(r.debut); fin.setDate(fin.getDate() + 6);
     const jour = d => d.toLocaleDateString(I18N.locale(), { day: "numeric", month: "long" });
     const max = Math.max(1, ...r.jours.map(j => j.n));
-    const barres = r.jours.map(j =>
-      '<span class="rc-jour' + (j.n ? "" : " vide") + '" title="' + echap(j.date.toLocaleDateString(I18N.locale(), { weekday: "long" }) + " : " + j.n) + '">' +
-      '<i style="--h:' + (j.n ? Math.max(0.12, j.n / max) : 0.06).toFixed(2) + '"></i><small>' +
-      echap(j.date.toLocaleDateString(I18N.locale(), { weekday: "narrow" })) + "</small></span>").join("");
+    /* A8 (v8.87) : LA HAUTEUR COMPTE LES TASSES, LA TEINTE DIT LEUR NOTE. De 4 et
+       moins (pâle) à 9 et plus (pleine) ; un jour sans note reste à mi-teinte.
+       Un jour avec des tasses se touche et ouvre l'historique de ce jour. */
+    const teinte = moy => moy === null ? 0.5 : Math.max(0.28, Math.min(1, (moy - 4) / 5));
+    const barres = r.jours.map(j => {
+      const nom = j.date.toLocaleDateString(I18N.locale(), { weekday: "long" });
+      const titre = j.n ? I18N.t(j.moy !== null ? "rc_jour_note" : "rc_jour", { j: nom, n: j.n, s: j.n > 1 ? "s" : "", m: j.moy !== null ? note1(j.moy) : "" }) : nom + " : 0";
+      const barre = '<i style="--h:' + (j.n ? Math.max(0.12, j.n / max) : 0.06).toFixed(2) + ";--o:" + teinte(j.moy).toFixed(2) + '"></i><small>' +
+        echap(j.date.toLocaleDateString(I18N.locale(), { weekday: "narrow" })) + "</small>";
+      return j.n
+        ? '<button type="button" class="rc-jour" data-jour="' + j.cle + '" title="' + echap(titre) + '" aria-label="' + echap(titre) + '">' + barre + "</button>"
+        : '<span class="rc-jour vide" title="' + echap(titre) + '">' + barre + "</span>";
+    }).join("");
     const m = r.meilleure;
     const cafeM = m ? DATA.state.cafes.find(c => c.id === m.cafe_id) : null;
     carte.hidden = false;
@@ -425,6 +437,8 @@
         "</span><em>" + echap(cafeM ? cafeM.nom : I18N.t("rc_sans_cafe")) + "</em><em>" +
         echap(m.recette ? I18N.tr(m.recette) : I18N.t("rc_sans_recette")) + "</em></div>" : "") +
       '<div class="rc-semaine" aria-label="' + echap(I18N.t("rc_barres")) + '">' + barres + "</div></div>";
+    carte.querySelectorAll("[data-jour]").forEach(b => b.addEventListener("click", () =>
+      UI.ouvrirHistoriqueSur({ "h-du": b.dataset.jour, "h-au": b.dataset.jour })));
     $("#recap-fermer").addEventListener("click", () => {
       try { localStorage.setItem(CLE_RECAP, UI.cleLocale(r.debut)); } catch (e) { /* tant pis, elle reviendra */ }
       carte.hidden = true;

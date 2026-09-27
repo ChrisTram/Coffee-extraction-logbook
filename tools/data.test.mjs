@@ -2883,5 +2883,12 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("au toucher, les petits boutons passent a 40 px", css.includes("@media (pointer: coarse)") && css.includes(".btn-carre-petit { min-width: 40px; min-height: 40px; }"));
 }
 
+/* A8 (v8.87) : LES BARRES DE LA SEMAINE DISENT LA NOTE ET S'OUVRENT. */
+{
+  const dessins = readFileSync(join(ROOT, "js/ui-dessins.js"), "utf8");
+  check("la teinte d'une barre suit la note moyenne du jour", dessins.includes(";--o:") && lireCss().includes(".rc-jour i { opacity: var(--o, 1); }"));
+  check("un jour avec des tasses ouvre l'historique de ce jour", dessins.includes('UI.ouvrirHistoriqueSur({ "h-du": b.dataset.jour, "h-au": b.dataset.jour })'));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

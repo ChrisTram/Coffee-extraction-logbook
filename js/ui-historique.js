@@ -175,8 +175,13 @@
       if ($("#" + id).value) actifs.push([id, I18N.t(cle) + " : " + texteSelect(id)]);
     });
     if ($("#h-note-min").value) actifs.push(["h-note-min", I18N.t("h_f_note", { n: $("#h-note-min").value })]);
-    if ($("#h-du").value) actifs.push(["h-du", I18N.t("h_f_du", { d: fmtDateCourte($("#h-du").value) })]);
-    if ($("#h-au").value) actifs.push(["h-au", I18N.t("h_f_au", { d: fmtDateCourte($("#h-au").value) })]);
+    const du = $("#h-du").value, au = $("#h-au").value;
+    // Un seul jour (depuis le récap de la semaine) : une pastille, pas deux.
+    if (du && du === au) actifs.push(["h-du h-au", I18N.t("h_f_le", { d: fmtDateCourte(du) })]);
+    else {
+      if (du) actifs.push(["h-du", I18N.t("h_f_du", { d: fmtDateCourte(du) })]);
+      if (au) actifs.push(["h-au", I18N.t("h_f_au", { d: fmtDateCourte(au) })]);
+    }
     $("#h-actifs").innerHTML = actifs.map(([id, t]) =>
       '<button type="button" class="h-actif" data-vider="' + id + '" aria-label="' + attrTitre(I18N.t("h_f_retirer", { f: t })) + '">' +
       attrTitre(t) + '<span aria-hidden="true">×</span></button>').join("");
@@ -627,6 +632,16 @@
     window.addEventListener("scroll", cacher, { passive: true, capture: true });
   }
 
+  /* OUVRIR L'HISTORIQUE SUR UN FILTRE (v8.87), par exemple un jour du récap de
+     la semaine. Les autres filtres repartent de zéro : on arrive pour voir CE
+     jour-là, pas ce jour-là croisé avec un café choisi il y a une semaine. */
+  function ouvrirHistoriqueSur(valeurs) {
+    FILTRES.forEach(id => { $("#" + id).value = ""; });
+    Object.entries(valeurs).forEach(([id, v]) => { $("#" + id).value = v; });
+    UI.activerEcran("historique");
+    rendreHistorique();
+  }
+
   function cablerHistorique() {
     FILTRES.forEach(id => $("#" + id).addEventListener("input", rendreHistoriqueDifferee));
     $("#h-reinitialiser").addEventListener("click", () => {
@@ -641,7 +656,7 @@
     $("#h-actifs").addEventListener("click", ev => {
       const b = ev.target.closest("[data-vider]");
       if (!b) return;
-      $("#" + b.dataset.vider).value = "";
+      b.dataset.vider.split(" ").forEach(id => { $("#" + id).value = ""; });
       rendreHistorique();
     });
     $("#h-exporter").addEventListener("click", () => {
@@ -722,6 +737,7 @@
   }
 
   Object.assign(UI, {
+    ouvrirHistoriqueSur,
     FILTRES, basculerComparaison, cablerHistorique, carteReglage, champsComparaison, comparaison, detailsOuverts,
     filtrerHistorique, ligneHistorique, majBarreComparaison, ouvrirComparaison,
     actionsExtraction, carteExtraction, commentaireHistorique, detailContenu, enCartes,
