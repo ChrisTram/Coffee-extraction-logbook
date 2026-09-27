@@ -2867,5 +2867,13 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("sous 1 400 px la fiche ne tombe plus sous le formulaire", lireCss().includes(".saisie-layout:not(.aside-ouvert) .saisie-aside { display: none; }"));
 }
 
+/* A6 (v8.85) : LE GUIDE SE FEUILLETTE. */
+{
+  const guide = readFileSync(join(ROOT, "js/ui-guide.js"), "utf8");
+  check("une recette repliee tient en une ligne qui se deplie", guide.includes('class="recette-bascule" data-bascule="') && lireCss().includes(".recette-carte.repliee .recette-corps { display: none; }"));
+  check("un lien vers une recette l'ouvre avant d'y defiler", /basculerRecette\(id, true\);\s+filtre\.valeur = "tout";/.test(guide));
+  check("au telephone chaque case du tableau cafe et recette dit sa colonne", guide.includes("'<td data-col=\"'") && lireCss().includes("content: attr(data-col)"));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

@@ -35,6 +35,7 @@ const I18N = (() => {
     j_aujourdhui: { fr: "Aujourd'hui" },
     h_actions: { fr: "Actions sur cette tasse" },
     br_voir: { fr: "La recette" },
+    rb_jamais: { fr: "jamais faite" },
     h_filtrer: { fr: "Filtrer" },
     h_filtrer_n: { fr: "Filtrer ({n})" },
     h_f_cafe: { fr: "Café" },

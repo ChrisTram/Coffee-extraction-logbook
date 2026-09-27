@@ -36,6 +36,21 @@
     const p = premiere.length ? premiere : lire(texte);
     return p.length ? p : ["lave", "fermente"];
   }
+  /* A6 (v8.85) : LES RECETTES SE REPLIENT. Seize écrans de téléphone pour
+     descendre le Guide, toutes les recettes dépliées alors qu'on en cherche une.
+     Repliée, une recette tient en une ligne : machine, dose et eau, température,
+     ta note chez toi. Celles que tu ouvres restent ouvertes d'une visite à l'autre. */
+  const CLE_OUVERTES = "guide-recettes-ouvertes";
+  const recettesOuvertes = new Set();
+  try { JSON.parse(localStorage.getItem(CLE_OUVERTES) || "[]").forEach(id => recettesOuvertes.add(id)); } catch (e) { /* sans stockage, tout replié */ }
+  function basculerRecette(id, ouvrir) {
+    if (ouvrir) recettesOuvertes.add(id); else recettesOuvertes.delete(id);
+    try { localStorage.setItem(CLE_OUVERTES, JSON.stringify([...recettesOuvertes])); } catch (e) { /* idem */ }
+  }
+  function noteChezToi(r) {
+    const notes = extAnalysables().filter(e => e.recette === r.nom && e.note_sur_10 !== "").map(e => Number(e.note_sur_10));
+    return notes.length ? fmtDecimal(moyenne(notes), 1) : "";
+  }
   function chezToi(r) {
     const notes = extAnalysables().filter(e => e.recette === r.nom && e.note_sur_10 !== "").map(e => Number(e.note_sur_10));
     return '<p class="recette-chez-toi">' + (notes.length
@@ -79,6 +94,7 @@
     const r = DATA.state.recettes.find(x => x.id === id);
     if (!r) { montrerGuide("ref-recettes"); return; }
     if (r.famille) familleSelection[r.famille] = r.id;
+    basculerRecette(id, true);
     filtre.valeur = "tout";
     rendreRecettes();
     montrerGuide("ref-recettes");
@@ -158,13 +174,13 @@
       M.colonnes.forEach(c => {
         const k = M.cases[l.id + "|" + c.id];
         const r = k && recette(k.recette);
-        if (!r) { html += "<td></td>"; return; }
+        if (!r) { html += '<td class="m-vide"></td>'; return; }
         const stats = statsCase(l.id, c.id);
         const miennes = stats[r.nom] || [];
         const meilleure = Object.entries(stats).filter(([nom, n]) => nom !== r.nom && n.length >= 3)
           .map(([nom, n]) => ({ nom, moy: moyenne(n), n: n.length })).sort((a, b) => b.moy - a.moy)[0];
         const autre = k.autre && recette(k.autre);
-        html += "<td>" + lienRecette(r) +
+        html += '<td data-col="' + attr(I18N.tr(c.nom)) + '">' + lienRecette(r) +
           (k.temp ? '<span class="m-temp">' + attr(k.temp) + "</span>" : "") +
           (autre ? '<span class="m-autre">' + I18N.t("mx_autre") + " " + lienRecette(autre) + "</span>" : "") +
           (miennes.length ? '<span class="m-chez-toi">' + I18N.t("mx_chez_toi", { m: note1(moyenne(miennes)), n: miennes.length }) + "</span>" : "") +
@@ -208,12 +224,20 @@
         '" data-var-fam="' + r.famille + '" data-var-id="' + x.id + '">' +
         I18N.tr(x.variante || x.nom) + "</button>").join("") + "</div>";
     }
-    return '<article class="carte recette-carte ' + r.methode.toLowerCase() + '" data-recette="' + r.id + '" data-profils="' +
+    const ouverte = recettesOuvertes.has(r.id);
+    const note = noteChezToi(r);
+    const resume = [r.methode, r.dose + " g / " + r.eau + " g", r.temp ? r.temp + " °C" : ""].filter(Boolean).join(" · ");
+    return '<article class="carte recette-carte ' + r.methode.toLowerCase() + (ouverte ? "" : " repliee") + '" data-recette="' + r.id + '" data-profils="' +
       profilsRecette(r).join(" ") + '">' +
       '<div class="recette-entete">' +
       (r.numero ? '<span class="recette-numero">' + r.numero + "</span>" : '<span class="recette-numero">' + r.methode + "</span>") +
       badges + "</div>" +
-      "<h3>" + r.nom + "</h3>" +
+      '<h3><button type="button" class="recette-bascule" data-bascule="' + r.id + '" aria-expanded="' + ouverte + '" aria-controls="corps-' + r.id + '">' +
+        '<span class="rb-nom">' + r.nom + "</span>" +
+        '<span class="rb-resume">' + attr(resume) + "</span>" +
+        '<span class="rb-note">' + (note ? note : I18N.t("rb_jamais")) + "</span>" +
+      "</button></h3>" +
+      '<div class="recette-corps" id="corps-' + r.id + '">' +
       pilules +
       '<p class="recette-sous">' + attr(I18N.tr(r.sousTitre)) + "</p>" +
       '<div class="recette-params">' + params + "</div>" +
@@ -226,7 +250,7 @@
       '<div class="recette-actions">' +
       '<button class="btn btn-primaire btn-petit" data-pasapas="' + r.id + '">' + I18N.t("a_pap") + "</button>" +
       '<button class="btn btn-petit" data-recette-edit="' + r.id + '">' + I18N.t("btn_modifier") + "</button>" +
-      "</div></article>";
+      "</div></div></article>";
   }
 
   function rendreRecettes() {
@@ -257,6 +281,13 @@
     $$("[data-var-fam]").forEach(b => b.addEventListener("click", () => {
       familleSelection[b.dataset.varFam] = b.dataset.varId;
       rendreRecettes();
+    }));
+    $$("[data-bascule]").forEach(b => b.addEventListener("click", () => {
+      const carte = b.closest(".recette-carte");
+      const ouvrir = carte.classList.contains("repliee");
+      carte.classList.toggle("repliee", !ouvrir);
+      b.setAttribute("aria-expanded", String(ouvrir));
+      basculerRecette(b.dataset.bascule, ouvrir);
     }));
     $$("[data-pasapas]").forEach(b => b.addEventListener("click", () => ouvrirPasAPas(b.dataset.pasapas)));
     $$("#grille-recettes [data-video]").forEach(b => b.addEventListener("click", () => lancerVideo(b)));

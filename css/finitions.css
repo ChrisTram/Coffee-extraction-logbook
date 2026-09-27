@@ -659,3 +659,44 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 @media (max-width: 1023px) {
   .saisie-layout.aside-ouvert .saisie-aside { bottom: calc(var(--barre-basse) + env(safe-area-inset-bottom, 0px)); max-height: calc(100vh - var(--barre-basse) - 90px); }
 }
+
+/* ---------- A6 (v8.85) : un Guide qui se feuillette ---------- */
+.recette-carte h3 { margin: 0; }
+.recette-bascule {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "nom note" "resume note";
+  gap: 2px 14px; align-items: center; width: 100%; padding: 0; border: 0; background: none; cursor: pointer;
+  text-align: left; font: inherit; color: inherit;
+}
+.rb-nom { grid-area: nom; font-family: var(--serif); font-size: 1.45rem; line-height: 1.1; color: var(--encre); }
+.rb-resume { grid-area: resume; font-family: var(--sans); font-size: 0.82rem; color: var(--attenue); font-variant-numeric: tabular-nums; }
+.rb-note { grid-area: note; font-family: var(--serif); font-size: 1.6rem; color: var(--accent-fort); white-space: nowrap; }
+.rb-note::after { content: "▾"; font-family: var(--sans); font-size: 0.8rem; color: var(--attenue); margin-left: 8px; vertical-align: 0.3em; }
+.recette-bascule[aria-expanded="true"] .rb-note::after { content: "▴"; }
+.recette-bascule:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 8px; }
+.recette-carte.repliee .recette-corps { display: none; }
+.recette-carte:not(.repliee) .rb-resume { display: none; }
+.recette-corps { display: grid; gap: 12px; margin-top: 12px; }
+/* Le sommaire collé en haut tenait trois rangées au téléphone, 130 px d'écran en
+   permanence : une seule rangée, qui défile au doigt. */
+@media (max-width: 699px) {
+  .sommaire.guide-onglets { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; }
+  .sommaire.guide-onglets::-webkit-scrollbar { display: none; }
+  .sommaire.guide-onglets > * { flex: none; scroll-snap-align: start; }
+}
+/* Le tableau « Quel café, quelle recette » au téléphone : une carte par procédé,
+   chaque case annonce sa torréfaction. */
+@media (max-width: 699px) {
+  .matrice, .matrice tbody, .matrice tr, .matrice th, .matrice td { display: block; }
+  .matrice thead { display: none; }
+  .matrice tr { padding: 10px 0; border-top: 1px solid var(--lignes); }
+  .matrice tbody tr:first-child { border-top: none; }
+  .matrice th[scope="row"] { font-family: var(--serif); font-size: 1.2rem; color: var(--encre); padding: 0 0 6px; background: none; }
+  .matrice td { padding: 6px 0 6px 96px; position: relative; border: 0; min-height: 28px; }
+  .matrice td::before { content: attr(data-col); position: absolute; left: 0; top: 7px; width: 88px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--attenue); }
+  .matrice td.m-vide { display: none; }
+  /* Une ligne par case : la recette, sa température et ta note. « Ou » et « ta
+     meilleure » restent sur ordinateur, ils doublaient la hauteur du tableau. */
+  .matrice td[data-col] { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+  .matrice td .m-temp, .matrice td .m-chez-toi { display: inline; margin: 0; }
+  .matrice td .m-autre, .matrice td .m-meilleure { display: none; }
+}

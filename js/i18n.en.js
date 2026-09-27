@@ -14,6 +14,7 @@ const I18N_EN = {
     j_aujourdhui: "Today",
     h_actions: "Actions on this cup",
     br_voir: "The recipe",
+    rb_jamais: "never made",
     h_filtrer: "Filter",
     h_filtrer_n: "Filter ({n})",
     h_f_cafe: "Coffee",
