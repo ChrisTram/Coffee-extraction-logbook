@@ -781,3 +781,42 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   .br-anneau { max-width: min(330px, 86vw); }
   .br-etape { justify-items: center; }
 }
+
+/* ---------- L6 (v8.91) : les paramètres rangés comme un téléphone ---------- */
+.param-index { display: grid; border: 1px solid var(--lignes); border-radius: var(--rayon); overflow: hidden; background: var(--panneau); align-self: start; }
+.pi-ligne {
+  display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 12px; align-items: center; min-height: 54px;
+  padding: 10px 14px; border: 0; border-top: 1px solid var(--lignes-douces); background: none; cursor: pointer;
+  font: inherit; color: var(--encre); text-align: left;
+}
+.pi-ligne:first-child { border-top: none; }
+.pi-ligne:hover { background: var(--panneau-2); }
+.pi-ligne:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.pi-ligne[aria-current="true"] { background: var(--accent-fond); }
+.pi-icone { width: 30px; height: 30px; padding: 6px; border-radius: 9px; background: var(--accent-fond); fill: none; stroke: var(--accent-fort); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.pi-titre { font-size: 0.95rem; }
+.pi-valeur { font-size: 0.82rem; color: var(--attenue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 12rem; font-variant-numeric: tabular-nums; }
+.pi-valeur::after { content: " ›"; }
+.param-section { display: none; }
+.param-section.active { display: block; }
+.param-actions { margin-top: 12px; }
+.param-actions[hidden] { display: none; }
+.param-retour { display: none; margin-bottom: 10px; }
+@media (min-width: 1024px) {
+  .param-corps { display: grid; grid-template-columns: minmax(260px, 320px) minmax(0, 1fr); gap: 18px; align-items: start; }
+  .param-index { position: sticky; top: 16px; }
+}
+@media (max-width: 1023px) {
+  .param-corps:not(.ouverte) .param-pages { display: none; }
+  .param-corps.ouverte .param-index { display: none; }
+  .param-corps.ouverte .param-retour { display: inline-flex; }
+  /* La table des valeurs par défaut : une fiche par recette, chaque case dit son nom. */
+  .param-tableau { min-width: 0; }
+  .param-tableau thead { display: none; }
+  .param-tableau, .param-tableau tbody { display: block; }
+  .param-tableau tr[data-param-recette] { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 10px; padding: 10px 0; border-top: 1px solid var(--lignes-douces); }
+  .param-tableau tr[data-param-recette] td:first-child { grid-column: 1 / -1; font-weight: 700; color: var(--encre); padding: 0; }
+  .param-tableau tr[data-param-recette] td { display: grid; gap: 3px; padding: 0; }
+  .param-tableau td[data-l]::before { content: attr(data-l); font-size: 0.75rem; color: var(--attenue); }
+  .param-tableau tr.param-groupe, .param-tableau tr.param-groupe td { display: block; padding: 12px 0 2px; }
+}

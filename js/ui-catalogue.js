@@ -343,14 +343,14 @@
         liste.map(r =>
           '<tr data-param-recette="' + r.id + '">' +
           "<td>" + I18N.tr(r.nom) + "</td>" +
-          '<td><input type="number" step="0.5" min="1" data-champ="dose" aria-label="' + nomChamp(r, "pc_dose") + '" value="' + (r.dose || "") + '"></td>' +
-          '<td><input type="number" step="1" min="10" data-champ="eau" aria-label="' + nomChamp(r, "pc_eau") + '" value="' + (r.eau || "") + '"></td>' +
-          '<td><input type="number" step="1" min="60" max="100" data-champ="temp" aria-label="' + nomChamp(r, "pc_temp") + '" value="' + (r.temp === "" ? "" : r.temp) +
+          '<td data-l="' + I18N.t("pc_dose") + '"><input type="number" step="0.5" min="1" data-champ="dose" aria-label="' + nomChamp(r, "pc_dose") + '" value="' + (r.dose || "") + '"></td>' +
+          '<td data-l="' + I18N.t("pc_eau") + '"><input type="number" step="1" min="10" data-champ="eau" aria-label="' + nomChamp(r, "pc_eau") + '" value="' + (r.eau || "") + '"></td>' +
+          '<td data-l="' + I18N.t("pc_temp") + '"><input type="number" step="1" min="60" max="100" data-champ="temp" aria-label="' + nomChamp(r, "pc_temp") + '" value="' + (r.temp === "" ? "" : r.temp) +
             '" placeholder="' + I18N.t("param_vide") + '"></td>' +
-          "<td>" + (r.methode === "Brikka"
+          '<td data-l="' + I18N.t("pc_feu") + '">' + (r.methode === "Brikka"
             ? '<input type="number" step="1" min="1" max="10" data-champ="puissance_feu" aria-label="' + nomChamp(r, "pc_feu") + '" value="' + (r.puissance_feu || "") + '">'
             : '<span class="param-sans">&middot;</span>') + "</td>" +
-          '<td><input type="text" data-champ="dial" aria-label="' + nomChamp(r, "pc_dial") + '" value="' + attrTitre(r.dial || "") + '"></td>' +
+          '<td data-l="' + I18N.t("pc_dial") + '"><input type="text" data-champ="dial" aria-label="' + nomChamp(r, "pc_dial") + '" value="' + attrTitre(r.dial || "") + '"></td>' +
           "</tr>").join("");
     }).join("");
     $("#param-recettes").innerHTML = lignes;
@@ -363,6 +363,38 @@
     majDetailMolette();
     $("#param-bips").checked = $("#chrono-bip").checked;
     majRatees();
+    majIndexParametres();
+  }
+
+  /* L6 (v8.91) : CHAQUE LIGNE DE LA LISTE DIT SA VALEUR. On sait ce qui est
+     réglé sans ouvrir la page, comme dans les réglages d'un téléphone. */
+  let sectionParam = "ps-recettes";
+  function majIndexParametres() {
+    const pas = replis.pas || {};
+    const n = UI.recettesVivantes ? UI.recettesVivantes().length : DATA.state.recettes.length;
+    const p = GRIND.parseDial(String(replis.molette || ""));
+    const val = {
+      recettes: I18N.t("piv_recettes", { n }),
+      repli: replis.dose + " g · " + I18N.t("piv_feu", { f: replis.feu }),
+      molette: replis.molette + (p ? " · ≈ " + Math.round(p.microns) + " µm" : ""),
+      bouilloire: replis.bulles ? I18N.t("piv_bulles", { t: UI.fmtTemps(replis.bulles) }) : I18N.t("piv_a_mesurer"),
+      pas: pas.pas_crans ? I18N.t("piv_crans", { n: pas.pas_crans }) : "",
+      appareil: I18N.t($("#chrono-bip").checked ? "piv_bips_oui" : "piv_bips_non"),
+      donnees: ($("#sync-statut") || { textContent: "" }).textContent.trim().slice(0, 40),
+    };
+    Object.entries(val).forEach(([k, v]) => { const el = $("#piv-" + k); if (el) el.textContent = v; });
+    montrerSectionParam(sectionParam, false);
+  }
+  function montrerSectionParam(id, ouvrir) {
+    sectionParam = id;
+    $$(".param-section").forEach(s => s.classList.toggle("active", s.id === id));
+    $$(".param-index [data-section]").forEach(b => b.setAttribute("aria-current", String(b.dataset.section === id)));
+    // « Cet appareil » s'enregistre d'un toucher : pas de bouton Enregistrer sous elle.
+    $("#param-actions").hidden = id === "ps-appareil";
+    if (ouvrir) {
+      $("#param-corps").classList.add("ouverte");
+      window.scrollTo({ top: 0 });
+    }
   }
 
   /* La bascule d'inclusion des tasses ratées, et le compte de ce qu'elle
@@ -469,6 +501,9 @@
     // Paramètres
     $("#param-enregistrer").addEventListener("click", enregistrerParametres);
     $("#param-annuler").addEventListener("click", rendreParametres);
+    $$(".param-index [data-section]").forEach(b => b.addEventListener("click", () => montrerSectionParam(b.dataset.section, true)));
+    $(".param-index [data-ouvre-donnees]").addEventListener("click", () => $("#btn-donnees").click());
+    $("#param-retour").addEventListener("click", () => $("#param-corps").classList.remove("ouverte"));
     $("#param-molette").addEventListener("input", majDetailMolette);
     // La case de l'écran Paramètres et celle du chrono pilotent le même réglage.
     $("#param-bips").addEventListener("change", () => {

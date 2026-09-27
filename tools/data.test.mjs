@@ -2916,5 +2916,15 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("et passe au cuivre les dix dernieres secondes", br.includes("IMMINENT_S = 10") && lireCss().includes(".br-anneau.imminent .br-trace"));
 }
 
+/* L6 (v8.91) : DES PARAMETRES RANGES COMME UN TELEPHONE. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  const sections = [...html.matchAll(/class="carte param-section" id="(ps-[a-z]+)"/g)].map(m => m[1]);
+  const lignes = [...html.matchAll(/class="pi-ligne" data-section="(ps-[a-z]+)"/g)].map(m => m[1]);
+  check("chaque rubrique de la liste ouvre une page qui existe", lignes.length === 6 && lignes.every(id => sections.includes(id)), lignes.join(","));
+  check("le bouton Enregistrer vit sous les pages, une seule fois", (html.match(/id="param-enregistrer"/g) || []).length === 1 && html.indexOf('id="param-actions"') > html.indexOf('id="ps-appareil"'));
+  check("au telephone la table des valeurs par defaut devient une fiche par recette", (readFileSync(join(ROOT, "js/ui-catalogue.js"), "utf8").match(/data-l="/g) || []).length === 5);
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

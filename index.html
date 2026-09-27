@@ -7,11 +7,11 @@
 <!-- Version du site, source unique : le pied de page la lit, et les fichiers
      chargés à la demande la mettent dans leur URL. Se pose avec
      node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="8.90">
-<link rel="stylesheet" href="css/socle.css?v=8.90">
-<link rel="stylesheet" href="css/ecrans.css?v=8.90">
-<link rel="stylesheet" href="css/fenetres.css?v=8.90">
-<link rel="stylesheet" href="css/finitions.css?v=8.90">
+<meta name="app-version" content="8.91">
+<link rel="stylesheet" href="css/socle.css?v=8.91">
+<link rel="stylesheet" href="css/ecrans.css?v=8.91">
+<link rel="stylesheet" href="css/fenetres.css?v=8.91">
+<link rel="stylesheet" href="css/finitions.css?v=8.91">
 <!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
      SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
      parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
@@ -49,7 +49,7 @@
      les scripts. bump_version.mjs versionne le lien des graphiques. -->
 <link rel="preload" href="css/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="css/fonts/instrument-serif-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="js/vendor/chart.umd.js?v=8.90" as="script">
+<link rel="preload" href="js/vendor/chart.umd.js?v=8.91" as="script">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%98%95%3C/text%3E%3C/svg%3E">
 </head>
 <body>
@@ -1337,10 +1337,24 @@ Cảm ơn shop.</pre>
       <h2 class="titre-page">Paramètres</h2>
     </div>
   </div>
-  <p class="ecran-intro">Les valeurs pré-remplies quand tu ouvres une saisie. Elles appartiennent à la recette : c'est la même fiche que dans « Gérer les recettes », donc une seule vérité, et elle se synchronise entre tes appareils.</p>
-
-  <article class="carte">
+  <!-- L6 (v8.91) : les paramètres rangés comme ceux d'un téléphone. Une liste
+       courte dont chaque ligne dit sa valeur ; chaque réglage a sa page. Sur
+       ordinateur, la liste à gauche et la page à droite. -->
+  <div class="param-corps" id="param-corps">
+    <nav class="param-index" aria-label="Rubriques des paramètres">
+      <button type="button" class="pi-ligne" data-section="ps-recettes"><svg class="pi-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h9"></path></svg><span class="pi-titre">Machines et recettes</span><span class="pi-valeur" id="piv-recettes"></span></button>
+      <button type="button" class="pi-ligne" data-section="ps-repli"><svg class="pi-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v9M12 17v.5M4 20h16"></path></svg><span class="pi-titre">Quand la recette ne dit rien</span><span class="pi-valeur" id="piv-repli"></span></button>
+      <button type="button" class="pi-ligne" data-section="ps-molette"><svg class="pi-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18zM12 3v5"></path></svg><span class="pi-titre">Mon moulin</span><span class="pi-valeur" id="piv-molette"></span></button>
+      <button type="button" class="pi-ligne" data-section="ps-bouilloire"><svg class="pi-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10h12l-1 9H6zM17 12h2a2 2 0 0 1 0 4h-2M9 6c0-1 1-2 1-3M13 6c0-1 1-2 1-3"></path></svg><span class="pi-titre">Ma bouilloire</span><span class="pi-valeur" id="piv-bouilloire"></span></button>
+      <button type="button" class="pi-ligne" data-section="ps-pas"><svg class="pi-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h7M8 8l-4 4l4 4M20 12h-7M16 8l4 4l-4 4"></path></svg><span class="pi-titre">Pas de correction</span><span class="pi-valeur" id="piv-pas"></span></button>
+      <button type="button" class="pi-ligne" data-section="ps-appareil"><svg class="pi-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM11 18h2"></path></svg><span class="pi-titre">Cet appareil</span><span class="pi-valeur" id="piv-appareil"></span></button>
+      <button type="button" class="pi-ligne" data-ouvre-donnees><svg class="pi-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18a4 4 0 0 1 0-8a5 5 0 0 1 9.6-1.5A3.5 3.5 0 0 1 17 18z"></path></svg><span class="pi-titre">Données et synchro</span><span class="pi-valeur" id="piv-donnees"></span></button>
+    </nav>
+    <div class="param-pages">
+      <button type="button" class="btn btn-discret btn-petit param-retour" id="param-retour">‹ Paramètres</button>
+  <article class="carte param-section" id="ps-recettes">
     <h3>Valeurs par défaut de chaque recette</h3>
+    <p class="param-aide">Les valeurs pré-remplies quand tu ouvres une saisie. Elles appartiennent à la recette : c'est la même fiche que dans « Gérer les recettes », donc une seule vérité, et elle se synchronise entre tes appareils.</p>
     <p class="param-aide">Un champ laissé vide n'est pas pré-rempli. C'est voulu pour la température de la Brikka : elle dépend de la puissance du feu, l'annoncer d'avance n'aurait aucun sens.</p>
     <div class="param-tableau-zone">
       <table class="tableau param-tableau">
@@ -1357,13 +1371,9 @@ Cảm ơn shop.</pre>
         <tbody id="param-recettes"></tbody>
       </table>
     </div>
-    <div class="saisie-actions">
-      <button class="btn btn-primaire" id="param-enregistrer">Enregistrer les valeurs par défaut</button>
-      <button class="btn btn-discret" id="param-annuler">Annuler mes changements</button>
-    </div>
   </article>
 
-  <article class="carte">
+  <article class="carte param-section" id="ps-repli">
     <h3>Repli quand la recette ne dit rien</h3>
     <p class="param-aide">Utilisé seulement si la recette choisie laisse la valeur vide.</p>
     <div class="grille-nombres">
@@ -1372,7 +1382,7 @@ Cảm ơn shop.</pre>
     </div>
   </article>
 
-  <article class="carte">
+  <article class="carte param-section" id="ps-molette">
     <h3>Où est réglée la molette de mon broyeur</h3>
     <p class="param-aide">C'est ce réglage qui prérempli la saisie, pas la cible de la recette. Ton C5 reste posé sur un seul réglage, la recette dit juste ce qu'elle viserait. La fiche continue d'afficher sa cible, et le site t'avertit si l'écart sort de la plage de la machine.</p>
     <div class="grille-nombres">
@@ -1384,7 +1394,7 @@ Cảm ơn shop.</pre>
     </div>
   </article>
 
-  <article class="carte">
+  <article class="carte param-section" id="ps-bouilloire">
     <h3>Ma bouilloire</h3>
     <p class="param-aide">Deux repères à chronométrer une fois, sur le feu habituel, depuis ton eau à température ambiante. Les premières bulles : beaucoup de petites bulles au fond et quelques-unes qui remontent, vers 88 degrés. Le gros bouillon : toute la surface roule, 100 degrés. En saisie Switch, le temps passé sur le feu donne la température estimée, sur une courbe qui passe par ces deux repères : la montée ralentit en approchant de l'ébullition. Une estimation, pas une mesure : le degré reste modifiable.</p>
     <div class="grille-nombres">
@@ -1406,7 +1416,7 @@ Cảm ơn shop.</pre>
   </article>
 
   <!-- Les pas de la correction chiffrée (v8.48), synchronisés avec le matériel. -->
-  <article class="carte">
+  <article class="carte param-section" id="ps-pas">
     <h3>Mes pas de correction</h3>
     <p class="param-aide">Quand tu coches un diagnostic, la saisie chiffre la correction pour la tasse suivante : « Un peu amer » sur 1.4.2 devient 1.4.4. Ces pas valent pour un diagnostic « un peu » ; un diagnostic franc les double. La molette reste dans la plage de la machine.</p>
     <div class="grille-nombres">
@@ -1418,7 +1428,7 @@ Cảm ơn shop.</pre>
     </div>
   </article>
 
-  <article class="carte">
+  <article class="carte param-section" id="ps-appareil">
     <h3>Cet appareil</h3>
     <p class="param-aide">Ces réglages restent locaux et ne se synchronisent pas : un téléphone et un ordinateur n'ont pas les mêmes besoins.</p>
     <div class="grille-nombres">
@@ -1434,6 +1444,13 @@ Cảm ơn shop.</pre>
     </div>
     <p class="param-aide">Le thème et la langue se règlent en bas du menu, sous « Plus » sur téléphone.</p>
   </article>
+      <!-- Un seul enregistrement pour les pages qui s'enregistrent : la même action qu'avant, sous chaque page. -->
+      <div class="saisie-actions param-actions" id="param-actions">
+        <button class="btn btn-primaire" id="param-enregistrer">Enregistrer</button>
+        <button class="btn btn-discret" id="param-annuler">Annuler mes changements</button>
+      </div>
+    </div>
+  </div>
 </section>
 
 </main>
@@ -1758,36 +1775,36 @@ Cảm ơn shop.</pre>
 <!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
      et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
      desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=8.90"></script>
-<script defer src="js/i18n.js?v=8.90"></script>
-<script defer src="js/grind.js?v=8.90"></script>
-<script defer src="js/recettes.js?v=8.90"></script>
+<script defer src="js/outils.js?v=8.91"></script>
+<script defer src="js/i18n.js?v=8.91"></script>
+<script defer src="js/grind.js?v=8.91"></script>
+<script defer src="js/recettes.js?v=8.91"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=8.90"></script>
-<script defer src="js/data-csv.js?v=8.90"></script>
-<script defer src="js/data-schema.js?v=8.90"></script>
-<script defer src="js/data-store.js?v=8.90"></script>
-<script defer src="js/data-calculs.js?v=8.90"></script>
-<script defer src="js/data-migrations.js?v=8.90"></script>
-<script defer src="js/data.js?v=8.90"></script>
-<script defer src="js/reglages.js?v=8.90"></script>
-<script defer src="js/charts.js?v=8.90"></script>
-<script defer src="js/ui-noyau.js?v=8.90"></script>
-<script defer src="js/ui-constats.js?v=8.90"></script>
-<script defer src="js/ui-derniere.js?v=8.90"></script>
-<script defer src="js/ui-tableau.js?v=8.90"></script>
-<script defer src="js/ui-saisie.js?v=8.90"></script>
-<script defer src="js/ui-saisie-aside.js?v=8.90"></script>
-<script defer src="js/ui-pilules.js?v=8.90"></script>
-<script defer src="js/ui-chrono.js?v=8.90"></script>
-<script defer src="js/ui-brouillon.js?v=8.90"></script>
-<script defer src="js/ui-rapide.js?v=8.90"></script>
-<script defer src="js/ui-historique.js?v=8.90"></script>
-<script defer src="js/ui-guide.js?v=8.90"></script>
-<script defer src="js/ui-catalogue.js?v=8.90"></script>
-<script defer src="js/ui-fiche.js?v=8.90"></script>
-<script defer src="js/ui-brassage.js?v=8.90"></script>
-<script defer src="js/ui-dessins.js?v=8.90"></script>
-<script defer src="js/app.js?v=8.90"></script>
+<script defer src="js/sync.js?v=8.91"></script>
+<script defer src="js/data-csv.js?v=8.91"></script>
+<script defer src="js/data-schema.js?v=8.91"></script>
+<script defer src="js/data-store.js?v=8.91"></script>
+<script defer src="js/data-calculs.js?v=8.91"></script>
+<script defer src="js/data-migrations.js?v=8.91"></script>
+<script defer src="js/data.js?v=8.91"></script>
+<script defer src="js/reglages.js?v=8.91"></script>
+<script defer src="js/charts.js?v=8.91"></script>
+<script defer src="js/ui-noyau.js?v=8.91"></script>
+<script defer src="js/ui-constats.js?v=8.91"></script>
+<script defer src="js/ui-derniere.js?v=8.91"></script>
+<script defer src="js/ui-tableau.js?v=8.91"></script>
+<script defer src="js/ui-saisie.js?v=8.91"></script>
+<script defer src="js/ui-saisie-aside.js?v=8.91"></script>
+<script defer src="js/ui-pilules.js?v=8.91"></script>
+<script defer src="js/ui-chrono.js?v=8.91"></script>
+<script defer src="js/ui-brouillon.js?v=8.91"></script>
+<script defer src="js/ui-rapide.js?v=8.91"></script>
+<script defer src="js/ui-historique.js?v=8.91"></script>
+<script defer src="js/ui-guide.js?v=8.91"></script>
+<script defer src="js/ui-catalogue.js?v=8.91"></script>
+<script defer src="js/ui-fiche.js?v=8.91"></script>
+<script defer src="js/ui-brassage.js?v=8.91"></script>
+<script defer src="js/ui-dessins.js?v=8.91"></script>
+<script defer src="js/app.js?v=8.91"></script>
 </body>
 </html>
