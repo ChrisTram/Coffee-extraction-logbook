@@ -7,8 +7,45 @@
   // Emprunté au noyau et à ui-saisie.js, chargés avant nous.
   const { $, attrTitre, fmtTemps, fmtDecimal, fmtVND, trouverRecette, saisie, cafeCourantMoulu } = UI;
 
+  /* LA BANDE DE LA RECETTE (A4, v8.84). Sous 1 400 px la fiche tombait sous tout
+     le formulaire : la recette, qu'on relit à chaque étape, était au bout de la
+     page. La bande la résume sous le chrono, avec le café, et ouvre la fiche. */
+  function majBandeRecette() {
+    const bande = $("#bande-recette");
+    if (!bande) return;
+    const r = trouverRecette($("#f-recette").value);
+    const cafe = DATA.state.cafes.find(c => c.id === $("#f-cafe").value);
+    if (!r && !cafe) { bande.hidden = true; return; }
+    const dose = $("#f-dose").value, eau = $("#f-eau").value, temp = $("#f-temp").value;
+    const params = [dose && eau ? dose + " g / " + eau + " g" : "", temp ? temp + " °C" : ""].filter(Boolean).join(" · ");
+    bande.hidden = false;
+    bande.innerHTML =
+      '<span class="br-nom">' + (r ? '<span class="pastille-methode ' + r.methode.toLowerCase() + '"></span>' + attrTitre(r.nom) : I18N.t("a_choisir_recette")) + "</span>" +
+      (params ? '<span class="br-params">' + params + "</span>" : "") +
+      (cafe ? '<span class="br-cafe">' + attrTitre(I18N.tr(cafe.nom)) + "</span>" : "") +
+      '<span class="br-voir">' + I18N.t("br_voir") + "</span>";
+  }
+  function ouvrirFicheRecette(ouvrir) {
+    const layout = $("#ecran-saisie .saisie-layout");
+    if (!layout) return;
+    layout.classList.toggle("aside-ouvert", ouvrir);
+    $("#bande-recette").setAttribute("aria-expanded", String(ouvrir));
+    if (ouvrir) $("#aside-fermer").focus();
+  }
+  function cablerBandeRecette() {
+    $("#bande-recette").addEventListener("click", () =>
+      ouvrirFicheRecette(!$("#ecran-saisie .saisie-layout").classList.contains("aside-ouvert")));
+    $("#aside-fermer").addEventListener("click", () => { ouvrirFicheRecette(false); $("#bande-recette").focus(); });
+    document.addEventListener("keydown", ev => {
+      if (ev.key === "Escape" && $("#ecran-saisie .saisie-layout").classList.contains("aside-ouvert")) ouvrirFicheRecette(false);
+    });
+    // Un réglage qui change la bande : la dose, l'eau et la température vivent dans le formulaire.
+    ["f-dose", "f-eau", "f-temp"].forEach(id => $("#" + id).addEventListener("input", majBandeRecette));
+  }
+
   // Panneau latéral de la saisie : la recette et le café sélectionnés, sous les yeux.
   function majAsideSaisie() {
+    majBandeRecette();
     const zoneR = $("#aside-recette");
     const zoneC = $("#aside-cafe");
     if (!zoneR || !zoneC) return;
@@ -139,5 +176,5 @@
       '<p class="j-moyenne">' + I18N.t("j_moyenne", { m: fmtDecimal(moy, 1), n: liste.length }) + "</p>";
   }
 
-  Object.assign(UI, { majAsideSaisie, majJumelles });
+  Object.assign(UI, { cablerBandeRecette, majAsideSaisie, majBandeRecette, majJumelles, ouvrirFicheRecette });
 })();

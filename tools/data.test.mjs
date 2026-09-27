@@ -2858,5 +2858,14 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("pas d'intertitre de jour dans l'historique (choix de Chris, v8.29)", !/h-jour/.test(readFileSync(join(ROOT, "js/ui-historique.js"), "utf8")));
 }
 
+/* A4 (v8.84) : LA RECETTE SOUS LES YEUX, sous 1 400 px. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  const chrono = html.slice(html.indexOf('id="chrono-widget"'), html.indexOf('id="chrono-corps"'));
+  check("la bande de la recette vit dans le chrono, qui colle en haut", chrono.includes('id="bande-recette"'));
+  check("elle ouvre la fiche, qui a son bouton pour se fermer", html.includes('aria-controls="saisie-aside"') && html.includes('id="aside-fermer"'));
+  check("sous 1 400 px la fiche ne tombe plus sous le formulaire", lireCss().includes(".saisie-layout:not(.aside-ouvert) .saisie-aside { display: none; }"));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

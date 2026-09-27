@@ -7,11 +7,11 @@
 <!-- Version du site, source unique : le pied de page la lit, et les fichiers
      chargés à la demande la mettent dans leur URL. Se pose avec
      node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="8.83">
-<link rel="stylesheet" href="css/socle.css?v=8.83">
-<link rel="stylesheet" href="css/ecrans.css?v=8.83">
-<link rel="stylesheet" href="css/fenetres.css?v=8.83">
-<link rel="stylesheet" href="css/finitions.css?v=8.83">
+<meta name="app-version" content="8.84">
+<link rel="stylesheet" href="css/socle.css?v=8.84">
+<link rel="stylesheet" href="css/ecrans.css?v=8.84">
+<link rel="stylesheet" href="css/fenetres.css?v=8.84">
+<link rel="stylesheet" href="css/finitions.css?v=8.84">
 <!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
      SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
      parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
@@ -49,7 +49,7 @@
      les scripts. bump_version.mjs versionne le lien des graphiques. -->
 <link rel="preload" href="css/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="css/fonts/instrument-serif-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="js/vendor/chart.umd.js?v=8.83" as="script">
+<link rel="preload" href="js/vendor/chart.umd.js?v=8.84" as="script">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%98%95%3C/text%3E%3C/svg%3E">
 </head>
 <body>
@@ -391,6 +391,10 @@
         <span class="chrono-palier" id="chrono-palier-court"></span>
         <span class="chrono-chevron" aria-hidden="true"></span>
       </button>
+      <!-- A4 (v8.84) : sous 1 400 px, la recette choisie en une ligne, collée au
+           chrono. Un toucher ouvre la fiche entière (recette, vidéo, tasses
+           jumelles, café) en feuille par-dessus le formulaire. -->
+      <button type="button" class="bande-recette" id="bande-recette" aria-expanded="false" aria-controls="saisie-aside" hidden></button>
       <div id="chrono-corps" hidden>
       <label class="label-inline chrono-bip-label" title="Bip discret à chaque palier de la recette">
         <input type="checkbox" id="chrono-bip" form="form-saisie" checked> Bips aux paliers
@@ -645,7 +649,8 @@
     </div>
   </form>
 
-  <aside class="saisie-aside" aria-label="Recette, café et chrono">
+  <aside class="saisie-aside" id="saisie-aside" aria-label="Recette, café et chrono">
+    <button type="button" class="btn btn-petit aside-fermer" id="aside-fermer">Fermer la fiche</button>
     <!-- La fiche recette EN PREMIER : c'est ce qu'on relit a chaque etape. Le
          chrono, lui, ne sert que pendant l'extraction, il vit replie sous elle
          et s'ouvre d'un clic (ou tout seul quand on le demarre). -->
@@ -1748,36 +1753,36 @@ Cảm ơn shop.</pre>
 <!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
      et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
      desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=8.83"></script>
-<script defer src="js/i18n.js?v=8.83"></script>
-<script defer src="js/grind.js?v=8.83"></script>
-<script defer src="js/recettes.js?v=8.83"></script>
+<script defer src="js/outils.js?v=8.84"></script>
+<script defer src="js/i18n.js?v=8.84"></script>
+<script defer src="js/grind.js?v=8.84"></script>
+<script defer src="js/recettes.js?v=8.84"></script>
 <!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=8.83"></script>
-<script defer src="js/data-csv.js?v=8.83"></script>
-<script defer src="js/data-schema.js?v=8.83"></script>
-<script defer src="js/data-store.js?v=8.83"></script>
-<script defer src="js/data-calculs.js?v=8.83"></script>
-<script defer src="js/data-migrations.js?v=8.83"></script>
-<script defer src="js/data.js?v=8.83"></script>
-<script defer src="js/reglages.js?v=8.83"></script>
-<script defer src="js/charts.js?v=8.83"></script>
-<script defer src="js/ui-noyau.js?v=8.83"></script>
-<script defer src="js/ui-constats.js?v=8.83"></script>
-<script defer src="js/ui-derniere.js?v=8.83"></script>
-<script defer src="js/ui-tableau.js?v=8.83"></script>
-<script defer src="js/ui-saisie.js?v=8.83"></script>
-<script defer src="js/ui-saisie-aside.js?v=8.83"></script>
-<script defer src="js/ui-pilules.js?v=8.83"></script>
-<script defer src="js/ui-chrono.js?v=8.83"></script>
-<script defer src="js/ui-brouillon.js?v=8.83"></script>
-<script defer src="js/ui-rapide.js?v=8.83"></script>
-<script defer src="js/ui-historique.js?v=8.83"></script>
-<script defer src="js/ui-guide.js?v=8.83"></script>
-<script defer src="js/ui-catalogue.js?v=8.83"></script>
-<script defer src="js/ui-fiche.js?v=8.83"></script>
-<script defer src="js/ui-brassage.js?v=8.83"></script>
-<script defer src="js/ui-dessins.js?v=8.83"></script>
-<script defer src="js/app.js?v=8.83"></script>
+<script defer src="js/sync.js?v=8.84"></script>
+<script defer src="js/data-csv.js?v=8.84"></script>
+<script defer src="js/data-schema.js?v=8.84"></script>
+<script defer src="js/data-store.js?v=8.84"></script>
+<script defer src="js/data-calculs.js?v=8.84"></script>
+<script defer src="js/data-migrations.js?v=8.84"></script>
+<script defer src="js/data.js?v=8.84"></script>
+<script defer src="js/reglages.js?v=8.84"></script>
+<script defer src="js/charts.js?v=8.84"></script>
+<script defer src="js/ui-noyau.js?v=8.84"></script>
+<script defer src="js/ui-constats.js?v=8.84"></script>
+<script defer src="js/ui-derniere.js?v=8.84"></script>
+<script defer src="js/ui-tableau.js?v=8.84"></script>
+<script defer src="js/ui-saisie.js?v=8.84"></script>
+<script defer src="js/ui-saisie-aside.js?v=8.84"></script>
+<script defer src="js/ui-pilules.js?v=8.84"></script>
+<script defer src="js/ui-chrono.js?v=8.84"></script>
+<script defer src="js/ui-brouillon.js?v=8.84"></script>
+<script defer src="js/ui-rapide.js?v=8.84"></script>
+<script defer src="js/ui-historique.js?v=8.84"></script>
+<script defer src="js/ui-guide.js?v=8.84"></script>
+<script defer src="js/ui-catalogue.js?v=8.84"></script>
+<script defer src="js/ui-fiche.js?v=8.84"></script>
+<script defer src="js/ui-brassage.js?v=8.84"></script>
+<script defer src="js/ui-dessins.js?v=8.84"></script>
+<script defer src="js/app.js?v=8.84"></script>
 </body>
 </html>

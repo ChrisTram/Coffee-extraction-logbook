@@ -890,6 +890,7 @@
     // UNE SEULE FOIS : les conteneurs survivent aux reconstructions de pilules,
     // les attacher depuis construirePilules empilerait un jeu par bascule de langue.
     UI.brancherPilules();
+    UI.cablerBandeRecette();
     brancherCurseurs();
     brancherPas();
     activerAppuiLong($("#f-diagnostic"));
