@@ -434,7 +434,10 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 @media (max-width: 1023px) {
   /* L'HISTORIQUE seulement (v8.74) : la règle visait tous les tableaux et
      masquait sur téléphone ceux du Guide et la comparaison de deux tasses. */
-  #ecran-historique .table-conteneur { display: none; }
+  /* La TABLE se cache, pas son cadre (v8.79) : les cartes et le message « aucune
+     extraction » vivent dans le même cadre, et le cacher vidait l'historique. */
+  #ecran-historique .table-conteneur > .table-historique { display: none; }
+  #ecran-historique .table-conteneur { background: none; border: 0; box-shadow: none; overflow: visible; }
   .h-cartes { display: flex; flex-direction: column; gap: 10px; }
 }
 
