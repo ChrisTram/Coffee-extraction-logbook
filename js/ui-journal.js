@@ -56,9 +56,8 @@
     const ordre = notees.slice().sort((a, b) => String(a.date_heure).localeCompare(String(b.date_heure)));
     const W = 240, H = 34, x = i => 4 + i * ((W - 8) / (ordre.length - 1)), y = n => H - 4 - (Math.max(3, Math.min(10, n)) - 3) / 7 * (H - 8);
     const d = "M" + ordre.map((e, i) => x(i).toFixed(1) + " " + y(Number(e.note_sur_10)).toFixed(1)).join(" L");
-    const der = ordre[ordre.length - 1];
-    return '<svg class="jn-courbe" viewBox="0 0 ' + W + " " + H + '" aria-hidden="true"><path d="' + d + '"></path>' +
-      '<circle cx="' + x(ordre.length - 1).toFixed(1) + '" cy="' + y(Number(der.note_sur_10)).toFixed(1) + '" r="3"></circle></svg>';
+    // Étirée sur toute la largeur (v8.95) : sur ordinateur, gardée à ses proportions, elle restait un trait au centre.
+    return '<svg class="jn-courbe" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" aria-hidden="true"><path d="' + d + '" vector-effect="non-scaling-stroke"></path></svg>';
   }
 
   function resume(c) {

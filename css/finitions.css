@@ -831,7 +831,9 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 .fc-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding: 12px 14px; border-radius: var(--rayon-petit); background: var(--panneau-2); }
 .fc-kpi b { display: block; font-family: var(--serif); font-weight: 400; font-size: clamp(1.4rem, 4vw, 1.9rem); line-height: 1; color: var(--encre); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fc-kpi span { font-size: 0.75rem; color: var(--attenue); }
-.fc-onglets { display: flex; gap: 4px; border-bottom: 1px solid var(--lignes); overflow-x: auto; scrollbar-width: none; position: sticky; top: -1px; z-index: 2; background: var(--panneau); }
+/* min-height : dans la grille de la fiche, qui a une hauteur fixe, une rangée qui défile
+   en largeur peut tomber à zéro ; sur ordinateur la barre d'onglets faisait 1 px (v8.95). */
+.fc-onglets { display: flex; gap: 4px; border-bottom: 1px solid var(--lignes); overflow-x: auto; scrollbar-width: none; position: sticky; top: -1px; z-index: 2; background: var(--panneau); min-height: 46px; flex-shrink: 0; }
 .fc-onglets::-webkit-scrollbar { display: none; }
 .fc-onglets [role="tab"] { font: inherit; font-size: 0.92rem; flex: none; border: 0; background: none; color: var(--attenue); cursor: pointer; padding: 12px 14px 10px; min-height: 44px; border-bottom: 2px solid transparent; margin-bottom: -1px; }
 .fc-onglets [role="tab"][aria-selected="true"] { color: var(--encre); font-weight: 700; border-bottom-color: var(--accent); }
@@ -909,3 +911,13 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 .ga-porte b { font-size: 1rem; color: var(--encre); }
 .ga-porte span { font-size: 0.82rem; color: var(--attenue); }
 @media (max-width: 560px) { .ga-portes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ---------- Le stock sur ordinateur (v8.95) ----------
+   Quatre pastilles sur une ligne élargissaient le bloc du titre à 730 px : « Ta
+   semaine » ne tenait plus à sa droite et passait dessous, l'en-tête doublait
+   de hauteur. Le bloc du titre garde une largeur bornée, les pastilles passent
+   sur deux rangées si besoin. */
+@media (min-width: 700px) {
+  #tableau-contenu > .tete-page > .tete-titres { flex: 1 1 260px; max-width: 400px; }
+  #tableau-contenu .sc-sachet { max-width: 12rem; }
+}
