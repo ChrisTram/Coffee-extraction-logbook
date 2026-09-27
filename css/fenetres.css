@@ -54,7 +54,9 @@
 .dessin-lien:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 .dessin-svg { width: 100%; height: auto; display: block; }
 .dessin-svg:empty { display: none; }
-.dessin-svg text { font-family: var(--sans); font-size: 9.5px; fill: var(--attenue); }
+/* 10,5 et non 9,5 (A7, v8.86) : au téléphone le dessin rétrécit, et 9,5 unités
+   tombaient sous 10 px à l'écran. */
+.dessin-svg text { font-family: var(--sans); font-size: 10.5px; fill: var(--attenue); }
 .dessin-svg .de-fort { fill: var(--encre); font-weight: 700; }
 .dessin-lecture { margin: 0; font-size: 0.8rem; line-height: 1.45; color: var(--texte); }
 .de-planche { stroke: var(--lignes); stroke-width: 2; }
@@ -90,7 +92,7 @@
   box-shadow: var(--ombre); padding: 10px 12px; display: grid; gap: 8px; font-size: 0.82rem;
 }
 .bt-tete { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.bt-quand { font-size: 0.74rem; color: var(--attenue); }
+.bt-quand { font-size: 0.75rem; color: var(--attenue); }
 .bt-fermer { font: inherit; font-size: 1.1rem; line-height: 1; background: none; border: none; color: var(--attenue); cursor: pointer; padding: 2px 4px; }
 .bt-corps { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: start; }
 .bt-corps > div { display: grid; gap: 2px; min-width: 0; }
@@ -139,7 +141,7 @@
 .fc-duo-table tbody th { font-weight: 600; color: var(--attenue); white-space: nowrap; }
 @media (max-width: 760px) { .fc-comparer-corps { grid-template-columns: 1fr; } }
 .fc-dessin:empty { display: none; }
-.fc-dessin text { font-family: var(--sans); font-size: 9.5px; fill: var(--attenue); }
+.fc-dessin text { font-family: var(--sans); font-size: 10.5px; fill: var(--attenue); }
 .fc-dessin .de-fort { fill: var(--encre); font-weight: 700; }
 
 /* LE RÉCAP DE LA SEMAINE (v8.51). */
@@ -156,10 +158,10 @@
   .tete-recap .rc-tete .rc-faits { order: 3; flex: 1 1 100%; }
   .tete-recap .rc-corps .rc-meilleure { grid-column: 1 / -1; max-width: none; }
 }
-.tete-recap .rc-tete h3 { font-family: var(--sans); font-size: 0.69rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--attenue); }
+.tete-recap .rc-tete h3 { font-family: var(--sans); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--attenue); }
 .tete-recap .rc-corps { gap: 8px 22px; }
 .tete-recap .rc-chiffre b { font-size: 1.5rem; }
-.tete-recap .rc-chiffre span { font-size: 0.72rem; }
+.tete-recap .rc-chiffre span { font-size: 0.75rem; }
 .tete-recap .rc-meilleure { max-width: 300px; }
 /* Café et recette sur UNE ligne dans la tête : « Là Việt Balanced · Brikka classique ». */
 .tete-recap .rc-meilleure em { display: inline; font-size: 0.76rem; }
@@ -184,7 +186,7 @@
    tasse ou deux dessinaient la même barre. */
 .rc-jour i { display: block; flex: none; width: 100%; max-width: 26px; height: calc((100% - 16px) * var(--h, 0)); border-radius: 4px 4px 0 0; background: var(--accent); }
 .rc-jour.vide i { background: var(--panneau-3); }
-.rc-jour small { font-size: 0.66rem; color: var(--attenue); text-transform: uppercase; }
+.rc-jour small { font-size: 0.75rem; color: var(--attenue); text-transform: uppercase; }
 .rc-faits { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 0.88rem; }
 .rc-faits li::marker { color: var(--accent); }
 @media (max-width: 700px) {
@@ -284,7 +286,7 @@
 .fc-note span { font-size: 0.78rem; color: var(--attenue); }
 .fc-grille { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .fc-bloc { background: var(--panneau-2); border-radius: var(--rayon-petit); padding: 14px 16px; min-width: 0; display: grid; gap: 10px; align-content: start; }
-.fc-h { margin: 0; font-family: var(--sans); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--attenue); }
+.fc-h { margin: 0; font-family: var(--sans); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--attenue); }
 .fc-muet { margin: 0; font-size: 0.85rem; color: var(--attenue); }
 .fc-texte { margin: 0; font-size: 0.86rem; line-height: 1.5; }
 .fc-jauge { height: 10px; border-radius: 99px; background: var(--panneau-3); overflow: hidden; }
@@ -297,9 +299,9 @@
 .fc-fraicheur::before { content: ""; position: absolute; left: 0; right: 0; top: 8px; height: 6px; border-radius: 99px; background: var(--panneau-3); }
 .fc-fenetre { position: absolute; top: 6px; height: 10px; border-radius: 99px; background: var(--accent-fond); border: 1px solid var(--accent); }
 .fc-aujourdhui { position: absolute; top: 1px; width: 3px; height: 20px; margin-left: -1px; border-radius: 2px; background: var(--encre); }
-.fc-leg { display: flex; justify-content: space-between; gap: 8px; font-size: 0.72rem; color: var(--attenue); }
+.fc-leg { display: flex; justify-content: space-between; gap: 8px; font-size: 0.75rem; color: var(--attenue); }
 .fc-svg { width: 100%; height: auto; display: block; }
-.fc-svg text { font-family: var(--sans); font-size: 10px; fill: var(--attenue); }
+.fc-svg text { font-family: var(--sans); font-size: 10.5px; fill: var(--attenue); }
 .fc-c-grille { stroke: var(--lignes); stroke-width: 1; }
 .fc-c-fenetre { fill: var(--accent-fond); }
 .fc-c-point { fill: var(--attenue); fill-opacity: 0.7; }

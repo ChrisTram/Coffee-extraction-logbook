@@ -437,7 +437,7 @@ button { font-family: inherit; }
   margin: 0;
   color: var(--encre);
 }
-.rail-sous { font-size: 0.74rem; color: var(--attenue); }
+.rail-sous { font-size: 0.75rem; color: var(--attenue); }
 
 .rail-nouvelle {
   width: 100%;
@@ -530,7 +530,7 @@ button { font-family: inherit; }
   background: transparent;
   color: var(--attenue);
   font: inherit;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   cursor: pointer;
 }
 .barre-entree.actif { color: var(--accent); }
@@ -637,7 +637,7 @@ button { font-family: inherit; }
 }
 .detail-item { display: flex; flex-direction: column; min-width: 0; }
 .detail-item span {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--attenue);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -687,7 +687,7 @@ button { font-family: inherit; }
 
 /* Stock du sachet en cours, dans la liste des cafes. */
 .badge-stock {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   padding: 2px 7px;
   border-radius: 999px;
   white-space: nowrap;
@@ -745,7 +745,7 @@ button { font-family: inherit; }
   margin: 8px auto 24px;
   padding: 0 20px;
   text-align: right;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--attenue);
 }
 
@@ -813,7 +813,7 @@ button { font-family: inherit; }
 .preuve-pied {
   margin-left: auto;
   white-space: nowrap;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   letter-spacing: 0.03em;
   font-variant-numeric: tabular-nums;
 }

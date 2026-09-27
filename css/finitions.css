@@ -322,14 +322,14 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   font-variant-numeric: tabular-nums;
 }
 .resume-libelle {
-  font-size: 0.66rem;
+  font-size: 0.75rem;
   color: var(--attenue);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 .resume-note {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--texte);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -351,7 +351,7 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
    ================================================================== */
 
 .modale h3 {
-  font-size: 0.69rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -377,7 +377,7 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 .chrono-entete-ligne:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .chrono-libelle {
   flex: 1;
-  font-size: 0.69rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -621,7 +621,7 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   .historique-resume { padding: 10px 14px; gap: 4px 16px; }
   .resume-item { flex-direction: row; align-items: baseline; gap: 5px; padding: 0; border-left: none; }
   .resume-valeur { font-size: 1.15rem; }
-  .resume-libelle { font-size: 0.7rem; letter-spacing: 0.04em; }
+  .resume-libelle { font-size: 0.75rem; letter-spacing: 0.04em; }
   .resume-note { display: none; }
 }
 
@@ -699,4 +699,21 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   .matrice td[data-col] { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
   .matrice td .m-temp, .matrice td .m-chez-toi { display: inline; margin: 0; }
   .matrice td .m-autre, .matrice td .m-meilleure { display: none; }
+}
+
+/* ---------- A7 (v8.86) : des cibles à la taille du doigt ----------
+   Seulement au toucher (pointer: coarse) : à la souris, les petites cibles vont
+   bien et gardent la densité. Deux façons : les boutons qui peuvent grandir
+   grandissent ; ceux dont la taille fait le dessin (pastilles, cases du
+   calendrier) gardent leur trait et agrandissent leur zone invisible. */
+@media (pointer: coarse) {
+  .btn-carre-petit { min-width: 40px; min-height: 40px; }
+  .onglets-analyses [role="tab"] { min-height: 40px; }
+  #recap-fermer, .lien-carte, .dessin-lien, #dessins-arranger, .lc-cafe, #aside-pap, .recette-video-lien, .lien-recette { min-height: 40px; display: inline-flex; align-items: center; }
+  .btn-petit { min-height: 40px; }
+  .tag, .pilule, .derniere-tag-plus { position: relative; }
+  /* ::before et non ::after : ::after porte déjà la bulle des diagnostics. */
+  .tag::before, .pilule::before { content: ""; position: absolute; inset: -4px -3px; }
+  /* Une case de 17 px : le trait transparent compte pour le doigt, pas pour l'œil. */
+  #g-heatmap rect { stroke: transparent; stroke-width: 4px; }
 }

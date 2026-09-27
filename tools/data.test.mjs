@@ -2875,5 +2875,13 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("au telephone chaque case du tableau cafe et recette dit sa colonne", guide.includes("'<td data-col=\"'") && lireCss().includes("content: attr(data-col)"));
 }
 
+/* A7 (v8.86) : RIEN SOUS 12 PX, ET 40 PX AU DOIGT. */
+{
+  const css = lireCss();
+  const sousLePlancher = (css.match(/[^\n]*font-size:\s*0\.(6[0-9]*|7[0-4]?)rem[^\n]*/g) || []).filter(l => !/::?(before|after)/.test(l));
+  check("aucun texte sous 0,75 rem (12 px), les signes dessines a part", sousLePlancher.length === 0, sousLePlancher.slice(0, 3).join(" | "));
+  check("au toucher, les petits boutons passent a 40 px", css.includes("@media (pointer: coarse)") && css.includes(".btn-carre-petit { min-width: 40px; min-height: 40px; }"));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);
