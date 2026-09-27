@@ -963,9 +963,12 @@ check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("pla
      survol. La carte, sans survol au doigt, garde le sien en plus. */
   check("la ligne du tableau offre les cinq actions",
     aLigne.length === 5 && !aLigne.includes("deplier"), aLigne.join(", "));
-  check("la carte du telephone offre les memes, plus son depliage",
-    aCarte.filter(a => a !== "deplier").join(",") === aLigne.join(",") && aCarte.includes("deplier"),
-    aCarte.join(", ") + "  vs  " + aLigne.join(", "));
+  /* A3 (v8.82) : fermee, la carte ne montre que « ⋯ » ; ouvert, son pied porte
+     les memes cinq actions que la ligne, construites par actionsExtraction(). */
+  check("la carte fermee ne porte que son bouton « ⋯ »", aCarte.join(",") === "menu", aCarte.join(", "));
+  const srcHisto = readFileSync(join(ROOT, "js/ui-historique.js"), "utf8");
+  check("et son menu ouvert offre le depliage et les cinq memes actions",
+    /h-carte-pied[\s\S]{0,400}data-action="deplier"[\s\S]{0,400}actionsExtraction\(e\)/.test(srcHisto));
 
   /* Et les deux portent l'identifiant : le gestionnaire de clic est delegue, il
      ne sait pas d'ou vient le clic et ne doit pas avoir a le savoir. */

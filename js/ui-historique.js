@@ -136,6 +136,7 @@
     if (th) th.textContent = tri.sens > 0 ? "▲" : "▼";
 
     rendreResume(liste);
+    majFiltresActifs();
 
     /* PLUS D'INTERTITRE DE JOUR (v8.29). Chris n'en voulait pas : une ligne
        entiere pour un nom de jour, c'est une ligne de moins pour une tasse. La
@@ -160,6 +161,28 @@
   }
 
   /* LES CARTES : la meme liste, chaque carte porte sa date complete. */
+  // Les cartes dont le menu « ⋯ » est ouvert, gardées d'un rendu à l'autre.
+  const menusOuverts = new Set();
+
+  /* LES FILTRES ACTIFS EN PASTILLES (A3, v8.82). Le panneau replié au téléphone
+     ne doit pas cacher qu'un filtre tourne : chaque filtre posé a sa pastille et
+     sa croix, et le bouton compte combien il y en a. La machine a déjà son
+     contrôle visible et la recherche son champ : elles n'en ont pas. */
+  function majFiltresActifs() {
+    const actifs = [];
+    const texteSelect = id => { const s = $("#" + id); return s.options[s.selectedIndex] ? s.options[s.selectedIndex].textContent : s.value; };
+    [["h-cafe", "h_f_cafe"], ["h-diagnostic", "h_f_diag"], ["h-ratee", "h_f_ratees"]].forEach(([id, cle]) => {
+      if ($("#" + id).value) actifs.push([id, I18N.t(cle) + " : " + texteSelect(id)]);
+    });
+    if ($("#h-note-min").value) actifs.push(["h-note-min", I18N.t("h_f_note", { n: $("#h-note-min").value })]);
+    if ($("#h-du").value) actifs.push(["h-du", I18N.t("h_f_du", { d: fmtDateCourte($("#h-du").value) })]);
+    if ($("#h-au").value) actifs.push(["h-au", I18N.t("h_f_au", { d: fmtDateCourte($("#h-au").value) })]);
+    $("#h-actifs").innerHTML = actifs.map(([id, t]) =>
+      '<button type="button" class="h-actif" data-vider="' + id + '" aria-label="' + attrTitre(I18N.t("h_f_retirer", { f: t })) + '">' +
+      attrTitre(t) + '<span aria-hidden="true">×</span></button>').join("");
+    $("#h-filtrer").textContent = actifs.length ? I18N.t("h_filtrer_n", { n: actifs.length }) : I18N.t("h_filtrer");
+  }
+
   function rendreCartes(liste) {
     return liste.map(carteExtraction).join("");
   }
@@ -331,37 +354,45 @@
   /* UNE TASSE EN CARTE, pour le telephone. Mêmes informations que la ligne, mais
      empilees : heure, machine, cafe, recette, dose et eau, ratio, note, gouts et
      diagnostic, commentaire, et les cinq mêmes actions. */
+  /* A3 (v8.82) : LA CARTE COMPACTE. 260 px par tasse faisaient vingt écrans pour
+     soixante tasses. La recette et les chiffres partagent une ligne, le
+     commentaire tient sur une, et les six actions passent derrière « ⋯ » : on
+     les ouvre pour une tasse, on ne les lit pas sur toutes. La date reste sur
+     chaque carte, sans intertitre de jour, comme Chris l'a voulu en v8.29. */
   function carteExtraction(e) {
     const ouvert = detailsOuverts.has(e.id);
-    const chiffres = [];
-    if (e.dose_g !== "" && e.eau_g !== "") chiffres.push(e.dose_g + " → " + e.eau_g + " g");
-    if (e._c.ratioTexte) chiffres.push(e._c.ratioTexte);
-    if (e.mouture_dial) chiffres.push(I18N.t("molette") + " " + e.mouture_dial);
-    return '<article class="h-carte' + (ouvert ? " ouverte" : "") +
+    const menu = ouvert || menusOuverts.has(e.id);
+    const meta = [];
+    if (e.recette) meta.push('<span class="h-carte-recette">' + I18N.tr(e.recette) + "</span>");
+    if (e.dose_g !== "" && e.eau_g !== "") meta.push(e.dose_g + " → " + e.eau_g + " g");
+    if (e._c.ratioTexte) meta.push(e._c.ratioTexte);
+    if (e.mouture_dial) meta.push(I18N.t("molette") + " " + e.mouture_dial);
+    return '<article class="h-carte' + (ouvert ? " ouverte" : "") + (menu ? " menu-ouvert" : "") +
       (comparaison.has(e.id) ? " comparee" : "") + (estRatee(e) ? " ratee" : "") +
       '" data-id="' + e.id + '">' +
       '<div class="h-carte-tete">' +
         '<span class="h-carte-heure">' + fmtDateHeure(e.date_heure) + "</span>" +
         '<span class="chip-methode ' + e.methode.toLowerCase() + '">' + e.methode + "</span>" +
         '<span class="h-carte-note">' + (e.note_sur_10 !== "" ? fmtDecimal(Number(e.note_sur_10), 1) : "") + "</span>" +
+        '<button type="button" class="btn-menu-carte" data-action="menu" aria-expanded="' + menu + '" aria-label="' +
+          attrTitre(I18N.t("h_actions")) + '">⋯</button>' +
       "</div>" +
       '<p class="h-carte-cafe">' + I18N.tr(e._c.cafe_nom) +
         (estRatee(e) ? '<span class="mention-ratee">' + I18N.t("rt_badge") + "</span>" : "") + "</p>" +
-      (e.recette ? '<p class="h-carte-recette">' + I18N.tr(e.recette) + "</p>" : "") +
-      (chiffres.length ? '<p class="h-carte-chiffres">' + chiffres.join(" · ") + "</p>" : "") +
+      (meta.length ? '<p class="h-carte-meta">' + meta.join(" · ") + "</p>" : "") +
       ((e.diagnostic || e.descripteurs)
         ? '<p class="h-carte-gouts">' +
           (e.diagnostic ? '<span class="h-diag">' + diagsAffiches(e.diagnostic) + "</span>" : "") +
           goutsHistorique(e) + "</p>"
         : "") +
       (e.commentaire ? '<p class="h-carte-commentaire">' + attrTitre(e.commentaire) + "</p>" : "") +
-      '<div class="h-carte-pied">' +
+      (!menu ? "" : '<div class="h-carte-pied">' +
         /* En mots et non en fleche : le telephone n'a pas de survol, le detail
            s'y deplie, et le bouton dit ce qu'il fait. */
         '<button type="button" class="btn-detail-carte" data-action="deplier" aria-expanded="' + ouvert + '">' +
         I18N.t(ouvert ? "h_detail_masquer" : "h_detail") + "</button>" +
         actionsExtraction(e) +
-      "</div>" +
+      "</div>") +
       (ouvert ? '<div class="h-carte-detail">' + detailContenu(e) + "</div>" : "") +
       "</article>";
   }
@@ -602,6 +633,17 @@
       FILTRES.forEach(id => { $("#" + id).value = ""; });
       rendreHistorique();
     });
+    // A3 : le panneau des filtres se replie au téléphone, les actifs restent en pastilles.
+    $("#h-filtrer").addEventListener("click", () => {
+      const ouvert = $("#ecran-historique").classList.toggle("filtres-ouverts");
+      $("#h-filtrer").setAttribute("aria-expanded", String(ouvert));
+    });
+    $("#h-actifs").addEventListener("click", ev => {
+      const b = ev.target.closest("[data-vider]");
+      if (!b) return;
+      $("#" + b.dataset.vider).value = "";
+      rendreHistorique();
+    });
     $("#h-exporter").addEventListener("click", () => {
       DATA.exporterExtractions(filtrerHistorique().map(e => { const { _c, ...reste } = e; return reste; }));
       toast(I18N.t("t_export_filtre"));
@@ -643,6 +685,10 @@
       } else if (btn.dataset.action === "dupliquer") {
         UI.refaireTasse(ext);
         toast(I18N.t("t_dupliquee"));
+      } else if (btn.dataset.action === "menu") {
+        if (menusOuverts.has(id)) menusOuverts.delete(id);
+        else menusOuverts.add(id);
+        rendreHistorique();
       } else if (btn.dataset.action === "deplier") {
         if (detailsOuverts.has(id)) detailsOuverts.delete(id);
         else detailsOuverts.add(id);

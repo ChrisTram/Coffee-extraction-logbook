@@ -2849,5 +2849,14 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("dans une carte etroite chaque tasse devient une fiche en grille", lireCss().includes("@container dernieres (max-width: 760px)") && lireCss().includes('grid-template-areas: "cafe cafe note" "quand mesures note" "gouts gouts note"'));
 }
 
+/* A3 (v8.82) : L'HISTORIQUE AU POUCE. */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  check("les filtres se replient derriere un bouton Filtrer", html.includes('id="h-filtrer" aria-expanded="false" aria-controls="h-panneau"') && html.includes('id="h-panneau"'));
+  check("et les filtres actifs restent visibles, chacun avec sa croix", SOURCE_UI.includes("function majFiltresActifs") && SOURCE_UI.includes('data-vider="'));
+  check("les actions d'une carte passent derriere « ⋯ »", SOURCE_UI.includes('data-action="menu"') && SOURCE_UI.includes("(!menu ? \"\" : '<div class=\"h-carte-pied\">'"));
+  check("pas d'intertitre de jour dans l'historique (choix de Chris, v8.29)", !/h-jour/.test(readFileSync(join(ROOT, "js/ui-historique.js"), "utf8")));
+}
+
 console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
 process.exit(failures === 0 ? 0 : 1);

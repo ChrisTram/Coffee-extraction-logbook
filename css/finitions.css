@@ -460,8 +460,8 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   font-variant-numeric: tabular-nums;
 }
 .h-carte-cafe { margin: 8px 0 0; font-weight: 600; color: var(--encre); }
-.h-carte-recette { margin: 2px 0 0; font-size: 0.84rem; color: var(--attenue); }
-.h-carte-chiffres { margin: 6px 0 0; font-size: 0.84rem; color: var(--texte); }
+.h-carte-meta { margin: 3px 0 0; font-size: 0.84rem; color: var(--texte); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.h-carte-recette { color: var(--attenue); }
 .h-carte-gouts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0 0; }
 .h-carte-commentaire {
   margin: 8px 0 0;
@@ -587,4 +587,40 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   .table-dernieres .d-note { grid-area: note; align-self: center; font-size: 1.7rem; padding-left: 6px; }
   .table-dernieres tr.derniere-commentaire { display: block; }
   .table-dernieres tr.derniere-commentaire td { display: block; padding: 0 2px 10px; max-width: none; }
+}
+
+/* ---------- A3 (v8.82) : l'historique au pouce ---------- */
+.h-filtrer, .h-actifs { display: none; }
+.btn-menu-carte {
+  border: 1px solid transparent; background: transparent; color: var(--attenue); cursor: pointer;
+  font: inherit; font-size: 1.2rem; line-height: 1; min-width: 40px; min-height: 36px; border-radius: 10px;
+}
+.btn-menu-carte:hover, .btn-menu-carte[aria-expanded="true"] { color: var(--encre); border-color: var(--lignes); background: var(--panneau-2); }
+.h-carte-note { margin-left: auto; }
+.h-carte-tete .btn-menu-carte { margin-right: -8px; }
+.h-carte { padding: 12px 16px; }
+.h-carte-cafe { margin-top: 4px; }
+.h-carte-gouts { flex-wrap: nowrap; overflow: hidden; margin-top: 6px; }
+.h-carte-commentaire { margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.h-carte.ouverte .h-carte-commentaire { white-space: normal; }
+@media (max-width: 1023px) {
+  .h-filtrer { display: inline-flex; }
+  .h-filtrer[aria-expanded="true"] { border-color: var(--accent); color: var(--accent-fort); }
+  .h-actifs { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+  .h-actifs:empty { display: none; }
+  .h-actif {
+    display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 0.8rem; cursor: pointer;
+    padding: 6px 8px 6px 12px; min-height: 36px; border-radius: 99px;
+    border: 1px solid var(--accent); background: var(--accent-fond); color: var(--accent-fort);
+  }
+  .h-actif span { font-size: 1rem; line-height: 1; }
+  #ecran-historique:not(.filtres-ouverts) .historique-filtres > .champ,
+  #ecran-historique:not(.filtres-ouverts) .historique-filtres-actions,
+  #ecran-historique:not(.filtres-ouverts) #h-exporter { display: none; }
+  /* Le résumé sur une ligne : quatre chiffres suffisent, pas quatre blocs. */
+  .historique-resume { padding: 10px 14px; gap: 4px 16px; }
+  .resume-item { flex-direction: row; align-items: baseline; gap: 5px; padding: 0; border-left: none; }
+  .resume-valeur { font-size: 1.15rem; }
+  .resume-libelle { font-size: 0.7rem; letter-spacing: 0.04em; }
+  .resume-note { display: none; }
 }
