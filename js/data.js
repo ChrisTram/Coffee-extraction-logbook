@@ -113,6 +113,33 @@ const DATA = (() => {
     return a;
   }
 
+  /* CORRIGER LE STOCK À LA MAIN (v8.96). Écrit le compte sur le sachet en
+     cours ; sans sachet enregistré pour ce café, en crée un d'aujourd'hui, au
+     format du café, pour y poser le compte. L'heure est celle des tasses, en
+     local à la minute, pour que « les tasses d'après » se compare en texte. */
+  async function corrigerStock(cafeId, grammes) {
+    const g = Math.round(Number(grammes) * 10) / 10;
+    if (!Number.isFinite(g) || g < 0) return null;
+    const d = new Date(maintenant());
+    const le = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    const sachet = sachetCourant(cafeId);
+    if (!sachet) {
+      const cafe = state.cafes.find(c => c.id === cafeId);
+      if (!cafe) return null;
+      return ajouterAchat({
+        cafe_id: cafeId, date_achat: le.slice(0, 10),
+        format_grammes: Number(cafe.format_grammes) > 0 ? cafe.format_grammes : Math.max(g, 1),
+        prix_vnd: cafe.prix_vnd, date_torrefaction: cafe.date_torrefaction,
+        restant_g: g, restant_le: le,
+      });
+    }
+    sachet.restant_g = g;
+    sachet.restant_le = le;
+    estampiller(sachet);
+    await persister();
+    return sachet;
+  }
+
   async function supprimerAchat(id) {
     marquerSupprime("achats", id);
     state.achats = state.achats.filter(x => x.id !== id);
@@ -745,7 +772,7 @@ const DATA = (() => {
     /* csvRecettes est exposee pour que l aller-retour CSV soit testable sur le
        VRAI chemin d export : c est lui qui perdait puissance_feu. */
     csvParse, csvSerialiser, csvRecettes, CAFE_COLS, EXT_COLS, RECETTE_COLS, ACHAT_COLS,
-    sachetCourant, stockSachet, ajouterAchat, supprimerAchat,
+    sachetCourant, stockSachet, ajouterAchat, supprimerAchat, corrigerStock,
     calculs, cafeDe,
     lierDossier, delierDossier, reautoriserDossier, sauverFichiers,
     importerTexteCSV, analyserImport, exporterTout, exporterCafes, exporterExtractions, exporterRecettes,

@@ -37,7 +37,7 @@ const DATA_MIGRATIONS = (() => {
 
        Chaque pas ne touche QUE la valeur semée d'avant. Un pas qui écraserait un
        réglage choisi volontairement serait un bug, pas une migration. */
-    const SCHEMA_ACTUEL = 18;
+    const SCHEMA_ACTUEL = 19;
 
     // Rattrapage de la puissance de feu des recettes Brikka : l'échelle de Chris a
     // bougé deux fois, 3 puis 4 puis 2.
@@ -376,6 +376,11 @@ const DATA_MIGRATIONS = (() => {
       });
       return touche;
     } },
+    /* Deux colonnes de sachet, restant_g et restant_le (v8.96). Rien à
+       rattraper : vides, elles laissent le calcul d'avant. Le pas n'existe que
+       pour monter la version, afin qu'un onglet resté sur l'ancienne soit refusé
+       par la synchro au lieu d'effacer ces colonnes qu'il ne connaît pas. */
+    { v: 19, nom: "compte a la main des sachets", appliquer: () => false },
     ];
 
     /* Applique les pas manquants et écrit la nouvelle version. Renvoie vrai si

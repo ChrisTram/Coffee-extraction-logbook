@@ -828,6 +828,21 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 .fc-bocal::before { content: ""; position: absolute; top: 0; left: 16px; right: 16px; height: 8px; border-radius: 0 0 4px 4px; background: var(--panneau-3); }
 .fc-bocal i { position: absolute; left: 10px; top: 16px; width: 6px; bottom: 12px; border-radius: 3px; background: linear-gradient(to bottom, rgba(255, 255, 255, 0.18), transparent); }
 .fc-identite h2 { margin: 2px 0 8px; }
+/* Le bocal est un bouton (v8.96) : son grain dessiné au centre, ses grammes dessous. */
+.fc-bocal-bloc { display: grid; justify-items: center; gap: 4px; }
+button.fc-bocal { padding: 0; font: inherit; color: var(--encre); cursor: pointer; display: grid; place-items: center; }
+button.fc-bocal:hover { border-color: var(--accent); }
+button.fc-bocal:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.fc-grain { width: 30px; height: 30px; opacity: 0.55; position: relative; }
+.fc-bocal-g { font-size: 0.78rem; font-weight: 700; color: var(--encre); font-variant-numeric: tabular-nums; }
+button.fc-a-compter { white-space: nowrap; font: inherit; font-size: 0.78rem; font-weight: 700; border: 0; background: none; padding: 0; cursor: pointer; color: var(--accent-fort); text-decoration: underline; text-underline-offset: 3px; }
+.fc-stock-edition { display: grid; gap: 6px; padding: 12px 14px; border-radius: var(--rayon-petit); background: var(--panneau-2); border: 1px solid var(--accent); }
+.fc-stock-edition label { font-size: 0.82rem; font-weight: 600; color: var(--encre); }
+.fc-stock-ligne { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.fc-stock-ligne input { width: 110px; }
+.fc-stock-ligne span { color: var(--attenue); }
+.fc-corriger { font: inherit; font-size: 0.8rem; font-weight: 600; border: 0; background: none; padding: 0 0 0 6px; color: var(--accent-fort); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.fc-corriger:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .fc-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding: 12px 14px; border-radius: var(--rayon-petit); background: var(--panneau-2); }
 .fc-kpi b { display: block; font-family: var(--serif); font-weight: 400; font-size: clamp(1.4rem, 4vw, 1.9rem); line-height: 1; color: var(--encre); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fc-kpi span { font-size: 0.75rem; color: var(--attenue); }
@@ -842,6 +857,7 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 @media (max-width: 560px) {
   .fc-passeport { grid-template-columns: 58px minmax(0, 1fr); gap: 12px; }
   .fc-bocal { width: 58px; height: 76px; }
+  .fc-grain { width: 24px; height: 24px; }
   .fc-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 

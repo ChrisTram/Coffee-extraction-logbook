@@ -13,6 +13,28 @@ introduit est dans le changelog.
 
 ## Architecture et code
 
+### Le stock se corrige à la main (v8.96)
+
+Chris voyait le bocal de son Là Việt Balanced vide, sachet presque plein. Le
+stock est un CALCUL : format du sachet moins les doses des tasses depuis son
+début. Il se trompe dès que la saisie des sachets est incomplète, et c'est
+la règle plus que l'exception : un café sans achat enregistré reçoit un
+sachet implicite (migration), qui compte TOUTES les tasses depuis l'ajout du
+café. Dans la démo, le Là Việt Balanced tombait à moins 88 g.
+
+Plutôt que de deviner la cause, un recours direct : le compte à la main.
+Deux colonnes sur le sachet, les grammes et le moment du compte ; le stock
+repart de là et ne retire que les tasses postérieures (comparaison de textes
+« AAAA-MM-JJTHH:MM », l'heure locale des tasses). Le compte vit sur le
+SACHET, pas sur le café : un rachat repart bien de son format plein. Schéma
+monté à 19 pour qu'un onglet resté sur l'ancienne version soit refusé par la
+synchro au lieu d'effacer ces colonnes.
+
+Au passage, un sachet se compte depuis son ouverture quand elle est connue :
+les tasses bues entre l'achat et l'ouverture sont celles de l'ancien sachet
+(c'est déjà la règle de `sachetALaDate`), le stock ne les comptait pas ainsi.
+Un stock sous zéro est forcément faux : la fiche écrit « à compter ».
+
 ### Le tableau de bord resserré (v8.39)
 
 **La place de la dernière tasse.** La carte prend la hauteur des chiffres

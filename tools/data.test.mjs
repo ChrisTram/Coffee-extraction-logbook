@@ -139,7 +139,7 @@ check(
 // 6. Stock par sachet. Le comportement CENTRAL : un rachat repart du format
 // plein. Sans ca la table achats n'apporterait rien sur un cafe rachete, ce qui
 // est precisement le cas d'usage qui la justifie.
-const ACHAT_ENTETE = "id,cafe_id,date_achat,format_grammes,prix_vnd,date_torrefaction,date_ouverture";
+const ACHAT_ENTETE = "id,cafe_id,date_achat,format_grammes,prix_vnd,date_torrefaction,date_ouverture,restant_g,restant_le";
 const achatCsv = DATA.csvSerialiser([{ id: "a1", cafe_id: "c1", format_grammes: 250, maj_le: 999 }], DATA.ACHAT_COLS);
 const premiereLigneAchats = achatCsv.split("\n")[0];
 check("entete achats.csv", premiereLigneAchats === ACHAT_ENTETE, premiereLigneAchats);
@@ -168,6 +168,34 @@ check("pas de format, aucun badge de stock", DATA.stockSachet("c9", 15) === null
 
 DATA.state.extractions.push({ id: "e9", cafe_id: "c1", date_heure: "2026-07-11T08:00", dose_g: 400 });
 check("depassement montre en negatif, pas masque", DATA.stockSachet("c1", 15).restant < 0);
+
+// 6 bis. LE COMPTE A LA MAIN (v8.96). Chris voyait un sachet vide qui ne l'etait
+// pas : le stock doit pouvoir repartir d'un chiffre pese ou estime, et ne plus
+// compter que les tasses d'apres. Et un sachet se compte depuis son OUVERTURE :
+// les tasses bues entre l'achat et l'ouverture vidaient l'ancien sachet.
+DATA.state.cafes.push({ id: "c2", nom: "Compte", format_grammes: 250, prix_vnd: 200000, actif: 1 });
+DATA.state.achats.push({ id: "a3", cafe_id: "c2", date_achat: "2026-07-01", date_ouverture: "2026-07-05", format_grammes: 250, maj_le: 3 });
+DATA.state.extractions.push(
+  { id: "k0", cafe_id: "c2", date_heure: "2026-07-03T08:00", dose_g: 15 },
+  { id: "k1", cafe_id: "c2", date_heure: "2026-07-06T08:00", dose_g: 15 },
+  { id: "k2", cafe_id: "c2", date_heure: "2026-07-07T08:00", dose_g: 15 });
+check("un sachet se compte depuis son ouverture, pas son achat",
+  DATA.stockSachet("c2", 15).restant === 220, String(DATA.stockSachet("c2", 15).restant));
+check("sans compte a la main, rien ne le signale", DATA.stockSachet("c2", 15).corrige === "");
+Object.assign(DATA.state.achats.find(a => a.id === "a3"), { restant_g: 180, restant_le: "2026-07-06T12:00" });
+check("le compte a la main repart de son chiffre, moins les tasses d'apres",
+  DATA.stockSachet("c2", 15).restant === 165, String(DATA.stockSachet("c2", 15).restant));
+check("et le stock dit quand il a ete compte", DATA.stockSachet("c2", 15).corrige === "2026-07-06T12:00");
+await DATA.corrigerStock("c2", 200);
+check("corriger ecrit sur le sachet en cours", DATA.stockSachet("c2", 15).restant === 200, String(DATA.stockSachet("c2", 15).restant));
+check("sans creer de sachet de plus", DATA.state.achats.filter(a => a.cafe_id === "c2").length === 1);
+DATA.state.cafes.push({ id: "c3", nom: "Jamais achete", format_grammes: 250, actif: 1 });
+await DATA.corrigerStock("c3", 120);
+check("sans sachet, corriger en cree un qui porte le compte",
+  DATA.state.achats.filter(a => a.cafe_id === "c3").length === 1 && DATA.stockSachet("c3", 15).restant === 120);
+check("un compte negatif est refuse", await DATA.corrigerStock("c3", -5) === null);
+const allerRetour = DATA.csvSerialiser(DATA.state.achats.filter(a => a.cafe_id === "c3"), DATA.ACHAT_COLS);
+check("le compte passe dans le CSV", allerRetour.includes(",120,"), allerRetour);
 
 // 7. Report des horodatages a la relecture d'un CSV. C'etait un vrai bug :
 // modifier une extraction hors ligne puis RECHARGER la page avant que la synchro

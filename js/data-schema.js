@@ -39,7 +39,8 @@ const DATA_SCHEMA = (() => {
      a été saisi, on ne réécrit pas le passé quand le réglage courant change. */
   const PUISSANCE_FEU_HISTORIQUE = 3;
 
-  const ACHAT_COLS = ["id", "cafe_id", "date_achat", "format_grammes", "prix_vnd", "date_torrefaction", "date_ouverture"];
+  const ACHAT_COLS = ["id", "cafe_id", "date_achat", "format_grammes", "prix_vnd", "date_torrefaction", "date_ouverture",
+    "restant_g", "restant_le"];
 
   /* L'HEURE DU CARNET (v8.71) : celle de l'appareil corrigée de son écart avec
      le serveur, mesuré à chaque synchro. Un téléphone en avance de dix minutes
@@ -351,6 +352,13 @@ const DATA_SCHEMA = (() => {
       /* Jour où le sachet a été OUVERT, la seule fraîcheur qui compte ici. Vide
          tant qu'il dort dans le placard, ce qui est une information en soi. */
       date_ouverture: r.date_ouverture || "",
+      /* LE COMPTE À LA MAIN (v8.96) : les grammes que Chris a pesés ou estimés
+         dans le sachet, et quand (« AAAA-MM-JJTHH:MM », l'heure locale des
+         tasses). Le stock repart de ce chiffre au lieu du format plein, et
+         seules les tasses d'après s'en retirent. */
+      restant_g: r.restant_g === "" || r.restant_g === undefined || r.restant_g === null ||
+        !Number.isFinite(Number(r.restant_g)) ? "" : Number(r.restant_g),
+      restant_le: r.restant_le || "",
     };
   }
 

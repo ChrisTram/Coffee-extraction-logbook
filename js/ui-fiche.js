@@ -105,6 +105,29 @@
     return a ? a.getAttribute("href") : null;
   }
 
+  /* Le grain de café du bocal : une ellipse et sa fente, en trait. */
+  const GRAIN = '<svg class="fc-grain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" ' +
+    'stroke-linecap="round" aria-hidden="true"><ellipse cx="12" cy="12" rx="6.2" ry="8.8" transform="rotate(32 12 12)"/>' +
+    '<path d="M8.6 6.2c2.6 2.2 1.2 4.6 3.4 6.6s3.2 2.4 3.4 5"/></svg>';
+
+  /* LE COMPTE À LA MAIN (v8.96) : un champ, prérempli du stock calculé. Caché
+     tant qu'on n'a pas cliqué le bocal ou « Corriger ». */
+  function editeurStock(stock) {
+    // Un stock négatif est faux : champ vide plutôt qu'un 0 à effacer, le format en indication.
+    const actuel = stock && stock.restant > 0 ? Math.round(stock.restant) : "";
+    const indication = stock ? stock.format : 250;
+    return '<form class="fc-stock-edition" id="fc-stock-edition" hidden>' +
+      '<label for="fc-stock-g">' + I18N.t("fi_stock_label") + "</label>" +
+      '<div class="fc-stock-ligne">' +
+        '<input type="number" id="fc-stock-g" min="0" max="5000" step="1" inputmode="decimal" value="' + actuel +
+          '" placeholder="' + indication + '">' +
+        "<span>g</span>" +
+        '<button type="submit" class="btn btn-petit btn-primaire">' + I18N.t("fi_stock_enregistrer") + "</button>" +
+        '<button type="button" class="btn btn-petit btn-discret" data-stock-annuler>' + I18N.t("fi_stock_annuler") + "</button>" +
+      "</div>" +
+      '<p class="fc-muet">' + I18N.t("fi_stock_aide") + "</p></form>";
+  }
+
   function blocSachet(cafe, exts, notees, moyCafe) {
     const doses = exts.filter(e => Number(e.dose_g) > 0).map(e => Number(e.dose_g));
     const dose = doses.length ? moyenne(doses) : replis.dose;
@@ -118,8 +141,11 @@
       const pc = Math.max(0, Math.min(100, (reste / stock.format) * 100));
       html += '<div class="fc-jauge" role="img" aria-label="' + echap(I18N.t("fi_jauge", { r: fmtDecimal(reste, 0), f: stock.format })) +
         '"><i style="width:' + pc.toFixed(1) + '%"></i></div>' +
-        '<div class="fc-ligne"><span><b>' + fmtDecimal(reste, 0) + " g</b> " + I18N.t("fi_sur", { f: stock.format }) + "</span>" +
-        "<span>" + (stock.restant <= 0 ? I18N.t("stock_vide") : I18N.t("fi_tasses", { n: tasses })) + "</span></div>";
+        '<div class="fc-ligne"><span><b>' + fmtDecimal(reste, 0) + " g</b> " + I18N.t("fi_sur", { f: stock.format }) +
+          ' <button type="button" class="fc-corriger" data-stock-edit>' + I18N.t("fi_stock_corriger") + "</button></span>" +
+        "<span>" + (stock.restant <= 0 ? I18N.t("stock_vide") : I18N.t("fi_tasses", { n: tasses })) + "</span></div>" +
+        (stock.corrige ? '<p class="fc-muet">' + I18N.t("fi_stock_compte", {
+          d: new Date(stock.corrige).toLocaleDateString(I18N.locale(), { day: "numeric", month: "long" }) }) + "</p>" : "");
       if (tasses <= REACHAT_TASSES) {
         const lien = lienBoutique(cafe);
         html += '<p class="fc-reachat">' + I18N.t("fi_reachat") +
@@ -127,7 +153,8 @@
             I18N.t("fi_boutique", { t: echap(cafe.torrefacteur) }) + "</a>" : "") + "</p>";
       }
     } else {
-      html += '<p class="fc-muet">' + I18N.t("fi_sans_stock") + "</p>";
+      html += '<p class="fc-muet">' + I18N.t("fi_sans_stock") +
+        ' <button type="button" class="fc-corriger" data-stock-edit>' + I18N.t("fi_stock_saisir") + "</button></p>";
     }
     // Supprimer le sachet en cours, saisi par erreur (v8.77) : la fonction existait sans bouton.
     const sachet = DATA.sachetCourant(cafe.id);
@@ -265,10 +292,24 @@
       '<p class="fc-texte" id="fiche-moulin-lecture"></p></section>';
     zone.innerHTML =
       '<header class="fc-tete fc-passeport">' +
-        '<div class="fc-bocal" aria-hidden="true" style="--niveau:' + niveau.toFixed(0) + "%;--teinte:" + teinte + '"><i></i></div>' +
+        /* LE BOCAL SE CORRIGE D'UN CLIC (v8.96) : ses grammes dessous, un grain
+           dessiné dedans pour qu'un sachet vide ne ressemble plus à une image
+           manquante, et le clic ouvre le compte à la main juste en dessous. */
+        '<div class="fc-bocal-bloc">' +
+          '<button type="button" class="fc-bocal" data-stock-edit aria-label="' +
+            echap(I18N.t("fi_stock_aria", { g: stock ? fmtDecimal(Math.max(0, stock.restant), 0) : "?" })) +
+            '" style="--niveau:' + niveau.toFixed(0) + "%;--teinte:" + teinte + '"><i></i>' + GRAIN + "</button>" +
+          /* Sous zéro, le calcul se trompe forcément (tasses d'un autre sachet, sachet
+             non saisi) : « à compter » invite à corriger, là où « 0 g » faisait
+             croire à un sachet vide. */
+          (stock && stock.restant < 0
+            ? '<button type="button" class="fc-bocal-g fc-a-compter" data-stock-edit>' + I18N.t("fi_stock_a_compter") + "</button>"
+            : '<span class="fc-bocal-g">' + (stock ? fmtDecimal(stock.restant, 0) + " g" : "") + "</span>") +
+        "</div>" +
         '<div class="fc-identite"><p class="surligne">' + I18N.t("fi_surligne") + "</p>" +
         '<h2 id="fiche-nom">' + echap(cafe.nom) + "</h2>" + '<div class="fc-chips">' + chips + "</div></div>" +
       "</header>" +
+      editeurStock(stock) +
       '<div class="fc-kpis">' +
         kpi(exts.length, I18N.t("fi_k_tasses")) +
         kpi(notees.length ? note1(moyCafe) : "·", I18N.t("fi_k_moyenne")) +
@@ -407,6 +448,35 @@
       if (entreeFiche && !fermeturePourAller) { try { history.back(); } catch (e) { /* rien à retirer */ } }
       entreeFiche = false;
       fermeturePourAller = false;
+    });
+    /* Le compte à la main : ouvrir, annuler, enregistrer (v8.96). */
+    const editeur = () => $("#fc-stock-edition");
+    const fermerEditeur = () => { const f = editeur(); if (f) f.hidden = true; };
+    $("#fiche-contenu").addEventListener("click", ev => {
+      if (ev.target.closest("[data-stock-annuler]")) { fermerEditeur(); return; }
+      if (!ev.target.closest("[data-stock-edit]")) return;
+      const f = editeur();
+      if (!f) return;
+      f.hidden = false;
+      f.scrollIntoView({ block: "nearest" });
+      const champ = $("#fc-stock-g");
+      champ.focus();
+      champ.select();
+    });
+    $("#fiche-contenu").addEventListener("keydown", ev => {
+      // Échap ferme le compte, pas la fiche entière.
+      if (ev.key !== "Escape" || !ev.target.closest("#fc-stock-edition")) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      fermerEditeur();
+    });
+    $("#fiche-contenu").addEventListener("submit", async ev => {
+      if (!ev.target.closest("#fc-stock-edition")) return;
+      ev.preventDefault();
+      const g = Number(String($("#fc-stock-g").value).replace(",", "."));
+      if (!Number.isFinite(g) || g < 0) { $("#fc-stock-g").focus(); return; }
+      await DATA.corrigerStock(ficheId, g);
+      toast(I18N.t("t_stock_corrige", { g: fmtDecimal(g, 0) }));
     });
     $("#fiche-contenu").addEventListener("click", async ev => {
       const b = ev.target.closest("[data-suppr-sachet]");

@@ -50,13 +50,23 @@ const DATA_CALCULS = (() => {
       const format = sachet ? sachet.format_grammes : (cafe ? cafe.format_grammes : "");
       if (format === "" || !(Number(format) > 0)) return null;
 
-      const depuis = sachet ? sachet.date_achat : (cafe ? cafe.date_ajout : "");
+      /* Depuis l'OUVERTURE quand elle est connue (v8.96), et plus depuis l'achat :
+         un sachet acheté d'avance comptait les tasses bues pendant ce temps dans
+         l'ANCIEN, et se vidait avant d'avoir servi. */
+      const depuis = sachet ? (sachet.date_ouverture || sachet.date_achat) : (cafe ? cafe.date_ajout : "");
+      /* LE COMPTE À LA MAIN passe avant tout (v8.96) : Chris a pesé ou estimé le
+         sachet, le stock repart de là, et seules les tasses d'APRÈS s'en retirent.
+         C'est le recours quand le calcul se trompe (sachet non saisi, tasses d'un
+         autre sachet, dose oubliée), sans avoir à comprendre pourquoi. */
+      const compte = sachet && sachet.restant_g !== "" && sachet.restant_le ? sachet : null;
       const consomme = state.extractions
         .filter(e => e.cafe_id === cafeId)
-        .filter(e => !depuis || String(e.date_heure).slice(0, 10) >= depuis)
+        .filter(e => compte
+          ? String(e.date_heure) > String(compte.restant_le)
+          : !depuis || String(e.date_heure).slice(0, 10) >= depuis)
         .reduce((total, e) => total + (Number(e.dose_g) || doseDefaut || 0), 0);
 
-      const restant = Number(format) - consomme;
+      const restant = (compte ? Number(compte.restant_g) : Number(format)) - consomme;
       return {
         format: Number(format),
         consomme: Math.round(consomme * 10) / 10,
@@ -64,6 +74,8 @@ const DATA_CALCULS = (() => {
         depuis,
         dateTorrefaction: sachet ? sachet.date_torrefaction : (cafe ? cafe.date_torrefaction : ""),
         sachets: state.achats.filter(a => a.cafe_id === cafeId).length,
+        // Le moment du compte à la main, vide si le stock vient du calcul seul.
+        corrige: compte ? compte.restant_le : "",
       };
     }
 
