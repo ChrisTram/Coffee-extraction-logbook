@@ -937,3 +937,10 @@ button.fc-a-compter { white-space: nowrap; font: inherit; font-size: 0.78rem; fo
   #tableau-contenu > .tete-page > .tete-titres { flex: 1 1 260px; max-width: 400px; }
   #tableau-contenu .sc-sachet { max-width: 12rem; }
 }
+
+/* ---------- Ta semaine : les chiffres alignés par le haut (v8.97) ----------
+   Alignés par le bas, le bloc « la meilleure » portait en plus son café et sa
+   recette : son chiffre remontait au-dessus des deux autres. Par le haut, les
+   trois chiffres sont sur une même ligne ; les barres restent posées en bas. */
+.tete-recap .rc-corps { align-items: start; }
+.tete-recap .rc-corps .rc-semaine { align-self: end; }
