@@ -318,7 +318,7 @@ async function minifyIfUseful(response, url) {
    changing this script without updating it would block it, and the test
    flags it first. The recipe video player comes from youtube-nocookie.
    And nobody can frame the logbook in their page. */
-export const THEME_SCRIPT_HASH = "sha256-E0DO0KwBV+TWsbuy+0OAxmRouDQMDfBZSyl6f2Ek81E=";
+export const THEME_SCRIPT_HASH = "sha256-N/v3DYpxCv3tWyPK7DiUrmJz+I9zCau7/b6/JWDnLjs=";
 export const SECURITY_POLICY = [
   "default-src 'self'",
   "script-src 'self' '" + THEME_SCRIPT_HASH + "'",
@@ -426,14 +426,14 @@ function loginPage(target, error) {
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%98%95%3C/text%3E%3C/svg%3E">
 <style>
   :root {
-    --fond: #111113;
-    --panneau: #18181b;
-    --encre: #f4f1ec;
-    --texte: #d2cdc6;
-    --attenue: #99938b;
+    --bg: #111113;
+    --panel: #18181b;
+    --ink: #f4f1ec;
+    --text: #d2cdc6;
+    --muted: #99938b;
     --accent: #e8bb85;
-    --accent-fort: #f4cd9d;
-    --lignes: rgba(255, 255, 255, 0.08);
+    --accent-strong: #f4cd9d;
+    --lines: rgba(255, 255, 255, 0.08);
     --danger: #ef8a78;
     --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
     --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -447,31 +447,31 @@ function loginPage(target, error) {
     place-items: center;
     padding: 24px;
     font-family: var(--sans);
-    color: var(--texte);
-    background: var(--fond) radial-gradient(1100px 520px at 85% -8%, rgba(232, 187, 133, 0.07) 0%, #111113 60%);
+    color: var(--text);
+    background: var(--bg) radial-gradient(1100px 520px at 85% -8%, rgba(232, 187, 133, 0.07) 0%, #111113 60%);
   }
-  .carte {
+  .card {
     width: 100%;
     max-width: 380px;
-    background: var(--panneau);
-    border: 1px solid var(--lignes);
+    background: var(--panel);
+    border: 1px solid var(--lines);
     border-radius: 14px;
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
     padding: 32px 28px;
   }
-  .tasse { font-size: 34px; line-height: 1; }
+  .cup { font-size: 34px; line-height: 1; }
   h1 {
     font-family: var(--serif);
-    color: var(--encre);
+    color: var(--ink);
     font-size: 25px;
     font-weight: 600;
     margin: 14px 0 4px;
   }
-  p.sous { margin: 0 0 24px; color: var(--attenue); font-size: 14px; }
+  p.sub { margin: 0 0 24px; color: var(--muted); font-size: 14px; }
   label {
     display: block;
     font-size: 13px;
-    color: var(--attenue);
+    color: var(--muted);
     margin-bottom: 6px;
   }
   input {
@@ -479,9 +479,9 @@ function loginPage(target, error) {
     padding: 11px 13px;
     margin-bottom: 16px;
     font: inherit;
-    color: var(--encre);
+    color: var(--ink);
     background: #2a1e14;
-    border: 1px solid var(--lignes);
+    border: 1px solid var(--lines);
     border-radius: 9px;
   }
   input:focus-visible {
@@ -501,8 +501,8 @@ function loginPage(target, error) {
     cursor: pointer;
     transition: background 220ms cubic-bezier(0.4, 0, 0.2, 1);
   }
-  button:hover { background: var(--accent-fort); }
-  .erreur {
+  button:hover { background: var(--accent-strong); }
+  .error {
     margin: 0 0 18px;
     padding: 10px 12px;
     font-size: 14px;
@@ -511,33 +511,33 @@ function loginPage(target, error) {
     border: 1px solid rgba(224, 108, 90, 0.4);
     border-radius: 9px;
   }
-  .pied {
+  .footer {
     margin: 22px 0 0;
     font-size: 12px;
-    color: var(--attenue);
+    color: var(--muted);
     display: flex;
     justify-content: space-between;
     gap: 12px;
   }
-  .langue {
+  .lang {
     background: none;
     border: 0;
     width: auto;
     padding: 0;
     font: inherit;
-    color: var(--attenue);
+    color: var(--muted);
     cursor: pointer;
     text-decoration: underline;
   }
-  .langue:hover { color: var(--accent); background: none; }
+  .lang:hover { color: var(--accent); background: none; }
 </style>
-<div class="carte">
-  <div class="tasse">&#9749;</div>
+<div class="card">
+  <div class="cup">&#9749;</div>
   <h1>Carnet d'extraction</h1>
-  <p class="sous" data-fr="Site prive. Connecte toi pour continuer."
+  <p class="sub" data-fr="Site prive. Connecte toi pour continuer."
      data-en="Private site. Sign in to continue.">Site prive. Connecte toi pour continuer.</p>
 
-  ${message ? `<p class="erreur" role="alert" data-fr="${escapeHtml(message.fr)}" data-en="${escapeHtml(message.en)}">${escapeHtml(message.fr)}</p>` : ""}
+  ${message ? `<p class="error" role="alert" data-fr="${escapeHtml(message.fr)}" data-en="${escapeHtml(message.en)}">${escapeHtml(message.fr)}</p>` : ""}
 
   <form method="post" action="${escapeHtml(LOGIN_PATH)}">
     <input type="hidden" name="next" value="${escapeHtml(target)}">
@@ -552,9 +552,9 @@ function loginPage(target, error) {
     <button type="submit" data-fr="Entrer" data-en="Sign in">Entrer</button>
   </form>
 
-  <p class="pied">
+  <p class="footer">
     <span data-fr="Session gardee 30 jours." data-en="Session kept for 30 days.">Session gardee 30 jours.</span>
-    <button type="button" class="langue" id="bascule-langue">EN</button>
+    <button type="button" class="lang" id="lang-toggle">EN</button>
   </p>
 </div>
 <script>
@@ -562,7 +562,7 @@ function loginPage(target, error) {
     var lang = "fr";
     try { if (localStorage.getItem("langue") === "en") lang = "en"; } catch (e) { /* unavailable */ }
 
-    var button = document.getElementById("bascule-langue");
+    var button = document.getElementById("lang-toggle");
 
     function apply() {
       document.documentElement.lang = lang;

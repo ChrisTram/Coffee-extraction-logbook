@@ -862,20 +862,20 @@ const I18N = (() => {
      English bundle arrives. See mergeBundle(). */
   let scanHadDict = false;
 
-  const ZONES_JS = "#grille-recettes,#h-corps,#kpis,#dernieres-liste,#recettes-liste,#cafes-liste," +
-    "#conv-resultat,#table-plages,#avertissements,#aside-recette,#aside-cafe,#duel-machines," +
-    "#tetsu-bloc,#pap-etapes,#g-heatmap,#reglette,#f-diagnostic,#f-descripteurs,#f-recette,#f-cafe," +
-    "#h-cafe,#h-diagnostic,#q-cafe,#q-recette,#c-recette,#donnees-statut,#toast,#pap-params," +
-    "#insights,#sync-statut,#heatmap-stats,#version-site,#comparaison-compte,#reglages-liste," +
-    "#comparaison-resume,#comparaison-titres,#comparaison-corps," +
-    "#vide-mouture,#vide-gouts,#vide-duel,#note-gouts,#param-recettes,#note-affichee," +
-    "#aside-jumelles,#roue-detail,#lecture-aromes,#vide-aromes,#f-dicter-texte,#fiche-contenu," +
-    "#br-machine,#br-titre,#br-dose,#br-sur,#br-cible,#br-vanne,#br-consigne,#br-suivante,#br-frise," +
-    "#br-go,#br-note-dite," +
-    "#dessin-etagere,#dessin-horloge,#dessin-spectre,#dessin-moulin," +
-    "#dessin-etagere-lecture,#dessin-horloge-lecture,#dessin-spectre-lecture,#dessin-moulin-lecture," +
-    "#carte-recap,#legende-30j,#aside-video,#matrice-recettes,#fiche-comparaison,#fiche-duo,#fiche-empreinte,#fiche-trajectoire,#fiche-moulin," +
-    "#dessins-panneau,#bulle-tasse,#dessin-frise,#dessin-podium,#dessin-progression,#dessin-frise-lecture,#dessin-podium-lecture,#dessin-progression-lecture";
+  const ZONES_JS = "#grid-recipes,#h-body,#kpis,#latest-list,#recipes-list,#coffees-list," +
+    "#conv-result,#table-ranges,#warnings,#aside-recipe,#aside-coffee,#duel-machines," +
+    "#tetsu-block,#wt-steps,#g-heatmap,#ruler,#f-diagnostic,#f-descriptors,#f-recipe,#f-coffee," +
+    "#h-coffee,#h-diagnostic,#q-coffee,#q-recipe,#c-recipe,#db-status,#toast,#wt-params," +
+    "#insights,#sync-status,#heatmap-stats,#version-site,#comparison-count,#tuning-list," +
+    "#comparison-summary,#comparison-titles,#comparison-body," +
+    "#empty-grind,#empty-tastes,#empty-duel,#rating-tastes,#param-recipes,#rating-shown," +
+    "#aside-twins,#wheel-detail,#reading-aromas,#empty-aromas,#f-dictate-text,#sheet-content," +
+    "#br-machine,#br-title,#br-dose,#br-over,#br-target,#br-valve,#br-instruction,#br-next,#br-timeline," +
+    "#br-go,#br-rating-spoken," +
+    "#drawing-etagere,#drawing-horloge,#drawing-spectre,#drawing-moulin," +
+    "#drawing-etagere-reading,#drawing-horloge-reading,#drawing-spectre-reading,#drawing-moulin-reading," +
+    "#card-recap,#legend-30d,#aside-video,#matrix-recipes,#sheet-comparison,#sheet-duo,#sheet-footprint,#sheet-trajectory,#sheet-grinder," +
+    "#drawings-panel,#bubble-cup,#drawing-frise,#drawing-podium,#drawing-progression,#drawing-frise-reading,#drawing-podium-reading,#drawing-progression-reading";
 
   function scan() {
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {

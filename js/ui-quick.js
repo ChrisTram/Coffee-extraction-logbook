@@ -19,16 +19,16 @@
 
   function toggleQuick(force) {
     quickOpen = force !== undefined ? force : !quickOpen;
-    $("#panneau-rapide").classList.toggle("ouvert", quickOpen);
-    $("#fab-rapide").classList.toggle("ouvert", quickOpen);
+    $("#panel-quick").classList.toggle("open", quickOpen);
+    $("#fab-quick").classList.toggle("open", quickOpen);
     /* The veil is not only there to darken: it gives a screen-sized close
        target, which a 30 px cross does not do for a thumb. */
-    $("#voile-rapide").hidden = !quickOpen;
+    $("#overlay-quick").hidden = !quickOpen;
     if (isQuickOpen()) updateQuickPanel();
   }
 
   function updateQuickPanel() {
-    const coffeeSelect = $("#q-cafe");
+    const coffeeSelect = $("#q-coffee");
     const v = coffeeSelect.value;
     const coffees = UI.selectableCoffees();
     coffeeSelect.innerHTML = '<option value="">' + I18N.t("choisir_cafe") + "</option>" +
@@ -40,11 +40,11 @@
        selection in progress. */
     if (!coffeeSelect.value && coffees[0]) coffeeSelect.value = coffees[0].id;
     // Every opening starts WITHOUT a rating: you rate after drinking.
-    $("#q-note").value = 5;
-    markRating($("#q-note"), true);
+    $("#q-rating").value = 5;
+    markRating($("#q-rating"), true);
     /* The save time, shown because it cannot be edited here: the sheet saves
        NOW, might as well say so. */
-    $("#q-quand").textContent = I18N.t("q_maintenant", {
+    $("#q-when").textContent = I18N.t("q_maintenant", {
       h: new Date().toLocaleTimeString(I18N.locale(), { hour: "2-digit", minute: "2-digit" }),
     });
     updateQuickRatingDisplay();
@@ -55,22 +55,22 @@
   /* Same rule as the full form: no thumb until it has been touched, and an
      empty rating shows as such. */
   function updateQuickRatingDisplay() {
-    const slider = $("#q-note");
+    const slider = $("#q-rating");
     const empty = isRatingEmpty(slider);
     const shown = empty ? I18N.t("n_pas_notee") : slider.value + " / 10";
-    $("#q-note-affichee").textContent = shown;
+    $("#q-rating-shown").textContent = shown;
     slider.setAttribute("aria-valuetext", shown);
-    $("#q-note-aide").hidden = !empty;
-    $("#q-note-effacer").hidden = empty;
+    $("#q-rating-help").hidden = !empty;
+    $("#q-rating-clear").hidden = empty;
     paintSlider(slider);
   }
 
   function quickRating() {
-    return isRatingEmpty($("#q-note")) ? "" : $("#q-note").value;
+    return isRatingEmpty($("#q-rating")) ? "" : $("#q-rating").value;
   }
 
   function updateQuickRecipes() {
-    const sel = $("#q-recette");
+    const sel = $("#q-recipe");
     const v = sel.value;
     const groups = ["Brikka", "Switch"].map(m => {
       const list = recipesForMethod(m);
@@ -84,19 +84,19 @@
   }
 
   function onQuickCoffeeChoice() {
-    const coffee = DATA.state.cafes.find(c => c.id === $("#q-cafe").value);
+    const coffee = DATA.state.cafes.find(c => c.id === $("#q-coffee").value);
     if (coffee) {
       const r = findRecipe(coffee.recette_recommandee);
-      if (r && r.actif !== 0) $("#q-recette").value = r.nom;
+      if (r && r.actif !== 0) $("#q-recipe").value = r.nom;
     }
     updateQuickWarnings();
   }
 
   function updateQuickWarnings() {
-    const coffee = DATA.state.cafes.find(c => c.id === $("#q-cafe").value);
-    const r = findRecipe($("#q-recette").value);
+    const coffee = DATA.state.cafes.find(c => c.id === $("#q-coffee").value);
+    const r = findRecipe($("#q-recipe").value);
     const warn = r ? combinationWarnings(coffee, r.methode, r.nom, DATA.state.recettes) : { msgs: [] };
-    $("#q-avert").textContent = warn.msgs.length ? "⚠ " + warn.msgs[0] : "";
+    $("#q-warn").textContent = warn.msgs.length ? "⚠ " + warn.msgs[0] : "";
     updateQuickRepeat();
   }
 
@@ -105,21 +105,21 @@
      the recipe by heart to know what you had just written. The machine dot is
      here too, it is the only place the method shows in this sheet. */
   function updateQuickRepeat() {
-    const r = findRecipe($("#q-recette").value);
-    const target = $("#q-repris");
+    const r = findRecipe($("#q-recipe").value);
+    const target = $("#q-resumed");
     if (!r) { target.innerHTML = ""; return; }
     const parts = [];
     if (r.dose) parts.push(r.dose + " g");
     if (r.eau) parts.push(r.eau + " g");
     if (r.dial) parts.push(I18N.t("molette") + " " + r.dial);
     target.innerHTML =
-      '<span class="pastille-methode ' + String(r.methode).toLowerCase() + '"></span>' +
+      '<span class="dot-method ' + String(r.methode).toLowerCase() + '"></span>' +
       "<span>" + (parts.length ? I18N.t("q_repris", { v: parts.join(", ") }) : I18N.tr(r.methode)) + "</span>";
   }
 
   async function saveQuick() {
-    const coffeeId = $("#q-cafe").value;
-    const r = findRecipe($("#q-recette").value);
+    const coffeeId = $("#q-coffee").value;
+    const r = findRecipe($("#q-recipe").value);
     if (!coffeeId) { toast(I18N.t("t_choisis_cafe")); return; }
     if (!r) { toast(I18N.t("t_choisis_recette")); return; }
     // The coffee chosen in the panel. A pre-ground coffee has no grinder
@@ -150,34 +150,34 @@
 
   /* Panel wiring. Called once by app.js, at startup. */
   function wireQuick() {
-    $("#fab-rapide").addEventListener("click", () => toggleQuick());
-    $("#q-fermer").addEventListener("click", () => toggleQuick(false));
-    $("#q-cafe").addEventListener("change", onQuickCoffeeChoice);
-    $("#q-recette").addEventListener("change", updateQuickWarnings);
-    $("#voile-rapide").addEventListener("click", () => toggleQuick(false));
-    wireRating($("#q-note"), updateQuickRatingDisplay);
-    $("#q-note-effacer").addEventListener("click", () => {
-      $("#q-note").value = 5;
-      markRating($("#q-note"), true);
+    $("#fab-quick").addEventListener("click", () => toggleQuick());
+    $("#q-close").addEventListener("click", () => toggleQuick(false));
+    $("#q-coffee").addEventListener("change", onQuickCoffeeChoice);
+    $("#q-recipe").addEventListener("change", updateQuickWarnings);
+    $("#overlay-quick").addEventListener("click", () => toggleQuick(false));
+    wireRating($("#q-rating"), updateQuickRatingDisplay);
+    $("#q-rating-clear").addEventListener("click", () => {
+      $("#q-rating").value = 5;
+      markRating($("#q-rating"), true);
       updateQuickRatingDisplay();
-      $("#q-note").focus();
+      $("#q-rating").focus();
     });
-    $("#q-enregistrer").addEventListener("click", oneAtATime(saveQuick));
-    $("#q-complet").addEventListener("click", () => { toggleQuick(false); activateScreen("saisie"); });
+    $("#q-save").addEventListener("click", oneAtATime(saveQuick));
+    $("#q-full").addEventListener("click", () => { toggleQuick(false); activateScreen("saisie"); });
 
     /* A9 (v8.88): THE BUTTON STEPS ASIDE WHEN YOU SCROLL DOWN. Sitting at the
        bottom right, it hid the end of the comments and a column of the last
        cup. It leaves when you scroll down, comes back as soon as you scroll
        up, and stays put while its panel is open. Eight pixels of slack: a
        shaky finger does not make it flicker. */
-    const fab = $("#fab-rapide");
+    const fab = $("#fab-quick");
     // Two reads and a class: no need to wait for a frame, the work is too light.
     let lastY = window.scrollY;
     window.addEventListener("scroll", () => {
       const y = window.scrollY;
-      if (quickOpen || y < 120) fab.classList.remove("fab-cache");
-      else if (y > lastY + 8) fab.classList.add("fab-cache");
-      else if (y < lastY - 8) fab.classList.remove("fab-cache");
+      if (quickOpen || y < 120) fab.classList.remove("fab-hidden");
+      else if (y > lastY + 8) fab.classList.add("fab-hidden");
+      else if (y < lastY - 8) fab.classList.remove("fab-hidden");
       if (Math.abs(y - lastY) > 8) lastY = y;
     }, { passive: true });
   }

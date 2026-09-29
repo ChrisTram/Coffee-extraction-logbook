@@ -18,18 +18,18 @@
   function updateBadges() {
     $("#badge-demo").hidden = !DATA.state.demoActive;
     const linked = !!DATA.state.dirHandle;
-    $("#badge-fichier").hidden = !linked;
+    $("#badge-file").hidden = !linked;
     // "Re-authorise" when the browser took the permission back (v8.72); tapping the badge asks again.
-    if (linked) $("#badge-fichier-nom").textContent = DATA.state.fileNeedsReauth ? I18N.t("f_reautoriser") : DATA.state.dirHandle.name;
+    if (linked) $("#badge-file-name").textContent = DATA.state.fileNeedsReauth ? I18N.t("f_reautoriser") : DATA.state.dirHandle.name;
   }
 
   function updateDataStatus() {
-    $("#don-delier").hidden = !DATA.state.dirHandle;
+    $("#db-unlink").hidden = !DATA.state.dirHandle;
     let s;
     if (DATA.state.dirHandle) s = I18N.t("statut_lie", { n: DATA.state.dirHandle.name });
     else if (DATA.state.demoActive) s = I18N.t("statut_demo");
     else s = I18N.t("statut_nav");
-    $("#donnees-statut").textContent = s +
+    $("#db-status").textContent = s +
       I18N.t("statut_compte", { c: DATA.state.cafes.length, e: DATA.state.extractions.length });
     updateSyncStatus();
   }
@@ -62,25 +62,25 @@
     if (cap > 0 && size / cap >= 0.5) {
       text += " " + I18N.t("sync_taille", { p: Math.round(100 * size / cap) });
     }
-    $$(".sync-texte").forEach(e => { e.textContent = text; });
+    $$(".sync-text").forEach(e => { e.textContent = text; });
     /* The rail dot takes the colour of the state: it is the only place where
        sync is visible without opening a panel. */
     const dot = $(".rail-point");
-    if (dot) dot.dataset.etat = DATA.state.syncState || "jamais";
-    $("#don-sync").hidden = !DATA.syncPossible();
+    if (dot) dot.dataset.state = DATA.state.syncState || "jamais";
+    $("#db-sync").hidden = !DATA.syncPossible();
   }
 
   async function linkAction(create) {
     if (!DATA.state.fsAvailable) {
       toast(I18N.t("t_fs"));
-      $("#don-note-fs").hidden = false;
+      $("#db-fs-note").hidden = false;
       return;
     }
     try {
       const name = await DATA.linkFolder(create);
       toast(I18N.t("t_dossier", { n: name }));
-      $("#modale-donnees").close();
-      $("#modale-accueil").close();
+      $("#modal-data").close();
+      $("#modal-welcome").close();
     } catch (e) {
       if (e && e.name === "AbortError") return;
       toast(e.message || I18N.t("t_liaison"));
@@ -94,13 +94,13 @@
   const isSheetLayout = () => typeof matchMedia === "function" && matchMedia("(max-width: 1023px)").matches;
   function updateInertia() {
     const rail = $("#rail");
-    if (rail) rail.inert = isSheetLayout() && !rail.classList.contains("ouverte");
+    if (rail) rail.inert = isSheetLayout() && !rail.classList.contains("expanded");
   }
   function toggleNavSheet(open) {
     const rail = $("#rail");
     if (!rail) return;
-    rail.classList.toggle("ouverte", !!open);
-    $("#voile-nav").hidden = !open;
+    rail.classList.toggle("expanded", !!open);
+    $("#overlay-nav").hidden = !open;
     $("#btn-plus").setAttribute("aria-expanded", open ? "true" : "false");
     updateInertia();
     if (!isSheetLayout()) return;
@@ -113,7 +113,7 @@
     if (typeof matchMedia === "function") matchMedia("(max-width: 1023px)").addEventListener("change", updateInertia);
     // Navigation
     $$(".nav-btn").forEach(b => b.addEventListener("click", () => {
-      activateScreen(b.dataset.ecran);
+      activateScreen(b.dataset.screen);
       /* On a phone the rail IS the "More" sheet: picking a screen must close
          it, otherwise it hides the screen that was just opened. */
       toggleNavSheet(false);
@@ -122,13 +122,13 @@
     /* The phone's "More" sheet. The rail and the sheet are the same element:
        see the navigation comment in index.html. */
     $("#btn-plus").addEventListener("click", () => {
-      toggleNavSheet(!$("#rail").classList.contains("ouverte"));
+      toggleNavSheet(!$("#rail").classList.contains("expanded"));
     });
-    $("#voile-nav").addEventListener("click", () => toggleNavSheet(false));
+    $("#overlay-nav").addEventListener("click", () => toggleNavSheet(false));
 
     // The rail brand leads back to the dashboard. We keep the href for the
     // keyboard and opening in a tab, but a plain click switches screens.
-    const brandLink = $(".rail-marque");
+    const brandLink = $(".rail-brand");
     if (brandLink) {
       brandLink.addEventListener("click", ev => {
         if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button !== 0) return;
@@ -136,7 +136,7 @@
         activateScreen("tableau");
       });
     }
-    $$("[data-va]").forEach(b => b.addEventListener("click", () => activateScreen(b.dataset.va)));
+    $$("[data-go]").forEach(b => b.addEventListener("click", () => activateScreen(b.dataset.go)));
     // The calendar counts its weeks over its card width: it redraws on resize (debounced).
     window.addEventListener("resize", debounce(() => {
       if (nav.screenName === "tableau") UI.renderDashboard();
@@ -160,7 +160,7 @@
     $("#btn-theme").addEventListener("click", () => {
       const root = document.documentElement;
       if (root.getAttribute("data-theme") !== "sombre") applyTheme("sombre", "graphite");
-      else if (root.getAttribute("data-sombre") !== "nuit") applyTheme("sombre", "nuit");
+      else if (root.getAttribute("data-palette") !== "nuit") applyTheme("sombre", "nuit");
       else applyTheme("clair");
     });
 
@@ -206,51 +206,51 @@
     // Escape also closes what is not a <dialog>: quick panel, expanded forms, bubbles.
     document.addEventListener("keydown", ev => {
       if (ev.key !== "Escape") return;
-      if ($("#rail").classList.contains("ouverte")) { toggleNavSheet(false); return; }
+      if ($("#rail").classList.contains("expanded")) { toggleNavSheet(false); return; }
       if (UI.isQuickOpen()) { UI.toggleQuick(false); return; }
-      const openForms = ["#form-cafe", "#form-sachet", "#form-recette"]
+      const openForms = ["#form-coffee", "#form-bag", "#form-recipe"]
         .map(s => $(s)).filter(x => x && !x.hidden);
       if (openForms.length) { openForms.forEach(x => { x.hidden = true; }); return; }
       // A help bubble opened by finger closes too, before anything else.
-      $$(".info-ouverte").forEach(x => x.classList.remove("info-ouverte"));
+      $$(".info-expanded").forEach(x => x.classList.remove("info-expanded"));
     });
 
     // Generic modals
     // The linked folder badge asks for permission again when it is gone (v8.72).
-    $("#badge-fichier").addEventListener("click", async () => {
+    $("#badge-file").addEventListener("click", async () => {
       if (!DATA.state.fileNeedsReauth) return;
       toast(I18N.t(await DATA.reauthorizeFolder() ? "f_reautorise" : "f_refuse"));
       updateBadges();
     });
-    // Every Close button closes its window, even without data-ferme (v8.72): the comparison one did nothing.
-    $$(".modale-fermer").forEach(b => b.addEventListener("click", () => (b.dataset.ferme ? $("#" + b.dataset.ferme) : b.closest("dialog")).close()));
+    // Every Close button closes its window, even without data-closes (v8.72): the comparison one did nothing.
+    $$(".modal-close").forEach(b => b.addEventListener("click", () => (b.dataset.closes ? $("#" + b.dataset.closes) : b.closest("dialog")).close()));
 
     // Welcome
-    $("#acc-creer").addEventListener("click", () => linkAction(true));
-    $("#acc-ouvrir").addEventListener("click", () => linkAction(false));
+    $("#welcome-create").addEventListener("click", () => linkAction(true));
+    $("#welcome-open").addEventListener("click", () => linkAction(false));
     // Three buttons load the demo (welcome, Data panel, empty dashboard): one single function.
     const loadDemo = async () => {
       await DATA.loadDemo();
-      $("#modale-accueil").close();
+      $("#modal-welcome").close();
       toast(I18N.t("t_demo"));
     };
-    $("#acc-demo").addEventListener("click", loadDemo);
-    $("#btn-demo-vide").addEventListener("click", loadDemo);
-    $("#acc-plus-tard").addEventListener("click", () => $("#modale-accueil").close());
+    $("#welcome-demo").addEventListener("click", loadDemo);
+    $("#btn-demo-empty").addEventListener("click", loadDemo);
+    $("#welcome-later").addEventListener("click", () => $("#modal-welcome").close());
 
     // Data
-    $("#btn-donnees").addEventListener("click", () => {
+    $("#btn-data").addEventListener("click", () => {
       updateDataStatus();
       const fsOk = DATA.state.fsAvailable;
-      $("#don-note-fs").hidden = fsOk;
-      $("#don-lier").disabled = !fsOk;
-      $("#don-ouvrir").disabled = !fsOk;
-      $("#modale-donnees").showModal();
+      $("#db-fs-note").hidden = fsOk;
+      $("#db-link").disabled = !fsOk;
+      $("#db-open").disabled = !fsOk;
+      $("#modal-data").showModal();
     });
-    $("#don-lier").addEventListener("click", () => linkAction(true));
-    $("#don-ouvrir").addEventListener("click", () => linkAction(false));
-    $("#don-importer").addEventListener("click", () => $("#don-fichier").click());
-    $("#don-fichier").addEventListener("change", async ev => {
+    $("#db-link").addEventListener("click", () => linkAction(true));
+    $("#db-open").addEventListener("click", () => linkAction(false));
+    $("#db-import").addEventListener("click", () => $("#db-file").click());
+    $("#db-file").addEventListener("change", async ev => {
       const f = ev.target.files[0];
       if (!f) return;
       try {
@@ -272,25 +272,25 @@
       ev.target.value = "";
     });
     // The six tables and the full re-importable file (v8.71), plus three.
-    $("#don-exporter").addEventListener("click", () => {
+    $("#db-export").addEventListener("click", () => {
       DATA.exportAll();
       toast(I18N.t("t_export_tout"));
     });
-    $("#don-demo").addEventListener("click", async () => {
+    $("#db-demo").addEventListener("click", async () => {
       if (DATA.state.extractions.length && !await UI.askConfirm(I18N.t("c_demo"))) return;
       await DATA.loadDemo();
       updateDataStatus();
       toast(I18N.t("t_demo"));
     });
     // Unlink the folder (v8.77): the function existed without a button.
-    $("#don-delier").addEventListener("click", async () => { await DATA.unlinkFolder(); updateDataStatus(); updateBadges(); toast(I18N.t("t_delie")); });
-    $("#don-vider").addEventListener("click", async () => {
+    $("#db-unlink").addEventListener("click", async () => { await DATA.unlinkFolder(); updateDataStatus(); updateBadges(); toast(I18N.t("t_delie")); });
+    $("#db-clear").addEventListener("click", async () => {
       if (!await UI.askConfirm(I18N.t("c_vider"), { danger: true })) return;
       await DATA.clearData();
       updateDataStatus();
       toast(I18N.t("t_reinit"));
     });
-    $("#don-sync").addEventListener("click", async () => {
+    $("#db-sync").addEventListener("click", async () => {
       const result = await DATA.synchronize(true);
       toast(I18N.t(result === "ok" ? "t_sync_ok" : "t_sync_ko"));
     });
@@ -325,7 +325,7 @@
   }
 
   function fillRecommendedRecipeSelect() {
-    const sel = $("#c-recette");
+    const sel = $("#c-recipe");
     const v = sel.value;
     sel.innerHTML = '<option value="">' + I18N.t("aucune") + "</option>" +
       liveRecipes().map(r => "<option>" + r.nom + "</option>").join("");
@@ -339,13 +339,13 @@
     $("#btn-lang").textContent = I18N.lang() === "fr" ? "EN" : "FR";
     $("#btn-lang").title = I18N.lang() === "fr" ? "Switch to English" : "Passer en français";
     UI.buildPills();
-    $$("#f-diagnostic .pilule").forEach(x => setPressed(x, UI.entry.diagnostics.has(x.dataset.diag)));
-    $$("#f-descripteurs .tag").forEach(x => setPressed(x, UI.entry.descripteurs.has(x.dataset.tag)));
+    $$("#f-diagnostic .pill").forEach(x => setPressed(x, UI.entry.diagnostics.has(x.dataset.diag)));
+    $$("#f-descriptors .tag").forEach(x => setPressed(x, UI.entry.descripteurs.has(x.dataset.tag)));
     UI.updateDiagnosticCorrection();
     UI.updateStopwatchButtons();
     UI.updateStopwatchSteps(false);
-    $("#saisie-titre").textContent = UI.entry.editId ? I18N.t("s_modifier") : I18N.t("s_nouvelle");
-    $("#btn-enregistrer").textContent = UI.entry.editId ? I18N.t("s_enregistrer_modif") : I18N.t("s_enregistrer");
+    $("#entry-title").textContent = UI.entry.editId ? I18N.t("s_modifier") : I18N.t("s_nouvelle");
+    $("#btn-save").textContent = UI.entry.editId ? I18N.t("s_enregistrer_modif") : I18N.t("s_enregistrer");
     UI.fillCoffeeSelect();
     UI.fillFilters();
     UI.fillRecipeSelect();
@@ -394,7 +394,7 @@
     fillRecommendedRecipeSelect();
     UI.fillCupSelect();
     UI.renderRecipes();
-    try { $("#chrono-bip").checked = localStorage.getItem("bips") !== "0"; } catch (e) { /* never mind */ }
+    try { $("#chrono-beep").checked = localStorage.getItem("bips") !== "0"; } catch (e) { /* never mind */ }
     // BEFORE anything that reads replis: the converter and the entry form depend on it.
     await migrateLocalFallbacks();
     loadFallbacks();
@@ -409,7 +409,7 @@
     else activateScreen(SCREEN_NAMES.includes(normalizeScreen(h)) ? normalizeScreen(h) : "tableau");
 
     // The first screen is rendered: the loading overlay has no reason to stay.
-    const overlay = $("#chargement");
+    const overlay = $("#loading");
     if (overlay) overlay.remove();
 
     // The system releases the screen lock when the tab goes to the background.
@@ -426,11 +426,11 @@
     const welcomeIfEmpty = () => {
       if (DATA.state.cafes.length || DATA.state.extractions.length) return;
       if (!DATA.state.fsAvailable) {
-        $("#acc-note-fs").hidden = false;
-        $("#acc-creer").disabled = true;
-        $("#acc-ouvrir").disabled = true;
+        $("#welcome-fs-note").hidden = false;
+        $("#welcome-create").disabled = true;
+        $("#welcome-open").disabled = true;
       }
-      $("#modale-accueil").showModal();
+      $("#modal-welcome").showModal();
     };
     if (DATA.syncPossible()) DATA.synchronize(false).then(welcomeIfEmpty);
     else if (!hasData) welcomeIfEmpty();

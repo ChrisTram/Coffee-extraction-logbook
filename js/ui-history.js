@@ -33,20 +33,20 @@
 
   function filterHistory() {
     const exts = extsWithCalcs();
-    const fCoffee = $("#h-cafe").value;
-    const fMethod = $("#h-methode").value;
+    const fCoffee = $("#h-coffee").value;
+    const fMethod = $("#h-method").value;
     const fDiag = $("#h-diagnostic").value;
-    const fScore = parseFloat($("#h-note-min").value);
-    const fFrom = $("#h-du").value;
-    const fTo = $("#h-au").value;
+    const fScore = parseFloat($("#h-rating-min").value);
+    const fFrom = $("#h-from").value;
+    const fTo = $("#h-to").value;
     /* Search insensitive to case AND accents: typing "brule" must find
        "brûlé". normalize plus stripping the diacritics is the only correct
        way to do it in French without a lookup table. */
-    const q = withoutAccents($("#h-recherche").value.trim().toLowerCase());
+    const q = withoutAccents($("#h-search").value.trim().toLowerCase());
     /* "" all, "ok" the successful ones, "ratee" the failed ones. The filter
        lives here and not in analyzableExts(): the history is the log, it shows
        everything by default, and it is Chris who asks to see only one side. */
-    const fFailed = $("#h-ratee").value;
+    const fFailed = $("#h-failed").value;
     return exts.filter(e =>
       (!fFailed || (fFailed === "ratee" ? isFailed(e) : !isFailed(e))) &&
       (!q || searchableText(e).includes(q)) &&
@@ -80,9 +80,9 @@
 
   /* The visible state of the segmented control, aligned on the <select> that is authoritative. */
   function updateMethodSegment() {
-    const v = $("#h-methode") ? $("#h-methode").value : "";
-    $$(".filtre-methode .seg").forEach(b =>
-      b.setAttribute("aria-pressed", b.dataset.methode === v ? "true" : "false"));
+    const v = $("#h-method") ? $("#h-method").value : "";
+    $$(".filter-method .seg").forEach(b =>
+      b.setAttribute("aria-pressed", b.dataset.method === v ? "true" : "false"));
   }
 
   /* AS CARDS or as a table: the threshold is the rest of the site's, 1024 px. */
@@ -97,7 +97,7 @@
   let historyLimit = HISTORY_CHUNK;
   function moreButton(leftover) {
     return leftover > 0
-      ? '<button type="button" class="btn btn-petit h-plus" id="h-plus">' +
+      ? '<button type="button" class="btn btn-small h-plus" id="h-plus">' +
         I18N.t("h_plus", { n: Math.min(leftover, HISTORY_CHUNK), t: leftover }) + "</button>"
       : "";
   }
@@ -115,23 +115,23 @@
       if (va > vb) return sortState.dir;
       return 0;
     });
-    $("#h-compte").textContent = I18N.t("h_compte", {
+    $("#h-count").textContent = I18N.t("h_compte", {
       n: list.length, s: list.length > 1 ? "s" : "", t: DATA.state.extractions.length,
     });
-    $("#h-vide").hidden = list.length > 0;
+    $("#h-empty").hidden = list.length > 0;
 
     /* The overline tells the TOTAL and since when, not the filter: it is the
        screen's identity, the filter has its own banner just below. */
     const allExts = extsWithCalcs();
     const first = allExts.length
       ? allExts.reduce((a, e) => (a && a.date_heure < e.date_heure ? a : e)).date_heure : "";
-    $("#h-surligne").textContent = allExts.length
+    $("#h-highlight").textContent = allExts.length
       ? I18N.t("h_surligne", { n: allExts.length, s: allExts.length > 1 ? "s" : "",
           d: fmtShortDate(String(first).slice(0, 10)) })
       : "";
 
-    $$("#h-table th .tri").forEach(s => s.textContent = "");
-    const th = $('#h-table th[data-tri="' + sortState.column + '"] .tri');
+    $$("#h-table th .sort").forEach(s => s.textContent = "");
+    const th = $('#h-table th[data-sort="' + sortState.column + '"] .sort');
     if (th) th.textContent = sortState.dir > 0 ? "▲" : "▼";
 
     renderSummary(list);
@@ -147,10 +147,10 @@
     UI.updateViews();
     const byBag = UI.historyView() === "sachet" && list.length > 0;
     $("#h-journal").hidden = !byBag;
-    $("#ecran-historique .table-conteneur").hidden = byBag;
+    $("#screen-historique .table-container").hidden = byBag;
     if (byBag) {
-      $("#h-corps").innerHTML = "";
-      $("#h-cartes").innerHTML = "";
+      $("#h-body").innerHTML = "";
+      $("#h-cards").innerHTML = "";
       UI.renderJournal(list);
       updateComparisonBar();
       return;
@@ -159,15 +159,15 @@
     const visible = list.slice(0, historyLimit);
     const leftover = list.length - visible.length;
     if (asCards()) {
-      $("#h-corps").innerHTML = "";
-      $("#h-cartes").innerHTML = renderCards(visible) + moreButton(leftover);
+      $("#h-body").innerHTML = "";
+      $("#h-cards").innerHTML = renderCards(visible) + moreButton(leftover);
       wireMore();
       updateComparisonBar();
       return;
     }
-    $("#h-cartes").innerHTML = "";
-    $("#h-corps").innerHTML = visible.map(e => historyRow(e)).join("") +
-      (leftover > 0 ? '<tr class="h-ligne-plus"><td colspan="10">' + moreButton(leftover) + "</td></tr>" : "");
+    $("#h-cards").innerHTML = "";
+    $("#h-body").innerHTML = visible.map(e => historyRow(e)).join("") +
+      (leftover > 0 ? '<tr class="h-row-plus"><td colspan="10">' + moreButton(leftover) + "</td></tr>" : "");
     wireMore();
     displayed = new Map(visible.map(e => [e.id, e]));
     updateComparisonBar();
@@ -184,21 +184,21 @@
   function updateActiveFilters() {
     const activeFilters = [];
     const selectText = id => { const s = $("#" + id); return s.options[s.selectedIndex] ? s.options[s.selectedIndex].textContent : s.value; };
-    [["h-cafe", "h_f_cafe"], ["h-diagnostic", "h_f_diag"], ["h-ratee", "h_f_ratees"]].forEach(([id, key]) => {
+    [["h-coffee", "h_f_cafe"], ["h-diagnostic", "h_f_diag"], ["h-failed", "h_f_ratees"]].forEach(([id, key]) => {
       if ($("#" + id).value) activeFilters.push([id, I18N.t(key) + " : " + selectText(id)]);
     });
-    if ($("#h-note-min").value) activeFilters.push(["h-note-min", I18N.t("h_f_note", { n: $("#h-note-min").value })]);
-    const dateFrom = $("#h-du").value, dateTo = $("#h-au").value;
+    if ($("#h-rating-min").value) activeFilters.push(["h-rating-min", I18N.t("h_f_note", { n: $("#h-rating-min").value })]);
+    const dateFrom = $("#h-from").value, dateTo = $("#h-to").value;
     // A single day (from the week recap): one pill, not two.
-    if (dateFrom && dateFrom === dateTo) activeFilters.push(["h-du h-au", I18N.t("h_f_le", { d: fmtShortDate(dateFrom) })]);
+    if (dateFrom && dateFrom === dateTo) activeFilters.push(["h-from h-to", I18N.t("h_f_le", { d: fmtShortDate(dateFrom) })]);
     else {
-      if (dateFrom) activeFilters.push(["h-du", I18N.t("h_f_du", { d: fmtShortDate(dateFrom) })]);
-      if (dateTo) activeFilters.push(["h-au", I18N.t("h_f_au", { d: fmtShortDate(dateTo) })]);
+      if (dateFrom) activeFilters.push(["h-from", I18N.t("h_f_du", { d: fmtShortDate(dateFrom) })]);
+      if (dateTo) activeFilters.push(["h-to", I18N.t("h_f_au", { d: fmtShortDate(dateTo) })]);
     }
-    $("#h-actifs").innerHTML = activeFilters.map(([id, t]) =>
-      '<button type="button" class="h-actif" data-vider="' + id + '" aria-label="' + titleAttr(I18N.t("h_f_retirer", { f: t })) + '">' +
+    $("#h-actives").innerHTML = activeFilters.map(([id, t]) =>
+      '<button type="button" class="h-on" data-clear="' + id + '" aria-label="' + titleAttr(I18N.t("h_f_retirer", { f: t })) + '">' +
       titleAttr(t) + '<span aria-hidden="true">×</span></button>').join("");
-    $("#h-filtrer").textContent = activeFilters.length ? I18N.t("h_filtrer_n", { n: activeFilters.length }) : I18N.t("h_filtrer");
+    $("#h-filter").textContent = activeFilters.length ? I18N.t("h_filtrer_n", { n: activeFilters.length }) : I18N.t("h_filtrer");
   }
 
   function renderCards(list) {
@@ -212,16 +212,16 @@
      failed ones are counted apart: they are what explains a low average, and
      the average leaves them out for the same reason the analyses do. */
   function renderSummary(list) {
-    const target = $("#h-resume");
+    const target = $("#h-summary");
     if (!list.length) { target.innerHTML = ""; target.hidden = true; return; }
     target.hidden = false;
     const rated = list.filter(e => e.note_sur_10 !== "" && !isFailed(e));
     const best = rated.slice().sort((a, b) => b.note_sur_10 - a.note_sur_10)[0];
     const failed = list.filter(isFailed).length;
     const block = (value, label, rating) =>
-      '<div class="resume-item"><span class="resume-valeur">' + value + "</span>" +
-      '<span class="resume-libelle">' + label + "</span>" +
-      (rating ? '<span class="resume-note">' + rating + "</span>" : "") + "</div>";
+      '<div class="summary-item"><span class="summary-value">' + value + "</span>" +
+      '<span class="summary-caption">' + label + "</span>" +
+      (rating ? '<span class="summary-rating">' + rating + "</span>" : "") + "</div>";
     target.innerHTML =
       block(list.length, I18N.t("h_res_tasses")) +
       block(rated.length ? fmtDecimal(average(rated.map(e => e.note_sur_10)), 1) : I18N.t("h_res_aucune"),
@@ -246,7 +246,7 @@
   function historyComment(e) {
     const c = String(e.commentaire || "").trim();
     if (!c) return "";
-    return '<tr class="ligne-commentaire" data-id="' + e.id + '"><td colspan="10">' +
+    return '<tr class="row-comment" data-id="' + e.id + '"><td colspan="10">' +
       titleAttr(c) + "</td></tr>";
   }
 
@@ -256,10 +256,10 @@
   function historyTastes(e) {
     const tags = String(e.descripteurs || "").split("|").filter(Boolean);
     if (!tags.length) return "";
-    const seen = tags.slice(0, MAX_HISTORY_TASTES).map(t => '<span class="derniere-tag">' + I18N.tag(t) + "</span>");
+    const seen = tags.slice(0, MAX_HISTORY_TASTES).map(t => '<span class="last-tag">' + I18N.tag(t) + "</span>");
     const leftover = tags.length - seen.length;
-    return '<span class="h-gouts">' + seen.join("") +
-      (leftover > 0 ? '<span class="derniere-tag derniere-tag-plus">+' + leftover + "</span>" : "") + "</span>";
+    return '<span class="h-tastes">' + seen.join("") +
+      (leftover > 0 ? '<span class="last-tag last-tag-plus">+' + leftover + "</span>" : "") + "</span>";
   }
 
   /* The detail: the logbook stores 22 fields per extraction and the table
@@ -298,10 +298,10 @@
     const tags = (e.descripteurs || "").split("|").filter(Boolean)
       .map(t => '<span class="detail-tag">' + I18N.tag(t) + "</span>").join("");
     const comment = withoutComment ? "" : e.commentaire;
-    return (cells ? '<div class="detail-grille">' + cells + "</div>" : "") +
+    return (cells ? '<div class="detail-grid">' + cells + "</div>" : "") +
       (tags ? '<div class="detail-tags">' + tags + "</div>" : "") +
-      (comment ? '<p class="detail-commentaire">' + comment + "</p>" : "") +
-      (cells || tags || comment ? "" : '<p class="detail-vide">' + I18N.t("d_rien") + "</p>");
+      (comment ? '<p class="detail-comment">' + comment + "</p>" : "") +
+      (cells || tags || comment ? "" : '<p class="detail-empty">' + I18N.t("d_rien") + "</p>");
   }
 
   /* The row's date: the day in ink, the time muted. fmtDateTime returns
@@ -310,18 +310,18 @@
     const text = fmtDateTime(dh);
     const i = text.lastIndexOf(" ");
     if (i < 0) return "<time>" + text + "</time>";
-    return "<time>" + text.slice(0, i) + '</time><span class="heure">' + text.slice(i + 1) + "</span>";
+    return "<time>" + text.slice(0, i) + '</time><span class="hour">' + text.slice(i + 1) + "</span>";
   }
 
   /* No more expand arrow (v8.33): the detail comes as a hover sheet, see
      wireHoverSheet(). */
   function historyRow(e) {
     const compare = comparison.has(e.id);
-    return '<tr data-id="' + e.id + '" class="ligne-histo' + (compare ? " comparee" : "") + '">' +
+    return '<tr data-id="' + e.id + '" class="row-hist' + (compare ? " compared" : "") + '">' +
       '<td><span class="td-date">' + twoToneDate(e.date_heure) + "</span></td>" +
-      '<td class="td-texte">' + I18N.tr(e._c.cafe_nom) + "</td>" +
-      '<td><span class="chip-methode ' + e.methode.toLowerCase() + '">' + e.methode + "</span></td>" +
-      '<td class="td-recette">' + (e.recette || "") + "</td>" +
+      '<td class="td-text">' + I18N.tr(e._c.cafe_nom) + "</td>" +
+      '<td><span class="chip-method ' + e.methode.toLowerCase() + '">' + e.methode + "</span></td>" +
+      '<td class="td-recipe">' + (e.recette || "") + "</td>" +
       /* Dose and water together, as on the card of the last five: they are
          two halves of the same gesture, and splitting them into two columns
          would have cost width without teaching anything. */
@@ -329,14 +329,14 @@
       /* The complement (microns, ratio in the cup or in the drink) goes UNDER
          the value, small: on one line, "1.2.0 (499 µm)" was truncated to
          "1.2.0 (49…" in its column. */
-      '<td class="td-num">' + (e.mouture_dial ? e.mouture_dial + '<small class="sous">' + e._c.microns + " µm</small>"
+      '<td class="td-num">' + (e.mouture_dial ? e.mouture_dial + '<small class="sub">' + e._c.microns + " µm</small>"
         : e._c.ground ? "<small>" + I18N.t("paquet") + "</small>" : "") + "</td>" +
       '<td class="td-num" title="' + titleAttr(detailRatio(e._c.ratioBase, e.dose_g, e.eau_g)) + '">' +
       e._c.ratioTexte +
-      (e._c.cupRatioText ? '<small class="sous">' + I18N.t("rt_tasse_court") + " " + e._c.cupRatioText + "</small>" : "") +
-      (e._c.drinkRatio ? '<small class="sous">' + I18N.t("rt_boisson_court") + " " + e._c.drinkRatio + "</small>" : "") + "</td>" +
-      '<td class="note-cellule">' + (isFailed(e)
-        ? '<span class="badge-ratee" title="' + titleAttr(I18N.t("rt_badge_titre")) + '">' + I18N.t("rt_badge") + "</span>"
+      (e._c.cupRatioText ? '<small class="sub">' + I18N.t("rt_tasse_court") + " " + e._c.cupRatioText + "</small>" : "") +
+      (e._c.drinkRatio ? '<small class="sub">' + I18N.t("rt_boisson_court") + " " + e._c.drinkRatio + "</small>" : "") + "</td>" +
+      '<td class="rating-cell">' + (isFailed(e)
+        ? '<span class="badge-failed" title="' + titleAttr(I18N.t("rt_badge_titre")) + '">' + I18N.t("rt_badge") + "</span>"
         : "") + (e.note_sur_10 !== "" ? fmtDecimal(Number(e.note_sur_10), 1) : "") + "</td>" +
       /* TASTES AND DIAGNOSIS in the same cell, not in two columns: one more
          column asks for four coordinated edits (see DECISIONS, "The trap of
@@ -356,16 +356,16 @@
      The click is delegated on data-action, so nothing else needs to know. */
   function actionsExtraction(e) {
     const compare = comparison.has(e.id);
-    return '<div class="actions-ligne">' +
-      '<button class="btn-ligne' + (compare ? " actif" : "") + '" data-action="comparer" title="' +
+    return '<div class="actions-row">' +
+      '<button class="btn-row' + (compare ? " on" : "") + '" data-action="comparer" title="' +
       titleAttr(I18N.t("h_comparer")) + '">' + icon("comparer") + "</button>" +
       /* The failed toggle, FIRST among the write actions: it is the one
          clicked most often after the fact, and its state shows without hover. */
-      '<button class="btn-ligne' + (isFailed(e) ? " actif-ratee" : "") + '" data-action="ratee" aria-pressed="' +
+      '<button class="btn-row' + (isFailed(e) ? " on-failed" : "") + '" data-action="ratee" aria-pressed="' +
       isFailed(e) + '" title="' + titleAttr(I18N.t(isFailed(e) ? "h_derater" : "h_rater")) + '">' + icon("ratee") + "</button>" +
-      '<button class="btn-ligne" data-action="dupliquer" title="Dupliquer pour refaire la même">' + icon("dupliquer") + "</button>" +
-      '<button class="btn-ligne" data-action="modifier" title="Modifier">' + icon("modifier") + "</button>" +
-      '<button class="btn-ligne danger" data-action="supprimer" title="Supprimer">' + icon("supprimer") + "</button>" +
+      '<button class="btn-row" data-action="dupliquer" title="Dupliquer pour refaire la même">' + icon("dupliquer") + "</button>" +
+      '<button class="btn-row" data-action="modifier" title="Modifier">' + icon("modifier") + "</button>" +
+      '<button class="btn-row danger" data-action="supprimer" title="Supprimer">' + icon("supprimer") + "</button>" +
       "</div>";
   }
 
@@ -381,37 +381,37 @@
     const expanded = openDetails.has(e.id);
     const menu = expanded || openMenus.has(e.id);
     const meta = [];
-    if (e.recette) meta.push('<span class="h-carte-recette">' + I18N.tr(e.recette) + "</span>");
+    if (e.recette) meta.push('<span class="h-card-recipe">' + I18N.tr(e.recette) + "</span>");
     if (e.dose_g !== "" && e.eau_g !== "") meta.push(e.dose_g + " → " + e.eau_g + " g");
     if (e._c.ratioTexte) meta.push(e._c.ratioTexte);
     if (e.mouture_dial) meta.push(I18N.t("molette") + " " + e.mouture_dial);
-    return '<article class="h-carte' + (expanded ? " ouverte" : "") + (menu ? " menu-ouvert" : "") +
-      (comparison.has(e.id) ? " comparee" : "") + (isFailed(e) ? " ratee" : "") +
+    return '<article class="h-card' + (expanded ? " expanded" : "") + (menu ? " menu-ouvert" : "") +
+      (comparison.has(e.id) ? " compared" : "") + (isFailed(e) ? " failed" : "") +
       '" data-id="' + e.id + '">' +
-      '<div class="h-carte-tete">' +
-        '<span class="h-carte-heure">' + fmtDateTime(e.date_heure) + "</span>" +
-        '<span class="chip-methode ' + e.methode.toLowerCase() + '">' + e.methode + "</span>" +
-        '<span class="h-carte-note">' + (e.note_sur_10 !== "" ? fmtDecimal(Number(e.note_sur_10), 1) : "") + "</span>" +
-        '<button type="button" class="btn-menu-carte" data-action="menu" aria-expanded="' + menu + '" aria-label="' +
+      '<div class="h-card-head">' +
+        '<span class="h-card-hour">' + fmtDateTime(e.date_heure) + "</span>" +
+        '<span class="chip-method ' + e.methode.toLowerCase() + '">' + e.methode + "</span>" +
+        '<span class="h-card-rating">' + (e.note_sur_10 !== "" ? fmtDecimal(Number(e.note_sur_10), 1) : "") + "</span>" +
+        '<button type="button" class="btn-menu-card" data-action="menu" aria-expanded="' + menu + '" aria-label="' +
           titleAttr(I18N.t("h_actions")) + '">⋯</button>' +
       "</div>" +
-      '<p class="h-carte-cafe">' + I18N.tr(e._c.cafe_nom) +
-        (isFailed(e) ? '<span class="mention-ratee">' + I18N.t("rt_badge") + "</span>" : "") + "</p>" +
-      (meta.length ? '<p class="h-carte-meta">' + meta.join(" · ") + "</p>" : "") +
+      '<p class="h-card-coffee">' + I18N.tr(e._c.cafe_nom) +
+        (isFailed(e) ? '<span class="mention-failed">' + I18N.t("rt_badge") + "</span>" : "") + "</p>" +
+      (meta.length ? '<p class="h-card-meta">' + meta.join(" · ") + "</p>" : "") +
       ((e.diagnostic || e.descripteurs)
-        ? '<p class="h-carte-gouts">' +
+        ? '<p class="h-card-tastes">' +
           (e.diagnostic ? '<span class="h-diag">' + displayedDiags(e.diagnostic) + "</span>" : "") +
           historyTastes(e) + "</p>"
         : "") +
-      (e.commentaire ? '<p class="h-carte-commentaire">' + titleAttr(e.commentaire) + "</p>" : "") +
-      (!menu ? "" : '<div class="h-carte-pied">' +
+      (e.commentaire ? '<p class="h-card-comment">' + titleAttr(e.commentaire) + "</p>" : "") +
+      (!menu ? "" : '<div class="h-card-footer">' +
         /* In words and not as an arrow: the phone has no hover, the detail
            expands there, and the button says what it does. */
-        '<button type="button" class="btn-detail-carte" data-action="deplier" aria-expanded="' + expanded + '">' +
+        '<button type="button" class="btn-detail-card" data-action="deplier" aria-expanded="' + expanded + '">' +
         I18N.t(expanded ? "h_detail_masquer" : "h_detail") + "</button>" +
         actionsExtraction(e) +
       "</div>") +
-      (expanded ? '<div class="h-carte-detail">' + detailContent(e) + "</div>" : "") +
+      (expanded ? '<div class="h-card-detail">' + detailContent(e) + "</div>" : "") +
       "</article>";
   }
 
@@ -435,12 +435,12 @@
   }
 
   function updateComparisonBar() {
-    const bar = $("#barre-comparaison");
+    const bar = $("#bar-comparison");
     if (!bar) return;
     bar.hidden = comparison.size === 0;
-    $("#comparaison-compte").textContent = I18N.t(
+    $("#comparison-count").textContent = I18N.t(
       comparison.size === 1 ? "cmp_une" : "cmp_deux", { n: comparison.size });
-    $("#comparaison-ouvrir").disabled = comparison.size !== 2;
+    $("#comparison-open").disabled = comparison.size !== 2;
   }
 
   // Rows of the comparison table. Each entry knows how to read its displayable value.
@@ -475,55 +475,55 @@
     if (exts.length !== 2) return;
     const [a, b] = exts;
 
-    $("#comparaison-titres").innerHTML = "<th></th><th>" + fmtDateTime(a.date_heure) +
+    $("#comparison-titles").innerHTML = "<th></th><th>" + fmtDateTime(a.date_heure) +
       "</th><th>" + fmtDateTime(b.date_heure) + "</th>";
-    $("#comparaison-corps").innerHTML = comparisonFields().map(c => {
+    $("#comparison-body").innerHTML = comparisonFields().map(c => {
       const va = String(c.read(a) || ""), vb = String(c.read(b) || "");
       if (!va && !vb) return "";
       // Highlight ONLY what differs: that is where the explanation of the
       // rating gap lies, the rest is visual noise.
       const deferred = va !== vb;
-      return '<tr' + (deferred ? ' class="differe"' : "") + "><th>" + I18N.t(c.key) + "</th>" +
+      return '<tr' + (deferred ? ' class="deferred"' : "") + "><th>" + I18N.t(c.key) + "</th>" +
         "<td>" + va + "</td><td>" + vb + "</td></tr>";
     }).join("");
 
     const gap = a.note_sur_10 !== "" && b.note_sur_10 !== ""
       ? I18N.t("cmp_ecart", { x: fmtDecimal(Math.abs(a.note_sur_10 - b.note_sur_10), 1) })
       : I18N.t("cmp_sans_note");
-    $("#comparaison-resume").textContent = gap;
-    $("#modale-comparaison").showModal();
+    $("#comparison-summary").textContent = gap;
+    $("#modal-comparison").showModal();
   }
 
   /* ---------- My best settings ----------
-     The calculation lives in js/reglages.js, without DOM, to be testable
+     The calculation lives in js/tuning.js, without DOM, to be testable
      without a browser. Here, only the display. */
-  // Opens the coffee sheet (js/ui-fiche.js), by delegation on data-fiche.
-  const sheetButton = c => '<button type="button" class="btn btn-petit btn-discret" data-fiche="' + c.id + '">' +
+  // Opens the coffee sheet (js/ui-coffee-sheet.js), by delegation on data-sheet.
+  const sheetButton = c => '<button type="button" class="btn btn-small btn-subtle" data-sheet="' + c.id + '">' +
     I18N.t("fi_voir") + "</button>";
 
   function tuningCard(summary) {
     const c = summary.coffee;
-    const header = '<div class="reglage-entete"><b>' + c.nom + "</b>" +
-      (c.actif === 0 ? ' <span class="cafe-meta">' + I18N.t("li_inactif") + "</span>" : "") +
+    const header = '<div class="setting-header"><b>' + c.nom + "</b>" +
+      (c.actif === 0 ? ' <span class="coffee-meta">' + I18N.t("li_inactif") + "</span>" : "") +
       (summary.average !== null
-        ? '<span class="reglage-moyenne">' + I18N.t("rg_moyenne", { m: fmtDecimal(summary.average, 1), n: summary.total }) + "</span>"
+        ? '<span class="setting-average">' + I18N.t("rg_moyenne", { m: fmtDecimal(summary.average, 1), n: summary.total }) + "</span>"
         : "") + "</div>";
 
     if (summary.reason === "sous_moyenne") {
       const t = summary.bestCup;
-      return '<article class="carte reglage' + (c.actif === 0 ? " inactif" : "") + '">' + header +
-        '<p class="carte-vide">' + I18N.t("rg_sous_moyenne", {
+      return '<article class="card setting' + (c.actif === 0 ? " inactive" : "") + '">' + header +
+        '<p class="card-empty">' + I18N.t("rg_sous_moyenne", {
           s: TUNING.MIN_CUPS, note: fmtDecimal(t.note, 1), k: t.times, n: summary.missing,
         }) + "</p>" +
-        '<div class="reglage-actions"><button type="button" class="btn btn-petit" data-refaire="' + t.id + '">' +
+        '<div class="setting-actions"><button type="button" class="btn btn-small" data-redo="' + t.id + '">' +
         I18N.t("rg_refaire") + "</button>" + sheetButton(c) + "</div></article>";
     }
     if (!summary.best) {
       const key = summary.reason === "aucune" ? "rg_aucune"
         : summary.reason === "pas_assez" ? "rg_pas_assez" : "rg_eparpille";
-      return '<article class="carte reglage' + (c.actif === 0 ? " inactif" : "") + '">' + header +
-        '<p class="carte-vide">' + I18N.t(key, { n: summary.missing, s: TUNING.MIN_CUPS }) + "</p>" +
-        '<div class="reglage-actions">' + sheetButton(c) + "</div></article>";
+      return '<article class="card setting' + (c.actif === 0 ? " inactive" : "") + '">' + header +
+        '<p class="card-empty">' + I18N.t(key, { n: summary.missing, s: TUNING.MIN_CUPS }) + "</p>" +
+        '<div class="setting-actions">' + sheetButton(c) + "</div></article>";
     }
 
     const m = summary.best;
@@ -531,20 +531,20 @@
     // what says whether the setting is really worth it or everything is equal.
     const gap = m.average - summary.average;
     const chips = [
-      m.recette ? '<span class="reglage-chip">' + I18N.tr(m.recette) + "</span>" : "",
-      m.grind ? '<span class="reglage-chip">' + I18N.t("molette") + " " + m.grind + "</span>"
-        : '<span class="reglage-chip">' + I18N.t("paquet") + "</span>",
-      m.power ? '<span class="reglage-chip">' + I18N.t("rg_feu", { f: m.power }) + "</span>" : "",
-      m.preheat ? '<span class="reglage-chip">' + I18N.t("d_prechauffee") + "</span>" : "",
+      m.recette ? '<span class="setting-chip">' + I18N.tr(m.recette) + "</span>" : "",
+      m.grind ? '<span class="setting-chip">' + I18N.t("molette") + " " + m.grind + "</span>"
+        : '<span class="setting-chip">' + I18N.t("paquet") + "</span>",
+      m.power ? '<span class="setting-chip">' + I18N.t("rg_feu", { f: m.power }) + "</span>" : "",
+      m.preheat ? '<span class="setting-chip">' + I18N.t("d_prechauffee") + "</span>" : "",
     ].filter(Boolean).join("");
 
-    return '<article class="carte reglage' + (c.actif === 0 ? " inactif" : "") + '">' + header +
-      '<div class="reglage-note"><b>' + fmtDecimal(m.average, 1) + "</b><small> / 10</small>" +
+    return '<article class="card setting' + (c.actif === 0 ? " inactive" : "") + '">' + header +
+      '<div class="setting-rating"><b>' + fmtDecimal(m.average, 1) + "</b><small> / 10</small>" +
       '<span>' + I18N.t("rg_sur", { n: m.n }) +
       (Math.abs(gap) >= 0.2 ? ", " + I18N.t(gap > 0 ? "rg_mieux" : "rg_moins",
         { x: fmtDecimal(Math.abs(gap), 1) }) : "") + "</span></div>" +
-      '<div class="reglage-chips">' + chips + "</div>" +
-      '<div class="reglage-actions"><button type="button" class="btn btn-petit" data-refaire="' + m.referenceId + '">' +
+      '<div class="setting-chips">' + chips + "</div>" +
+      '<div class="setting-actions"><button type="button" class="btn btn-small" data-redo="' + m.referenceId + '">' +
       I18N.t("rg_refaire") + "</button>" + sheetButton(c) + "</div></article>";
   }
 
@@ -553,11 +553,11 @@
        and would get a correct setting condemned. */
     const exts = analyzableExts();
     const summaries = TUNING.forAllCoffees(DATA.state.cafes, exts);
-    $("#reglages-liste").innerHTML = summaries.length
+    $("#tuning-list").innerHTML = summaries.length
       ? summaries.map(tuningCard).join("")
-      : '<p class="carte-vide">' + I18N.t("rg_sans_cafe") + "</p>";
-    $$("[data-refaire]").forEach(b => b.addEventListener("click", () => {
-      const ext = DATA.state.extractions.find(e => e.id === b.dataset.refaire);
+      : '<p class="card-empty">' + I18N.t("rg_sans_cafe") + "</p>";
+    $$("[data-redo]").forEach(b => b.addEventListener("click", () => {
+      const ext = DATA.state.extractions.find(e => e.id === b.dataset.redo);
       if (!ext) return;
       UI.redoCup(ext);
       toast(I18N.t("rg_preremplie"));
@@ -565,7 +565,7 @@
   }
 
   function fillFilters() {
-    const selCoffee = $("#h-cafe");
+    const selCoffee = $("#h-coffee");
     const v = selCoffee.value;
     selCoffee.innerHTML = '<option value="">' + I18N.t("tous") + "</option>" +
       DATA.state.cafes.map(c => '<option value="' + TOOLS.escapeHtml(c.id) + '">' + TOOLS.escapeHtml(c.nom) + "</option>").join("");
@@ -579,7 +579,7 @@
 
   // Made available to the other screens.
   /* Wiring of the history controls. Called once by app.js. */
-  const FILTERS = ["h-recherche", "h-cafe", "h-methode", "h-diagnostic", "h-note-min", "h-du", "h-au", "h-ratee"];
+  const FILTERS = ["h-search", "h-coffee", "h-method", "h-diagnostic", "h-rating-min", "h-from", "h-to", "h-failed"];
 
   /* THE HOVER SHEET (v8.33), in place of the arrow that expanded a detail
      row: Chris found it ugly, and expanding pushed the whole table down. The
@@ -593,7 +593,7 @@
   function wireHoverSheet() {
     if (typeof matchMedia !== "function" || !matchMedia("(hover: hover) and (pointer: fine)").matches) return;
     const sheet = document.createElement("div");
-    sheet.className = "h-fiche";
+    sheet.className = "h-sheet";
     sheet.setAttribute("role", "tooltip");
     sheet.hidden = true;
     document.body.appendChild(sheet);
@@ -607,15 +607,15 @@
     };
     const show = id => {
       const e = displayed.get(id);
-      const row = $('#h-corps tr.ligne-histo[data-id="' + id + '"]');
+      const row = $('#h-body tr.row-hist[data-id="' + id + '"]');
       if (!e || !row) return;
       const content = detailContent(e, true);
-      if (content.includes("detail-vide")) return;
+      if (content.includes("detail-empty")) return;
       sheet.innerHTML = content;
       sheet.hidden = false;
       // Under the whole group, the row AND its comment: we do not cover what is being read.
       const following = row.nextElementSibling;
-      const last = following && following.classList.contains("ligne-commentaire") ? following : row;
+      const last = following && following.classList.contains("row-comment") ? following : row;
       const low = last.getBoundingClientRect().bottom;
       const high = row.getBoundingClientRect().top;
       const l = sheet.offsetWidth, h = sheet.offsetHeight;
@@ -626,11 +626,11 @@
       requestAnimationFrame(() => sheet.classList.add("visible"));
     };
 
-    const body = $("#h-corps");
+    const body = $("#h-body");
     body.addEventListener("mousemove", ev => {
       mouseX = ev.clientX;
       const row = ev.target.closest("[data-id]");
-      const onAction = ev.target.closest(".actions-ligne");
+      const onAction = ev.target.closest(".actions-row");
       const id = row && !onAction ? row.dataset.id : null;
       if (id === currentId) return;
       hide();
@@ -657,32 +657,32 @@
 
   function wireHistory() {
     FILTERS.forEach(id => $("#" + id).addEventListener("input", renderHistoryDeferred));
-    $("#h-reinitialiser").addEventListener("click", () => {
+    $("#h-reset").addEventListener("click", () => {
       FILTERS.forEach(id => { $("#" + id).value = ""; });
       renderHistory();
     });
     // A3: the filter panel folds on the phone, the active ones stay as pills.
-    $("#h-filtrer").addEventListener("click", () => {
-      const expanded = $("#ecran-historique").classList.toggle("filtres-ouverts");
-      $("#h-filtrer").setAttribute("aria-expanded", String(expanded));
+    $("#h-filter").addEventListener("click", () => {
+      const expanded = $("#screen-historique").classList.toggle("filters-open");
+      $("#h-filter").setAttribute("aria-expanded", String(expanded));
     });
-    $("#h-actifs").addEventListener("click", ev => {
-      const b = ev.target.closest("[data-vider]");
+    $("#h-actives").addEventListener("click", ev => {
+      const b = ev.target.closest("[data-clear]");
       if (!b) return;
-      b.dataset.vider.split(" ").forEach(id => { $("#" + id).value = ""; });
+      b.dataset.clear.split(" ").forEach(id => { $("#" + id).value = ""; });
       renderHistory();
     });
-    $("#h-exporter").addEventListener("click", () => {
+    $("#h-export").addEventListener("click", () => {
       DATA.exportExtractions(filterHistory().map(e => { const { _c, ...leftover } = e; return leftover; }));
       toast(I18N.t("t_export_filtre"));
     });
-    $$("#h-table th[data-tri]").forEach(th => th.addEventListener("click", () => {
-      if (sortState.column === th.dataset.tri) sortState.dir = -sortState.dir;
-      else { sortState.column = th.dataset.tri; sortState.dir = -1; }
+    $$("#h-table th[data-sort]").forEach(th => th.addEventListener("click", () => {
+      if (sortState.column === th.dataset.sort) sortState.dir = -sortState.dir;
+      else { sortState.column = th.dataset.sort; sortState.dir = -1; }
       renderHistory();
     }));
     /* BOTH CONTAINERS, table and cards: the same handler serves both
-       renders. Attached to #h-corps alone, it left the six card actions
+       renders. Attached to #h-body alone, it left the six card actions
        rendered but dead. */
     const onHistoryClick = async ev => {
       const btn = ev.target.closest("[data-action]");
@@ -731,23 +731,23 @@
         toast(I18N.t(Number(ext.ratee) === 1 ? "t_deratee" : "t_ratee"));
       }
     };
-    [$("#h-corps"), $("#h-cartes"), $("#h-journal")].forEach(z => z.addEventListener("click", onHistoryClick));
+    [$("#h-body"), $("#h-cards"), $("#h-journal")].forEach(z => z.addEventListener("click", onHistoryClick));
     UI.wireJournal(renderHistory);
     wireHoverSheet();
 
     /* The machine's segmented control DRIVES the <select>, which stays the
        source of truth: all the filtering, the reset and the export read it.
        Two sources for the same filter means two states that diverge. */
-    $$(".filtre-methode .seg").forEach(b => b.addEventListener("click", () => {
-      const sel = $("#h-methode");
-      sel.value = b.dataset.methode;
+    $$(".filter-method .seg").forEach(b => b.addEventListener("click", () => {
+      const sel = $("#h-method");
+      sel.value = b.dataset.method;
       sel.dispatchEvent(new Event("input", { bubbles: true }));
       updateMethodSegment();
     }));
     /* The reset goes through the select: the segment must follow. */
-    $("#h-reinitialiser").addEventListener("click", () => setTimeout(updateMethodSegment, 0));
-    $("#comparaison-ouvrir").addEventListener("click", openComparison);
-    $("#comparaison-vider").addEventListener("click", () => { comparison.clear(); renderHistory(); });
+    $("#h-reset").addEventListener("click", () => setTimeout(updateMethodSegment, 0));
+    $("#comparison-open").addEventListener("click", openComparison);
+    $("#comparison-clear").addEventListener("click", () => { comparison.clear(); renderHistory(); });
   }
 
   Object.assign(UI, {

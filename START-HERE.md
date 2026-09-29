@@ -89,13 +89,13 @@ jamais à la main dans les CSV.
 | `AUDIT.md` | L'audit courant du projet et son backlog chiffré. |
 | `README.md` | La présentation pour Chris, côté usage. |
 | `index.html` | La page unique, tout le HTML statique, et la version du site (`<meta name="app-version">`) |
-| `css/socle.css`, `ecrans.css`, `fenetres.css`, `finitions.css` | Styles en quatre feuilles chargées dans cet ordre : jetons et thèmes dans socle, les écrasements responsives en dernier |
-| `js/outils.js` | Fonctions pures partagées par toutes les couches |
+| `css/base.css`, `screens.css`, `dialogs.css`, `finishing.css` | Styles en quatre feuilles chargées dans cet ordre : jetons et thèmes dans socle, les écrasements responsives en dernier |
+| `js/tools.js` | Fonctions pures partagées par toutes les couches |
 | `js/i18n.js`, `js/i18n.en.js` | Traduction FR/EN, à toucher dès qu'un texte change |
 | `js/grind.js` | Moteur du moulin : conversions, plages, validation |
-| `js/recettes.js` | Recettes d'origine, cafés de départ, tasses, règles |
+| `js/recipes.js` | Recettes d'origine, cafés de départ, tasses, règles |
 | `js/data*.js` | Couche de données en six fichiers, façade `DATA` dans `data.js` |
-| `js/reglages.js` | Meilleurs réglages par café, calcul pur |
+| `js/tuning.js` | Meilleurs réglages par café, calcul pur |
 | `js/charts.js` | Graphiques Chart.js, heatmap SVG, diagramme officiel SVG |
 | `js/ui-*.js` | L’interface : un fichier par écran, plus le noyau et le chrono |
 | `js/app.js` | Démarrage, navigation, câblage global |

@@ -25,21 +25,21 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
    when we would want them to be watching. */
 /* The styles live in four sheets since v8.78: checks read them end to end, in
    load order, like the browser does. */
-const CSS_SHEETS = ["css/socle.css", "css/ecrans.css", "css/fenetres.css", "css/finitions.css"];
+const CSS_SHEETS = ["css/base.css", "css/screens.css", "css/dialogs.css", "css/finishing.css"];
 const readCss = () => CSS_SHEETS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
-const SOURCE_UI = ["js/ui-noyau.js", "js/ui-constats.js", "js/ui-derniere.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-saisie-aside.js", "js/ui-pilules.js", "js/ui-chrono.js", "js/ui-brouillon.js", "js/ui-rapide.js",
-  "js/ui-historique.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/ui-fiche.js", "js/ui-brassage.js", "js/ui-dessins.js", "js/app.js"]
+const SOURCE_UI = ["js/ui-core.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js",
+  "js/ui-history.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/app.js"]
   .map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 /* demo-data.js has not been a script tag since v7.56, but the harness still
    loads it: loadDemo() needs it and there is no network here. */
 /* The data layer has lived in six files since v7.87: checks that look for a
    string "in data.js" read the concatenation, for the same reason as
    SOURCE_UI above. */
-const DATA_FILES = ["js/data-csv.js", "js/data-schema.js", "js/data-store.js", "js/data-calculs.js",
+const DATA_FILES = ["js/data-csv.js", "js/data-schema.js", "js/data-store.js", "js/data-calcs.js",
   "js/data-migrations.js", "js/data.js"];
 const SOURCE_DATA = DATA_FILES.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
-const SCRIPTS = ["js/outils.js", "js/grind.js", "js/recettes.js", "js/demo-data.js", "js/sync.js",
-  ...DATA_FILES, "js/reglages.js"];
+const SCRIPTS = ["js/tools.js", "js/grind.js", "js/recipes.js", "js/demo-data.js", "js/sync.js",
+  ...DATA_FILES, "js/tuning.js"];
 
 const source = SCRIPTS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 const loader = new Function(
@@ -376,7 +376,7 @@ check("no em dash in the descriptions",
 check("the tooltip holds two lines for each diagnostic",
   DIAGNOSTICS.every(d => [DIAGNOSTIC_WHEN[d], DIAGNOSTIC_CORRECTIONS[d]].filter(Boolean).length === 2));
 
-// 12. Best setting PER COFFEE (js/reglages.js). Per coffee and not overall: the
+// 12. Best setting PER COFFEE (js/tuning.js). Per coffee and not overall: the
 // best setting for a coffee pre-ground at 82 percent has nothing to do with that
 // of a whole bean coffee, a global average would mix the two.
 const brew = (id, coffee, recipe, grindDial, fire, preheated, rating) => ({
@@ -758,7 +758,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 }
 
 /* The service worker must precache ALL the scripts loaded by index.html.
-   sync.js and reglages.js were missing: offline, SYNC and TUNING did not exist
+   sync.js and tuning.js were missing: offline, SYNC and TUNING did not exist
    and app.js broke at startup. A hand-written list inevitably diverges, so we
    compare it to the source. */
 {
@@ -904,7 +904,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 
 /* THE SCORE DISPLAY GOES THROUGH A SINGLE FUNCTION.
 
-   Draft resume wrote #note-affichee by hand, with the raw field value. So it
+   Draft resume wrote #rating-shown by hand, with the raw field value. So it
    ignored "not rated yet": after resuming an unrated draft, the screen showed
    "5" while saving was going to file the cup as UNRATED. With the slider also
    set on 5, nothing betrayed the gap, and the averages depended on it.
@@ -912,12 +912,12 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
    The rule: a single place writes this element. Any other code touching it is
    a second opinion on the same question, and that is how they diverge. */
 {
-  const entry = readFileSync(join(ROOT, "js/ui-saisie.js"), "utf8");
-  const others = ["js/ui-chrono.js", "js/ui-brouillon.js", "js/app.js", "js/ui-historique.js", "js/ui-tableau.js"]
-    .filter(f => /\$\("#note-affichee"\)\s*\.\s*textContent\s*=/.test(readFileSync(join(ROOT, f), "utf8")));
-  check("a single file writes #note-affichee, and it is the entry one",
+  const entry = readFileSync(join(ROOT, "js/ui-entry.js"), "utf8");
+  const others = ["js/ui-chrono.js", "js/ui-draft.js", "js/app.js", "js/ui-history.js", "js/ui-dashboard.js"]
+    .filter(f => /\$\("#rating-shown"\)\s*\.\s*textContent\s*=/.test(readFileSync(join(ROOT, f), "utf8")));
+  check("a single file writes #rating-shown, and it is the entry one",
     others.length === 0, others.join(", "));
-  const writes = (entry.match(/\$\("#note-affichee"\)\s*\.\s*textContent\s*=/g) || []).length;
+  const writes = (entry.match(/\$\("#rating-shown"\)\s*\.\s*textContent\s*=/g) || []).length;
   check("and it writes it in only one place", writes === 1, String(writes));
 
   /* And that place must look at the checkbox, otherwise the official function lies
@@ -928,11 +928,11 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 /* SCREEN SWITCHING RELIES ON SPECIFICITY ALONE.
 
    Two lines do all the navigation:
-     .ecran { display: none }   then   .ecran.actif { display: block }
+     .screen { display: none }   then   .screen.actif { display: block }
    An ID selector outweighs a class. A rule that sets a display on an #ecran-*
-   without requiring .actif therefore beats the display:none, and that screen
+   without requiring .on therefore beats the display:none, and that screen
    stays shown forever: the next ones stack below it instead of replacing it.
-   That is exactly what #ecran-saisie { display: grid } did in the Comptoir
+   That is exactly what #screen-saisie { display: grid } did in the Comptoir
    redesign, and nothing in the five suites saw it.
 
    The check targets the RULE: any screen could cause the breakdown again. */
@@ -950,15 +950,15 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
       /* The display may target a DESCENDANT of the screen without trouble: only
          the selector that ends on the screen itself causes the breakdown. */
       if (!/#ecran-[\w-]+[\w.:\[\]="-]*$/.test(sel)) continue;
-      if (!/\.actif\b/.test(sel)) offenders.push(sel + " { display }");
+      if (!/\.on\b/.test(sel)) offenders.push(sel + " { display }");
     }
   }
-  check("no rule forces a screen to show without .actif",
+  check("no rule forces a screen to show without .on",
     offenders.length === 0, offenders.join(" | "));
 
   /* SAME LESSON, ANOTHER FACE: a screen does not lay itself out.
 
-     #ecran-saisie has only ONE child, .saisie-layout, which already carried the
+     #screen-saisie has only ONE child, .entry-layout, which already carried the
      "form plus fixed column" grid. A second grid set on the screen put the whole
      form in column 1 and left 360 px empty on the right: the content looked
      cramped and shifted, without anything being in error.
@@ -993,9 +993,9 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
    field falls on. */
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
-  const formStart = html.indexOf('<form id="form-saisie"');
+  const formStart = html.indexOf('<form id="form-entry"');
   const formEnd = html.indexOf("</form>", formStart);
-  const asideStart = html.indexOf('<aside class="saisie-aside"');
+  const asideStart = html.indexOf('<aside class="entry-aside"');
   const asideEnd = html.indexOf("</aside>", asideStart);
   check("the entry form and its column exist",
     formStart > 0 && formEnd > formStart && asideStart > formEnd && asideEnd > asideStart);
@@ -1005,17 +1005,17 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 
   /* The fields Chris fills in. A single one outside the form and the entry goes
      into the wrong column. */
-  const FIELDS = ["f-cafe", "f-recette", "f-dose", "f-eau", "f-mouture", "f-volume",
-    "f-tasse", "f-note", "f-diagnostic", "f-descripteurs", "f-commentaire", "f-date"];
+  const FIELDS = ["f-coffee", "f-recipe", "f-dose", "f-water", "f-grind", "f-volume",
+    "f-cup", "f-rating", "f-diagnostic", "f-descriptors", "f-comment", "f-date"];
   /* A field placed OUTSIDE the form tags still counts if it carries
-     form="form-saisie": that is HTML's official association, and the date in
+     form="form-entry": that is HTML's official association, and the date in
      the page header uses it. */
-  const attached = new Set([...html.matchAll(/id="([^"]+)"[^>]*form="form-saisie"/g)].map(m => m[1]));
+  const attached = new Set([...html.matchAll(/id="([^"]+)"[^>]*form="form-entry"/g)].map(m => m[1]));
   const strays = FIELDS.filter(id => !inForm.includes('id="' + id + '"') && !attached.has(id));
   check("every entry field is in the form", strays.length === 0, strays.join(", "));
 
   /* The three numbered blocks, in the form and in order. */
-  const blocks = [...inForm.matchAll(/class="bloc-num"[^>]*>(\d)</g)].map(m => m[1]);
+  const blocks = [...inForm.matchAll(/class="block-num"[^>]*>(\d)</g)].map(m => m[1]);
   check("the three numbered blocks are in the form",
     blocks.join(",") === "1,2,3", blocks.join(",") || "none");
 
@@ -1032,7 +1032,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   /* The dark card is reserved for the timer: a form block wearing it signals
      that the split went wrong. */
   check("no form block is dressed as a dark card",
-    !inForm.includes("carte-sombre"));
+    !inForm.includes("card-dark"));
 
   /* ON DESKTOP the CSS puts the timer back at the top of the right column. The
      DOM order serves the phone, the grid serves the wide screen, and neither
@@ -1041,18 +1041,18 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("the timer is placed at the top of the right column on desktop",
     /#chrono-widget\s*\{[^}]*grid-column:\s*2[^}]*grid-row:\s*1/.test(css));
   check("and the recipe card column moves to the second row",
-    /\.saisie-aside\s*\{[^}]*grid-column:\s*2[^}]*grid-row:\s*2/.test(css));
+    /\.entry-aside\s*\{[^}]*grid-column:\s*2[^}]*grid-row:\s*2/.test(css));
 
   /* The timer is collapsible: a header that controls a body. */
   const stopwatchZone = html.slice(stopwatchDomPos, formStart);
   check("the timer has a header that opens and closes its body",
-    stopwatchZone.includes('aria-controls="chrono-corps"') && stopwatchZone.includes('id="chrono-corps"'));
+    stopwatchZone.includes('aria-controls="chrono-body"') && stopwatchZone.includes('id="chrono-body"'));
   /* The time lives in the HEADER, not in the body: collapsed, it must stay
      readable, otherwise collapsing costs more than it brings. */
-  const header = stopwatchZone.slice(stopwatchZone.indexOf('id="chrono-basculer"'), stopwatchZone.indexOf('id="chrono-corps"'));
+  const header = stopwatchZone.slice(stopwatchZone.indexOf('id="chrono-toggle"'), stopwatchZone.indexOf('id="chrono-body"'));
   check("the time stays readable when the timer is collapsed",
     header.includes('id="chrono-total"'));
-  check("and so does the current pour step", header.includes('id="chrono-palier-court"'));
+  check("and so does the current pour step", header.includes('id="chrono-phase-short"'));
 }
 /* THE KETTLE FACTORY FALLBACK CANNOT BE ZERO.
 
@@ -1066,7 +1066,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
    both: a non-zero fallback, and a model that falls within the observed band.
    */
 {
-  const coreSrc2 = readFileSync(join(ROOT, "js/ui-noyau.js"), "utf8");
+  const coreSrc2 = readFileSync(join(ROOT, "js/ui-core.js"), "utf8");
   const fallback = Number((coreSrc2.match(/FACTORY_BOIL_S\s*=\s*(\d+)/) || [])[1]);
   check("the factory boiling time is not zero, otherwise the calculation is off",
     fallback > 0, String(fallback));
@@ -1094,8 +1094,8 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 }
 /* THE DEFAULT HEAT IS THE SAME FIGURE EVERYWHERE.
 
-   It lives in THREE places: the Brikka recipe seed (recettes.js), the interface
-   factory fallback (ui-noyau.js) and the settings schema default
+   It lives in THREE places: the Brikka recipe seed (recipes.js), the interface
+   factory fallback (ui-core.js) and the settings schema default
    (data-schema.js). Changing only one leaves a new logbook and an existing one
    announcing two different heats, without anything flagging it.
 
@@ -1103,7 +1103,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
    already recorded, and it is the migration replay check, further up, that
    covers it. */
 {
-  const coreSrc2 = readFileSync(join(ROOT, "js/ui-noyau.js"), "utf8");
+  const coreSrc2 = readFileSync(join(ROOT, "js/ui-core.js"), "utf8");
   const fallback = Number((coreSrc2.match(/FACTORY_FIRE\s*=\s*(\d+)/) || [])[1]);
   const schema = DATA.normalizeSettings({}).puissance_feu;
   const seeded = STARTER_RECIPES.filter(r => r.methode === "Brikka").map(r => r.puissance_feu);
@@ -1119,7 +1119,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
    clicks it at the right moment.
 
    The rule: every button carrying an id must be mentioned somewhere in the JS.
-   Buttons driven by ATTRIBUTE (data-va, data-ferme, data-ecran) are delegated
+   Buttons driven by ATTRIBUTE (data-go, data-closes, data-screen) are delegated
    and do not need their id; submit buttons are handled by their form's
    submit. */
 {
@@ -1134,8 +1134,8 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
     const b = m[0];
     const id = (b.match(/id="([^"]+)"/) || [])[1];
     if (!id) continue;
-    // data-analyse: the analysis tabs, driven by delegation (v8.39).
-    if (/data-va=|data-ferme=|data-ecran=|data-analyse=|type="submit"/.test(b)) continue;
+    // data-analysis: the analysis tabs, driven by delegation (v8.39).
+    if (/data-go=|data-closes=|data-screen=|data-analysis=|type="submit"/.test(b)) continue;
     if (!allJs.includes('"' + id + '"') && !allJs.includes("#" + id)) dead.push(id);
   }
   check("no button with an id is left without code", dead.length === 0, dead.join(", "));
@@ -1144,8 +1144,8 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 
    The old version of this block targeted <nav class="nav">, gone with the
    header in the Comptoir redesign: indexOf returned -1 and the check passed
-   empty. It also carried /data-ecran="(w+)"/ without a backslash, which never
-   finds anything: "toutes les cibles data-ecran existent" has therefore never
+   empty. It also carried /data-screen="(w+)"/ without a backslash, which never
+   finds anything: "toutes les cibles data-screen existent" has therefore never
    verified anything since it existed. Both are fixed here. */
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
@@ -1155,16 +1155,16 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("the screen list is readable from the test", screens.length === 6, screens.join(", "));
 
   /* Every navigation target must aim at a screen that exists. A misspelled
-     data-ecran throws nothing: the click simply does nothing. */
-  const targets = [...html.matchAll(/data-ecran="(\w+)"/g)].map(m => m[1]);
+     data-screen throws nothing: the click simply does nothing. */
+  const targets = [...html.matchAll(/data-screen="(\w+)"/g)].map(m => m[1]);
   check("navigation targets exist", targets.length > 0, String(targets.length));
   const unknownTargets = [...new Set(targets)].filter(c => !screens.includes(c));
-  check("all data-ecran targets exist", unknownTargets.length === 0, unknownTargets.join(", "));
+  check("all data-screen targets exist", unknownTargets.length === 0, unknownTargets.join(", "));
 
   /* The rail carries the SIX screens: it is the full menu, the bottom bar only
      shows three and sends the rest to the sheet. */
   const rail = html.slice(html.indexOf('<nav class="rail"'), html.indexOf("</nav>"));
-  const inRail = [...rail.matchAll(/data-ecran="(\w+)"/g)].map(m => m[1]);
+  const inRail = [...rail.matchAll(/data-screen="(\w+)"/g)].map(m => m[1]);
   const forgotten = screens.filter(e => !inRail.includes(e));
   check("the rail leads to the six screens, none has become unreachable",
     forgotten.length === 0, forgotten.join(", "));
@@ -1172,15 +1172,15 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   /* The bottom bar does not exceed four entries: beyond that it gets cramped
      and the targets drop below thumb comfort. That is the reason for "Plus",
      and the replacement of the old three tabs rule. */
-  const bar = html.slice(html.indexOf('<nav class="barre-bas"'));
+  const bar = html.slice(html.indexOf('<nav class="bottom-bar"'));
   const barEnd = bar.indexOf("</nav>");
-  const entryCount = (bar.slice(0, barEnd).match(/class="[^"]*barre-entree/g) || []).length;
+  const entryCount = (bar.slice(0, barEnd).match(/class="[^"]*bar-entry/g) || []).length;
   check("four entries at most in the bottom bar", entryCount <= 4, String(entryCount));
 
   /* THE THREE TOOLS ARE UNIQUE. app.js addresses them by id: if the rail and the
      sheet were two separate elements, the second button would be mute. That is
      precisely why the rail IS the sheet. */
-  ["btn-lang", "btn-theme", "btn-donnees", "btn-plus"].forEach(id => {
+  ["btn-lang", "btn-theme", "btn-data", "btn-plus"].forEach(id => {
     const n = (html.match(new RegExp('id="' + id + '"', "g")) || []).length;
     check("#" + id + " exists only once in the page", n === 1, String(n));
   });
@@ -1188,7 +1188,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   /* An entry without a readable label is mute to a screen reader. Entries carry
      a text <span>; those that do not must carry an aria-label.
      */
-  const mute = [...html.matchAll(/<button[^>]*class="[^"]*(?:rail-entree|barre-entree)[^"]*"[^>]*>([\s\S]*?)<\/button>/g)]
+  const mute = [...html.matchAll(/<button[^>]*class="[^"]*(?:rail-entry|bar-entry)[^"]*"[^>]*>([\s\S]*?)<\/button>/g)]
     .filter(m => !/<span>[^<]+<\/span>/.test(m[1]) && !/aria-label=/.test(m[0]));
   check("every navigation entry carries a label", mute.length === 0, String(mute.length));
 
@@ -1207,7 +1207,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("no more save refusal in app.js",
     !app.includes("entry.bloque") && !app.includes("t_bloque"));
 
-  const rec = readFileSync(join(ROOT, "js/recettes.js"), "utf8");
+  const rec = readFileSync(join(ROOT, "js/recipes.js"), "utf8");
   check("combinationWarnings no longer returns a block", !rec.includes("bloque = true"));
   check("the cafeInterditSwitch function has gone", !rec.includes("cafeInterditSwitch"));
 
@@ -1232,7 +1232,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
   check("the heating method select has gone", !html.includes('id="f-temp-preset"'));
   check("the heating time is entered in minutes and seconds",
-    html.includes('id="f-chauffe-min"') && html.includes('id="f-chauffe-sec"'));
+    html.includes('id="f-heat-min"') && html.includes('id="f-heat-sec"'));
   check("chauffe_s is a column, at the end of the row, after ratee",
     DATA.EXT_COLS.indexOf("chauffe_s") === DATA.EXT_COLS.length - 1 && DATA.EXT_COLS.includes("temperature_c"));
   check("the kettle boiling time is a synced setting",
@@ -1279,8 +1279,8 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("the bubbles marker is a synced setting, 1:30 by default",
     DATA.SETTINGS_COLS.includes("bulles_s") && DATA.normalizeSettings({}).bulles_s === 90);
   check("and Parametres enters it in minutes and seconds",
-    html.includes('id="param-bulles-min"') && html.includes('id="param-bulles-sec"'));
-  const entryJs = readFileSync(join(ROOT, "js/ui-saisie.js"), "utf8");
+    html.includes('id="param-bubbles-min"') && html.includes('id="param-bubbles-sec"'));
+  const entryJs = readFileSync(join(ROOT, "js/ui-entry.js"), "utf8");
   check("every estimate in the entry passes the bubbles marker",
     (entryJs.match(/(temperatureFromHeating|heatTimeForTemperature)\(/g) || []).length ===
     (entryJs.match(/(temperatureFromHeating|heatTimeForTemperature)\([^)]*fallbacks\.bubbles\)/g) || []).length);
@@ -1291,8 +1291,8 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("empty stays empty, never zero", DATA.normalizeExtraction({}).chauffe_s === "");
   const app = SOURCE_UI;
   check("the entry only saves a heating time on the Switch",
-    /chauffe_s: entry\.methode === "Switch" \? readDuration\("f-chauffe"\) : ""/.test(app));
-  check("the heating row is hidden on the Brikka", /ligne-chauffe"\)\.hidden = m !== "Switch"/.test(app));
+    /chauffe_s: entry\.methode === "Switch" \? readDuration\("f-heat"\) : ""/.test(app));
+  check("the heating row is hidden on the Brikka", /row-heat"\)\.hidden = m !== "Switch"/.test(app));
   check("the help texts are bilingual",
     bilingual("temp_estimee") && bilingual("temp_conseil") && bilingual("temp_sans_bouilloire") && bilingual("d_chauffe") && bilingual("t_param_ebullition"));
 }
@@ -1389,15 +1389,15 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
    temperature in v7.33. The grinder setting is set in Parametres. */
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
-  const field = (html.match(/<input[^>]*id="f-mouture"[^>]*>/) || [""])[0];
+  const field = (html.match(/<input[^>]*id="f-grind"[^>]*>/) || [""])[0];
   check("the grind field no longer has a misleading placeholder", !field.includes("placeholder"), field);
-  check("Parametres carries the grinder setting", html.includes('id="param-molette"'));
+  check("Parametres carries the grinder setting", html.includes('id="param-dial"'));
 
   const app = SOURCE_UI;
   /* Except the recipe whose grind goes OUT of its machine's range ON PURPOSE
      (the Neo Brew, v8.63): its extra coarse grind is the recipe itself. */
   check("the prefill reads the grinder setting, not the recipe dial",
-    app.includes('$("#f-mouture").value = currentCoffeeGround() ? "" : wantedDial(r) ? r.dial : fallbacks.dial;'));
+    app.includes('$("#f-grind").value = currentCoffeeGround() ? "" : wantedDial(r) ? r.dial : fallbacks.dial;'));
   check("and only a recipe outside its machine's range imposes its dial",
     app.includes("!GRIND.checkRange(r.methode, r.dial).ok"));
   check("the factory setting is the compromise of both machines",
@@ -1456,17 +1456,17 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
     /molette unique a 1\.5\.0[\s\S]{0,300}state\.recettes\.forEach/.test(data));
 }
 
-/* The frame is set ONCE, on .ecran: max width and centering. No #ecran-* must
+/* The frame is set ONCE, on .screen: max width and centering. No #ecran-* must
    set a width or a margin: an id rule beats the class, and that is how the
    history ended up stuck to the left by a margin-left: 0 inherited from an old
    widening, while its neighbours were centred. General rule, not a one-off
    fix. */
 {
-  // Without comments: a comment quoting #ecran-saisie is not a rule.
+  // Without comments: a comment quoting #screen-saisie is not a rule.
   const css = readCss().replace(/\/\*[\s\S]*?\*\//g, "");
-  const frame =(css.match(/\.ecran \{([^}]*)\}/g) || []).join(" ");
+  const frame =(css.match(/\.screen \{([^}]*)\}/g) || []).join(" ");
   check("the common frame bounds and centres every screen",
-    /max-width:\s*var\(--cadre\)/.test(frame) && /margin-inline:\s*auto/.test(frame), frame);
+    /max-width:\s*var\(--frame\)/.test(frame) && /margin-inline:\s*auto/.test(frame), frame);
   const offenders = [];
   const re = /([^{}]*)\{([^}]*)\}/g;
   let m;
@@ -1489,24 +1489,24 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("its step is ONE click, not a rounding", sl.includes('step="1"'), sl);
   const grind = readFileSync(join(ROOT, "js/grind.js"), "utf8");
   check("the slider stop is the grinder's", grind.includes("MAX_CLICKS = 150"));
-  check("the apply button exists", html.includes('id="conv-appliquer"'));
-  check("the advice area exists", html.includes('id="conv-conseil"'));
+  check("the apply button exists", html.includes('id="conv-apply"'));
+  check("the advice area exists", html.includes('id="conv-advice"'));
 
   /* The offset zero of Chris's grinder must be written on the page: it skews the
      whole micron scale by 2 clicks, and nothing else says so. */
-  check("the zero offset is documented", html.includes("encadre-zero"));
+  check("the zero offset is documented", html.includes("callout-zero"));
   check("it gives the figure, not just a warning",
     html.includes("2 crans après le 0 du cadran"));
 
   // Recipes: moved below the Rules, a tab is already dedicated to them.
   const order = [...html.matchAll(/id="(ref-[a-z]+)"/g)].map(m => m[1]);
   const rank = k => order.indexOf(k);
-  check("the grinder comes before the recipes", rank("ref-moulin") < rank("ref-recettes"),
+  check("the grinder comes before the recipes", rank("ref-grinder") < rank("ref-recipes"),
     order.join(" > "));
   check("the table of contents follows the same order as the page",
     // L5 (v8.94): the Guide home comes before everything, on purpose.
-    order.filter(k => k !== "ref-recettes" && k !== "ref-accueil").join(",") ===
-    ["ref-moulin", "ref-diagnostic", "ref-regles", "ref-vocabulaire"].join(","),
+    order.filter(k => k !== "ref-recipes" && k !== "ref-welcome").join(",") ===
+    ["ref-grinder", "ref-diagnostic", "ref-rules", "ref-vocabulary"].join(","),
     order.join(","));
 }
 
@@ -1546,7 +1546,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   const css = readCss();
   const metrics = /font-weight|font-size|letter-spacing|padding|border-width/;
   const offending = [];
-  const re = /([^{}]*\.actif[^{}]*)\{([^}]*)\}/g;
+  const re = /([^{}]*\.on[^{}]*)\{([^}]*)\}/g;
   let m;
   while ((m = re.exec(css))) {
     if (metrics.test(m[2])) offending.push(m[1].trim());
@@ -1555,7 +1555,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
     offending.length === 0, offending.join(" | "));
 
   // Background and colour must stay, otherwise the selection no longer shows.
-  const activeTag = (css.match(/\.tag\.actif \{([^}]*)\}/) || ["", ""])[1];
+  const activeTag = (css.match(/\.tag\.on \{([^}]*)\}/) || ["", ""])[1];
   check("the selection stays visible through background and colour",
     activeTag.includes("background") && activeTag.includes("color"), activeTag.trim());
 }
@@ -1569,15 +1569,15 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
      until it has been touched. It must start in that state, in the entry as in
      the quick entry, and the checkbox has gone. */
   check("the score slider starts without a thumb, in both entries",
-    /<input[^>]*id="f-note"[^>]*class="[^"]*curseur-inactif/.test(html) &&
-    /<input[^>]*id="q-note"[^>]*class="[^"]*curseur-inactif/.test(html));
+    /<input[^>]*id="f-rating"[^>]*class="[^"]*slider-inactive/.test(html) &&
+    /<input[^>]*id="q-rating"[^>]*class="[^"]*slider-inactive/.test(html));
   check("the not yet rated checkbox has gone", !/note-vide/.test(html));
   /* But no more second look (v8.68): the class is a state, not a style. Dotted
      and hidden thumb made two different sliders. */
   const cssScore = readCss();
-  check("the score not given no longer has a style of its own", !/\.curseur-inactif\s*[:{,]/.test(cssScore));
+  check("the score not given no longer has a style of its own", !/\.slider-inactive\s*[:{,]/.test(cssScore));
   check("the slider no longer suggests 7",
-    /<input[^>]*id="f-note"[^>]*value="5"/.test(html));
+    /<input[^>]*id="f-rating"[^>]*value="5"/.test(html));
 
   const app = SOURCE_UI;
   check("saving reads entryRating and no longer the raw slider",
@@ -1841,14 +1841,14 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   const app = SOURCE_UI;
 
   // The machine choice, in the static HTML.
-  const methodButtons = [...html.matchAll(/<button[^>]*class="btn-methode[^"]*"[^>]*>/g)].map(m => m[0]);
+  const methodButtons = [...html.matchAll(/<button[^>]*class="btn-method[^"]*"[^>]*>/g)].map(m => m[0]);
   check("both machine buttons exist", methodButtons.length === 2, String(methodButtons.length));
   check("and they announce their state", methodButtons.every(m => m.includes("aria-pressed")),
     methodButtons.join(" | "));
 
   // Pills and tags, generated in JS.
   check("diagnostic pills are born with an announced state",
-    /class="pilule" aria-pressed=/.test(app));
+    /class="pill" aria-pressed=/.test(app));
   check("so are the descriptors", /class="tag" aria-pressed=/.test(app));
 
   /* The point that matters over time: class and attribute toggle in ONE single
@@ -1867,7 +1867,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   /* Hover tooltips were unreachable by finger: on phone hover does not exist and
      a tap does not trigger :focus-visible. */
   const css = readCss();
-  check("tooltips also open without hover", css.includes(".info-ouverte::after"));
+  check("tooltips also open without hover", css.includes(".info-expanded::after"));
   check("a long press triggers them", app.includes("LONG_PRESS_MS"));
   /* Attached ONCE: the containers survive pill rebuilds, attaching it from
      buildPills would stack one set of listeners per language toggle.
@@ -2036,15 +2036,15 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("headings avoid the orphan line", css.includes("text-wrap: balance"));
 
   // Text search in the history.
-  check("a search field exists", html.includes('id="h-recherche"'));
+  check("a search field exists", html.includes('id="h-search"'));
   /* In French, a search without accent normalisation is unusable: typing brule
      must find the accented brule. */
   check("it ignores accents", app.includes("function withoutAccents") && app.includes("NFD"));
   check("it searches what Chris wrote",
     /function searchableText[\s\S]{0,260}commentaire[\s\S]{0,120}descripteurs/.test(app));
   check("it resets with the other filters",
-    /h-reinitialiser[\s\S]{0,200}FILTERS\.forEach/.test(app) &&
-    /const FILTERS = \[[^\]]*"h-recherche"/.test(app));
+    /h-reset[\s\S]{0,200}FILTERS\.forEach/.test(app) &&
+    /const FILTERS = \[[^\]]*"h-search"/.test(app));
 
   // Network recovery and Escape.
   check("the sync restarts when the network comes back", /addEventListener\("online"/.test(app));
@@ -2052,8 +2052,8 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 
   /* The loading veil must be in the HTML: created in JS, it would only appear
      after the scripts run, so too late to be of any use. */
-  check("the loading veil is in the HTML", html.includes('id="chargement"'));
-  check("and it is removed once the first screen is rendered", app.includes('$("#chargement")'));
+  check("the loading veil is in the HTML", html.includes('id="loading"'));
+  check("and it is removed once the first screen is rendered", app.includes('$("#loading")'));
 }
 
 /* WORK ON KEYSTROKE AND ON RENDER.
@@ -2088,7 +2088,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("pill clicks are delegated to the container",
     app.includes("function wirePills"));
   check("and buildPills no longer reattaches anything",
-    !/buildPills[\s\S]{0,900}f-descripteurs \.tag"\)\.forEach\(b => b\.addEventListener/.test(app));
+    !/buildPills[\s\S]{0,900}f-descriptors \.tag"\)\.forEach\(b => b\.addEventListener/.test(app));
   /* Set ONCE at wiring time: the containers survive rebuilds, setting it from the
      render would stack one set of listeners per toggle. */
   check("the delegation is set at wiring time",
@@ -2129,9 +2129,9 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
      AND by the legend, so that both say the same thing. */
   const cssCoffees = readCss();
   check("the five coffee tints are tokens",
-    [1, 2, 3, 4, 5].every(n => cssCoffees.includes("--cafe-" + n + ":")) && block30d.includes('cssVar("--cafe-" + n)'));
+    [1, 2, 3, 4, 5].every(n => cssCoffees.includes("--coffee-" + n + ":")) && block30d.includes('cssVar("--coffee-" + n)'));
   check("and the dashboard passes the coffees to the chart, with their legend",
-    SOURCE_UI.includes("UI.renderCoffees30d(exts)") && readFileSync(join(ROOT, "index.html"), "utf8").includes('id="legende-30j"'));
+    SOURCE_UI.includes("UI.renderCoffees30d(exts)") && readFileSync(join(ROOT, "index.html"), "utf8").includes('id="legend-30d"'));
   /* The grams curve is gone: a fourth series on a chart that already carried
      three, on a hidden axis to boot, it cluttered the view without being
      readable. The figure now lives in the tooltip. */
@@ -2145,8 +2145,8 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
      comment already said, and what its colour contradicted. */
   const css = readCss();
   check("and the converter ruler keeps its default colour",
-    css.includes("--tendance"));
-  const trends = [...css.matchAll(/--tendance: ([^;]+);/g)].map(m => m[1].trim());
+    css.includes("--trend"));
+  const trends = [...css.matchAll(/--trend: ([^;]+);/g)].map(m => m[1].trim());
   // One per palette: light, Graphite and Nuit (v8.34).
   check("the trend exists in all three palettes", trends.length === 3, trends.join(" | "));
   check("and it is translucent, to read as a background",
@@ -2194,20 +2194,20 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
     .map(m => m[1]).filter(f => !knownIds.has(f));
   check("every label points to a field that exists", lost.length === 0, lost.join(", "));
 
-  /* A .champ must not contain several LABELLABLE controls under a single label.
+  /* A .field must not contain several LABELLABLE controls under a single label.
      Legitimate pairs (minutes and seconds, value and preset) are listed: they
      form a single control in the user's eyes, and so rightly share a label.
      */
-  const PAIRS = ["f-chauffe-min", "f-chauffe-sec", "f-total-sec", "f-ecoulement-sec",
-    "param-ebullition-sec", "param-bulles-sec"];
+  const PAIRS = ["f-heat-min", "f-heat-sec", "f-total-sec", "f-flow-sec",
+    "param-boil-sec", "param-bubbles-sec"];
   /* A slider named "X-curseur" drives the field "X": it is the SAME value shown
      twice, so a legitimate pair by construction. The rule is better than a list
      to extend with every added slider, since it is the naming that guarantees
      the belonging. */
   const isSliderOfItsField = (id, neighbors) =>
-    id.endsWith("-curseur") && neighbors.includes(id.slice(0, -"-curseur".length));
+    id.endsWith("-slider") && neighbors.includes(id.slice(0, -"-slider".length));
   const mixed = [];
-  for (const m of html.matchAll(/<div class="champ[^"]*">([\s\S]*?)<\/div>/g)) {
+  for (const m of html.matchAll(/<div class="field[^"]*">([\s\S]*?)<\/div>/g)) {
     const allIds = [...m[1].matchAll(/<(?:input|select|textarea)\b[^>]*\bid="([^"]+)"/g)].map(x => x[1]);
     const controls = allIds
       .filter(id => !PAIRS.includes(id) && !isSliderOfItsField(id, allIds));
@@ -2295,9 +2295,9 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
      filters are in flex (chips), it pushes itself to the right with
      margin-left: auto. */
   check("the history actions are no longer a filter column",
-    /\.historique-filtres-actions \{[^}]*margin-left: auto/.test(css));
+    /\.history-filters-actions \{[^}]*margin-left: auto/.test(css));
   check("and their labels no longer wrap",
-    /\.historique-filtres-actions \.btn \{[^}]*white-space: nowrap/.test(css));
+    /\.history-filters-actions \.btn \{[^}]*white-space: nowrap/.test(css));
 }
 
 /* THE HOME-MADE TOOLTIP, DEFINED ONLY ONCE.
@@ -2318,8 +2318,8 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   /* The comment is WRITTEN under its row, in the latest extractions as in the
      history: a tooltip repeating it on hover says nothing more. Chris found it
      absurd (v8.33). */
-  const table = readFileSync(join(ROOT, "js/ui-tableau.js"), "utf8");
-  const historySrc = readFileSync(join(ROOT, "js/ui-historique.js"), "utf8");
+  const table = readFileSync(join(ROOT, "js/ui-dashboard.js"), "utf8");
+  const historySrc = readFileSync(join(ROOT, "js/ui-history.js"), "utf8");
   check("no tooltip repeats the already written comment",
     !/data-info="' \+ titleAttr\(e\.commentaire\)/.test(table + historySrc));
 }
@@ -2332,7 +2332,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
    claimed that must not happen, without anything preventing it.
    */
 {
-  const coreSrc2 = readFileSync(join(ROOT, "js/ui-noyau.js"), "utf8");
+  const coreSrc2 = readFileSync(join(ROOT, "js/ui-core.js"), "utf8");
   const f = coreSrc2.slice(coreSrc2.indexOf("function enableLongPress"),
     coreSrc2.indexOf("function", coreSrc2.indexOf("function enableLongPress") + 10));
   check("long press swallows the click that follows it",
@@ -2453,7 +2453,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
    prescribes a dial, that dial must be COARSER than the reference, and vice
    versa. */
 {
-  const recipes = new Function(readFileSync(join(ROOT, "js/recettes.js"), "utf8") +
+  const recipes = new Function(readFileSync(join(ROOT, "js/recipes.js"), "utf8") +
     "\nreturn STARTER_RECIPES;")();
   // rotation.number.click, 5 clicks per number, 10 numbers per rotation.
   const clicks = dial => {
@@ -2523,7 +2523,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("and cold or hot water on the Brikka", html.includes("Eau froide ou eau chaude à la Brikka"));
   check("the guide and the recipes say the same thing about water",
     /Bialetti indique l'EAU FROIDE pour toutes ses cafetières/.test(html) &&
-    /Bialetti indique l'eau FROIDE pour toutes ses cafetières/.test(readFileSync(join(ROOT, "js/recettes.js"), "utf8")));
+    /Bialetti indique l'eau FROIDE pour toutes ses cafetières/.test(readFileSync(join(ROOT, "js/recipes.js"), "utf8")));
   check("and no more valve that would release too early with hot water", !html.includes("fait lâcher la soupape trop tôt"));
 }
 
@@ -2586,7 +2586,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
     return Object.fromEntries([...body.matchAll(/(--[\w-]+):\s*(#[0-9a-f]{6})\s*;/gi)].map(m => [m[1], m[2]]));
   };
   const graphite = block('html[data-theme="sombre"]');
-  const night = { ...graphite, ...block('html[data-theme="sombre"][data-sombre="nuit"]') };
+  const night = { ...graphite, ...block('html[data-theme="sombre"][data-palette="nuit"]') };
   const lum = h => {
     const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255)
       .map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
@@ -2595,11 +2595,11 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
 
   check("the Espresso theme has gone", !css.includes("#1a120d") && !css.includes("#261c15"));
-  check("Nuit is a palette in its own right", night["--fond"] && night["--fond"] !== graphite["--fond"]);
+  check("Nuit is a palette in its own right", night["--bg"] && night["--bg"] !== graphite["--bg"]);
   for (const [itemName, p] of [["Graphite", graphite], ["Nuit", night]]) {
-    const surfaces = ["--fond", "--rail", "--panneau", "--panneau-2", "--panneau-3"];
+    const surfaces = ["--bg", "--rail", "--panel", "--panel-2", "--panel-3"];
     const weak = [];
-    for (const t of ["--encre", "--texte", "--attenue", "--accent", "--danger"]) {
+    for (const t of ["--ink", "--text", "--muted", "--accent", "--danger"]) {
       for (const s of surfaces) {
         if (!p[t] || !p[s]) { weak.push(t + " or " + s + " missing"); continue; }
         const r = ratio(p[t], p[s]);
@@ -2607,18 +2607,18 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
       }
     }
     // The timer card: its muted colour on its own sub-surfaces.
-    for (const s of ["--carte-sombre-fond", "--cs-panneau", "--cs-panneau-2"]) {
-      const r = ratio(p["--cs-attenue"], p[s]);
-      if (r < 4.5) weak.push("--cs-attenue on " + s + " " + r.toFixed(2));
+    for (const s of ["--card-dark-bg", "--cs-panel", "--cs-panel-2"]) {
+      const r = ratio(p["--cs-muted"], p[s]);
+      if (r < 4.5) weak.push("--cs-muted on " + s + " " + r.toFixed(2));
     }
-    if (ratio(p["--sur-accent"], p["--accent"]) < 4.5) weak.push("--sur-accent on --accent");
+    if (ratio(p["--on-accent"], p["--accent"]) < 4.5) weak.push("--on-accent on --accent");
     check(itemName + ": all texts hold 4.5:1", weak.length === 0, weak.join(", "));
   }
 
   // The button cycles through all three, and the choice survives a reload.
   const head = readFileSync(join(ROOT, "index.html"), "utf8");
   check("the head restores the dark palette", head.includes('localStorage.getItem("sombre")') &&
-    head.includes('"data-sombre"'));
+    head.includes('"data-palette"'));
   const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
   check("the theme button offers Graphite then Nuit",
     app.includes('applyTheme("sombre", "graphite")') && app.includes('applyTheme("sombre", "nuit")'));
@@ -2711,8 +2711,8 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
   const appSrc = readFileSync(join(ROOT, "js/app.js"), "utf8");
-  const coreSrc = readFileSync(join(ROOT, "js/ui-noyau.js"), "utf8");
-  check("every Fermer button closes its window, even without data-ferme", appSrc.includes('b.closest("dialog")'));
+  const coreSrc = readFileSync(join(ROOT, "js/ui-core.js"), "utf8");
+  check("every Fermer button closes its window, even without data-closes", appSrc.includes('b.closest("dialog")'));
   check("updates announce themselves instead of asking for two reloads",
     coreSrc.includes("controllerchange") && coreSrc.includes("reg.update()") && bilingual("maj_prete"));
   check("the status bar follows the palette from load time", /querySelectorAll\('meta\[name="theme-color"\]'\)/.test(html.slice(0, 4000)));
@@ -2720,10 +2720,10 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("linked files no longer ask for permission outside a gesture",
     SOURCE_DATA.includes('queryPermission({ mode: "readwrite" }) === "granted"') && SOURCE_DATA.includes("reauthorizeFolder"));
   const css = readCss();
-  check("«Nouvelle tasse» no longer appears twice in the Plus menu", css.includes(".rail .rail-nouvelle"));
+  check("«Nouvelle tasse» no longer appears twice in the Plus menu", css.includes(".rail .rail-new"));
   check("the old header rules are gone", !/\.nav \{/.test(css) && !/\.nav-btn \{ padding: 8px/.test(css));
-  const draftSrc = readFileSync(join(ROOT, "js/ui-brouillon.js"), "utf8");
-  check("the draft keeps «ratée» and the agitation", draftSrc.includes('"f-ratee"') && draftSrc.includes('"f-agitation-oui"'));
+  const draftSrc = readFileSync(join(ROOT, "js/ui-draft.js"), "utf8");
+  check("the draft keeps «ratée» and the agitation", draftSrc.includes('"f-failed"') && draftSrc.includes('"f-agitation-yes"'));
 }
 
 /* AUDIT BATCH 3 (v8.73): LOCK IT DOWN. */
@@ -2740,11 +2740,11 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   DATA.state.cafes = DATA.state.cafes.filter(x => x !== c);
 
   // A single escaping function for the whole site.
-  const copies = ["js/charts.js", "js/ui-brassage.js", "js/ui-dessins.js", "js/ui-fiche.js", "js/ui-guide.js", "js/ui-noyau.js"]
+  const copies = ["js/charts.js", "js/ui-brew.js", "js/ui-drawings.js", "js/ui-coffee-sheet.js", "js/ui-guide.js", "js/ui-core.js"]
     .filter(f => /replace\(\/&\/g, "&amp;"\)/.test(readFileSync(join(ROOT, f), "utf8")));
   check("no more local copy of the escaping", copies.length === 0, copies.join(", "));
   check("the shared escaping handles the five characters",
-    /replace\(\/'\/g, "&#39;"\)/.test(readFileSync(join(ROOT, "js/outils.js"), "utf8")));
+    /replace\(\/'\/g, "&#39;"\)/.test(readFileSync(join(ROOT, "js/tools.js"), "utf8")));
 
   // No spreadsheet formula, and the round trip keeps the text.
   const csv = DATA.csvSerialize([{ id: "e-f", commentaire: "=HYPERLINK(\"x\")", dose_g: -1 }], ["id", "commentaire", "dose_g"]);
@@ -2756,7 +2756,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 /* AUDIT BATCHES 4 AND 5 (v8.74): A GUIDE THAT TELLS THE TRUTH, AND ACCURATELY. */
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
-  const rec = readFileSync(join(ROOT, "js/recettes.js"), "utf8");
+  const rec = readFileSync(join(ROOT, "js/recipes.js"), "utf8");
   // The matrix only points to recipes that exist, and covers every cell.
   const ids = new Set(STARTER_RECIPES.map(r => r.id));
   const cells = Object.values(COFFEE_RECIPE_MATRIX.cells);
@@ -2771,7 +2771,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("an anaerobic is not taken for a natural", p("Anaerobic natural", "Light medium", "Arabica") === "anaerobic|medium");
   check("a dark rang bơ robusta goes to the robustas", p("Rang bơ", "Foncée", "Robusta") === "robusta|fonce");
   check("a coffee without a process counts in no cell", coffeeProfile({}).row === null);
-  check("the matrix is drawn in the Guide", html.includes('id="matrice-recettes"') && SOURCE_UI.includes("function renderMatrix"));
+  check("the matrix is drawn in the Guide", html.includes('id="matrix-recipes"') && SOURCE_UI.includes("function renderMatrix"));
 
   // The missing tastes, translated and described.
   const allIds = DESCRIPTOR_GROUPS.flatMap(g => g.tags);
@@ -2790,7 +2790,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("no more recipes quoted by number in the rules", !html.includes("les recettes 4 et 5"));
   check("the Guide no longer says the scale is missing", !html.includes("Le vrai manque") && !html.includes("Maintenant : la balance"));
   check("Brassage mode shows grams by default",
-    readFileSync(join(ROOT, "js/ui-brassage.js"), "utf8").includes('=== "ml" ? "ml" : "g"'));
+    readFileSync(join(ROOT, "js/ui-brew.js"), "utf8").includes('=== "ml" ? "ml" : "g"'));
   check("corrections talk about two clicks, like the default steps", !rec.includes("un ou deux crans"));
   check("non rang bơ coffees have their own message", rec.includes('I18N.t("w_profil_brikka")') && bilingual("w_profil_brikka"));
   check("the preheated Brikka no longer announces a grind it does not have", !rec.includes("mouture plus grossière\","));
@@ -2802,13 +2802,13 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 
 /* AUDIT BATCH 6 (v8.75): FASTER. */
 {
-  const coreSrc2 = readFileSync(join(ROOT, "js/ui-noyau.js"), "utf8");
+  const coreSrc2 = readFileSync(join(ROOT, "js/ui-core.js"), "utf8");
   const charts = readFileSync(join(ROOT, "js/charts.js"), "utf8");
   const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
   check("per cup calculations are kept in memory", coreSrc2.includes("memoPerCup") && coreSrc2.includes("dataRevision"));
   check("a sync-only notification only redraws the badge", app.includes('if (kind === "sync")'));
   check("charts are updated instead of recreated", charts.includes('existing.update("none")'));
-  check("drawings are no longer drawn twice", !readFileSync(join(ROOT, "js/ui-dessins.js"), "utf8").includes('DATA.subscribe(() => { if (nav.screenName === "tableau") renderDrawings(); });'));
+  check("drawings are no longer drawn twice", !readFileSync(join(ROOT, "js/ui-drawings.js"), "utf8").includes('DATA.subscribe(() => { if (nav.screenName === "tableau") renderDrawings(); });'));
   check("the history renders in slices of one hundred", SOURCE_UI.includes("HISTORY_CHUNK = 100") && bilingual("h_plus"));
   const worker = readFileSync(join(ROOT, "worker/index.js"), "utf8");
   check("the server strips comments from the stylesheet and the page", worker.includes("function minifyCss") && worker.includes("function minifyHtml"));
@@ -2833,20 +2833,20 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   const notFound = targets.filter(id => !html.includes('id="' + id + '"') && !SOURCE_UI.includes('id="' + id + '"'));
   check("and the title it quotes exists", notFound.length === 0, notFound.join(", "));
   check("the closed Plus menu is inert to the keyboard", app.includes("rail.inert = isSheetLayout()"));
-  check("decorative icons are hidden from screen readers", !/class="choix-icone">/.test(html));
-  check("the recipe table fields are named", readFileSync(join(ROOT, "js/ui-catalogue.js"), "utf8").includes('aria-label="\' + fieldName(r, "pc_dose")'));
+  check("decorative icons are hidden from screen readers", !/class="choice-icon">/.test(html));
+  check("the recipe table fields are named", readFileSync(join(ROOT, "js/ui-catalog.js"), "utf8").includes('aria-label="\' + fieldName(r, "pc_dose")'));
 
   // Light theme contrasts, computed the way WCAG does.
   const block = css.slice(css.indexOf('html[data-theme="clair"] {'), css.indexOf("}", css.indexOf('html[data-theme="clair"] {')));
   const token = itemName => (block.match(new RegExp("--" + itemName + ":\\s*(#[0-9a-fA-F]{6})")) || [])[1];
   const lum = h => { const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(v => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4))); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
   const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
-  const p3 = token("panneau-3");
-  for (const n of ["attenue", "accent", "danger"]) {
+  const p3 = token("panel-3");
+  for (const n of ["muted", "accent", "danger"]) {
     check("in light theme, --" + n + " passes 4.5:1 on the hover surface", ratio(token(n), p3) >= 4.5, token(n) + " on " + p3 + ": " + ratio(token(n), p3).toFixed(2));
   }
-  check("a field border passes 3:1 on the panel", ratio(token("lignes-champ"), token("panneau")) >= 3, String(token("lignes-champ")));
-  check("and the fields use it", css.includes("border: 1px solid var(--lignes-champ, var(--lignes));"));
+  check("a field border passes 3:1 on the panel", ratio(token("lines-field"), token("panel")) >= 3, String(token("lines-field")));
+  check("and the fields use it", css.includes("border: 1px solid var(--lines-field, var(--lines));"));
 }
 
 /* AUDIT BATCH 8 (v8.77): THE DEEP CLEAN. */
@@ -2862,7 +2862,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("tr no longer mistakes a coffee name for an object property", readFileSync(join(ROOT, "js/i18n.js"), "utf8").includes("hasOwnProperty.call(UI, text)"));
   check("the dead code is gone", !SOURCE_UI.includes("function ecartMoyen") && !SOURCE_UI.includes("function mesuresDerniere"));
   check("deleting a bag and unlinking the folder have their button",
-    SOURCE_UI.includes("data-suppr-sachet") && readFileSync(join(ROOT, "index.html"), "utf8").includes('id="don-delier"'));
+    SOURCE_UI.includes("data-delete-bag") && readFileSync(join(ROOT, "index.html"), "utf8").includes('id="db-unlink"'));
   check("the full export can be reimported: the picker accepts JSON", readFileSync(join(ROOT, "index.html"), "utf8").includes('accept=".csv,.json'));
 }
 
@@ -2875,35 +2875,35 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 /* A1 (v8.82): THE LATEST EXTRACTIONS ARE READABLE, grouped by day. */
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
-  const cols = (html.match(/<table class="table-dernieres">[\s\S]*?<\/colgroup>/) || [""])[0].match(/<col /g) || [];
+  const cols = (html.match(/<table class="table-latest">[\s\S]*?<\/colgroup>/) || [""])[0].match(/<col /g) || [];
   check("the latest table has five columns, the machine no longer has one", cols.length === 5 && !html.includes('class="c-machine"'));
-  check("and each day has its subheading", SOURCE_UI.includes('<tr class="d-jour"><th colspan="5"'));
-  check("the comment spans the five columns", SOURCE_UI.includes('"derniere-commentaire" data-ext="\' + e.id + \'"><td colspan="5">'));
+  check("and each day has its subheading", SOURCE_UI.includes('<tr class="d-day"><th colspan="5"'));
+  check("the comment spans the five columns", SOURCE_UI.includes('"last-comment" data-ext="\' + e.id + \'"><td colspan="5">'));
   check("in a narrow card each cup becomes a grid card", readCss().includes("@container dernieres (max-width: 760px)") && readCss().includes('grid-template-areas: "cafe cafe note" "quand mesures note" "gouts gouts note"'));
 }
 
 /* A3 (v8.82): THE HISTORY BY THUMB. */
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
-  check("the filters fold behind a Filtrer button", html.includes('id="h-filtrer" aria-expanded="false" aria-controls="h-panneau"') && html.includes('id="h-panneau"'));
-  check("and active filters stay visible, each with its cross", SOURCE_UI.includes("function updateActiveFilters") && SOURCE_UI.includes('data-vider="'));
-  check("a card's actions go behind «⋯»", SOURCE_UI.includes('data-action="menu"') && SOURCE_UI.includes("(!menu ? \"\" : '<div class=\"h-carte-pied\">'"));
-  check("no day subheading in the history (Chris's choice, v8.29)", !/h-jour(?!nal)/.test(readFileSync(join(ROOT, "js/ui-historique.js"), "utf8")));
+  check("the filters fold behind a Filtrer button", html.includes('id="h-filter" aria-expanded="false" aria-controls="h-panel"') && html.includes('id="h-panel"'));
+  check("and active filters stay visible, each with its cross", SOURCE_UI.includes("function updateActiveFilters") && SOURCE_UI.includes('data-clear="'));
+  check("a card's actions go behind «⋯»", SOURCE_UI.includes('data-action="menu"') && SOURCE_UI.includes("(!menu ? \"\" : '<div class=\"h-card-footer\">'"));
+  check("no day subheading in the history (Chris's choice, v8.29)", !/h-jour(?!nal)/.test(readFileSync(join(ROOT, "js/ui-history.js"), "utf8")));
 }
 
 /* A4 (v8.84): THE RECIPE IN SIGHT, below 1,400 px. */
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
-  const stopwatch = html.slice(html.indexOf('id="chrono-widget"'), html.indexOf('id="chrono-corps"'));
-  check("the recipe strip lives in the timer, which sticks to the top", stopwatch.includes('id="bande-recette"'));
-  check("it opens the card, which has its own close button", html.includes('aria-controls="saisie-aside"') && html.includes('id="aside-fermer"'));
-  check("below 1,400 px the card no longer drops below the form", readCss().includes(".saisie-layout:not(.aside-ouvert) .saisie-aside { display: none; }"));
+  const stopwatch = html.slice(html.indexOf('id="chrono-widget"'), html.indexOf('id="chrono-body"'));
+  check("the recipe strip lives in the timer, which sticks to the top", stopwatch.includes('id="band-recipe"'));
+  check("it opens the card, which has its own close button", html.includes('aria-controls="entry-aside"') && html.includes('id="aside-close"'));
+  check("below 1,400 px the card no longer drops below the form", readCss().includes(".entry-layout:not(.aside-open) .entry-aside { display: none; }"));
 }
 
 /* A6 (v8.85): THE GUIDE CAN BE LEAFED THROUGH. */
 {
   const guide = readFileSync(join(ROOT, "js/ui-guide.js"), "utf8");
-  check("a collapsed recipe fits on one line that unfolds", guide.includes('class="recette-bascule" data-bascule="') && readCss().includes(".recette-carte.repliee .recette-corps { display: none; }"));
+  check("a collapsed recipe fits on one line that unfolds", guide.includes('class="recipe-toggle" data-toggle="') && readCss().includes(".recipe-card.collapsed .recipe-body { display: none; }"));
   check("a link to a recipe opens it before scrolling to it", /toggleRecipe\(id, true\);\s+filter\.value = "tout";/.test(guide));
   check("on phone each cell of the coffee and recipe table states its column", guide.includes("'<td data-col=\"'") && readCss().includes("content: attr(data-col)"));
 }
@@ -2913,57 +2913,57 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   const css = readCss();
   const belowFloor = (css.match(/[^\n]*font-size:\s*0\.(6[0-9]*|7[0-4]?)rem[^\n]*/g) || []).filter(l => !/::?(before|after)/.test(l));
   check("no text below 0.75 rem (12 px), drawn signs aside", belowFloor.length === 0, belowFloor.slice(0, 3).join(" | "));
-  check("on touch, small buttons go to 40 px", css.includes("@media (pointer: coarse)") && css.includes(".btn-carre-petit { min-width: 40px; min-height: 40px; }"));
+  check("on touch, small buttons go to 40 px", css.includes("@media (pointer: coarse)") && css.includes(".btn-square-small { min-width: 40px; min-height: 40px; }"));
 }
 
 /* A8 (v8.87): THE WEEK BARS TELL THE SCORE AND OPEN UP. */
 {
-  const drawingsSrc = readFileSync(join(ROOT, "js/ui-dessins.js"), "utf8");
-  check("a bar's tint follows the day's average score", drawingsSrc.includes(";--o:") && readCss().includes(".rc-jour i { opacity: var(--o, 1); }"));
-  check("a day with cups opens that day's history", drawingsSrc.includes('UI.openHistoryOn({ "h-du": b.dataset.jour, "h-au": b.dataset.jour })'));
+  const drawingsSrc = readFileSync(join(ROOT, "js/ui-drawings.js"), "utf8");
+  check("a bar's tint follows the day's average score", drawingsSrc.includes(";--o:") && readCss().includes(".rc-day i { opacity: var(--o, 1); }"));
+  check("a day with cups opens that day's history", drawingsSrc.includes('UI.openHistoryOn({ "h-from": b.dataset.day, "h-to": b.dataset.day })'));
 }
 
 /* A9 (v8.88): THE FLOATING BUTTON NO LONGER HIDES ANYTHING. */
 {
   const css = readCss();
-  check("the floating button fades out when scrolling down", readFileSync(join(ROOT, "js/ui-rapide.js"), "utf8").includes('fab.classList.add("fab-cache")') && css.includes(".fab.fab-cache {"));
-  check("the page keeps room at the bottom for the bar and the button", css.includes("main { padding-bottom: calc(var(--barre-basse) + 96px + env(safe-area-inset-bottom, 0px)); }"));
-  check("the four bottom tabs have the same size", css.includes(".barre-bas .barre-entree { font-size: 0.8rem; }"));
+  check("the floating button fades out when scrolling down", readFileSync(join(ROOT, "js/ui-quick.js"), "utf8").includes('fab.classList.add("fab-hidden")') && css.includes(".fab.fab-hidden {"));
+  check("the page keeps room at the bottom for the bar and the button", css.includes("main { padding-bottom: calc(var(--bottom-bar) + 96px + env(safe-area-inset-bottom, 0px)); }"));
+  check("the four bottom tabs have the same size", css.includes(".bottom-bar .bar-entry { font-size: 0.8rem; }"));
 }
 
 /* v8.89: THE STOCK IN THE DASHBOARD CORNER. */
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
-  const titles = html.slice(html.indexOf('id="tableau-surligne"'), html.indexOf("</div>", html.indexOf('id="tableau-surligne"')) + 200);
-  check("the stock lives under the dashboard title", titles.includes('id="stock-coin"'));
-  check("it states the grams and opens the coffee card", SOURCE_UI.includes('Math.round(s.leftover) + " g"') && SOURCE_UI.includes('class="sc-sachet'));
+  const titles = html.slice(html.indexOf('id="dashboard-highlight"'), html.indexOf("</div>", html.indexOf('id="dashboard-highlight"')) + 200);
+  check("the stock lives under the dashboard title", titles.includes('id="stock-corner"'));
+  check("it states the grams and opens the coffee card", SOURCE_UI.includes('Math.round(s.leftover) + " g"') && SOURCE_UI.includes('class="sc-bag'));
 }
 
 /* L7 (v8.90): BRASSAGE MODE, READABLE FROM ONE METRE. */
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
-  const center = html.slice(html.indexOf('class="br-centre"'), html.indexOf('class="br-etape"'));
-  check("the gram target lives in the centre of the ring", center.includes('id="br-cible"') && center.includes('id="br-label"'));
-  const br = readFileSync(join(ROOT, "js/ui-brassage.js"), "utf8");
+  const center = html.slice(html.indexOf('class="br-center"'), html.indexOf('class="br-step"'));
+  check("the gram target lives in the centre of the ring", center.includes('id="br-target"') && center.includes('id="br-label"'));
+  const br = readFileSync(join(ROOT, "js/ui-brew.js"), "utf8");
   check("the ring counts down to the next pour", br.includes("const arcEnd = nextStep ? nextStep.t : duration;"));
-  check("and turns copper for the last ten seconds", br.includes("IMMINENT_S = 10") && readCss().includes(".br-anneau.imminent .br-trace"));
+  check("and turns copper for the last ten seconds", br.includes("IMMINENT_S = 10") && readCss().includes(".br-ring.imminent .br-trace"));
 }
 
 /* L6 (v8.91): SETTINGS ORGANISED LIKE A PHONE. */
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
-  const sections = [...html.matchAll(/class="carte param-section" id="(ps-[a-z]+)"/g)].map(m => m[1]);
-  const rows = [...html.matchAll(/class="pi-ligne" data-section="(ps-[a-z]+)"/g)].map(m => m[1]);
+  const sections = [...html.matchAll(/class="card param-section" id="(ps-[a-z]+)"/g)].map(m => m[1]);
+  const rows = [...html.matchAll(/class="pi-row" data-section="(ps-[a-z]+)"/g)].map(m => m[1]);
   check("every section of the list opens a page that exists", rows.length === 6 && rows.every(id => sections.includes(id)), rows.join(","));
-  check("the Enregistrer button lives under the pages, only once", (html.match(/id="param-enregistrer"/g) || []).length === 1 && html.indexOf('id="param-actions"') > html.indexOf('id="ps-appareil"'));
-  check("on phone the default values table becomes one card per recipe", (readFileSync(join(ROOT, "js/ui-catalogue.js"), "utf8").match(/data-l="/g) || []).length === 5);
+  check("the Enregistrer button lives under the pages, only once", (html.match(/id="param-save"/g) || []).length === 1 && html.indexOf('id="param-actions"') > html.indexOf('id="ps-device"'));
+  check("on phone the default values table becomes one card per recipe", (readFileSync(join(ROOT, "js/ui-catalog.js"), "utf8").match(/data-l="/g) || []).length === 5);
 }
 
 /* L4 (v8.92): THE COFFEE CARD, A PASSPORT IN FOUR TABS. */
 {
-  const sheet = readFileSync(join(ROOT, "js/ui-fiche.js"), "utf8");
+  const sheet = readFileSync(join(ROOT, "js/ui-coffee-sheet.js"), "utf8");
   check("the card arranges its blocks in four tabs", ["reglage", "gouts", "sachets", "tasses"].every(k => sheet.includes('panel("' + k + '"')));
-  check("and all the card's drawings are still there", ["fiche-empreinte", "fiche-trajectoire", "fiche-moulin", "fiche-roue"].every(id => sheet.includes('id="' + id + '"')));
+  check("and all the card's drawings are still there", ["sheet-footprint", "sheet-trajectory", "sheet-grinder", "sheet-wheel"].every(id => sheet.includes('id="' + id + '"')));
   check("the phone back button closes the card", sheet.includes("history.pushState({ sheet: coffeeId }") && sheet.includes('addEventListener("popstate"'));
 }
 
@@ -2972,16 +2972,16 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   const j = readFileSync(join(ROOT, "js/ui-journal.js"), "utf8");
   check("cups are grouped by bag, the bag at the cup's date", j.includes("DATA.bagAtDate(e.cafe_id, e.date_heure)"));
   check("each chapter has its summary and its cards", j.includes("function resume(c)") && j.includes("UI.extractionCard(e)"));
-  check("the by-date view stays one tap away", readFileSync(join(ROOT, "index.html"), "utf8").includes('data-vue="date"'));
+  check("the by-date view stays one tap away", readFileSync(join(ROOT, "index.html"), "utf8").includes('data-view="date"'));
 }
 
 /* L5 (v8.94): THE GUIDE, A LIBRARY. */
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
   const g = readFileSync(join(ROOT, "js/ui-guide.js"), "utf8");
-  check("the Guide opens on its home, with its search", html.includes('id="gp-accueil" data-panneau="accueil"') && html.includes('id="guide-recherche"') && g.includes('localStorage.getItem("guide-onglet") || "accueil"'));
+  check("the Guide opens on its home, with its search", html.includes('id="gp-accueil" data-panel="accueil"') && html.includes('id="guide-search"') && g.includes('localStorage.getItem("guide-onglet") || "accueil"'));
   check("search covers recipes, vocabulary and tips", g.includes('type: "g_t_recette"') && g.includes('type: "g_t_mot"') && g.includes('type: "g_t_conseil"'));
-  check("every recipe can be brewed in one tap", g.includes('data-brasser="') && g.includes("function brewRecipe"));
+  check("every recipe can be brewed in one tap", g.includes('data-brew="') && g.includes("function brewRecipe"));
 }
 
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);

@@ -11,9 +11,9 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
     position: fixed;
     left: 0; top: 0; bottom: 0;
     width: var(--rail-large);
-    z-index: var(--z-entete);
+    z-index: var(--z-header);
     padding: 18px 14px;
-    border-right: 1px solid var(--lignes);
+    border-right: 1px solid var(--lines);
     overflow-y: auto;
   }
   main {
@@ -26,33 +26,33 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
      to one screen shifts it from the others, and the jump shows on every
      tab change. Text line length is capped elsewhere, on
      paragraphs, not on the frame. */
-  .ecran { max-width: var(--cadre); margin-inline: auto; }
+  .screen { max-width: var(--frame); margin-inline: auto; }
   /* The guide's long texts keep a readable line length. */
-  #ecran-guide p, #ecran-guide li, #ecran-parametres p { max-width: 78ch; }
-  .pied-site { margin-inline-start: var(--rail-large); }
+  #screen-guide p, #screen-guide li, #screen-parametres p { max-width: 78ch; }
+  .footer-site { margin-inline-start: var(--rail-large); }
   /* The floating quick-entry button DISAPPEARS: the rail's "Nouvelle tasse"
      opens the full entry form, which is what you want on a keyboard. */
-  .fab, .barre-bas { display: none; }
+  .fab, .bottom-bar { display: none; }
 }
 
 /* PHONE: the rail becomes the "Plus" sheet, the bottom bar takes the
    three daily screens. */
 @media (max-width: 1023px) {
-  .barre-bas { display: flex; }
+  .bottom-bar { display: flex; }
   .rail {
     position: fixed;
     left: 0; right: 0; bottom: 0;
     z-index: var(--z-rail);
     padding: 10px 14px calc(18px + env(safe-area-inset-bottom));
     border-radius: 22px 22px 0 0;
-    border-top: 1px solid var(--lignes);
-    box-shadow: var(--ombre);
+    border-top: 1px solid var(--lines);
+    box-shadow: var(--shadow);
     transform: translateY(101%);
     transition: transform var(--transition);
     max-height: 80vh;
     overflow-y: auto;
   }
-  .rail.ouverte { transform: none; }
+  .rail.expanded { transform: none; }
   /* The sheet's handle, drawn rather than added to the HTML: it only makes
      sense in this layout. */
   .rail::before {
@@ -61,47 +61,47 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
     width: 40px; height: 4px;
     margin: 0 auto 12px;
     border-radius: 999px;
-    background: var(--lignes);
+    background: var(--lines);
   }
   /* What the bottom bar already carries need not appear twice. */
-  /* .rail .rail-nouvelle and not .rail-nouvelle (v8.72): .btn, declared below
+  /* .rail .rail-new and not .rail-new (v8.72): .btn, declared below
      with the same weight, put "Nouvelle tasse" back as a duplicate in the menu. */
-  .rail-marque,
-  .rail .rail-nouvelle,
-  .rail-entree[data-ecran="tableau"],
-  .rail-entree[data-ecran="saisie"],
-  .rail-entree[data-ecran="historique"] { display: none; }
-  .rail-pied { border-top: none; padding-top: 4px; }
-  main { padding-bottom: calc(var(--barre-basse) + 34px); }
-  .pied-site { margin-bottom: calc(var(--barre-basse) + 16px); }
+  .rail-brand,
+  .rail .rail-new,
+  .rail-entry[data-screen="tableau"],
+  .rail-entry[data-screen="saisie"],
+  .rail-entry[data-screen="historique"] { display: none; }
+  .rail-footer { border-top: none; padding-top: 4px; }
+  main { padding-bottom: calc(var(--bottom-bar) + 34px); }
+  .footer-site { margin-bottom: calc(var(--bottom-bar) + 16px); }
   /* The floating button moves up above the bar. */
-  .fab { bottom: calc(var(--barre-basse) + 16px + env(safe-area-inset-bottom)); }
+  .fab { bottom: calc(var(--bottom-bar) + 16px + env(safe-area-inset-bottom)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .rail { transition: none; }
 }
 
-.ecran { display: none; }
-.ecran.actif { display: block; animation: apparition 320ms ease-out; }
+.screen { display: none; }
+.screen.on { display: block; animation: appear 320ms ease-out; }
 
-@keyframes apparition {
+@keyframes appear {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: none; }
 }
 
-.carte {
-  background: var(--panneau);
-  border: 1px solid var(--lignes);
-  border-radius: var(--rayon);
-  padding: var(--carte-padding);
-  /* In the light theme --ombre-carte is empty: the design lays cards flat, on
+.card {
+  background: var(--panel);
+  border: 1px solid var(--lines);
+  border-radius: var(--radius);
+  padding: var(--card-padding);
+  /* In the light theme --shadow-card is empty: the design lays cards flat, on
      a hairline. In the dark theme this token gives the relief. */
-  box-shadow: var(--ombre-carte);
+  box-shadow: var(--shadow-card);
 }
 
 /* Block subheadings: small spaced capitals, muted. */
-.carte h3 {
+.card h3 {
   margin: 0 0 14px;
   /* MANROPE, not the serif inherited from the global h1..h4 rule. An 11 px serif
      in capitals is unreadable: its thick and thin strokes are drawn for large
@@ -112,7 +112,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--attenue);
+  color: var(--muted);
 }
 
 /* A DARK card in the light theme: the insights and the timer. In the dark
@@ -121,48 +121,48 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
 /* THE DARK CARD REDEFINES ITS TOKENS, it does not dress its descendants one
    by one. It is the only way to also cover whatever gets added later:
    the first version only handled the title and links, and everything else
-   wrote in --encre on an --encre background, i.e. invisible text. */
-.carte-sombre {
-  --encre: #f6efe5;
-  --texte: #ede2d4;
-  --attenue: #c2ad98;
+   wrote in --ink on an --ink background, i.e. invisible text. */
+.card-dark {
+  --ink: #f6efe5;
+  --text: #ede2d4;
+  --muted: #c2ad98;
   --accent: #e0bd97;
-  --accent-fort: #f0d3b4;
-  --accent-fond: rgba(224, 189, 151, 0.16);
-  --lignes: rgba(246, 239, 229, 0.2);
-  --lignes-douces: rgba(246, 239, 229, 0.12);
-  --panneau: rgba(246, 239, 229, 0.06);
-  --panneau-2: rgba(246, 239, 229, 0.1);
-  --barre-neutre: rgba(246, 239, 229, 0.3);
-  background: var(--carte-sombre-fond);
-  border-color: var(--carte-sombre-fond);
-  color: var(--texte);
+  --accent-strong: #f0d3b4;
+  --accent-bg: rgba(224, 189, 151, 0.16);
+  --lines: rgba(246, 239, 229, 0.2);
+  --lines-soft: rgba(246, 239, 229, 0.12);
+  --panel: rgba(246, 239, 229, 0.06);
+  --panel-2: rgba(246, 239, 229, 0.1);
+  --bar-neutral: rgba(246, 239, 229, 0.3);
+  background: var(--card-dark-bg);
+  border-color: var(--card-dark-bg);
+  color: var(--text);
 }
 /* In the dark theme there is nothing to invert: the card becomes a secondary
    card bordered with an accent hairline, and so keeps the theme's tokens. */
-html[data-theme="sombre"] .carte-sombre {
-  /* inherit: we CANCEL the inversion set by .carte-sombre for the light theme,
+html[data-theme="sombre"] .card-dark {
+  /* inherit: we CANCEL the inversion set by .card-dark for the light theme,
      and the card takes back the tokens of the active dark palette, whichever
      it is. Only its sub-surfaces and its muted colour have their own values. */
-  --encre: inherit;
-  --texte: inherit;
-  --attenue: var(--cs-attenue);
+  --ink: inherit;
+  --text: inherit;
+  --muted: var(--cs-muted);
   --accent: inherit;
-  --accent-fort: inherit;
-  --accent-fond: inherit;
-  --lignes: inherit;
-  --lignes-douces: inherit;
-  --panneau: var(--cs-panneau);
-  --panneau-2: var(--cs-panneau-2);
-  --barre-neutre: inherit;
-  --carte-sombre-fond: inherit;
-  border-color: var(--lignes);
-  box-shadow: var(--ombre-carte), inset 3px 0 0 var(--accent);
+  --accent-strong: inherit;
+  --accent-bg: inherit;
+  --lines: inherit;
+  --lines-soft: inherit;
+  --panel: var(--cs-panel);
+  --panel-2: var(--cs-panel-2);
+  --bar-neutral: inherit;
+  --card-dark-bg: inherit;
+  border-color: var(--lines);
+  box-shadow: var(--shadow-card), inset 3px 0 0 var(--accent);
 }
 
 /* The card footer link: "Voir mes meilleurs reglages", "Tout
    l'historique". A button, because these are screen changes. */
-.lien-carte {
+.link-card {
   margin-top: 12px;
   padding: 0;
   border: none;
@@ -174,11 +174,11 @@ html[data-theme="sombre"] .carte-sombre {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.lien-carte:hover { color: var(--accent-fort); }
+.link-card:hover { color: var(--accent-strong); }
 
 /* Hidden from the eye, read by screen readers. Not display:none, which
    would also remove it from the accessibility tree. */
-.hors-ecran {
+.offscreen {
   position: absolute;
   width: 1px; height: 1px;
   margin: -1px; padding: 0;
@@ -190,7 +190,7 @@ html[data-theme="sombre"] .carte-sombre {
 
 /* ---------- Page header ----------
    The screen's name, which lived in the header, now lives in the screen. */
-.tete-page {
+.head-page {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -198,35 +198,35 @@ html[data-theme="sombre"] .carte-sombre {
   flex-wrap: wrap;
   margin-bottom: 22px;
 }
-.tete-titres { min-width: 0; }
-.surligne {
+.head-titles { min-width: 0; }
+.highlight {
   margin: 0 0 2px;
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--attenue);
+  color: var(--muted);
 }
-.titre-page {
+.title-page {
   margin: 0;
   font-family: var(--serif);
   font-weight: 400;
   font-size: clamp(1.7rem, 3.4vw, 2.38rem);
   letter-spacing: -0.01em;
   line-height: 1.1;
-  color: var(--encre);
+  color: var(--ink);
 }
-.tete-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.head-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
 /* ---------- Dashboard grid ----------
    Three equal columns, the main card spanning two. */
-.grille-tableau {
+.grid-dashboard {
   display: grid;
   /* TWELVE columns and not three: the main card takes 8, the others 4.
      Same ratio as before (two thirds, one third), but a twelve-column grid
      lets us change it card by card without touching the neighbours. */
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: var(--ecart-cartes);
+  gap: var(--gap-cards);
   /* Cards in the same row STRETCH to the height of the tallest.
      Top-aligned, they left a gap under the shorter ones, and a dashboard
      with gaps reads like a broken dashboard. */
@@ -234,69 +234,69 @@ html[data-theme="sombre"] .carte-sombre {
 }
 /* Stretching the card is not enough: its content must fill the gained space,
    otherwise we just moved the gap inside. */
-.grille-tableau > .carte { display: flex; flex-direction: column; }
-.grille-tableau > .carte > .canvas-h240,
-.grille-tableau > .carte > .canvas-h200 { flex: 1; min-height: 200px; }
+.grid-dashboard > .card { display: flex; flex-direction: column; }
+.grid-dashboard > .card > .canvas-h240,
+.grid-dashboard > .card > .canvas-h200 { flex: 1; min-height: 200px; }
 /* The link FOLLOWS its content, it is no longer pushed to the bottom of the
    stretched card: margin-top: auto dug a big blank between the last line and the link. */
-.grille-tableau > .carte > .lien-carte { margin-top: 12px; align-self: flex-start; }
+.grid-dashboard > .card > .link-card { margin-top: 12px; align-self: flex-start; }
 /* The last cup is the only card laid out in a ROW: body on the left, rating
    on the right behind a hairline. The general rule above made it a column
    and the rating fell under the body, centred in empty space. */
-.grille-tableau > .carte-derniere { flex-direction: row; }
-.grille-tableau > * { min-width: 0; grid-column: span 4; }
+.grid-dashboard > .card-last { flex-direction: row; }
+.grid-dashboard > * { min-width: 0; grid-column: span 4; }
 .col-2 { grid-column: span 8; }
 
 @media (max-width: 1100px) {
-  .grille-tableau { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .grille-tableau > * { grid-column: span 1; }
+  .grid-dashboard { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid-dashboard > * { grid-column: span 1; }
   .col-2 { grid-column: span 2; }
 }
 @media (max-width: 700px) {
-  .grille-tableau { grid-template-columns: 1fr; }
-  .grille-tableau > *, .col-2 { grid-column: span 1; }
+  .grid-dashboard { grid-template-columns: 1fr; }
+  .grid-dashboard > *, .col-2 { grid-column: span 1; }
 }
 
 /* ---------- "Derniere tasse" card ---------- */
-.carte-derniere {
+.card-last {
   display: flex;
   gap: 26px;
   align-items: stretch;
   cursor: pointer;
 }
-.carte-derniere:hover { border-color: var(--accent); }
-.carte-derniere:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.derniere-grande-corps { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.derniere-grande-cafe {
+.card-last:hover { border-color: var(--accent); }
+.card-last:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.last-big-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.last-big-coffee {
   margin: 2px 0 6px;
   font-family: var(--serif);
   font-size: 1.6rem;
   line-height: 1.15;
   letter-spacing: -0.01em;
-  color: var(--encre);
+  color: var(--ink);
 }
-.derniere-grande-contexte {
+.last-big-context {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   margin: 0 0 10px;
   font-size: 0.85rem;
-  color: var(--texte);
+  color: var(--text);
 }
-.derniere-grande-contexte .sep { color: var(--lignes); }
-.derniere-grande-machine { font-weight: 600; }
-.derniere-grande-commentaire {
+.last-big-context .sep { color: var(--lines); }
+.last-big-machine { font-weight: 600; }
+.last-big-comment {
   margin: 10px 0 0;
   font-style: italic;
-  color: var(--attenue);
+  color: var(--muted);
   font-size: 0.86rem;
 }
 /* THE FOOTER: ratio, grind, flow, cost. The card stretches to the height of
    the key figures card and left 200 px of blank under the tastes; these
    four values are already computed and are what we compare from one cup to
    the next. margin-top: auto pushes it down, whatever the height. */
-.derniere-grande-pied {
+.last-big-footer {
   margin-top: auto;
   padding-top: 8px;
   /* As a GRID (v8.39): five cells and their target below fit on one
@@ -307,23 +307,23 @@ html[data-theme="sombre"] .carte-sombre {
   grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
   gap: 6px 12px;
   font-size: 0.75rem;
-  color: var(--attenue);
+  color: var(--muted);
 }
 /* Label and value on ONE line, the marker below (v8.67): three lines per
    cell made 56 px of height for four figures. */
-.derniere-grande-pied > div { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 5px; line-height: 1.25; }
-.derniere-grande-pied > div > small { flex-basis: 100%; }
-.derniere-grande-pied b {
+.last-big-footer > div { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 5px; line-height: 1.25; }
+.last-big-footer > div > small { flex-basis: 100%; }
+.last-big-footer b {
   font-family: var(--serif);
   font-weight: 400;
   font-size: 1.05rem;
   line-height: 1.05;
-  color: var(--encre);
+  color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
-.derniere-grande-pied small { font-size: 0.75rem; color: var(--attenue); }
+.last-big-footer small { font-size: 0.75rem; color: var(--muted); }
 /* The rating, separated by a vertical hairline: it is the answer to "was it good?". */
-.derniere-grande-note {
+.last-big-rating {
   flex: none;
   display: flex;
   flex-direction: column;
@@ -331,43 +331,43 @@ html[data-theme="sombre"] .carte-sombre {
   justify-content: center;
   gap: 6px;
   padding-left: 24px;
-  border-left: 1px solid var(--lignes);
+  border-left: 1px solid var(--lines);
   min-width: 118px;
 }
-.grande-note {
+.big-rating {
   font-family: var(--serif);
   font-size: 3.9rem;
   line-height: 1;
-  color: var(--encre);
+  color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
-.grande-note-sur { font-size: 0.75rem; color: var(--attenue); }
-.grande-note-sans { font-size: 0.8rem; color: var(--attenue); text-align: center; }
-.pastille-diag {
+.big-rating-scale { font-size: 0.75rem; color: var(--muted); }
+.big-rating-none { font-size: 0.8rem; color: var(--muted); text-align: center; }
+.dot-diag {
   padding: 4px 10px;
-  border-radius: var(--rayon-pastille);
-  background: var(--accent-fond);
-  color: var(--accent-fort);
+  border-radius: var(--radius-dot);
+  background: var(--accent-bg);
+  color: var(--accent-strong);
   font-size: 0.75rem;
   text-align: center;
 }
 @media (max-width: 560px) {
-  /* Same specificity as the rule that lays it in a row (.grille-tableau >
-     .carte-derniere): without it, the card stayed in a row on phone and
+  /* Same specificity as the rule that lays it in a row (.grid-dashboard >
+     .card-last): without it, the card stayed in a row on phone and
      its body shrank to 166 px, next to the rating. */
-  .grille-tableau > .carte-derniere { flex-direction: column; gap: 16px; }
-  .derniere-grande-note {
+  .grid-dashboard > .card-last { flex-direction: column; gap: 16px; }
+  .last-big-rating {
     flex-direction: row;
     padding-left: 0; padding-top: 14px;
-    border-left: none; border-top: 1px solid var(--lignes);
+    border-left: none; border-top: 1px solid var(--lines);
     justify-content: flex-start; gap: 12px;
   }
-  .grande-note { font-size: 2.7rem; }
+  .big-rating { font-size: 2.7rem; }
 }
 
 /* ---------- Table of the last five ---------- */
-.table-enveloppe { overflow-x: auto; }
-.table-dernieres {
+.table-wrapper { overflow-x: auto; }
+.table-latest {
   width: 100%;
   /* FORCED widths: without them, the recipe and coffee pushed the table
      beyond its card and the card scrolled. Each cell truncates with
@@ -376,96 +376,96 @@ html[data-theme="sombre"] .carte-sombre {
   border-collapse: collapse;
   font-size: 0.85rem;
 }
-.table-dernieres col.c-quand { width: 62px; }
-.table-dernieres col.c-cafe { width: 27%; }
-.table-dernieres col.c-mesures { width: 38%; }
-.table-dernieres col.c-gouts { width: 25%; }
-.table-dernieres col.c-note { width: 52px; }
+.table-latest col.c-when { width: 62px; }
+.table-latest col.c-coffee { width: 27%; }
+.table-latest col.c-measures { width: 38%; }
+.table-latest col.c-tastes { width: 25%; }
+.table-latest col.c-rating { width: 52px; }
 /* The day subheading (v8.82): the date is no longer repeated on every row. */
-.table-dernieres tr.d-jour { cursor: default; }
-.table-dernieres tr.d-jour th {
+.table-latest tr.d-day { cursor: default; }
+.table-latest tr.d-day th {
   text-align: left; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--attenue); padding: 14px 10px 4px; border-top: 1px solid var(--lignes);
+  color: var(--muted); padding: 14px 10px 4px; border-top: 1px solid var(--lines);
 }
-.table-dernieres tr.d-jour:first-child th { padding-top: 2px; border-top: none; }
-.table-dernieres tr.d-jour + tr td { border-top: none; }
-.d-cafe .pastille-methode { display: inline-block; margin-right: 7px; vertical-align: 1px; }
+.table-latest tr.d-day:first-child th { padding-top: 2px; border-top: none; }
+.table-latest tr.d-day + tr td { border-top: none; }
+.d-coffee .dot-method { display: inline-block; margin-right: 7px; vertical-align: 1px; }
 /* ONE LINE PER CUP. Everything here fits on one line and truncates
    cleanly: a table where each row is six lines tall is no longer a table. */
-.table-dernieres td {
+.table-latest td {
   padding: 11px 10px;
-  border-top: 1px solid var(--lignes-douces);
+  border-top: 1px solid var(--lines-soft);
   vertical-align: top;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.table-dernieres tr:first-child td { border-top: none; }
-.table-dernieres tr { cursor: pointer; }
-.table-dernieres tr:hover td { background: var(--panneau-2); }
-.table-dernieres tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.d-quand { white-space: nowrap; color: var(--attenue); font-variant-numeric: tabular-nums; }
-.d-cafe b { color: var(--encre); }
-.d-recette { color: var(--attenue); }
-.d-chiffres { color: var(--texte); margin-left: 8px; }
-.d-diag { color: var(--accent-fort); margin-left: 8px; }
+.table-latest tr:first-child td { border-top: none; }
+.table-latest tr { cursor: pointer; }
+.table-latest tr:hover td { background: var(--panel-2); }
+.table-latest tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.d-when { white-space: nowrap; color: var(--muted); font-variant-numeric: tabular-nums; }
+.d-coffee b { color: var(--ink); }
+.d-recipe { color: var(--muted); }
+.d-figures { color: var(--text); margin-left: 8px; }
+.d-diag { color: var(--accent-strong); margin-left: 8px; }
 /* Tastes no longer stack: they scroll out of view if space runs out,
    and the row keeps its height. */
-.d-gouts .derniere-gouts { display: flex; flex-wrap: nowrap; gap: 4px; overflow: hidden; }
+.d-tastes .last-tastes { display: flex; flex-wrap: nowrap; gap: 4px; overflow: hidden; }
 
 /* The comment row: a single line, truncated, full text on hover if cut. */
-.derniere-commentaire td {
+.last-comment td {
   border-top: none;
   padding: 0 10px 9px 30px;
   font-style: italic;
   font-size: 0.8rem;
-  color: var(--attenue);
+  color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 0;
 }
-.derniere-commentaire:hover td { background: var(--panneau-2); }
-.d-gouts { max-width: 210px; }
-.d-note {
+.last-comment:hover td { background: var(--panel-2); }
+.d-tastes { max-width: 210px; }
+.d-rating {
   text-align: right;
   font-family: var(--serif);
   font-size: 1.25rem;
-  color: var(--encre);
+  color: var(--ink);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 /* A failed cup fades, and says so in red. It stays readable: it is
    in the history to be reread, not to be hidden. */
-.ligne-ratee td { color: var(--attenue); }
-.ligne-ratee .d-cafe b, .ligne-ratee .d-note { color: var(--attenue); }
-.mention-ratee { margin-left: 7px; color: var(--danger); font-size: 0.76rem; }
+.row-failed td { color: var(--muted); }
+.row-failed .d-coffee b, .row-failed .d-rating { color: var(--muted); }
+.mention-failed { margin-left: 7px; color: var(--danger); font-size: 0.76rem; }
 
 /* ---------- Key figures: two by two ---------- */
-.carte-chiffres .kpis {
+.card-figures .kpis {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-bottom: 0;
   /* Tightened (v8.67): it sets the row height along with the last
      cup, and that row pushed the latest brews below the screen. */
   gap: 8px 12px;
 }
-.carte-chiffres .kpi-valeur { font-size: 1.5rem; }
+.card-figures .kpi-value { font-size: 1.5rem; }
 /* Total, overall rating and caffeine: three aligned lines under a hairline, at
    the bottom of the card. As one sentence, they read like a footnote;
    as lines, the figure is found at first glance. */
-.kpi-secondaires {
+.kpi-secondary {
   list-style: none;
   margin: auto 0 0;
   padding: 10px 0 0;
-  border-top: 1px solid var(--lignes-douces);
+  border-top: 1px solid var(--lines-soft);
   display: grid;
   gap: 3px;
   font-size: 0.8rem;
-  color: var(--attenue);
+  color: var(--muted);
 }
-.kpi-secondaires li { display: flex; justify-content: space-between; gap: 10px; }
-.kpi-secondaires b { color: var(--encre); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.carte-note { font-size: 0.8rem; color: var(--attenue); margin: 10px 0 0; }
+.kpi-secondary li { display: flex; justify-content: space-between; gap: 10px; }
+.kpi-secondary b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.card-note { font-size: 0.8rem; color: var(--muted); margin: 10px 0 0; }
 
 /* ---------- KPIs ---------- */
 
@@ -483,7 +483,7 @@ html[data-theme="sombre"] .carte-sombre {
   border: none;
   border-radius: 0;
   padding: 0;
-  animation: apparition 400ms ease-out backwards;
+  animation: appear 400ms ease-out backwards;
 }
 .kpi:nth-child(2) { animation-delay: 40ms; }
 .kpi:nth-child(3) { animation-delay: 80ms; }
@@ -491,34 +491,34 @@ html[data-theme="sombre"] .carte-sombre {
 .kpi:nth-child(5) { animation-delay: 160ms; }
 .kpi:nth-child(6) { animation-delay: 200ms; }
 
-.kpi-valeur {
+.kpi-value {
   font-family: var(--serif);
   font-size: 1.75rem;
-  color: var(--encre);
+  color: var(--ink);
   font-variant-numeric: tabular-nums;
   line-height: 1.15;
 }
-.kpi-valeur small { font-size: 0.95rem; color: var(--attenue); }
-.kpi-label { font-size: 0.78rem; color: var(--attenue); margin-top: 2px; }
+.kpi-value small { font-size: 0.95rem; color: var(--muted); }
+.kpi-label { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
 
 .canvas-h240 { position: relative; height: 250px; min-width: 0; }
 .canvas-h200 { position: relative; height: 200px; min-width: 0; }
 /* The 30-day chart has ITS OWN height (v8.39), it no longer follows its neighbour:
    it stretched to the height of the findings and reached 272 px of drawing. */
-.canvas-30j { position: relative; height: 210px; min-width: 0; }
+.canvas-30d { position: relative; height: 210px; min-width: 0; }
 /* The coffee legend under the chart: one pill per coffee, which opens its card. */
-.legende-cafes { display: flex; flex-wrap: wrap; gap: 6px 8px; margin-top: 10px; }
-.lc-cafe { display: inline-flex; align-items: center; gap: 7px; min-height: 30px; padding: 4px 10px; border-radius: 99px;
-  background: var(--panneau-2); border: 1px solid var(--lignes); color: var(--encre); font: inherit; font-size: 0.8rem; cursor: pointer; }
-button.lc-cafe:hover { background: var(--panneau-3); }
-.lc-cafe i { width: 10px; height: 10px; border-radius: 3px; flex: none; }
-.lc-cafe small { font-size: 0.75rem; color: var(--attenue); font-variant-numeric: tabular-nums; }
-.lc-autres { cursor: default; color: var(--attenue); }
-.lc-autres i { background: var(--barre-neutre); }
+.legend-coffees { display: flex; flex-wrap: wrap; gap: 6px 8px; margin-top: 10px; }
+.lc-coffee { display: inline-flex; align-items: center; gap: 7px; min-height: 30px; padding: 4px 10px; border-radius: 99px;
+  background: var(--panel-2); border: 1px solid var(--lines); color: var(--ink); font: inherit; font-size: 0.8rem; cursor: pointer; }
+button.lc-coffee:hover { background: var(--panel-3); }
+.lc-coffee i { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.lc-coffee small { font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.lc-others { cursor: default; color: var(--muted); }
+.lc-others i { background: var(--bar-neutral); }
 
 /* THE CARD HEADER: the title and a control on the same line (the
    findings carousel, the analysis tabs). */
-.carte-tete {
+.card-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -526,146 +526,146 @@ button.lc-cafe:hover { background: var(--panneau-3); }
   gap: 8px 16px;
   margin-bottom: 14px;
 }
-.carte .carte-tete h3 { margin: 0; }
+.card .card-head h3 { margin: 0; }
 
 /* THE FINDINGS CAROUSEL (v8.39). All in the same grid cell, only one
    visible: the card takes the height of the longest, never their sum. */
 .insights > li { grid-area: 1 / 1; visibility: hidden; }
-.insights > li.courant { visibility: visible; }
+.insights > li.current { visibility: visible; }
 .insights-nav { display: flex; align-items: center; gap: 4px; }
-.insights-pos { font-size: 0.75rem; color: var(--attenue); margin-right: 6px; font-variant-numeric: tabular-nums; }
-.btn-carre-petit {
+.insights-pos { font-size: 0.75rem; color: var(--muted); margin-right: 6px; font-variant-numeric: tabular-nums; }
+.btn-square-small {
   width: 28px; height: 28px; padding: 0;
   display: grid; place-items: center;
-  border-radius: 8px; border: 1px solid var(--lignes);
-  background: var(--panneau-2); color: var(--texte); cursor: pointer;
+  border-radius: 8px; border: 1px solid var(--lines);
+  background: var(--panel-2); color: var(--text); cursor: pointer;
 }
-.btn-carre-petit:hover { background: var(--panneau-3); color: var(--accent-fort); }
-.btn-carre-petit:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.btn-carre-petit .ico { width: 14px; height: 14px; }
+.btn-square-small:hover { background: var(--panel-3); color: var(--accent-strong); }
+.btn-square-small:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn-square-small .ico { width: 14px; height: 14px; }
 
 /* ANALYSES AS TABS (v8.39): a full-width card, the
    chart on the left, its one-sentence reading on the right. */
-.grille-tableau > .col-plein { grid-column: 1 / -1; }
-.onglets-analyses {
+.grid-dashboard > .col-full { grid-column: 1 / -1; }
+.tabs-analyses {
   display: flex; flex-wrap: wrap; gap: 4px;
-  padding: 4px; border-radius: 12px; background: var(--panneau-2);
+  padding: 4px; border-radius: 12px; background: var(--panel-2);
 }
-.onglets-analyses [role="tab"] {
+.tabs-analyses [role="tab"] {
   font: inherit; font-size: 0.82rem; font-weight: 600;
-  border: none; background: transparent; color: var(--attenue);
+  border: none; background: transparent; color: var(--muted);
   padding: 7px 13px; border-radius: 9px; cursor: pointer;
 }
-.onglets-analyses [role="tab"]:hover { color: var(--encre); }
-.onglets-analyses [role="tab"][aria-selected="true"] { background: var(--panneau-3); color: var(--encre); box-shadow: var(--ombre-haut); }
-.onglets-analyses [role="tab"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.analyses-pile { display: grid; }
-.analyses-pile > .analyse { grid-area: 1 / 1; visibility: hidden; }
-.analyses-pile > .analyse.courant { visibility: visible; }
-.analyse {
+.tabs-analyses [role="tab"]:hover { color: var(--ink); }
+.tabs-analyses [role="tab"][aria-selected="true"] { background: var(--panel-3); color: var(--ink); box-shadow: var(--shadow-top); }
+.tabs-analyses [role="tab"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.analyses-stack { display: grid; }
+.analyses-stack > .analysis { grid-area: 1 / 1; visibility: hidden; }
+.analyses-stack > .analysis.current { visibility: visible; }
+.analysis {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(200px, 300px);
   gap: 16px 28px;
   align-items: center;
 }
-.analyse-graphe { min-width: 0; }
+.analysis-chart { min-width: 0; }
 /* The aroma wheel (v8.45): the wheel, and the chosen family beside it. */
-.roue-boite { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 20px; align-items: center; }
-.roue { width: 100%; max-width: 300px; height: auto; display: block; }
-.roue .roue-famille { fill: var(--panneau-3); cursor: pointer; }
-.roue .roue-famille.choisie { stroke: var(--accent-fort); stroke-width: 2; }
-.roue .roue-famille:focus-visible { outline: none; stroke: var(--accent); stroke-width: 3; }
-.roue .roue-gout { fill: var(--accent); cursor: pointer; }
-.roue .roue-centre-nom { font-family: var(--sans); font-size: 12px; font-weight: 700; fill: var(--encre); pointer-events: none; }
-.roue .roue-centre-note { font-family: var(--serif); font-size: 22px; fill: var(--encre); pointer-events: none; }
-.roue-detail { display: grid; gap: 2px; align-content: start; min-width: 0; }
-.roue-titre { margin: 0 0 6px; font-size: 1.1rem; }
-.roue-ligne {
+.wheel-box { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 20px; align-items: center; }
+.wheel { width: 100%; max-width: 300px; height: auto; display: block; }
+.wheel .wheel-family { fill: var(--panel-3); cursor: pointer; }
+.wheel .wheel-family.chosen { stroke: var(--accent-strong); stroke-width: 2; }
+.wheel .wheel-family:focus-visible { outline: none; stroke: var(--accent); stroke-width: 3; }
+.wheel .wheel-taste { fill: var(--accent); cursor: pointer; }
+.wheel .wheel-center-name { font-family: var(--sans); font-size: 12px; font-weight: 700; fill: var(--ink); pointer-events: none; }
+.wheel .wheel-center-rating { font-family: var(--serif); font-size: 22px; fill: var(--ink); pointer-events: none; }
+.wheel-detail { display: grid; gap: 2px; align-content: start; min-width: 0; }
+.wheel-title { margin: 0 0 6px; font-size: 1.1rem; }
+.wheel-row {
   display: grid; grid-template-columns: minmax(0, 1fr) auto 2.4em; gap: 10px;
-  padding: 5px 0; border-top: 1px solid var(--lignes-douces); font-size: 0.85rem;
+  padding: 5px 0; border-top: 1px solid var(--lines-soft); font-size: 0.85rem;
 }
-.roue-ligne span:nth-child(2) { color: var(--attenue); font-variant-numeric: tabular-nums; }
-.roue-ligne b { text-align: right; font-variant-numeric: tabular-nums; }
+.wheel-row span:nth-child(2) { color: var(--muted); font-variant-numeric: tabular-nums; }
+.wheel-row b { text-align: right; font-variant-numeric: tabular-nums; }
 @media (max-width: 700px) {
-  .roue-boite { grid-template-columns: 1fr; }
-  .roue { margin: 0 auto; }
+  .wheel-box { grid-template-columns: 1fr; }
+  .wheel { margin: 0 auto; }
 }
-.analyse-lecture {
+.analysis-reading {
   margin: 0;
   padding-left: 14px;
   border-left: 2px solid var(--accent);
   font-size: 0.92rem;
   line-height: 1.5;
-  color: var(--texte);
+  color: var(--text);
 }
-p.analyse-lecture:empty { display: none; }
-div.analyse-lecture p { margin: 0; }
-div.analyse-lecture p + p { margin-top: 8px; }
+p.analysis-reading:empty { display: none; }
+div.analysis-reading p { margin: 0; }
+div.analysis-reading p + p { margin-top: 8px; }
 @media (max-width: 900px) {
-  .analyse { grid-template-columns: 1fr; }
+  .analysis { grid-template-columns: 1fr; }
 }
 
 /* THE RANK OF THE LAST CUP among those of its coffee (v8.39): it
    fills the empty band between the tastes and the footer. */
-.derniere-place {
+.last-spot {
   margin-top: 8px;
   padding: 7px 14px 0;
-  border-radius: var(--rayon-petit);
-  background: var(--panneau-2);
+  border-radius: var(--radius-small);
+  background: var(--panel-2);
 }
-.derniere-place-tete {
+.last-spot-head {
   display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px;
   margin: 0 0 4px;
-  font-size: 0.76rem; color: var(--attenue);
+  font-size: 0.76rem; color: var(--muted);
 }
-.derniere-place-tete b { color: var(--accent-fort); font-weight: 700; }
-.derniere-place svg { display: block; width: 100%; height: auto; overflow: visible; }
-.derniere-place text { font-family: var(--sans); font-size: 11px; fill: var(--attenue); }
-.derniere-grande-pied small.cible-tenue { color: var(--accent-fort); }
+.last-spot-head b { color: var(--accent-strong); font-weight: 700; }
+.last-spot svg { display: block; width: 100%; height: auto; overflow: visible; }
+.last-spot text { font-family: var(--sans); font-size: 11px; fill: var(--muted); }
+.last-big-footer small.target-held { color: var(--accent-strong); }
 
 /* Brikka versus Switch duel */
 .duel { display: flex; gap: 12px; margin-bottom: 12px; }
 .duel-col {
   flex: 1;
-  border-radius: var(--rayon-petit);
+  border-radius: var(--radius-small);
   padding: 10px 12px;
-  border: 1px solid var(--lignes);
-  border-left: 4px solid var(--barre-neutre);
+  border: 1px solid var(--lines);
+  border-left: 4px solid var(--bar-neutral);
 }
 .duel-col.brikka { border-left-color: var(--brikka); }
 .duel-col.switch { border-left-color: var(--switch); }
-.duel-col b { font-family: var(--serif); font-size: 1.3rem; color: var(--encre); }
-.duel-col span { display: block; font-size: 0.75rem; color: var(--attenue); }
+.duel-col b { font-family: var(--serif); font-size: 1.3rem; color: var(--ink); }
+.duel-col span { display: block; font-size: 0.75rem; color: var(--muted); }
 
 /* Heatmap */
 /* A card does not scroll horizontally. If the content does not fit, it is the
    content that adapts, not the reader who swipes. */
-.heatmap-conteneur { overflow-x: hidden; }
+.heatmap-container { overflow-x: hidden; }
 /* NO min-width: that is what made the card scroll. The number of
    weeks adapts to the available space (see semainesVisibles), so the SVG
    never needs to overflow again. */
 .heatmap-svg { width: 100%; max-width: 820px; height: auto; display: block; margin: 0 auto; }
-.hm-label { font-size: 11px; fill: var(--attenue); font-family: var(--sans); }
+.hm-label { font-size: 11px; fill: var(--muted); font-family: var(--sans); }
 /* A hairline on each cell: without it days without a brew melt into
    the background and the grid no longer reads as a calendar. */
 .hm-cell {
   cursor: pointer;
   transition: opacity 150ms;
-  stroke: var(--lignes);
+  stroke: var(--lines);
   stroke-width: 0.5;
 }
 .hm-cell:hover, .hm-cell:focus-visible { opacity: 0.75; stroke: var(--accent); stroke-width: 1.5; outline: none; }
 /* Marker for the current day. */
-.hm-aujourdhui { stroke: var(--encre); stroke-width: 1.6; }
+.hm-today { stroke: var(--ink); stroke-width: 1.6; }
 .hm-n0 { fill: var(--hm0); }
 .hm-n1 { fill: var(--hm1); }
 .hm-n2 { fill: var(--hm2); }
 .hm-n3 { fill: var(--hm3); }
 .hm-n4 { fill: var(--hm4); }
 
-.legende-heatmap {
+.legend-heatmap {
   display: flex; align-items: center; gap: 4px; justify-content: flex-end;
-  font-size: 0.75rem; color: var(--attenue); margin: 8px 0 0;
+  font-size: 0.75rem; color: var(--muted); margin: 8px 0 0;
 }
 .hm-i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
 .hm-i.hm-n0 { background: var(--hm0); }
@@ -675,41 +675,41 @@ div.analyse-lecture p + p { margin-top: 8px; }
 .hm-i.hm-n4 { background: var(--hm4); }
 
 /* Latest brews */
-.dernieres { list-style: none; margin: 0; padding: 0; }
+.latest { list-style: none; margin: 0; padding: 0; }
 /* Three columns: pill, body taking the full width, rating on the right.
    In flex, the body did not stretch and each row stayed empty in the middle. */
-.dernieres li {
+.latest li {
   display: grid;
   grid-template-columns: 10px minmax(0, 1fr) auto;
   column-gap: 12px;
   align-items: start;
   padding: 10px 6px;
-  border-bottom: 1px solid var(--lignes);
+  border-bottom: 1px solid var(--lines);
 }
-.dernieres li .pastille-methode { margin-top: 6px; }
-.dernieres li:last-child { border-bottom: none; }
-.pastille-methode {
+.latest li .dot-method { margin-top: 6px; }
+.latest li:last-child { border-bottom: none; }
+.dot-method {
   width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
 }
-.pastille-methode.brikka { background: var(--brikka); }
-.pastille-methode.switch { background: var(--switch); }
+.dot-method.brikka { background: var(--brikka); }
+.dot-method.switch { background: var(--switch); }
 /* Checked tastes and comment, under the measurements: the card had room and
    said nothing about the cup in the mouth. */
-.derniere-gouts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
-.derniere-tag {
+.last-tastes { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.last-tag {
   font-size: 0.75rem; line-height: 1.2;
   padding: 2px 7px;
   border-radius: 999px;
-  border: 1px solid var(--lignes);
-  background: var(--panneau-2);
-  color: var(--texte);
+  border: 1px solid var(--lines);
+  background: var(--panel-2);
+  color: var(--text);
 }
-.derniere-tag-plus { color: var(--attenue); border-style: dashed; }
-.derniere-commentaire {
+.last-tag-plus { color: var(--muted); border-style: dashed; }
+.last-comment {
   margin-top: 5px;
   font-size: 0.8rem;
   font-style: italic;
-  color: var(--attenue);
+  color: var(--muted);
   line-height: 1.4;
 }
 /* Measurements on their own line, more readable than the context above:
@@ -717,47 +717,47 @@ div.analyse-lecture p + p { margin-top: 8px; }
    they line up from one row to the next, and separators in flex rather than
    text so that wrapping on phone does not leave an orphan middle
    dot at the start of a line. */
-.derniere-mesures {
+.last-measures {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 2px 7px;
   margin-top: 2px;
   font-size: 0.82rem;
-  color: var(--texte);
+  color: var(--text);
   font-variant-numeric: tabular-nums;
 }
-.derniere-mesures b { color: var(--encre); font-weight: 600; }
-.derniere-mesures small { color: var(--attenue); }
-.derniere-mesures > span { color: var(--lignes-graphe); }
+.last-measures b { color: var(--ink); font-weight: 600; }
+.last-measures small { color: var(--muted); }
+.last-measures > span { color: var(--lines-chart); }
 
 /* ---------- Empty states ---------- */
 
-.etat-vide {
+.empty-state {
   text-align: center;
   padding: 60px 24px;
-  color: var(--attenue);
+  color: var(--muted);
 }
-.etat-vide-icone { font-size: 3rem; margin: 0; }
-.etat-vide h2 { color: var(--encre); }
-.etat-vide p { max-width: 460px; margin: 10px auto; }
-.etat-vide-actions { display: flex; gap: 10px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
-.etat-vide-mini { padding: 28px; }
+.empty-state-icon { font-size: 3rem; margin: 0; }
+.empty-state h2 { color: var(--ink); }
+.empty-state p { max-width: 460px; margin: 10px auto; }
+.empty-state-actions { display: flex; gap: 10px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
+.empty-state-mini { padding: 28px; }
 
 /* ---------- Buttons ---------- */
 
 .btn {
-  border: 1px solid var(--lignes);
-  background: var(--panneau);
-  color: var(--texte);
+  border: 1px solid var(--lines);
+  background: var(--panel);
+  color: var(--text);
   padding: 9px 16px;
-  border-radius: var(--rayon-petit);
+  border-radius: var(--radius-small);
   font-size: 0.92rem;
   cursor: pointer;
   transition: border-color var(--transition), background var(--transition), transform 120ms;
   /* Same height as the fields: side by side on one line, two different
      heights show immediately. */
-  min-height: var(--hauteur-controle);
+  min-height: var(--height-control);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -765,27 +765,27 @@ div.analyse-lecture p + p { margin-top: 8px; }
 }
 .btn:hover { border-color: var(--accent); }
 .btn:active { transform: scale(0.98); }
-.btn-primaire {
+.btn-primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: var(--sur-accent);
+  color: var(--on-accent);
   font-weight: 600;
 }
-.btn-primaire:hover { background: var(--accent-fort); border-color: var(--accent-fort); }
-.btn-grand {
+.btn-primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
+.btn-big {
   padding: 14px 26px;
   font-size: 1.02rem;
-  border-radius: var(--rayon-petit);
+  border-radius: var(--radius-small);
   min-height: 52px;
   padding-inline: 26px;
 }
-.btn-petit { padding: 6px 11px; font-size: 0.82rem; min-height: 34px; }
-.btn-discret { border-color: transparent; background: transparent; color: var(--attenue); }
-.btn-discret:hover { color: var(--encre); border-color: var(--lignes); }
+.btn-small { padding: 6px 11px; font-size: 0.82rem; min-height: 34px; }
+.btn-subtle { border-color: transparent; background: transparent; color: var(--muted); }
+.btn-subtle:hover { color: var(--ink); border-color: var(--lines); }
 /* Confirmation modal: short, buttons on the right, the safe choice first. */
-.modale-confirmer { max-width: 440px; }
-.modale-confirmer p { margin: 8px 0 0; line-height: 1.5; }
-.confirmer-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
+.modal-confirm { max-width: 440px; }
+.modal-confirm p { margin: 8px 0 0; line-height: 1.5; }
+.confirm-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
 
 .btn-danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
 .btn-danger:hover { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, transparent); }
@@ -793,29 +793,29 @@ div.analyse-lecture p + p { margin-top: 8px; }
 
 /* ---------- Forms ---------- */
 
-.champ { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
-.champ label, .champ .label, .label {
+.field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+.field label, .field .label, .label {
   font-size: 0.8rem;
-  color: var(--attenue);
+  color: var(--muted);
   font-weight: 600;
   letter-spacing: 0.02em;
 }
-.label-inline { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--texte); }
+.label-inline { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text); }
 
 /* "search" was missing from this list, so a search field fell back to the
    browser's default rendering, with no background, border or radius, among
    styled fields. */
 input[type="text"], input[type="number"], input[type="date"], input[type="datetime-local"],
 input[type="search"], select, textarea {
-  background: var(--panneau);
-  border: 1px solid var(--lignes-champ, var(--lignes));
-  color: var(--encre);
-  border-radius: var(--rayon-petit);
+  background: var(--panel);
+  border: 1px solid var(--lines-field, var(--lines));
+  color: var(--ink);
+  border-radius: var(--radius-small);
   /* Design height: 46 px, 48 on touch. It is set HERE, on the fields'
      baseline, and not screen by screen: a control shorter than
      another next to it is the first thing you see. textarea keeps its
      own height, it is measured in lines. */
-  min-height: var(--hauteur-controle);
+  min-height: var(--height-control);
   padding: 10px 13px;
   font-size: 0.95rem;
   font-family: inherit;
@@ -826,16 +826,16 @@ textarea { min-height: 56px; }
 input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-fond);
+  box-shadow: 0 0 0 3px var(--accent-bg);
 }
 
 /* THE entry form layout, and the only one. The form on the left, the fixed
-   360 px column on the right. It lives HERE and not on #ecran-saisie, which
+   360 px column on the right. It lives HERE and not on #screen-saisie, which
    has only one child and so has nothing to lay out. */
-.saisie-layout {
+.entry-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 380px;
-  gap: var(--ecart-cartes);
+  gap: var(--gap-cards);
   /* Capped AND centred: at 1240 px with no auto margin, the form
      stopped at the left of the 1560 frame and left an empty band on the right. */
   max-width: 1400px;
@@ -851,10 +851,10 @@ input:focus, select:focus, textarea:focus {
      splits its height between them, the first swells to 1,300 px and the recipe
      and coffee cards land in the middle of nowhere. The first row holds the
      timer's height, the second takes all the rest. */
-  .saisie-layout { grid-template-rows: auto 1fr; }
+  .entry-layout { grid-template-rows: auto 1fr; }
   #chrono-widget { grid-column: 2; grid-row: 1; }
-  #form-saisie { grid-column: 1; grid-row: 1 / span 2; }
-  .saisie-aside { grid-column: 2; grid-row: 2; }
+  #form-entry { grid-column: 1; grid-row: 1 / span 2; }
+  .entry-aside { grid-column: 2; grid-row: 2; }
 }
 /* BETWEEN 1024 AND 1399 PX, A SINGLE COLUMN. The rail takes 232 px and the
    right column 380: at 1024 the form had 326 px left, the coffee menu
@@ -863,31 +863,31 @@ input:focus, select:focus, textarea:focus {
    1400. Below that, DOM order, the phone's: timer, form,
    cards. */
 @media (min-width: 1024px) and (max-width: 1399px) {
-  .saisie-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; max-width: 860px; }
-  #chrono-widget, #form-saisie, .saisie-aside { grid-column: 1; grid-row: auto; }
-  .saisie-aside { position: static; }
+  .entry-layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; max-width: 860px; }
+  #chrono-widget, #form-entry, .entry-aside { grid-column: 1; grid-row: auto; }
+  .entry-aside { position: static; }
 }
-#form-saisie { min-width: 0; }
+#form-entry { min-width: 0; }
 
 /* ENTRY BLOCKS. Three titled cards instead of a column of eighteen
    fields: coffee and recipe, settings, in the mouth. The title is a
    discreet small capital, not a page h3: it is a form subheading. */
-.saisie-bloc {
-  background: var(--panneau);
-  border: 1px solid var(--lignes);
-  border-radius: var(--rayon);
-  padding: var(--carte-padding);
-  margin-bottom: var(--ecart-cartes);
-  box-shadow: var(--ombre-carte);
+.entry-block {
+  background: var(--panel);
+  border: 1px solid var(--lines);
+  border-radius: var(--radius);
+  padding: var(--card-padding);
+  margin-bottom: var(--gap-cards);
+  box-shadow: var(--shadow-card);
 }
-.saisie-bloc-titre {
+.entry-block-title {
   margin: 0 0 18px;
   font-family: var(--serif);
   font-size: 1.35rem;
   font-weight: 400;
   letter-spacing: -0.01em;
   text-transform: none;
-  color: var(--encre);
+  color: var(--ink);
   display: flex;
   align-items: center;
   gap: 11px;
@@ -895,19 +895,19 @@ input:focus, select:focus, textarea:focus {
 /* Coffee, method and recipe on ONE row: these are the three choices that
    decide everything else, they read at a glance. Bottom-aligned so that
    the controls sit at the same height despite different labels. */
-.saisie-tete {
+.entry-head {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.2fr);
   gap: 14px;
   align-items: end;
 }
-.saisie-tete .champ { margin-bottom: 14px; }
+.entry-head .field { margin-bottom: 14px; }
 @media (max-width: 860px) {
-  .saisie-tete { grid-template-columns: 1fr; }
+  .entry-head { grid-template-columns: 1fr; }
 }
 /* The live row becomes the FOOTER of the settings block: it is the summary of
    what was just set, in its place right below. */
-.saisie-bloc .bandeau-live {
+.entry-block .banner-live {
   margin: 12px -18px 0;
   padding: 12px 18px;
   /* A card footer, not a second banner: transparent background, a hairline on
@@ -915,11 +915,11 @@ input:focus, select:focus, textarea:focus {
      figures. */
   background: transparent;
   border-radius: 0;
-  border-top: 1px solid var(--lignes);
+  border-top: 1px solid var(--lines);
   gap: 8px 30px;
   font-size: 0.82rem;
 }
-.saisie-bloc .bandeau-live b {
+.entry-block .banner-live b {
   font-family: var(--serif);
   font-size: 1.05rem;
   font-weight: 600;
@@ -927,106 +927,106 @@ input:focus, select:focus, textarea:focus {
 }
 /* Checkbox options, on ONE discreet line: box, label, grey hint, instead
    of a full card that weighed as much as the grid above. */
-.saisie-bloc .option-saisie {
+.entry-block .option-entry {
   flex-direction: row;
   align-items: center;
   flex-wrap: wrap;
   gap: 6px 14px;
   padding: 8px 12px;
   background: transparent;
-  border: 1px dashed var(--lignes);
+  border: 1px dashed var(--lines);
 }
-.saisie-bloc .option-saisie .label-inline { font-weight: 600; }
-.saisie-bloc .option-saisie .champ-hint { flex: 1 1 200px; }
-.saisie-bloc .grille-nombres {
+.entry-block .option-entry .label-inline { font-weight: 600; }
+.entry-block .option-entry .field-hint { flex: 1 1 200px; }
+.entry-block .grid-numbers {
   margin-bottom: 14px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px 18px;
 }
-.saisie-bloc .options-saisie { margin-bottom: 4px; }
-.saisie-bloc .tasses-editeur { margin-bottom: 14px; }
+.entry-block .options-entry { margin-bottom: 4px; }
+.entry-block .cups-editor { margin-bottom: 14px; }
 
-.saisie-aside {
+.entry-aside {
   position: sticky;
   top: 22px;
   display: flex;
   flex-direction: column;
-  gap: var(--ecart-cartes);
+  gap: var(--gap-cards);
   min-width: 0;
 }
-.aside-carte { padding: 15px 17px; }
-.aside-titre { display: flex; align-items: center; gap: 9px; }
-.aside-titre h4 { margin: 0; font-size: 1.05rem; }
-.aside-sous { color: var(--attenue); font-style: italic; font-size: 0.82rem; margin: 3px 0 8px; }
-.aside-carte p { font-size: 0.85rem; margin: 0 0 7px; }
+.aside-card { padding: 15px 17px; }
+.aside-title { display: flex; align-items: center; gap: 9px; }
+.aside-title h4 { margin: 0; font-size: 1.05rem; }
+.aside-sub { color: var(--muted); font-style: italic; font-size: 0.82rem; margin: 3px 0 8px; }
+.aside-card p { font-size: 0.85rem; margin: 0 0 7px; }
 /* Twin cups (v8.44): one line per cup, date, gap, rating. */
-.jumelles { list-style: none; margin: 4px 0 8px; padding: 0; }
-.jumelles li {
+.twins { list-style: none; margin: 4px 0 8px; padding: 0; }
+.twins li {
   display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 10px; align-items: baseline;
-  padding: 7px 0; border-top: 1px solid var(--lignes-douces); font-size: 0.84rem;
+  padding: 7px 0; border-top: 1px solid var(--lines-soft); font-size: 0.84rem;
 }
-.jumelles .j-date { color: var(--attenue); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
-.jumelles .j-ecart { color: var(--texte); min-width: 0; overflow-wrap: anywhere; }
-.jumelles .j-meme { color: var(--accent-fort); }
-.jumelles .j-note { font-family: var(--serif); font-weight: 400; font-size: 1.35rem; line-height: 1; color: var(--encre); font-variant-numeric: tabular-nums; }
-.aside-carte .j-moyenne { color: var(--attenue); font-size: 0.8rem; margin: 0; }
-.aside-notes { color: var(--attenue); }
-.aside-reco { color: var(--accent-fort); font-weight: 600; }
-.aside-age { border-top: 1px dashed var(--lignes); padding-top: 7px; }
-.aside-vide { color: var(--attenue); font-size: 0.85rem; margin: 0; }
+.twins .j-date { color: var(--muted); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+.twins .j-gap { color: var(--text); min-width: 0; overflow-wrap: anywhere; }
+.twins .j-same { color: var(--accent-strong); }
+.twins .j-rating { font-family: var(--serif); font-weight: 400; font-size: 1.35rem; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
+.aside-card .j-average { color: var(--muted); font-size: 0.8rem; margin: 0; }
+.aside-notes { color: var(--muted); }
+.aside-reco { color: var(--accent-strong); font-weight: 600; }
+.aside-age { border-top: 1px dashed var(--lines); padding-top: 7px; }
+.aside-empty { color: var(--muted); font-size: 0.85rem; margin: 0; }
 /* Steps show IN FULL: a scrolling 220 px box hid half of a six-step
    recipe, and the recipe is what Chris reads during the
    pour. The panel sticks to the top; what overflows below (for whom, rating,
    coffee card) is revealed by scrolling down the form. */
-.aside-carte .recette-etapes { margin: 8px 0 10px; }
-.aside-carte .recette-etapes li { font-size: 0.83rem; padding: 4px 0; }
+.aside-card .recipe-steps { margin: 8px 0 10px; }
+.aside-card .recipe-steps li { font-size: 0.83rem; padding: 4px 0; }
 
 @media (max-width: 980px) {
-  .saisie-layout { max-width: 720px; }
+  .entry-layout { max-width: 720px; }
 }
 
-.saisie-entete {
+.entry-header {
   display: flex; align-items: flex-end; justify-content: space-between;
   gap: 16px; flex-wrap: wrap; margin-bottom: 8px;
 }
-.saisie-entete h2 { margin: 0; }
-.champ-datetime { margin-bottom: 0; min-width: 220px; }
+.entry-header h2 { margin: 0; }
+.field-datetime { margin-bottom: 0; min-width: 220px; }
 
 /* Signals that the displayed stages are no longer the card's: they follow
    the entered water. Without a marker, the gap would be incomprehensible. */
-.param-chip-adapte, .param-chip.param-chip-adapte {
+.param-chip-adapted, .param-chip.param-chip-adapted {
   border-color: var(--accent);
-  color: var(--accent-fort);
-  background: var(--accent-fond);
+  color: var(--accent-strong);
+  background: var(--accent-bg);
 }
 
 /* Rating slider when no rating has been given yet (v8.40): no
    thumb, a dotted track. It suggests no value, and the first
    touch, anywhere on the track, sets the rating. */
-.note-tete { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-.note-effacer {
-  font: inherit; font-size: 0.8rem; font-weight: 600; color: var(--attenue);
+.rating-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.rating-clear {
+  font: inherit; font-size: 0.8rem; font-weight: 600; color: var(--muted);
   background: none; border: none; padding: 4px 0; cursor: pointer;
   text-decoration: underline; text-underline-offset: 3px;
 }
-.note-effacer:hover { color: var(--encre); }
+.rating-clear:hover { color: var(--ink); }
 /* The comment label and the dictation button on one line (v8.43). */
-.comm-tete { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.dicter {
+.comm-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.dictate {
   display: inline-flex; align-items: center; gap: 6px;
-  font: inherit; font-size: 0.8rem; font-weight: 600; color: var(--texte);
-  background: var(--panneau-2); border: 1px solid var(--lignes); border-radius: 99px;
+  font: inherit; font-size: 0.8rem; font-weight: 600; color: var(--text);
+  background: var(--panel-2); border: 1px solid var(--lines); border-radius: 99px;
   padding: 4px 12px; cursor: pointer;
 }
-.dicter:hover { color: var(--encre); }
-.dicter[aria-pressed="true"] { color: var(--accent-fort); border-color: var(--accent); background: var(--accent-fond); }
+.dictate:hover { color: var(--ink); }
+.dictate[aria-pressed="true"] { color: var(--accent-strong); border-color: var(--accent); background: var(--accent-bg); }
 /* The numeric correction (v8.48), under the correction sentences. */
-.corr-chiffree { display: block; margin-top: 6px; color: var(--accent-fort); font-weight: 600; }
-.note-aide { display: block; margin-top: 2px; font-size: 0.8rem; color: var(--attenue); }
+.corr-numeric { display: block; margin-top: 6px; color: var(--accent-strong); font-weight: 600; }
+.rating-help { display: block; margin-top: 2px; font-size: 0.8rem; color: var(--muted); }
 
 /* Bag age under the coffee choice: information, not a warning. */
-.age-paquet { margin: 0 0 12px; font-size: 0.85rem; color: var(--attenue); }
+.age-pack { margin: 0 0 12px; font-size: 0.85rem; color: var(--muted); }
 
 /* Undo button in the message: it must be visible without crushing the text. */
 .toast-action {
@@ -1043,34 +1043,34 @@ input:focus, select:focus, textarea:focus {
 
 /* Grinder: the converter is driven by the slider, the step unit is the
    grinder's own click so that what you read can be reproduced by hand. */
-.conv-ligne { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
-.conv-ligne .champ { flex: 0 0 160px; margin-bottom: 0; }
+.conv-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+.conv-row .field { flex: 0 0 160px; margin-bottom: 0; }
 .conv-slider { width: 100%; margin: 10px 0 4px; }
-.conv-slider-reperes { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
-.conv-repere {
-  border: 1px solid var(--lignes); background: var(--panneau); color: var(--texte);
+.conv-slider-markers { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.conv-marker {
+  border: 1px solid var(--lines); background: var(--panel); color: var(--text);
   border-radius: 999px; padding: 3px 10px; font-size: 0.78rem; cursor: pointer;
   font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
 }
-.conv-repere:hover { border-color: var(--accent); color: var(--accent-fort); }
-.conv-conseil { margin-top: 12px; }
-.conv-conseil p { margin: 0 0 7px; font-size: 0.87rem; color: var(--texte); }
-.conv-conseil p:last-child { margin-bottom: 0; }
-.conv-hors { color: var(--danger); }
+.conv-marker:hover { border-color: var(--accent); color: var(--accent-strong); }
+.conv-advice { margin-top: 12px; }
+.conv-advice p { margin: 0 0 7px; font-size: 0.87rem; color: var(--text); }
+.conv-advice p:last-child { margin-bottom: 0; }
+.conv-out { color: var(--danger); }
 
 /* Zero point of Chris's grinder: a callout, not a passing note. */
-.encadre-zero { border-left: 3px solid var(--accent); }
-.encadre-zero h3 { margin-top: 0; }
+.callout-zero { border-left: 3px solid var(--accent); }
+.callout-zero h3 { margin-top: 0; }
 
 /* Line of the saved setting on the chart, distinct from the black slider. */
-.dg-defaut { stroke: var(--ok); stroke-width: 3; opacity: 0.75; }
+.dg-default { stroke: var(--ok); stroke-width: 3; opacity: 0.75; }
 
 /* Temperature estimate and degree side by side, see index.html. */
 /* Heating time (minutes and seconds) then degree, on a single line. */
-.ligne-temp { display: flex; gap: 6px; align-items: center; }
-.ligne-temp .duree { flex: 1; min-width: 0; }
-.ligne-temp .duree input { flex: 0 0 3.4rem; width: 3.4rem; }
-.ligne-temp > .champ-pas { flex: 0 0 92px; }
+.row-temp { display: flex; gap: 6px; align-items: center; }
+.row-temp .duration { flex: 1; min-width: 0; }
+.row-temp .duration input { flex: 0 0 3.4rem; width: 3.4rem; }
+.row-temp > .field-incr { flex: 0 0 92px; }
 
 /* THE UP AND DOWN SPINNER of a number field (v8.35). Chrome only shows its
    own arrows above a certain width, and the Temperature field
@@ -1079,36 +1079,36 @@ input:focus, select:focus, textarea:focus {
    engines and in both themes. tabindex="-1" on the buttons: on the keyboard
    the field's arrow keys already do the job, and two tab stops per
    number field would weigh down the whole form. */
-.champ-pas { display: flex; align-items: stretch; min-width: 0; }
-.champ-pas input[type="number"] {
+.field-incr { display: flex; align-items: stretch; min-width: 0; }
+.field-incr input[type="number"] {
   flex: 1; min-width: 0; width: 100%;
   border-top-right-radius: 0; border-bottom-right-radius: 0;
   padding-inline: 10px;
   appearance: textfield;
 }
-.champ-pas input[type="number"]::-webkit-outer-spin-button,
-.champ-pas input[type="number"]::-webkit-inner-spin-button { appearance: none; margin: 0; }
-.pas {
+.field-incr input[type="number"]::-webkit-outer-spin-button,
+.field-incr input[type="number"]::-webkit-inner-spin-button { appearance: none; margin: 0; }
+.incr {
   display: flex; flex-direction: column;
-  border: 1px solid var(--lignes); border-left: none;
-  border-radius: 0 var(--rayon-petit) var(--rayon-petit) 0;
+  border: 1px solid var(--lines); border-left: none;
+  border-radius: 0 var(--radius-small) var(--radius-small) 0;
   overflow: hidden;
-  background: var(--panneau-2);
+  background: var(--panel-2);
 }
-.pas button {
+.incr button {
   flex: 1; width: 28px; padding: 0;
-  border: none; background: transparent; color: var(--attenue);
+  border: none; background: transparent; color: var(--muted);
   cursor: pointer; display: grid; place-items: center;
 }
-.pas button + button { border-top: 1px solid var(--lignes-douces); }
-.pas button:hover { background: var(--panneau-3); color: var(--accent-fort); }
-.pas button:active { background: var(--accent-fond); }
-.pas .ico { width: 13px; height: 13px; }
+.incr button + button { border-top: 1px solid var(--lines-soft); }
+.incr button:hover { background: var(--panel-3); color: var(--accent-strong); }
+.incr button:active { background: var(--accent-bg); }
+.incr .ico { width: 13px; height: 13px; }
 
-.ligne-cafe { display: flex; gap: 8px; align-items: center; }
-.ligne-cafe select { flex: 1; }
+.row-coffee { display: flex; gap: 8px; align-items: center; }
+.row-coffee select { flex: 1; }
 
-.grille-nombres {
+.grid-numbers {
   display: grid;
   /* 220px gives FOUR columns on a wide screen. This is not arbitrary:
      in Brikka the visible fields take exactly 8 column units
@@ -1123,67 +1123,67 @@ input:focus, select:focus, textarea:focus {
 }
 /* The grid gap is enough: the fields' margin added to it and created
    uneven spacing from one row to the next. */
-.grille-nombres .champ { margin-bottom: 0; }
+.grid-numbers .field { margin-bottom: 0; }
 /* Reserved for the coffee and recipe forms. The ENTRY grid no longer
    uses it: a wide element does not fit at the end of a row and wraps alone
    onto the next, which created a gap in the MIDDLE of the form. All its
    cells are one column wide, so gaps are always at the end. */
-.champ-double { grid-column: span 2; }
+.field-double { grid-column: span 2; }
 
 /* Checkbox options, outside the numeric grid. They have no label
    above their control, so mixed with the number fields they
    aligned higher than their neighbours. Grouped, they read as
    what they are. */
-.options-saisie {
+.options-entry {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 16px;
 }
-.option-saisie {
+.option-entry {
   display: flex;
   flex-direction: column;
   gap: 5px;
   flex: 1 1 240px;
   min-width: 0;
   padding: 10px 12px;
-  background: var(--panneau-2);
-  border: 1px solid var(--lignes);
-  border-radius: var(--rayon-petit);
-  border-top: 1px dashed var(--lignes);
+  background: var(--panel-2);
+  border: 1px solid var(--lines);
+  border-radius: var(--radius-small);
+  border-top: 1px dashed var(--lines);
   padding-top: 10px;
   margin-top: 4px;
 }
-.option-saisie .champ-hint { margin: 0; }
-.option-saisie input[type="number"] { max-width: 110px; }
+.option-entry .field-hint { margin: 0; }
+.option-entry input[type="number"] { max-width: 110px; }
 /* Nothing to show: the container must not leave an empty block. */
-.options-saisie:not(:has(.option-saisie:not([hidden]))) { display: none; }
+.options-entry:not(:has(.option-entry:not([hidden]))) { display: none; }
 
 /* Method: two big buttons */
 /* The machine control is described ONLY ONCE, with the rest of the entry form
    at the end of the file (Comptoir redesign, step 4). */
 
 /* Non-blocking warnings */
-.avertissements { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
-.avertissement {
-  background: var(--avert-fond);
-  border: 1px solid var(--avert-bord);
-  border-radius: var(--rayon-petit);
+.warnings { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.warning {
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
+  border-radius: var(--radius-small);
   padding: 10px 14px;
   font-size: 0.87rem;
-  color: var(--encre);
-  animation: apparition 250ms ease-out;
+  color: var(--ink);
+  animation: appear 250ms ease-out;
   position: relative;
   padding-left: 40px;
 }
-.avertissement::before {
+.warning::before {
   content: "";
   position: absolute; left: 14px; top: 12px;
   width: 16px; height: 16px;
   border-radius: 50%;
   border: 1.8px solid var(--accent);
 }
-.avertissement::after {
+.warning::after {
   content: "!";
   position: absolute; left: 14px; top: 10px;
   width: 16px; text-align: center;
@@ -1192,33 +1192,33 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* Live banner */
-.bandeau-live {
+.banner-live {
   display: flex;
   gap: 10px 26px;
   flex-wrap: wrap;
   background: none;
-  border-radius: var(--rayon-petit);
+  border-radius: var(--radius-small);
   padding: 10px 16px;
   margin-bottom: 16px;
   font-size: 0.78rem;
-  color: var(--attenue);
+  color: var(--muted);
   margin-top: 18px;
   padding-top: 14px;
-  border-top: 1px solid var(--lignes);
+  border-top: 1px solid var(--lines);
 }
-.bandeau-live b {
-  color: var(--encre);
+.banner-live b {
+  color: var(--ink);
   font-variant-numeric: tabular-nums;
   display: block;
   font-family: var(--serif);
   font-weight: 400;
   font-size: 1.25rem;
 }
-.bandeau-live .hors-plage b { color: var(--danger); }
+.banner-live .out-range b { color: var(--danger); }
 
 /* Timer */
 .chrono { margin-bottom: 16px; }
-.chrono-entete-ligne {
+.chrono-header-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1233,53 +1233,53 @@ input:focus, select:focus, textarea:focus {
   text-align: left;
   cursor: pointer;
 }
-.chrono-valeur {
+.chrono-value {
   font-family: var(--serif);
-  color: var(--encre);
+  color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
-.chrono-grand { font-size: 2.6rem; line-height: 1.1; }
-.chrono-bip-label {
+.chrono-big { font-size: 2.6rem; line-height: 1.1; }
+.chrono-beep-label {
   font-size: 0.8rem;
-  color: var(--attenue);
+  color: var(--muted);
   display: inline-flex;
   align-items: center;
   gap: 7px;
   margin-bottom: 12px;
 }
-.chrono-etapes { margin: 6px 0 10px; }
-.chrono-etape-courante {
+.chrono-steps { margin: 6px 0 10px; }
+.chrono-step-now {
   font-size: 1.05rem;
   font-weight: 600;
-  color: var(--encre);
+  color: var(--ink);
   margin: 0 0 4px;
 }
-.chrono-etape-suivante { font-size: 0.83rem; color: var(--attenue); margin: 0; }
-.chrono-boutons { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
-.chrono-manuels { margin-top: 6px; }
-.chrono.en-cours .chrono-grand {
-  color: var(--accent-fort);
+.chrono-step-next { font-size: 0.83rem; color: var(--muted); margin: 0; }
+.chrono-buttons { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
+.chrono-manual { margin-top: 6px; }
+.chrono.in-progress .chrono-big {
+  color: var(--accent-strong);
   text-shadow: 0 0 24px color-mix(in srgb, var(--accent) 45%, transparent);
 }
-.chrono.en-cours .chrono-etape-courante { color: var(--accent-fort); }
+.chrono.in-progress .chrono-step-now { color: var(--accent-strong); }
 
 /* Cups */
-.tasses-editeur { margin-bottom: 14px; padding: 12px 14px; }
-.tasse-ligne {
+.cups-editor { margin-bottom: 14px; padding: 12px 14px; }
+.cup-row {
   display: flex; justify-content: space-between; align-items: center;
   padding: 5px 0; font-size: 0.86rem;
-  border-bottom: 1px dashed var(--lignes);
+  border-bottom: 1px dashed var(--lines);
 }
-.tasses-ajout { display: flex; gap: 8px; margin-top: 10px; }
-.tasses-ajout input[type="number"] { max-width: 90px; }
-/* Two classes to win over .champ-hint, defined below: specificity
+.cups-add { display: flex; gap: 8px; margin-top: 10px; }
+.cups-add input[type="number"] { max-width: 90px; }
+/* Two classes to win over .field-hint, defined below: specificity
    does the job, not !important. */
-.hint-alerte, .champ-hint.hint-alerte { color: var(--danger); font-weight: 600; }
+.hint-alert, .field-hint.hint-alert { color: var(--danger); font-weight: 600; }
 
 /* Coffee pills */
-.badge-nonpur {
+.badge-nonpure {
   font-size: 0.75rem;
-  background: color-mix(in srgb, var(--danger) 16%, var(--panneau));
+  background: color-mix(in srgb, var(--danger) 16%, var(--panel));
   color: var(--danger);
   border: 1px solid color-mix(in srgb, var(--danger) 45%, transparent);
   border-radius: 999px;
@@ -1289,28 +1289,28 @@ input:focus, select:focus, textarea:focus {
 }
 .badge-reference {
   font-size: 0.75rem;
-  background: color-mix(in srgb, var(--deux) 15%, var(--panneau));
-  color: var(--deux);
-  border: 1px solid color-mix(in srgb, var(--deux) 45%, transparent);
+  background: color-mix(in srgb, var(--second) 15%, var(--panel));
+  color: var(--second);
+  border: 1px solid color-mix(in srgb, var(--second) 45%, transparent);
   border-radius: 999px;
   padding: 2px 8px;
   font-weight: 700;
   white-space: nowrap;
 }
-.badge-note {
+.badge-rating {
   font-size: 0.75rem;
-  background: color-mix(in srgb, var(--accent) 15%, var(--panneau));
-  color: var(--accent-fort);
+  background: color-mix(in srgb, var(--accent) 15%, var(--panel));
+  color: var(--accent-strong);
   border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
   border-radius: 999px;
   padding: 2px 8px;
   font-weight: 700;
   white-space: nowrap;
 }
-.encadre-costaud { border-left: 4px solid var(--switch); margin-top: 4px; }
+.callout-strong { border-left: 4px solid var(--switch); margin-top: 4px; }
 
 /* Variant toggle in a recipe card */
-.variantes-recette {
+.variants-recipe {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
@@ -1318,15 +1318,15 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* Recipe details in the entry side panel */
-/* Prefixed with .aside-carte to win over `.aside-carte p`, which sets the
+/* Prefixed with .aside-card to win over `.aside-card p`, which sets the
    margin of every paragraph in the panel: specificity, not !important. */
-.aside-pourqui, .aside-cafes, .aside-carte .aside-pourqui, .aside-carte .aside-cafes {
+.aside-forwho, .aside-coffees, .aside-card .aside-forwho, .aside-card .aside-coffees {
   font-size: 0.8rem;
-  color: var(--attenue);
+  color: var(--muted);
   margin: 8px 0 0;
 }
-.aside-pourqui b, .aside-cafes b { color: var(--encre); }
-.aside-note-recette, .aside-carte .aside-note-recette {
+.aside-forwho b, .aside-coffees b { color: var(--ink); }
+.aside-recipe-note, .aside-card .aside-recipe-note {
   font-size: 0.8rem;
   border-left: 3px solid var(--accent);
   padding-left: 9px;
@@ -1334,47 +1334,47 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* Rating slider */
-.curseur-note { width: 100%; height: 34px; }
+.slider-rating { width: 100%; height: 34px; }
 /* The rating shown large next to its label: it is the value being set, it
    must not read as a word of the label. */
-#note-affichee { color: var(--accent-fort); font-family: var(--serif); font-size: 1.5rem; font-weight: 400; line-height: 1; vertical-align: -2px; }
+#rating-shown { color: var(--accent-strong); font-family: var(--serif); font-size: 1.5rem; font-weight: 400; line-height: 1; vertical-align: -2px; }
 
 /* Diagnosis as radio pills */
-.choix-diagnostic { display: flex; flex-wrap: wrap; gap: 8px; }
-.pilule {
-  border: 1px solid var(--lignes);
-  background: var(--panneau);
-  color: var(--texte);
+.choice-diagnostic { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill {
+  border: 1px solid var(--lines);
+  background: var(--panel);
+  color: var(--text);
   border-radius: 999px;
   padding: 8px 14px;
   font-size: 0.85rem;
   cursor: pointer;
   transition: all var(--transition);
 }
-.pilule:hover { border-color: var(--accent); }
-.pilule.actif {
+.pill:hover { border-color: var(--accent); }
+.pill.on {
   background: var(--accent);
   border-color: var(--accent);
-  color: var(--sur-accent);
+  color: var(--on-accent);
 }
 
 /* Required field */
-.requis {
+.required {
   color: var(--danger);
   font-weight: 700;
   margin-left: 3px;
   font-size: 1em;
 }
-.legende-requis { margin: 0 0 12px; }
+.legend-required { margin: 0 0 12px; }
 
 /* Small hints under fields */
-.champ-hint {
+.field-hint {
   font-size: 0.75rem;
-  color: var(--attenue);
+  color: var(--muted);
   font-weight: 400;
   line-height: 1.4;
 }
-.champ-hint-btn {
+.field-hint-btn {
   background: none;
   border: none;
   padding: 0;
@@ -1383,41 +1383,41 @@ input:focus, select:focus, textarea:focus {
   color: var(--accent);
   text-decoration: underline dotted;
 }
-.champ-hint-btn:hover { color: var(--accent-fort); }
-#diagnostic-correction { min-height: 0; color: var(--accent-fort); }
+.field-hint-btn:hover { color: var(--accent-strong); }
+#diagnostic-correction { min-height: 0; color: var(--accent-strong); }
 
 /* Descriptor tags */
 .tags { display: flex; flex-wrap: wrap; gap: 7px; }
-.tags-groupe { margin-bottom: 9px; }
-.tags-groupe-nom {
+.tags-group { margin-bottom: 9px; }
+.tags-group-name {
   display: block;
   font-size: 0.75rem;
-  color: var(--attenue);
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-bottom: 5px;
 }
 .tag {
-  border: 1px solid var(--lignes);
-  background: var(--panneau-2);
-  color: var(--attenue);
+  border: 1px solid var(--lines);
+  background: var(--panel-2);
+  color: var(--muted);
   border-radius: 999px;
   padding: 6px 12px;
   font-size: 0.82rem;
   cursor: pointer;
   transition: all var(--transition);
 }
-.tag:hover { color: var(--encre); border-color: var(--attenue); }
+.tag:hover { color: var(--ink); border-color: var(--muted); }
 /* NO font-weight here, nor anywhere else on a selected state, and this is a
    fix, not a preference. Bold is wider than normal: the pill
    grew on click, the row reflowed, and checking "citronné" sent
    the whole "floral et thé" group to the next line. The background and accent
    colour are plenty to show the selection. Locked by a test
-   that rejects any width property in an .actif rule. */
-.tag.actif {
-  background: var(--accent-fond);
+   that rejects any width property in an .on rule. */
+.tag.on {
+  background: var(--accent-bg);
   border-color: var(--accent);
-  color: var(--accent-fort);
+  color: var(--accent-strong);
 }
 
 /* ---------- The custom tooltip, defined ONCE ----------
@@ -1429,11 +1429,11 @@ input:focus, select:focus, textarea:focus {
 
    Preferred over the native tooltip: instant where title waits a second,
    true to the theme, and it respects line breaks. On phone, a long
-   press sets .info-ouverte, see activerAppuiLong(). */
+   press sets .info-expanded, see activerAppuiLong(). */
 [data-info] { position: relative; }
 [data-info]:hover::after,
 [data-info]:focus-visible::after,
-[data-info].info-ouverte::after {
+[data-info].info-expanded::after {
   content: attr(data-info);
   position: absolute;
   bottom: calc(100% + 8px);
@@ -1443,9 +1443,9 @@ input:focus, select:focus, textarea:focus {
   max-width: 300px;
   padding: 8px 11px;
   border-radius: 9px;
-  border: 1px solid var(--lignes);
-  background: var(--tooltip-fond);
-  color: var(--tooltip-texte);
+  border: 1px solid var(--lines);
+  background: var(--tooltip-bg);
+  color: var(--tooltip-text);
   font-size: 0.76rem;
   font-weight: 400;
   line-height: 1.4;
@@ -1460,19 +1460,19 @@ input:focus, select:focus, textarea:focus {
 /* An EMPTY data-info must not open an empty bubble. */
 [data-info=""]:hover::after,
 [data-info=""]:focus-visible::after,
-[data-info=""].info-ouverte::after { content: none; }
+[data-info=""].info-expanded::after { content: none; }
 
 /* Pills and tags keep their positioning for the shared bubble. */
-.pilule, .tag { position: relative; }
+.pill, .tag { position: relative; }
 
-.saisie-actions { display: flex; gap: 14px; align-items: center; margin-top: 20px; flex-wrap: wrap; }
+.entry-actions { display: flex; gap: 14px; align-items: center; margin-top: 20px; flex-wrap: wrap; }
 
 /* ---------- History ---------- */
 
 /* The filters, as pills. These are styled native <select>s: a select
    already OPENS a menu, handles the keyboard, typing and the phone's wheel; a
    hand-written menu would have to relearn all that for the same look. */
-.historique-filtres {
+.history-filters {
   display: flex;
   gap: 8px;
   margin-bottom: 14px;
@@ -1482,7 +1482,7 @@ input:focus, select:focus, textarea:focus {
   border: none;
   padding: 0;
 }
-.historique-filtres .champ {
+.history-filters .field {
   margin-bottom: 0;
   display: flex;
   flex-direction: row;
@@ -1490,22 +1490,22 @@ input:focus, select:focus, textarea:focus {
   gap: 8px;
   margin: 0;
   padding: 0 10px 0 14px;
-  min-height: var(--hauteur-controle);
-  border: 1px solid var(--lignes);
-  border-radius: var(--rayon-pastille);
-  background: var(--panneau);
+  min-height: var(--height-control);
+  border: 1px solid var(--lines);
+  border-radius: var(--radius-dot);
+  background: var(--panel);
 }
 /* Search takes its own line, full width. It does not filter
    on a column like the others, it searches free text: giving it
    the size of a 150 px dropdown would make it look like one more
    filter, and you could not comfortably type a sentence into it. */
-.historique-filtres .champ-recherche { grid-column: 1 / -1; }
+.history-filters .field-search { grid-column: 1 / -1; }
 /* Actions take their own line, right-aligned. They used to be a
    grid cell like the others, 150 px wide: the two buttons
    wrapped and the label "Exporter le filtre en CSV" broke
    inside, hence a tall narrow block. They are not filters, they have
    no business in the filters' rhythm. */
-.historique-filtres-actions {
+.history-filters-actions {
   display: flex;
   gap: 8px;
   align-items: center;
@@ -1513,17 +1513,17 @@ input:focus, select:focus, textarea:focus {
   flex-wrap: wrap;
   margin-left: auto;
 }
-.historique-filtres-actions .btn { white-space: nowrap; }
+.history-filters-actions .btn { white-space: nowrap; }
 
 /* Chrome draws the clear cross in a fixed dark colour: unreadable on the dark
    theme. We redo it by hand in the muted text colour. */
-.champ-recherche input[type="search"]::-webkit-search-cancel-button {
+.field-search input[type="search"]::-webkit-search-cancel-button {
   -webkit-appearance: none;
   appearance: none;
   height: 15px;
   width: 15px;
   cursor: pointer;
-  background: var(--attenue);
+  background: var(--muted);
   /* The webkit prefix is there for a reason, not out of habit: without it, an
      engine that ignores `mask` would show a solid rectangle in the
      background colour, so worse than the original cross. Both cover Chrome
@@ -1535,18 +1535,18 @@ input:focus, select:focus, textarea:focus {
 /* The "failed" box, under the rating. The red edge sets it apart from the other
    form checkboxes: it is the only one that removes the cup from the
    analyses, so the only one worth noticing before checking it. */
-.champ-ratee {
+.field-failed {
   border-left: 3px solid color-mix(in srgb, var(--danger) 55%, transparent);
   padding-left: 12px;
   margin-top: -4px;
 }
-.champ-ratee .label-inline { color: var(--texte); }
+.field-failed .label-inline { color: var(--text); }
 
 /* Badge of a failed brew. Deliberately red: here red really says "bad
    news", which is exactly its meaning in the rest of the site. */
 /* Toggle button on: same red as the badge, so you read at first
    glance which rows are excluded without having to hover. */
-.btn-ligne.actif-ratee {
+.btn-row.on-failed {
   color: var(--danger);
   border-color: color-mix(in srgb, var(--danger) 45%, transparent);
   background: color-mix(in srgb, var(--danger) 14%, transparent);
@@ -1554,18 +1554,18 @@ input:focus, select:focus, textarea:focus {
 
 /* The whole row opens the brew: the cursor must say so. The action
    buttons get their own back, otherwise the nuance is lost on hover. */
-.ligne-histo { cursor: pointer; }
-.ligne-histo .btn-ligne { cursor: pointer; }
+.row-hist { cursor: pointer; }
+.row-hist .btn-row { cursor: pointer; }
 
 /* Slider and number on ONE line. Stacked, each cell of the numeric
    grid would double in height, exactly the flaw the
    Temperature cell already documents. The number stays narrow: it displays and allows
    precise typing, the slider does the bulk of the gesture. */
-.ligne-curseur { display: flex; align-items: center; gap: 10px; }
-.ligne-curseur .curseur-champ { flex: 1 1 auto; min-width: 0; }
-.ligne-curseur input[type="number"],
-.ligne-curseur input[type="text"] { flex: 0 0 76px; width: 76px; text-align: center; }
-.curseur-champ { height: 22px; }
+.row-slider { display: flex; align-items: center; gap: 10px; }
+.row-slider .slider-field { flex: 1 1 auto; min-width: 0; }
+.row-slider input[type="number"],
+.row-slider input[type="text"] { flex: 0 0 76px; width: 76px; text-align: center; }
+.slider-field { height: 22px; }
 
 /* ---------- The sliders, drawn ----------
    accent-color gave a different track and thumb on each engine, and
@@ -1589,23 +1589,23 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 input[type="range"]::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 4px;
-  background: linear-gradient(to right, var(--accent) var(--pc, 0%), var(--lignes) var(--pc, 0%));
+  background: linear-gradient(to right, var(--accent) var(--pc, 0%), var(--lines) var(--pc, 0%));
 }
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 18px; height: 18px;
   margin-top: -7px;
   border-radius: 50%;
-  background: var(--panneau);
+  background: var(--panel);
   border: 2px solid var(--accent);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
-input[type="range"]::-moz-range-track { height: 4px; border-radius: 4px; background: var(--lignes); }
+input[type="range"]::-moz-range-track { height: 4px; border-radius: 4px; background: var(--lines); }
 input[type="range"]::-moz-range-progress { height: 4px; border-radius: 4px; background: var(--accent); }
 input[type="range"]::-moz-range-thumb {
   width: 18px; height: 18px;
   border-radius: 50%;
-  background: var(--panneau);
+  background: var(--panel);
   border: 2px solid var(--accent);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
@@ -1613,38 +1613,38 @@ input[type="range"]::-moz-range-thumb {
    style, dotted track and no thumb, which switched on first touch:
    Chris saw two different sliders in it, and no meaning. The slider
    now always looks the same; "not rated yet" reads in the
-   label above and in the hint below. The curseur-inactif class remains,
-   but only as a STATE (noteVide, ui-noyau.js), with no style at all. */
+   label above and in the hint below. The slider-inactive class remains,
+   but only as a STATE (noteVide, ui-core.js), with no style at all. */
 
 /* ---------- The switch ----------
    Around an ORDINARY checkbox, which stays the source of truth: the
    form, the draft and the tests always read input.checked. Only the
    look changes, so that options do not look like fields. */
-.interrupteur { position: relative; display: inline-block; width: 40px; height: 22px; flex: none; }
-.interrupteur input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; margin: 0; cursor: pointer; }
-.interrupteur i {
+.toggle { position: relative; display: inline-block; width: 40px; height: 22px; flex: none; }
+.toggle input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; margin: 0; cursor: pointer; }
+.toggle i {
   position: absolute; inset: 0;
   border-radius: 999px;
-  background: var(--barre-neutre);
+  background: var(--bar-neutral);
   transition: background var(--transition);
 }
-.interrupteur i::after {
+.toggle i::after {
   content: "";
   position: absolute; top: 3px; left: 3px;
   width: 16px; height: 16px;
   border-radius: 50%;
-  background: var(--panneau);
+  background: var(--panel);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   transition: transform var(--transition);
 }
-.interrupteur input:checked + i { background: var(--accent); }
-.interrupteur input:checked + i::after { transform: translateX(18px); }
-.interrupteur input:focus-visible + i { outline: 2px solid var(--accent); outline-offset: 2px; }
+.toggle input:checked + i { background: var(--accent); }
+.toggle input:checked + i::after { transform: translateX(18px); }
+.toggle input:focus-visible + i { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* A square icon-only button, as tall as the fields it accompanies. */
-.btn-carre { width: var(--hauteur-controle); min-height: var(--hauteur-controle); padding: 0; flex: none; }
+.btn-square { width: var(--height-control); min-height: var(--height-control); padding: 0; flex: none; }
 
-.badge-ratee {
+.badge-failed {
   display: inline-block;
   /* Sans-serif, lowercase, no letter spacing: in spaced serif small
      capitals, the accent on the E read like dots beside the word. */
@@ -1657,14 +1657,14 @@ input[type="range"]::-moz-range-thumb {
   margin-right: 6px;
   border-radius: 999px;
   color: var(--danger);
-  background: color-mix(in srgb, var(--danger) 14%, var(--panneau));
+  background: color-mix(in srgb, var(--danger) 14%, var(--panel));
   border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
   vertical-align: middle;
 }
 
-.historique-compte { color: var(--attenue); font-size: 0.85rem; margin: 0 0 10px 4px; }
+.history-count { color: var(--muted); font-size: 0.85rem; margin: 0 0 10px 4px; }
 
-.table-conteneur { overflow-x: auto; padding: 0; }
+.table-container { overflow-x: auto; padding: 0; }
 /* table-layout fixed: columns NO LONGER widen with their content.
    That was the cause of the horizontal scrolling, a long coffee name pushed the whole
    table beyond its container. Widths are now forced, and
@@ -1672,12 +1672,12 @@ input[type="range"]::-moz-range-thumb {
    min-width: below it (phone), we scroll rather than squash nine
    columns into mush. */
 /* NO width or margin rule on an #ecran-*: the frame is set ONCE
-   on .ecran (layout block). An id rule beats the class
+   on .screen (layout block). An id rule beats the class
    and silently off-centres the screen: that is what happened to the history, pushed
    to the left by a margin-left: 0 inherited from an old widening. A test now
    rejects it. */
 
-.table-historique {
+.table-history {
   width: 100%;
   /* 1180 px was the minimum width for THIRTEEN columns. At ten, the table fits
      in the card without scrolling: the floor drops to 940, enough to keep the
@@ -1691,72 +1691,72 @@ input[type="range"]::-moz-range-thumb {
 /* Widths live in index.html's <colgroup>: pixels for the seven
    numeric columns and the actions, nothing for coffee, recipe and tastes, which
    share the rest equally. They are the only ones that can overflow,
-   and they wrap (see .td-texte) instead of truncating. */
-.table-historique col.c-date { width: 132px; }
-.table-historique col.c-methode { width: 92px; }
-.table-historique col.c-dose { width: 100px; }
-.table-historique col.c-mouture { width: 104px; }
-.table-historique col.c-ratio { width: 94px; }
-.table-historique col.c-note { width: 60px; }
-.table-historique col.c-actions { width: 150px; }
+   and they wrap (see .td-text) instead of truncating. */
+.table-history col.c-date { width: 132px; }
+.table-history col.c-method { width: 92px; }
+.table-history col.c-dose { width: 100px; }
+.table-history col.c-grind { width: 104px; }
+.table-history col.c-ratio { width: 94px; }
+.table-history col.c-rating { width: 60px; }
+.table-history col.c-actions { width: 150px; }
 /* Coffee and recipe WRAP instead of truncating: a coffee name
    cut to "Trung Nguyên Sáng…" no longer says which of the two it is. The
    numeric columns, on the other hand, never wrap. */
-.table-historique .td-texte { white-space: normal; line-height: 1.3; color: var(--encre); font-weight: 600; }
-.table-historique .td-recette { white-space: normal; line-height: 1.3; }
-.table-historique .td-num { font-variant-numeric: tabular-nums; }
-.table-historique .td-num small.sous { display: block; font-size: 0.75rem; color: var(--attenue); }
+.table-history .td-text { white-space: normal; line-height: 1.3; color: var(--ink); font-weight: 600; }
+.table-history .td-recipe { white-space: normal; line-height: 1.3; }
+.table-history .td-num { font-variant-numeric: tabular-nums; }
+.table-history .td-num small.sub { display: block; font-size: 0.75rem; color: var(--muted); }
 /* The date in two tones: day in ink, time muted, the chevron in front. */
 .td-date { display: flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
-.td-date time { color: var(--encre); }
-.td-date .heure { color: var(--attenue); margin-left: 4px; }
+.td-date time { color: var(--ink); }
+.td-date .hour { color: var(--muted); margin-left: 4px; }
 /* The actions cell drops its inner padding: once measured, it
    needed 137 px for 129 available, and 24 of those px were empty space on the
    sides. A truncated button is UNREACHABLE, which is a failure and not a
    layout flaw: this cell never truncates. */
-.table-historique td:nth-child(10) { padding-inline: 2px; overflow: visible; }
+.table-history td:nth-child(10) { padding-inline: 2px; overflow: visible; }
 
 /* Tastes stack instead of truncating: they are short, and a pill
    cut in half no longer says which taste it was. */
-.chip-diagnostic { white-space: normal; font-size: 0.8rem; color: var(--attenue); }
+.chip-diagnostic { white-space: normal; font-size: 0.8rem; color: var(--muted); }
 /* The five action buttons must FIT: truncated, they become
    unreachable, which is a failure and not a layout flaw. */
-.actions-ligne { gap: 2px; justify-content: flex-end; display: flex; }
+.actions-row { gap: 2px; justify-content: flex-end; display: flex; }
 
 /* The comment row: full width under its cup, with no top border
    so that it reads as the continuation of the row and not as one more
    row. */
-.ligne-commentaire td {
+.row-comment td {
   border-top: none;
   padding: 0 12px 10px;
   font-style: italic;
   font-size: 0.82rem;
-  color: var(--attenue);
+  color: var(--muted);
   white-space: normal;
   cursor: pointer;
 }
-.ligne-commentaire:hover td { background: var(--panneau-2); }
-.table-historique th {
+.row-comment:hover td { background: var(--panel-2); }
+.table-history th {
   text-align: left;
   padding: 12px 12px;
-  color: var(--attenue);
+  color: var(--muted);
   font-size: 0.76rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-bottom: 1px solid var(--lignes);
+  border-bottom: 1px solid var(--lines);
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
   position: sticky;
   top: 0;
-  background: var(--panneau);
+  background: var(--panel);
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.table-historique th:hover { color: var(--encre); }
-.table-historique td {
+.table-history th:hover { color: var(--ink); }
+.table-history td {
   padding: 10px 12px;
-  border-bottom: 1px solid var(--lignes);
+  border-bottom: 1px solid var(--lines);
   vertical-align: middle;
   /* Truncate instead of widening. The title attribute set on free-text
      cells gives the full value on hover and focus. */
@@ -1764,11 +1764,11 @@ input[type="range"]::-moz-range-thumb {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.table-historique tbody tr { transition: background 150ms; }
-.table-historique tbody tr:hover { background: var(--panneau-2); }
-.tri { font-size: 0.75rem; }
+.table-history tbody tr { transition: background 150ms; }
+.table-history tbody tr:hover { background: var(--panel-2); }
+.sort { font-size: 0.75rem; }
 
-.note-cellule {
+.rating-cell {
   font-family: var(--serif);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -1777,26 +1777,26 @@ input[type="range"]::-moz-range-thumb {
    colour: cream on the Switch vermilion gave 2.75 and on the
    Brikka blue 3.80. Data colours are untouchable, but nothing forced us
    to write on them, and the design describes precisely a dot pill. */
-.chip-methode {
+.chip-method {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font-size: 0.78rem;
   padding: 3px 10px 3px 8px;
-  border-radius: var(--rayon-pastille);
-  background: var(--panneau-2);
-  color: var(--texte);
+  border-radius: var(--radius-dot);
+  background: var(--panel-2);
+  color: var(--text);
 }
-.chip-methode::before {
+.chip-method::before {
   content: "";
   width: 8px; height: 8px;
   flex: none;
   border-radius: 999px;
-  background: var(--barre-neutre);
+  background: var(--bar-neutral);
 }
-.chip-methode.brikka::before { background: var(--brikka); }
-.chip-methode.switch::before { background: var(--switch); }
-.btn-ligne {
+.chip-method.brikka::before { background: var(--brikka); }
+.chip-method.switch::before { background: var(--switch); }
+.btn-row {
   display: inline-grid;
   place-items: center;
   width: 28px;
@@ -1806,277 +1806,277 @@ input[type="range"]::-moz-range-thumb {
   cursor: pointer;
   padding: 0;
   border-radius: 7px;
-  color: var(--attenue);
+  color: var(--muted);
   transition: all 150ms;
 }
-.btn-ligne .ico { width: 15px; height: 15px; }
-.btn-ligne:hover { background: var(--panneau-2); color: var(--encre); }
-.btn-ligne.danger:hover { color: var(--danger); }
+.btn-row .ico { width: 15px; height: 15px; }
+.btn-row:hover { background: var(--panel-2); color: var(--ink); }
+.btn-row.danger:hover { color: var(--danger); }
 
 /* ---------- Reference ---------- */
 
-.sommaire {
+.toc {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
   position: sticky;
   /* Sticky at the top (v8.72): 62 and 108 px dated from the old header, now gone. */
   top: calc(env(safe-area-inset-top, 0px) + 8px);
-  z-index: var(--z-sommaire);
-  background: color-mix(in srgb, var(--fond) 82%, transparent);
-  border-radius: var(--rayon-petit);
+  z-index: var(--z-toc);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  border-radius: var(--radius-small);
   backdrop-filter: blur(8px);
   padding: 0;
   margin-bottom: 22px;
   border: none;
 }
-.sommaire-sep {
+.toc-sep {
   width: 1px; align-self: stretch; margin: 2px 5px;
-  background: var(--lignes);
+  background: var(--lines);
 }
-.sommaire a {
+.toc a {
   text-decoration: none;
-  color: var(--texte);
+  color: var(--text);
   font-size: 0.84rem;
   padding: 7px 14px;
-  border-radius: var(--rayon-pastille);
-  border: 1px solid var(--lignes);
-  background: var(--panneau);
+  border-radius: var(--radius-dot);
+  border: 1px solid var(--lines);
+  background: var(--panel);
   transition: all var(--transition);
 }
-.sommaire a:hover { color: var(--accent); border-color: var(--accent); }
+.toc a:hover { color: var(--accent); border-color: var(--accent); }
 /* The table of contents is the Guide's tab bar (v8.52): one panel at a time. */
-.sommaire a.courant { color: var(--sur-accent); background: var(--accent); border-color: var(--accent); }
-.biblio-filtres { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 14px; }
-.biblio-filtres .pilule { display: inline-flex; align-items: center; gap: 6px; }
-.recette-chez-toi { margin: 6px 0 2px; font-size: 0.84rem; font-weight: 600; color: var(--accent-fort); }
+.toc a.current { color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
+.library-filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 14px; }
+.library-filters .pill { display: inline-flex; align-items: center; gap: 6px; }
+.recipe-at-home { margin: 6px 0 2px; font-size: 0.84rem; font-weight: 600; color: var(--accent-strong); }
 
-.ref-titre {
+.ref-title {
   font-size: 1.45rem;
   margin: 34px 0 6px;
   scroll-margin-top: 120px;
 }
-.ref-intro { color: var(--attenue); max-width: 760px; margin-top: 0; }
-.ref-bloc { margin-bottom: 16px; }
-.ref-bloc h3 { margin: 20px 0 8px; font-size: 1rem; }
-.ref-bloc h3:first-child { margin-top: 0; }
+.ref-intro { color: var(--muted); max-width: 760px; margin-top: 0; }
+.ref-block { margin-bottom: 16px; }
+.ref-block h3 { margin: 20px 0 8px; font-size: 1rem; }
+.ref-block h3:first-child { margin-top: 0; }
 
-.liste-simple { margin: 8px 0; padding-left: 20px; }
-.liste-simple li { margin-bottom: 3px; }
+.list-simple { margin: 8px 0; padding-left: 20px; }
+.list-simple li { margin-bottom: 3px; }
 
-.formule {
-  background: var(--panneau-2);
-  border-radius: var(--rayon-petit);
+.formula {
+  background: var(--panel-2);
+  border-radius: var(--radius-small);
   padding: 10px 14px;
 }
-.formule code { background: transparent; padding: 0; }
+.formula code { background: transparent; padding: 0; }
 
-.encadre {
+.callout {
   border-left: 3px solid var(--accent);
-  background: var(--accent-fond);
-  border-radius: 0 var(--rayon-petit) var(--rayon-petit) 0;
+  background: var(--accent-bg);
+  border-radius: 0 var(--radius-small) var(--radius-small) 0;
   padding: 10px 14px;
 }
 
 /* Recipes */
-.grille-recettes {
+.grid-recipes {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
   gap: 16px;
   margin-bottom: 10px;
 }
-.recette-carte {
-  border-top: 4px solid var(--barre-neutre);
+.recipe-card {
+  border-top: 4px solid var(--bar-neutral);
   display: flex;
   flex-direction: column;
 }
-.recette-carte.brikka { border-top-color: var(--brikka); }
-.recette-carte.switch { border-top-color: var(--switch); }
-.recette-entete { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.recette-numero { font-size: 0.75rem; color: var(--attenue); text-transform: uppercase; letter-spacing: 0.06em; }
-.recette-carte h3 { margin: 2px 0 2px; font-size: 1.2rem; }
-.recette-sous { color: var(--attenue); font-style: italic; font-size: 0.86rem; margin: 0 0 10px; }
-.recette-params {
+.recipe-card.brikka { border-top-color: var(--brikka); }
+.recipe-card.switch { border-top-color: var(--switch); }
+.recipe-header { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.recipe-num { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.recipe-card h3 { margin: 2px 0 2px; font-size: 1.2rem; }
+.recipe-sub { color: var(--muted); font-style: italic; font-size: 0.86rem; margin: 0 0 10px; }
+.recipe-params {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   margin-bottom: 12px;
 }
 .param-chip {
-  background: var(--panneau-2);
+  background: var(--panel-2);
   border-radius: 7px;
   padding: 4px 10px;
   font-size: 0.8rem;
-  color: var(--encre);
+  color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
-.recette-etapes { margin: 0 0 12px; padding-left: 4px; list-style: none; }
-.recette-etapes li {
+.recipe-steps { margin: 0 0 12px; padding-left: 4px; list-style: none; }
+.recipe-steps li {
   display: flex;
   gap: 10px;
   padding: 5px 0;
   font-size: 0.88rem;
   align-items: baseline;
 }
-.etape-temps {
+.step-time {
   font-family: ui-monospace, Consolas, monospace;
   font-size: 0.8rem;
-  color: var(--accent-fort);
+  color: var(--accent-strong);
   min-width: 40px;
   flex-shrink: 0;
   font-weight: 600;
 }
-.recette-pourqui { font-size: 0.84rem; color: var(--attenue); margin: 0 0 10px; }
-.recette-pourqui b { color: var(--encre); }
-.recette-cafes { font-size: 0.8rem; color: var(--attenue); margin: 0 0 12px; }
+.recipe-forwho { font-size: 0.84rem; color: var(--muted); margin: 0 0 10px; }
+.recipe-forwho b { color: var(--ink); }
+.recipe-coffees { font-size: 0.8rem; color: var(--muted); margin: 0 0 12px; }
 /* History in batches (v8.75): the button under the last row. */
 .h-plus { margin: 10px auto; display: block; }
-.h-ligne-plus td { text-align: center; border-bottom: none; }
+.h-row-plus td { text-align: center; border-bottom: none; }
 
 /* FOCUS IN THE DRAWINGS (v8.76): a jar or a ribbon focused by keyboard only
    differed from hover by a barely thicker stroke. */
 svg [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
 /* On touch, menu entries are at least 44 px tall (v8.76). */
-@media (max-width: 1023px) { .rail-entree { min-height: 44px; } }
+@media (max-width: 1023px) { .rail-entry { min-height: 44px; } }
 
-.fc-suppr-sachet { margin-top: 10px; }
+.sh-delete-bag { margin-top: 10px; }
 
 /* Which coffee, which recipe (v8.74): a cell, a recipe and what your cups say. */
-.matrice-carte > summary { font-family: var(--serif); font-size: 1.35rem; color: var(--encre); cursor: pointer; }
-.matrice-carte .carte-note { margin: 8px 0 12px; }
-.matrice th[scope="row"] { white-space: nowrap; vertical-align: top; }
-.matrice td { vertical-align: top; min-width: 150px; }
-@media (max-width: 700px) { .matrice td { min-width: 128px; } }
-.matrice td > span { display: block; font-size: 0.76rem; color: var(--attenue); line-height: 1.35; margin-top: 2px; }
-.matrice .m-chez-toi { color: var(--accent-fort); font-weight: 600; }
-.matrice .m-meilleure { color: var(--encre); }
-.lien-recette { background: none; border: 0; padding: 0; font: inherit; font-weight: 700; color: var(--encre); cursor: pointer; text-align: left; text-decoration: underline; text-decoration-color: var(--lignes); text-underline-offset: 3px; }
-.lien-recette:hover { color: var(--accent-fort); }
-.m-autre .lien-recette { font-weight: 500; color: var(--texte); }
+.matrix-card > summary { font-family: var(--serif); font-size: 1.35rem; color: var(--ink); cursor: pointer; }
+.matrix-card .card-note { margin: 8px 0 12px; }
+.matrix th[scope="row"] { white-space: nowrap; vertical-align: top; }
+.matrix td { vertical-align: top; min-width: 150px; }
+@media (max-width: 700px) { .matrix td { min-width: 128px; } }
+.matrix td > span { display: block; font-size: 0.76rem; color: var(--muted); line-height: 1.35; margin-top: 2px; }
+.matrix .m-at-home { color: var(--accent-strong); font-weight: 600; }
+.matrix .m-best { color: var(--ink); }
+.link-recipe { background: none; border: 0; padding: 0; font: inherit; font-weight: 700; color: var(--ink); cursor: pointer; text-align: left; text-decoration: underline; text-decoration-color: var(--lines); text-underline-offset: 3px; }
+.link-recipe:hover { color: var(--accent-strong); }
+.m-other .link-recipe { font-weight: 500; color: var(--text); }
 
 /* The recipe video (v8.64): the button and the link, then the 16:9 player in its place. */
-.recette-video { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 12px; }
-.recette-video-lien { font-size: 0.8rem; color: var(--accent-fort); }
-.aside-video .recette-video { margin: 0; }
-.recette-lecteur { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: var(--rayon-petit); background: #000; }
-.recette-note { font-size: 0.82rem; border-left: 3px solid var(--accent); padding-left: 10px; color: var(--texte); margin: 0 0 12px; }
-.recette-actions { margin-top: auto; display: flex; gap: 8px; flex-wrap: wrap; }
-.badge-defaut {
+.recipe-video { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 12px; }
+.recipe-video-link { font-size: 0.8rem; color: var(--accent-strong); }
+.aside-video .recipe-video { margin: 0; }
+.recipe-player { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: var(--radius-small); background: #000; }
+.recipe-note { font-size: 0.82rem; border-left: 3px solid var(--accent); padding-left: 10px; color: var(--text); margin: 0 0 12px; }
+.recipe-actions { margin-top: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+.badge-default {
   font-size: 0.75rem;
-  background: var(--deux);
+  background: var(--second);
   /* DARK text on this background: white only reached 2.6:1, and did no
      better on the old green. On dusty pink, dark goes up to 7:1. */
-  color: var(--encre-sur-clair);
+  color: var(--ink-on-light);
   border-radius: 999px;
   padding: 2px 9px;
   font-weight: 700;
 }
-.badge-avancee {
+.badge-advanced {
   font-size: 0.75rem;
-  background: var(--panneau-2);
-  color: var(--attenue);
-  border: 1px solid var(--lignes);
+  background: var(--panel-2);
+  color: var(--muted);
+  border: 1px solid var(--lines);
   border-radius: 999px;
   padding: 2px 9px;
   font-weight: 600;
 }
 
 /* Tetsu variants */
-.tetsu-variantes { border-top: 1px dashed var(--lignes); padding-top: 12px; margin-bottom: 12px; }
-.tetsu-groupe { margin-bottom: 10px; }
-.tetsu-groupe .label { display: block; margin-bottom: 6px; }
+.tetsu-variants { border-top: 1px dashed var(--lines); padding-top: 12px; margin-bottom: 12px; }
+.tetsu-group { margin-bottom: 10px; }
+.tetsu-group .label { display: block; margin-bottom: 6px; }
 .tetsu-options { display: flex; gap: 6px; flex-wrap: wrap; }
-.tetsu-versements { margin: 10px 0 0; padding: 0; list-style: none; }
-.tetsu-versements li {
+.tetsu-pours { margin: 10px 0 0; padding: 0; list-style: none; }
+.tetsu-pours li {
   display: flex; gap: 10px; align-items: baseline;
   padding: 4px 0; font-size: 0.88rem;
   font-variant-numeric: tabular-nums;
 }
-.tetsu-detail { font-size: 0.8rem; color: var(--attenue); margin: 6px 0 0; }
+.tetsu-detail { font-size: 0.8rem; color: var(--muted); margin: 6px 0 0; }
 
 /* Converter */
-.convertisseur { margin: 18px 0 8px; }
-.convertisseur-resultat {
+.converter { margin: 18px 0 8px; }
+.converter-result {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   min-height: 40px;
 }
 .conv-chip {
-  background: var(--panneau-2);
-  border-radius: var(--rayon-petit);
+  background: var(--panel-2);
+  border-radius: var(--radius-small);
   padding: 8px 14px;
   font-size: 0.9rem;
 }
-.conv-chip b { color: var(--accent-fort); font-variant-numeric: tabular-nums; }
-.conv-erreur { color: var(--danger); font-size: 0.88rem; padding: 8px 0; }
+.conv-chip b { color: var(--accent-strong); font-variant-numeric: tabular-nums; }
+.conv-error { color: var(--danger); font-size: 0.88rem; padding: 8px 0; }
 
 /* Official grind size chart */
-.diagramme-conteneur { overflow-x: auto; margin-top: 14px; }
-.diagramme-svg { width: 100%; min-width: 720px; height: auto; }
-.dg-titre-axe { font-size: 11px; fill: var(--attenue); font-family: var(--sans); }
-.dg-axe { font-size: 10px; fill: var(--attenue); font-family: var(--sans); font-variant-numeric: tabular-nums; }
-.dg-tick { stroke: var(--attenue); stroke-width: 0.8; opacity: 0.7; }
-.dg-ligne { stroke: var(--attenue); stroke-width: 1; }
-.dg-hachure { stroke: var(--attenue); stroke-width: 1; opacity: 0.5; }
-.dg-zone-hors { opacity: 0.25; }
-.dg-boite rect {
-  fill: var(--panneau-2);
-  stroke: var(--attenue);
+.diagram-container { overflow-x: auto; margin-top: 14px; }
+.diagram-svg { width: 100%; min-width: 720px; height: auto; }
+.dg-title-axis { font-size: 11px; fill: var(--muted); font-family: var(--sans); }
+.dg-axis { font-size: 10px; fill: var(--muted); font-family: var(--sans); font-variant-numeric: tabular-nums; }
+.dg-tick { stroke: var(--muted); stroke-width: 0.8; opacity: 0.7; }
+.dg-row { stroke: var(--muted); stroke-width: 1; }
+.dg-hatch { stroke: var(--muted); stroke-width: 1; opacity: 0.5; }
+.dg-zone-out { opacity: 0.25; }
+.dg-box rect {
+  fill: var(--panel-2);
+  stroke: var(--muted);
   stroke-width: 1;
   transition: opacity 150ms;
 }
-.dg-boite { cursor: pointer; }
-.dg-boite:hover rect { stroke: var(--accent); }
-.dg-nom { font-size: 11px; fill: var(--encre); font-family: var(--sans); pointer-events: none; }
-.dg-boite-perso rect { stroke-width: 2; }
-.dg-boite-eteinte { opacity: 0.35; }
-.dg-boite-compatible { opacity: 1; }
-.dg-boite-compatible rect { stroke: var(--ok); stroke-width: 2; fill: color-mix(in srgb, var(--ok) 12%, var(--panneau-2)); }
-.dg-bande { fill: var(--panneau-2); stroke: var(--lignes); }
-.dg-bande-nom { font-size: 10.5px; fill: var(--attenue); font-family: var(--sans); }
+.dg-box { cursor: pointer; }
+.dg-box:hover rect { stroke: var(--accent); }
+.dg-name { font-size: 11px; fill: var(--ink); font-family: var(--sans); pointer-events: none; }
+.dg-box-own rect { stroke-width: 2; }
+.dg-box-off { opacity: 0.35; }
+.dg-box-compatible { opacity: 1; }
+.dg-box-compatible rect { stroke: var(--ok); stroke-width: 2; fill: color-mix(in srgb, var(--ok) 12%, var(--panel-2)); }
+.dg-band { fill: var(--panel-2); stroke: var(--lines); }
+.dg-band-name { font-size: 10.5px; fill: var(--muted); font-family: var(--sans); }
 .dg-ref { stroke-width: 1.6; stroke-dasharray: 4 3; opacity: 0.9; }
-.dg-ref-point { cursor: pointer; stroke: var(--panneau); stroke-width: 1.5; }
-.dg-curseur { stroke: var(--encre); stroke-width: 1.6; }
-.dg-curseur-label { font-size: 11px; fill: var(--encre); font-weight: 700; font-family: var(--sans); }
+.dg-ref-point { cursor: pointer; stroke: var(--panel); stroke-width: 1.5; }
+.dg-slider { stroke: var(--ink); stroke-width: 1.6; }
+.dg-slider-label { font-size: 11px; fill: var(--ink); font-weight: 700; font-family: var(--sans); }
 
 /* Reference tables */
 .table-ref { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
 .table-ref th {
-  text-align: left; padding: 8px 12px; color: var(--attenue);
+  text-align: left; padding: 8px 12px; color: var(--muted);
   font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.05em;
-  border-bottom: 1px solid var(--lignes);
+  border-bottom: 1px solid var(--lines);
 }
-.table-ref td { padding: 7px 12px; border-bottom: 1px solid var(--lignes); }
+.table-ref td { padding: 7px 12px; border-bottom: 1px solid var(--lines); }
 .table-ref tr:last-child td { border-bottom: none; }
-.ligne-perso td { background: var(--accent-fond); }
+.row-own td { background: var(--accent-bg); }
 
 /* Taste diagnosis */
-.grille-diagnostic {
+.grid-diagnostic {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 14px;
   margin-bottom: 10px;
 }
-.diag-carte h3 { margin: 0 0 8px; }
-.diag-carte p { font-size: 0.88rem; margin: 0 0 8px; }
+.diag-card h3 { margin: 0 0 8px; }
+.diag-card p { font-size: 0.88rem; margin: 0 0 8px; }
 .diag-action {
-  color: var(--accent-fort);
+  color: var(--accent-strong);
   font-weight: 600;
-  border-top: 1px dashed var(--lignes);
+  border-top: 1px dashed var(--lines);
   padding-top: 8px;
 }
 .diag-calibration { border-style: dashed; }
 
 /* Vocabulary cards */
-.fiches { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
-.fiche { padding: 0; overflow: hidden; }
-.fiche summary {
+.sheets { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+.sheet { padding: 0; overflow: hidden; }
+.sheet summary {
   cursor: pointer;
   padding: 15px 20px;
   font-family: var(--serif);
   font-size: 1.02rem;
-  color: var(--encre);
+  color: var(--ink);
   font-weight: 600;
   list-style: none;
   display: flex;
@@ -2084,13 +2084,13 @@ svg [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset:
   align-items: center;
   transition: background var(--transition);
 }
-.fiche summary::-webkit-details-marker { display: none; }
-.fiche summary::after { content: "+"; color: var(--attenue); font-size: 1.3rem; transition: transform var(--transition); }
-.fiche[open] summary::after { transform: rotate(45deg); }
-.fiche summary:hover { background: var(--panneau-2); }
-.fiche-corps { padding: 4px 20px 16px; font-size: 0.92rem; }
-.fiche-corps p { margin: 0 0 10px; }
+.sheet summary::-webkit-details-marker { display: none; }
+.sheet summary::after { content: "+"; color: var(--muted); font-size: 1.3rem; transition: transform var(--transition); }
+.sheet[open] summary::after { transform: rotate(45deg); }
+.sheet summary:hover { background: var(--panel-2); }
+.sheet-body { padding: 4px 20px 16px; font-size: 0.92rem; }
+.sheet-body p { margin: 0 0 10px; }
 
-.lexique { display: grid; grid-template-columns: auto 1fr; gap: 4px 18px; margin: 0; }
-.lexique dt { font-weight: 700; color: var(--accent-fort); }
-.lexique dd { margin: 0; color: var(--texte); }
+.glossary { display: grid; grid-template-columns: auto 1fr; gap: 4px 18px; margin: 0; }
+.glossary dt { font-weight: 700; color: var(--accent-strong); }
+.glossary dd { margin: 0; color: var(--text); }

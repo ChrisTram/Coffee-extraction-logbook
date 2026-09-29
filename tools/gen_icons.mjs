@@ -6,7 +6,7 @@
  * Writes icons/icon-192.png, icon-512.png, icon-maskable-512.png and
  * apple-touch-icon-180.png. Rerun only if the drawing changes.
  *
- * The colours come from the dark theme of css/socle.css: background #221709,
+ * The colours come from the dark theme of css/base.css: background #221709,
  * porcelain #f3e8d8, coffee #d98741. The drawing is described in relative
  * coordinates (0 to 1) then sampled 4x4 per pixel for antialiasing.
  */

@@ -171,7 +171,7 @@ function twins(extractions, target, count) {
    amer" on a 1.4.2 dial becomes "1.4.2 → 1.5.0".
 
    Nothing is hard-coded here: the DIRECTION comes from DIAGNOSTIC_LEVERS
-   (recettes.js), the STEPS from the settings row (Settings), the starting
+   (recipes.js), the STEPS from the settings row (Settings), the starting
    value from the cup, and the grind bounds from its machine's range (GRIND).
    Changing a step, a range or a recipe changes the proposal without touching
    the code.
@@ -268,7 +268,7 @@ const TUNING = (() => {
     ].join("|");
   }
 
-  // Defined once, in outils.js. Returns null on an empty list, where the
+  // Defined once, in tools.js. Returns null on an empty list, where the
   // local copy returned NaN and let "NaN" reach the screen.
   const average = TOOLS.average;
 

@@ -1,10 +1,10 @@
 /* Entry screen: the side panel (the chosen recipe and coffee, in plain
- * sight) and the twin cups. Moved out of ui-saisie.js in v8.78. */
+ * sight) and the twin cups. Moved out of ui-entry.js in v8.78. */
 "use strict";
 
 (() => {
 
-  // Borrowed from the core and from ui-saisie.js, loaded before us.
+  // Borrowed from the core and from ui-entry.js, loaded before us.
   const { $, titleAttr, fmtDuration, fmtDecimal, fmtVND, findRecipe, entry, currentCoffeeGround } = UI;
 
   /* THE RECIPE STRIP (A4, v8.84). Below 1,400 px the card dropped under the
@@ -12,88 +12,88 @@
      the page. The strip sums it up under the timer, with the coffee, and opens
      the card. */
   function updateRecipeBand() {
-    const band = $("#bande-recette");
+    const band = $("#band-recipe");
     if (!band) return;
-    const r = findRecipe($("#f-recette").value);
-    const coffee = DATA.state.cafes.find(c => c.id === $("#f-cafe").value);
+    const r = findRecipe($("#f-recipe").value);
+    const coffee = DATA.state.cafes.find(c => c.id === $("#f-coffee").value);
     if (!r && !coffee) { band.hidden = true; return; }
-    const dose = $("#f-dose").value, water = $("#f-eau").value, temp = $("#f-temp").value;
+    const dose = $("#f-dose").value, water = $("#f-water").value, temp = $("#f-temp").value;
     const params = [dose && water ? dose + " g / " + water + " g" : "", temp ? temp + " °C" : ""].filter(Boolean).join(" · ");
     band.hidden = false;
     band.innerHTML =
-      '<span class="br-nom">' + (r ? '<span class="pastille-methode ' + r.methode.toLowerCase() + '"></span>' + titleAttr(r.nom) : I18N.t("a_choisir_recette")) + "</span>" +
+      '<span class="br-name">' + (r ? '<span class="dot-method ' + r.methode.toLowerCase() + '"></span>' + titleAttr(r.nom) : I18N.t("a_choisir_recette")) + "</span>" +
       (params ? '<span class="br-params">' + params + "</span>" : "") +
-      (coffee ? '<span class="br-cafe">' + titleAttr(I18N.tr(coffee.nom)) + "</span>" : "") +
-      '<span class="br-voir">' + I18N.t("br_voir") + "</span>";
+      (coffee ? '<span class="br-coffee">' + titleAttr(I18N.tr(coffee.nom)) + "</span>" : "") +
+      '<span class="br-show">' + I18N.t("br_voir") + "</span>";
   }
   function openRecipeSheet(open) {
-    const layout = $("#ecran-saisie .saisie-layout");
+    const layout = $("#screen-saisie .entry-layout");
     if (!layout) return;
-    layout.classList.toggle("aside-ouvert", open);
-    $("#bande-recette").setAttribute("aria-expanded", String(open));
-    if (open) $("#aside-fermer").focus();
+    layout.classList.toggle("aside-open", open);
+    $("#band-recipe").setAttribute("aria-expanded", String(open));
+    if (open) $("#aside-close").focus();
   }
   function wireRecipeBand() {
-    $("#bande-recette").addEventListener("click", () =>
-      openRecipeSheet(!$("#ecran-saisie .saisie-layout").classList.contains("aside-ouvert")));
-    $("#aside-fermer").addEventListener("click", () => { openRecipeSheet(false); $("#bande-recette").focus(); });
+    $("#band-recipe").addEventListener("click", () =>
+      openRecipeSheet(!$("#screen-saisie .entry-layout").classList.contains("aside-open")));
+    $("#aside-close").addEventListener("click", () => { openRecipeSheet(false); $("#band-recipe").focus(); });
     document.addEventListener("keydown", ev => {
-      if (ev.key === "Escape" && $("#ecran-saisie .saisie-layout").classList.contains("aside-ouvert")) openRecipeSheet(false);
+      if (ev.key === "Escape" && $("#screen-saisie .entry-layout").classList.contains("aside-open")) openRecipeSheet(false);
     });
     // A setting that changes the strip: dose, water and temperature live in the form.
-    ["f-dose", "f-eau", "f-temp"].forEach(id => $("#" + id).addEventListener("input", updateRecipeBand));
+    ["f-dose", "f-water", "f-temp"].forEach(id => $("#" + id).addEventListener("input", updateRecipeBand));
   }
 
   // Entry side panel: the selected recipe and coffee, in plain sight.
   function updateEntryAside() {
     updateRecipeBand();
-    const recipeZone = $("#aside-recette");
-    const coffeeZone = $("#aside-cafe");
+    const recipeZone = $("#aside-recipe");
+    const coffeeZone = $("#aside-coffee");
     if (!recipeZone || !coffeeZone) return;
 
-    const r = findRecipe($("#f-recette").value);
+    const r = findRecipe($("#f-recipe").value);
     UI.updateVideoAside(r);
     if (!r) {
-      recipeZone.innerHTML = '<p class="aside-vide">' + I18N.t("a_choisir_recette") + "</p>";
+      recipeZone.innerHTML = '<p class="aside-empty">' + I18N.t("a_choisir_recette") + "</p>";
     } else {
       const steps = UI.stepsFor(r);
       recipeZone.innerHTML =
-        '<div class="aside-titre"><span class="pastille-methode ' + r.methode.toLowerCase() + '"></span><h4>' + r.nom + "</h4></div>" +
-        (r.sousTitre ? '<p class="aside-sous">' + titleAttr(I18N.tr(r.sousTitre)) + "</p>" : "") +
-        '<div class="recette-params">' +
+        '<div class="aside-title"><span class="dot-method ' + r.methode.toLowerCase() + '"></span><h4>' + r.nom + "</h4></div>" +
+        (r.sousTitre ? '<p class="aside-sub">' + titleAttr(I18N.tr(r.sousTitre)) + "</p>" : "") +
+        '<div class="recipe-params">' +
         '<span class="param-chip">' + r.dose + " g / " + r.eau + " g</span>" +
         (UI.waterFactor(r) !== 1
-          ? '<span class="param-chip param-chip-adapte">' + I18N.t("a_adapte", { e: $("#f-eau").value }) + "</span>"
+          ? '<span class="param-chip param-chip-adapted">' + I18N.t("a_adapte", { e: $("#f-water").value }) + "</span>"
           : "") +
         (r.ratioTexte ? '<span class="param-chip">' + titleAttr(I18N.tr(r.ratioTexte)) + "</span>" : "") +
         (r.tempTexte ? '<span class="param-chip">' + titleAttr(I18N.tr(r.tempTexte)) + "</span>" : "") +
         '<span class="param-chip">' + I18N.t("molette") + " " + r.dial + "</span>" +
         (r.totalTexte ? '<span class="param-chip">' + titleAttr(I18N.tr(r.totalTexte)) + "</span>" : "") +
         "</div>" +
-        (steps.length ? '<ol class="recette-etapes">' + steps.map(e =>
-          "<li><span class=\"etape-temps\">" + (e.t === null ? "·" : fmtDuration(e.t)) + "</span><span>" + e.texte + "</span></li>"
+        (steps.length ? '<ol class="recipe-steps">' + steps.map(e =>
+          "<li><span class=\"step-time\">" + (e.t === null ? "·" : fmtDuration(e.t)) + "</span><span>" + e.texte + "</span></li>"
         ).join("") + "</ol>" : "") +
-        (r.pourQui ? '<p class="aside-pourqui"><b>' + I18N.t("r_pourqui") + "</b> " + titleAttr(I18N.tr(r.pourQui)) + "</p>" : "") +
-        (r.cafesAssocies.length ? '<p class="aside-cafes"><b>' + I18N.t("r_cafes") + "</b> " + r.cafesAssocies.join(", ") + "</p>" : "") +
-        (r.note ? '<p class="aside-note-recette">' + titleAttr(I18N.tr(r.note)) + "</p>" : "") +
-        '<button type="button" class="btn btn-petit" id="aside-pap" data-r="' + r.id + '">' + I18N.t("a_pap") + "</button>";
-      const btn = $("#aside-pap");
+        (r.pourQui ? '<p class="aside-forwho"><b>' + I18N.t("r_pourqui") + "</b> " + titleAttr(I18N.tr(r.pourQui)) + "</p>" : "") +
+        (r.cafesAssocies.length ? '<p class="aside-coffees"><b>' + I18N.t("r_cafes") + "</b> " + r.cafesAssocies.join(", ") + "</p>" : "") +
+        (r.note ? '<p class="aside-recipe-note">' + titleAttr(I18N.tr(r.note)) + "</p>" : "") +
+        '<button type="button" class="btn btn-small" id="aside-wt" data-r="' + r.id + '">' + I18N.t("a_pap") + "</button>";
+      const btn = $("#aside-wt");
       if (btn) btn.addEventListener("click", () => UI.openWalkthrough(btn.dataset.r));
     }
 
-    const coffee = DATA.state.cafes.find(c => c.id === $("#f-cafe").value);
+    const coffee = DATA.state.cafes.find(c => c.id === $("#f-coffee").value);
     if (!coffee) {
-      coffeeZone.innerHTML = '<p class="aside-vide">' + I18N.t("a_choisir_cafe") + "</p>";
+      coffeeZone.innerHTML = '<p class="aside-empty">' + I18N.t("a_choisir_cafe") + "</p>";
     } else {
       const lines = [];
       const pct = coffee.pourcentage_cafe_reel === "" || coffee.pourcentage_cafe_reel === undefined ? 100 : Number(coffee.pourcentage_cafe_reel);
       let badge = "";
-      if (pct < 100) badge = '<span class="badge-nonpur">' + pct + " % " + I18N.t("pct_cafe") + "</span>";
+      if (pct < 100) badge = '<span class="badge-nonpure">' + pct + " % " + I18N.t("pct_cafe") + "</span>";
       else if ((coffee.tag || "").includes("référence")) badge = '<span class="badge-reference">' + I18N.t("badge_etalon") + "</span>";
       const identity = [coffee.torrefacteur, coffee.origine].filter(Boolean).join(" · ");
       const profile = [coffee.espece, coffee.procede,
         coffee.torrefaction ? I18N.t("a_torref", { t: coffee.torrefaction.toLowerCase() }) : ""].filter(Boolean).join(" · ");
-      if (identity) lines.push('<p class="aside-sous">' + identity + "</p>");
+      if (identity) lines.push('<p class="aside-sub">' + identity + "</p>");
       if (profile) lines.push("<p>" + profile + "</p>");
       if (coffee.notes_annoncees) lines.push('<p class="aside-notes">' + coffee.notes_annoncees + "</p>");
       if (Number(coffee.deja_moulu) === 1) lines.push('<p class="aside-reco">' + I18N.t("paquet_aside") + "</p>");
@@ -122,7 +122,7 @@
           lines.push('<p class="aside-age">' + I18N.t("a_age", { j: days, s: days > 1 ? "s" : "", f: freshness }) + "</p>");
         }
       }
-      coffeeZone.innerHTML = '<div class="aside-titre"><h4>' + coffee.nom + "</h4>" + badge + "</div>" + lines.join("");
+      coffeeZone.innerHTML = '<div class="aside-title"><h4>' + coffee.nom + "</h4>" + badge + "</div>" + lines.join("");
     }
     updateTwins();
     UI.updateStopwatchSteps(false);
@@ -134,16 +134,16 @@
      coffee and same grinder setting are not written. Below two twins, the card
      hides, a single cup is not a reference point. */
   function updateTwins() {
-    const zone = $("#aside-jumelles");
+    const zone = $("#aside-twins");
     if (!zone) return;
     const target = {
-      cafe_id: $("#f-cafe").value, recette: $("#f-recette").value,
-      mouture_dial: $("#f-mouture").value.trim(), ground: currentCoffeeGround(),
+      cafe_id: $("#f-coffee").value, recette: $("#f-recipe").value,
+      mouture_dial: $("#f-grind").value.trim(), ground: currentCoffeeGround(),
     };
     const exts = UI.analyzableExts().filter(e => e.id !== entry.editId);
     const list = TUNING.twins(exts, target, 3);
     if (list.length < 2) { zone.hidden = true; zone.innerHTML = ""; return; }
-    const temp = $("#f-temp").value, heat = $("#f-puissance").value;
+    const temp = $("#f-temp").value, heat = $("#f-power").value;
     const lines = list.map(j => {
       const e = j.ext;
       const diffs = [];
@@ -164,17 +164,17 @@
         String(e.puissance_feu) !== String(heat)) diffs.push(I18N.t("j_feu", { f: e.puissance_feu }));
       const [y, m, day] = String(e.date_heure).slice(0, 10).split("-").map(Number);
       const date = new Date(y, m - 1, day).toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" });
-      return '<li><span class="j-date">' + date + '</span><span class="j-ecart' + (diffs.length ? "" : " j-meme") + '">' +
-        (diffs.length ? diffs.join(" · ") : I18N.t(target.ground ? "j_meme_moulu" : "j_meme")) + '</span><b class="j-note">' +
+      return '<li><span class="j-date">' + date + '</span><span class="j-gap' + (diffs.length ? "" : " j-same") + '">' +
+        (diffs.length ? diffs.join(" · ") : I18N.t(target.ground ? "j_meme_moulu" : "j_meme")) + '</span><b class="j-rating">' +
         fmtDecimal(Number(e.note_sur_10), 1) + "</b></li>";
     });
     const avg = list.reduce((s, j) => s + Number(j.ext.note_sur_10), 0) / list.length;
     zone.hidden = false;
-    zone.innerHTML = '<div class="aside-titre"><h4>' + I18N.t("j_titre") + "</h4></div>" +
-      '<p class="aside-sous">' + I18N.t(target.ground ? "j_regle_moulu" : "j_regle", { c: TUNING.TWIN_CLICKS }) +
+    zone.innerHTML = '<div class="aside-title"><h4>' + I18N.t("j_titre") + "</h4></div>" +
+      '<p class="aside-sub">' + I18N.t(target.ground ? "j_regle_moulu" : "j_regle", { c: TUNING.TWIN_CLICKS }) +
       "</p>" +
-      '<ol class="jumelles">' + lines.join("") + "</ol>" +
-      '<p class="j-moyenne">' + I18N.t("j_moyenne", { m: fmtDecimal(avg, 1), n: list.length }) + "</p>";
+      '<ol class="twins">' + lines.join("") + "</ol>" +
+      '<p class="j-average">' + I18N.t("j_moyenne", { m: fmtDecimal(avg, 1), n: list.length }) + "</p>";
   }
 
   Object.assign(UI, { wireRecipeBand, updateEntryAside, updateRecipeBand, updateTwins, openRecipeSheet });

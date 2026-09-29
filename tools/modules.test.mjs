@@ -133,8 +133,8 @@ function lexer(src) {
 const OPS = ["...", "===", "!==", "**=", "&&=", "||=", "??=", "=>", "==", "!=", "<=", ">=",
   "&&", "||", "??", "?.", "++", "--", "+=", "-=", "*=", "/=", "%=", "**", "<<", ">>"];
 
-const FILES = ["js/ui-noyau.js", "js/ui-constats.js", "js/ui-derniere.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-saisie-aside.js", "js/ui-pilules.js", "js/ui-chrono.js", "js/ui-brouillon.js", "js/ui-rapide.js",
-  "js/ui-historique.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/ui-fiche.js", "js/ui-brassage.js", "js/ui-dessins.js", "js/app.js"];
+const FILES = ["js/ui-core.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js",
+  "js/ui-history.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/app.js"];
 
 const KEYWORDS = new Set(["if","else","for","while","do","return","function","const","let","var",
   "new","typeof","instanceof","in","of","delete","void","this","null","true","false","undefined",
@@ -142,12 +142,12 @@ const KEYWORDS = new Set(["if","else","for","while","do","return","function","co
   "continue","async","await","yield","import","export","from","as","static","get","set","arguments"]);
 
 /* The other layers of the site. We COLLECT them from their files instead of
-   listing them here: recettes.js alone publishes some thirty constants, and a
+   listing them here: recipes.js alone publishes some thirty constants, and a
    handwritten list would have drifted at the first addition, turning this test
    into a source of false alarms. Which amounts to disabling it. */
-const OTHER_LAYERS = ["js/outils.js", "js/i18n.js", "js/grind.js", "js/recettes.js", "js/sync.js",
-  "js/data-csv.js", "js/data-schema.js", "js/data-store.js", "js/data-calculs.js", "js/data-migrations.js",
-  "js/data.js", "js/reglages.js", "js/charts.js", "js/demo-data.js"];
+const OTHER_LAYERS = ["js/tools.js", "js/i18n.js", "js/grind.js", "js/recipes.js", "js/sync.js",
+  "js/data-csv.js", "js/data-schema.js", "js/data-store.js", "js/data-calcs.js", "js/data-migrations.js",
+  "js/data.js", "js/tuning.js", "js/charts.js", "js/demo-data.js"];
 const GLOBALS = new Set(["Chart",
   "UI","document","window","location","history","navigator","localStorage","sessionStorage",
   "console","Math","JSON","Date","Number","String","Boolean","Array","Object","Set","Map","WeakMap","Promise",
@@ -257,7 +257,7 @@ for (const f of FILES) {
   info[f] = { src, declared, free, borrowed, exposed, viaUI, reassigned };
 }
 
-const core = info["js/ui-noyau.js"];
+const core = info["js/ui-core.js"];
 
 /* 1. NO UNKNOWN FREE NAME.
    A name that is neither declared locally, nor borrowed from the core, nor a
@@ -299,7 +299,7 @@ const core = info["js/ui-noyau.js"];
     [...core.src.matchAll(/^  (?:let|var) ([\w$]+)\s*=/gm)].map(m => m[1]));
   const faults = [];
   for (const f of FILES) {
-    if (f === "js/ui-noyau.js") continue;
+    if (f === "js/ui-core.js") continue;
     for (const n of info[f].borrowed) if (coreMutables.has(n)) faults.push(f + " borrows the let " + n);
   }
   check("no file borrows a reassignable variable from the core",
@@ -308,7 +308,7 @@ const core = info["js/ui-noyau.js"];
   // The noisy counterpart: reassigning a borrowed name throws in strict mode.
   const reassignFaults = [];
   for (const f of FILES) {
-    if (f === "js/ui-noyau.js") continue;
+    if (f === "js/ui-core.js") continue;
     for (const n of info[f].reassigned) if (info[f].borrowed.has(n)) reassignFaults.push(f + " reassigns " + n);
   }
   check("no file reassigns a borrowed name", reassignFaults.length === 0, reassignFaults.join(", "));

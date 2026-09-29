@@ -32,7 +32,7 @@ const UI = (() => {
     // True between a bubble opened by long press and the click that follows it.
     let bubbleJustOpened = false;
     const dismiss = () => {
-      root.querySelectorAll(".info-ouverte").forEach(x => x.classList.remove("info-ouverte"));
+      root.querySelectorAll(".info-expanded").forEach(x => x.classList.remove("info-expanded"));
     };
     const cancel = () => { clearTimeout(pendingTimer); pendingTimer = null; target = null; };
 
@@ -43,7 +43,7 @@ const UI = (() => {
       bubbleJustOpened = false;
       pendingTimer = setTimeout(() => {
         dismiss();
-        el.classList.add("info-ouverte");
+        el.classList.add("info-expanded");
         bubbleJustOpened = true;
         pendingTimer = null;
       }, LONG_PRESS_MS);
@@ -52,7 +52,7 @@ const UI = (() => {
     root.addEventListener("pointerup", () => {
       // A long press already opened the bubble: the click that follows must
       // not also toggle the pill. Otherwise the click is let through.
-      if (target && target.classList.contains("info-ouverte")) {
+      if (target && target.classList.contains("info-expanded")) {
         setTimeout(dismiss, 2500);
       }
       cancel();
@@ -135,7 +135,7 @@ const UI = (() => {
   }
 
   function setPressed(el, isActive) {
-    el.classList.toggle("actif", isActive);
+    el.classList.toggle("on", isActive);
     el.setAttribute("aria-pressed", isActive ? "true" : "false");
   }
 
@@ -219,12 +219,12 @@ const UI = (() => {
      Returns a promise of a boolean, so the caller reads as before:
      `if (!await askConfirm(texte)) return;`. */
   function askConfirm(message, options) {
-    const d = $("#modale-confirmer");
+    const d = $("#modal-confirm");
     if (!d || typeof d.showModal !== "function") return Promise.resolve(window.confirm(message));
     const danger = !!(options && options.danger);
-    setText($("#confirmer-titre"), I18N.t("c_titre"));
-    setText($("#confirmer-texte"), message);
-    const ok = $("#confirmer-ok"), noButton = $("#confirmer-annuler");
+    setText($("#confirm-title"), I18N.t("c_titre"));
+    setText($("#confirm-text"), message);
+    const ok = $("#confirm-ok"), noButton = $("#confirm-cancel");
     ok.textContent = (options && options.label) || I18N.t("c_ok");
     noButton.textContent = I18N.t("t_annuler");
     ok.classList.toggle("btn-danger", danger);
@@ -274,7 +274,7 @@ const UI = (() => {
     return Math.round(n).toLocaleString("fr-FR") + " ₫";
   }
 
-  // A single definition, in outils.js: see that file's header.
+  // A single definition, in tools.js: see that file's header.
   const { average, localDateKey } = TOOLS;
 
   function localNow() {
@@ -299,15 +299,15 @@ const UI = (() => {
   /* THE RATING WITHOUT A THUMB (v8.40). A slider cannot be empty: the absence
      of a rating lived in a "not rated yet" box, to untick ON TOP of setting
      the rating. It now lives on the slider itself, through the
-     curseur-inactif class, as long as it has not been touched. Putting a
+     slider-inactive class, as long as it has not been touched. Putting a
      finger anywhere on the track rates, in a single gesture. Since v8.68 this
      class has no style: the slider keeps the same look, the label tells the
      state. Same mechanism in the entry form and in the quick entry. */
   function isRatingEmpty(slider) {
-    return !!slider && slider.classList.contains("curseur-inactif");
+    return !!slider && slider.classList.contains("slider-inactive");
   }
   function markRating(slider, empty) {
-    if (slider) slider.classList.toggle("curseur-inactif", empty);
+    if (slider) slider.classList.toggle("slider-inactive", empty);
   }
   /* The keys that CHANGE the value. Tabbing through the slider must not rate
      the cup: the old unfiltered keydown did. */
@@ -606,12 +606,12 @@ const UI = (() => {
 
   // ---------- Theme ----------
 
-  /* The two dark palettes (v8.34): data-theme gives the family, data-sombre
+  /* The two dark palettes (v8.34): data-theme gives the family, data-palette
      the palette. The status bar colour follows the palette. */
   const TINTS = { clair: "#f4ede3", graphite: "#111113", nuit: "#0b1017" };
   function applyTheme(theme, palette) {
     document.documentElement.setAttribute("data-theme", theme);
-    if (palette) document.documentElement.setAttribute("data-sombre", palette);
+    if (palette) document.documentElement.setAttribute("data-palette", palette);
     try {
       localStorage.setItem("theme", theme);
       if (palette) localStorage.setItem("sombre", palette);
@@ -621,7 +621,7 @@ const UI = (() => {
        one whose media matches: so we write the chosen colour into BOTH,
        otherwise the one it keeps would contradict the choice. */
     const tint = theme === "sombre"
-      ? TINTS[document.documentElement.getAttribute("data-sombre")] || TINTS.graphite
+      ? TINTS[document.documentElement.getAttribute("data-palette")] || TINTS.graphite
       : TINTS.clair;
     document.querySelectorAll('meta[name="theme-color"]')
       .forEach(m => m.setAttribute("content", tint));
@@ -703,16 +703,16 @@ const UI = (() => {
     // Only the VISUAL switch goes into the transition. The edit abandonment
     // above is business logic: it happens in every case.
     withTransition(() => {
-      $$(".ecran").forEach(e => e.classList.remove("actif"));
+      $$(".screen").forEach(e => e.classList.remove("on"));
       /* aria-current="page" and not aria-pressed: these are navigation links
           disguised as buttons, not toggles. */
       $$(".nav-btn").forEach(b => {
-        b.classList.toggle("actif", b.dataset.ecran === nameKey);
-        if (b.dataset.ecran === nameKey) b.setAttribute("aria-current", "page");
+        b.classList.toggle("on", b.dataset.screen === nameKey);
+        if (b.dataset.screen === nameKey) b.setAttribute("aria-current", "page");
         else b.removeAttribute("aria-current");
       });
-      const sec = $("#ecran-" + nameKey);
-      if (sec) sec.classList.add("actif");
+      const sec = $("#screen-" + nameKey);
+      if (sec) sec.classList.add("on");
       if (location.hash !== "#" + nameKey) history.replaceState(null, "", "#" + nameKey);
       renderCurrentScreen();
     });

@@ -214,8 +214,8 @@ que c'etait le seul du site.
 
 **Le feu par défaut vit à TROIS endroits, et le quatrième est une migration.**
 Chris a redemandé 3 ; l'échelle avait déjà fait 3, puis 4, puis 2. Changer la
-valeur demande de toucher la semence des recettes (`recettes.js`), le repli
-d'usine de l'interface (`ui-noyau.js`) et le défaut du schéma des réglages
+valeur demande de toucher la semence des recettes (`recipes.js`), le repli
+d'usine de l'interface (`ui-core.js`) et le défaut du schéma des réglages
 (`data-schema.js`), puis d'ajouter un pas de schéma pour les recettes déjà
 enregistrées. En oublier un laisse un carnet neuf et un carnet existant annoncer
 deux feux différents, sans que rien ne le signale. Un test compare désormais les
@@ -862,9 +862,9 @@ préfixe.
 
 ### Le brouillon a son fichier
 
-`ui-saisie.js` a repassé le plafond de 1 200 lignes en v7.93 avec le temps de
+`ui-entry.js` a repassé le plafond de 1 200 lignes en v7.93 avec le temps de
 chauffe. Plutôt que de relever le plafond, le brouillon (écriture, planification,
-restauration) est sorti dans `ui-brouillon.js`, chargé juste après : il ne
+restauration) est sorti dans `ui-draft.js`, chargé juste après : il ne
 partage avec l'écran que l'objet `saisie`, un objet muté en place donc sûr à
 emprunter, et les identifiants des champs. Il appelle l'écran par `UI.` et
 l'écran l'appelle par `UI.`, comme entre deux écrans. Un plafond qu'on relève à
@@ -921,7 +921,7 @@ Deux réglages qui ne sont PAS arbitraires :
   cellule et décalait ses voisins.
 
 La case "eau préchauffée" est MASQUÉE sur la famille `brikka-classique`
-(`majChampPrechauffe`, `FAMILLES_PRECHAUFFAGE` dans recettes.js) : le
+(`majChampPrechauffe`, `FAMILLES_PRECHAUFFAGE` dans recipes.js) : le
 préchauffage y est la différence entre les deux variantes, donc la case ferait
 doublon avec le choix de recette et permettrait d'enregistrer une contradiction.
 La valeur stockée se déduit alors de la recette, ce qui garde `eau_prechauffee`
@@ -977,7 +977,7 @@ le feu, lui, se lit sur le chrono et se reproduit. C'est sa demande du
 dépend pas de l'observateur. Remplacé en v7.93.
 
 Le modèle est le plus simple possible et il est écrit tel quel dans
-`recettes.js` : montée linéaire de l'eau du robinet, 28 °C au Vietnam, à 100 °C
+`recipes.js` : montée linéaire de l'eau du robinet, 28 °C au Vietnam, à 100 °C
 au temps d'ébullition de la bouilloire, réglé dans Paramètres (zéro tant qu'il
 n'est pas chronométré, 2:00 chez Chris). Une vraie bouilloire monte un peu moins vite près de
 l'ébullition à cause des pertes, donc le linéaire surestime de deux ou trois
@@ -1060,9 +1060,9 @@ Une recette écrit ses paliers en grammes ABSOLUS : "Verser jusqu'à 112 g",
 Chris a versé 240 g et le panneau latéral comme le chronomètre lui réclamaient
 toujours 225 g, sans rien signaler.
 
-`echelleVersements(texte, facteur)` vit dans `js/recettes.js`, pas dans app.js :
+`echelleVersements(texte, facteur)` vit dans `js/recipes.js`, pas dans app.js :
 c'est du calcul pur sur des chaînes, donc testable sans navigateur, comme
-`reglages.js`. `app.js` ne garde que `facteurEau()`, qui lit le champ. Un
+`tuning.js`. `app.js` ne garde que `facteurEau()`, qui lit le champ. Un
 facteur de 1 laisse les textes intacts au caractère près.
 
 LE GARDE-FOU, à ne pas retirer : seuls les nombres suivis de " g" et
@@ -1937,7 +1937,7 @@ null sous deux notes : une seule note n'a pas de régularité.
 
 ### Écran Mes meilleurs réglages
 
-`js/reglages.js`, chargé entre data.js et app.js. Le CALCUL y vit, sans aucune
+`js/tuning.js`, chargé entre data.js et app.js. Le CALCUL y vit, sans aucune
 dépendance au DOM, ce qui le rend testable sans navigateur. app.js ne fait que
 l'affichage. Ce découpage est délibéré : app.js dépasse 2500 lignes et le backlog
 demande de le scinder, autant ne pas aggraver en attendant.
@@ -2278,7 +2278,7 @@ chacun renvoie son état complet. Acceptable pour un utilisateur unique.
 été découpé en v7.87 par extraction MÉCANIQUE de chaque déclaration nommée avec
 son commentaire, sans retaper un corps de fonction : `data-csv.js` et
 `data-schema.js` sont purs, `data-store.js` ne connaît que des primitives,
-`data-calculs.js` et `data-migrations.js` se lient à l'état par `pour(state)`
+`data-calcs.js` et `data-migrations.js` se lient à l'état par `pour(state)`
 parce que leurs fonctions le lisent (ou, pour les migrations, l'écrivent) et
 que leur passer l'état en paramètre à chaque appel aurait touché des dizaines
 de sites. `data.js` reste le seul propriétaire de l'état et le seul à appeler

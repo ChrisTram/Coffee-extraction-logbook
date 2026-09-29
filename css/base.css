@@ -9,7 +9,7 @@
    Brikka #2a78d6, Switch #eb6834, both machines #cc79a7.
 
    CONTRAST. Every TEXT colour holds at least 4.5:1 on all four surfaces
-   it can sit on (--panneau, --fond, --panneau-2, --rail), not just on
+   it can sit on (--panel, --bg, --panel-2, --rail), not just on
    the convenient one. Several mockup values had to be darkened for this,
    very slightly, keeping the hue: details and ratios are in DECISIONS.md,
    "La refonte Comptoir". DATA colours are exempt: they are fills and
@@ -84,17 +84,17 @@
      Mid tones, readable on all three backgrounds, and far from the three
      machine colours (blue, vermilion, pink) and the rating copper, with no
      green, which the Comptoir design forbids. */
-  --cafe-1: #5fa8d3;
-  --cafe-2: #d0806a;
-  --cafe-3: #d8b73e;
-  --cafe-4: #9d8ec4;
-  --cafe-5: #9aa05a;
+  --coffee-1: #5fa8d3;
+  --coffee-2: #d0806a;
+  --coffee-3: #d8b73e;
+  --coffee-4: #9d8ec4;
+  --coffee-5: #9aa05a;
   --brikka: #2a78d6;
   --switch: #eb6834;
   /* Dusty pink, no longer emerald green. The blue / vermilion / pink-purple trio
      is Okabe-Ito's, colour-blind safe; emerald was too, but it
      clashed with an entirely warm palette. */
-  --deux: #cc79a7;
+  --second: #cc79a7;
 
   --serif: "Instrument Serif", Georgia, "Times New Roman", serif;
   --sans: Manrope, "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -102,51 +102,51 @@
   /* Comptoir design radii: cards 18, controls 12, round pills. The first
      two names already existed and keep their name, only the value
      changes, so the whole site follows without touching the rules. */
-  --rayon: 18px;
-  --rayon-petit: 12px;
-  --rayon-pastille: 999px;
+  --radius: 18px;
+  --radius-small: 12px;
+  --radius-dot: 999px;
 
   /* Design spacings and heights, to stop rewriting them in every block. */
-  --ecart-cartes: 18px;
-  --carte-padding: 22px 26px;
-  --hauteur-controle: 48px;
+  --gap-cards: 18px;
+  --card-padding: 22px 26px;
+  --height-control: 48px;
   --rail-large: 232px;
-  --barre-basse: 62px;
+  --bottom-bar: 62px;
   /* The frame: max width of EVERY screen, centred in main. A single token,
-     a single rule (.ecran), no screen redefines it. */
-  --cadre: 1560px;
+     a single rule (.screen), no screen redefines it. */
+  --frame: 1560px;
 
   --transition: 220ms cubic-bezier(0.4, 0, 0.2, 1);
 
   /* The only colour that does not follow the theme: dark text on the
      pink pill of both machines, whose background is the same in both.
-     --sur-accent, on the other hand, had to become a theme colour: the light
+     --on-accent, on the other hand, had to become a theme colour: the light
      theme's cream on the dark theme's accent only reached 2.66:1. */
-  --encre-sur-clair: #2e211a;
+  --ink-on-light: #2e211a;
 
   /* Layer scale, a single list read bottom to top. A z-index hard-coded
      elsewhere is a regression: this is where we decide what goes on top. */
-  --z-sommaire: 20;
-  --z-entete: 50;
+  --z-toc: 20;
+  --z-header: 50;
   --z-tag: 60;
   /* The scrim goes UNDER the navigation sheet and UNDER the floating button:
      it dims the content, not the navigation. */
-  --z-voile-nav: 148;
-  --z-panneau-rapide: 149;
+  --z-overlay-nav: 148;
+  --z-panel-quick: 149;
   --z-fab: 150;
-  --z-bulle: 200;
+  --z-bubble: 200;
   /* The "Plus" sheet goes above the floating button, otherwise the cup
      would float over the menu it is supposed to leave alone. */
   --z-rail: 152;
   --z-toast: 300;
   /* The scrim under a window or the phone sheet (v8.78). */
-  --voile: rgba(38, 25, 15, 0.35);
+  --overlay: rgba(38, 25, 15, 0.35);
 }
 
 /* THE TWO DARK THEMES (v8.34), picked by Chris from a mockup on 19
    September 2026, replacing the brown "Espresso" he did not like at all.
    data-theme="sombre" stays the FAMILY switch: every rule written for
-   dark keeps applying to both. data-sombre picks the palette, Graphite
+   dark keeps applying to both. data-palette picks the palette, Graphite
    by default. The theme button cycles light, Graphite, Nuit.
 
    Same grammar in both: four surfaces in clear steps, alpha hairlines,
@@ -159,54 +159,54 @@
    GRAPHITE: near black, a barely warm neutral, a single accent, the crema
    of an espresso. The "modern app" direction. */
 html[data-theme="sombre"] {
-  --fond: #111113;
+  --bg: #111113;
   --rail: #141416;
-  --fond-degrade: radial-gradient(1100px 520px at 85% -8%, rgba(232, 187, 133, 0.07) 0%, #111113 60%);
-  --panneau: #18181b;
-  --panneau-2: #212125;
-  /* Hover and pressed-state surface, one step above --panneau-2. */
-  --panneau-3: #2b2b30;
-  --encre: #f4f1ec;
-  --texte: #d2cdc6;
-  /* 5.82:1 on --panneau, 4.63:1 on --panneau-3, the lightest. */
-  --attenue: #99938b;
+  --bg-gradient: radial-gradient(1100px 520px at 85% -8%, rgba(232, 187, 133, 0.07) 0%, #111113 60%);
+  --panel: #18181b;
+  --panel-2: #212125;
+  /* Hover and pressed-state surface, one step above --panel-2. */
+  --panel-3: #2b2b30;
+  --ink: #f4f1ec;
+  --text: #d2cdc6;
+  /* 5.82:1 on --panel, 4.63:1 on --panel-3, the lightest. */
+  --muted: #99938b;
   --accent: #e8bb85;
-  --accent-fort: #f4cd9d;
-  --accent-fond: rgba(232, 187, 133, 0.12);
+  --accent-strong: #f4cd9d;
+  --accent-bg: rgba(232, 187, 133, 0.12);
   /* Dark ink on the accent: 10.3:1. */
-  --sur-accent: #1b140c;
+  --on-accent: #1b140c;
   /* ALPHA hairlines: a single value stays visible on every surface. */
-  --lignes: rgba(255, 255, 255, 0.08);
-  --lignes-douces: rgba(255, 255, 255, 0.05);
-  --lignes-graphe: rgba(255, 255, 255, 0.08);
-  --barre-neutre: #4a4640;
+  --lines: rgba(255, 255, 255, 0.08);
+  --lines-soft: rgba(255, 255, 255, 0.05);
+  --lines-chart: rgba(255, 255, 255, 0.08);
+  --bar-neutral: #4a4640;
   /* The dark theme's relief: a soft shadow under each card, and a one-pixel
      light hairline on top. The light theme lays its cards flat on a
      border, so these two tokens are empty there. */
-  --ombre-carte: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 10px 30px rgba(0, 0, 0, 0.35);
-  --ombre-haut: 0 1px 0 rgba(255, 255, 255, 0.05) inset;
-  --ombre: 0 16px 40px rgba(0, 0, 0, 0.55);
-  --tooltip-fond: #f4f1ec;
-  --tooltip-texte: #18181b;
-  --avert-fond: rgba(232, 187, 133, 0.10);
-  --avert-bord: rgba(232, 187, 133, 0.40);
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-top: 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+  --shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+  --tooltip-bg: #f4f1ec;
+  --tooltip-text: #18181b;
+  --warn-bg: rgba(232, 187, 133, 0.10);
+  --warn-border: rgba(232, 187, 133, 0.40);
   --danger: #ef8a78;
   /* NO MORE GREEN, anywhere, even to say "good": an explicit request
      from Chris. The favourable status therefore takes the accent, the
      unfavourable keeps red. The name --ok is kept to avoid rewriting the
      thirty rules that use it. */
   --ok: #e8bb85;
-  --tendance: rgba(232, 187, 133, 0.45);
+  --trend: rgba(232, 187, 133, 0.45);
   /* Background of the dark card (the timer): a secondary card with an accent
      stroke on the left. Its sub-surfaces and muted colour live in --cs-*. */
-  --carte-sombre-fond: #212125;
-  --cs-panneau: #18181b;
-  --cs-panneau-2: #2b2b30;
-  --cs-attenue: #a29c94;
+  --card-dark-bg: #212125;
+  --cs-panel: #18181b;
+  --cs-panel-2: #2b2b30;
+  --cs-muted: #a29c94;
 
   --brikka: #4f93e6;
   --switch: #ef7440;
-  --deux: #d58ab3;
+  --second: #d58ab3;
 
   --hm0: #212125;
   --hm1: #3d3326;
@@ -220,40 +220,40 @@ html[data-theme="sombre"] {
    moka pot. Cold below, warm above: the sharpest contrast. The Brikka
    blue goes up one more notch so it does not melt into the background.
    Only redefines what changes, the rest comes from the Graphite block. */
-html[data-theme="sombre"][data-sombre="nuit"] {
-  --fond: #0b1017;
+html[data-theme="sombre"][data-palette="nuit"] {
+  --bg: #0b1017;
   --rail: #0e141d;
-  --fond-degrade: radial-gradient(1100px 520px at 88% -10%, rgba(91, 156, 240, 0.10) 0%, #0b1017 60%);
-  --panneau: #121a25;
-  --panneau-2: #192331;
-  --panneau-3: #212e3f;
-  --encre: #eef2f6;
-  --texte: #c7d0db;
-  /* 6.33:1 on --panneau, 4.98:1 on --panneau-3. */
-  --attenue: #8e9db0;
+  --bg-gradient: radial-gradient(1100px 520px at 88% -10%, rgba(91, 156, 240, 0.10) 0%, #0b1017 60%);
+  --panel: #121a25;
+  --panel-2: #192331;
+  --panel-3: #212e3f;
+  --ink: #eef2f6;
+  --text: #c7d0db;
+  /* 6.33:1 on --panel, 4.98:1 on --panel-3. */
+  --muted: #8e9db0;
   --accent: #e5935a;
-  --accent-fort: #f3aa74;
-  --accent-fond: rgba(229, 147, 90, 0.13);
+  --accent-strong: #f3aa74;
+  --accent-bg: rgba(229, 147, 90, 0.13);
   /* 7.7:1. */
-  --sur-accent: #1c0f06;
-  --lignes: rgba(200, 220, 255, 0.09);
-  --lignes-douces: rgba(200, 220, 255, 0.05);
-  --lignes-graphe: rgba(200, 220, 255, 0.09);
-  --barre-neutre: #3a4a60;
-  --ombre-carte: 0 1px 0 rgba(200, 220, 255, 0.05) inset, 0 12px 32px rgba(0, 0, 0, 0.45);
-  --ombre-haut: 0 1px 0 rgba(200, 220, 255, 0.05) inset;
-  --ombre: 0 16px 40px rgba(0, 0, 0, 0.6);
-  --tooltip-fond: #eef2f6;
-  --tooltip-texte: #121a25;
-  --avert-fond: rgba(229, 147, 90, 0.10);
-  --avert-bord: rgba(229, 147, 90, 0.40);
+  --on-accent: #1c0f06;
+  --lines: rgba(200, 220, 255, 0.09);
+  --lines-soft: rgba(200, 220, 255, 0.05);
+  --lines-chart: rgba(200, 220, 255, 0.09);
+  --bar-neutral: #3a4a60;
+  --shadow-card: 0 1px 0 rgba(200, 220, 255, 0.05) inset, 0 12px 32px rgba(0, 0, 0, 0.45);
+  --shadow-top: 0 1px 0 rgba(200, 220, 255, 0.05) inset;
+  --shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  --tooltip-bg: #eef2f6;
+  --tooltip-text: #121a25;
+  --warn-bg: rgba(229, 147, 90, 0.10);
+  --warn-border: rgba(229, 147, 90, 0.40);
   --danger: #f08a7a;
   --ok: #e5935a;
-  --tendance: rgba(229, 147, 90, 0.45);
-  --carte-sombre-fond: #192331;
-  --cs-panneau: #121a25;
-  --cs-panneau-2: #212e3f;
-  --cs-attenue: #95a4b6;
+  --trend: rgba(229, 147, 90, 0.45);
+  --card-dark-bg: #192331;
+  --cs-panel: #121a25;
+  --cs-panel-2: #212e3f;
+  --cs-muted: #95a4b6;
 
   --brikka: #5b9cf0;
 
@@ -268,50 +268,50 @@ html[data-theme="sombre"][data-sombre="nuit"] {
    Values followed by a ratio were darkened relative to the mockup to
    hold 4.5:1 on the darkest surface they sit on. */
 html[data-theme="clair"] {
-  --fond: #f4ede3;
-  --fond-degrade: radial-gradient(1200px 600px at 80% -10%, #faf4ea 0%, #f4ede3 55%);
-  --panneau: #fcf8f2;
-  --panneau-2: #ebe1d4;
+  --bg: #f4ede3;
+  --bg-gradient: radial-gradient(1200px 600px at 80% -10%, #faf4ea 0%, #f4ede3 55%);
+  --panel: #fcf8f2;
+  --panel-2: #ebe1d4;
   /* Lighter (v8.76): muted, accent and error fell to 4.0:1 on it. */
-  --panneau-3: #e8ddcf;
+  --panel-3: #e8ddcf;
   --rail: #f0e7db;
-  --encre: #26190f;
-  --texte: #5e4b3c;
-  /* Mockup #8a7462: 3.42:1 on --panneau-2, below the threshold. #6d5a4b since
-     v8.76: 5.06:1 on --panneau-2 and 4.88:1 on --panneau-3, the hover surface. */
-  --attenue: #6d5a4b;
-  /* Mockup #a85a1e: 4.00:1 on --accent-fond. #924d1a since v8.76:
-     5.03:1 on --accent-fond, 4.75:1 on --panneau-3. */
+  --ink: #26190f;
+  --text: #5e4b3c;
+  /* Mockup #8a7462: 3.42:1 on --panel-2, below the threshold. #6d5a4b since
+     v8.76: 5.06:1 on --panel-2 and 4.88:1 on --panel-3, the hover surface. */
+  --muted: #6d5a4b;
+  /* Mockup #a85a1e: 4.00:1 on --accent-bg. #924d1a since v8.76:
+     5.03:1 on --accent-bg, 4.75:1 on --panel-3. */
   --accent: #924d1a;
-  --accent-fort: #8a4716;
-  --accent-fond: #f2e2d2;
+  --accent-strong: #8a4716;
+  --accent-bg: #f2e2d2;
   /* Cream on the accent: 5.02:1. */
-  --sur-accent: #f4ede3;
-  --lignes: #dccdbb;
-  --lignes-douces: #ede4d8;
-  --lignes-graphe: rgba(116, 97, 82, 0.18);
-  --barre-neutre: #cbb8a2;
+  --on-accent: #f4ede3;
+  --lines: #dccdbb;
+  --lines-soft: #ede4d8;
+  --lines-chart: rgba(116, 97, 82, 0.18);
+  --bar-neutral: #cbb8a2;
   /* No shadow on light theme cards: the design lays them flat, on a
-     border. --ombre is now only used by the floating button and the sheet. */
-  --ombre: 0 10px 30px rgba(38, 25, 15, 0.14);
-  --ombre-carte: none;
-  --ombre-haut: none;
-  --tooltip-fond: #26190f;
-  --tooltip-texte: #f4ede3;
-  --avert-fond: #f2e2d2;
-  --avert-bord: rgba(154, 82, 28, 0.42);
-  /* Mockup #c4503b: 3.57:1 on --panneau-2. #a0412f since v8.76:
-     4.76:1 on --panneau-3. */
+     border. --shadow is now only used by the floating button and the sheet. */
+  --shadow: 0 10px 30px rgba(38, 25, 15, 0.14);
+  --shadow-card: none;
+  --shadow-top: none;
+  --tooltip-bg: #26190f;
+  --tooltip-text: #f4ede3;
+  --warn-bg: #f2e2d2;
+  --warn-border: rgba(154, 82, 28, 0.42);
+  /* Mockup #c4503b: 3.57:1 on --panel-2. #a0412f since v8.76:
+     4.76:1 on --panel-3. */
   --danger: #a0412f;
   /* A field's border (v8.76): 3.3:1 on the panel, the minimum for a control
-     boundary is 3:1. --lignes, at 1.5:1, left fields barely visible. */
-  --lignes-champ: #9a8570;
+     boundary is 3:1. --lines, at 1.5:1, left fields barely visible. */
+  --lines-field: #9a8570;
   /* No green: "good" takes the accent. See the dark theme. */
   --ok: #9a521c;
-  --tendance: rgba(154, 82, 28, 0.34);
-  /* Background of the dark card. A dedicated token and not --encre: inside
-     the card, --encre flips meaning and becomes the TEXT colour. */
-  --carte-sombre-fond: #26190f;
+  --trend: rgba(154, 82, 28, 0.34);
+  /* Background of the dark card. A dedicated token and not --ink: inside
+     the card, --ink flips meaning and becomes the TEXT colour. */
+  --card-dark-bg: #26190f;
 
   /* Caramel ramp of the calendar, from empty to most active. The design gives
      four for five levels: the missing step is interpolated between the last two.
@@ -341,7 +341,7 @@ html {
 
 /* On touch: no double-tap zoom on a button and no grey tap highlight,
    both feel like a "web page" where we want an "app". */
-button, .pilule, .tag, .nav-btn, input[type="range"] { touch-action: manipulation; }
+button, .pill, .tag, .nav-btn, input[type="range"] { touch-action: manipulation; }
 /* Installed app: pulling down at the top of the page does not reload the
    site. The service worker and versioning deliver the new version on
    the next open anyway. */
@@ -351,18 +351,18 @@ body {
   font-family: var(--sans);
   font-size: 16px;
   line-height: 1.55;
-  color: var(--texte);
-  background: var(--fond);
-  background-image: var(--fond-degrade);
+  color: var(--text);
+  background: var(--bg);
+  background-image: var(--bg-gradient);
   background-attachment: fixed;
   min-height: 100vh;
 }
-button, a, .pilule, .tag { -webkit-tap-highlight-color: transparent; }
+button, a, .pill, .tag { -webkit-tap-highlight-color: transparent; }
 
 /* FORCED CONTRAST (Windows). Background colours disappear: an active state
    that relied only on its colour becomes invisible. We give it an outline. */
 @media (forced-colors: active) {
-  [aria-pressed="true"], [aria-current="page"], .btn-methode.actif, .nav-btn.actif {
+  [aria-pressed="true"], [aria-current="page"], .btn-method.on, .nav-btn.on {
     outline: 2px solid CanvasText;
     outline-offset: 2px;
   }
@@ -372,25 +372,25 @@ button, a, .pilule, .tag { -webkit-tap-highlight-color: transparent; }
    the browser faked bold by thickening the stroke. */
 h1, h2, h3, h4 {
   font-family: var(--serif);
-  color: var(--encre);
+  color: var(--ink);
   font-weight: 400;
   letter-spacing: 0.01em;
 }
 
 code {
   font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
-  background: var(--panneau-2);
+  background: var(--panel-2);
   padding: 1px 6px;
   border-radius: 6px;
   font-size: 0.92em;
-  color: var(--accent-fort);
+  color: var(--accent-strong);
 }
 
 a { color: var(--accent); }
 
 button { font-family: inherit; }
 
-::selection { background: var(--accent); color: var(--panneau); }
+::selection { background: var(--accent); color: var(--panel); }
 
 /* ---------- Header ---------- */
 
@@ -398,7 +398,7 @@ button { font-family: inherit; }
 
    ONE .rail element. On desktop it is the left rail; below 1024 px
    it becomes the "Plus" sheet rising from the bottom, and the three daily
-   screens move into .barre-bas. See the comment in index.html. */
+   screens move into .bottom-bar. See the comment in index.html. */
 
 .rail {
   background: var(--rail);
@@ -407,48 +407,48 @@ button { font-family: inherit; }
   gap: 18px;
 }
 
-.rail-marque {
+.rail-brand {
   display: flex;
   align-items: center;
   gap: 11px;
   text-decoration: none;
   color: inherit;
-  border-radius: var(--rayon-petit);
+  border-radius: var(--radius-small);
   padding: 4px;
 }
-.rail-marque:hover { background: var(--accent-fond); }
-.rail-marque:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.rail-brand:hover { background: var(--accent-bg); }
+.rail-brand:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .rail-logo {
   width: 38px; height: 38px;
   flex: none;
   display: grid;
   place-items: center;
   border-radius: 11px;
-  background: var(--encre);
-  color: var(--fond);
+  background: var(--ink);
+  color: var(--bg);
 }
-.rail-titres { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
-.rail-nom {
+.rail-titles { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.rail-name {
   font-family: var(--serif);
   font-size: 1.35rem;
   font-weight: 400;
   letter-spacing: -0.01em;
   margin: 0;
-  color: var(--encre);
+  color: var(--ink);
 }
-.rail-sous { font-size: 0.75rem; color: var(--attenue); }
+.rail-sub { font-size: 0.75rem; color: var(--muted); }
 
-.rail-nouvelle {
+.rail-new {
   width: 100%;
-  height: var(--hauteur-controle);
+  height: var(--height-control);
   justify-content: center;
   gap: 8px;
 }
 
-.rail-entrees { display: flex; flex-direction: column; gap: 2px; }
+.rail-entries { display: flex; flex-direction: column; gap: 2px; }
 
 /* A rail entry: line icon plus label, never an emoji. */
-.rail-entree {
+.rail-entry {
   display: flex;
   align-items: center;
   gap: 11px;
@@ -456,29 +456,29 @@ button { font-family: inherit; }
   padding: 10px 12px;
   border: none;
   background: transparent;
-  color: var(--texte);
+  color: var(--text);
   font: inherit;
   font-size: 0.92rem;
   text-align: left;
-  border-radius: var(--rayon-petit);
+  border-radius: var(--radius-small);
   cursor: pointer;
   transition: background var(--transition), color var(--transition);
 }
-.rail-entree .ico { flex: none; color: var(--attenue); transition: color var(--transition); }
-.rail-entree:hover { background: var(--panneau-3); color: var(--encre); }
-.rail-entree:hover .ico { color: var(--encre); }
+.rail-entry .ico { flex: none; color: var(--muted); transition: color var(--transition); }
+.rail-entry:hover { background: var(--panel-3); color: var(--ink); }
+.rail-entry:hover .ico { color: var(--ink); }
 /* The active entry takes the page BACKGROUND, not the accent: the design
    wants a rail where the current screen looks cut out of it, not highlighted. */
-.rail-entree.actif { background: var(--fond); color: var(--encre); }
-.rail-entree.actif .ico { color: var(--accent); }
+.rail-entry.on { background: var(--bg); color: var(--ink); }
+.rail-entry.on .ico { color: var(--accent); }
 
-.rail-pied {
+.rail-footer {
   margin-top: auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding-top: 14px;
-  border-top: 1px solid var(--lignes);
+  border-top: 1px solid var(--lines);
 }
 .rail-sync {
   display: flex;
@@ -486,7 +486,7 @@ button { font-family: inherit; }
   gap: 8px;
   margin: 0;
   font-size: 0.75rem;
-  color: var(--attenue);
+  color: var(--muted);
 }
 /* The status dot. It is the only place where sync shows without opening a
    panel, so it carries colour rather than a plain grey circle. */
@@ -494,80 +494,80 @@ button { font-family: inherit; }
   width: 8px; height: 8px;
   flex: none;
   border-radius: 999px;
-  background: var(--barre-neutre);
+  background: var(--bar-neutral);
 }
-.rail-point[data-etat="ok"] { background: var(--accent); }
-.rail-point[data-etat="encours"] { background: var(--accent); opacity: 0.55; }
-.rail-point[data-etat="erreur"],
-.rail-point[data-etat="session-expiree"] { background: var(--danger); }
+.rail-point[data-state="ok"] { background: var(--accent); }
+.rail-point[data-state="encours"] { background: var(--accent); opacity: 0.55; }
+.rail-point[data-state="erreur"],
+.rail-point[data-state="session-expiree"] { background: var(--danger); }
 
 .rail-badges { display: flex; flex-wrap: wrap; gap: 6px; }
 .rail-badges:empty { display: none; }
-.rail-outils { display: flex; flex-wrap: wrap; gap: 6px; }
-.rail-donnees { flex: 1 0 100%; justify-content: center; }
+.rail-tools { display: flex; flex-wrap: wrap; gap: 6px; }
+.rail-data { flex: 1 0 100%; justify-content: center; }
 
 /* ---------- Bottom bar, phone ---------- */
-.barre-bas {
+.bottom-bar {
   display: none;
   position: fixed;
   left: 0; right: 0; bottom: 0;
-  z-index: var(--z-entete);
+  z-index: var(--z-header);
   background: color-mix(in srgb, var(--rail) 92%, transparent);
   backdrop-filter: blur(10px);
-  border-top: 1px solid var(--lignes);
+  border-top: 1px solid var(--lines);
   padding-bottom: env(safe-area-inset-bottom);
 }
-.barre-entree {
+.bar-entry {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 3px;
-  min-height: var(--barre-basse);
+  min-height: var(--bottom-bar);
   border: none;
   background: transparent;
-  color: var(--attenue);
+  color: var(--muted);
   font: inherit;
   font-size: 0.75rem;
   cursor: pointer;
 }
-.barre-entree.actif { color: var(--accent); }
-.barre-entree[aria-expanded="true"] { color: var(--encre); }
+.bar-entry.on { color: var(--accent); }
+.bar-entry[aria-expanded="true"] { color: var(--ink); }
 
 /* Phone scrim when the sheet is open. */
-.voile-nav {
+.overlay-nav {
   position: fixed;
   inset: 0;
-  z-index: var(--z-voile-nav);
-  background: var(--voile);
+  z-index: var(--z-overlay-nav);
+  background: var(--overlay);
 }
 
 /* My best settings screen: one card per coffee. */
-#reglages-liste {
+#tuning-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: var(--ecart-cartes);
+  gap: var(--gap-cards);
 }
-.reglage { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
-.reglage.inactif { opacity: 0.6; }
-.reglage-entete { display: flex; flex-direction: column; gap: 2px; }
-.reglage-entete b { font-family: var(--serif); font-size: 1.05rem; color: var(--encre); }
-.reglage-moyenne { font-size: 0.78rem; color: var(--attenue); }
-.reglage-note { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
-.reglage-note b { font-family: var(--serif); font-size: 2rem; color: var(--ok); line-height: 1; }
-.reglage-note span { font-size: 0.78rem; color: var(--attenue); }
-.reglage-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.reglage-chip {
+.setting { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.setting.inactive { opacity: 0.6; }
+.setting-header { display: flex; flex-direction: column; gap: 2px; }
+.setting-header b { font-family: var(--serif); font-size: 1.05rem; color: var(--ink); }
+.setting-average { font-size: 0.78rem; color: var(--muted); }
+.setting-rating { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.setting-rating b { font-family: var(--serif); font-size: 2rem; color: var(--ok); line-height: 1; }
+.setting-rating span { font-size: 0.78rem; color: var(--muted); }
+.setting-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.setting-chip {
   font-size: 0.78rem; padding: 3px 10px; border-radius: 999px;
-  background: var(--panneau-2); border: 1px solid var(--lignes); color: var(--texte);
+  background: var(--panel-2); border: 1px solid var(--lines); color: var(--text);
 }
-.ecran-intro { color: var(--attenue); max-width: 70ch; margin: 0 0 18px; }
+.screen-intro { color: var(--muted); max-width: 70ch; margin: 0 0 18px; }
 
 /* Latest brew rows: clickable to edit. */
-.derniere-cliquable { cursor: pointer; border-radius: var(--rayon-petit); transition: background var(--transition); }
-.derniere-cliquable:hover { background: var(--panneau-2); }
-.derniere-cliquable:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.last-clickable { cursor: pointer; border-radius: var(--radius-small); transition: background var(--transition); }
+.last-clickable:hover { background: var(--panel-2); }
+.last-clickable:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* Settings screen: a compact edit table, one row per recipe. */
 /* Bounded reading column, but CENTRED: without the auto margin it stuck
@@ -575,114 +575,114 @@ button { font-family: inherit; }
 /* Screen width is set ONCE, in the layout block.
    A screen-specific cap shifted it from the others: Settings was 780 px
    while its neighbours were 993, and the jump showed on every tab
-   change. Only the LINE LENGTH of text is capped, by .ecran-intro and
+   change. Only the LINE LENGTH of text is capped, by .screen-intro and
    paragraphs, not the frame. */
-#ecran-parametres .carte { margin-bottom: 18px; }
-.param-aide { color: var(--attenue); font-size: 0.85rem; margin: 0 0 12px; max-width: 72ch; }
-.param-tableau-zone { overflow-x: auto; margin-bottom: 14px; }
-.param-tableau { min-width: 560px; }
-.param-tableau td { padding: 5px 8px; }
-.param-tableau input { width: 100%; min-width: 70px; padding: 5px 7px; }
-.param-tableau tr.param-groupe td {
-  font-family: var(--serif); color: var(--encre); font-weight: 400;
-  background: var(--panneau-2); padding: 7px 8px;
+#screen-parametres .card { margin-bottom: 18px; }
+.param-help { color: var(--muted); font-size: 0.85rem; margin: 0 0 12px; max-width: 72ch; }
+.param-table-zone { overflow-x: auto; margin-bottom: 14px; }
+.param-table { min-width: 560px; }
+.param-table td { padding: 5px 8px; }
+.param-table input { width: 100%; min-width: 70px; padding: 5px 7px; }
+.param-table tr.param-group td {
+  font-family: var(--serif); color: var(--ink); font-weight: 400;
+  background: var(--panel-2); padding: 7px 8px;
 }
-.param-sans { color: var(--attenue); }
+.param-none { color: var(--muted); }
 
 /* The live row's ratio carries its explanation on hover. The bubble is
    shared, see [data-info]; only its own underline remains here. */
-.aide-ratio { cursor: help; border-bottom: 1px dotted var(--attenue); }
+.help-ratio { cursor: help; border-bottom: 1px dotted var(--muted); }
 
 /* Contradiction warning under the diagnosis pills. */
-.diag-alerte { display: block; color: var(--accent-fort); margin-bottom: 4px; }
+.diag-alert { display: block; color: var(--accent-strong); margin-bottom: 4px; }
 
 /* Comparator selection bar. */
-.barre-comparaison {
+.bar-comparison {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   margin: 0 0 10px; padding: 8px 12px;
-  background: var(--accent-fond); border: 1px solid var(--avert-bord);
-  border-radius: var(--rayon-petit); font-size: 0.85rem;
+  background: var(--accent-bg); border: 1px solid var(--warn-border);
+  border-radius: var(--radius-small); font-size: 0.85rem;
 }
 
-.ligne-histo.comparee { background: var(--accent-fond); }
-.btn-ligne.actif { color: var(--accent-fort); background: var(--accent-fond); }
+.row-hist.compared { background: var(--accent-bg); }
+.btn-row.on { color: var(--accent-strong); background: var(--accent-bg); }
 
 /* THE HOVER CARD in the history (v8.33): a cup's details, floating
-   under its row. Set as fixed by ui-historique.js, which positions it; it never
+   under its row. Set as fixed by ui-history.js, which positions it; it never
    captures the mouse, otherwise it would steal the hover from the row below. */
-.h-fiche {
+.h-sheet {
   position: fixed;
-  z-index: var(--z-bulle);
+  z-index: var(--z-bubble);
   width: min(460px, calc(100vw - 24px));
   padding: 16px 18px;
-  background: var(--panneau);
-  border: 1px solid var(--lignes);
-  border-radius: var(--rayon-petit);
-  box-shadow: var(--ombre);
+  background: var(--panel);
+  border: 1px solid var(--lines);
+  border-radius: var(--radius-small);
+  box-shadow: var(--shadow);
   pointer-events: none;
   opacity: 0;
   transform: translateY(-4px);
   transition: opacity 140ms ease-out, transform 140ms ease-out;
 }
-.h-fiche.visible { opacity: 1; transform: none; }
-.h-fiche .detail-grille { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.h-fiche .detail-tags { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--lignes-douces); }
+.h-sheet.visible { opacity: 1; transform: none; }
+.h-sheet .detail-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.h-sheet .detail-tags { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--lines-soft); }
 @media (prefers-reduced-motion: reduce) {
-  .h-fiche { transition: none; transform: none; }
+  .h-sheet { transition: none; transform: none; }
 }
-.detail-grille {
+.detail-grid {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 10px 14px;
 }
 .detail-item { display: flex; flex-direction: column; min-width: 0; }
 .detail-item span {
   font-size: 0.75rem;
-  color: var(--attenue);
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-.detail-item b { font-size: 0.9rem; color: var(--encre); font-weight: 600; }
+.detail-item b { font-size: 0.9rem; color: var(--ink); font-weight: 600; }
 .detail-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
 .detail-tag {
   font-size: 0.75rem; padding: 2px 9px; border-radius: 999px;
-  background: var(--panneau); border: 1px solid var(--lignes); color: var(--texte);
+  background: var(--panel); border: 1px solid var(--lines); color: var(--text);
 }
-.detail-commentaire {
+.detail-comment {
   margin: 12px 0 0; padding-left: 12px; font-style: italic;
-  border-left: 2px solid var(--accent); color: var(--texte);
+  border-left: 2px solid var(--accent); color: var(--text);
 }
-.detail-vide { margin: 0; color: var(--attenue); font-size: 0.85rem; }
+.detail-empty { margin: 0; color: var(--muted); font-size: 0.85rem; }
 
 /* Comparison table: only rows that DIFFER are highlighted,
    that is where the explanation of the rating gap lies. */
-.table-comparaison { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-.table-comparaison th, .table-comparaison td {
-  padding: 8px 12px; border-bottom: 1px solid var(--lignes);
+.table-comparison { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.table-comparison th, .table-comparison td {
+  padding: 8px 12px; border-bottom: 1px solid var(--lines);
   text-align: left; vertical-align: top;
 }
-.table-comparaison thead th { color: var(--attenue); font-size: 0.78rem; }
-.table-comparaison tbody th {
-  color: var(--attenue); font-weight: 600; font-size: 0.78rem;
+.table-comparison thead th { color: var(--muted); font-size: 0.78rem; }
+.table-comparison tbody th {
+  color: var(--muted); font-weight: 600; font-size: 0.78rem;
   text-transform: uppercase; letter-spacing: 0.04em; width: 30%;
 }
-.table-comparaison tr.differe td { background: var(--accent-fond); color: var(--encre); font-weight: 600; }
+.table-comparison tr.deferred td { background: var(--accent-bg); color: var(--ink); font-weight: 600; }
 
 /* Duration in minutes and seconds: two narrow fields on one line. */
-.duree { display: flex; align-items: center; gap: 6px; }
+.duration { display: flex; align-items: center; gap: 6px; }
 /* Two digits, no more. The number field's arrows ate 13 px and cut
    off the seconds' "45" in a 175 px column; we remove them, they are
    useless on a field you type into, and the inner padding
    tightens. inputmode="numeric" already gives the right phone keyboard. */
-.duree input {
+.duration input {
   width: 4.2rem;
   min-width: 0;
   padding-inline: 8px;
   text-align: center;
   appearance: textfield;
 }
-.duree input::-webkit-outer-spin-button,
-.duree input::-webkit-inner-spin-button { appearance: none; margin: 0; }
-.duree span { font-size: 0.8rem; color: var(--attenue); }
+.duration input::-webkit-outer-spin-button,
+.duration input::-webkit-inner-spin-button { appearance: none; margin: 0; }
+.duration span { font-size: 0.8rem; color: var(--muted); }
 
 /* Stock of the current bag, in the coffee list. */
 .badge-stock {
@@ -693,9 +693,9 @@ button { font-family: inherit; }
   border: 1px solid transparent;
 }
 .badge-stock-ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); background: color-mix(in srgb, var(--ok) 12%, transparent); }
-.badge-stock-bas { color: var(--accent-fort); border-color: var(--avert-bord); background: var(--avert-fond); }
-.badge-stock-vide { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, transparent); background: color-mix(in srgb, var(--danger) 12%, transparent); }
-.cafe-ligne.epuise b { text-decoration: line-through; text-decoration-thickness: 1px; }
+.badge-stock-low { color: var(--accent-strong); border-color: var(--warn-border); background: var(--warn-bg); }
+.badge-stock-empty { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, transparent); background: color-mix(in srgb, var(--danger) 12%, transparent); }
+.coffee-row.depleted b { text-decoration: line-through; text-decoration-thickness: 1px; }
 
 /* Mini stats, under the activity calendar: the number on the left, the
    label on the right, in TWO columns. As one column of five rows they
@@ -706,7 +706,7 @@ button { font-family: inherit; }
   gap: 4px 16px;
   margin-top: 14px;
   padding-top: 12px;
-  border-top: 1px solid var(--lignes-douces);
+  border-top: 1px solid var(--lines-soft);
 }
 .mini-stat {
   display: flex;
@@ -721,42 +721,42 @@ button { font-family: inherit; }
   font-family: var(--serif);
   font-weight: 400;
   font-size: 1.2rem;
-  color: var(--encre);
+  color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
-.mini-stat span { font-size: 0.76rem; color: var(--attenue); }
+.mini-stat span { font-size: 0.76rem; color: var(--muted); }
 
 /* Message that replaces a legitimately empty chart. */
-.carte-vide {
+.card-empty {
   margin: 0;
   padding: 16px 14px;
   font-size: 0.86rem;
   line-height: 1.5;
-  color: var(--attenue);
-  background: var(--panneau-2);
-  border: 1px dashed var(--lignes);
-  border-radius: var(--rayon-petit);
+  color: var(--muted);
+  background: var(--panel-2);
+  border: 1px dashed var(--lines);
+  border-radius: var(--radius-small);
 }
 
 /* Footer: version number, to know what is running on the device. */
-.pied-site {
+.footer-site {
   max-width: 1180px;
   margin: 8px auto 24px;
   padding: 0 20px;
   text-align: right;
   font-size: 0.75rem;
-  color: var(--attenue);
+  color: var(--muted);
 }
 
 /* Sync status line, in the Data panel. */
-.sync-ligne {
+.sync-row {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
   margin: -6px 0 16px;
   font-size: 0.85rem;
-  color: var(--attenue);
+  color: var(--muted);
 }
 
 /* Dashboard insights: sentences, not charts. */
@@ -764,9 +764,9 @@ button { font-family: inherit; }
 .insights li {
   position: relative;
   padding: 10px 14px 10px 34px;
-  background: var(--panneau-2);
-  border: 1px solid var(--lignes);
-  border-radius: var(--rayon-petit);
+  background: var(--panel-2);
+  border: 1px solid var(--lines);
+  border-radius: var(--radius-small);
   line-height: 1.45;
 }
 .insights li::before {
@@ -780,36 +780,36 @@ button { font-family: inherit; }
    in accent and the rest neutral, the two averages, then confidence and
    sample sizes. One line, not three: the card, taller than the neighbouring
    chart, made it grow with it. */
-.insights .constat p { margin: 0; }
-.insights .constat .preuve {
+.insights .finding p { margin: 0; }
+.insights .finding .proof {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px 12px;
   margin-top: 3px;
   font-size: 0.76rem;
-  color: var(--attenue);
+  color: var(--muted);
 }
-.reglette {
+.ruler {
   position: relative;
   flex: 1 1 48px;
   max-width: 130px;
   height: 6px;
   border-radius: 99px;
-  background: var(--panneau-3);
+  background: var(--panel-3);
 }
-.reglette i { position: absolute; top: 0; height: 100%; }
-.reglette-trait { background: var(--accent-fond); border-radius: 99px; }
-.reglette .reglette-point {
+.ruler i { position: absolute; top: 0; height: 100%; }
+.ruler-line { background: var(--accent-bg); border-radius: 99px; }
+.ruler .ruler-point {
   width: 10px; height: 10px; top: -2px;
   margin-left: -5px;
   border-radius: 50%;
 }
-.reglette-point.haut { background: var(--accent); }
-.reglette-point.bas { background: var(--barre-neutre); }
-.preuve-chiffres { white-space: nowrap; font-variant-numeric: tabular-nums; }
-.preuve-chiffres b { color: var(--encre); font-size: 0.86rem; }
-.preuve-pied {
+.ruler-point.high { background: var(--accent); }
+.ruler-point.low { background: var(--bar-neutral); }
+.proof-figures { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.proof-figures b { color: var(--ink); font-size: 0.86rem; }
+.proof-footer {
   margin-left: auto;
   white-space: nowrap;
   font-size: 0.75rem;
@@ -819,12 +819,12 @@ button { font-family: inherit; }
 
 /* .marque, .nav and .nav-icone disappeared with the header (Comptoir redesign,
    step 2). .nav-btn remains, but only as a behaviour hook: it is
-   .rail-entree and .barre-entree that carry the look. */
+   .rail-entry and .bar-entry that carry the look. */
 .nav-btn {
   font: inherit;
   border: none;
   background: transparent;
-  color: var(--attenue);
+  color: var(--muted);
   font-size: 0.92rem;
   padding: 9px 12px;
   border-radius: 999px;
@@ -834,29 +834,29 @@ button { font-family: inherit; }
 }
 
 
-.nav-btn:hover { color: var(--encre); background: var(--panneau-2); }
+.nav-btn:hover { color: var(--ink); background: var(--panel-2); }
 /* A selected state changes ONLY colours: see the comment on
-   .tag.actif below. Bold widened the label and shifted its neighbours. */
-.nav-btn.actif { background: var(--accent-fond); color: var(--accent-fort); }
+   .tag.on below. Bold widened the label and shifted its neighbours. */
+.nav-btn.on { background: var(--accent-bg); color: var(--accent-strong); }
 
 .badge {
   font-size: 0.75rem;
   padding: 4px 10px;
   border-radius: 999px;
-  border: 1px solid var(--lignes);
-  color: var(--attenue);
-  background: var(--panneau);
+  border: 1px solid var(--lines);
+  color: var(--muted);
+  background: var(--panel);
   max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.badge-demo { color: var(--accent-fort); border-color: var(--avert-bord); background: var(--avert-fond); }
+.badge-demo { color: var(--accent-strong); border-color: var(--warn-border); background: var(--warn-bg); }
 
-.btn-icone {
-  border: 1px solid var(--lignes);
-  background: var(--panneau);
-  color: var(--texte);
+.btn-icon {
+  border: 1px solid var(--lines);
+  background: var(--panel);
+  color: var(--text);
   border-radius: 999px;
   padding: 6px 10px;
   cursor: pointer;
@@ -872,6 +872,6 @@ button { font-family: inherit; }
      WCAG minimum (24) but not comfort (44). */
   position: relative;
 }
-.btn-icone:hover { border-color: var(--accent); }
+.btn-icon:hover { border-color: var(--accent); }
 
-.btn-icone::after { content: ""; position: absolute; inset: -6px -2px; }
+.btn-icon::after { content: ""; position: absolute; inset: -6px -2px; }

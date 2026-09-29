@@ -1,6 +1,6 @@
 /* Home screen: the activity calendar, the analyses and the latest
- * extractions. The computed sentences live in ui-constats.js and the big
- * card of the last cup in ui-derniere.js (split out in v8.78). */
+ * extractions. The computed sentences live in ui-findings.js and the big
+ * card of the last cup in ui-last-cup.js (split out in v8.78). */
 "use strict";
 
 (() => {
@@ -96,7 +96,7 @@
      and that is why it must exist. Without it, the calendar is a run of
      browns. */
   function renderHeatmapLegend() {
-    const target = $("#heatmap-legende");
+    const target = $("#heatmap-legend");
     if (!target) return;
     const cells = [0, 1, 2, 3, 4].map(n =>
       '<span class="hm-i hm-n' + n + '"></span>').join("");
@@ -109,7 +109,7 @@
     const s = statsHeatmap(perDay, windowWeeks);
     if (!s.tasses) {
       $("#heatmap-stats").innerHTML =
-        '<p class="carte-vide">' + I18N.t("hm_resume_vide", { s: windowWeeks }) + "</p>";
+        '<p class="card-empty">' + I18N.t("hm_resume_vide", { s: windowWeeks }) + "</p>";
       return;
     }
     const cells = [
@@ -130,8 +130,8 @@
      rather than a generic "no data" that helps nobody. */
   function updateEmptyCard(id, pointCount, key) {
     const empty = pointCount === 0;
-    $("#boite-" + id).hidden = empty;
-    const msg = $("#vide-" + id);
+    $("#box-" + id).hidden = empty;
+    const msg = $("#empty-" + id);
     msg.hidden = !empty;
     if (empty) msg.textContent = I18N.t(key);
   }
@@ -182,7 +182,7 @@
       .sort((a, b) => b.mean - a.mean);
 
     if (!ranked.length) {
-      $("#note-gouts").textContent = "";
+      $("#rating-tastes").textContent = "";
       return [];
     }
 
@@ -204,8 +204,8 @@
         ? getComputedStyle(document.documentElement).getPropertyValue("--ok").trim()
         : getComputedStyle(document.documentElement).getPropertyValue("--danger").trim());
 
-    CHARTS.horizontalBars("g-gouts", items, colors, I18N.t("axe_note_moy"), 10);
-    $("#note-gouts").textContent = I18N.t("gouts_note", {
+    CHARTS.horizontalBars("g-tastes", items, colors, I18N.t("axe_note_moy"), 10);
+    $("#rating-tastes").textContent = I18N.t("gouts_note", {
       m: fmtDecimal(overallAvg, 1),
       n: MIN_TASTE_CUPS,
     });
@@ -271,19 +271,19 @@
 
   /* The TABS. The chosen tab is remembered in this browser: you come back to
      the question you were asking. The panels are never display: none (see
-     .analyses-pile): they are inert and invisible, so that each chart keeps
+     .analyses-stack): they are inert and invisible, so that each chart keeps
      its size. */
   const TAB_KEY = "analyse-onglet";
   function showAnalysis(name, focus) {
-    const buttons = $$(".onglets-analyses [role=tab]");
-    if (!buttons.some(b => b.dataset.analyse === name)) name = "cafes";
+    const buttons = $$(".tabs-analyses [role=tab]");
+    if (!buttons.some(b => b.dataset.analysis === name)) name = "cafes";
     buttons.forEach(b => {
-      const active = b.dataset.analyse === name;
+      const active = b.dataset.analysis === name;
       b.setAttribute("aria-selected", String(active));
       b.tabIndex = active ? 0 : -1;
       if (active && focus) b.focus();
-      const panel = $("#analyse-" + b.dataset.analyse);
-      panel.classList.toggle("courant", active);
+      const panel = $("#analysis-" + b.dataset.analysis);
+      panel.classList.toggle("current", active);
       panel.inert = !active;
       panel.setAttribute("aria-hidden", String(!active));
     });
@@ -307,8 +307,8 @@
        v7.91: as a banner here, it took the place of the first figure on every
        opening for a setting changed once a month. */
     const empty = exts.length === 0;
-    $("#tableau-vide").hidden = !empty;
-    $("#tableau-contenu").hidden = empty;
+    $("#dashboard-empty").hidden = !empty;
+    $("#dashboard-content").hidden = empty;
     if (empty) return;
     renderStockCorner();
 
@@ -342,7 +342,7 @@
       { value: TUNING.gapAtSameCoffee(analyzable) || 0, label: I18N.t("kpi_regularite"), dec: 1, plusMinus: true },
     ];
     $("#kpis").innerHTML = kpis.map(k =>
-      '<div class="kpi"><div class="kpi-valeur"><span class="kpi-nombre"></span>' +
+      '<div class="kpi"><div class="kpi-value"><span class="kpi-number"></span>' +
       (k.outOf10 ? "<small> / 10</small>" : k.mg ? "<small> mg</small>" : k.plusMinus ? "<small> pt</small>" : "") +
       '</div><div class="kpi-label">' + k.label + "</div></div>"
     ).join("");
@@ -350,7 +350,7 @@
        week of failed cups. A dash, with no animation or unit. */
     kpis[2].empty = !ratings7d.length;
     kpis[3].empty = ratings.length < 2;
-    $$("#kpis .kpi-nombre").forEach((el, i) => {
+    $$("#kpis .kpi-number").forEach((el, i) => {
       if (kpis[i].empty) {
         el.textContent = "-";
         el.parentElement.querySelector("small")?.remove();
@@ -363,13 +363,13 @@
        text, and are no longer in the path of the eye. */
     const row = (caption, value) =>
       "<li><span>" + caption + "</span><b>" + value + "</b></li>";
-    $("#kpis-secondaires").innerHTML =
+    $("#kpis-secondary").innerHTML =
       row(I18N.t("kpi_total"), exts.length) +
       row(I18N.t("kpi_note"), fmtDecimal(average(ratings) || 0, 1) + " / 10") +
       row(I18N.t("kpi_cafeine"), "≈ " + Math.round(caffeine7d / 7) + " mg");
 
     /* The page header subline: today's date, as in the mockup. */
-    $("#tableau-surligne").textContent = now.toLocaleDateString(I18N.locale(),
+    $("#dashboard-highlight").textContent = now.toLocaleDateString(I18N.locale(),
       { weekday: "long", day: "numeric", month: "long" });
 
     renderLastCup(exts);
@@ -417,7 +417,7 @@
         (new Date(key + "T12:00") - new Date(lastDate + "T12:00")) / 86400000 > 7;
       trend.push(stale ? null : latest);
     }
-    CHARTS.barsAndLine30d("g-30jours", labels, counts, averages, details, trend, UI.renderCoffees30d(exts));
+    CHARTS.barsAndLine30d("g-30days", labels, counts, averages, details, trend, UI.renderCoffees30d(exts));
 
     // Heatmap
     const perDay = {}, infoPerDay = {};
@@ -433,7 +433,7 @@
        same window. */
     const weeks = visibleWeeks();
     CHARTS.heatmap("g-heatmap", perDay, infoPerDay, weeks);
-    $("#heatmap-titre").textContent = I18N.t("hm_titre", { n: weeks });
+    $("#heatmap-title").textContent = I18N.t("hm_titre", { n: weeks });
     renderHeatmapStats(perDay, weeks);
     renderHeatmapLegend();
 
@@ -464,8 +464,8 @@
       return c && (c.tag || "").includes("référence") ? CHARTS.C_BOTH : undefined;
     });
     const coffeeAccents = coffeeColors.some(Boolean) ? coffeeColors.map(c => c || getComputedStyle(document.documentElement).getPropertyValue("--accent").trim()) : null;
-    CHARTS.horizontalBars("g-cafes", coffeeItems, coffeeAccents, I18N.t("axe_note_moy"), 10);
-    $("#lecture-cafes").textContent = readRanking(
+    CHARTS.horizontalBars("g-coffees", coffeeItems, coffeeAccents, I18N.t("axe_note_moy"), 10);
+    $("#reading-coffees").textContent = readRanking(
       coffeeItems.map(i => ({ ...i, n: byCoffee[i.rawName].length })), "lec_cafes_deux", "lec_cafes");
 
     // Brikka versus Switch duel
@@ -494,18 +494,18 @@
     const pts = m => analyzable
       .filter(e => e.methode === m && e.note_sur_10 !== "" && e._c.microns !== "")
       .map(e => ({ x: e._c.microns, y: e.note_sur_10, nom: e._c.cafe_nom + ", " + e.mouture_dial }));
-    CHARTS.scatter("g-mouture", pts("Brikka"), pts("Switch"), I18N.t("axe_mouture"), "µm");
+    CHARTS.scatter("g-grind", pts("Brikka"), pts("Switch"), I18N.t("axe_mouture"), "µm");
 
     const rated = analyzable.filter(e => e.note_sur_10 !== "");
     const tastes = renderTastes(rated);
-    $("#lecture-gouts").textContent = readTastes(tastes, average(rated.map(e => e.note_sur_10)) || 0);
-    $("#lecture-machines").textContent = readMachines(nB, nS);
-    $("#lecture-mouture").textContent = readGrind(analyzable);
+    $("#reading-tastes").textContent = readTastes(tastes, average(rated.map(e => e.note_sur_10)) || 0);
+    $("#reading-machines").textContent = readMachines(nB, nS);
+    $("#reading-grind").textContent = readGrind(analyzable);
 
     // The three cards that can stay empty with valid data.
-    updateEmptyCard("mouture", pts("Brikka").length + pts("Switch").length, emptyGrindCause(rated));
-    updateEmptyCard("gouts", tastes.length, emptyTastesCause(rated));
-    updateEmptyCard("aromes", CHARTS.aromaWheel(rated), emptyTastesCause(rated));
+    updateEmptyCard("grind", pts("Brikka").length + pts("Switch").length, emptyGrindCause(rated));
+    updateEmptyCard("tastes", tastes.length, emptyTastesCause(rated));
+    updateEmptyCard("aromas", CHARTS.aromaWheel(rated), emptyTastesCause(rated));
     updateEmptyCard("duel", bothCoffees.length, emptyDuelCause(rated));
 
     // Diagnostics
@@ -515,7 +515,7 @@
     }));
     const diagLabels = DIAGNOSTICS.filter(d => byDiag[d]);
     CHARTS.diagnosticsRing("g-diagnostics", diagLabels, diagLabels.map(d => byDiag[d]));
-    $("#lecture-diagnostics").textContent = readDiagnostics(byDiag);
+    $("#reading-diagnostics").textContent = readDiagnostics(byDiag);
 
     // Rating per recipe
     const byRecipe = {};
@@ -530,8 +530,8 @@
       const r = findRecipe(i.label);
       return r ? (r.methode === "Brikka" ? CHARTS.C_BRIKKA : CHARTS.C_SWITCH) : CHARTS.C_BOTH;
     });
-    CHARTS.horizontalBars("g-recettes", recipeItems, recipeColors, I18N.t("axe_note_moy"), 10);
-    $("#lecture-recettes").textContent = readRanking(
+    CHARTS.horizontalBars("g-recipes", recipeItems, recipeColors, I18N.t("axe_note_moy"), 10);
+    $("#reading-recipes").textContent = readRanking(
       recipeItems.map(i => ({ ...i, label: I18N.tr(i.label), n: byRecipe[i.label].length })), "lec_recettes_deux", "lec_recettes");
 
     // 5 latest
@@ -553,32 +553,32 @@
        phone (44 px, « 2… ») nor on a 1,280 laptop. The brewer no longer has
        its column: its colour dot moves in front of the coffee name. */
     let currentDay = "";
-    $("#dernieres-liste").innerHTML = latestCups.map(e => {
+    $("#latest-list").innerHTML = latestCups.map(e => {
       const day = dayKey(e.date_heure);
       const header = day !== currentDay
-        ? '<tr class="d-jour"><th colspan="5" scope="colgroup">' + dayLabelOf(e.date_heure) + "</th></tr>" : "";
+        ? '<tr class="d-day"><th colspan="5" scope="colgroup">' + dayLabelOf(e.date_heure) + "</th></tr>" : "";
       currentDay = day;
       return header +
-      '<tr class="derniere-cliquable' + (isFailed(e) ? " ligne-ratee" : "") +
+      '<tr class="last-clickable' + (isFailed(e) ? " row-failed" : "") +
       '" data-ext="' + e.id + '" tabindex="0" role="button" title="' + titleAttr(I18N.t("h_editer")) + '">' +
-      '<td class="d-quand">' + fmtHour(e.date_heure) + "</td>" +
-      '<td class="d-cafe"><span class="pastille-methode ' + e.methode.toLowerCase() +
+      '<td class="d-when">' + fmtHour(e.date_heure) + "</td>" +
+      '<td class="d-coffee"><span class="dot-method ' + e.methode.toLowerCase() +
         '" title="' + titleAttr(e.methode) + '"></span><b>' + I18N.tr(e._c.cafe_nom) + "</b>" +
-        (isFailed(e) ? '<span class="mention-ratee">' + I18N.t("rt_badge") + "</span>" : "") + "</td>" +
-      '<td class="d-mesures">' +
-        (e.recette ? '<span class="d-recette">' + I18N.tr(e.recette) + "</span>" : "") +
+        (isFailed(e) ? '<span class="mention-failed">' + I18N.t("rt_badge") + "</span>" : "") + "</td>" +
+      '<td class="d-measures">' +
+        (e.recette ? '<span class="d-recipe">' + I18N.tr(e.recette) + "</span>" : "") +
         shortMeasures(e) +
         (e.diagnostic ? '<span class="d-diag">' + displayedDiags(e.diagnostic) + "</span>" : "") +
       "</td>" +
-      '<td class="d-gouts">' + lastTastes(e) + "</td>" +
-      '<td class="d-note">' + (e.note_sur_10 !== "" ? fmtDecimal(Number(e.note_sur_10), 1) : "") + "</td></tr>" +
+      '<td class="d-tastes">' + lastTastes(e) + "</td>" +
+      '<td class="d-rating">' + (e.note_sur_10 !== "" ? fmtDecimal(Number(e.note_sur_10), 1) : "") + "</td></tr>" +
       lastComment(e);
     }).join("");
     /* The full text on hover, but ONLY if the line truncated it: a comment
        readable in full does not need repeating. Measured on hover and not at
        render: the screen may render hidden, and everything measures 0. */
-    $("#dernieres-liste").onmouseover = ev => {
-      const td = ev.target.closest(".derniere-commentaire td");
+    $("#latest-list").onmouseover = ev => {
+      const td = ev.target.closest(".last-comment td");
       if (td) td.title = td.scrollWidth > td.clientWidth + 1 ? td.textContent : "";
     };
   }
@@ -607,7 +607,7 @@
     }).filter(Boolean).sort((a, b) => (a.leftover <= 0) - (b.leftover <= 0) || a.leftover - b.leftover);
   }
   function renderStockCorner() {
-    const zone = $("#stock-coin");
+    const zone = $("#stock-corner");
     if (!zone) return;
     const all = stockData();
     zone.hidden = !all.length;
@@ -615,29 +615,29 @@
     zone.innerHTML = shown.map(s => {
       const low = s.tasses < 3;
       const tooltip = I18N.t(s.leftover <= 0 ? "sc_vide_titre" : "sc_titre", { c: I18N.tr(s.coffee.nom), g: Math.round(s.leftover), n: s.tasses, s: s.tasses > 1 ? "s" : "" });
-      return '<button type="button" class="sc-sachet' + (low ? " bas" : "") + '" data-fiche="' + s.coffee.id + '" title="' + titleAttr(tooltip) + '" aria-label="' + titleAttr(tooltip) + '">' +
-        '<span class="sc-verre" style="--pc:' + s.pc.toFixed(0) + '%" aria-hidden="true"></span>' +
+      return '<button type="button" class="sc-bag' + (low ? " low" : "") + '" data-sheet="' + s.coffee.id + '" title="' + titleAttr(tooltip) + '" aria-label="' + titleAttr(tooltip) + '">' +
+        '<span class="sc-glass" style="--pc:' + s.pc.toFixed(0) + '%" aria-hidden="true"></span>' +
         '<b>' + (s.leftover <= 0 ? I18N.t("sc_vide") : Math.round(s.leftover) + " g") + "</b>" +
-        '<span class="sc-nom">' + titleAttr(I18N.tr(s.coffee.nom)) + "</span></button>";
+        '<span class="sc-name">' + titleAttr(I18N.tr(s.coffee.nom)) + "</span></button>";
     }).join("") + (all.length > STOCK_MAX ? '<span class="sc-plus">+' + (all.length - STOCK_MAX) + "</span>" : "");
   }
 
   /* Wiring of the dashboard controls. Called once by app.js. */
   function wireDashboard() {
     wireFindings();
-    const tabs = $(".onglets-analyses");
+    const tabs = $(".tabs-analyses");
     tabs.addEventListener("click", ev => {
       const b = ev.target.closest("[role=tab]");
-      if (b) showAnalysis(b.dataset.analyse);
+      if (b) showAnalysis(b.dataset.analysis);
     });
     // Left and right arrows, Home and End: the keyboard of a real tab list.
     tabs.addEventListener("keydown", ev => {
-      const list = $$(".onglets-analyses [role=tab]");
+      const list = $$(".tabs-analyses [role=tab]");
       const i = list.findIndex(b => b.getAttribute("aria-selected") === "true");
       const target = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: list.length - 1 }[ev.key];
       if (target === undefined) return;
       ev.preventDefault();
-      showAnalysis(list[(target + list.length) % list.length].dataset.analyse, true);
+      showAnalysis(list[(target + list.length) % list.length].dataset.analysis, true);
     });
     let initial = "cafes";
     try { initial = localStorage.getItem(TAB_KEY) || initial; } catch (e) { /* same */ }
@@ -655,7 +655,7 @@
     /* The table AND the big card open the extraction. Delegating on both
        rather than on document: a global handler would catch clicks from the
        whole dashboard to serve only two areas. */
-    [$("#dernieres-liste"), $("#carte-derniere")].forEach(zone => {
+    [$("#latest-list"), $("#card-last")].forEach(zone => {
       zone.addEventListener("click", ev => openLatest(ev.target));
       zone.addEventListener("keydown", ev => {
         if (ev.key !== "Enter" && ev.key !== " ") return;

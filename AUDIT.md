@@ -183,7 +183,7 @@ Il manque :
 
 - `Content-Security-Policy` : aucune. Le site fait 46 `innerHTML`. J'ai vérifié
   qu'aucun champ utilisateur n'y est interpolé sans passer par l'échappement de
-  `ui-noyau.js`, et le seul contenu externe possible vient de D1 derrière ta
+  `ui-core.js`, et le seul contenu externe possible vient de D1 derrière ta
   session. Le risque réel est donc faible, mais une CSP est la ceinture qui
   rend le prochain oubli inoffensif. Le seul script inline est celui du thème
   dans `<head>` : un hash SHA-256 dans la directive `script-src` le couvre. Pas
@@ -249,7 +249,7 @@ dessus des données, vider les données, rétablir une recette d'origine, suppri
 une recette. Ils passent par `I18N.t`, donc ils sont traduits, mais sur le
 téléphone ce sont des boîtes système qui cassent l'application installée.
 
-À faire : une modale `<dialog>` de confirmation générique dans `ui-noyau.js`
+À faire : une modale `<dialog>` de confirmation générique dans `ui-core.js`
 (titre, texte, bouton dangereux, bouton annuler, promesse), et quatre appels.
 Les deux actions destructrices (vider, supprimer une recette) méritent le même
 retour arrière de cinq secondes que la suppression d'extraction, le mécanisme
@@ -291,8 +291,8 @@ Deux champs JSON, une entrée dans le test qui lit le manifeste.
 
 **Coût XS, 10 à 15 k.**
 
-`cleLocale(d)` existe dans `charts.js` et `ui-noyau.js`. `moyenne(liste)` existe
-dans `reglages.js` et `ui-noyau.js`. Ce sont des fonctions de date et de calcul,
+`cleLocale(d)` existe dans `charts.js` et `ui-core.js`. `moyenne(liste)` existe
+dans `tuning.js` et `ui-core.js`. Ce sont des fonctions de date et de calcul,
 donc exactement celles qui divergent en silence : un jour l'une arrondit et
 l'autre non, et deux écrans affichent deux chiffres pour la même chose. Elles
 ont leur place dans un module pur, testable sans navigateur, comme `grind.js`.
@@ -329,7 +329,7 @@ Découpage naturel, en scripts classiques, sans build :
 js/data-csv.js         csvParse, csvSerialiser, colonnes, en-têtes verrouillées
 js/data-store.js       IndexedDB, File System Access, sauverLocal, sauverFichiers
 js/data-migrations.js  version de schéma, normaliser*, migrerDonnees
-js/data-calculs.js     calculs, sachetCourant, stockSachet, cafeDe
+js/data-calcs.js       calculs, sachetCourant, stockSachet, cafeDe
 js/data.js             l'état, abonner, init, synchroniser : la façade
 ```
 
@@ -371,7 +371,7 @@ chacun renvoie son état complet. Acceptable pour un utilisateur unique.
   comme la vérité. Je l'ai presque fait.
 - `README.md` : la section « Structure du dossier » liste `app.js` comme
   « l'application (écrans, saisie, historique, gestion) » et ne mentionne ni les
-  sept `ui-*.js`, ni `sync.js`, ni `reglages.js`, ni le Worker, ni le service
+  sept `ui-*.js`, ni `sync.js`, ni `tuning.js`, ni le Worker, ni le service
   worker. Elle date d'avant la v7.60. Le reste du README est juste.
 - `../petit-grimoire-du-cafe.html` charge Google Fonts : c'est un livrable à
   part et ça ne concerne pas le tracker, je le note pour mémoire.

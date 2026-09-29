@@ -262,32 +262,32 @@ unreadable: it measures the health of your brews, not your taste.
 ```
 tracker/
   index.html            the single page, all the static HTML
-  css/socle.css         fonts, tokens (dark and light themes), base, navigation
-  css/ecrans.css        the screens
-  css/fenetres.css      dialogs, guide, quick entry, tooltips
-  css/finitions.css     responsive and last overrides, loaded LAST
+  css/base.css          fonts, tokens (dark and light themes), base, navigation
+  css/screens.css       the screens
+  css/dialogs.css       dialogs, guide, quick entry, tooltips
+  css/finishing.css     responsive and last overrides, loaded LAST
   css/fonts/            the two bundled fonts, woff2, under the OFL
-  js/outils.js          shared pure functions (average, dates, version)
+  js/tools.js           shared pure functions (average, dates, version)
   js/i18n.js            translation, French half and the mechanism
   js/i18n.en.js         English pack, loaded on demand
   js/grind.js           grinder conversions (dial, clicks, microns, ranges)
-  js/recettes.js        starting recipes and coffees, warning rules
+  js/recipes.js         starting recipes and coffees, warning rules
   js/sync.js            device-to-device sync, client side
   js/data*.js           CSV, IndexedDB, File System Access, migrations, maths
-  js/reglages.js        best settings per coffee, pure calculation
+  js/tuning.js          best settings per coffee, pure calculation
   js/charts.js          Chart.js charts (on demand), SVG heatmap and ruler
-  js/ui-noyau.js        shared interface tools, theme, navigation
-  js/ui-constats.js     the computed insights and their carousel
-  js/ui-derniere.js     the last cup card
-  js/ui-tableau.js      dashboard: calendar, analyses, recent cups
-  js/ui-saisie.js       form and timer
-  js/ui-saisie-aside.js the entry side panel and twin cups
-  js/ui-pilules.js      diagnostic and taste pills
-  js/ui-brouillon.js    entry draft (localStorage)
-  js/ui-rapide.js       quick entry sheet
-  js/ui-historique.js   history, filters, comparator, best settings
+  js/ui-core.js         shared interface tools, theme, navigation
+  js/ui-findings.js     the computed insights and their carousel
+  js/ui-last-cup.js     the last cup card
+  js/ui-dashboard.js    dashboard: calendar, analyses, recent cups
+  js/ui-entry.js        form and timer
+  js/ui-entry-aside.js the entry side panel and twin cups
+  js/ui-pills.js        diagnostic and taste pills
+  js/ui-draft.js        entry draft (localStorage)
+  js/ui-quick.js        quick entry sheet
+  js/ui-history.js      history, filters, comparator, best settings
   js/ui-guide.js        recipes, grinder, step-by-step
-  js/ui-catalogue.js    coffees, bags, editable recipes, settings screen
+  js/ui-catalog.js      coffees, bags, editable recipes, settings screen
   js/app.js             startup and global wiring
   js/demo-data.js       the embedded demo, loaded on demand
   js/vendor/chart.umd.js   Chart.js 4.4.4, local, no network dependency

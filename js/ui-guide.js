@@ -53,20 +53,20 @@
   }
   function atHome(r) {
     const ratings = analyzableExts().filter(e => e.recette === r.nom && e.note_sur_10 !== "").map(e => Number(e.note_sur_10));
-    return '<p class="recette-chez-toi">' + (ratings.length
+    return '<p class="recipe-at-home">' + (ratings.length
       ? I18N.t("bi_chez_toi", { m: fmtDecimal(average(ratings), 1), n: ratings.length })
       : I18N.t("bi_pas_essayee")) + "</p>";
   }
   const filter = { value: "tout" };
   try { filter.value = localStorage.getItem("guide-filtre") || "tout"; } catch (e) { /* without storage, all */ }
   function applyFilter() {
-    $$("#grille-recettes .recette-carte").forEach(c => {
+    $$("#grid-recipes .recipe-card").forEach(c => {
       const v = filter.value;
-      c.hidden = !(v === "tout" || c.classList.contains(v.toLowerCase()) || (c.dataset.profils || "").split(" ").includes(v));
+      c.hidden = !(v === "tout" || c.classList.contains(v.toLowerCase()) || (c.dataset.profiles || "").split(" ").includes(v));
     });
-    $$("#biblio-filtres [data-filtre]").forEach(b => setPressed(b, b.dataset.filtre === filter.value));
-    const empty = $("#biblio-vide");
-    if (empty) empty.hidden = $$("#grille-recettes .recette-carte").some(c => !c.hidden);
+    $$("#library-filters [data-filter]").forEach(b => setPressed(b, b.dataset.filter === filter.value));
+    const empty = $("#library-empty");
+    if (empty) empty.hidden = $$("#grid-recipes .recipe-card").some(c => !c.hidden);
   }
 
   /* THE GUIDE TABS (v8.52). The table of contents shows ONE panel at a time,
@@ -75,16 +75,16 @@
      Recipes first, and the chosen tab is remembered. */
   function showGuide(target) {
     const el = target ? document.getElementById(target) : null;
-    const panel = el ? el.closest(".guide-panneau") : $("#gp-" + (target || "recettes"));
+    const panel = el ? el.closest(".guide-panel") : $("#gp-" + (target || "recettes"));
     if (!panel) return;
-    $$(".guide-panneau").forEach(p => { p.hidden = p !== panel; });
-    $$(".guide-onglets [data-guide]").forEach(a => {
-      const active = a.dataset.guide === panel.dataset.panneau;
-      a.classList.toggle("courant", active);
+    $$(".guide-panel").forEach(p => { p.hidden = p !== panel; });
+    $$(".guide-tabs [data-guide]").forEach(a => {
+      const active = a.dataset.guide === panel.dataset.panel;
+      a.classList.toggle("current", active);
       if (active) a.setAttribute("aria-current", "true"); else a.removeAttribute("aria-current");
     });
-    try { localStorage.setItem("guide-onglet", panel.dataset.panneau); } catch (e) { /* never mind */ }
-    if (el && el !== panel.querySelector("h2, .ref-titre-ligne h2")) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    try { localStorage.setItem("guide-onglet", panel.dataset.panel); } catch (e) { /* never mind */ }
+    if (el && el !== panel.querySelector("h2, .ref-title-row h2")) el.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   /* Opens ONE recipe in the Guide (v8.53, the dashboard podium): its displayed
@@ -92,17 +92,17 @@
      hidden, then the card centred, briefly highlighted. */
   function showRecipe(id) {
     const r = DATA.state.recettes.find(x => x.id === id);
-    if (!r) { showGuide("ref-recettes"); return; }
+    if (!r) { showGuide("ref-recipes"); return; }
     if (r.famille) familySelection[r.famille] = r.id;
     toggleRecipe(id, true);
     filter.value = "tout";
     renderRecipes();
-    showGuide("ref-recettes");
-    const card = $('#grille-recettes [data-recette="' + id + '"]');
+    showGuide("ref-recipes");
+    const card = $('#grid-recipes [data-recipe="' + id + '"]');
     if (!card) return;
     card.scrollIntoView({ behavior: "smooth", block: "center" });
-    card.classList.add("recette-montree");
-    setTimeout(() => card.classList.remove("recette-montree"), 1800);
+    card.classList.add("recipe-revealed");
+    setTimeout(() => card.classList.remove("recipe-revealed"), 1800);
   }
 
   /* THE RECIPE VIDEO (v8.64). A YouTube link becomes "Watch the video": the
@@ -114,14 +114,14 @@
   function videoBlock(r) {
     if (!r.video) return "";
     const id = youtubeId(r.video);
-    return '<div class="recette-video">' +
-      (id ? '<button type="button" class="btn btn-petit" data-video="' + id + '">' + I18N.t("bi_video") + "</button>" : "") +
-      '<a class="recette-video-lien" href="' + attr(r.video) + '" target="_blank" rel="noopener">' +
+    return '<div class="recipe-video">' +
+      (id ? '<button type="button" class="btn btn-small" data-video="' + id + '">' + I18N.t("bi_video") + "</button>" : "") +
+      '<a class="recipe-video-link" href="' + attr(r.video) + '" target="_blank" rel="noopener">' +
       I18N.t(id ? "bi_youtube" : "bi_source") + "</a></div>";
   }
   function startVideo(button) {
     const frame = document.createElement("iframe");
-    frame.className = "recette-lecteur";
+    frame.className = "recipe-player";
     frame.src = "https://www.youtube-nocookie.com/embed/" + button.dataset.video + "?autoplay=1&rel=0";
     frame.title = I18N.t("bi_video");
     frame.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
@@ -137,8 +137,8 @@
     const zone = $("#aside-video");
     if (!zone) return;
     const key = r ? r.id + "|" + (r.video || "") : "";
-    if (zone.dataset.pour === key) return;
-    zone.dataset.pour = key;
+    if (zone.dataset.for === key) return;
+    zone.dataset.for = key;
     const block = r ? videoBlock(r) : "";
     zone.hidden = !block;
     zone.innerHTML = block;
@@ -146,12 +146,12 @@
     if (b) b.addEventListener("click", () => startVideo(b));
   }
 
-  /* WHICH COFFEE, WHICH RECIPE (v8.74). The table from recettes.js, and in each
+  /* WHICH COFFEE, WHICH RECIPE (v8.74). The table from recipes.js, and in each
      cell what your cups say: your average with the recommended recipe on the
      coffees of that profile, and your best recipe here when another one does
      better over at least three cups. */
   function renderMatrix() {
-    const table = $("#matrice-recettes");
+    const table = $("#matrix-recipes");
     if (!table || typeof COFFEE_RECIPE_MATRIX === "undefined") return;
     const M = COFFEE_RECIPE_MATRIX;
     const recipe = id => DATA.state.recettes.find(r => r.id === id);
@@ -166,7 +166,7 @@
       });
       return byRecipe;
     };
-    const recipeLink = r => '<button type="button" class="lien-recette" data-matrice="' + attr(r.id) + '">' + attr(I18N.tr(r.nom)) + "</button>";
+    const recipeLink = r => '<button type="button" class="link-recipe" data-matrix="' + attr(r.id) + '">' + attr(I18N.tr(r.nom)) + "</button>";
     const fmt1 = n => fmtDecimal(n, 1);
     let html = "<thead><tr><th></th>" + M.columns.map(c => "<th>" + attr(I18N.tr(c.nom)) + "</th>").join("") + "</tr></thead><tbody>";
     M.rows.forEach(l => {
@@ -174,7 +174,7 @@
       M.columns.forEach(c => {
         const k = M.cells[l.id + "|" + c.id];
         const r = k && recipe(k.recette);
-        if (!r) { html += '<td class="m-vide"></td>'; return; }
+        if (!r) { html += '<td class="m-empty"></td>'; return; }
         const stats = cellStats(l.id, c.id);
         const mine = stats[r.nom] || [];
         const best = Object.entries(stats).filter(([name, n]) => name !== r.nom && n.length >= 3)
@@ -182,27 +182,27 @@
         const alt = k.alternative && recipe(k.alternative);
         html += '<td data-col="' + attr(I18N.tr(c.nom)) + '">' + recipeLink(r) +
           (k.temp ? '<span class="m-temp">' + attr(k.temp) + "</span>" : "") +
-          (alt ? '<span class="m-autre">' + I18N.t("mx_autre") + " " + recipeLink(alt) + "</span>" : "") +
-          (mine.length ? '<span class="m-chez-toi">' + I18N.t("mx_chez_toi", { m: fmt1(average(mine)), n: mine.length }) + "</span>" : "") +
+          (alt ? '<span class="m-other">' + I18N.t("mx_autre") + " " + recipeLink(alt) + "</span>" : "") +
+          (mine.length ? '<span class="m-at-home">' + I18N.t("mx_chez_toi", { m: fmt1(average(mine)), n: mine.length }) + "</span>" : "") +
           (best && (mine.length < 3 || best.mean > average(mine))
-            ? '<span class="m-meilleure">' + I18N.t("mx_meilleure", { r: attr(I18N.tr(best.nom)), m: fmt1(best.mean) }) + "</span>" : "") +
+            ? '<span class="m-best">' + I18N.t("mx_meilleure", { r: attr(I18N.tr(best.nom)), m: fmt1(best.mean) }) + "</span>" : "") +
           "</td>";
       });
       html += "</tr>";
     });
     table.innerHTML = html + "</tbody>";
-    if (!table.dataset.cable) {
-      table.dataset.cable = "1";
+    if (!table.dataset.wired) {
+      table.dataset.wired = "1";
       table.addEventListener("click", ev => {
-        const b = ev.target.closest("[data-matrice]");
-        if (b) UI.showRecipe(b.dataset.matrice);
+        const b = ev.target.closest("[data-matrix]");
+        if (b) UI.showRecipe(b.dataset.matrix);
       });
     }
   }
 
   function recipeCard(r, group) {
-    const badges = (r.parDefaut ? '<span class="badge-defaut">' + I18N.t("badge_defaut") + "</span>" : "") +
-      (r.avancee ? '<span class="badge-avancee">' + I18N.t("badge_avancee") + "</span>" : "");
+    const badges = (r.parDefaut ? '<span class="badge-default">' + I18N.t("badge_defaut") + "</span>" : "") +
+      (r.avancee ? '<span class="badge-advanced">' + I18N.t("badge_avancee") + "</span>" : "");
     const params =
       '<span class="param-chip">' + r.dose + " g / " + r.eau + " g</span>" +
       '<span class="param-chip">' + attr(I18N.tr(r.ratioTexte)) + "</span>" +
@@ -211,46 +211,46 @@
       '<span class="param-chip">' + attr(I18N.tr(r.totalTexte)) + "</span>";
     let steps = "";
     if (r.etapes.length) {
-      steps = '<ol class="recette-etapes">' + r.etapes.map(e =>
-        "<li><span class=\"etape-temps\">" + (e.t === null ? "·" : fmtDuration(e.t)) + "</span><span>" + attr(I18N.tr(e.texte)) + "</span></li>"
+      steps = '<ol class="recipe-steps">' + r.etapes.map(e =>
+        "<li><span class=\"step-time\">" + (e.t === null ? "·" : fmtDuration(e.t)) + "</span><span>" + attr(I18N.tr(e.texte)) + "</span></li>"
       ).join("") + "</ol>";
     }
-    const tetsuBlock = r.variantes ? '<div class="tetsu-variantes" id="tetsu-bloc"></div>' : "";
+    const tetsuBlock = r.variantes ? '<div class="tetsu-variants" id="tetsu-block"></div>' : "";
     // Variant toggle when the recipe belongs to a family.
     let pills = "";
     if (group && group.length > 1) {
-      pills = '<div class="variantes-recette">' + group.map(x =>
-        '<button type="button" class="pilule' + (x.id === r.id ? " actif" : "") +
+      pills = '<div class="variants-recipe">' + group.map(x =>
+        '<button type="button" class="pill' + (x.id === r.id ? " on" : "") +
         '" data-var-fam="' + r.famille + '" data-var-id="' + x.id + '">' +
         I18N.tr(x.variante || x.nom) + "</button>").join("") + "</div>";
     }
     const isOpen = openRecipes.has(r.id);
     const rating = homeRating(r);
     const summary = [r.methode, r.dose + " g / " + r.eau + " g", r.temp ? r.temp + " °C" : ""].filter(Boolean).join(" · ");
-    return '<article class="carte recette-carte ' + r.methode.toLowerCase() + (isOpen ? "" : " repliee") + '" data-recette="' + r.id + '" data-profils="' +
+    return '<article class="card recipe-card ' + r.methode.toLowerCase() + (isOpen ? "" : " collapsed") + '" data-recipe="' + r.id + '" data-profiles="' +
       recipeProfiles(r).join(" ") + '">' +
-      '<div class="recette-entete">' +
-      (r.numero ? '<span class="recette-numero">' + r.numero + "</span>" : '<span class="recette-numero">' + r.methode + "</span>") +
+      '<div class="recipe-header">' +
+      (r.numero ? '<span class="recipe-num">' + r.numero + "</span>" : '<span class="recipe-num">' + r.methode + "</span>") +
       badges + "</div>" +
-      '<h3><button type="button" class="recette-bascule" data-bascule="' + r.id + '" aria-expanded="' + isOpen + '" aria-controls="corps-' + r.id + '">' +
-        '<span class="rb-nom">' + r.nom + "</span>" +
-        '<span class="rb-resume">' + attr(summary) + "</span>" +
-        '<span class="rb-note">' + (rating ? rating : I18N.t("rb_jamais")) + "</span>" +
+      '<h3><button type="button" class="recipe-toggle" data-toggle="' + r.id + '" aria-expanded="' + isOpen + '" aria-controls="body-' + r.id + '">' +
+        '<span class="rb-name">' + r.nom + "</span>" +
+        '<span class="rb-summary">' + attr(summary) + "</span>" +
+        '<span class="rb-rating">' + (rating ? rating : I18N.t("rb_jamais")) + "</span>" +
       "</button></h3>" +
-      '<div class="recette-corps" id="corps-' + r.id + '">' +
+      '<div class="recipe-body" id="body-' + r.id + '">' +
       pills +
-      '<p class="recette-sous">' + attr(I18N.tr(r.sousTitre)) + "</p>" +
-      '<div class="recette-params">' + params + "</div>" +
+      '<p class="recipe-sub">' + attr(I18N.tr(r.sousTitre)) + "</p>" +
+      '<div class="recipe-params">' + params + "</div>" +
       videoBlock(r) +
       atHome(r) +
       steps + tetsuBlock +
-      (r.pourQui ? '<p class="recette-pourqui"><b>' + I18N.t("r_pourqui") + "</b> " + attr(I18N.tr(r.pourQui)) + "</p>" : "") +
-      (r.cafesAssocies.length ? '<p class="recette-cafes"><b>' + I18N.t("r_cafes") + "</b> " + r.cafesAssocies.join(", ") + "</p>" : "") +
-      (r.note ? '<p class="recette-note">' + attr(I18N.tr(r.note)) + "</p>" : "") +
-      '<div class="recette-actions">' +
-      '<button class="btn btn-primaire btn-petit" data-brasser="' + r.id + '">' + I18N.t("g_brasser") + "</button>" +
-      '<button class="btn btn-petit" data-pasapas="' + r.id + '">' + I18N.t("a_pap") + "</button>" +
-      '<button class="btn btn-petit" data-recette-edit="' + r.id + '">' + I18N.t("btn_modifier") + "</button>" +
+      (r.pourQui ? '<p class="recipe-forwho"><b>' + I18N.t("r_pourqui") + "</b> " + attr(I18N.tr(r.pourQui)) + "</p>" : "") +
+      (r.cafesAssocies.length ? '<p class="recipe-coffees"><b>' + I18N.t("r_cafes") + "</b> " + r.cafesAssocies.join(", ") + "</p>" : "") +
+      (r.note ? '<p class="recipe-note">' + attr(I18N.tr(r.note)) + "</p>" : "") +
+      '<div class="recipe-actions">' +
+      '<button class="btn btn-primary btn-small" data-brew="' + r.id + '">' + I18N.t("g_brasser") + "</button>" +
+      '<button class="btn btn-small" data-walkthrough="' + r.id + '">' + I18N.t("a_pap") + "</button>" +
+      '<button class="btn btn-small" data-recipe-edit="' + r.id + '">' + I18N.t("btn_modifier") + "</button>" +
       "</div></div></article>";
   }
 
@@ -261,7 +261,7 @@
     if (!r) return;
     UI.resetEntry(true);
     UI.chooseMethod(r.methode);
-    const sel = $("#f-recette");
+    const sel = $("#f-recipe");
     sel.value = r.nom;
     sel.dispatchEvent(new Event("change", { bubbles: true }));
     UI.activateScreen("saisie");
@@ -274,13 +274,13 @@
   const DOORS = { recettes: "g_p_recettes", moulin: "g_p_moulin", diagnostic: "g_p_diagnostic", regles: "g_p_regles",
     vocabulaire: "g_p_vocabulaire", boutiques: "g_p_boutiques", materiel: "g_p_materiel", messages: "g_p_messages" };
   function renderGuideHome() {
-    const doors = $("#guide-portes");
+    const doors = $("#guide-doors");
     if (!doors) return;
-    const counts = { recettes: liveRecipes().length, vocabulaire: $$("#fiches-vocabulaire .fiche").length };
-    doors.innerHTML = $$(".guide-onglets [data-guide]").filter(a => a.dataset.guide !== "accueil").map(a =>
-      '<button type="button" class="ga-porte" data-porte="' + attr(a.getAttribute("href").slice(1)) + '"><b>' + attr(a.textContent.trim()) + "</b><span>" +
+    const counts = { recettes: liveRecipes().length, vocabulaire: $$("#sheets-vocabulary .sheet").length };
+    doors.innerHTML = $$(".guide-tabs [data-guide]").filter(a => a.dataset.guide !== "accueil").map(a =>
+      '<button type="button" class="ga-door" data-door="' + attr(a.getAttribute("href").slice(1)) + '"><b>' + attr(a.textContent.trim()) + "</b><span>" +
       attr(I18N.t(DOORS[a.dataset.guide] || "g_p_autre", { n: counts[a.dataset.guide] || 0 })) + "</span></button>").join("");
-    const zone = $("#guide-pour-toi");
+    const zone = $("#guide-for-you");
     const lastCup = DATA.state.extractions.slice().sort((a, b) => String(b.date_heure).localeCompare(String(a.date_heure)))[0];
     const coffee = lastCup ? DATA.coffeeOf(lastCup) : null;
     const p = coffee && typeof coffeeProfile === "function" ? coffeeProfile(coffee) : null;
@@ -288,14 +288,14 @@
     const suggested = k ? [k.recette, k.alternative].filter(Boolean).map(id => DATA.state.recettes.find(r => r.id === id)).filter(Boolean) : [];
     zone.hidden = !suggested.length;
     if (!suggested.length) { zone.innerHTML = ""; return; }
-    zone.innerHTML = '<h3 id="guide-pour-toi-titre" class="ga-h">' + attr(I18N.t("g_pour_toi", { c: I18N.tr(coffee.nom) })) + "</h3>" +
-      '<div class="ga-cartes">' + suggested.map((r, i) => {
+    zone.innerHTML = '<h3 id="guide-for-you-title" class="ga-h">' + attr(I18N.t("g_pour_toi", { c: I18N.tr(coffee.nom) })) + "</h3>" +
+      '<div class="ga-cards">' + suggested.map((r, i) => {
         const rating = homeRating(r);
-        return '<button type="button" class="ga-carte' + (i === 0 ? " premiere" : "") + '" data-pour-toi="' + r.id + '">' +
-          '<span class="ga-sur">' + attr(I18N.t(i === 0 ? "g_depart" : "g_essayer")) + "</span>" +
+        return '<button type="button" class="ga-card' + (i === 0 ? " first" : "") + '" data-for-you="' + r.id + '">' +
+          '<span class="ga-label">' + attr(I18N.t(i === 0 ? "g_depart" : "g_essayer")) + "</span>" +
           "<b>" + attr(I18N.tr(r.nom)) + "</b>" +
           '<span class="ga-params">' + attr([r.methode, i === 0 && k.temp ? k.temp : r.temp ? r.temp + " °C" : ""].filter(Boolean).join(" · ")) + "</span>" +
-          '<span class="ga-note">' + (rating ? I18N.t("g_chez_toi", { m: rating }) : I18N.t("rb_jamais")) + "</span></button>";
+          '<span class="ga-rating">' + (rating ? I18N.t("g_chez_toi", { m: rating }) : I18N.t("rb_jamais")) + "</span></button>";
       }).join("") + "</div>";
   }
 
@@ -307,11 +307,11 @@
   function buildIndex() {
     const idx = [];
     liveRecipes().forEach(r => idx.push({ type: "g_t_recette", title: I18N.tr(r.nom), detail: [r.methode, I18N.tr(r.sousTitre || "")].filter(Boolean).join(" · "), recette: r.id }));
-    $$("#fiches-vocabulaire .fiche").forEach(f => {
+    $$("#sheets-vocabulary .sheet").forEach(f => {
       const s = f.querySelector("summary");
-      if (s) idx.push({ type: "g_t_mot", title: s.textContent.trim(), detail: (f.querySelector(".fiche-corps") || f).textContent.trim().replace(/\s+/g, " ").slice(0, 90), el: f });
+      if (s) idx.push({ type: "g_t_mot", title: s.textContent.trim(), detail: (f.querySelector(".sheet-body") || f).textContent.trim().replace(/\s+/g, " ").slice(0, 90), el: f });
     });
-    $$(".guide-panneau").forEach(p => {
+    $$(".guide-panel").forEach(p => {
       if (p.id === "gp-accueil" || p.id === "gp-recettes" || p.id === "gp-vocabulaire") return;
       p.querySelectorAll("h2, h3, h4").forEach(h => {
         const nextEl = h.nextElementSibling;
@@ -322,30 +322,30 @@
   }
   let matches = [];
   function searchGuide() {
-    const q = stripAccents($("#guide-recherche").value.trim());
-    const zone = $("#guide-resultats");
+    const q = stripAccents($("#guide-search").value.trim());
+    const zone = $("#guide-results");
     if (!q) { zone.innerHTML = ""; return; }
     if (!guideIndex) guideIndex = buildIndex();
     // Title first: a word found in the title ranks above a word found in the text.
     matches = guideIndex.filter(x => x.key.includes(q))
       .sort((a, b) => Number(!stripAccents(a.title).includes(q)) - Number(!stripAccents(b.title).includes(q))).slice(0, 8);
     zone.innerHTML = matches.length
-      ? matches.map((x, i) => '<button type="button" class="ga-resultat" data-resultat="' + i + '"><span class="ga-type">' + attr(I18N.t(x.type)) + "</span><b>" +
+      ? matches.map((x, i) => '<button type="button" class="ga-result" data-result="' + i + '"><span class="ga-type">' + attr(I18N.t(x.type)) + "</span><b>" +
           attr(x.title) + "</b><span>" + attr(x.detail) + "</span></button>").join("")
-      : '<p class="ga-rien">' + attr(I18N.t("g_rien", { q: $("#guide-recherche").value.trim() })) + "</p>";
+      : '<p class="ga-nothing">' + attr(I18N.t("g_rien", { q: $("#guide-search").value.trim() })) + "</p>";
   }
   function goToResult(i) {
     const x = matches[i];
     if (!x) return;
     if (x.recette) { showRecipe(x.recette); return; }
-    const panel = x.el.closest(".guide-panneau");
+    const panel = x.el.closest(".guide-panel");
     if (!panel) return;
     const heading = panel.querySelector("h2");
     showGuide(heading && heading.id ? heading.id : null);
     if (x.el.tagName === "DETAILS") x.el.open = true;
     x.el.scrollIntoView({ behavior: "smooth", block: "start" });
-    x.el.classList.add("recette-montree");
-    setTimeout(() => x.el.classList.remove("recette-montree"), 1800);
+    x.el.classList.add("recipe-revealed");
+    setTimeout(() => x.el.classList.remove("recipe-revealed"), 1800);
   }
 
   function renderRecipes() {
@@ -370,7 +370,7 @@
       rendered.add(r.id);
       cards.push(recipeCard(r, null));
     });
-    $("#grille-recettes").innerHTML = cards.join("");
+    $("#grid-recipes").innerHTML = cards.join("");
     applyFilter();
 
     renderTetsu();
@@ -379,19 +379,19 @@
       familySelection[b.dataset.varFam] = b.dataset.varId;
       renderRecipes();
     }));
-    $$("[data-bascule]").forEach(b => b.addEventListener("click", () => {
-      const card = b.closest(".recette-carte");
-      const expand = card.classList.contains("repliee");
-      card.classList.toggle("repliee", !expand);
+    $$("[data-toggle]").forEach(b => b.addEventListener("click", () => {
+      const card = b.closest(".recipe-card");
+      const expand = card.classList.contains("collapsed");
+      card.classList.toggle("collapsed", !expand);
       b.setAttribute("aria-expanded", String(expand));
-      toggleRecipe(b.dataset.bascule, expand);
+      toggleRecipe(b.dataset.toggle, expand);
     }));
-    $$("[data-brasser]").forEach(b => b.addEventListener("click", () => brewRecipe(b.dataset.brasser)));
-    $$("[data-pasapas]").forEach(b => b.addEventListener("click", () => openWalkthrough(b.dataset.pasapas)));
-    $$("#grille-recettes [data-video]").forEach(b => b.addEventListener("click", () => startVideo(b)));
-    $$("[data-recette-edit]").forEach(b => b.addEventListener("click", () => {
+    $$("[data-brew]").forEach(b => b.addEventListener("click", () => brewRecipe(b.dataset.brew)));
+    $$("[data-walkthrough]").forEach(b => b.addEventListener("click", () => openWalkthrough(b.dataset.walkthrough)));
+    $$("#grid-recipes [data-video]").forEach(b => b.addEventListener("click", () => startVideo(b)));
+    $$("[data-recipe-edit]").forEach(b => b.addEventListener("click", () => {
       UI.openRecipesModal();
-      UI.openRecipeForm(b.dataset.recetteEdit);
+      UI.openRecipeForm(b.dataset.recipeEdit);
     }));
   }
 
@@ -404,26 +404,26 @@
   }
 
   function renderTetsu() {
-    const block = $("#tetsu-bloc");
+    const block = $("#tetsu-block");
     if (!block) return;
     const { pours, v40, v60, eau: water } = tetsuPours();
     let total = 0;
     const lines = pours.map((p, i) => {
       total += p;
       const phase = i < 2 ? "40 %" : "60 %";
-      return "<li><span class=\"etape-temps\">" + (i + 1) + "</span><span>" +
+      return "<li><span class=\"step-time\">" + (i + 1) + "</span><span>" +
         I18N.t("te_ligne", { p, c: total }) + " <small>(" + phase + ")</small></span></li>";
     }).join("");
     block.innerHTML =
-      '<div class="tetsu-groupe"><span class="label">' + I18N.t("te_40") + "</span>" +
+      '<div class="tetsu-group"><span class="label">' + I18N.t("te_40") + "</span>" +
       '<div class="tetsu-options">' + TETSU.first40.map(v =>
-        '<button type="button" class="pilule' + (v.id === tetsuChoice.p40 ? " actif" : "") + '" data-t40="' + v.id + '">' + I18N.tr(v.nom) + "</button>").join("") +
+        '<button type="button" class="pill' + (v.id === tetsuChoice.p40 ? " on" : "") + '" data-t40="' + v.id + '">' + I18N.tr(v.nom) + "</button>").join("") +
       "</div></div>" +
-      '<div class="tetsu-groupe"><span class="label">' + I18N.t("te_60") + "</span>" +
+      '<div class="tetsu-group"><span class="label">' + I18N.t("te_60") + "</span>" +
       '<div class="tetsu-options">' + TETSU.last60.map(v =>
-        '<button type="button" class="pilule' + (v.id === tetsuChoice.p60 ? " actif" : "") + '" data-t60="' + v.id + '">' + I18N.tr(v.nom) + "</button>").join("") +
+        '<button type="button" class="pill' + (v.id === tetsuChoice.p60 ? " on" : "") + '" data-t60="' + v.id + '">' + I18N.tr(v.nom) + "</button>").join("") +
       "</div></div>" +
-      '<ul class="tetsu-versements">' + lines + "</ul>" +
+      '<ul class="tetsu-pours">' + lines + "</ul>" +
       '<p class="tetsu-detail">' + I18N.tr(v40.detail) + " " + I18N.tr(v60.detail) + " " + I18N.t("te_fin") + "</p>";
     $$("[data-t40]").forEach(b => b.addEventListener("click", () => { tetsuChoice.p40 = b.dataset.t40; renderTetsu(); }));
     $$("[data-t60]").forEach(b => b.addEventListener("click", () => { tetsuChoice.p60 = b.dataset.t60; renderTetsu(); }));
@@ -433,11 +433,11 @@
 
   const walkthrough = { recipe: null, steps: [], index: -1, startedAt: null, interval: null };
 
-  /* The computation lives in recettes.js, without DOM, so it is testable
+  /* The computation lives in recipes.js, without DOM, so it is testable
      without a browser. Here we only read the field. 1 means "nothing to
      scale", and the texts then stay intact down to the character. */
   function waterFactor(recipe) {
-    const targetWater = parseFloat($("#f-eau").value);
+    const targetWater = parseFloat($("#f-water").value);
     if (!recipe || !(recipe.eau > 0) || !(targetWater > 0)) return 1;
     return targetWater / recipe.eau;
   }
@@ -476,25 +476,25 @@
     walkthrough.index = -1;
     clearInterval(walkthrough.interval);
     walkthrough.startedAt = null;
-    $("#pap-titre").textContent = r.nom;
-    $("#pap-chrono").textContent = "0:00";
-    $("#pap-params").textContent = r.dose + " g / " + r.eau + " g, " + I18N.tr(r.tempTexte) + ", " + I18N.t("molette") + " " + r.dial + ", " + I18N.tr(r.totalTexte);
-    $("#pap-demarrer").textContent = I18N.t("pap_demarrer");
-    $("#pap-suivant").disabled = true;
+    $("#wt-title").textContent = r.nom;
+    $("#wt-chrono").textContent = "0:00";
+    $("#wt-params").textContent = r.dose + " g / " + r.eau + " g, " + I18N.tr(r.tempTexte) + ", " + I18N.t("molette") + " " + r.dial + ", " + I18N.tr(r.totalTexte);
+    $("#wt-start").textContent = I18N.t("pap_demarrer");
+    $("#wt-next").disabled = true;
     renderWalkthroughSteps();
-    $("#modale-pas-a-pas").showModal();
+    $("#modal-walkthrough").showModal();
   }
 
   function renderWalkthroughSteps() {
-    $("#pap-etapes").innerHTML = walkthrough.steps.map((e, i) =>
-      '<li class="' + (i < walkthrough.index ? "faite" : i === walkthrough.index ? "courante" : "") + '">' +
-      '<span class="etape-temps">' + (e.t === null ? "·" : fmtDuration(e.t)) + "</span><span>" + e.texte + "</span></li>"
+    $("#wt-steps").innerHTML = walkthrough.steps.map((e, i) =>
+      '<li class="' + (i < walkthrough.index ? "done" : i === walkthrough.index ? "now" : "") + '">' +
+      '<span class="step-time">' + (e.t === null ? "·" : fmtDuration(e.t)) + "</span><span>" + e.texte + "</span></li>"
     ).join("");
   }
 
   function walkthroughTick() {
     const s = Math.floor((Date.now() - walkthrough.startedAt) / 1000);
-    $("#pap-chrono").textContent = fmtDuration(s);
+    $("#wt-chrono").textContent = fmtDuration(s);
     // Automatic advance on timed steps.
     const nextIdx = walkthrough.index + 1;
     if (nextIdx < walkthrough.steps.length && walkthrough.steps[nextIdx].t !== null && s >= walkthrough.steps[nextIdx].t) {
@@ -507,16 +507,16 @@
     if (walkthrough.startedAt) {
       clearInterval(walkthrough.interval);
       walkthrough.startedAt = null;
-      $("#pap-demarrer").textContent = I18N.t("pap_reprendre");
-      $("#pap-suivant").disabled = true;
+      $("#wt-start").textContent = I18N.t("pap_reprendre");
+      $("#wt-next").disabled = true;
       return;
     }
     walkthrough.startedAt = Date.now();
     walkthrough.index = 0;
     renderWalkthroughSteps();
     walkthrough.interval = setInterval(walkthroughTick, 300);
-    $("#pap-demarrer").textContent = I18N.t("pap_arreter");
-    $("#pap-suivant").disabled = false;
+    $("#wt-start").textContent = I18N.t("pap_arreter");
+    $("#wt-next").disabled = false;
   }
 
   function nextWalkthroughStep() {
@@ -540,7 +540,7 @@
     if (brikkaOk && switchOk) lines.push("<b>" + I18N.t("cm_deux") + "</b>");
     else if (brikkaOk) lines.push("<b>" + I18N.t("cm_brikka") + "</b>");
     else if (switchOk) lines.push("<b>" + I18N.t("cm_switch") + "</b>");
-    else lines.push('<b class="conv-hors">' + I18N.t("cm_aucune") + "</b>");
+    else lines.push('<b class="conv-out">' + I18N.t("cm_aucune") + "</b>");
 
     lines.push(I18N.t("cm_plus_fin"));
     lines.push(I18N.t("cm_plus_grossier"));
@@ -564,13 +564,13 @@
 
   function renderConverter() {
     const text = $("#conv-dial").value.trim().replace(/,/g, ".");
-    const zone = $("#conv-resultat");
+    const zone = $("#conv-result");
     const p = GRIND.parseDial(text);
     if (!p) {
-      zone.innerHTML = '<span class="conv-erreur">' + I18N.t("cv_erreur") + "</span>";
-      $("#conv-conseil").innerHTML = "";
-      $("#conv-appliquer").disabled = true;
-      CHARTS.diagram("reglette", null, fallbacks.dial);
+      zone.innerHTML = '<span class="conv-error">' + I18N.t("cv_erreur") + "</span>";
+      $("#conv-advice").innerHTML = "";
+      $("#conv-apply").disabled = true;
+      CHARTS.diagram("ruler", null, fallbacks.dial);
       return;
     }
     // The slider always follows the value, including when it comes from the text.
@@ -582,29 +582,29 @@
       '<span class="conv-chip">' + I18N.t("cv_environ") + " <b>" + Math.round(p.microns) + "</b> " + I18N.t("cv_microns") + "</span>" +
       '<span class="conv-chip">' + I18N.t("cv_bande") + " <b>" + GRIND.bandOf(p.microns).nom + "</b></span>" +
       '<span class="conv-chip">' + (compatible.length ? I18N.t("cv_compatible") + " <b>" + compatible.join(", ") + "</b>" : "<b>" + I18N.t("cv_hors") + "</b>") + "</span>";
-    $("#conv-conseil").innerHTML = grindAdvice(p);
-    $("#conv-appliquer").disabled = text === fallbacks.dial;
-    $("#conv-appliquer").textContent = text === fallbacks.dial
+    $("#conv-advice").innerHTML = grindAdvice(p);
+    $("#conv-apply").disabled = text === fallbacks.dial;
+    $("#conv-apply").textContent = text === fallbacks.dial
       ? I18N.t("cv_deja") : I18N.t("cv_appliquer");
-    CHARTS.diagram("reglette", text, fallbacks.dial);
+    CHARTS.diagram("ruler", text, fallbacks.dial);
   }
 
   // Marks under the slider: the reference positions, clickable.
   function renderGrindMarkers() {
-    $("#conv-reperes").innerHTML = GRIND.REFERENCES.map(r =>
-      '<button type="button" class="conv-repere" data-dial="' + r.dial + '" title="' +
+    $("#conv-markers").innerHTML = GRIND.REFERENCES.map(r =>
+      '<button type="button" class="conv-marker" data-dial="' + r.dial + '" title="' +
       titleAttr(I18N.tr(r.usage)) + '">' + r.dial + "</button>").join("");
-    $$("#conv-reperes .conv-repere").forEach(b => b.addEventListener("click", () => {
+    $$("#conv-markers .conv-marker").forEach(b => b.addEventListener("click", () => {
       $("#conv-dial").value = b.dataset.dial;
       renderConverter();
     }));
   }
 
   function renderRangeTable() {
-    $("#table-plages").innerHTML = GRIND.METHODS.map(m => {
+    $("#table-ranges").innerHTML = GRIND.METHODS.map(m => {
       const highlight = m.id === "brikka" || m.id === "switch";
       const name = I18N.method(m.nom);
-      return "<tr" + (highlight ? ' class="ligne-perso"' : "") + "><td>" + (highlight ? "<b>" + name + "</b>" : name) + "</td>" +
+      return "<tr" + (highlight ? ' class="row-own"' : "") + "><td>" + (highlight ? "<b>" + name + "</b>" : name) + "</td>" +
         "<td>" + (m.minU === 0 ? I18N.t("plage_moins_u", { x: m.maxU }) : I18N.t("plage_a", { a: m.minU, b: m.maxU })) + "</td>" +
         "<td>" + (m.minC === 0 ? I18N.t("plage_moins_u", { x: m.maxC }) : I18N.t("plage_a", { a: m.minC, b: m.maxC })) + "</td>" +
         "<td><code>" + I18N.dialRange(m.dialText) + "</code></td></tr>";
@@ -628,25 +628,25 @@
     });
     /* The only path that really changes a setting from this screen. It writes
        the same fallback as the Settings screen, so there is only one source. */
-    $("#conv-appliquer").addEventListener("click", async () => {
+    $("#conv-apply").addEventListener("click", async () => {
       const dial = $("#conv-dial").value.trim().replace(/,/g, ".");
       if (!GRIND.parseDial(dial)) { toast(I18N.t("t_mouture_invalide")); return; }
       fallbacks.dial = dial;
       await saveFallbacks();
       renderConverter();
-      if ($("#param-molette")) $("#param-molette").value = dial;
+      if ($("#param-dial")) $("#param-dial").value = dial;
       toast(I18N.t("t_molette_appliquee", { m: dial }));
     });
-    $("#pap-demarrer").addEventListener("click", startWalkthrough);
-    $("#pap-suivant").addEventListener("click", nextWalkthroughStep);
-    $("#modale-pas-a-pas").addEventListener("close", () => clearInterval(walkthrough.interval));
-    $("#btn-gerer-recettes").addEventListener("click", () => UI.openRecipesModal());
-    $$("#biblio-filtres [data-filtre]").forEach(b => b.addEventListener("click", () => {
-      filter.value = b.dataset.filtre;
+    $("#wt-start").addEventListener("click", startWalkthrough);
+    $("#wt-next").addEventListener("click", nextWalkthroughStep);
+    $("#modal-walkthrough").addEventListener("close", () => clearInterval(walkthrough.interval));
+    $("#btn-manage-recipes").addEventListener("click", () => UI.openRecipesModal());
+    $$("#library-filters [data-filter]").forEach(b => b.addEventListener("click", () => {
+      filter.value = b.dataset.filter;
       try { localStorage.setItem("guide-filtre", filter.value); } catch (e) { /* never mind */ }
       applyFilter();
     }));
-    $$(".guide-onglets [data-guide]").forEach(a => a.addEventListener("click", ev => {
+    $$(".guide-tabs [data-guide]").forEach(a => a.addEventListener("click", ev => {
       ev.preventDefault();
       showGuide(a.getAttribute("href").slice(1));
     }));
@@ -654,25 +654,25 @@
     let tab = "accueil";
     try { tab = localStorage.getItem("guide-onglet") || "accueil"; } catch (e) { /* home */ }
     const panel = $("#gp-" + tab) || $("#gp-accueil");
-    $("#guide-recherche").addEventListener("input", searchGuide);
-    $("#guide-resultats").addEventListener("click", ev => {
-      const b = ev.target.closest("[data-resultat]");
-      if (b) goToResult(Number(b.dataset.resultat));
+    $("#guide-search").addEventListener("input", searchGuide);
+    $("#guide-results").addEventListener("click", ev => {
+      const b = ev.target.closest("[data-result]");
+      if (b) goToResult(Number(b.dataset.result));
     });
-    $("#guide-portes").addEventListener("click", ev => {
-      const b = ev.target.closest("[data-porte]");
-      if (b) showGuide(b.dataset.porte);
+    $("#guide-doors").addEventListener("click", ev => {
+      const b = ev.target.closest("[data-door]");
+      if (b) showGuide(b.dataset.door);
     });
-    $("#guide-pour-toi").addEventListener("click", ev => {
-      const b = ev.target.closest("[data-pour-toi]");
-      if (b) showRecipe(b.dataset.pourToi);
+    $("#guide-for-you").addEventListener("click", ev => {
+      const b = ev.target.closest("[data-for-you]");
+      if (b) showRecipe(b.dataset.forYou);
     });
     const heading = panel && panel.querySelector("h2");
     showGuide(heading && heading.id ? heading.id : null);
 
     // Copy buttons for the Vietnamese messages
-    $$("[data-copier]").forEach(b => b.addEventListener("click", async () => {
-      const block = document.getElementById(b.dataset.copier);
+    $$("[data-copy]").forEach(b => b.addEventListener("click", async () => {
+      const block = document.getElementById(b.dataset.copy);
       const text = block ? block.textContent.trim() : "";
       try {
         await navigator.clipboard.writeText(text);

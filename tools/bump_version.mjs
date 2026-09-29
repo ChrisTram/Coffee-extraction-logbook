@@ -5,7 +5,7 @@
  * The version lives in THREE places, and they must say the same thing:
  *
  *   index.html   <meta name="app-version" content="X">, read by app.js for the
- *                footer and by outils.js for the files loaded on demand; and
+ *                footer and by tools.js for the files loaded on demand; and
  *                the ?v=X parameter of every script tag and of the
  *                stylesheet, which is what lets the browser keep these files
  *                cached for a year without ever serving a stale version: the

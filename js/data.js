@@ -8,7 +8,7 @@
  *   data-csv.js         read and write the CSV format
  *   data-schema.js      columns, normalisation, seeds
  *   data-store.js       IndexedDB, File System Access, download
- *   data-calculs.js     derived fields and bag lookups (read only)
+ *   data-calcs.js       derived fields and bag lookups (read only)
  *   data-migrations.js  schema version and catch-ups of existing data
  *
  * The DATA facade returned at the bottom exposes the same name as before for

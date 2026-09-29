@@ -1,10 +1,10 @@
 /* Entry screen: the diagnostic and taste pills, and folding the families.
- * Moved out of ui-saisie.js in v8.78. */
+ * Moved out of ui-entry.js in v8.78. */
 "use strict";
 
 (() => {
 
-  // Borrowed from the core and from ui-saisie.js, loaded before us.
+  // Borrowed from the core and from ui-entry.js, loaded before us.
   const { $, $$, setPressed, entry, updateDiagnosticCorrection } = UI;
 
   /* A diagnostic's bubble: WHEN to tick it, then WHAT to do. Two lines, the
@@ -23,7 +23,7 @@
      listeners saved on each language switch. */
   function wirePills() {
     $("#f-diagnostic").addEventListener("click", ev => {
-      const b = ev.target.closest(".pilule");
+      const b = ev.target.closest(".pill");
       if (!b || !b.dataset.diag) return;
       const d = b.dataset.diag;
       if (entry.diagnostics.has(d)) entry.diagnostics.delete(d);
@@ -33,7 +33,7 @@
       updateDiagnosticCorrection();
     });
     /* After each click on a pill, we recompute: see updateVisibleFamilies. */
-    $("#f-descripteurs").addEventListener("click", ev => {
+    $("#f-descriptors").addEventListener("click", ev => {
       const b = ev.target.closest(".tag");
       if (!b || !b.dataset.tag) return;
       const t = b.dataset.tag;
@@ -50,17 +50,17 @@
     // Grouped by what needs correcting: setting, ratio, or the coffee itself.
     // A flat list of sixteen entries reads badly and pushes you to tick at random.
     $("#f-diagnostic").innerHTML = DIAGNOSTIC_GROUPS.map(g =>
-      '<div class="tags-groupe"><span class="tags-groupe-nom">' + I18N.group(g.nom) + "</span>" +
+      '<div class="tags-group"><span class="tags-group-name">' + I18N.group(g.nom) + "</span>" +
       '<div class="tags">' + g.diags.map(d =>
-        '<button type="button" class="pilule" aria-pressed="false" data-diag="' + d + '" data-info="' +
+        '<button type="button" class="pill" aria-pressed="false" data-diag="' + d + '" data-info="' +
         infoDiagnostic(d) + '">' + I18N.diag(d) + "</button>").join("") +
       "</div></div>").join("");
     // Clicks are delegated once and for all, see wirePills().
 
     // Descriptors grouped by family of the flavour wheel. Each tag carries
     // its definition as a tooltip (data-info, CSS bubble on hover).
-    $("#f-descripteurs").innerHTML = DESCRIPTOR_GROUPS.map(g =>
-      '<div class="tags-groupe" data-groupe="' + g.nom + '"><span class="tags-groupe-nom">' +
+    $("#f-descriptors").innerHTML = DESCRIPTOR_GROUPS.map(g =>
+      '<div class="tags-group" data-group="' + g.nom + '"><span class="tags-group-name">' +
       I18N.group(g.nom) + "</span>" +
       '<div class="tags">' + g.tags.map(d =>
         '<button type="button" class="tag" aria-pressed="false" data-tag="' + d + '" data-info="' +
@@ -96,17 +96,17 @@
      Called on every selection change, and not only at first render: editing
      an old cup ticks tastes AFTER the pills are built. */
   function updateVisibleFamilies() {
-    const zone = $("#f-descripteurs");
+    const zone = $("#f-descriptors");
     if (!zone) return;
     const showAll = allFamilies();
     let hiddenCount = 0;
-    $$("#f-descripteurs .tags-groupe").forEach((g, i) => {
-      const ticked = !!g.querySelector(".tag.actif");
+    $$("#f-descriptors .tags-group").forEach((g, i) => {
+      const ticked = !!g.querySelector(".tag.on");
       const visible = showAll || ticked || i < VISIBLE_FAMILIES;
       g.hidden = !visible;
       if (!visible) hiddenCount++;
     });
-    const b = $("#gouts-plus");
+    const b = $("#tastes-plus");
     if (!b) return;
     b.hidden = !showAll && hiddenCount === 0;
     b.textContent = showAll ? I18N.t("gouts_moins") : I18N.t("gouts_plus", { n: hiddenCount });

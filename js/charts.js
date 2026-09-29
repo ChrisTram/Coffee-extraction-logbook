@@ -38,13 +38,13 @@ const CHARTS = (() => {
     if (typeof Chart === "undefined") return;
     Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
     Chart.defaults.font.size = 12;
-    Chart.defaults.color = cssVar("--attenue");
-    Chart.defaults.borderColor = cssVar("--lignes-graphe");
+    Chart.defaults.color = cssVar("--muted");
+    Chart.defaults.borderColor = cssVar("--lines-chart");
     Chart.defaults.plugins.legend.labels.boxWidth = 12;
     Chart.defaults.plugins.legend.labels.boxHeight = 12;
-    Chart.defaults.plugins.tooltip.backgroundColor = cssVar("--tooltip-fond");
-    Chart.defaults.plugins.tooltip.titleColor = cssVar("--tooltip-texte");
-    Chart.defaults.plugins.tooltip.bodyColor = cssVar("--tooltip-texte");
+    Chart.defaults.plugins.tooltip.backgroundColor = cssVar("--tooltip-bg");
+    Chart.defaults.plugins.tooltip.titleColor = cssVar("--tooltip-text");
+    Chart.defaults.plugins.tooltip.bodyColor = cssVar("--tooltip-text");
     Chart.defaults.plugins.tooltip.padding = 10;
     Chart.defaults.plugins.tooltip.cornerRadius = 8;
     // No animation when the system asks for less motion (v8.75).
@@ -142,12 +142,12 @@ const CHARTS = (() => {
        of reading a height. The scale stops at the month's biggest day (at
        least 2), with one tick per cup. */
     const maxCups = Math.max(2, ...counts.map(Number).filter(Number.isFinite));
-    const borderTint = cssVar("--panneau");
+    const borderTint = cssVar("--panel");
     /* THE COFFEE COLOUR (v8.61): the k-th block of a day takes the tint of
        the coffee of that day's k-th cup (rank computed by UI.renderCoffees30d,
        which writes the legend with the same tokens). Without a rank, neutral grey. */
-    const neutral = cssVar("--barre-neutre");
-    const tints = [1, 2, 3, 4, 5].map(n => cssVar("--cafe-" + n));
+    const neutral = cssVar("--bar-neutral");
+    const tints = [1, 2, 3, 4, 5].map(n => cssVar("--coffee-" + n));
     const tint = (i, k) => {
       const r = coffeesPerDay && coffeesPerDay[i] ? coffeesPerDay[i][k] : -1;
       return r >= 0 && tints[r] ? tints[r] : neutral;
@@ -176,7 +176,7 @@ const CHARTS = (() => {
                rating it smooths, translucent. A foreign tint made it pass
                for a third piece of data, which it is not. */
             type: "line", label: I18N.t("l_tendance"), data: trend || [], yAxisID: "y2",
-            borderColor: cssVar("--tendance"), backgroundColor: cssVar("--tendance"),
+            borderColor: cssVar("--trend"), backgroundColor: cssVar("--trend"),
             spanGaps: true, tension: 0.4, pointRadius: 0, pointHoverRadius: 4, borderWidth: 3,
             fill: false,
           },
@@ -191,9 +191,9 @@ const CHARTS = (() => {
           legend: { labels: { filter: (item, data) => !data.datasets[item.datasetIndex].isTile } },
           tooltip: {
             // In the tooltip too: the first block carries the day's total.
-            filter: item => !(item.dataset.pave > 1) && !(item.dataset.pave === 1 && !Number(counts[item.dataIndex])),
+            filter: item => !(item.dataset.isTile > 1) && !(item.dataset.isTile === 1 && !Number(counts[item.dataIndex])),
             callbacks: {
-              label: item => (item.dataset.pave
+              label: item => (item.dataset.isTile
                 ? I18N.t("l_tasses_jour") + " : " + counts[item.dataIndex]
                 : item.dataset.label + " : " + (item.formattedValue || "")),
               afterBody: items => {
@@ -218,7 +218,7 @@ const CHARTS = (() => {
           y: {
             stack: "trente", stackWeight: 1, position: "left", stacked: true, min: 0, max: maxCups,
             ticks: { stepSize: 1 },
-            grid: { color: cssVar("--lignes-douces"), drawTicks: false },
+            grid: { color: cssVar("--lines-soft"), drawTicks: false },
             title: { display: true, text: I18N.t("axe_tasses") },
           },
           y2: {
@@ -328,7 +328,7 @@ const CHARTS = (() => {
         datasets: [{
           data: values,
           backgroundColor: labels.map(l => C_DIAG[l] || "#999"),
-          borderColor: cssVar("--panneau"),
+          borderColor: cssVar("--panel"),
           borderWidth: 3, hoverOffset: 8,
         }],
       },
@@ -351,7 +351,7 @@ const CHARTS = (() => {
 
   // ---------- Calendar heatmap in SVG ----------
 
-  // Date key in local time, defined only once in outils.js.
+  // Date key in local time, defined only once in tools.js.
   const localDateKey = TOOLS.localDateKey;
 
   function heatmap(container, perDay, infoByDay, weekCount) {
@@ -408,7 +408,7 @@ const CHARTS = (() => {
         // a grid of more than a hundred cells means counting the columns.
         const isToday = key === todayKey;
         svg += '<rect x="' + x + '" y="' + y + '" width="' + cell + '" height="' + cell +
-          '" rx="3" class="hm-cell hm-n' + level + (isToday ? " hm-aujourdhui" : "") +
+          '" rx="3" class="hm-cell hm-n' + level + (isToday ? " hm-today" : "") +
           '" tabindex="0" data-tip="' +
           localDate + " : " + count + (info ? ", " + info : "") + '"></rect>';
         d.setDate(d.getDate() + 1);
@@ -469,25 +469,25 @@ const CHARTS = (() => {
     const x = u => left + Math.max(0, Math.min(maxU, u)) / maxU * zone;
     const umPerStep = GRIND.MICRONS_PER_CLICK;
 
-    let svg = '<svg viewBox="0 0 ' + width + " " + height + '" class="diagramme-svg" role="img" aria-label="' + I18N.t("rg_aria") + '">';
-    svg += '<defs><pattern id="hachures" width="9" height="9" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">' +
-      '<line x1="0" y1="0" x2="0" y2="9" class="dg-hachure"></line></pattern></defs>';
+    let svg = '<svg viewBox="0 0 ' + width + " " + height + '" class="diagram-svg" role="img" aria-label="' + I18N.t("rg_aria") + '">';
+    svg += '<defs><pattern id="hatching" width="9" height="9" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">' +
+      '<line x1="0" y1="0" x2="0" y2="9" class="dg-hatch"></line></pattern></defs>';
 
     // Area out of the grinder's reach, beyond the stop.
     const xStop = x(GRIND.MICRONS_AT_STOP);
-    svg += '<rect x="' + xStop + '" y="' + axisTop + '" width="' + (x(maxU) - xStop) + '" height="' + (bandsY - axisTop) + '" fill="url(#hachures)" class="dg-zone-hors"></rect>';
+    svg += '<rect x="' + xStop + '" y="' + axisTop + '" width="' + (x(maxU) - xStop) + '" height="' + (bandsY - axisTop) + '" fill="url(#hatching)" class="dg-zone-out"></rect>';
 
     // Top axis: rotations, a graduation every 0.2.0 (10 clicks), a tick per click.
-    svg += '<text x="' + left + '" y="12" class="dg-titre-axe">' + I18N.t("dg_rotations") + "</text>";
+    svg += '<text x="' + left + '" y="12" class="dg-title-axis">' + I18N.t("dg_rotations") + "</text>";
     for (let c = 0; c <= GRIND.MAX_CLICKS; c++) {
       const gx = x(c * umPerStep);
       const major = c % 10 === 0;
       svg += '<line x1="' + gx + '" y1="' + (axisTop - (major ? 9 : 4)) + '" x2="' + gx + '" y2="' + axisTop + '" class="dg-tick"></line>';
       if (major) {
-        svg += '<text x="' + gx + '" y="' + (axisTop - 13) + '" text-anchor="middle" class="dg-axe">' + GRIND.dialFromClicks(c) + "</text>";
+        svg += '<text x="' + gx + '" y="' + (axisTop - 13) + '" text-anchor="middle" class="dg-axis">' + GRIND.dialFromClicks(c) + "</text>";
       }
     }
-    svg += '<line x1="' + left + '" y1="' + axisTop + '" x2="' + x(GRIND.MICRONS_AT_STOP) + '" y2="' + axisTop + '" class="dg-ligne"></line>';
+    svg += '<line x1="' + left + '" y1="' + axisTop + '" x2="' + x(GRIND.MICRONS_AT_STOP) + '" y2="' + axisTop + '" class="dg-row"></line>';
 
     /* Method boxes. The compatibility classes are NOT set here: they depend
        on the cursor, so they change on every click. We keep the bounds of
@@ -501,11 +501,11 @@ const CHARTS = (() => {
         const x1 = x(m.minU), x2 = x(Math.min(m.maxU, maxU));
         const isOwn = id === "brikka" || id === "switch";
         boxes.push({ id, minU: m.minU, maxU: m.maxU });
-        svg += '<g class="dg-boite' + (isOwn ? " dg-boite-perso" : "") + '" data-boite="' + id + '" data-tip="' +
+        svg += '<g class="dg-box' + (isOwn ? " dg-box-own" : "") + '" data-box="' + id + '" data-tip="' +
           I18N.method(m.nom) + " : " + I18N.t("rg_tip_court", { min: m.minU, max: m.maxU, minC: m.minC, maxC: m.maxC, mol: I18N.dialRange(m.dialText) }) + '">' +
           '<rect x="' + x1 + '" y="' + y + '" width="' + Math.max(4, x2 - x1) + '" height="' + boxH + '" rx="4"' +
           (isOwn ? ' style="stroke:' + (id === "brikka" ? C_BRIKKA : C_SWITCH) + '"' : "") + "></rect>" +
-          '<text x="' + ((x1 + x2) / 2) + '" y="' + (y + boxH / 2 + 4) + '" text-anchor="middle" class="dg-nom">' + I18N.method(m.nom) + "</text></g>";
+          '<text x="' + ((x1 + x2) / 2) + '" y="' + (y + boxH / 2 + 4) + '" text-anchor="middle" class="dg-name">' + I18N.method(m.nom) + "</text></g>";
       });
     });
 
@@ -513,11 +513,11 @@ const CHARTS = (() => {
     GRIND.GRIND_BANDS.forEach(b => {
       const bandEnd = b.max === Infinity ? maxU : b.max;
       const x1 = x(b.min), x2 = x(bandEnd);
-      svg += '<rect x="' + x1 + '" y="' + bandsY + '" width="' + (x2 - x1) + '" height="' + bandsH + '" class="dg-bande"></rect>' +
-        '<text x="' + ((x1 + x2) / 2) + '" y="' + (bandsY + bandsH / 2 + 4) + '" text-anchor="middle" class="dg-bande-nom">' + b.nom + "</text>";
+      svg += '<rect x="' + x1 + '" y="' + bandsY + '" width="' + (x2 - x1) + '" height="' + bandsH + '" class="dg-band"></rect>' +
+        '<text x="' + ((x1 + x2) / 2) + '" y="' + (bandsY + bandsH / 2 + 4) + '" text-anchor="middle" class="dg-band-name">' + b.nom + "</text>";
     });
     for (let u = 0; u <= maxU; u += 200) {
-      svg += '<text x="' + x(u) + '" y="' + (bandsY + bandsH + 18) + '" text-anchor="middle" class="dg-axe">' + u + (u === maxU ? " µm" : "") + "</text>";
+      svg += '<text x="' + x(u) + '" y="' + (bandsY + bandsH + 18) + '" text-anchor="middle" class="dg-axis">' + u + (u === maxU ? " µm" : "") + "</text>";
     }
 
     // Personal markers.
@@ -535,14 +535,14 @@ const CHARTS = (() => {
     const pd = defaultDial ? GRIND.parseDial(defaultDial) : null;
     if (pd) {
       const dx = x(pd.microns);
-      svg += '<line x1="' + dx + '" y1="' + (axisTop - 4) + '" x2="' + dx + '" y2="' + (bandsY + bandsH) + '" class="dg-defaut"></line>';
+      svg += '<line x1="' + dx + '" y1="' + (axisTop - 4) + '" x2="' + dx + '" y2="' + (bandsY + bandsH) + '" class="dg-default"></line>';
     }
 
     /* Converter cursor. It is ALWAYS in the skeleton, hidden by display, the SVG attribute, when
        there is nothing to show: creating and destroying it as it moves
        would mean redoing by hand exactly what we are trying to avoid. */
-    svg += '<line x1="0" y1="' + (axisTop - 10) + '" x2="0" y2="' + (bandsY + bandsH) + '" class="dg-curseur" data-curseur display="none"></line>' +
-      '<text x="0" y="' + (height - 2) + '" text-anchor="middle" class="dg-curseur-label" data-curseur-label display="none"></text>';
+    svg += '<line x1="0" y1="' + (axisTop - 10) + '" x2="0" y2="' + (bandsY + bandsH) + '" class="dg-slider" data-slider display="none"></line>' +
+      '<text x="0" y="' + (height - 2) + '" text-anchor="middle" class="dg-slider-label" data-slider-label display="none"></text>';
 
     svg += "</svg>";
     el.innerHTML = svg;
@@ -550,9 +550,9 @@ const CHARTS = (() => {
 
     return {
       defaultDial, lang: I18N.lang(), x, boxes,
-      sliderEl: el.querySelector("[data-curseur]"),
-      labelEl: el.querySelector("[data-curseur-label]"),
-      nodes: new Map(boxes.map(b => [b.id, el.querySelector('[data-boite="' + b.id + '"]')])),
+      sliderEl: el.querySelector("[data-slider]"),
+      labelEl: el.querySelector("[data-slider-label]"),
+      nodes: new Map(boxes.map(b => [b.id, el.querySelector('[data-box="' + b.id + '"]')])),
     };
   }
 
@@ -581,8 +581,8 @@ const CHARTS = (() => {
       const n = cache.nodes.get(b.id);
       if (!n) continue;
       const compatible = !!p && p.microns >= b.minU && p.microns <= b.maxU;
-      n.classList.toggle("dg-boite-compatible", compatible);
-      n.classList.toggle("dg-boite-eteinte", !!p && !compatible);
+      n.classList.toggle("dg-box-compatible", compatible);
+      n.classList.toggle("dg-box-off", !!p && !compatible);
     }
   }
 
@@ -636,7 +636,7 @@ const CHARTS = (() => {
   const WHEEL_LOW_SCORE = 5, WHEEL_HIGH_SCORE = 8.5;
   const wheelChoice = new Map();
   function aromaWheel(rated, ids) {
-    const o = Object.assign({ svg: "roue-aromes", detail: "roue-detail", reading: "lecture-aromes" }, ids || {});
+    const o = Object.assign({ svg: "wheel-aromas", detail: "wheel-detail", reading: "reading-aromas" }, ids || {});
     const svg = document.getElementById(o.svg);
     if (!svg) return 0;
     const byTag = {};
@@ -681,14 +681,14 @@ const CHARTS = (() => {
         const af = Math.min((f.n / total) * TURN, TURN - 0.001);
         const isActive = f.nom === chosen;
         const familyName = I18N.group(f.nom);
-        html += '<path d="' + sector(46, 92, a + GAP, a + af - GAP) + '" class="roue-famille' + (isActive ? " choisie" : "") +
-          '" data-famille="' + escapeHtml(f.nom) + '" tabindex="0" role="button" aria-pressed="' + isActive +
+        html += '<path d="' + sector(46, 92, a + GAP, a + af - GAP) + '" class="wheel-family' + (isActive ? " chosen" : "") +
+          '" data-family="' + escapeHtml(f.nom) + '" tabindex="0" role="button" aria-pressed="' + isActive +
           '" aria-label="' + escapeHtml(familyName + ", " + fmtRating(f.note)) + '"><title>' + escapeHtml(familyName) + "</title></path>";
         let b = a;
         f.tastes.forEach(g => {
           const ag = (g.n / total) * TURN;
-          html += '<path d="' + sector(96, isActive ? 146 : 138, b + GAP, b + ag - GAP) + '" class="roue-gout" style="fill-opacity:' +
-            opacity(g.note).toFixed(2) + '" data-famille="' + escapeHtml(f.nom) + '"><title>' +
+          html += '<path d="' + sector(96, isActive ? 146 : 138, b + GAP, b + ag - GAP) + '" class="wheel-taste" style="fill-opacity:' +
+            opacity(g.note).toFixed(2) + '" data-family="' + escapeHtml(f.nom) + '"><title>' +
             escapeHtml(I18N.tag(g.tag) + " : " + fmtRating(g.note) + ", " + I18N.t("roue_fois", { n: g.n })) + "</title></path>";
           b += ag;
         });
@@ -696,14 +696,14 @@ const CHARTS = (() => {
       });
       const f = families.find(x => x.nom === chosen);
       const brief = I18N.group(f.nom);
-      html += '<text x="150" y="146" text-anchor="middle" class="roue-centre-nom">' +
+      html += '<text x="150" y="146" text-anchor="middle" class="wheel-center-name">' +
         escapeHtml(brief.length > 14 ? brief.split(" ")[0] : brief) + "</text>" +
-        '<text x="150" y="170" text-anchor="middle" class="roue-centre-note">' + fmtRating(f.note) + "</text>";
+        '<text x="150" y="170" text-anchor="middle" class="wheel-center-rating">' + fmtRating(f.note) + "</text>";
       svg.innerHTML = html;
       if (detail) {
-        detail.innerHTML = '<h4 class="roue-titre">' + escapeHtml(I18N.group(f.nom)) + "</h4>" +
+        detail.innerHTML = '<h4 class="wheel-title">' + escapeHtml(I18N.group(f.nom)) + "</h4>" +
           f.tastes.slice().sort((x, y) => y.note - x.note).map(g =>
-            '<div class="roue-ligne"><span>' + escapeHtml(I18N.tag(g.tag)) + "</span><span>" +
+            '<div class="wheel-row"><span>' + escapeHtml(I18N.tag(g.tag)) + "</span><span>" +
             I18N.t("roue_fois", { n: g.n }) + "</span><b>" + fmtRating(g.note) + "</b></div>").join("");
       }
     }
@@ -715,17 +715,17 @@ const CHARTS = (() => {
       });
     }
     // Wired ONCE per wheel: the SVG survives re-renders, only its content changes.
-    if (!svg.dataset.branche) {
-      svg.dataset.branche = "1";
+    if (!svg.dataset.branch) {
+      svg.dataset.branch = "1";
       const choose = ev => {
-        const p = ev.target.closest(".roue-famille, .roue-gout");
+        const p = ev.target.closest(".wheel-family, .wheel-taste");
         if (!p) return;
         if (ev.type === "keydown" && ev.key !== "Enter" && ev.key !== " ") return;
         ev.preventDefault();
-        wheelChoice.set(o.svg, p.dataset.famille);
+        wheelChoice.set(o.svg, p.dataset.family);
         svg._paint();
         if (ev.type === "keydown") {
-          const target = [...svg.querySelectorAll(".roue-famille")].find(x => x.dataset.famille === p.dataset.famille);
+          const target = [...svg.querySelectorAll(".wheel-family")].find(x => x.dataset.family === p.dataset.family);
           if (target) target.focus();
         }
       };

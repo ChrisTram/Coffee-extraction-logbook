@@ -18,9 +18,9 @@
 
   function openCoffeesModal() {
     renderCoffeeList();
-    $("#form-cafe").hidden = true;
-    $("#form-sachet").hidden = true;
-    const m = $("#modale-cafes");
+    $("#form-coffee").hidden = true;
+    $("#form-bag").hidden = true;
+    const m = $("#modal-coffees");
     if (!m.open) m.showModal();
   }
 
@@ -46,12 +46,12 @@
     // of the list. Each coffee carries an average score badge (over its
     // rated brews) and the date it was added to the system.
     const sorted = [...DATA.state.cafes].sort((a, b) => (a.actif === 0 ? 1 : 0) - (b.actif === 0 ? 1 : 0));
-    $("#cafes-liste").innerHTML = sorted.map(c => {
+    $("#coffees-list").innerHTML = sorted.map(c => {
       const notes = DATA.state.extractions
         .filter(e => e.cafe_id === c.id && e.note_sur_10 !== "")
         .map(e => Number(e.note_sur_10));
       const scoreBadge = notes.length
-        ? ' <span class="badge-note" title="' + I18N.t("b_extractions", { n: notes.length }) + '">★ ' +
+        ? ' <span class="badge-rating" title="' + I18N.t("b_extractions", { n: notes.length }) + '">★ ' +
           fmtDecimal(average(notes), 1) + "</span>"
         : "";
       // Stock of the current bag. A missing dose counts as the default dose,
@@ -71,7 +71,7 @@
         const typicalDose = doses.length ? average(doses) : fallbacks.dose;
         cupCost = typicalDose;
         const cupsLeft = Math.max(0, Math.floor(stock.remaining / typicalDose));
-        const level = stock.remaining <= 0 ? "vide" : cupsLeft <= 3 ? "bas" : "ok";
+        const level = stock.remaining <= 0 ? "empty" : cupsLeft <= 3 ? "low" : "ok";
         const label = stock.remaining <= 0
           ? I18N.t("stock_vide")
           : I18N.t("stock_reste", { g: fmtDecimal(stock.remaining, 0), n: cupsLeft });
@@ -84,12 +84,12 @@
             src: I18N.t(doses.length ? "stock_dose_moy" : "stock_dose_defaut"),
           }) + '">' + label + "</span>";
       }
-      return '<div class="cafe-ligne' + (c.actif === 0 ? " inactif" : "") +
-      (stock && stock.remaining <= 0 ? " epuise" : "") + '">' +
+      return '<div class="coffee-row' + (c.actif === 0 ? " inactive" : "") +
+      (stock && stock.remaining <= 0 ? " depleted" : "") + '">' +
       "<div><b>" + c.nom + "</b>" + scoreBadge + stockBadge +
-      (Number(c.pourcentage_cafe_reel) < 100 ? ' <span class="badge-nonpur">' + c.pourcentage_cafe_reel + " % " + I18N.t("pct_cafe") + "</span>" : "") +
+      (Number(c.pourcentage_cafe_reel) < 100 ? ' <span class="badge-nonpure">' + c.pourcentage_cafe_reel + " % " + I18N.t("pct_cafe") + "</span>" : "") +
       ((c.tag || "").includes("référence") ? ' <span class="badge-reference">' + I18N.t("badge_etalon") + "</span>" : "") +
-      "<div class=\"cafe-meta\">" +
+      "<div class=\"coffee-meta\">" +
       [c.torrefacteur, c.espece, c.procede,
         c.machine_recommandee ? I18N.t("li_machine", { m: I18N.machine(c.machine_recommandee) }) : "",
         c.prix_vnd ? fmtVND(c.prix_vnd) + " / " + c.format_grammes + " g" : "",
@@ -100,13 +100,13 @@
         costPerCup(c, cupCost),
         c.date_ajout ? I18N.t("li_ajoute", { d: fmtShortDate(c.date_ajout) }) : ""].filter(Boolean).join(" · ") +
       "</div></div>" +
-      '<span class="cafe-meta">' + (c.actif === 0 ? I18N.t("li_inactif") : "") + "</span>" +
-      '<button class="btn btn-petit" data-fiche="' + c.id + '">' + I18N.t("fi_voir") + "</button>" +
-      '<button class="btn btn-petit" data-cafe-sachet="' + c.id + '">' + I18N.t("btn_sachet") + "</button>" +
-      '<button class="btn btn-petit" data-cafe-edit="' + c.id + '">' + I18N.t("btn_modifier") + "</button></div>";
+      '<span class="coffee-meta">' + (c.actif === 0 ? I18N.t("li_inactif") : "") + "</span>" +
+      '<button class="btn btn-small" data-sheet="' + c.id + '">' + I18N.t("fi_voir") + "</button>" +
+      '<button class="btn btn-small" data-coffee-bag="' + c.id + '">' + I18N.t("btn_sachet") + "</button>" +
+      '<button class="btn btn-small" data-coffee-edit="' + c.id + '">' + I18N.t("btn_modifier") + "</button></div>";
     }).join("");
-    $$("[data-cafe-edit]").forEach(b => b.addEventListener("click", () => openCoffeeForm(b.dataset.cafeEdit)));
-    $$("[data-cafe-sachet]").forEach(b => b.addEventListener("click", () => openBagForm(b.dataset.cafeSachet)));
+    $$("[data-coffee-edit]").forEach(b => b.addEventListener("click", () => openCoffeeForm(b.dataset.coffeeEdit)));
+    $$("[data-coffee-bag]").forEach(b => b.addEventListener("click", () => openBagForm(b.dataset.coffeeBag)));
   }
 
   // ---------- New bag ----------
@@ -120,22 +120,22 @@
     const c = DATA.state.cafes.find(x => x.id === coffeeId);
     if (!c) return;
     bagCoffeeId = coffeeId;
-    $("#form-sachet-titre").textContent = I18N.t("sachet_titre", { n: c.nom });
+    $("#form-bag-title").textContent = I18N.t("sachet_titre", { n: c.nom });
     $("#s-date").value = localNow().slice(0, 10);
     $("#s-format").value = c.format_grammes || "";
-    $("#s-prix").value = c.prix_vnd || "";
+    $("#s-price").value = c.prix_vnd || "";
     // The usual case is opening the bag on the day it is recorded. Chris can
     // clear the field if the bag goes into the cupboard.
-    $("#s-ouverture").value = localNow().slice(0, 10);
-    $("#s-torref").value = "";
-    $("#form-sachet").hidden = false;
+    $("#s-opening").value = localNow().slice(0, 10);
+    $("#s-roast").value = "";
+    $("#form-bag").hidden = false;
     $("#s-date").focus();
   }
 
   // Closing the form also means forgetting the target coffee: the two already
   // went together, they just lived in two different files.
   function closeBagForm() {
-    $("#form-sachet").hidden = true;
+    $("#form-bag").hidden = true;
     bagCoffeeId = null;
   }
 
@@ -146,11 +146,11 @@
       cafe_id: bagCoffeeId,
       date_achat: $("#s-date").value || localNow().slice(0, 10),
       format_grammes: $("#s-format").value,
-      prix_vnd: $("#s-prix").value,
-      date_torrefaction: $("#s-torref").value,
-      date_ouverture: $("#s-ouverture").value,
+      prix_vnd: $("#s-price").value,
+      date_torrefaction: $("#s-roast").value,
+      date_ouverture: $("#s-opening").value,
     });
-    $("#form-sachet").hidden = true;
+    $("#form-bag").hidden = true;
     bagCoffeeId = null;
     renderCoffeeList();
     toast(I18N.t("t_sachet"));
@@ -159,50 +159,50 @@
   function openCoffeeForm(id) {
     editingCoffeeId = id || null;
     const c = id ? DATA.state.cafes.find(x => x.id === id) : null;
-    $("#form-cafe-titre").textContent = c ? I18N.t("f_modif", { n: c.nom }) : I18N.t("fc_nouveau");
-    $("#c-nom").value = c ? c.nom : "";
-    $("#c-torrefacteur").value = c ? c.torrefacteur : "";
-    $("#c-origine").value = c ? c.origine : "";
-    $("#c-espece").value = c ? c.espece : "";
-    $("#c-procede").value = c ? c.procede : "";
-    $("#c-torrefaction").value = c ? c.torrefaction : "";
+    $("#form-coffee-title").textContent = c ? I18N.t("f_modif", { n: c.nom }) : I18N.t("fc_nouveau");
+    $("#c-name").value = c ? c.nom : "";
+    $("#c-roaster").value = c ? c.torrefacteur : "";
+    $("#c-origin").value = c ? c.origine : "";
+    $("#c-species").value = c ? c.espece : "";
+    $("#c-process").value = c ? c.procede : "";
+    $("#c-roasting").value = c ? c.torrefaction : "";
     $("#c-format").value = c ? c.format_grammes : "";
-    $("#c-prix").value = c ? c.prix_vnd : "";
-    $("#c-date-torref").value = c ? c.date_torrefaction : "";
+    $("#c-price").value = c ? c.prix_vnd : "";
+    $("#c-date-roast").value = c ? c.date_torrefaction : "";
     $("#c-machine").value = c ? c.machine_recommandee : "";
-    $("#c-recette").value = c ? c.recette_recommandee : "";
+    $("#c-recipe").value = c ? c.recette_recommandee : "";
     $("#c-notes").value = c ? c.notes_annoncees : "";
     $("#c-pct").value = c ? (c.pourcentage_cafe_reel === "" || c.pourcentage_cafe_reel === undefined ? 100 : c.pourcentage_cafe_reel) : 100;
-    $("#c-moulu").checked = c ? Number(c.deja_moulu) === 1 : false;
-    $("#c-actif").checked = c ? c.actif !== 0 : true;
-    $("#form-cafe").hidden = false;
-    $("#c-nom").focus();
+    $("#c-ground").checked = c ? Number(c.deja_moulu) === 1 : false;
+    $("#c-on").checked = c ? c.actif !== 0 : true;
+    $("#form-coffee").hidden = false;
+    $("#c-name").focus();
   }
 
   async function saveCoffee(ev) {
     ev.preventDefault();
     const coffee = {
-      nom: $("#c-nom").value.trim(),
-      torrefacteur: $("#c-torrefacteur").value.trim(),
-      origine: $("#c-origine").value.trim(),
-      espece: $("#c-espece").value.trim(),
-      procede: $("#c-procede").value.trim(),
-      torrefaction: $("#c-torrefaction").value,
+      nom: $("#c-name").value.trim(),
+      torrefacteur: $("#c-roaster").value.trim(),
+      origine: $("#c-origin").value.trim(),
+      espece: $("#c-species").value.trim(),
+      procede: $("#c-process").value.trim(),
+      torrefaction: $("#c-roasting").value,
       format_grammes: $("#c-format").value,
-      prix_vnd: $("#c-prix").value,
-      date_torrefaction: $("#c-date-torref").value,
+      prix_vnd: $("#c-price").value,
+      date_torrefaction: $("#c-date-roast").value,
       machine_recommandee: $("#c-machine").value,
-      recette_recommandee: $("#c-recette").value,
+      recette_recommandee: $("#c-recipe").value,
       notes_annoncees: $("#c-notes").value.trim(),
       pourcentage_cafe_reel: $("#c-pct").value || 100,
       tag: (editingCoffeeId && (DATA.state.cafes.find(x => x.id === editingCoffeeId) || {}).tag) || "",
-      deja_moulu: $("#c-moulu").checked ? 1 : 0,
-      actif: $("#c-actif").checked ? 1 : 0,
+      deja_moulu: $("#c-ground").checked ? 1 : 0,
+      actif: $("#c-on").checked ? 1 : 0,
     };
     if (Number(coffee.pourcentage_cafe_reel) < 100 && !coffee.tag) coffee.tag = "café aromatisé";
     if (editingCoffeeId) await DATA.editCoffee(editingCoffeeId, coffee);
     else await DATA.addCoffee(coffee);
-    $("#form-cafe").hidden = true;
+    $("#form-coffee").hidden = true;
     renderCoffeeList();
     UI.fillCoffeeSelect();
     UI.fillFilters();
@@ -215,80 +215,80 @@
 
   function openRecipesModal() {
     renderRecipeList();
-    $("#form-recette").hidden = true;
-    const m = $("#modale-recettes");
+    $("#form-recipe").hidden = true;
+    const m = $("#modal-recipes");
     if (!m.open) m.showModal();
   }
 
   function renderRecipeList() {
-    $("#recettes-liste").innerHTML = DATA.state.recettes.map(r =>
-      '<div class="cafe-ligne' + (r.actif === 0 ? " inactif" : "") + '">' +
-      '<span class="chip-methode ' + r.methode.toLowerCase() + '">' + r.methode + "</span>" +
-      "<div><b>" + r.nom + "</b><div class=\"cafe-meta\">" +
+    $("#recipes-list").innerHTML = DATA.state.recettes.map(r =>
+      '<div class="coffee-row' + (r.actif === 0 ? " inactive" : "") + '">' +
+      '<span class="chip-method ' + r.methode.toLowerCase() + '">' + r.methode + "</span>" +
+      "<div><b>" + r.nom + "</b><div class=\"coffee-meta\">" +
       [r.numero, r.dose + " g / " + r.eau + " g", I18N.t("molette") + " " + r.dial,
         DATA.isOriginalRecipe(r.id) ? "" : I18N.t("li_perso"),
         r.actif === 0 ? I18N.t("li_masquee") : ""].filter(Boolean).join(" · ") +
       "</div></div>" +
-      '<button class="btn btn-petit" data-recette-form="' + r.id + '">' + I18N.t("btn_modifier") + "</button></div>"
+      '<button class="btn btn-small" data-recipe-form="' + r.id + '">' + I18N.t("btn_modifier") + "</button></div>"
     ).join("");
-    $$("[data-recette-form]").forEach(b => b.addEventListener("click", () => openRecipeForm(b.dataset.recetteForm)));
+    $$("[data-recipe-form]").forEach(b => b.addEventListener("click", () => openRecipeForm(b.dataset.recipeForm)));
   }
 
   function openRecipeForm(id) {
     editingRecipeId = id || null;
     const r = id ? DATA.state.recettes.find(x => x.id === id) : null;
-    $("#form-recette-titre").textContent = r ? I18N.t("f_modif", { n: r.nom }) : I18N.t("fr_nouvelle");
-    $("#r-nom").value = r ? r.nom : "";
-    $("#r-methode").value = r ? r.methode : "Switch";
-    $("#r-numero").value = r ? r.numero : "";
-    $("#r-sous-titre").value = r ? r.sousTitre : "";
+    $("#form-recipe-title").textContent = r ? I18N.t("f_modif", { n: r.nom }) : I18N.t("fr_nouvelle");
+    $("#r-name").value = r ? r.nom : "";
+    $("#r-method").value = r ? r.methode : "Switch";
+    $("#r-num").value = r ? r.numero : "";
+    $("#r-subtitle").value = r ? r.sousTitre : "";
     $("#r-dose").value = r ? r.dose : 15;
-    $("#r-eau").value = r ? r.eau : 225;
+    $("#r-water").value = r ? r.eau : 225;
     $("#r-temp").value = r ? r.temp : 92;
-    $("#r-feu").value = r ? r.puissance_feu : "";
-    $("#r-temp-texte").value = r ? r.tempTexte : "";
+    $("#r-fire").value = r ? r.puissance_feu : "";
+    $("#r-temp-text").value = r ? r.tempTexte : "";
     $("#r-dial").value = r ? r.dial : "1.5.0";
-    $("#r-ratio-texte").value = r ? r.ratioTexte : "";
-    $("#r-total-texte").value = r ? r.totalTexte : "";
-    $("#r-etapes").value = r ? stepsToText(r.etapes) : "";
-    $("#r-pourqui").value = r ? r.pourQui : "";
-    $("#r-cafes").value = r ? r.cafesAssocies.join("\n") : "";
+    $("#r-ratio-text").value = r ? r.ratioTexte : "";
+    $("#r-total-text").value = r ? r.totalTexte : "";
+    $("#r-steps").value = r ? stepsToText(r.etapes) : "";
+    $("#r-forwho").value = r ? r.pourQui : "";
+    $("#r-coffees").value = r ? r.cafesAssocies.join("\n") : "";
     $("#r-note").value = r ? r.note : "";
     $("#r-video").value = r ? r.video || "" : "";
-    $("#r-defaut").checked = r ? !!r.parDefaut : false;
-    $("#r-avancee").checked = r ? !!r.avancee : false;
-    $("#r-actif").checked = r ? r.actif !== 0 : true;
+    $("#r-default").checked = r ? !!r.parDefaut : false;
+    $("#r-advanced").checked = r ? !!r.avancee : false;
+    $("#r-on").checked = r ? r.actif !== 0 : true;
     const isOriginal = r && DATA.isOriginalRecipe(r.id);
-    $("#recette-retablir").hidden = !isOriginal;
-    $("#recette-supprimer").hidden = !r || isOriginal;
-    $("#form-recette").hidden = false;
-    $("#r-nom").focus();
+    $("#recipe-restore").hidden = !isOriginal;
+    $("#recipe-delete").hidden = !r || isOriginal;
+    $("#form-recipe").hidden = false;
+    $("#r-name").focus();
   }
 
   function readRecipeForm() {
     return {
-      nom: $("#r-nom").value.trim(),
-      methode: $("#r-methode").value,
-      numero: $("#r-numero").value.trim(),
-      sousTitre: $("#r-sous-titre").value.trim(),
+      nom: $("#r-name").value.trim(),
+      methode: $("#r-method").value,
+      numero: $("#r-num").value.trim(),
+      sousTitre: $("#r-subtitle").value.trim(),
       dose: $("#r-dose").value,
-      eau: $("#r-eau").value,
+      eau: $("#r-water").value,
       temp: $("#r-temp").value,
-      puissance_feu: $("#r-feu").value,
+      puissance_feu: $("#r-fire").value,
       // Without a temperature target, no invented text: " °C" on its own makes no sense.
-      tempTexte: $("#r-temp-texte").value.trim() ||
+      tempTexte: $("#r-temp-text").value.trim() ||
         ($("#r-temp").value ? $("#r-temp").value + " °C" : ""),
       dial: $("#r-dial").value.trim().replace(/,/g, "."),
-      ratioTexte: $("#r-ratio-texte").value.trim(),
-      totalTexte: $("#r-total-texte").value.trim(),
-      etapes: textToSteps($("#r-etapes").value),
-      pourQui: $("#r-pourqui").value.trim(),
-      cafesAssocies: $("#r-cafes").value.split("\n").map(s => s.trim()).filter(Boolean),
+      ratioTexte: $("#r-ratio-text").value.trim(),
+      totalTexte: $("#r-total-text").value.trim(),
+      etapes: textToSteps($("#r-steps").value),
+      pourQui: $("#r-forwho").value.trim(),
+      cafesAssocies: $("#r-coffees").value.split("\n").map(s => s.trim()).filter(Boolean),
       note: $("#r-note").value.trim(),
       video: $("#r-video").value.trim(),
-      parDefaut: $("#r-defaut").checked,
-      avancee: $("#r-avancee").checked,
-      actif: $("#r-actif").checked ? 1 : 0,
+      parDefaut: $("#r-default").checked,
+      avancee: $("#r-advanced").checked,
+      actif: $("#r-on").checked ? 1 : 0,
     };
   }
 
@@ -299,7 +299,7 @@
     if (!editingRecipeId) return;
     if (!await askConfirm(I18N.t("c_retablir"))) return;
     await DATA.resetRecipe(editingRecipeId);
-    $("#form-recette").hidden = true;
+    $("#form-recipe").hidden = true;
     renderRecipeList();
     toast(I18N.t("t_retablie"));
   }
@@ -308,7 +308,7 @@
     if (!editingRecipeId) return;
     if (!await askConfirm(I18N.t("c_suppr_recette"), { danger: true })) return;
     await DATA.deleteRecipe(editingRecipeId);
-    $("#form-recette").hidden = true;
+    $("#form-recipe").hidden = true;
     renderRecipeList();
     toast(I18N.t("t_recette_supprimee"));
   }
@@ -321,7 +321,7 @@
     if (recipe.dial && !dial) { toast(I18N.t("t_mouture_invalide")); return; }
     if (editingRecipeId) await DATA.editRecipe(editingRecipeId, recipe);
     else await DATA.addRecipe(recipe);
-    $("#form-recette").hidden = true;
+    $("#form-recipe").hidden = true;
     renderRecipeList();
     toast(I18N.t("t_recette"));
   }
@@ -339,48 +339,48 @@
     const rows = ["Brikka", "Switch"].map(m => {
       const list = recipesForMethod(m);
       if (!list.length) return "";
-      return '<tr class="param-groupe"><td colspan="6">' + m + "</td></tr>" +
+      return '<tr class="param-group"><td colspan="6">' + m + "</td></tr>" +
         list.map(r =>
-          '<tr data-param-recette="' + r.id + '">' +
+          '<tr data-param-recipe="' + r.id + '">' +
           "<td>" + I18N.tr(r.nom) + "</td>" +
-          '<td data-l="' + I18N.t("pc_dose") + '"><input type="number" step="0.5" min="1" data-champ="dose" aria-label="' + fieldName(r, "pc_dose") + '" value="' + (r.dose || "") + '"></td>' +
-          '<td data-l="' + I18N.t("pc_eau") + '"><input type="number" step="1" min="10" data-champ="eau" aria-label="' + fieldName(r, "pc_eau") + '" value="' + (r.eau || "") + '"></td>' +
-          '<td data-l="' + I18N.t("pc_temp") + '"><input type="number" step="1" min="60" max="100" data-champ="temp" aria-label="' + fieldName(r, "pc_temp") + '" value="' + (r.temp === "" ? "" : r.temp) +
+          '<td data-l="' + I18N.t("pc_dose") + '"><input type="number" step="0.5" min="1" data-field="dose" aria-label="' + fieldName(r, "pc_dose") + '" value="' + (r.dose || "") + '"></td>' +
+          '<td data-l="' + I18N.t("pc_eau") + '"><input type="number" step="1" min="10" data-field="eau" aria-label="' + fieldName(r, "pc_eau") + '" value="' + (r.eau || "") + '"></td>' +
+          '<td data-l="' + I18N.t("pc_temp") + '"><input type="number" step="1" min="60" max="100" data-field="temp" aria-label="' + fieldName(r, "pc_temp") + '" value="' + (r.temp === "" ? "" : r.temp) +
             '" placeholder="' + I18N.t("param_vide") + '"></td>' +
           '<td data-l="' + I18N.t("pc_feu") + '">' + (r.methode === "Brikka"
-            ? '<input type="number" step="1" min="1" max="10" data-champ="puissance_feu" aria-label="' + fieldName(r, "pc_feu") + '" value="' + (r.puissance_feu || "") + '">'
-            : '<span class="param-sans">&middot;</span>') + "</td>" +
-          '<td data-l="' + I18N.t("pc_dial") + '"><input type="text" data-champ="dial" aria-label="' + fieldName(r, "pc_dial") + '" value="' + titleAttr(r.dial || "") + '"></td>' +
+            ? '<input type="number" step="1" min="1" max="10" data-field="puissance_feu" aria-label="' + fieldName(r, "pc_feu") + '" value="' + (r.puissance_feu || "") + '">'
+            : '<span class="param-none">&middot;</span>') + "</td>" +
+          '<td data-l="' + I18N.t("pc_dial") + '"><input type="text" data-field="dial" aria-label="' + fieldName(r, "pc_dial") + '" value="' + titleAttr(r.dial || "") + '"></td>' +
           "</tr>").join("");
     }).join("");
-    $("#param-recettes").innerHTML = rows;
-    $("#param-dose-defaut").value = fallbacks.dose;
-    $("#param-feu-defaut").value = fallbacks.fire;
-    $("#param-molette").value = fallbacks.dial;
-    UI.writeDuration("param-ebullition", fallbacks.boil);
-    UI.writeDuration("param-bulles", fallbacks.bubbles);
+    $("#param-recipes").innerHTML = rows;
+    $("#param-dose-default").value = fallbacks.dose;
+    $("#param-fire-default").value = fallbacks.fire;
+    $("#param-dial").value = fallbacks.dial;
+    UI.writeDuration("param-boil", fallbacks.boil);
+    UI.writeDuration("param-bubbles", fallbacks.bubbles);
     STEP_FIELDS.forEach(([id, key]) => { $("#" + id).value = (fallbacks.stepSizes || {})[key]; });
     updateDialDetail();
-    $("#param-bips").checked = $("#chrono-bip").checked;
+    $("#param-beeps").checked = $("#chrono-beep").checked;
     updateFailed();
     updateSettingsIndex();
   }
 
   /* L6 (v8.91): EACH ROW OF THE LIST SHOWS ITS VALUE. You know what is set
      without opening the page, as in a phone's settings. */
-  let currentSection = "ps-recettes";
+  let currentSection = "ps-recipes";
   function updateSettingsIndex() {
     const steps = fallbacks.stepSizes || {};
     const n = UI.liveRecipes ? UI.liveRecipes().length : DATA.state.recettes.length;
     const p = GRIND.parseDial(String(fallbacks.dial || ""));
     const values = {
-      recettes: I18N.t("piv_recettes", { n }),
-      repli: fallbacks.dose + " g · " + I18N.t("piv_feu", { f: fallbacks.fire }),
-      molette: fallbacks.dial + (p ? " · ≈ " + Math.round(p.microns) + " µm" : ""),
-      bouilloire: fallbacks.bubbles ? I18N.t("piv_bulles", { t: UI.fmtDuration(fallbacks.bubbles) }) : I18N.t("piv_a_mesurer"),
-      pas: steps.pas_crans ? I18N.t("piv_crans", { n: steps.pas_crans }) : "",
-      appareil: I18N.t($("#chrono-bip").checked ? "piv_bips_oui" : "piv_bips_non"),
-      donnees: ($("#sync-statut") || { textContent: "" }).textContent.trim().slice(0, 40),
+      recipes: I18N.t("piv_recettes", { n }),
+      fallback: fallbacks.dose + " g · " + I18N.t("piv_feu", { f: fallbacks.fire }),
+      dial: fallbacks.dial + (p ? " · ≈ " + Math.round(p.microns) + " µm" : ""),
+      kettle: fallbacks.bubbles ? I18N.t("piv_bulles", { t: UI.fmtDuration(fallbacks.bubbles) }) : I18N.t("piv_a_mesurer"),
+      incr: steps.pas_crans ? I18N.t("piv_crans", { n: steps.pas_crans }) : "",
+      device: I18N.t($("#chrono-beep").checked ? "piv_bips_oui" : "piv_bips_non"),
+      data: ($("#sync-status") || { textContent: "" }).textContent.trim().slice(0, 40),
     };
     Object.entries(values).forEach(([k, v]) => { const el = $("#piv-" + k); if (el) el.textContent = v; });
     showSettingsSection(currentSection, false);
@@ -390,9 +390,9 @@
     $$(".param-section").forEach(s => s.classList.toggle("active", s.id === id));
     $$(".param-index [data-section]").forEach(b => b.setAttribute("aria-current", String(b.dataset.section === id)));
     // "This device" saves with a tap: no Save button under it.
-    $("#param-actions").hidden = id === "ps-appareil";
+    $("#param-actions").hidden = id === "ps-device";
     if (open) {
-      $("#param-corps").classList.add("ouverte");
+      $("#param-body").classList.add("expanded");
       window.scrollTo({ top: 0 });
     }
   }
@@ -401,33 +401,33 @@
      out today. A reading preference, local like the beeps. */
   function updateFailed() {
     const excluded = extsWithCalcs().length - analyzableExts().length;
-    $("#param-ratees").checked = includeFailed();
-    $("#compte-ratees").textContent = I18N.t("rt_exclues", { n: excluded });
+    $("#param-failed").checked = includeFailed();
+    $("#count-failed").textContent = I18N.t("rt_exclues", { n: excluded });
   }
 
   // Clicks and microns under the field, to check the right setting was typed.
   function updateDialDetail() {
-    const p = GRIND.parseDial($("#param-molette").value.trim().replace(/,/g, "."));
-    $("#param-molette-detail").textContent = p
+    const p = GRIND.parseDial($("#param-dial").value.trim().replace(/,/g, "."));
+    $("#param-dial-detail").textContent = p
       ? I18N.t("param_molette_detail", { c: p.clicks, m: Math.round(p.microns) })
       : "";
   }
 
   // The fields of the "My correction steps" card and their settings column.
-  const STEP_FIELDS = [["param-pas-crans", "pas_crans"], ["param-pas-degres", "pas_degres"],
-    ["param-pas-feu", "pas_feu"], ["param-pas-eau", "pas_eau_g"], ["param-pas-dose", "pas_dose_g"]];
+  const STEP_FIELDS = [["param-incr-notches", "pas_crans"], ["param-incr-degrees", "pas_degres"],
+    ["param-incr-fire", "pas_feu"], ["param-incr-water", "pas_eau_g"], ["param-incr-dose", "pas_dose_g"]];
 
   async function saveParameters() {
-    const dose = Number($("#param-dose-defaut").value);
-    const heat = Number($("#param-feu-defaut").value);
-    const dial = $("#param-molette").value.trim().replace(/,/g, ".");
+    const dose = Number($("#param-dose-default").value);
+    const heat = Number($("#param-fire-default").value);
+    const dial = $("#param-dial").value.trim().replace(/,/g, ".");
     if (!(dose > 0)) { toast(I18N.t("t_param_dose")); return; }
     if (!(heat >= 1 && heat <= 10)) { toast(I18N.t("t_param_feu")); return; }
     if (!GRIND.parseDial(dial)) { toast(I18N.t("t_mouture_invalide")); return; }
-    const boilTime = UI.readDuration("param-ebullition");
+    const boilTime = UI.readDuration("param-boil");
     if (boilTime === "" || !(boilTime >= 30 && boilTime <= 1800)) { toast(I18N.t("t_param_ebullition")); return; }
     // The first bubbles come BEFORE the rolling boil, otherwise the curve makes no sense.
-    const bubblesTime = UI.readDuration("param-bulles");
+    const bubblesTime = UI.readDuration("param-bubbles");
     if (bubblesTime === "" || !(bubblesTime >= 10 && bubblesTime < boilTime)) { toast(I18N.t("t_param_bulles")); return; }
     fallbacks.dose = dose;
     fallbacks.fire = Math.round(heat);
@@ -443,11 +443,11 @@
     /* Only recipes actually touched are rewritten: each write stamps maj_le
        and would win the merge against another device. */
     let touched = 0;
-    for (const tr of $$("[data-param-recette]")) {
-      const r = DATA.state.recettes.find(x => x.id === tr.dataset.paramRecette);
+    for (const tr of $$("[data-param-recipe]")) {
+      const r = DATA.state.recettes.find(x => x.id === tr.dataset.paramRecipe);
       if (!r) continue;
       const vals = {};
-      tr.querySelectorAll("[data-champ]").forEach(i => { vals[i.dataset.champ] = i.value.trim(); });
+      tr.querySelectorAll("[data-field]").forEach(i => { vals[i.dataset.field] = i.value.trim(); });
       const changed =
         String(r.dose || "") !== vals.dose ||
         String(r.eau || "") !== vals.eau ||
@@ -481,39 +481,39 @@
   function wireCatalog() {
     /* The two header shortcuts disappeared along with the header (Comptoir
        redesign, step 2). The modals stay reachable where they are needed:
-       #btn-gerer-cafes on the Entry screen, #btn-gerer-recettes in the Guide.
+       #btn-manage-coffees on the Entry screen, #btn-manage-recipes in the Guide.
        Those two buttons still exist and are wired by their screens. */
 
     // Coffee: form, and bags
-    $("#cafe-nouveau").addEventListener("click", () => openCoffeeForm(null));
-    $("#cafe-annuler").addEventListener("click", () => { $("#form-cafe").hidden = true; });
-    $("#form-cafe").addEventListener("submit", saveCoffee);
-    $("#form-sachet").addEventListener("submit", saveBag);
-    $("#sachet-annuler").addEventListener("click", closeBagForm);
+    $("#coffee-new").addEventListener("click", () => openCoffeeForm(null));
+    $("#coffee-cancel").addEventListener("click", () => { $("#form-coffee").hidden = true; });
+    $("#form-coffee").addEventListener("submit", saveCoffee);
+    $("#form-bag").addEventListener("submit", saveBag);
+    $("#bag-cancel").addEventListener("click", closeBagForm);
 
     // Recipes: form
-    $("#recette-nouvelle").addEventListener("click", () => openRecipeForm(null));
-    $("#recette-annuler").addEventListener("click", () => { $("#form-recette").hidden = true; });
-    $("#form-recette").addEventListener("submit", saveRecipe);
-    $("#recette-retablir").addEventListener("click", restoreCurrentRecipe);
-    $("#recette-supprimer").addEventListener("click", deleteCurrentRecipe);
+    $("#recipe-new").addEventListener("click", () => openRecipeForm(null));
+    $("#recipe-cancel").addEventListener("click", () => { $("#form-recipe").hidden = true; });
+    $("#form-recipe").addEventListener("submit", saveRecipe);
+    $("#recipe-restore").addEventListener("click", restoreCurrentRecipe);
+    $("#recipe-delete").addEventListener("click", deleteCurrentRecipe);
 
     // Settings
-    $("#param-enregistrer").addEventListener("click", saveParameters);
-    $("#param-annuler").addEventListener("click", renderParameters);
+    $("#param-save").addEventListener("click", saveParameters);
+    $("#param-cancel").addEventListener("click", renderParameters);
     $$(".param-index [data-section]").forEach(b => b.addEventListener("click", () => showSettingsSection(b.dataset.section, true)));
-    $(".param-index [data-ouvre-donnees]").addEventListener("click", () => $("#btn-donnees").click());
-    $("#param-retour").addEventListener("click", () => $("#param-corps").classList.remove("ouverte"));
-    $("#param-molette").addEventListener("input", updateDialDetail);
+    $(".param-index [data-opens-db]").addEventListener("click", () => $("#btn-data").click());
+    $("#param-back").addEventListener("click", () => $("#param-body").classList.remove("expanded"));
+    $("#param-dial").addEventListener("input", updateDialDetail);
     // The Settings checkbox and the stopwatch one drive the same setting.
-    $("#param-bips").addEventListener("change", () => {
-      $("#chrono-bip").checked = $("#param-bips").checked;
-      $("#chrono-bip").dispatchEvent(new Event("change"));
+    $("#param-beeps").addEventListener("change", () => {
+      $("#chrono-beep").checked = $("#param-beeps").checked;
+      $("#chrono-beep").dispatchEvent(new Event("change"));
     });
     /* The dashboard redraws itself on the next visit to the screen: that is
        where the toggle changes what the numbers say. */
-    $("#param-ratees").addEventListener("change", () => {
-      toggleFailed($("#param-ratees").checked);
+    $("#param-failed").addEventListener("change", () => {
+      toggleFailed($("#param-failed").checked);
       updateFailed();
     });
   }

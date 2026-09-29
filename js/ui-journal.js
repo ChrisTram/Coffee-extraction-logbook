@@ -12,7 +12,7 @@
 
 (() => {
 
-  // Borrowed from the core and from ui-historique.js, loaded before us.
+  // Borrowed from the core and from ui-history.js, loaded before us.
   const { $, titleAttr, isFailed, fmtShortDate, fmtDecimal, average } = UI;
 
   const VIEW_KEY = "historique-vue";
@@ -57,7 +57,7 @@
     const W = 240, H = 34, x = i => 4 + i * ((W - 8) / (ordered.length - 1)), y = n => H - 4 - (Math.max(3, Math.min(10, n)) - 3) / 7 * (H - 8);
     const d = "M" + ordered.map((e, i) => x(i).toFixed(1) + " " + y(Number(e.note_sur_10)).toFixed(1)).join(" L");
     // Stretched across the full width (v8.95): on desktop, kept at its proportions, it stayed a stroke in the middle.
-    return '<svg class="jn-courbe" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" aria-hidden="true"><path d="' + d + '" vector-effect="non-scaling-stroke"></path></svg>';
+    return '<svg class="jn-curve" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" aria-hidden="true"><path d="' + d + '" vector-effect="non-scaling-stroke"></path></svg>';
   }
 
   function resume(c) {
@@ -90,26 +90,26 @@
     const kpi = (v, l) => '<div class="jn-kpi"><b>' + v + "</b><span>" + l + "</span></div>";
     const cups = expandedKeys.has(c.key) ? c.cups : c.cups.slice(0, VISIBLE_COUNT);
     const hidden = c.cups.length - cups.length;
-    return '<section class="jn-chapitre' + (isOpen ? " ouvert" : "") + (r.ongoing ? " en-cours" : "") + '">' +
-      '<button type="button" class="jn-tete" data-chapitre="' + titleAttr(c.key) + '" aria-expanded="' + isOpen + '">' +
-        '<span class="jn-titre"><b>' + titleAttr(name) + "</b>" +
-          '<span class="jn-etat' + (r.ongoing ? " vif" : "") + '">' + status + "</span></span>" +
-        '<span class="jn-sous">' + when + " · " + I18N.t("jn_tasses", { n: c.cups.length, s: c.cups.length > 1 ? "s" : "" }) +
+    return '<section class="jn-chapter' + (isOpen ? " open" : "") + (r.ongoing ? " in-progress" : "") + '">' +
+      '<button type="button" class="jn-head" data-chapter="' + titleAttr(c.key) + '" aria-expanded="' + isOpen + '">' +
+        '<span class="jn-title"><b>' + titleAttr(name) + "</b>" +
+          '<span class="jn-state' + (r.ongoing ? " vivid" : "") + '">' + status + "</span></span>" +
+        '<span class="jn-sub">' + when + " · " + I18N.t("jn_tasses", { n: c.cups.length, s: c.cups.length > 1 ? "s" : "" }) +
           (c.bag && c.bag.format_grammes ? " · " + c.bag.format_grammes + " g" : "") + "</span>" +
-        '<span class="jn-moy">' + (r.avg !== null ? fmtRating(r.avg) : "·") + "</span>" +
+        '<span class="jn-avg">' + (r.avg !== null ? fmtRating(r.avg) : "·") + "</span>" +
       "</button>" +
       (isOpen
-        ? '<div class="jn-corps">' +
-            '<div class="jn-resume">' +
+        ? '<div class="jn-body">' +
+            '<div class="jn-summary">' +
               '<div class="jn-kpis">' +
                 kpi(r.avg !== null ? fmtRating(r.avg) : "·", I18N.t("jn_moyenne", { n: r.rated.length })) +
                 kpi(r.best ? fmtRating(Number(r.best.note_sur_10)) : "·", I18N.t("jn_meilleure")) +
                 kpi(r.price ? r.price.toLocaleString(I18N.locale()) + " ₫" : "·", I18N.t("jn_la_tasse")) +
               "</div>" + curve(r.rated) +
-              (setting ? '<p class="jn-reglage">' + I18N.t("jn_reglage", { r: titleAttr(setting), n: fmtRating(Number(r.best.note_sur_10)) }) + "</p>" : "") +
+              (setting ? '<p class="jn-setting">' + I18N.t("jn_reglage", { r: titleAttr(setting), n: fmtRating(Number(r.best.note_sur_10)) }) + "</p>" : "") +
             "</div>" +
-            '<div class="h-cartes jn-tasses">' + cups.map(e => UI.extractionCard(e)).join("") + "</div>" +
-            (hidden > 0 ? '<button type="button" class="btn btn-discret btn-petit jn-tout" data-journal-tout="' + titleAttr(c.key) + '">' +
+            '<div class="h-cards jn-cups">' + cups.map(e => UI.extractionCard(e)).join("") + "</div>" +
+            (hidden > 0 ? '<button type="button" class="btn btn-subtle btn-small jn-all" data-journal-all="' + titleAttr(c.key) + '">' +
               I18N.t("jn_voir_tout", { n: hidden, s: hidden > 1 ? "s" : "" }) + "</button>" : "") +
           "</div>"
         : "") +
@@ -127,22 +127,22 @@
 
   function wireJournal(render) {
     $("#h-journal").addEventListener("click", ev => {
-      const t = ev.target.closest("[data-chapitre]");
+      const t = ev.target.closest("[data-chapter]");
       if (t) {
-        const k = t.dataset.chapitre;
+        const k = t.dataset.chapter;
         if (openKeys.has(k)) openKeys.delete(k); else openKeys.add(k);
         render();
         return;
       }
-      const all = ev.target.closest("[data-journal-tout]");
-      if (all) { expandedKeys.add(all.dataset.journalTout); render(); }
+      const all = ev.target.closest("[data-journal-all]");
+      if (all) { expandedKeys.add(all.dataset.journalAll); render(); }
     });
-    document.querySelectorAll(".h-vues [data-vue]").forEach(b => b.addEventListener("click", () => { setView(b.dataset.vue); render(); }));
+    document.querySelectorAll(".h-views [data-view]").forEach(b => b.addEventListener("click", () => { setView(b.dataset.view); render(); }));
   }
 
   function updateViews() {
     const v = historyView();
-    document.querySelectorAll(".h-vues [data-vue]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.vue === v)));
+    document.querySelectorAll(".h-views [data-view]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
   }
 
   Object.assign(UI, { wireJournal, updateViews, renderJournal, historyView });

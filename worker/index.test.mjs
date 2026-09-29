@@ -146,7 +146,7 @@ check("expired session rejected", expired.status === 302, `status ${expired.stat
   const versioned = await call("/js/app.js?v=7.82", { headers: { Cookie: cookie } });
   check("a versioned script is immutable", (versioned.headers.get("Cache-Control") || "").includes("immutable"));
   check("and still private", (versioned.headers.get("Cache-Control") || "").includes("private"));
-  const css = await call("/css/socle.css?v=7.82", { headers: { Cookie: cookie } });
+  const css = await call("/css/base.css?v=7.82", { headers: { Cookie: cookie } });
   check("the versioned stylesheet too", (css.headers.get("Cache-Control") || "").includes("immutable"));
   const bare = await call("/js/app.js", { headers: { Cookie: cookie } });
   check("without a version, a script revalidates", (bare.headers.get("Cache-Control") || "").includes("no-cache"));
@@ -229,7 +229,7 @@ check("expired session rejected", expired.status === 302, `status ${expired.stat
   const { dirname, join } = await import("node:path");
   const { fileURLToPath } = await import("node:url");
   const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-  const realCss = ["socle", "ecrans", "fenetres", "finitions"].map(f => readFileSync(join(root, "css/" + f + ".css"), "utf8")).join("\n");
+  const realCss = ["base", "screens", "dialogs", "finishing"].map(f => readFileSync(join(root, "css/" + f + ".css"), "utf8")).join("\n");
   const slimmed = minifyCss(realCss);
   check("the real stylesheet keeps all its braces", (slimmed.match(/\{/g) || []).length === (realCss.replace(/\/\*[\s\S]*?\*\//g, "").match(/\{/g) || []).length);
   check("and shrinks by at least a quarter", slimmed.length < realCss.length * 0.75, slimmed.length + " / " + realCss.length);

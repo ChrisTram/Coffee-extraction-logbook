@@ -22,7 +22,7 @@ ES, ils ne marchent pas en `file://`), tous en `defer`, dans l'ordre de
 (`RECETTES_DEPART`, etc.).
 
 SIX écrans dans une page unique, bascule par nav et hash. La liste fait foi dans
-`ECRANS` (`js/ui-noyau.js`) : tableau, saisie, historique, reglages, guide,
+`ECRANS` (`js/ui-core.js`) : tableau, saisie, historique, reglages, guide,
 parametres. Les anciens liens `#reference` restent valides grâce à
 `ECRANS_RENOMMES`.
 
@@ -51,7 +51,7 @@ LE CADRE (v8.27). Tout écran est borné et centré par UNE règle, `.ecran
 d'identifiant bat la classe, et c'est ainsi que l'historique s'est retrouvé calé
 à gauche. La grille de saisie a son propre plafond de 1400 px, centré.
 
-LES INSIGHTS (« Ce que tes données disent »). Dix règles dans `ui-constats.js`
+LES INSIGHTS (« Ce que tes données disent »). Dix règles dans `ui-findings.js`
 (dont, depuis la v8.42, la température de l'eau du Switch par tranches, l'eau
 préchauffée de la Brikka et l'agitation du Switch, chacune limitée à sa machine),
 chacune rendant `{ texte, haut, bas, confiance }` ou `null` via `constat()`,
@@ -63,10 +63,10 @@ d’affichage (0,4 point, 3 tasses par groupe) sont dans `MIN_GAP` et
 LES CHAMPS NOMBRE ÉTROITS. Chrome n’affiche ses flèches natives qu’à partir
 d’une certaine largeur : le champ Température (66 px) n’en avait aucune. Le
 sélecteur maison est `.champ-pas` + `.pas` dans la feuille de style, et
-`brancherPas()` dans `ui-saisie.js` : tout champ nombre peut l’avoir en posant
+`brancherPas()` dans `ui-entry.js` : tout champ nombre peut l’avoir en posant
 deux boutons `data-pas="1|-1" data-pas-champ="<id>"` à côté de lui.
 
-LES THÈMES. Trois palettes dans `css/socle.css` (v8.34) : `html[data-theme="clair"]`,
+LES THÈMES. Trois palettes dans `css/base.css` (v8.34) : `html[data-theme="clair"]`,
 `html[data-theme="sombre"]` (Graphite, le sombre par défaut) et
 `html[data-theme="sombre"][data-sombre="nuit"]` (Nuit, qui ne redéfinit que ce qui
 change). `data-theme` dit la famille, `data-sombre` la palette ; les deux sont
@@ -77,7 +77,7 @@ du chrono prend ses sous-surfaces dans `--cs-*`. Quatre surfaces par thème
 en alpha en sombre, et le relief par `--ombre-carte` et `--ombre-haut`, vides en
 clair. La couleur de fond du sombre vit à CINQ endroits à changer
 ensemble : la feuille de style, la balise `theme-color` d'`index.html`, la table
-`TEINTES` d'`ui-noyau.js` (une par palette), `manifest.json` et la page de
+`TEINTES` d'`ui-core.js` (une par palette), `manifest.json` et la page de
 connexion de `worker/index.js` (ces deux derniers en Graphite). Les icônes en
 trait des boutons d'action viennent de `UI.icone(nom)`, la piste des curseurs
 de `UI.peindreCurseur(curseur)` (à appeler après toute écriture de `.value`).
@@ -96,35 +96,35 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 
 | Fichier | Rôle |
 | --- | --- |
-| `js/outils.js` | fonctions pures partagées par toutes les couches : `moyenne`, `cleLocale`, version du site. Se charge en premier. |
+| `js/tools.js` | fonctions pures partagées par toutes les couches : `moyenne`, `cleLocale`, version du site. Se charge en premier. |
 | `js/i18n.js`, `js/i18n.en.js` | traduction, moitié française et mécanisme ; paquet anglais chargé à la demande |
 | `js/grind.js` | moulin : conversions, plages, validation |
-| `js/recettes.js` | semences : recettes, cafés, tasses, descripteurs, diagnostics, règles d'avertissement |
+| `js/recipes.js` | semences : recettes, cafés, tasses, descripteurs, diagnostics, règles d'avertissement |
 | `js/sync.js` | synchronisation entre appareils, côté client : parle au réseau, rien d'autre |
 | `js/data-csv.js` | format CSV, pur |
 | `js/data-schema.js` | colonnes, normalisation, semences des tables, pur |
 | `js/data-store.js` | IndexedDB, File System Access, téléchargement : primitives |
-| `js/data-calculs.js` | champs dérivés et lecture des sachets, lecture seule, lié à l'état par `pour(state)` |
+| `js/data-calcs.js` | champs dérivés et lecture des sachets, lecture seule, lié à l'état par `pour(state)` |
 | `js/data-migrations.js` | version de schéma et rattrapages de l'existant, même mécanisme |
 | `js/data.js` | POSSÈDE l'état ; mutations, import et export, démo, synchro, démarrage. La façade `DATA` expose le même nom pour chaque fonction, où qu'elle vive. |
-| `js/reglages.js` | meilleurs réglages par café, moyenne glissante, constats : calcul pur |
+| `js/tuning.js` | meilleurs réglages par café, moyenne glissante, constats : calcul pur |
 | `js/charts.js` | graphiques Chart.js (chargée à la demande), heatmap et réglette en SVG maison |
-| `js/ui-noyau.js` | outils d'interface partagés, thème, navigation. Définit `UI`. |
-| `js/ui-constats.js` | les phrases calculées et leur carrousel |
-| `js/ui-derniere.js` | la carte de la dernière tasse, et ses briques partagées avec la table |
-| `js/ui-tableau.js` | tableau de bord : calendrier, analyses, dernières extractions |
-| `js/ui-saisie.js` | formulaire, chronomètre |
-| `js/ui-saisie-aside.js` | panneau latéral de la saisie, tasses jumelles |
-| `js/ui-pilules.js` | pilules des diagnostics et des goûts, repli des familles |
+| `js/ui-core.js` | outils d'interface partagés, thème, navigation. Définit `UI`. |
+| `js/ui-findings.js` | les phrases calculées et leur carrousel |
+| `js/ui-last-cup.js` | la carte de la dernière tasse, et ses briques partagées avec la table |
+| `js/ui-dashboard.js` | tableau de bord : calendrier, analyses, dernières extractions |
+| `js/ui-entry.js` | formulaire, chronomètre |
+| `js/ui-entry-aside.js` | panneau latéral de la saisie, tasses jumelles |
+| `js/ui-pills.js` | pilules des diagnostics et des goûts, repli des familles |
 | `js/ui-chrono.js` | chronomètre de la saisie : paliers, bips, verrou d’écran, widget repliable |
-| `js/ui-brouillon.js` | brouillon de saisie en localStorage, chargé après ui-saisie.js |
-| `js/ui-rapide.js` | panneau de saisie rapide |
-| `js/ui-historique.js` | tableau, filtres, tri, comparateur, écran Mes meilleurs réglages |
+| `js/ui-draft.js` | brouillon de saisie en localStorage, chargé après ui-entry.js |
+| `js/ui-quick.js` | panneau de saisie rapide |
+| `js/ui-history.js` | tableau, filtres, tri, comparateur, écran Mes meilleurs réglages |
 | `js/ui-guide.js` | recettes de référence, pas à pas, moulin interactif |
-| `js/ui-catalogue.js` | modales cafés, sachets, recettes, écran Paramètres |
-| `js/ui-fiche.js` | la fiche d'un café (v8.46), dialogue `#modale-fiche` |
-| `js/ui-brassage.js` | le mode Brassage (v8.47), dialogue plein écran `#modale-brassage` |
-| `js/ui-dessins.js` | les dessins en SVG maison (v8.49) : étagère, horloge, spectre, carte du moulin |
+| `js/ui-catalog.js` | modales cafés, sachets, recettes, écran Paramètres |
+| `js/ui-coffee-sheet.js` | la fiche d'un café (v8.46), dialogue `#modale-fiche` |
+| `js/ui-brew.js` | le mode Brassage (v8.47), dialogue plein écran `#modale-brassage` |
+| `js/ui-drawings.js` | les dessins en SVG maison (v8.49) : étagère, horloge, spectre, carte du moulin |
 | `js/app.js` | démarrage, navigation, thème, langue, modales d'accueil et de données, abonnement aux données |
 | `css/fonts/` | les deux polices de la DA, embarquées en woff2, sous OFL (section 10) |
 | `sw.js`, `manifest.json`, `icons/` | PWA et hors ligne (section 10) |
@@ -154,9 +154,9 @@ frontières le refuse.
 - Une fonction utilisée par UN seul écran : dans son fichier, sans l'exposer.
 - Une fonction appelée depuis un autre écran : dans l'`Object.assign(UI, …)` de
   son fichier, appelée en `UI.laFonction()`.
-- Un outil d'interface utile à DEUX écrans au moins : dans `ui-noyau.js`. Une
+- Un outil d'interface utile à DEUX écrans au moins : dans `ui-core.js`. Une
   fonction PURE utile à deux couches (données, graphiques, interface) : dans
-  `outils.js`. Pas avant : un nom placé là est un engagement.
+  `tools.js`. Pas avant : un nom placé là est un engagement.
 - Un nouveau fichier JS : le déclarer dans `index.html` (avec `?v=`), `sw.js`,
   `tools/boot.test.mjs` (SCRIPTS), `tools/data.test.mjs` (SCRIPTS ou
   FICHIERS_DATA ou SOURCE_UI) et `tools/modules.test.mjs` (FICHIERS ou
@@ -239,18 +239,18 @@ diagnostic, descripteurs, commentaire, puissance_feu, ratee, chauffe_s`
   régler, et elle n'était mesurée nulle part.
 - `descripteurs` : tags séparés par `|`, valeurs françaises (la traduction EN
   est purement d'affichage). La liste vit dans DESCRIPTEURS_GROUPES
-  (recettes.js), 69 tags en 10 familles. Chaque tag a une définition
+  (recipes.js), 69 tags en 10 familles. Chaque tag a une définition
   courte dans TAGS_INFO (i18n.js, fr et en), affichée dans une bulle CSS au
   survol ou au focus (attribut data-info, styles « [data-info] » dans
-  ecrans.css). Ne pas mettre de guillemets doubles dans ces définitions
+  screens.css). Ne pas mettre de guillemets doubles dans ces définitions
   (elles partent dans un attribut HTML).
-- `diagnostic` : zéro, une ou PLUSIEURS valeurs de DIAGNOSTICS (recettes.js)
+- `diagnostic` : zéro, une ou PLUSIEURS valeurs de DIAGNOSTICS (recipes.js)
   séparées par `|` (choix multiple depuis la v7.2, une tasse peut être un
   peu amère ET astringente). Les anciennes lignes à valeur unique se lisent
   telles quelles (split sur `|`). 11 niveaux dont deux intermédiaires
   ("Un peu acide", "Un peu amer") entre Équilibré et les extractions ratées.
   Depuis la v7.19 ils sont GROUPÉS par levier de correction
-  (DIAGNOSTICS_GROUPES dans recettes.js) : "Rien à changer", "Réglage
+  (DIAGNOSTICS_GROUPES dans recipes.js) : "Rien à changer", "Réglage
   d'extraction", "Répartition dans le panier", "Ratio café et eau", "Le café lui
   même". "Acide ET amer (extraction inégale)" est SEUL dans son groupe, et c'est
   le point : rangé avec les réglages il passait pour un raccourci redondant des
@@ -297,7 +297,7 @@ etapes, pour_qui, cafes_associes, note, par_defaut, avancee, variantes, actif`
   tasse moins volume de café estimé.
 - `variantes` 0/1 : active le bloc Tetsu (versements pilotables) : réservé au
   Tetsu 4:6, préservé à l'édition.
-- Les 11 recettes d'origine (RECETTES_DEPART dans recettes.js) sont
+- Les 11 recettes d'origine (RECETTES_DEPART dans recipes.js) sont
   restaurables une par une via "Rétablir la version d'origine".
 
 Recettes d'origine (v7.92) : trois Brikka, Brikka classique et sa variante
@@ -426,7 +426,7 @@ Dans l'écran Guide, le moulin est un RÉGLAGE, pas un convertisseur : curseur e
 crans, repères cliquables, conseil vivant, bouton qui pose `replis.molette` (la
 même source que l'écran Paramètres). Raisons et pièges : `DECISIONS.md`.
 
-## 6 bis. Tableau de bord (js/ui-tableau.js)
+## 6 bis. Tableau de bord (js/ui-dashboard.js)
 
 Quatre rangées sur une grille de DOUZE colonnes : la carte principale sur huit,
 les autres sur quatre (`.col-2` vaut `span 8`, le défaut `span 4`).
@@ -445,7 +445,7 @@ les autres sur quatre (`.col-2` vaut `span 8`, le défaut `span 4`).
   avec un repère par tasse. L'infobulle ne montre que le premier pavé, qui porte le
   total du jour. Depuis la v8.61 chaque pavé a la couleur de SON café (jetons
   `--cafe-1` à `--cafe-5`, les cinq cafés les plus bus du mois, gris pour le reste) :
-  `UI.rendreCafes30j(exts)` (ui-dessins.js) calcule le rang de couleur de chaque
+  `UI.rendreCafes30j(exts)` (ui-drawings.js) calcule le rang de couleur de chaque
   tasse et écrit la légende `#legende-30j`, une pastille par café qui ouvre sa fiche
   (`data-fiche`). Les pavés sortent de la légende Chart.js.
 - **Ce que tes données disent** : les insights, sur carte sombre.
@@ -470,13 +470,13 @@ les autres sur quatre (`.col-2` vaut `span 8`, le défaut `span 4`).
   sinon elle passerait sous la couche du dessus. Elle se ferme au clic ailleurs, à
   Échap et au défilement.
 - **Récap de la semaine** (v8.51, `#carte-recap`, `UI.donneesRecap()` dans
-  js/ui-dessins.js) : la semaine passée, lundi à dimanche, en tête du tableau de bord
+  js/ui-drawings.js) : la semaine passée, lundi à dimanche, en tête du tableau de bord
   pendant la semaine suivante, jusqu'à « Refermer » (localStorage `recap-ferme`, clé
   = le lundi de la semaine résumée). Tasses, moyenne, meilleure tasse, barres par
   jour, et des FAITS seulement s'ils sont vrais : écart avec la semaine d'avant (0,4
   point, trois notées de chaque côté), café qui fait la moitié des tasses, sachets
   ouverts. Rien sous deux tasses.
-- **Tes cafés en dessins** (v8.49, `#carte-dessins`, js/ui-dessins.js) : quatre
+- **Tes cafés en dessins** (v8.49, `#carte-dessins`, js/ui-drawings.js) : quatre
   dessins, chacun raccourci vers la page qu'il résume (`data-raccourci` : cafes,
   historique, diagnostics, moulin). L'étagère (un bocal par café actif avec sachet,
   le moins rempli d'abord, liseré selon la fenêtre de fraîcheur de la fiche ; un bocal
@@ -540,7 +540,7 @@ Les couleurs des séries : trois jetons protégés pour les machines (`--brikka`
 emprunte jamais (`--tendance`, `--grammes`). Pourquoi : `DECISIONS.md`, « Une
 couleur, une série ».
 
-## 8. Saisie (js/ui-saisie.js, js/ui-chrono.js, js/ui-rapide.js)
+## 8. Saisie (js/ui-entry.js, js/ui-chrono.js, js/ui-quick.js)
 
 - Préremplissage au choix du café : méthode et recette recommandées, dose et
   molette de la recette. L'EAU RESTE VIDE (elle se lit sur la balance, Chris en a une) et la température
@@ -610,7 +610,7 @@ Points fixés depuis, chacun expliqué dans `DECISIONS.md` :
   (`reglages.ebullition_s`, 2:00 par défaut ; le pas de schéma v11 recale le
   4:00 inventé des premières versions sur 2:00, le pas v15 fait passer sur la
   courbe les degrés estimés sous l'ancienne droite et jamais retouchés). Fonctions pures
-  `temperatureDepuisChauffe` et `chauffePourTemperature` dans `recettes.js`. Le
+  `temperatureDepuisChauffe` et `chauffePourTemperature` dans `recipes.js`. Le
   degré estimé s'écrit dans `f-temp`, reste modifiable et reste la valeur
   stockée ; l'aide sous le champ dit combien de temps viser pour la cible de la
   recette. Le temps d'ébullition vaut ZÉRO tant qu'il n'est pas chronométré, et
@@ -628,7 +628,7 @@ Points fixés depuis, chacun expliqué dans `DECISIONS.md` :
   110 caractères ; le texte complet reste au survol (v7.94).
 - CORRECTION CHIFFRÉE (v8.48) : `REGLAGES.correctionChiffree(ext, replis.pas, moulu)`
   transforme les diagnostics cochés en réglages. Trois sources, aucune en dur dans le
-  calcul : le SENS de chaque levier dans `DIAGNOSTIC_LEVIERS` (recettes.js, à côté
+  calcul : le SENS de chaque levier dans `DIAGNOSTIC_LEVIERS` (recipes.js, à côté
   des phrases qu'il traduit ; un test vérifie qu'ils disent la même chose), les PAS
   dans la ligne de réglages (`pas_crans`, `pas_degres`, `pas_feu`, `pas_eau_g`,
   `pas_dose_g`, carte Paramètres « Mes pas de correction », doublés pour un
@@ -653,7 +653,7 @@ Points fixés depuis, chacun expliqué dans `DECISIONS.md` :
 - La saisie rapide enregistre SANS note par défaut, comme le formulaire complet :
   curseur sans pouce à chaque ouverture, même mécanisme (`UI.brancherNote`).
 
-## 8 quater. Le mode Brassage (js/ui-brassage.js)
+## 8 quater. Le mode Brassage (js/ui-brew.js)
 
 Le chrono de la saisie en plein écran, ouvert par `#btn-brassage` dans le widget du
 chrono. PAS un second chrono : il lit `UI.chrono` et appelle `chronoPrincipal`,
@@ -674,7 +674,7 @@ qu'il est ouvert.
   note (`#br-note`, même curseur sans pouce) qui écrit dans `#f-note`, et deux boutons :
   Enregistrer la tasse (soumet le formulaire) ou Compléter la saisie.
 
-## 8 ter. La fiche d'un café (js/ui-fiche.js)
+## 8 ter. La fiche d'un café (js/ui-coffee-sheet.js)
 
 Dialogue `#modale-fiche`, ouvert par tout bouton `data-fiche="<id café>"` (clic
 délégué sur le document) : les cartes de « Mes meilleurs réglages » et les lignes de
@@ -693,7 +693,7 @@ chaque notification de données et à la bascule de langue tant qu'il est ouvert
 - **Courbe** SVG maison : chaque tasse en point, la moyenne par tranche en ligne, la
   fenêtre en fond, aujourd'hui en pointillé.
 - **Goûts** : la roue `CHARTS.roueAromes` en petit, sur les tasses de ce café.
-- **Dessins** (v8.50, js/ui-dessins.js) : l'empreinte (radar des familles de goûts,
+- **Dessins** (v8.50, js/ui-drawings.js) : l'empreinte (radar des familles de goûts,
   part de chaque famille sur ce café contre tous les cafés, chaque profil ramené à
   sa famille la plus cochée), la trajectoire (molette contre degrés au Switch ou feu
   à la Brikka, dans l'ordre des tasses, sur la recette la plus faite de ce café) et
@@ -711,7 +711,7 @@ chaque notification de données et à la bascule de langue tant qu'il est ouvert
 La démo ouvre chaque sachet le jour de son achat (`chargerDemo`) : sans date
 d'ouverture aucune tasse n'avait de jour du sachet.
 
-## 8 bis. Historique (js/ui-historique.js)
+## 8 bis. Historique (js/ui-history.js)
 
 DEUX rendus de la meme liste, choisis a 1024 px par `enCartes()` :
 
@@ -873,7 +873,7 @@ double clic sur `index.html` marche exactement comme avant.
   découpe la forme qu'il veut. Régénérer si le dessin change, pas autrement.
 - `css/fonts/` : Instrument Serif (titres, chiffres) et Manrope (tout le
   reste), en woff2, sous licence OFL, déclarées en `@font-face` dans
-  `css/socle.css` et précachées. Sous-ensembles latin et latin étendu pour les
+  `css/base.css` et précachées. Sous-ensembles latin et latin étendu pour les
   deux, plus le VIETNAMIEN pour Manrope (les cafés s'appellent « Trung Nguyên
   Sáng Tạo », « Là Việt »). Elles n'ont pas de `?v=` et n'en auront pas : elles
   sont immuables PAR CONTRAT, on ne réécrit jamais un `.woff2` sous le même
@@ -1017,7 +1017,7 @@ raccourcis s'affichent sur Android, pas sur iPhone.
   for` orphelin, et groupe de champ mélangeant deux contrôles sans rapport.
 - UN SCRIPT DIFFÉRÉ NE PEUT PAS DÉCIDER DE L'APPARENCE. `defer` veut dire "après
   l'analyse du document", donc après le premier rendu. Le thème était restauré
-  depuis `ui-noyau.js`, différé comme tout le reste : le thème clair clignotait
+  depuis `ui-core.js`, différé comme tout le reste : le thème clair clignotait
   en sombre à chaque ouverture. Rien ne le signalait, aucun test ne peut voir un
   clignotement, et il était visible à chaque fois. Le thème s'applique maintenant
   par un script EN LIGNE dans le `<head>`, le seul de la page, et c'est une

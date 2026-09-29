@@ -1,9 +1,9 @@
 /* Stopwatch for the Entry screen, and nothing else.
  *
- * Split out of js/ui-saisie.js when that file went past the 1,200-line cap.
+ * Split out of js/ui-entry.js when that file went past the 1,200-line cap.
  * The seam is clean: the stopwatch has its own state, its own screen lock,
  * its own recipe steps, and it became a separate collapsible widget on
- * screen. It loads AFTER ui-saisie.js, from which it borrows a few helpers.
+ * screen. It loads AFTER ui-entry.js, from which it borrows a few helpers.
  *
  * It talks to the rest through UI.: the form asks it to collapse, and it
  * writes the times into the form fields by id. */
@@ -55,7 +55,7 @@
   }
 
   function currentMilestones() {
-    const r = findRecipe($("#f-recette").value);
+    const r = findRecipe($("#f-recipe").value);
     if (!r) return [];
     return UI.stepsFor(r).filter(e => e.t !== null && e.t !== undefined);
   }
@@ -66,7 +66,7 @@
   }
 
   function playBeep() {
-    if (!$("#chrono-bip").checked) return;
+    if (!$("#chrono-beep").checked) return;
     try {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const o = audioCtx.createOscillator();
@@ -86,7 +86,7 @@
   function updateStopwatchSteps(withBeeps) {
     const s = stopwatchElapsed();
     const steps = currentMilestones();
-    const area = $("#chrono-etapes");
+    const area = $("#chrono-steps");
     if (!steps.length) { area.hidden = true; return; }
     area.hidden = false;
     let current = null, next = null;
@@ -94,19 +94,19 @@
     const currentText = current
       ? fmtDuration(current.t) + " · " + current.texte
       : I18N.t("ch_pret");
-    $("#chrono-courante").textContent = currentText;
+    $("#chrono-now").textContent = currentText;
     /* The same step in the header, so it reads WITHOUT expanding: on a phone
        the stopwatch is a collapsed strip stuck to the top, and a strip that
        does not say where you are just takes up space. Empty when the
        stopwatch is not running, otherwise it would announce a step not yet begun. */
-    const shortLabel = $("#chrono-palier-court");
+    const shortLabel = $("#chrono-phase-short");
     if (shortLabel) shortLabel.textContent = stopwatch.state === "arrete" ? "" : currentText;
     if (next) {
-      $("#chrono-suivante").textContent = I18N.t("ch_suivante", {
+      $("#chrono-next").textContent = I18N.t("ch_suivante", {
         t: fmtDuration(next.t), d: Math.max(0, Math.ceil(next.t - s)), texte: next.texte,
       });
     } else {
-      $("#chrono-suivante").textContent = current ? I18N.t("ch_derniere") : "";
+      $("#chrono-next").textContent = current ? I18N.t("ch_derniere") : "";
     }
     if (withBeeps && stopwatch.state === "encours") {
       steps.forEach(step => {
@@ -134,8 +134,8 @@
     else if (stopwatch.state === "encours") b.textContent = I18N.t("ch_pause");
     else b.textContent = I18N.t("ch_reprendre");
     $("#btn-chrono-stop").hidden = stopwatch.state === "arrete";
-    $("#btn-chrono-raz").hidden = stopwatch.state === "arrete" && stopwatchElapsed() === 0;
-    $(".chrono").classList.toggle("en-cours", stopwatch.state === "encours");
+    $("#btn-chrono-reset").hidden = stopwatch.state === "arrete" && stopwatchElapsed() === 0;
+    $(".chrono").classList.toggle("in-progress", stopwatch.state === "encours");
     // Called on every stopwatch transition, the right place to align the
     // screen lock with no risk of forgetting it in a branch.
     syncWakeLock();
@@ -174,7 +174,7 @@
     stopwatch.state = "arrete";
     writeDuration("f-total", total);
     const tOpen = openingTime();
-    if (tOpen !== null && total > tOpen) writeDuration("f-ecoulement", total - tOpen);
+    if (tOpen !== null && total > tOpen) writeDuration("f-flow", total - tOpen);
     updateStopwatchButtons();
     toast(I18N.t("t_temps"));
   }
@@ -204,14 +204,14 @@
   }
 
   function toggleStopwatch(open) {
-    const body = $("#chrono-corps");
+    const body = $("#chrono-body");
     if (!body) return;
     const wants = open === undefined ? body.hidden : open;
     /* A running stopwatch is never closed. */
     const isOpen = !wants && isStopwatchRunning() ? true : wants;
     body.hidden = !isOpen;
-    $("#chrono-widget").classList.toggle("ouvert", isOpen);
-    $("#chrono-basculer").setAttribute("aria-expanded", isOpen ? "true" : "false");
+    $("#chrono-widget").classList.toggle("open", isOpen);
+    $("#chrono-toggle").setAttribute("aria-expanded", isOpen ? "true" : "false");
   }
 
   Object.assign(UI, {

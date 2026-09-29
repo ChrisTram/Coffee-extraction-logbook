@@ -809,7 +809,7 @@ const NEVER_SWITCH_NAMES = [
    mentioned "14 g de café" in its text would get its dose multiplied,
    which would be worse than not adapting anything.
 
-   PURE function with no DOM, like reglages.js, so it can be tested without a
+   PURE function with no DOM, like tuning.js, so it can be tested without a
    browser. See tools/data.test.mjs. */
 const POUR_THRESHOLD_G = 30;
 

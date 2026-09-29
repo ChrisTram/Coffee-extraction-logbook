@@ -1,5 +1,5 @@
 /* Dashboard: the computed sentences and their carousel (moved out of
- * ui-tableau.js in v8.78).
+ * ui-dashboard.js in v8.78).
  *
  * Findings are COMPUTED sentences, not more charts, and the rules stay
  * deliberately cautious: there must be enough rated brews in each of the
@@ -292,10 +292,10 @@
     const from = Math.min(hi, lo), to = Math.max(hi, lo);
     // The labels of both sides, for a screen reader: the sentence already names them visually.
     const spoken = c.high.label + " " + fmtRating(hi) + ", " + c.low.label + " " + fmtRating(lo);
-    return '<span class="reglette" role="img" aria-label="' + titleAttr(spoken) + '">' +
-      '<i class="reglette-trait" style="left:' + pc(from) + ";width:calc(" + pc(to) + " - " + pc(from) + ')"></i>' +
-      '<i class="reglette-point bas" style="left:' + pc(lo) + '"></i>' +
-      '<i class="reglette-point haut" style="left:' + pc(hi) + '"></i></span>';
+    return '<span class="ruler" role="img" aria-label="' + titleAttr(spoken) + '">' +
+      '<i class="ruler-line" style="left:' + pc(from) + ";width:calc(" + pc(to) + " - " + pc(from) + ')"></i>' +
+      '<i class="ruler-point low" style="left:' + pc(lo) + '"></i>' +
+      '<i class="ruler-point high" style="left:' + pc(hi) + '"></i></span>';
   }
 
   /* THE CAROUSEL (v8.39). Findings used to stack, and the card, taller than
@@ -308,7 +308,7 @@
     if (!items.length) return;
     currentInsight = (i + items.length) % items.length;
     items.forEach((li, k) => {
-      li.classList.toggle("courant", k === currentInsight);
+      li.classList.toggle("current", k === currentInsight);
       li.setAttribute("aria-hidden", String(k !== currentInsight));
     });
     const pos = $("#insights-nav .insights-pos");
@@ -329,14 +329,14 @@
     navEl.hidden = findings.length < 2;
     navEl.innerHTML = findings.length < 2 ? "" :
       '<span class="insights-pos"></span>' +
-      '<button type="button" class="btn-carre-petit" data-insight="-1" aria-label="' + titleAttr(I18N.t("ins_precedent")) + '">' + UI.icon("gauche") + "</button>" +
-      '<button type="button" class="btn-carre-petit" data-insight="1" aria-label="' + titleAttr(I18N.t("ins_suivant")) + '">' + UI.icon("chevron") + "</button>";
+      '<button type="button" class="btn-square-small" data-insight="-1" aria-label="' + titleAttr(I18N.t("ins_precedent")) + '">' + UI.icon("gauche") + "</button>" +
+      '<button type="button" class="btn-square-small" data-insight="1" aria-label="' + titleAttr(I18N.t("ins_suivant")) + '">' + UI.icon("chevron") + "</button>";
     $("#insights").innerHTML = findings.map(c => {
-      if (!c.high) return '<li class="constat constat-vide"><p>' + c.texte + "</p></li>";
-      return '<li class="constat"><p>' + c.texte + "</p>" +
-        '<div class="preuve">' + scaleBar(c) +
-        '<span class="preuve-chiffres">' + I18N.t("ins_contre", { h: fmtRating(c.high.note), b: fmtRating(c.low.note) }) + "</span>" +
-        '<span class="preuve-pied">' + I18N.t("ins_" + c.confidence) + " · " +
+      if (!c.high) return '<li class="finding finding-empty"><p>' + c.texte + "</p></li>";
+      return '<li class="finding"><p>' + c.texte + "</p>" +
+        '<div class="proof">' + scaleBar(c) +
+        '<span class="proof-figures">' + I18N.t("ins_contre", { h: fmtRating(c.high.note), b: fmtRating(c.low.note) }) + "</span>" +
+        '<span class="proof-footer">' + I18N.t("ins_" + c.confidence) + " · " +
         I18N.t("ins_effectifs", { h: c.high.n, b: c.low.n }) + "</span></div></li>";
     }).join("");
     showInsight(currentInsight);

@@ -3,7 +3,7 @@
  * First script on the page: nothing here depends on the DOM, the data or any
  * other file, and everything runs as is in Node for the tests.
  *
- * Why this file exists: average() lived in reglages.js AND in the interface
+ * Why this file exists: average() lived in tuning.js AND in the interface
  * core, localDateKey() in charts.js AND in the core, and the same local date was
  * recomputed a third time in data.js. Three copies of a calculation function
  * drift apart one day, silently, and two screens then show two numbers for

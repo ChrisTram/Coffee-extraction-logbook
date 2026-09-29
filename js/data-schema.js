@@ -4,7 +4,7 @@
  * a row. This is the layer that decides what a valid brew is, which columns
  * go into a CSV and which never do (maj_le), and what the seeded recipes and
  * cups are worth. Depends on GRIND (dial validation) and on the seeds in
- * recettes.js. */
+ * recipes.js. */
 "use strict";
 
 const DATA_SCHEMA = (() => {
@@ -124,7 +124,7 @@ const DATA_SCHEMA = (() => {
   }
 
   // Today's date in LOCAL time (never toISOString, UTC+7 offset). Same
-  // definition as everywhere else: outils.js.
+  // definition as everywhere else: tools.js.
   function localDateToday() {
     return TOOLS.localDateKey(new Date());
   }
@@ -220,7 +220,7 @@ const DATA_SCHEMA = (() => {
          feeds fallbacks.boil, not the interface constant. */
       ebullition_s: num(r && r.ebullition_s, 30, 1800, 120),
       /* The kettle's second marker (v8.59): the first bubbles RISING, around
-         88 °C. It bends the degree estimate (recettes.js). 1:30 by default,
+         88 °C. It bends the degree estimate (recipes.js). 1:30 by default,
          what Chris timed; a row from before v8.59 takes it without
          migration. A marker set after the boil is not refused here: the
          model replaces it with three quarters of the boil time. */

@@ -258,10 +258,10 @@ Chart.defaults = hollow();
 
 /* ---------- Execution ---------- */
 
-const SCRIPTS = ["js/outils.js", "js/i18n.en.js", "js/i18n.js", "js/grind.js", "js/recettes.js", "js/demo-data.js",
-  "js/sync.js", "js/data-csv.js", "js/data-schema.js", "js/data-store.js", "js/data-calculs.js",
-  "js/data-migrations.js", "js/data.js", "js/reglages.js", "js/charts.js",
-  "js/ui-noyau.js", "js/ui-constats.js", "js/ui-derniere.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-saisie-aside.js", "js/ui-pilules.js", "js/ui-chrono.js", "js/ui-brouillon.js", "js/ui-rapide.js", "js/ui-historique.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/ui-fiche.js", "js/ui-brassage.js", "js/ui-dessins.js", "js/app.js"];
+const SCRIPTS = ["js/tools.js", "js/i18n.en.js", "js/i18n.js", "js/grind.js", "js/recipes.js", "js/demo-data.js",
+  "js/sync.js", "js/data-csv.js", "js/data-schema.js", "js/data-store.js", "js/data-calcs.js",
+  "js/data-migrations.js", "js/data.js", "js/tuning.js", "js/charts.js",
+  "js/ui-core.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js", "js/ui-history.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/app.js"];
 const source = SCRIPTS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 
 // Intercepted console.error: that is where render errors come out.
@@ -430,14 +430,14 @@ if (brikka) {
   check("the Brikka recipe carries 150 g of water", Number(brikka.eau) === 150, String(brikka.eau));
   check("the Brikka recipe imposes no temperature", brikka.temp === "", JSON.stringify(brikka.temp));
   check("the blank form inherits the recipe water",
-    String(document.querySelector("#f-eau").value) === String(brikka.eau),
-    JSON.stringify(document.querySelector("#f-eau").value));
+    String(document.querySelector("#f-water").value) === String(brikka.eau),
+    JSON.stringify(document.querySelector("#f-water").value));
   check("the blank form leaves the temperature empty for the Brikka",
     document.querySelector("#f-temp").value === "",
     JSON.stringify(document.querySelector("#f-temp").value));
   check("the blank form inherits the burner power",
-    String(document.querySelector("#f-puissance").value) === String(brikka.puissance_feu),
-    JSON.stringify(document.querySelector("#f-puissance").value));
+    String(document.querySelector("#f-power").value) === String(brikka.puissance_feu),
+    JSON.stringify(document.querySelector("#f-power").value));
 }
 
 // No field placeholder may announce a default value that does not exist.
@@ -450,7 +450,7 @@ check("the temperature field no longer has a misleading placeholder", !tempField
    machines, while the Brikka recipe aims for 1.2.0. The form therefore made him
    record a grind he had not used. */
 {
-  const grind = String(document.querySelector("#f-mouture").value);
+  const grind = String(document.querySelector("#f-grind").value);
   check("the blank form takes the grinder setting, 1.5.0",
     grind === "1.5.0", JSON.stringify(grind));
   // Chris asked on August 24 that ALL recipes carry his single
@@ -479,9 +479,9 @@ check("the temperature field no longer has a misleading placeholder", !tempField
   const recipe = api.DATA.state.recettes.find(r => r.actif !== 0);
   check("a coffee and a recipe exist for quick entry", !!coffee && !!recipe);
   if (coffee && recipe) {
-    document.querySelector("#q-cafe").value = coffee.id;
-    document.querySelector("#q-recette").value = recipe.nom;
-    document.querySelector("#q-note").value = "";
+    document.querySelector("#q-coffee").value = coffee.id;
+    document.querySelector("#q-recipe").value = recipe.nom;
+    document.querySelector("#q-rating").value = "";
     const before = api.DATA.state.extractions.length;
     let raised = null;
     try { await api.UI.saveQuick(); } catch (e) { raised = e; }
@@ -528,8 +528,8 @@ check("the temperature field no longer has a misleading placeholder", !tempField
     set innerHTML(v) { rebuilds++; this.firstChild = { v }; },
     get innerHTML() { return ""; },
     querySelector(sel) {
-      if (sel === "[data-curseur]") return cursorLine;
-      if (sel === "[data-curseur-label]") return label;
+      if (sel === "[data-slider]") return cursorLine;
+      if (sel === "[data-slider-label]") return label;
       if (!boxes.has(sel)) boxes.set(sel, link(node()));
       return boxes.get(sel);
     },
@@ -619,7 +619,7 @@ check("the temperature field no longer has a misleading placeholder", !tempField
   api.UI.chooseMethod("Brikka");
   api.UI.resetEntry();
   const active = api.DATA.state.cafes.filter(c => c.actif !== 0);
-  const coffeeField = document.querySelector("#f-cafe");
+  const coffeeField = document.querySelector("#f-coffee");
   check("the blank form offers a coffee",
     active.length > 0 && coffeeField.value === active[0].id,
     JSON.stringify(coffeeField.value) + " for " + JSON.stringify(active[0] && active[0].id));
@@ -628,11 +628,11 @@ check("the temperature field no longer has a misleading placeholder", !tempField
 
   /* The quick panel REFUSES to save without a coffee: opening it on an empty
      field guaranteed a round trip. */
-  document.querySelector("#q-cafe").value = "";
+  document.querySelector("#q-coffee").value = "";
   api.UI.updateQuickPanel();
   check("the quick panel too",
-    document.querySelector("#q-cafe").value === active[0].id,
-    JSON.stringify(document.querySelector("#q-cafe").value));
+    document.querySelector("#q-coffee").value === active[0].id,
+    JSON.stringify(document.querySelector("#q-coffee").value));
 }
 
 /* THE DATE OF A NEW ENTRY IS THE CURRENT TIME.
@@ -686,8 +686,8 @@ check("the temperature field no longer has a misleading placeholder", !tempField
   /* The first body row is a day SUBHEADING since the history
      is grouped: a <td> with colspan, not an extraction. We look for the first
      data row, which is what this check always meant. */
-  const rows = document.querySelector("#h-corps").innerHTML.split("</tr>");
-  const firstRow = rows.find(l => l.includes("ligne-histo")) || "";
+  const rows = document.querySelector("#h-body").innerHTML.split("</tr>");
+  const firstRow = rows.find(l => l.includes("row-hist")) || "";
   const cells = (firstRow.match(/<td/g) || []).length;
 
   check("the history table renders a row", cells > 0, String(cells));
@@ -697,7 +697,7 @@ check("the temperature field no longer has a misleading placeholder", !tempField
   /* The expandable detail spans the WHOLE width: its colspan must follow.
      Too short, it leaves empty columns on the right; too long, it widens the
      table by a ghost column. */
-  const historySrc = readFileSync(join(ROOT, "js/ui-historique.js"), "utf8");
+  const historySrc = readFileSync(join(ROOT, "js/ui-history.js"), "utf8");
   const colspan = Number((historySrc.match(/colspan="(\d+)"/) || [])[1]);
   check("and the expanded detail covers exactly those columns",
     colspan === headerCount, colspan + " against " + headerCount);
@@ -710,14 +710,14 @@ check("the temperature field no longer has a misleading placeholder", !tempField
   const colgroup = htmlPage.slice(tableStart, htmlPage.indexOf("</colgroup>", tableStart));
   const cols = [...colgroup.matchAll(/<col class="(c-[a-z]+)"/g)].map(m => m[1]);
   check("each column has its <col>", cols.length === headerCount, cols.length + " col for " + headerCount + " columns");
-  const cssPage = ["socle", "ecrans", "fenetres", "finitions"].map(f => readFileSync(join(ROOT, "css/" + f + ".css"), "utf8")).join("\n");
-  const fixed = cols.filter(c => cssPage.includes(".table-historique col." + c + " { width: ") &&
-    /\d+px/.test(cssPage.split(".table-historique col." + c + " { width: ")[1].split(";")[0]));
+  const cssPage = ["base", "screens", "dialogs", "finishing"].map(f => readFileSync(join(ROOT, "css/" + f + ".css"), "utf8")).join("\n");
+  const fixed = cols.filter(c => cssPage.includes(".table-history col." + c + " { width: ") &&
+    /\d+px/.test(cssPage.split(".table-history col." + c + " { width: ")[1].split(";")[0]));
   const flexible = cols.filter(c => !fixed.includes(c));
   check("numeric columns and actions have a width in pixels",
     fixed.length === headerCount - 3, fixed.join(", "));
   check("coffee, recipe and flavours share the rest",
-    flexible.join(",") === "c-cafe,c-recette,c-gouts", flexible.join(", "));
+    flexible.join(",") === "c-coffee,c-recipe,c-tastes", flexible.join(", "));
 }
 
 /* FAILED EXTRACTIONS: left out of the ADVICE, kept in the COUNTS.
@@ -751,17 +751,17 @@ check("the temperature field no longer has a misleading placeholder", !tempField
 
   /* A FAILED CUP SHOWS, on both surfaces that display it.
 
-     The old version looked for the "badge-ratee" class: it broke as soon as
+     The old version looked for the "badge-failed" class: it broke as soon as
      the last five switched to a table, where the mark is called something else.
      A test written on a class name checks the class name. This one
      checks the RULE: the word Chris reads is there, and the row carries a distinct
      state, whatever name either of them is given. */
   api.UI.renderDashboard();
   const word = api.I18N.t("rt_badge");
-  const table = document.querySelector("#dernieres-liste").innerHTML;
+  const table = document.querySelector("#latest-list").innerHTML;
   check("a failed cup is named in the last five", table.includes(word), word);
   check("and its row carries a distinct state, not just a word",
-    /class="[^"]*ratee/.test(table));
+    /class="[^"]*failed/.test(table));
   /* The big card shows THE LATEST cup, which is not necessarily the one
      just flagged. So we flag the most recent one for the duration of the
      check, and put it back as it was. */
@@ -771,25 +771,25 @@ check("the temperature field no longer has a misleading placeholder", !tempField
   latest.ratee = 1;
   api.UI.renderDashboard();
   check("the latest cup card says so too",
-    document.querySelector("#carte-derniere").innerHTML.includes(word));
+    document.querySelector("#card-last").innerHTML.includes(word));
   latest.ratee = before;
   api.UI.renderDashboard();
   check("and no longer says so when the cup is not failed",
-    !document.querySelector("#carte-derniere").innerHTML.includes(word));
+    !document.querySelector("#card-last").innerHTML.includes(word));
 
   /* The history is the LOG: it shows everything by default, and the filter
      does the sorting. A failed cup must stay visible there, that is precisely where
      Chris wants to find it. */
-  document.querySelector("#h-ratee").value = "";
+  document.querySelector("#h-failed").value = "";
   check("the history keeps them by default",
     api.UI.filterHistory().length === total, String(api.UI.filterHistory().length));
-  document.querySelector("#h-ratee").value = "ratee";
+  document.querySelector("#h-failed").value = "ratee";
   check("the filter isolates the failed ones",
     api.UI.filterHistory().length === 1, String(api.UI.filterHistory().length));
-  document.querySelector("#h-ratee").value = "ok";
+  document.querySelector("#h-failed").value = "ok";
   check("and can also set them aside",
     api.UI.filterHistory().length === total - 1, String(api.UI.filterHistory().length));
-  document.querySelector("#h-ratee").value = "";
+  document.querySelector("#h-failed").value = "";
 
   /* THE TOGGLE IN THE HISTORY ROW. The first version only offered the
      checkbox of the entry form: flagging an ALREADY saved cup required
@@ -798,7 +798,7 @@ check("the temperature field no longer has a misleading placeholder", !tempField
      know you messed up AFTER drinking. */
   api.UI.renderHistory();
   {
-    const h = document.querySelector("#h-corps").innerHTML;
+    const h = document.querySelector("#h-body").innerHTML;
     const rowCount = api.UI.filterHistory().length;
     check("each history row carries the toggle",
       (h.match(/data-action="ratee"/g) || []).length === rowCount,
@@ -807,9 +807,9 @@ check("the temperature field no longer has a misleading placeholder", !tempField
        going over each one. */
     check("and only the failed cup shows it lit",
       (h.match(/aria-pressed="true"/g) || []).length === 1 &&
-      (h.match(/actif-ratee/g) || []).length === 1,
-      h.match(/aria-pressed="true"/g) + " / " + h.match(/actif-ratee/g));
-    check("the badge flags it too", (h.match(/badge-ratee/g) || []).length === 1);
+      (h.match(/on-failed/g) || []).length === 1,
+      h.match(/aria-pressed="true"/g) + " / " + h.match(/on-failed/g));
+    check("the badge flags it too", (h.match(/badge-failed/g) || []).length === 1);
   }
 
   // The column must survive a CSV round trip, otherwise the flag gets lost.
@@ -828,7 +828,7 @@ check("the temperature field no longer has a misleading placeholder", !tempField
    setting Chris did not make. */
 {
   const field = document.querySelector("#f-dose");
-  const slider = document.querySelector("#f-dose-curseur");
+  const slider = document.querySelector("#f-dose-slider");
   field.value = "18";
   slider.value = "9";
   api.UI.updateSliders();
@@ -837,8 +837,8 @@ check("the temperature field no longer has a misleading placeholder", !tempField
 
   /* The grind is not a number: the field carries a dial
      rotation.number.click and the slider runs over the CLICKS. */
-  const grindField = document.querySelector("#f-mouture");
-  const grindSlider = document.querySelector("#f-mouture-curseur");
+  const grindField = document.querySelector("#f-grind");
+  const grindSlider = document.querySelector("#f-grind-slider");
   grindField.value = "1.5.0";
   grindSlider.value = "0";
   api.UI.updateSliders();
@@ -859,10 +859,10 @@ check("the temperature field no longer has a misleading placeholder", !tempField
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
   const ids = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]));
-  const sliders = [...ids].filter(id => id.endsWith("-curseur") && id.startsWith("f-"));
+  const sliders = [...ids].filter(id => id.endsWith("-slider") && id.startsWith("f-"));
   check("sliders were indeed set up", sliders.length >= 4, String(sliders.length));
 
-  const orphans = sliders.filter(id => !ids.has(id.slice(0, -"-curseur".length)));
+  const orphans = sliders.filter(id => !ids.has(id.slice(0, -"-slider".length)));
   check("each slider drives an existing field", orphans.length === 0, orphans.join(", "));
 
   /* aria-labelledby rather than an aria-label: the slider reuses the ALREADY
@@ -898,8 +898,8 @@ check("the temperature field no longer has a misleading placeholder", !tempField
   check("a 150 ml cup exists for the calculation", !!cup, cup && cup.nom);
 
   if (milkRecipe && cup) {
-    document.querySelector("#f-recette").value = milkRecipe.nom;
-    document.querySelector("#f-tasse").value = cup.nom;
+    document.querySelector("#f-recipe").value = milkRecipe.nom;
+    document.querySelector("#f-cup").value = cup.nom;
     document.querySelector("#f-volume").value = "";
     api.UI.updateMilk();
 
@@ -914,9 +914,9 @@ check("the temperature field no longer has a misleading placeholder", !tempField
 
        The field takes the flat white: it is the most common pour. */
     check("milk is computed with no measured volume",
-      String(document.querySelector("#f-lait").value) === "55",
-      document.querySelector("#f-lait").value);
-    const text = document.querySelector("#lait-hint").textContent;
+      String(document.querySelector("#f-milk").value) === "55",
+      document.querySelector("#f-milk").value);
+    const text = document.querySelector("#milk-hint").textContent;
     check("and the hint gives BOTH drinks, on the same base",
       text.includes("55") && text.includes("40") && text.includes("60"), text);
     check("the cappuccino needs LESS cold milk than the flat white",
@@ -929,8 +929,8 @@ check("the temperature field no longer has a misleading placeholder", !tempField
     document.querySelector("#f-volume").value = "110";
     api.UI.updateMilk();
     check("a measurement beats the recipe figure",
-      String(document.querySelector("#f-lait").value) === "36",
-      document.querySelector("#f-lait").value);
+      String(document.querySelector("#f-milk").value) === "36",
+      document.querySelector("#f-milk").value);
     document.querySelector("#f-volume").value = "";
   }
 
@@ -968,9 +968,9 @@ check("the temperature field no longer has a misleading placeholder", !tempField
   /* A3 (v8.82): closed, the card only shows « ⋯ »; open, its footer carries
      the same five actions as the row, built by actionsExtraction(). */
   check("the closed card only carries its « ⋯ » button", cardActions.join(",") === "menu", cardActions.join(", "));
-  const historySrc = readFileSync(join(ROOT, "js/ui-historique.js"), "utf8");
+  const historySrc = readFileSync(join(ROOT, "js/ui-history.js"), "utf8");
   check("and its open menu offers expanding and the same five actions",
-    /h-carte-pied[\s\S]{0,400}data-action="deplier"[\s\S]{0,400}actionsExtraction\(e\)/.test(historySrc));
+    /h-card-footer[\s\S]{0,400}data-action="deplier"[\s\S]{0,400}actionsExtraction\(e\)/.test(historySrc));
 
   /* And both carry the id: the click handler is delegated, it
      does not know where the click comes from and must not have to know. */
@@ -983,7 +983,7 @@ check("the temperature field no longer has a misleading placeholder", !tempField
     typeof detail === "string" && !detail.includes("<tr"));
   // The sheet does not repeat the comment, written in full under the row.
   check("the hover sheet does not repeat the comment",
-    !api.UI.detailContent({ ...withCalcs, commentaire: "un mot" }, true).includes("detail-commentaire"));
+    !api.UI.detailContent({ ...withCalcs, commentaire: "un mot" }, true).includes("detail-comment"));
 }
 
 /* REDOING A CUP TAKES ITS SETTINGS, NOT ITS RESULT (v8.41).
@@ -996,8 +996,8 @@ check("the temperature field no longer has a misleading placeholder", !tempField
   api.UI.redoCup(rated);
   check("redoing takes the dose", String(document.querySelector("#f-dose").value) === String(last.dose_g),
     document.querySelector("#f-dose").value);
-  check("but not the rating", api.UI.isRatingEmpty(document.querySelector("#f-note")));
-  check("nor the comment", document.querySelector("#f-commentaire").value === "");
+  check("but not the rating", api.UI.isRatingEmpty(document.querySelector("#f-rating")));
+  check("nor the comment", document.querySelector("#f-comment").value === "");
   check("and the shortcut finds the latest cup", api.UI.redoLast() === true);
   api.UI.resetEntry();
 }

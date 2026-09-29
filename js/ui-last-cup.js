@@ -1,10 +1,10 @@
 /* Dashboard: the latest cup, shown large, and the building blocks it shares
- * with the table of recent brews (moved out of ui-tableau.js in v8.78). */
+ * with the table of recent brews (moved out of ui-dashboard.js in v8.78). */
 "use strict";
 
 (() => {
 
-  // Borrowed from the core and from ui-constats.js, loaded before us.
+  // Borrowed from the core and from ui-findings.js, loaded before us.
   const { $, titleAttr, displayedDiags, isFailed, analyzableExts, fmtDuration, fmtVND,
     average, fmtRating, findRecipe } = UI;
 
@@ -18,7 +18,7 @@
      It hides when there is nothing: an empty card announcing "no latest
      cup" teaches nothing to someone who already sees an empty logbook. */
   function renderLastCup(exts) {
-    const card = $("#carte-derniere");
+    const card = $("#card-last");
     const e = [...exts].sort((a, b) => b.date_heure.localeCompare(a.date_heure))[0];
     card.hidden = !e;
     if (!e) return;
@@ -36,29 +36,29 @@
     card.setAttribute("role", "button");
     card.setAttribute("tabindex", "0");
     card.innerHTML =
-      '<div class="derniere-grande-corps">' +
-        '<p class="surligne">' + I18N.t("tb_derniere", { q: timeSince(e.date_heure) }) + "</p>" +
-        '<p class="derniere-grande-cafe">' + I18N.tr(e._c.cafe_nom) + "</p>" +
-        '<p class="derniere-grande-contexte">' +
-          '<span class="pastille-methode ' + e.methode.toLowerCase() + '"></span>' +
-          '<span class="derniere-grande-machine">' + e.methode + "</span>" +
+      '<div class="last-big-body">' +
+        '<p class="highlight">' + I18N.t("tb_derniere", { q: timeSince(e.date_heure) }) + "</p>" +
+        '<p class="last-big-coffee">' + I18N.tr(e._c.cafe_nom) + "</p>" +
+        '<p class="last-big-context">' +
+          '<span class="dot-method ' + e.methode.toLowerCase() + '"></span>' +
+          '<span class="last-big-machine">' + e.methode + "</span>" +
           context.map(x => '<span class="sep" aria-hidden="true">|</span><span>' + x + "</span>").join("") +
         "</p>" +
         lastTastes(e) +
-        (e.commentaire ? '<p class="derniere-grande-commentaire">' + titleAttr(e.commentaire) + "</p>" : "") +
+        (e.commentaire ? '<p class="last-big-comment">' + titleAttr(e.commentaire) + "</p>" : "") +
         rankAmongSiblings(e) +
         lastCupFooter(e) +
       "</div>" +
-      '<div class="derniere-grande-note">' +
-        (isFailed(e) ? '<span class="badge-ratee">' + I18N.t("rt_badge") + "</span>" : "") +
+      '<div class="last-big-rating">' +
+        (isFailed(e) ? '<span class="badge-failed">' + I18N.t("rt_badge") + "</span>" : "") +
         /* Without a score, we write "not rated yet" instead of a dash: a dash
            in a big number reads as a minus, and the project rules forbid
            the em dash anyway. */
         (e.note_sur_10 !== ""
-          ? '<span class="grande-note">' + e.note_sur_10 + "</span>" +
-            '<span class="grande-note-sur">' + I18N.t("tb_sur10") + "</span>"
-          : '<span class="grande-note-sans">' + I18N.t("n_pas_notee") + "</span>") +
-        (e.diagnostic ? '<span class="pastille-diag">' + displayedDiags(e.diagnostic) + "</span>" : "") +
+          ? '<span class="big-rating">' + e.note_sur_10 + "</span>" +
+            '<span class="big-rating-scale">' + I18N.t("tb_sur10") + "</span>"
+          : '<span class="big-rating-none">' + I18N.t("n_pas_notee") + "</span>") +
+        (e.diagnostic ? '<span class="dot-diag">' + displayedDiags(e.diagnostic) + "</span>" : "") +
       "</div>";
   }
 
@@ -90,12 +90,12 @@
     const low = Math.max(0, Math.floor(Math.min(...notes)) - 1);
     const L = 12, R = 588, base = 34, step = 6.5;
     const x = n => L + ((n - low) / (10 - low)) * (R - L);
-    let svg = '<line x1="' + L + '" y1="' + (base + 8) + '" x2="' + R + '" y2="' + (base + 8) + '" stroke="var(--lignes)"></line>';
+    let svg = '<line x1="' + L + '" y1="' + (base + 8) + '" x2="' + R + '" y2="' + (base + 8) + '" stroke="var(--lines)"></line>';
     for (let n = Math.ceil(low); n <= 10; n += (10 - low > 6 ? 2 : 1)) {
       svg += '<text x="' + x(n) + '" y="' + (base + 19) + '" text-anchor="middle">' + n + "</text>";
     }
     const xm = x(avg);
-    svg += '<line x1="' + xm + '" y1="12" x2="' + xm + '" y2="' + (base + 8) + '" stroke="var(--attenue)" stroke-dasharray="3 3"></line>' +
+    svg += '<line x1="' + xm + '" y1="12" x2="' + xm + '" y2="' + (base + 8) + '" stroke="var(--muted)" stroke-dasharray="3 3"></line>' +
       '<text x="' + (xm > R * 0.7 ? xm - 5 : xm + 5) + '" y="10" text-anchor="' + (xm > R * 0.7 ? "end" : "start") + '">' +
       I18N.t("pl_moyenne", { m: fmtRating(avg) }) + "</text>";
     // The other cups, stacked when they share the same score.
@@ -104,13 +104,13 @@
       if (s.id === e.id) return;
       const n = Number(s.note_sur_10);
       const k = (stacks[n] = (stacks[n] || 0) + 1) - 1;
-      svg += '<circle cx="' + x(n) + '" cy="' + (base - Math.min(k, 3) * step) + '" r="2.6" fill="var(--texte)" opacity="0.55"></circle>';
+      svg += '<circle cx="' + x(n) + '" cy="' + (base - Math.min(k, 3) * step) + '" r="2.6" fill="var(--text)" opacity="0.55"></circle>';
     });
     // This one, on top, ringed with the panel colour so it stands out.
-    svg += '<circle cx="' + x(rating) + '" cy="' + (base - 3) + '" r="6.5" fill="var(--accent)" stroke="var(--panneau-2)" stroke-width="2"></circle>';
-    return '<div class="derniere-place" role="img" aria-label="' + titleAttr(I18N.t("pl_aria", {
+    svg += '<circle cx="' + x(rating) + '" cy="' + (base - 3) + '" r="6.5" fill="var(--accent)" stroke="var(--panel-2)" stroke-width="2"></circle>';
+    return '<div class="last-spot" role="img" aria-label="' + titleAttr(I18N.t("pl_aria", {
       n: notes.length, cafe: I18N.tr(e._c.cafe_nom), note: fmtRating(rating), m: fmtRating(avg) })) + '">' +
-      '<p class="derniere-place-tete"><span>' + I18N.t("pl_parmi", { n: notes.length, cafe: I18N.tr(e._c.cafe_nom) }) + "</span>" +
+      '<p class="last-spot-head"><span>' + I18N.t("pl_parmi", { n: notes.length, cafe: I18N.tr(e._c.cafe_nom) }) + "</span>" +
       "<span><b>" + rankText + "</b>, " + position + "</span></p>" +
       '<svg viewBox="0 0 600 ' + (base + 22) + '" aria-hidden="true">' + svg + "</svg></div>";
   }
@@ -136,7 +136,7 @@
     };
     const cells = [];
     const cell = (label, value, target, ok) => cells.push("<div><span>" + label + "</span><b>" + value + "</b>" +
-      (target ? '<small class="' + (ok ? "cible-tenue" : "") + '">' + target + "</small>" : "") + "</div>");
+      (target ? '<small class="' + (ok ? "target-held" : "") + '">' + target + "</small>" : "") + "</div>");
 
     if (e._c.ratioTexte) {
       let target = "", ok = false;
@@ -166,7 +166,7 @@
     if (e.mouture_dial) cell(I18N.t("d_mouture"), e.mouture_dial, e._c.microns ? e._c.microns + " µm" : "", false);
     else if (e._c.ground) cell(I18N.t("d_mouture"), I18N.t("paquet"), "", false);
     if (e._c.cout_tasse_vnd !== "") cell(I18N.t("d_cout"), fmtVND(e._c.cout_tasse_vnd), I18N.t("pl_la_tasse"), false);
-    return cells.length ? '<div class="derniere-grande-pied">' + cells.join("") + "</div>" : "";
+    return cells.length ? '<div class="last-big-footer">' + cells.join("") + "</div>" : "";
   }
 
   /* "2 h ago". Precise enough to place the cup, never to the minute: we want
@@ -189,10 +189,10 @@
   function lastTastes(e) {
     const tags = String(e.descripteurs || "").split("|").filter(Boolean);
     if (!tags.length) return "";
-    const shown = tags.slice(0, MAX_LAST_TASTES).map(t => '<span class="derniere-tag">' + I18N.tag(t) + "</span>");
+    const shown = tags.slice(0, MAX_LAST_TASTES).map(t => '<span class="last-tag">' + I18N.tag(t) + "</span>");
     const rest = tags.length - shown.length;
-    return '<div class="derniere-gouts">' + shown.join("") +
-      (rest > 0 ? '<span class="derniere-tag derniere-tag-plus">+' + rest + "</span>" : "") + "</div>";
+    return '<div class="last-tastes">' + shown.join("") +
+      (rest > 0 ? '<span class="last-tag last-tag-plus">+' + rest + "</span>" : "") + "</div>";
   }
 
   /* The comment, in plain view and truncated, instead of waiting for hover:
@@ -205,7 +205,7 @@
   function lastComment(e) {
     const c = String(e.commentaire || "").trim();
     if (!c) return "";
-    return '<tr class="derniere-commentaire" data-ext="' + e.id + '"><td colspan="5">' + titleAttr(c) + "</td></tr>";
+    return '<tr class="last-comment" data-ext="' + e.id + '"><td colspan="5">' + titleAttr(c) + "</td></tr>";
   }
 
   /* THE CARD MEASUREMENTS, short version: dose, water and time. Dial,
@@ -217,7 +217,7 @@
     const t = fmtDuration(e.temps_total_s);
     if (t) parts.push(t);
     if (!parts.length) return "";
-    return '<span class="d-chiffres">' + parts.join(" · ") + "</span>";
+    return '<span class="d-figures">' + parts.join(" · ") + "</span>";
   }
 
   Object.assign(UI, {

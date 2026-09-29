@@ -3,13 +3,13 @@
  *
  * A separate file since v7.93: it shares with the entry screen only the
  * `saisie` object and the field ids, and it calls it through UI. It loads
- * AFTER ui-saisie.js to borrow `saisie`, which is an object mutated in
+ * AFTER ui-entry.js to borrow `saisie`, which is an object mutated in
  * place, so safe to borrow. */
 "use strict";
 
 (() => {
 
-  // Borrowed from the core, plus the entry state, exposed by ui-saisie.js.
+  // Borrowed from the core, plus the entry state, exposed by ui-entry.js.
   const { $, $$, setPressed, markRating, isRatingEmpty, entry } = UI;
 
   /* ---------- Entry draft ----------
@@ -30,14 +30,24 @@
      included. */
   const DRAFT_DATE_MAX_MS = 2 * 60 * 60 * 1000;
   const DRAFT_FIELDS = [
-    "f-date", "f-cafe", "f-recette", "f-dose", "f-eau", "f-mouture", "f-temp",
-    "f-chauffe-min", "f-chauffe-sec",
-    "f-volume", "f-eau-ajoutee", "f-lait", "f-agitation", "f-tasse", "f-note",
-    "f-commentaire", "f-total-min", "f-total-sec", "f-ecoulement-min", "f-ecoulement-sec",
-    "f-puissance",
+    "f-date", "f-coffee", "f-recipe", "f-dose", "f-water", "f-grind", "f-temp",
+    "f-heat-min", "f-heat-sec",
+    "f-volume", "f-water-added", "f-milk", "f-agitation", "f-cup", "f-rating",
+    "f-comment", "f-total-min", "f-total-sec", "f-flow-min", "f-flow-sec",
+    "f-power",
   ];
   // "ratée" and agitation were forgotten on restore (v8.72).
-  const DRAFT_CHECKBOXES = ["f-prechauffe", "f-ajout-eau-oui", "f-ratee", "f-agitation-oui"];
+  const DRAFT_CHECKBOXES = ["f-preheat", "f-add-water-yes", "f-failed", "f-agitation-yes"];
+  /* A draft saved before the ids went English keys its fields by the French
+     ids. Read-side only: the next save writes the new ids. */
+  const LEGACY_IDS = {
+    "f-cafe": "f-coffee", "f-recette": "f-recipe", "f-eau": "f-water", "f-mouture": "f-grind",
+    "f-chauffe-min": "f-heat-min", "f-chauffe-sec": "f-heat-sec", "f-eau-ajoutee": "f-water-added",
+    "f-lait": "f-milk", "f-tasse": "f-cup", "f-note": "f-rating", "f-commentaire": "f-comment",
+    "f-ecoulement-min": "f-flow-min", "f-ecoulement-sec": "f-flow-sec", "f-puissance": "f-power",
+    "f-prechauffe": "f-preheat", "f-ajout-eau-oui": "f-add-water-yes", "f-ratee": "f-failed",
+    "f-agitation-oui": "f-agitation-yes",
+  };
   let draftTimer = null;
 
   function saveDraft() {
@@ -57,7 +67,7 @@
         /* The rating lives in the slider's value AND in its "not rated yet"
            state (v8.40). Without the state, a rating given before the page
            was unloaded came back unrated. */
-        noteVide: isRatingEmpty($("#f-note")),
+        noteVide: isRatingEmpty($("#f-rating")),
         valeurs: values,
       }));
     } catch (e) { /* storage full or refused, never mind */ }
@@ -78,15 +88,16 @@
      every opening, which would be absurd. */
   function isDraftUseful(b) {
     const v = b.valeurs || {};
-    return Boolean(v["f-cafe"] || (v["f-commentaire"] || "").trim() ||
+    return Boolean(v["f-coffee"] || (v["f-comment"] || "").trim() ||
       b.diagnostics.length || b.descripteurs.length || b.noteVide === false ||
-      v["f-total-min"] || v["f-total-sec"] || v["f-volume"] || v["f-eau"]);
+      v["f-total-min"] || v["f-total-sec"] || v["f-volume"] || v["f-water"]);
   }
 
   function restoreDraft() {
     let b;
     try { b = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch (e) { return false; }
     if (!b || !b.valeurs) return false;
+    b.valeurs = Object.fromEntries(Object.entries(b.valeurs).map(([k, v]) => [LEGACY_IDS[k] || k, v]));
     if (Date.now() - (b.le || 0) > DRAFT_MAX_MS) { clearDraft(); return false; }
     if (!isDraftUseful(b)) return false;
 
@@ -113,17 +124,17 @@
        value. We then fall back on the first coffee and the method's first
        recipe, as on a fresh form: most of the time it is the one Chris
        keeps, and it is one click less. */
-    if (!$("#f-cafe").value) {
+    if (!$("#f-coffee").value) {
       const first = UI.selectableCoffees()[0];
-      if (first) $("#f-cafe").value = first.id;
+      if (first) $("#f-coffee").value = first.id;
     }
     // Without prefillFromRecipe: it would overwrite the draft's dose and water.
-    if (!$("#f-recette").value) UI.fillRecipeSelect();
+    if (!$("#f-recipe").value) UI.fillRecipeSelect();
 
     entry.diagnostics = new Set(b.diagnostics || []);
     entry.descripteurs = new Set(b.descripteurs || []);
-    $$("#f-diagnostic .pilule").forEach(x => setPressed(x, entry.diagnostics.has(x.dataset.diag)));
-    $$("#f-descripteurs .tag").forEach(x => setPressed(x, entry.descripteurs.has(x.dataset.tag)));
+    $$("#f-diagnostic .pill").forEach(x => setPressed(x, entry.diagnostics.has(x.dataset.diag)));
+    $$("#f-descriptors .tag").forEach(x => setPressed(x, entry.descripteurs.has(x.dataset.tag)));
 
     /* THROUGH THE OFFICIAL FUNCTION, not by hand. This line wrote the field's
         value directly, ignoring "not rated yet": after restoring an unrated
@@ -131,9 +142,9 @@
         file as UNRATED. With the slider also sitting on 5, nothing betrayed
         the gap. It also forgot the "/ 10" and the stepper's inactive state. */
     // A draft from before v8.40 has no state: it stays unrated.
-    markRating($("#f-note"), b.noteVide !== false);
+    markRating($("#f-rating"), b.noteVide !== false);
     UI.updateRatingDisplay();
-    $("#f-eau-ajoutee").hidden = !$("#f-ajout-eau-oui").checked;
+    $("#f-water-added").hidden = !$("#f-add-water-yes").checked;
     UI.updateDiagnosticCorrection();
     UI.updateWarnings();
     UI.updateLive();

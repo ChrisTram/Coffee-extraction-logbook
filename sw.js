@@ -25,7 +25,7 @@
  *    logout stop working.
  */
 
-const VERSION = "9.03";
+const VERSION = "9.04";
 const CACHE_NAME = "carnet-extraction";
 
 const versioned = url => url + "?v=" + VERSION;
@@ -41,10 +41,10 @@ const PRECACHE_URLS = [
   "./icons/icon-192.png",
   "./icons/icon-512.png",
 ].concat([
-  "./css/socle.css",
-  "./css/ecrans.css",
-  "./css/fenetres.css",
-  "./css/finitions.css",
+  "./css/base.css",
+  "./css/screens.css",
+  "./css/dialogs.css",
+  "./css/finishing.css",
   /* The fonts. Without them in the precache, the first offline open
      shows the fallback then jumps to the real font once the network returns.
      Their URL carries no version: a font file never changes
@@ -57,13 +57,13 @@ const PRECACHE_URLS = [
   // No longer loaded by a script tag since v7.54, but still precached:
   // on-demand loading must work offline.
   "./js/vendor/chart.umd.js",
-  "./js/outils.js",
+  "./js/tools.js",
   "./js/i18n.js",
   // Loaded on demand since v7.55, but precached so the language
   // switch also works offline.
   "./js/i18n.en.js",
   "./js/grind.js",
-  "./js/recettes.js",
+  "./js/recipes.js",
   // Loaded on demand since v7.56, precached so the demo works
   // offline like the rest of the site.
   "./js/demo-data.js",
@@ -71,28 +71,28 @@ const PRECACHE_URLS = [
   "./js/data-csv.js",
   "./js/data-schema.js",
   "./js/data-store.js",
-  "./js/data-calculs.js",
+  "./js/data-calcs.js",
   "./js/data-migrations.js",
   "./js/data.js",
-  "./js/reglages.js",
+  "./js/tuning.js",
   "./js/charts.js",
-  "./js/ui-noyau.js",
-  "./js/ui-constats.js",
-  "./js/ui-derniere.js",
-  "./js/ui-tableau.js",
-  "./js/ui-saisie.js",
-  "./js/ui-saisie-aside.js",
-  "./js/ui-pilules.js",
+  "./js/ui-core.js",
+  "./js/ui-findings.js",
+  "./js/ui-last-cup.js",
+  "./js/ui-dashboard.js",
+  "./js/ui-entry.js",
+  "./js/ui-entry-aside.js",
+  "./js/ui-pills.js",
   "./js/ui-chrono.js",
-  "./js/ui-brouillon.js",
-  "./js/ui-rapide.js",
-  "./js/ui-historique.js",
+  "./js/ui-draft.js",
+  "./js/ui-quick.js",
+  "./js/ui-history.js",
   "./js/ui-journal.js",
   "./js/ui-guide.js",
-  "./js/ui-catalogue.js",
-  "./js/ui-fiche.js",
-  "./js/ui-brassage.js",
-  "./js/ui-dessins.js",
+  "./js/ui-catalog.js",
+  "./js/ui-coffee-sheet.js",
+  "./js/ui-brew.js",
+  "./js/ui-drawings.js",
   "./js/app.js",
 ].map(versioned));
 
