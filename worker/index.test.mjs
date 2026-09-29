@@ -24,61 +24,61 @@ const post = (path, fields, cookie) =>
     headers: cookie ? { Cookie: cookie } : {},
   });
 
-// 1. Anonyme sur la racine : redirige vers /login en gardant la destination
+// 1. Anonymous on the root: redirects to /login, keeping the destination
 const anon = await call("/");
-check("anonyme redirige", anon.status === 302, `status ${anon.status}`);
-check("anonyme ne voit pas le site", !(await anon.text()).includes("LE SITE"));
+check("anonymous is redirected", anon.status === 302, `status ${anon.status}`);
+check("anonymous does not see the site", !(await anon.text()).includes("LE SITE"));
 
 const deep = await call("/index.html?x=1");
 check(
-  "destination preservee",
+  "destination preserved",
   deep.headers.get("Location").endsWith("/login?next=%2Findex.html%3Fx%3D1"),
   deep.headers.get("Location")
 );
 
-// 2. La page de login s'affiche et est bilingue
+// 2. The login page renders and is bilingual
 const page = await call("/login");
 const html = await page.text();
-check("login sert du HTML", page.status === 200 && html.includes("Carnet d'extraction"));
-check("login bilingue", html.includes('data-en="Username"') && html.includes('data-fr="Identifiant"'));
-check("login non indexable", page.headers.get("X-Robots-Tag").includes("noindex"));
+check("login serves HTML", page.status === 200 && html.includes("Carnet d'extraction"));
+check("login is bilingual", html.includes('data-en="Username"') && html.includes('data-fr="Identifiant"'));
+check("login is not indexable", page.headers.get("X-Robots-Tag").includes("noindex"));
 
-// 3. Mauvais mot de passe, mauvais identifiant
+// 3. Wrong password, wrong username
 const wrongPass = await post("/login", { username: "Chris", password: "nope", next: "/" });
-check("mauvais mdp refuse", wrongPass.status === 401, `status ${wrongPass.status}`);
-check("mauvais mdp ne pose pas de cookie", !wrongPass.headers.get("Set-Cookie"));
+check("wrong password refused", wrongPass.status === 401, `status ${wrongPass.status}`);
+check("wrong password sets no cookie", !wrongPass.headers.get("Set-Cookie"));
 
 const wrongUser = await post("/login", { username: "Eve", password: "correct-horse", next: "/" });
-check("mauvais identifiant refuse", wrongUser.status === 401, `status ${wrongUser.status}`);
+check("wrong username refused", wrongUser.status === 401, `status ${wrongUser.status}`);
 
-// 4. Bonnes creds : cookie 30 jours, HttpOnly, Secure, SameSite
+// 4. Good creds: 30-day cookie, HttpOnly, Secure, SameSite
 const good = await post("/login", { username: "Chris", password: "correct-horse", next: "/historique" });
 const setCookie = good.headers.get("Set-Cookie") || "";
-check("bonnes creds redirigent", good.status === 302, `status ${good.status}`);
-check("retour a la destination", (good.headers.get("Location") || "").endsWith("/historique"));
+check("good creds redirect", good.status === 302, `status ${good.status}`);
+check("back to the destination", (good.headers.get("Location") || "").endsWith("/historique"));
 check("cookie HttpOnly", setCookie.includes("HttpOnly"));
 check("cookie Secure", setCookie.includes("Secure"));
 check("cookie SameSite=Lax", setCookie.includes("SameSite=Lax"));
-check("cookie 30 jours", setCookie.includes(`Max-Age=${30 * 24 * 3600}`), setCookie);
+check("cookie 30 days", setCookie.includes(`Max-Age=${30 * 24 * 3600}`), setCookie);
 
-// 5. Identifiant insensible a la casse
+// 5. Case-insensitive username
 const casing = await post("/login", { username: "  chris ", password: "correct-horse", next: "/" });
-check("identifiant insensible a la casse", casing.status === 302, `status ${casing.status}`);
+check("username is case-insensitive", casing.status === 302, `status ${casing.status}`);
 
-// 6. Avec le cookie : le site est servi
+// 6. With the cookie: the site is served
 const cookie = setCookie.split(";")[0];
 const inside = await call("/", { headers: { Cookie: cookie } });
 const insideBody = await inside.text();
-check("session valide sert le site", inside.status === 200 && insideBody.includes("LE SITE"));
-check("contenu non cachable en partage", (inside.headers.get("Cache-Control") || "").includes("private"));
+check("valid session serves the site", inside.status === 200 && insideBody.includes("LE SITE"));
+check("content not cacheable in shared caches", (inside.headers.get("Cache-Control") || "").includes("private"));
 
-// 7. Cookie falsifie : signature cassee
+// 7. Tampered cookie: broken signature
 const [name, value] = cookie.split("=");
 const tampered = `${name}=${value.slice(0, -3)}AAA`;
 const forged = await call("/", { headers: { Cookie: tampered } });
-check("signature falsifiee rejetee", forged.status === 302, `status ${forged.status}`);
+check("tampered signature rejected", forged.status === 302, `status ${forged.status}`);
 
-// 8. Cookie signe avec une AUTRE cle
+// 8. Cookie signed with ANOTHER key
 const otherEnv = { ...env, AUTH_SECRET: "another-key" };
 const otherLogin = await worker.fetch(
   new Request("https://site.test/login", { method: "POST", body: new URLSearchParams({ username: "Chris", password: "correct-horse", next: "/" }) }),
@@ -86,33 +86,33 @@ const otherLogin = await worker.fetch(
 );
 const otherCookie = (otherLogin.headers.get("Set-Cookie") || "").split(";")[0];
 const crossed = await call("/", { headers: { Cookie: otherCookie } });
-check("cookie d'une autre cle rejete", crossed.status === 302, `status ${crossed.status}`);
+check("cookie from another key rejected", crossed.status === 302, `status ${crossed.status}`);
 
-// 9. Redirection ouverte
+// 9. Open redirect
 const openRedirect = await post("/login", { username: "Chris", password: "correct-horse", next: "//evil.example/x" });
 check(
-  "redirection ouverte bloquee",
+  "open redirect blocked",
   (openRedirect.headers.get("Location") || "").startsWith("https://site.test/"),
   openRedirect.headers.get("Location")
 );
 const schemeRedirect = await post("/login", { username: "Chris", password: "correct-horse", next: "https://evil.example/x" });
 check(
-  "next absolu bloque",
+  "absolute next blocked",
   (schemeRedirect.headers.get("Location") || "") === "https://site.test/",
   schemeRedirect.headers.get("Location")
 );
 
 // 10. Logout
 const bye = await call("/logout", { headers: { Cookie: cookie } });
-check("logout efface le cookie", (bye.headers.get("Set-Cookie") || "").includes("Max-Age=0"));
+check("logout clears the cookie", (bye.headers.get("Set-Cookie") || "").includes("Max-Age=0"));
 
-// 11. Secrets manquants : fermeture par defaut, et on dit lesquels
+// 11. Missing secrets: fail closed, and say which ones
 const naked = await worker.fetch(new Request("https://site.test/"), { ASSETS: env.ASSETS });
 const nakedBody = await naked.text();
-check("sans secrets, 503", naked.status === 503, `status ${naked.status}`);
-check("sans secrets, rien n'est servi", !nakedBody.includes("LE SITE"));
+check("without secrets, 503", naked.status === 503, `status ${naked.status}`);
+check("without secrets, nothing is served", !nakedBody.includes("LE SITE"));
 check(
-  "sans secrets, les trois noms sont listes",
+  "without secrets, all three names are listed",
   ["AUTH_USERNAME", "AUTH_PASSWORD", "AUTH_SECRET"].every((n) => nakedBody.includes(n))
 );
 
@@ -121,61 +121,61 @@ const partial = await worker.fetch(new Request("https://site.test/"), {
   AUTH_SECRET: undefined,
 });
 const partialBody = await partial.text();
-check("un seul secret manquant, 503", partial.status === 503, `status ${partial.status}`);
-check("le secret manquant est nomme", partialBody.includes("Manquant ou vide : AUTH_SECRET"));
-check("les secrets presents ne sont pas nommes comme manquants", !partialBody.includes("AUTH_USERNAME,"));
-check("aucune valeur de secret n'est divulguee", !partialBody.includes("correct-horse"));
+check("a single missing secret, 503", partial.status === 503, `status ${partial.status}`);
+check("the missing secret is named", partialBody.includes("Manquant ou vide : AUTH_SECRET"));
+check("present secrets are not named as missing", !partialBody.includes("AUTH_USERNAME,"));
+check("no secret value is leaked", !partialBody.includes("correct-horse"));
 
-// Un secret vide ou reduit a des espaces compte comme absent
+// A secret that is empty or only whitespace counts as missing
 const blank = await worker.fetch(new Request("https://site.test/"), { ...env, AUTH_PASSWORD: "   " });
-check("secret vide traite comme absent", blank.status === 503, `status ${blank.status}`);
+check("empty secret treated as missing", blank.status === 503, `status ${blank.status}`);
 
-// 12. Session expiree (on force une expiration dans le passe)
+// 12. Expired session (we force an expiry in the past)
 const realNow = Date.now;
 Date.now = () => realNow() - 31 * 24 * 3600 * 1000;
 const oldLogin = await post("/login", { username: "Chris", password: "correct-horse", next: "/" });
 Date.now = realNow;
 const oldCookie = (oldLogin.headers.get("Set-Cookie") || "").split(";")[0];
 const expired = await call("/", { headers: { Cookie: oldCookie } });
-check("session expiree rejetee", expired.status === 302, `status ${expired.status}`);
+check("expired session rejected", expired.status === 302, `status ${expired.status}`);
 
-// 12 bis. Cache HTTP : un fichier de code VERSIONNE se garde un an, tout le
-//     reste se revalide a chaque fois. La version dans l'URL est ce qui rend
-//     la promesse tenable : un nouveau deploiement change l'URL.
+// 12 bis. HTTP cache: a VERSIONED code file is kept for a year, everything
+//     else revalidates every time. The version in the URL is what makes the
+//     promise hold: a new deploy changes the URL.
 {
   const versioned = await call("/js/app.js?v=7.82", { headers: { Cookie: cookie } });
-  check("un script versionne est immutable", (versioned.headers.get("Cache-Control") || "").includes("immutable"));
-  check("et toujours prive", (versioned.headers.get("Cache-Control") || "").includes("private"));
+  check("a versioned script is immutable", (versioned.headers.get("Cache-Control") || "").includes("immutable"));
+  check("and still private", (versioned.headers.get("Cache-Control") || "").includes("private"));
   const css = await call("/css/socle.css?v=7.82", { headers: { Cookie: cookie } });
-  check("la feuille de style versionnee aussi", (css.headers.get("Cache-Control") || "").includes("immutable"));
+  check("the versioned stylesheet too", (css.headers.get("Cache-Control") || "").includes("immutable"));
   const bare = await call("/js/app.js", { headers: { Cookie: cookie } });
-  check("sans version, un script se revalide", (bare.headers.get("Cache-Control") || "").includes("no-cache"));
+  check("without a version, a script revalidates", (bare.headers.get("Cache-Control") || "").includes("no-cache"));
   const page = await call("/index.html?v=7.82", { headers: { Cookie: cookie } });
-  check("la page ne devient jamais immutable, meme avec ?v", (page.headers.get("Cache-Control") || "").includes("no-cache"));
+  check("the page never becomes immutable, even with ?v", (page.headers.get("Cache-Control") || "").includes("no-cache"));
   const manifest = await call("/manifest.json", { headers: { Cookie: cookie } });
-  check("le manifeste non plus", (manifest.headers.get("Cache-Control") || "").includes("no-cache"));
+  check("nor does the manifest", (manifest.headers.get("Cache-Control") || "").includes("no-cache"));
 
-  /* Les polices n'ont pas de ?v= et n'en auront pas : la version vit dans
-     index.html et sw.js, pas dans la feuille de style. Elles sont immuables par
-     contrat (on publie un nouveau nom, on ne reecrit jamais un .woff2). Sans
-     cette regle, les cinq polices repartaient revalider a chaque ouverture. */
-  const police = await call("/css/fonts/manrope-latin.woff2", { headers: { Cookie: cookie } });
-  check("une police est immutable sans porter de version",
-    (police.headers.get("Cache-Control") || "").includes("immutable"),
-    police.headers.get("Cache-Control"));
-  check("et elle reste privee comme le reste",
-    (police.headers.get("Cache-Control") || "").includes("private"));
-  /* La regle porte sur l'extension, pas sur le dossier : une police posee
-     ailleurs sous /css doit se comporter pareil. */
-  const ailleurs = await call("/css/autre.woff2", { headers: { Cookie: cookie } });
-  check("la regle suit l'extension et non le dossier",
-    (ailleurs.headers.get("Cache-Control") || "").includes("immutable"),
-    ailleurs.headers.get("Cache-Control"));
+  /* Fonts have no ?v= and never will: the version lives in index.html and
+     sw.js, not in the stylesheet. They are immutable by contract (we publish
+     a new name, we never rewrite a .woff2). Without this rule, the five fonts
+     went back to revalidate on every open. */
+  const font = await call("/css/fonts/manrope-latin.woff2", { headers: { Cookie: cookie } });
+  check("a font is immutable without carrying a version",
+    (font.headers.get("Cache-Control") || "").includes("immutable"),
+    font.headers.get("Cache-Control"));
+  check("and it stays private like the rest",
+    (font.headers.get("Cache-Control") || "").includes("private"));
+  /* The rule is about the extension, not the folder: a font placed elsewhere
+     under /css must behave the same. */
+  const elsewhere = await call("/css/autre.woff2", { headers: { Cookie: cookie } });
+  check("the rule follows the extension, not the folder",
+    (elsewhere.headers.get("Cache-Control") || "").includes("immutable"),
+    elsewhere.headers.get("Cache-Control"));
 }
 
-// 13. Le cache local de wrangler ne part ni dans le depot ni dans les assets.
-//     Il contient l'identifiant et le nom du compte Cloudflare, et il a ete
-//     versionne puis servi pendant trois semaines avant qu'un audit le voie.
+// 13. The local wrangler cache goes neither into the repo nor into the assets.
+//     It holds the Cloudflare account id and name, and it was committed and
+//     then served for three weeks before an audit caught it.
 {
   const { readFileSync } = await import("node:fs");
   const { dirname, join } = await import("node:path");
@@ -183,11 +183,11 @@ check("session expiree rejetee", expired.status === 302, `status ${expired.statu
   const root = join(dirname(fileURLToPath(import.meta.url)), "..");
   const gitignore = readFileSync(join(root, ".gitignore"), "utf8");
   const assetsignore = readFileSync(join(root, ".assetsignore"), "utf8");
-  check("le cache wrangler est ignore par git", /^\.wrangler\/?$/m.test(gitignore));
-  check("le cache wrangler n'est pas televerse comme asset", /^\.wrangler\/?$/m.test(assetsignore));
+  check("the wrangler cache is ignored by git", /^\.wrangler\/?$/m.test(gitignore));
+  check("the wrangler cache is not uploaded as an asset", /^\.wrangler\/?$/m.test(assetsignore));
 }
 
-// v8.73 : politique de securite, en-tetes, limite d'essais de connexion.
+// v8.73: security policy, headers, login attempt limit.
 {
   const { readFileSync } = await import("node:fs");
   const { createHash } = await import("node:crypto");
@@ -195,48 +195,48 @@ check("session expiree rejetee", expired.status === 302, `status ${expired.statu
   const { fileURLToPath } = await import("node:url");
   const root = join(dirname(fileURLToPath(import.meta.url)), "..");
   const index = readFileSync(join(root, "index.html"), "utf8");
-  const debut = index.indexOf("<script>") + 8, finScript = index.indexOf("</script>", debut);
-  const empreinte = "sha256-" + createHash("sha256").update(index.slice(debut, finScript), "utf8").digest("base64");
-  check("l'empreinte du script du theme correspond a index.html (sinon il serait bloque)",
-    empreinte === EMPREINTE_SCRIPT_THEME, empreinte + " contre " + EMPREINTE_SCRIPT_THEME);
-  check("un seul script en ligne dans index.html", (index.match(/<script>/g) || []).length === 1);
-  check("aucun script en ligne n'est autorise en dehors de celui-la", !POLITIQUE_SECURITE.includes("'unsafe-inline'; ") || !/script-src[^;]*unsafe-inline/.test(POLITIQUE_SECURITE));
-  check("le lecteur des videos est autorise", /frame-src https:\/\/www\.youtube-nocookie\.com/.test(POLITIQUE_SECURITE));
-  check("personne ne peut encadrer le carnet", POLITIQUE_SECURITE.includes("frame-ancestors 'none'"));
+  const start = index.indexOf("<script>") + 8, scriptEnd = index.indexOf("</script>", start);
+  const hash = "sha256-" + createHash("sha256").update(index.slice(start, scriptEnd), "utf8").digest("base64");
+  check("the theme script hash matches index.html (otherwise it would be blocked)",
+    hash === EMPREINTE_SCRIPT_THEME, hash + " vs " + EMPREINTE_SCRIPT_THEME);
+  check("a single inline script in index.html", (index.match(/<script>/g) || []).length === 1);
+  check("no inline script is allowed other than that one", !POLITIQUE_SECURITE.includes("'unsafe-inline'; ") || !/script-src[^;]*unsafe-inline/.test(POLITIQUE_SECURITE));
+  check("the video player is allowed", /frame-src https:\/\/www\.youtube-nocookie\.com/.test(POLITIQUE_SECURITE));
+  check("nobody can frame the notebook", POLITIQUE_SECURITE.includes("frame-ancestors 'none'"));
 
-  const bon = await post("/login", { username: "Chris", password: "correct-horse", next: "/" });
-  const cookie = (bon.headers.get("Set-Cookie") || "").split(";")[0];
-  const pageSite = await call("/", { headers: { Cookie: cookie } });
-  check("la page du site porte la politique de securite", (pageSite.headers.get("Content-Security-Policy") || "") === POLITIQUE_SECURITE);
-  check("et nosniff", pageSite.headers.get("X-Content-Type-Options") === "nosniff");
+  const goodLogin = await post("/login", { username: "Chris", password: "correct-horse", next: "/" });
+  const cookie = (goodLogin.headers.get("Set-Cookie") || "").split(";")[0];
+  const sitePage = await call("/", { headers: { Cookie: cookie } });
+  check("the site page carries the security policy", (sitePage.headers.get("Content-Security-Policy") || "") === POLITIQUE_SECURITE);
+  check("and nosniff", sitePage.headers.get("X-Content-Type-Options") === "nosniff");
 
-  let essais = 0;
-  const envLimite = { ...env, LOGIN_LIMITER: { limit: async () => ({ success: ++essais <= 2 }) } };
-  const essai = () => worker.fetch(new Request("https://site.test/login", { method: "POST", body: new URLSearchParams({ username: "Chris", password: "faux" }) }), envLimite);
-  await essai(); await essai();
-  const bloque = await essai();
-  check("au-dela de la limite, la connexion repond 429", bloque.status === 429, String(bloque.status));
-  check("avec un message lisible", (await bloque.text()).includes("Trop d'essais"));
+  let attempts = 0;
+  const limitedEnv = { ...env, LOGIN_LIMITER: { limit: async () => ({ success: ++attempts <= 2 }) } };
+  const attempt = () => worker.fetch(new Request("https://site.test/login", { method: "POST", body: new URLSearchParams({ username: "Chris", password: "faux" }) }), limitedEnv);
+  await attempt(); await attempt();
+  const blocked = await attempt();
+  check("past the limit, login answers 429", blocked.status === 429, String(blocked.status));
+  check("with a readable message", (await blocked.text()).includes("Trop d'essais"));
 }
 
-// v8.75 : la feuille et la page servies sans commentaires, le contenu intact.
+// v8.75: stylesheet and page served without comments, content intact.
 {
   const css = "/* un commentaire\n sur deux lignes */\n.a { color: red; }\n\n  .b { content: \"x\"; }\n";
-  check("la feuille perd ses commentaires et ses lignes vides", allegerCss(css) === '.a { color: red; }\n.b { content: "x"; }');
+  check("the stylesheet loses its comments and blank lines", allegerCss(css) === '.a { color: red; }\n.b { content: "x"; }');
   const html = "<p>a</p><!-- note -->\n<pre>ligne 1\n  ligne 2</pre>";
-  check("la page perd ses commentaires sans toucher aux espaces du <pre>", allegerHtml(html) === "<p>a</p>\n<pre>ligne 1\n  ligne 2</pre>");
+  check("the page loses its comments without touching <pre> whitespace", allegerHtml(html) === "<p>a</p>\n<pre>ligne 1\n  ligne 2</pre>");
   const { readFileSync } = await import("node:fs");
   const { dirname, join } = await import("node:path");
   const { fileURLToPath } = await import("node:url");
   const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-  const vraie = ["socle", "ecrans", "fenetres", "finitions"].map(f => readFileSync(join(root, "css/" + f + ".css"), "utf8")).join("\n");
-  const allegee = allegerCss(vraie);
-  check("la vraie feuille garde toutes ses accolades", (allegee.match(/\{/g) || []).length === (vraie.replace(/\/\*[\s\S]*?\*\//g, "").match(/\{/g) || []).length);
-  check("et fond d'au moins un quart", allegee.length < vraie.length * 0.75, allegee.length + " / " + vraie.length);
+  const realCss = ["socle", "ecrans", "fenetres", "finitions"].map(f => readFileSync(join(root, "css/" + f + ".css"), "utf8")).join("\n");
+  const slimmed = allegerCss(realCss);
+  check("the real stylesheet keeps all its braces", (slimmed.match(/\{/g) || []).length === (realCss.replace(/\/\*[\s\S]*?\*\//g, "").match(/\{/g) || []).length);
+  check("and shrinks by at least a quarter", slimmed.length < realCss.length * 0.75, slimmed.length + " / " + realCss.length);
   const index = readFileSync(join(root, "index.html"), "utf8");
-  const debut = index.indexOf("<script>"), fin = index.indexOf("</script>", debut);
-  check("le script du theme reste identique (son empreinte ne change pas)", allegerHtml(index).includes(index.slice(debut, fin)));
+  const start = index.indexOf("<script>"), end = index.indexOf("</script>", start);
+  check("the theme script stays identical (its hash does not change)", allegerHtml(index).includes(index.slice(start, end)));
 }
 
-console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
+console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);
 process.exit(failures === 0 ? 0 : 1);

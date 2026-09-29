@@ -1,40 +1,40 @@
-/* Carnet d'extraction, feuille 1 sur 4 : polices, jetons, base, navigation.
-   Le style tient en quatre feuilles chargées dans cet ordre (v8.78) : socle,
-   ecrans, fenetres, finitions. Découpées sans rien déplacer : la cascade est
-   celle de l'ancienne styles.css, d'un seul tenant.
+/* Brew logbook, sheet 1 of 4: fonts, tokens, base, navigation.
+   The styling lives in four sheets loaded in this order (v8.78): socle,
+   ecrans, fenetres, finitions. Split without moving anything: the cascade is
+   that of the old styles.css, in one piece.
 
-   Direction « Comptoir » : papier chaud, encre espresso, un seul accent en
-   terre cuite. Aucune teinte verte nulle part, y compris pour le « bon ».
-   Couleurs de données (validées daltonisme, palette Okabe-Ito) :
-   Brikka #2a78d6, Switch #eb6834, les deux machines #cc79a7.
+   "Comptoir" direction: warm paper, espresso ink, a single terracotta
+   accent. No green hue anywhere, not even for "good".
+   Data colours (colour-blind checked, Okabe-Ito palette):
+   Brikka #2a78d6, Switch #eb6834, both machines #cc79a7.
 
-   CONTRASTES. Toute couleur de TEXTE tient au moins 4,5:1 sur les quatre
-   surfaces où elle peut se poser (--panneau, --fond, --panneau-2, --rail) et
-   non sur la seule qui arrangeait. Plusieurs valeurs de la maquette ont dû
-   être assombries pour ça, de très peu, la teinte est conservée : le détail et
-   les ratios sont dans DECISIONS.md, « La refonte Comptoir ». Les couleurs de
-   DONNÉES échappent à la règle : ce sont des aplats et des traits, pas du
-   texte, et leur seuil est celui des objets graphiques, 3:1. */
+   CONTRAST. Every TEXT colour holds at least 4.5:1 on all four surfaces
+   it can sit on (--panneau, --fond, --panneau-2, --rail), not just on
+   the convenient one. Several mockup values had to be darkened for this,
+   very slightly, keeping the hue: details and ratios are in DECISIONS.md,
+   "La refonte Comptoir". DATA colours are exempt: they are fills and
+   strokes, not text, and their threshold is that of graphical
+   objects, 3:1. */
 
-/* ---------- Polices embarquées ----------
+/* ---------- Embedded fonts ----------
 
-   Instrument Serif et Manrope, toutes deux sous licence OFL (voir
-   css/fonts/LICENCE.md). Elles sont DANS le dépôt et jamais chargées depuis un
-   CDN : le site doit s'ouvrir en file:// et hors ligne, une dépendance réseau
-   afficherait le repli à la première ouverture et ferait clignoter la page.
+   Instrument Serif and Manrope, both under the OFL licence (see
+   css/fonts/LICENCE.md). They live IN the repo and are never loaded from a
+   CDN: the site must open over file:// and offline, and a network dependency
+   would show the fallback on first open and make the page flicker.
 
-   Sous-ensembles retenus : latin et latin étendu pour les deux, plus le
-   VIETNAMIEN pour Manrope, parce que les cafés de Chris s'appellent « Trung
-   Nguyên Sáng Tạo » et « Là Việt ». Cyrillique et grec écartés, ils ne servent
-   à rien ici et pèsent pour rien.
+   Subsets kept: latin and latin extended for both, plus VIETNAMESE for
+   Manrope, because Chris's coffees are called "Trung Nguyên Sáng Tạo"
+   and "Là Việt". Cyrillic and Greek dropped, they serve no purpose here
+   and weigh for nothing.
 
-   Instrument Serif n'a PAS de sous-ensemble vietnamien chez Google Fonts : les
-   caractères comme ạ, ế, ữ retombent glyphe par glyphe sur Georgia. Un nom de
-   café vietnamien affiché en serif est donc typographiquement mixte. C'est
-   assumé, documenté dans DECISIONS.md, et ça ne concerne que les titres.
+   Instrument Serif has NO Vietnamese subset on Google Fonts: characters
+   like ạ, ế, ữ fall back glyph by glyph to Georgia. A Vietnamese coffee
+   name shown in serif is therefore typographically mixed. This is
+   intended, documented in DECISIONS.md, and only affects headings.
 
-   Manrope est une police VARIABLE : un seul fichier par sous-ensemble couvre
-   les graisses 400 à 700, d'où le font-weight en plage. */
+   Manrope is a VARIABLE font: one file per subset covers weights
+   400 to 700, hence the font-weight range. */
 
 @font-face {
   font-family: "Instrument Serif";
@@ -80,10 +80,10 @@
 /* ---------- Variables ---------- */
 
 :root {
-  /* Les cafés du graphe des 30 jours (v8.61), dans l'ordre du nombre de tasses.
-     Tons moyens, lisibles sur les trois fonds, et loin des trois couleurs de
-     machine (bleu, vermillon, rose) comme du cuivre de la note, et sans vert,
-     que la DA Comptoir interdit. */
+  /* The coffees of the 30-day chart (v8.61), ordered by number of cups.
+     Mid tones, readable on all three backgrounds, and far from the three
+     machine colours (blue, vermilion, pink) and the rating copper, with no
+     green, which the Comptoir design forbids. */
   --cafe-1: #5fa8d3;
   --cafe-2: #d0806a;
   --cafe-3: #d8b73e;
@@ -91,99 +91,98 @@
   --cafe-5: #9aa05a;
   --brikka: #2a78d6;
   --switch: #eb6834;
-  /* Rose poudré et non plus vert émeraude. Le trio bleu / vermillon / rose-violet
-     est celui d'Okabe-Ito, sûr pour le daltonisme ; l'émeraude l'était aussi mais
-     criait sur une palette entièrement chaude. */
+  /* Dusty pink, no longer emerald green. The blue / vermilion / pink-purple trio
+     is Okabe-Ito's, colour-blind safe; emerald was too, but it
+     clashed with an entirely warm palette. */
   --deux: #cc79a7;
 
   --serif: "Instrument Serif", Georgia, "Times New Roman", serif;
   --sans: Manrope, "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
 
-  /* Rayons de la DA Comptoir : cartes 18, contrôles 12, pastilles rondes. Les
-     deux premiers noms existaient déjà et gardent leur nom, c'est la valeur qui
-     change, donc tout le site suit sans qu'on touche aux règles. */
+  /* Comptoir design radii: cards 18, controls 12, round pills. The first
+     two names already existed and keep their name, only the value
+     changes, so the whole site follows without touching the rules. */
   --rayon: 18px;
   --rayon-petit: 12px;
   --rayon-pastille: 999px;
 
-  /* Espaces et hauteurs de la DA, pour cesser de les réécrire à chaque bloc. */
+  /* Design spacings and heights, to stop rewriting them in every block. */
   --ecart-cartes: 18px;
   --carte-padding: 22px 26px;
   --hauteur-controle: 48px;
   --rail-large: 232px;
   --barre-basse: 62px;
-  /* Le cadre : largeur maximale de TOUT ecran, centre dans main. Un seul jeton,
-     une seule regle (.ecran), aucun ecran ne le redefinit. */
+  /* The frame: max width of EVERY screen, centred in main. A single token,
+     a single rule (.ecran), no screen redefines it. */
   --cadre: 1560px;
 
   --transition: 220ms cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Seule couleur qui ne suit pas le thème : le texte sombre posé sur la
-     pastille rose des deux machines, dont le fond est le même dans les deux.
-     --sur-accent, lui, a dû devenir une couleur de thème : le crème du thème
-     clair posé sur l'accent du thème sombre ne donnait que 2,66:1. */
+  /* The only colour that does not follow the theme: dark text on the
+     pink pill of both machines, whose background is the same in both.
+     --sur-accent, on the other hand, had to become a theme colour: the light
+     theme's cream on the dark theme's accent only reached 2.66:1. */
   --encre-sur-clair: #2e211a;
 
-  /* Échelle des plans, une seule liste lue de bas en haut. Un z-index écrit en
-     dur ailleurs est une régression : c'est ici qu'on décide qui passe devant. */
+  /* Layer scale, a single list read bottom to top. A z-index hard-coded
+     elsewhere is a regression: this is where we decide what goes on top. */
   --z-sommaire: 20;
   --z-entete: 50;
   --z-tag: 60;
-  /* Le voile passe SOUS la feuille de navigation et SOUS le bouton flottant :
-     il assombrit le contenu, pas la navigation. */
+  /* The scrim goes UNDER the navigation sheet and UNDER the floating button:
+     it dims the content, not the navigation. */
   --z-voile-nav: 148;
   --z-panneau-rapide: 149;
   --z-fab: 150;
   --z-bulle: 200;
-  /* La feuille « Plus » passe devant le bouton flottant, sinon la tasse
-     flotterait par dessus le menu qu'elle est censee laisser tranquille. */
+  /* The "Plus" sheet goes above the floating button, otherwise the cup
+     would float over the menu it is supposed to leave alone. */
   --z-rail: 152;
   --z-toast: 300;
-  /* Le voile sous une fenêtre ou la feuille du téléphone (v8.78). */
+  /* The scrim under a window or the phone sheet (v8.78). */
   --voile: rgba(38, 25, 15, 0.35);
 }
 
-/* LES DEUX THÈMES SOMBRES (v8.34), choisis par Chris sur maquette le 19
-   septembre 2026, à la place de l'« Espresso » brun qu'il n'aimait pas du tout.
-   data-theme="sombre" reste l'interrupteur de la FAMILLE : toutes les règles
-   écrites pour le sombre continuent de s'appliquer aux deux. data-sombre choisit
-   la palette, Graphite par défaut. Le bouton de thème fait le tour clair,
-   Graphite, Nuit.
+/* THE TWO DARK THEMES (v8.34), picked by Chris from a mockup on 19
+   September 2026, replacing the brown "Espresso" he did not like at all.
+   data-theme="sombre" stays the FAMILY switch: every rule written for
+   dark keeps applying to both. data-sombre picks the palette, Graphite
+   by default. The theme button cycles light, Graphite, Nuit.
 
-   Même grammaire dans les deux : quatre surfaces à pas nets, filets en alpha,
-   relief par ombre douce et filet clair d'un pixel, le brun seulement dans
-   l'accent. Tous les textes tiennent au moins 4,5:1 sur le fond, le rail et les
-   trois panneaux ; un test le vérifie (data.test, « thèmes sombres »). Les
-   couleurs de machines sont éclaircies d'un cran : sur un fond presque noir, le
-   bleu Brikka d'origine tombait sous 4:1.
+   Same grammar in both: four surfaces in clear steps, alpha hairlines,
+   relief from a soft shadow and a one-pixel light hairline, brown only in
+   the accent. All text holds at least 4.5:1 on the background, the rail
+   and the three panels; a test checks it (data.test, "thèmes sombres").
+   Machine colours are lightened one notch: on a near-black background,
+   the original Brikka blue fell below 4:1.
 
-   GRAPHITE : presque noir, neutre à peine chaud, un seul accent, la crème d'un
-   espresso. La direction « app moderne ». */
+   GRAPHITE: near black, a barely warm neutral, a single accent, the crema
+   of an espresso. The "modern app" direction. */
 html[data-theme="sombre"] {
   --fond: #111113;
   --rail: #141416;
   --fond-degrade: radial-gradient(1100px 520px at 85% -8%, rgba(232, 187, 133, 0.07) 0%, #111113 60%);
   --panneau: #18181b;
   --panneau-2: #212125;
-  /* Surface de survol et d'etat enfonce, un pas au dessus de --panneau-2. */
+  /* Hover and pressed-state surface, one step above --panneau-2. */
   --panneau-3: #2b2b30;
   --encre: #f4f1ec;
   --texte: #d2cdc6;
-  /* 5,82:1 sur --panneau, 4,63:1 sur --panneau-3, la plus claire. */
+  /* 5.82:1 on --panneau, 4.63:1 on --panneau-3, the lightest. */
   --attenue: #99938b;
   --accent: #e8bb85;
   --accent-fort: #f4cd9d;
   --accent-fond: rgba(232, 187, 133, 0.12);
-  /* Encre sombre sur l'accent : 10,3:1. */
+  /* Dark ink on the accent: 10.3:1. */
   --sur-accent: #1b140c;
-  /* Filets en ALPHA : une seule valeur reste visible sur toutes les surfaces. */
+  /* ALPHA hairlines: a single value stays visible on every surface. */
   --lignes: rgba(255, 255, 255, 0.08);
   --lignes-douces: rgba(255, 255, 255, 0.05);
   --lignes-graphe: rgba(255, 255, 255, 0.08);
   --barre-neutre: #4a4640;
-  /* Le relief du theme sombre : une ombre douce sous chaque carte, et un filet
-     clair d'un pixel en haut. Le theme clair pose ses cartes a plat sur une
-     bordure, ces deux jetons y sont vides. */
+  /* The dark theme's relief: a soft shadow under each card, and a one-pixel
+     light hairline on top. The light theme lays its cards flat on a
+     border, so these two tokens are empty there. */
   --ombre-carte: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 10px 30px rgba(0, 0, 0, 0.35);
   --ombre-haut: 0 1px 0 rgba(255, 255, 255, 0.05) inset;
   --ombre: 0 16px 40px rgba(0, 0, 0, 0.55);
@@ -192,14 +191,14 @@ html[data-theme="sombre"] {
   --avert-fond: rgba(232, 187, 133, 0.10);
   --avert-bord: rgba(232, 187, 133, 0.40);
   --danger: #ef8a78;
-  /* PLUS DE VERT, nulle part, y compris pour dire « bon » : c'est une demande
-     explicite de Chris. Le statut favorable prend donc l'accent, le défavorable
-     garde le rouge. Le nom --ok est conservé pour ne pas réécrire les trente
-     règles qui l'utilisent. */
+  /* NO MORE GREEN, anywhere, even to say "good": an explicit request
+     from Chris. The favourable status therefore takes the accent, the
+     unfavourable keeps red. The name --ok is kept to avoid rewriting the
+     thirty rules that use it. */
   --ok: #e8bb85;
   --tendance: rgba(232, 187, 133, 0.45);
-  /* Fond de la carte sombre (le chrono) : une carte secondaire avec un trait
-     d'accent a gauche. Ses sous-surfaces et son attenue vivent dans --cs-*. */
+  /* Background of the dark card (the timer): a secondary card with an accent
+     stroke on the left. Its sub-surfaces and muted colour live in --cs-*. */
   --carte-sombre-fond: #212125;
   --cs-panneau: #18181b;
   --cs-panneau-2: #2b2b30;
@@ -217,10 +216,10 @@ html[data-theme="sombre"] {
   color-scheme: dark;
 }
 
-/* NUIT : un bleu encre très profond, presque noir, et un accent cuivre de moka
-   chauffée. Froid dessous, chaud dessus : le contraste le plus franc. Le bleu
-   Brikka monte encore d'un cran pour ne pas se fondre dans le fond. Ne
-   redéfinit que ce qui change, le reste vient du bloc Graphite. */
+/* NUIT: a very deep ink blue, near black, and a copper accent of a heated
+   moka pot. Cold below, warm above: the sharpest contrast. The Brikka
+   blue goes up one more notch so it does not melt into the background.
+   Only redefines what changes, the rest comes from the Graphite block. */
 html[data-theme="sombre"][data-sombre="nuit"] {
   --fond: #0b1017;
   --rail: #0e141d;
@@ -230,12 +229,12 @@ html[data-theme="sombre"][data-sombre="nuit"] {
   --panneau-3: #212e3f;
   --encre: #eef2f6;
   --texte: #c7d0db;
-  /* 6,33:1 sur --panneau, 4,98:1 sur --panneau-3. */
+  /* 6.33:1 on --panneau, 4.98:1 on --panneau-3. */
   --attenue: #8e9db0;
   --accent: #e5935a;
   --accent-fort: #f3aa74;
   --accent-fond: rgba(229, 147, 90, 0.13);
-  /* 7,7:1. */
+  /* 7.7:1. */
   --sur-accent: #1c0f06;
   --lignes: rgba(200, 220, 255, 0.09);
   --lignes-douces: rgba(200, 220, 255, 0.05);
@@ -265,35 +264,35 @@ html[data-theme="sombre"][data-sombre="nuit"] {
   --hm4: #e5935a;
 }
 
-/* Thème clair « Comptoir ». Papier chaud, encre espresso, accent terre cuite.
-   Les valeurs suivies d'un ratio ont été assombries par rapport à la maquette
-   pour tenir 4,5:1 sur la plus sombre des surfaces où elles se posent. */
+/* Light "Comptoir" theme. Warm paper, espresso ink, terracotta accent.
+   Values followed by a ratio were darkened relative to the mockup to
+   hold 4.5:1 on the darkest surface they sit on. */
 html[data-theme="clair"] {
   --fond: #f4ede3;
   --fond-degrade: radial-gradient(1200px 600px at 80% -10%, #faf4ea 0%, #f4ede3 55%);
   --panneau: #fcf8f2;
   --panneau-2: #ebe1d4;
-  /* Plus clair (v8.76) : l'atténué, l'accent et l'erreur y tombaient à 4,0:1. */
+  /* Lighter (v8.76): muted, accent and error fell to 4.0:1 on it. */
   --panneau-3: #e8ddcf;
   --rail: #f0e7db;
   --encre: #26190f;
   --texte: #5e4b3c;
-  /* Maquette #8a7462 : 3,42:1 sur --panneau-2, sous le seuil. #6d5a4b depuis la
-     v8.76 : 5,06:1 sur --panneau-2 et 4,88:1 sur --panneau-3, la surface de survol. */
+  /* Mockup #8a7462: 3.42:1 on --panneau-2, below the threshold. #6d5a4b since
+     v8.76: 5.06:1 on --panneau-2 and 4.88:1 on --panneau-3, the hover surface. */
   --attenue: #6d5a4b;
-  /* Maquette #a85a1e : 4,00:1 sur --accent-fond. #924d1a depuis la v8.76 :
-     5,03:1 sur --accent-fond, 4,75:1 sur --panneau-3. */
+  /* Mockup #a85a1e: 4.00:1 on --accent-fond. #924d1a since v8.76:
+     5.03:1 on --accent-fond, 4.75:1 on --panneau-3. */
   --accent: #924d1a;
   --accent-fort: #8a4716;
   --accent-fond: #f2e2d2;
-  /* Crème sur l'accent : 5,02:1. */
+  /* Cream on the accent: 5.02:1. */
   --sur-accent: #f4ede3;
   --lignes: #dccdbb;
   --lignes-douces: #ede4d8;
   --lignes-graphe: rgba(116, 97, 82, 0.18);
   --barre-neutre: #cbb8a2;
-  /* Aucune ombre sur les cartes du thème clair : la DA les pose à plat, sur
-     bordure. --ombre ne sert plus qu'au bouton flottant et à la feuille. */
+  /* No shadow on light theme cards: the design lays them flat, on a
+     border. --ombre is now only used by the floating button and the sheet. */
   --ombre: 0 10px 30px rgba(38, 25, 15, 0.14);
   --ombre-carte: none;
   --ombre-haut: none;
@@ -301,22 +300,22 @@ html[data-theme="clair"] {
   --tooltip-texte: #f4ede3;
   --avert-fond: #f2e2d2;
   --avert-bord: rgba(154, 82, 28, 0.42);
-  /* Maquette #c4503b : 3,57:1 sur --panneau-2. #a0412f depuis la v8.76 :
-     4,76:1 sur --panneau-3. */
+  /* Mockup #c4503b: 3.57:1 on --panneau-2. #a0412f since v8.76:
+     4.76:1 on --panneau-3. */
   --danger: #a0412f;
-  /* La bordure d'un champ (v8.76) : 3,3:1 sur le panneau, le minimum d'une limite
-     de contrôle est 3:1. --lignes, à 1,5:1, laissait deviner les champs. */
+  /* A field's border (v8.76): 3.3:1 on the panel, the minimum for a control
+     boundary is 3:1. --lignes, at 1.5:1, left fields barely visible. */
   --lignes-champ: #9a8570;
-  /* Pas de vert : « bon » prend l'accent. Voir le thème sombre. */
+  /* No green: "good" takes the accent. See the dark theme. */
   --ok: #9a521c;
   --tendance: rgba(154, 82, 28, 0.34);
-  /* Fond de la carte sombre. Un jeton dedie et non --encre : a l'interieur de
-     la carte, --encre change de sens et devient la couleur du TEXTE. */
+  /* Background of the dark card. A dedicated token and not --encre: inside
+     the card, --encre flips meaning and becomes the TEXT colour. */
   --carte-sombre-fond: #26190f;
 
-  /* Rampe caramel du calendrier, du vide au plus actif. La DA en donne quatre
-     pour cinq niveaux : le pas manquant est interpolé entre les deux derniers.
-     Ce sont des aplats, pas du texte, aucun seuil de contraste ne s'y applique. */
+  /* Caramel ramp of the calendar, from empty to most active. The design gives
+     four for five levels: the missing step is interpolated between the last two.
+     These are fills, not text, so no contrast threshold applies. */
   --hm0: #ebe1d4;
   --hm1: #ecd3b5;
   --hm2: #cf9a5f;
@@ -329,23 +328,23 @@ html[data-theme="clair"] {
 
 * { box-sizing: border-box; }
 
-/* L'attribut hidden doit toujours gagner, même contre display: flex. */
+/* The hidden attribute must always win, even against display: flex. */
 [hidden] { display: none !important; }
 
 html {
   scroll-behavior: smooth;
-  /* La place de la barre de defilement est TOUJOURS reservee. Sans ca, un ecran
-     court (Mes reglages) est 15 px plus large qu un ecran long (le tableau de
-     bord), et le contenu saute lateralement a chaque changement d onglet. */
+  /* The scrollbar space is ALWAYS reserved. Without it, a short screen
+     (Mes reglages) is 15 px wider than a long one (the dashboard),
+     and the content jumps sideways on every tab change. */
   scrollbar-gutter: stable;
 }
 
-/* Au doigt : pas de zoom au double appui sur un bouton ni de halo gris au tap,
-   les deux font "page web" la ou on veut "application". */
+/* On touch: no double-tap zoom on a button and no grey tap highlight,
+   both feel like a "web page" where we want an "app". */
 button, .pilule, .tag, .nav-btn, input[type="range"] { touch-action: manipulation; }
-/* Application installée : tirer vers le bas en haut de page ne recharge pas le
-   site. Le service worker et le versionnage livrent la nouvelle version à
-   l'ouverture suivante de toute façon. */
+/* Installed app: pulling down at the top of the page does not reload the
+   site. The service worker and versioning deliver the new version on
+   the next open anyway. */
 body {
   overscroll-behavior-y: contain;
   margin: 0;
@@ -360,8 +359,8 @@ body {
 }
 button, a, .pilule, .tag { -webkit-tap-highlight-color: transparent; }
 
-/* CONTRASTE FORCE (Windows). Les couleurs de fond disparaissent : un etat actif
-   qui ne tenait qu'a sa couleur devient invisible. On lui rend un trait. */
+/* FORCED CONTRAST (Windows). Background colours disappear: an active state
+   that relied only on its colour becomes invisible. We give it an outline. */
 @media (forced-colors: active) {
   [aria-pressed="true"], [aria-current="page"], .btn-methode.actif, .nav-btn.actif {
     outline: 2px solid CanvasText;
@@ -369,8 +368,8 @@ button, a, .pilule, .tag { -webkit-tap-highlight-color: transparent; }
   }
 }
 
-/* 400 et pas 600 (v8.78) : Instrument Serif n'existe qu'en un seul poids, et le
-   navigateur fabriquait un faux gras en épaississant le trait. */
+/* 400 and not 600 (v8.78): Instrument Serif exists in a single weight, and
+   the browser faked bold by thickening the stroke. */
 h1, h2, h3, h4 {
   font-family: var(--serif);
   color: var(--encre);
@@ -393,13 +392,13 @@ button { font-family: inherit; }
 
 ::selection { background: var(--accent); color: var(--panneau); }
 
-/* ---------- Entête ---------- */
+/* ---------- Header ---------- */
 
-/* ---------- Navigation : rail, barre du bas, feuille ----------
+/* ---------- Navigation: rail, bottom bar, sheet ----------
 
-   Un SEUL element .rail. Sur ordinateur c'est le rail de gauche ; sous 1024 px
-   il devient la feuille « Plus » qui monte du bas, et les trois ecrans
-   quotidiens passent dans .barre-bas. Voir le commentaire d'index.html. */
+   ONE .rail element. On desktop it is the left rail; below 1024 px
+   it becomes the "Plus" sheet rising from the bottom, and the three daily
+   screens move into .barre-bas. See the comment in index.html. */
 
 .rail {
   background: var(--rail);
@@ -448,7 +447,7 @@ button { font-family: inherit; }
 
 .rail-entrees { display: flex; flex-direction: column; gap: 2px; }
 
-/* Une entree de rail : icone en trait plus libelle, jamais d'emoji. */
+/* A rail entry: line icon plus label, never an emoji. */
 .rail-entree {
   display: flex;
   align-items: center;
@@ -468,8 +467,8 @@ button { font-family: inherit; }
 .rail-entree .ico { flex: none; color: var(--attenue); transition: color var(--transition); }
 .rail-entree:hover { background: var(--panneau-3); color: var(--encre); }
 .rail-entree:hover .ico { color: var(--encre); }
-/* L'entree active prend le FOND de la page, pas l'accent : la DA veut un rail
-   ou l'ecran courant a l'air decoupe dedans, pas surligne. */
+/* The active entry takes the page BACKGROUND, not the accent: the design
+   wants a rail where the current screen looks cut out of it, not highlighted. */
 .rail-entree.actif { background: var(--fond); color: var(--encre); }
 .rail-entree.actif .ico { color: var(--accent); }
 
@@ -489,8 +488,8 @@ button { font-family: inherit; }
   font-size: 0.75rem;
   color: var(--attenue);
 }
-/* Le point d'etat. C'est le seul endroit ou la synchro se voit sans ouvrir un
-   panneau, donc il porte la couleur plutot qu'un simple rond gris. */
+/* The status dot. It is the only place where sync shows without opening a
+   panel, so it carries colour rather than a plain grey circle. */
 .rail-point {
   width: 8px; height: 8px;
   flex: none;
@@ -507,7 +506,7 @@ button { font-family: inherit; }
 .rail-outils { display: flex; flex-wrap: wrap; gap: 6px; }
 .rail-donnees { flex: 1 0 100%; justify-content: center; }
 
-/* ---------- Barre du bas, telephone ---------- */
+/* ---------- Bottom bar, phone ---------- */
 .barre-bas {
   display: none;
   position: fixed;
@@ -536,7 +535,7 @@ button { font-family: inherit; }
 .barre-entree.actif { color: var(--accent); }
 .barre-entree[aria-expanded="true"] { color: var(--encre); }
 
-/* Voile du telephone quand la feuille est ouverte. */
+/* Phone scrim when the sheet is open. */
 .voile-nav {
   position: fixed;
   inset: 0;
@@ -544,7 +543,7 @@ button { font-family: inherit; }
   background: var(--voile);
 }
 
-/* Ecran Mes meilleurs reglages : une carte par cafe. */
+/* My best settings screen: one card per coffee. */
 #reglages-liste {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -565,19 +564,19 @@ button { font-family: inherit; }
 }
 .ecran-intro { color: var(--attenue); max-width: 70ch; margin: 0 0 18px; }
 
-/* Lignes des dernieres extractions : cliquables vers l edition. */
+/* Latest brew rows: clickable to edit. */
 .derniere-cliquable { cursor: pointer; border-radius: var(--rayon-petit); transition: background var(--transition); }
 .derniere-cliquable:hover { background: var(--panneau-2); }
 .derniere-cliquable:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* Ecran Parametres : un tableau d edition compact, une ligne par recette. */
-/* Colonne de lecture bornee, mais CENTREE : sans la marge auto elle se collait
-   a gauche de main, qui fait 1180 px, et la page paraissait de travers. */
-/* La largeur des ecrans est posee UNE fois, dans le bloc de mise en page.
-   Un plafond propre a un ecran le decalait des autres : Parametres tenait 780 px
-   pendant que ses voisins en faisaient 993, et le saut se voyait a chaque
-   changement d'onglet. Seule la LONGUEUR DE LIGNE des textes est bridee, par
-   .ecran-intro et les paragraphes, pas le cadre. */
+/* Settings screen: a compact edit table, one row per recipe. */
+/* Bounded reading column, but CENTRED: without the auto margin it stuck
+   to the left of main, which is 1180 px wide, and the page looked lopsided. */
+/* Screen width is set ONCE, in the layout block.
+   A screen-specific cap shifted it from the others: Settings was 780 px
+   while its neighbours were 993, and the jump showed on every tab
+   change. Only the LINE LENGTH of text is capped, by .ecran-intro and
+   paragraphs, not the frame. */
 #ecran-parametres .carte { margin-bottom: 18px; }
 .param-aide { color: var(--attenue); font-size: 0.85rem; margin: 0 0 12px; max-width: 72ch; }
 .param-tableau-zone { overflow-x: auto; margin-bottom: 14px; }
@@ -590,14 +589,14 @@ button { font-family: inherit; }
 }
 .param-sans { color: var(--attenue); }
 
-/* Le ratio de la ligne live porte son explication au survol. La bulle est
-   commune, voir [data-info] ; il ne reste ici que son propre soulignement. */
+/* The live row's ratio carries its explanation on hover. The bubble is
+   shared, see [data-info]; only its own underline remains here. */
 .aide-ratio { cursor: help; border-bottom: 1px dotted var(--attenue); }
 
-/* Alerte de contradiction sous les pilules de diagnostic. */
+/* Contradiction warning under the diagnosis pills. */
 .diag-alerte { display: block; color: var(--accent-fort); margin-bottom: 4px; }
 
-/* Barre de selection du comparateur. */
+/* Comparator selection bar. */
 .barre-comparaison {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   margin: 0 0 10px; padding: 8px 12px;
@@ -608,9 +607,9 @@ button { font-family: inherit; }
 .ligne-histo.comparee { background: var(--accent-fond); }
 .btn-ligne.actif { color: var(--accent-fort); background: var(--accent-fond); }
 
-/* LA FICHE AU SURVOL de l'historique (v8.33) : le detail d'une tasse, flottant
-   sous sa ligne. Posee en fixed par ui-historique.js, qui la place ; elle ne
-   capte jamais la souris, sinon elle volerait le survol a la ligne dessous. */
+/* THE HOVER CARD in the history (v8.33): a cup's details, floating
+   under its row. Set as fixed by ui-historique.js, which positions it; it never
+   captures the mouse, otherwise it would steal the hover from the row below. */
 .h-fiche {
   position: fixed;
   z-index: var(--z-bulle);
@@ -654,8 +653,8 @@ button { font-family: inherit; }
 }
 .detail-vide { margin: 0; color: var(--attenue); font-size: 0.85rem; }
 
-/* Tableau de comparaison : seules les lignes qui DIFFÈRENT sont surlignées,
-   c'est là que se trouve l'explication de l'écart de note. */
+/* Comparison table: only rows that DIFFER are highlighted,
+   that is where the explanation of the rating gap lies. */
 .table-comparaison { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
 .table-comparaison th, .table-comparaison td {
   padding: 8px 12px; border-bottom: 1px solid var(--lignes);
@@ -668,12 +667,12 @@ button { font-family: inherit; }
 }
 .table-comparaison tr.differe td { background: var(--accent-fond); color: var(--encre); font-weight: 600; }
 
-/* Duree en minutes et secondes : deux champs etroits sur une ligne. */
+/* Duration in minutes and seconds: two narrow fields on one line. */
 .duree { display: flex; align-items: center; gap: 6px; }
-/* Deux chiffres, pas plus. Les fleches du champ numerique mangeaient 13 px et
-   coupaient le « 45 » des secondes dans une colonne de 175 px ; on les retire,
-   elles ne servent a rien sur un champ qu'on tape, et la marge interne se
-   resserre. inputmode="numeric" donne deja le bon clavier au telephone. */
+/* Two digits, no more. The number field's arrows ate 13 px and cut
+   off the seconds' "45" in a 175 px column; we remove them, they are
+   useless on a field you type into, and the inner padding
+   tightens. inputmode="numeric" already gives the right phone keyboard. */
 .duree input {
   width: 4.2rem;
   min-width: 0;
@@ -685,7 +684,7 @@ button { font-family: inherit; }
 .duree input::-webkit-inner-spin-button { appearance: none; margin: 0; }
 .duree span { font-size: 0.8rem; color: var(--attenue); }
 
-/* Stock du sachet en cours, dans la liste des cafes. */
+/* Stock of the current bag, in the coffee list. */
 .badge-stock {
   font-size: 0.75rem;
   padding: 2px 7px;
@@ -698,9 +697,9 @@ button { font-family: inherit; }
 .badge-stock-vide { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, transparent); background: color-mix(in srgb, var(--danger) 12%, transparent); }
 .cafe-ligne.epuise b { text-decoration: line-through; text-decoration-thickness: 1px; }
 
-/* Mini statistiques, sous le calendrier d'activite : le nombre a gauche, le
-   libelle a droite, en DEUX colonnes. En une colonne de cinq lignes elles
-   creusaient la carte ; en boites, « tasses par semaine » se coupait en deux. */
+/* Mini stats, under the activity calendar: the number on the left, the
+   label on the right, in TWO columns. As one column of five rows they
+   hollowed the card; as boxes, "cups per week" broke in two. */
 .mini-stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -727,7 +726,7 @@ button { font-family: inherit; }
 }
 .mini-stat span { font-size: 0.76rem; color: var(--attenue); }
 
-/* Message qui remplace un graphique legitimement vide. */
+/* Message that replaces a legitimately empty chart. */
 .carte-vide {
   margin: 0;
   padding: 16px 14px;
@@ -739,7 +738,7 @@ button { font-family: inherit; }
   border-radius: var(--rayon-petit);
 }
 
-/* Pied de page : numero de version, pour savoir ce qui tourne sur l'appareil. */
+/* Footer: version number, to know what is running on the device. */
 .pied-site {
   max-width: 1180px;
   margin: 8px auto 24px;
@@ -749,7 +748,7 @@ button { font-family: inherit; }
   color: var(--attenue);
 }
 
-/* Ligne d'etat de la synchronisation, dans le panneau Donnees. */
+/* Sync status line, in the Data panel. */
 .sync-ligne {
   display: flex;
   align-items: center;
@@ -760,7 +759,7 @@ button { font-family: inherit; }
   color: var(--attenue);
 }
 
-/* Insights du tableau de bord : des phrases, pas des graphiques. */
+/* Dashboard insights: sentences, not charts. */
 .insights { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .insights li {
   position: relative;
@@ -777,10 +776,10 @@ button { font-family: inherit; }
   color: var(--accent);
   font-weight: 700;
 }
-/* LA PREUVE, SUR UNE LIGNE (v8.37) : une réglette de 0 à 10 avec le réglage
-   en accent et le reste en neutre, les deux moyennes, puis la confiance et
-   les effectifs. Une ligne et non trois : la carte, plus haute que le graphe
-   voisin, le faisait grandir avec elle. */
+/* THE PROOF, ON ONE LINE (v8.37): a 0 to 10 ruler with the setting
+   in accent and the rest neutral, the two averages, then confidence and
+   sample sizes. One line, not three: the card, taller than the neighbouring
+   chart, made it grow with it. */
 .insights .constat p { margin: 0; }
 .insights .constat .preuve {
   display: flex;
@@ -818,9 +817,9 @@ button { font-family: inherit; }
   font-variant-numeric: tabular-nums;
 }
 
-/* .marque, .nav et .nav-icone ont disparu avec l'entete (refonte Comptoir,
-   etape 2). .nav-btn reste, mais comme simple crochet de comportement : c'est
-   .rail-entree et .barre-entree qui portent le dessin. */
+/* .marque, .nav and .nav-icone disappeared with the header (Comptoir redesign,
+   step 2). .nav-btn remains, but only as a behaviour hook: it is
+   .rail-entree and .barre-entree that carry the look. */
 .nav-btn {
   font: inherit;
   border: none;
@@ -836,8 +835,8 @@ button { font-family: inherit; }
 
 
 .nav-btn:hover { color: var(--encre); background: var(--panneau-2); }
-/* Un état sélectionné ne change QUE des couleurs : voir le commentaire sur
-   .tag.actif plus bas. Le gras élargissait le libellé et décalait les voisins. */
+/* A selected state changes ONLY colours: see the comment on
+   .tag.actif below. Bold widened the label and shifted its neighbours. */
 .nav-btn.actif { background: var(--accent-fond); color: var(--accent-fort); }
 
 .badge {
@@ -867,10 +866,10 @@ button { font-family: inherit; }
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  /* ZONE D'APPUI de 44 px sans changer le dessin : le pseudo-element ::after
-     deborde de 6 px en hauteur et 2 px sur les cotes. Ce sont les boutons qu'on
-     tape plusieurs fois par jour les doigts mouilles, et 30 px passent le
-     minimum WCAG (24) mais pas le confort (44). */
+  /* 44 px TAP AREA without changing the look: the ::after pseudo-element
+     overflows by 6 px vertically and 2 px on the sides. These are the buttons
+     tapped several times a day with wet fingers, and 30 px meets the
+     WCAG minimum (24) but not comfort (44). */
   position: relative;
 }
 .btn-icone:hover { border-color: var(--accent); }

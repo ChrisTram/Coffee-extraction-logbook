@@ -1,14 +1,14 @@
-/* Genere les icones PNG de la PWA. Deterministe, aucune dependance : node
- * suffit (zlib est dans la bibliotheque standard).
+/* Generates the PWA's PNG icons. Deterministic, no dependency: node is
+ * enough (zlib is in the standard library).
  *
  *   node tools/gen_icons.mjs
  *
- * Ecrit icons/icon-192.png, icon-512.png, icon-maskable-512.png et
- * apple-touch-icon-180.png. A relancer seulement si le dessin change.
+ * Writes icons/icon-192.png, icon-512.png, icon-maskable-512.png and
+ * apple-touch-icon-180.png. Rerun only if the drawing changes.
  *
- * Les couleurs viennent du theme sombre de css/socle.css : fond #221709,
- * porcelaine #f3e8d8, cafe #d98741. Le dessin est decrit en coordonnees
- * relatives (0 a 1) puis echantillonne en 4x4 par pixel pour l'antialiasing.
+ * The colours come from the dark theme of css/socle.css: background #221709,
+ * porcelain #f3e8d8, coffee #d98741. The drawing is described in relative
+ * coordinates (0 to 1) then sampled 4x4 per pixel for antialiasing.
  */
 
 import { deflateSync } from "node:zlib";
@@ -22,11 +22,11 @@ const PORCELAIN = [0xf3, 0xe8, 0xd8];
 const COFFEE = [0xd9, 0x87, 0x41];
 const SUPERSAMPLE = 4;
 
-/* ---------- Dessin ---------- */
+/* ---------- Drawing ---------- */
 
 const insideEllipse = (x, y, cx, cy, rx, ry) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1;
 
-/* Trapeze vertical : la demi largeur decroit lineairement du haut vers le bas. */
+/* Vertical trapezoid: the half width shrinks linearly from top to bottom. */
 function insideCup(x, y, top, bottom, halfTop, halfBottom, cx) {
   if (y < top || y > bottom) return false;
   const t = (y - top) / (bottom - top);
@@ -41,19 +41,19 @@ function insideRoundedSquare(x, y, radius) {
   return dx * dx + dy * dy <= radius * radius;
 }
 
-/* Retourne la couleur RGBA en un point, ou null pour transparent.
-   scale rapproche ou eloigne le dessin du bord, pour la version maskable. */
+/* Returns the RGBA colour at a point, or null for transparent.
+   scale moves the drawing closer to or away from the edge, for the maskable version. */
 function sample(x, y, { cornerRadius, scale }) {
   if (!insideRoundedSquare(x, y, cornerRadius)) return null;
 
-  // Coordonnees du dessin, recentrees puis mises a l'echelle
+  // Drawing coordinates, recentred then scaled
   const dx = (x - 0.5) / scale + 0.5;
   const dy = (y - 0.5) / scale + 0.5;
   const cx = 0.5;
 
-  // Le bord de la tasse est une ellipse, le corps un trapeze qui part de son
-  // centre : les deux se raccordent sans marche. Le cafe est une ellipse plus
-  // petite, ce qui laisse la porcelaine visible en bord de tasse.
+  // The cup's rim is an ellipse, the body a trapezoid starting from its
+  // centre: the two join without a step. The coffee is a smaller ellipse,
+  // which leaves the porcelain visible at the cup's rim.
   const RIM_Y = 0.375;
   const rim = insideEllipse(dx, dy, cx, RIM_Y, 0.235, 0.052);
   const brew = insideEllipse(dx, dy, cx, RIM_Y, 0.203, 0.040);
@@ -61,9 +61,9 @@ function sample(x, y, { cornerRadius, scale }) {
   const bodyBottom = insideEllipse(dx, dy, cx, 0.735, 0.163, 0.036);
   const saucer = insideEllipse(dx, dy, cx, 0.778, 0.315, 0.048);
 
-  // Anse : anneau complet. Sa partie gauche tombe dans le corps de la tasse,
-  // de meme couleur, donc le raccord est invisible; son trou ne perce pas le
-  // corps puisque le corps est teste separement.
+  // Handle: a full ring. Its left part falls inside the cup body, of the
+  // same colour, so the join is invisible; its hole does not pierce the
+  // body since the body is tested separately.
   const handleDistance = Math.hypot(dx - (cx + 0.245), dy - 0.520);
   const handle = handleDistance <= 0.112 && handleDistance >= 0.058;
 
@@ -98,7 +98,7 @@ function render(size, options) {
   return pixels;
 }
 
-/* ---------- Encodage PNG ---------- */
+/* ---------- PNG encoding ---------- */
 
 const CRC_TABLE = (() => {
   const table = new Int32Array(256);
@@ -129,11 +129,11 @@ function encodePng(size, pixels) {
   const header = Buffer.alloc(13);
   header.writeUInt32BE(size, 0);
   header.writeUInt32BE(size, 4);
-  header[8] = 8;   // 8 bits par canal
+  header[8] = 8;   // 8 bits per channel
   header[9] = 6;   // RGBA
-  // 10, 11, 12 restent a zero : deflate, filtre adaptatif, non entrelace
+  // 10, 11, 12 stay at zero: deflate, adaptive filter, not interlaced
 
-  // Chaque ligne est prefixee de son octet de filtre, ici 0 (aucun filtre)
+  // Each row is prefixed with its filter byte, here 0 (no filter)
   const raw = Buffer.alloc(size * (size * 4 + 1));
   for (let y = 0; y < size; y += 1) {
     raw[y * (size * 4 + 1)] = 0;
@@ -148,20 +148,20 @@ function encodePng(size, pixels) {
   ]);
 }
 
-/* ---------- Sortie ---------- */
+/* ---------- Output ---------- */
 
-// La version maskable laisse la zone de securite : le dessin occupe le centre
-// et le fond va jusqu'au bord, l'OS decoupe la forme qu'il veut.
-const CIBLES = [
-  { fichier: "icons/icon-192.png", size: 192, cornerRadius: 0.18, scale: 1 },
-  { fichier: "icons/icon-512.png", size: 512, cornerRadius: 0.18, scale: 1 },
-  { fichier: "icons/icon-maskable-512.png", size: 512, cornerRadius: 0, scale: 0.72 },
-  { fichier: "icons/apple-touch-icon-180.png", size: 180, cornerRadius: 0, scale: 1 },
+// The maskable version leaves the safe zone: the drawing takes the centre
+// and the background runs to the edge, the OS cuts whatever shape it wants.
+const TARGETS = [
+  { file: "icons/icon-192.png", size: 192, cornerRadius: 0.18, scale: 1 },
+  { file: "icons/icon-512.png", size: 512, cornerRadius: 0.18, scale: 1 },
+  { file: "icons/icon-maskable-512.png", size: 512, cornerRadius: 0, scale: 0.72 },
+  { file: "icons/apple-touch-icon-180.png", size: 180, cornerRadius: 0, scale: 1 },
 ];
 
 mkdirSync(join(ROOT, "icons"), { recursive: true });
-for (const { fichier, size, cornerRadius, scale } of CIBLES) {
+for (const { file, size, cornerRadius, scale } of TARGETS) {
   const png = encodePng(size, render(size, { cornerRadius, scale }));
-  writeFileSync(join(ROOT, fichier), png);
-  console.log(`${fichier}  ${size}x${size}  ${(png.length / 1024).toFixed(1)} ko`);
+  writeFileSync(join(ROOT, file), png);
+  console.log(`${file}  ${size}x${size}  ${(png.length / 1024).toFixed(1)} ko`);
 }

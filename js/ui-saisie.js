@@ -1,46 +1,46 @@
-/* Écran de saisie : le formulaire et le chronomètre. Le brouillon vit dans
- * ui-brouillon.js, le panneau rapide qui flotte par-dessus dans ui-rapide.js,
- * le panneau latéral dans ui-saisie-aside.js et les pilules de goût dans
- * ui-pilules.js (découpés en v8.78, chargés juste après nous).
+/* Entry screen: the form and the timer. The draft lives in ui-brouillon.js,
+ * the quick panel floating on top of it in ui-rapide.js, the side panel in
+ * ui-saisie-aside.js and the taste pills in ui-pilules.js (split out in v8.78,
+ * loaded right after us).
  *
- * C'est le fichier le plus long, et pour une bonne raison : c'est là que Chris
- * passe son temps, souvent d'une main, au téléphone, pendant une extraction. Le
- * brouillon existe parce que quitter l'onglet suffit à ce qu'un téléphone
- * décharge la page pour récupérer de la mémoire. */
+ * This is the longest file, and for a good reason: this is where Chris spends
+ * his time, often one-handed, on the phone, during an extraction. The draft
+ * exists because leaving the tab is enough for a phone to unload the page to
+ * reclaim memory. */
 "use strict";
 
 (() => {
 
-  // Emprunté au noyau, chargé avant nous.
+  // Borrowed from the core, loaded before us.
   const { $, $$, $f, activerAppuiLong, activerEcran, attrTitre, basculerEtat, detailRatio, fmtTemps,
     fmtDecimal, fmtVND, icone, maintenantLocal, brancherDictee, brancherNote, marquerNote, nav, noteVide, peindreCurseur, poser, poserTexte, recettesDeMethode, replis, toast,
     trouverRecette, unSeulALaFois } = UI;
 
-  // ---------- Saisie ----------
+  // ---------- Entry ----------
 
-  /* Durées saisies en minutes ET secondes, stockées en secondes.
-     Taper "4 min 18" est plus rapide et moins risqué que convertir 258 de tête,
-     surtout sur téléphone. Le stockage ne change pas : les CSV gardent des
-     secondes, donc l'historique reste lisible et rien à migrer. */
-  function lireDuree(prefixe) {
-    const min = parseInt($("#" + prefixe + "-min").value, 10);
-    const sec = parseInt($("#" + prefixe + "-sec").value, 10);
+  /* Durations entered in minutes AND seconds, stored in seconds.
+     Typing "4 min 18" is faster and less error-prone than converting 258 in
+     your head, especially on a phone. Storage does not change: the CSVs keep
+     seconds, so the history stays readable and there is nothing to migrate. */
+  function lireDuree(prefix) {
+    const min = parseInt($("#" + prefix + "-min").value, 10);
+    const sec = parseInt($("#" + prefix + "-sec").value, 10);
     const m = Number.isFinite(min) ? min : 0;
     const s = Number.isFinite(sec) ? sec : 0;
-    // Les deux champs vides veulent dire "pas de temps", pas "zéro seconde".
+    // Both fields empty means "no time", not "zero seconds".
     if (!Number.isFinite(min) && !Number.isFinite(sec)) return "";
     return m * 60 + s;
   }
 
-  function ecrireDuree(prefixe, secondes) {
-    const total = Number(secondes);
-    if (secondes === "" || secondes === null || secondes === undefined || !Number.isFinite(total)) {
-      $("#" + prefixe + "-min").value = "";
-      $("#" + prefixe + "-sec").value = "";
+  function ecrireDuree(prefix, seconds) {
+    const total = Number(seconds);
+    if (seconds === "" || seconds === null || seconds === undefined || !Number.isFinite(total)) {
+      $("#" + prefix + "-min").value = "";
+      $("#" + prefix + "-sec").value = "";
       return;
     }
-    $("#" + prefixe + "-min").value = Math.floor(total / 60);
-    $("#" + prefixe + "-sec").value = total % 60;
+    $("#" + prefix + "-min").value = Math.floor(total / 60);
+    $("#" + prefix + "-sec").value = total % 60;
   }
 
   const saisie = {
@@ -48,9 +48,9 @@
     descripteurs: new Set(),
     diagnostics: new Set(),
     editId: null,
-    /* Vrai dès que la date vient de Chris plutôt que d'un défaut. Sans lui,
-       rafraîchir la date à l'arrivée sur l'écran écraserait la tasse d'hier soir
-       qu'il est justement en train de noter. */
+    /* True as soon as the date comes from Chris rather than from a default.
+       Without it, refreshing the date on arriving at the screen would overwrite
+       the cup from last night that he is in the middle of logging. */
     dateTouchee: false,
   };
 
@@ -63,158 +63,158 @@
     return !!(c && Number(c.deja_moulu) === 1);
   }
 
-  function remplirSelectCafes(garderId) {
-    // Les cafés désactivés n'apparaissent PAS en saisie. Seule exception :
-    // l'édition d'une ancienne extraction dont le café a été désactivé depuis
-    // (l'option est réinjectée pour que la valeur reste affichable).
+  function remplirSelectCafes(keepId) {
+    // Deactivated coffees do NOT appear in the entry form. Only exception:
+    // editing an old extraction whose coffee has since been deactivated
+    // (the option is injected back so the value stays displayable).
     const sel = $("#f-cafe");
-    const valeur = garderId || sel.value;
-    const inactifGarde = DATA.state.cafes.find(c => c.id === valeur && c.actif === 0);
+    const value = keepId || sel.value;
+    const keptInactive = DATA.state.cafes.find(c => c.id === value && c.actif === 0);
     sel.innerHTML = '<option value="">' + I18N.t("choisir_cafe") + "</option>" +
       cafesSelectionnables().map(c => '<option value="' + attrTitre(c.id) + '">' + attrTitre(c.nom) + "</option>").join("") +
-      (inactifGarde ? '<option value="' + attrTitre(inactifGarde.id) + '">' + attrTitre(inactifGarde.nom) + " " + I18N.t("inactif") + "</option>" : "");
-    if (valeur) sel.value = valeur;
+      (keptInactive ? '<option value="' + attrTitre(keptInactive.id) + '">' + attrTitre(keptInactive.nom) + " " + I18N.t("inactif") + "</option>" : "");
+    if (value) sel.value = value;
   }
 
   function remplirSelectRecettes() {
     const sel = $("#f-recette");
-    const valeur = sel.value;
-    const liste = recettesDeMethode(saisie.methode);
-    sel.innerHTML = liste.map(r => "<option>" + r.nom + "</option>").join("");
-    if (liste.some(r => r.nom === valeur)) sel.value = valeur;
+    const value = sel.value;
+    const list = recettesDeMethode(saisie.methode);
+    sel.innerHTML = list.map(r => "<option>" + r.nom + "</option>").join("");
+    if (list.some(r => r.nom === value)) sel.value = value;
     else {
-      /* Repli sur la PREMIÈRE recette quand aucune n'est marquée par défaut, ce
-         qui est le cas de toutes les Brikka. Le navigateur sélectionne déjà la
-         première option tout seul, mais le code ne le savait pas : sel.value
-         restait vide de son point de vue, donc prefillDepuisRecette repartait
-         sans rien faire et l'eau à 150 g n'arrivait jamais. */
-      const defaut = liste.find(r => r.parDefaut) || liste[0];
-      if (defaut) sel.value = defaut.nom;
+      /* Fall back to the FIRST recipe when none is marked as default, which is
+         the case for every Brikka one. The browser already selects the first
+         option on its own, but the code did not know: from its point of view
+         sel.value stayed empty, so prefillDepuisRecette returned without doing
+         anything and the 150 g of water never arrived. */
+      const fallback = list.find(r => r.parDefaut) || list[0];
+      if (fallback) sel.value = fallback.nom;
     }
   }
 
-  function choisirMethode(m, garderRecette) {
+  function choisirMethode(m, keepRecipe) {
     saisie.methode = m;
     $$(".btn-methode").forEach(b => basculerEtat(b, b.dataset.methode === m));
-    // Champs propres à chaque méthode.
+    // Fields specific to each method.
     $("#champ-ajout-eau").hidden = m !== "Brikka";
     $("#champ-puissance").hidden = m !== "Brikka";
     $("#champ-agitation").hidden = m !== "Switch";
-    /* La température entière est un champ du SWITCH. Sur la Brikka l'eau chauffe
-       dans la chaudière, il n'y a rien à mesurer avant : la seule question est
-       la case « eau préchauffée », et elle a son propre champ. */
+    /* The whole temperature is a SWITCH field. On the Brikka the water heats in
+       the boiler, there is nothing to measure beforehand: the only question is
+       the "preheated water" box, and it has its own field. */
     $("#champ-temp").hidden = m !== "Switch";
     if ($("#ligne-chauffe")) $("#ligne-chauffe").hidden = m !== "Switch";
     majTempHint();
-    // Tasse par défaut : Flat White Egg en Brikka, Classic Mug en Switch.
-    const defauts = { "Brikka": "Loveramics Flat White Egg", "Switch": "Classic Mug" };
-    const tasseActuelle = $("#f-tasse").value;
-    if ((tasseActuelle === "" || Object.values(defauts).includes(tasseActuelle)) &&
-        DATA.state.tasses.some(t => t.nom === defauts[m])) {
-      $("#f-tasse").value = defauts[m];
+    // Default cup: Flat White Egg for the Brikka, Classic Mug for the Switch.
+    const defaultCups = { "Brikka": "Loveramics Flat White Egg", "Switch": "Classic Mug" };
+    const currentCup = $("#f-tasse").value;
+    if ((currentCup === "" || Object.values(defaultCups).includes(currentCup)) &&
+        DATA.state.tasses.some(t => t.nom === defaultCups[m])) {
+      $("#f-tasse").value = defaultCups[m];
     }
-    if (!garderRecette) remplirSelectRecettes();
+    if (!keepRecipe) remplirSelectRecettes();
     majChampPrechauffe();
     majAvertissements();
     majLive();
   }
 
-  /* La case "eau préchauffée" n'a de sens que quand la recette ne tranche pas
-     déjà la question. Sur la famille brikka-classique, c'est LA différence entre
-     les deux variantes : afficher la case en plus laisserait enregistrer une
-     contradiction, du genre recette préchauffée avec la case décochée.
-     On masque donc la case et on déduit la valeur de la recette. */
+  /* The "preheated water" box only makes sense when the recipe does not already
+     settle the question. In the brikka-classique family, it is THE difference
+     between the two variants: showing the box as well would allow saving a
+     contradiction, such as a preheated recipe with the box unchecked.
+     So the box is hidden and the value is derived from the recipe. */
   function majChampPrechauffe() {
     const r = trouverRecette($("#f-recette").value);
-    const familleTranche = !!r && FAMILLES_PRECHAUFFAGE.includes(r.famille || "");
-    /* TOUJOURS visible sur la Brikka (v7.95, demande de Chris) : c'est la seule
-       question que la Brikka pose sur l'eau. Sur la famille brikka-classique la
-       case et la variante de recette disent la même chose, alors elles restent
-       d'accord dans les deux sens : la recette coche la case, et cocher la case
-       change la recette (surPrechauffe). */
+    const familyDecides = !!r && FAMILLES_PRECHAUFFAGE.includes(r.famille || "");
+    /* ALWAYS visible on the Brikka (v7.95, at Chris's request): it is the only
+       question the Brikka asks about the water. In the brikka-classique family
+       the box and the recipe variant say the same thing, so they stay in
+       agreement both ways: the recipe checks the box, and checking the box
+       changes the recipe (surPrechauffe). */
     $("#champ-prechauffe").hidden = saisie.methode !== "Brikka";
-    if (familleTranche) $("#f-prechauffe").checked = RECETTES_EAU_PRECHAUFFEE.includes(r.id);
+    if (familyDecides) $("#f-prechauffe").checked = RECETTES_EAU_PRECHAUFFEE.includes(r.id);
   }
 
-  /* Cocher ou décocher « eau préchauffée » quand la recette est une des deux
-     Brikka classique bascule sur l'autre variante, pour qu'on ne puisse pas
-     enregistrer une recette préchauffée avec la case décochée. Sur les autres
-     recettes Brikka, la case est une simple donnée de la tasse. */
+  /* Checking or unchecking "preheated water" when the recipe is one of the two
+     classic Brikka ones switches to the other variant, so that a preheated
+     recipe cannot be saved with the box unchecked. On the other Brikka
+     recipes, the box is a plain data point about the cup. */
   function surPrechauffe() {
     const r = trouverRecette($("#f-recette").value);
     if (!r || !FAMILLES_PRECHAUFFAGE.includes(r.famille || "")) return;
-    const voulue = $("#f-prechauffe").checked;
-    const cible = recettesDeMethode("Brikka").find(x =>
-      x.famille === r.famille && RECETTES_EAU_PRECHAUFFEE.includes(x.id) === voulue);
-    if (!cible || cible.nom === r.nom) return;
-    $("#f-recette").value = cible.nom;
-    prefillDepuisRecette(cible.nom);
+    const wanted = $("#f-prechauffe").checked;
+    const target = recettesDeMethode("Brikka").find(x =>
+      x.famille === r.famille && RECETTES_EAU_PRECHAUFFEE.includes(x.id) === wanted);
+    if (!target || target.nom === r.nom) return;
+    $("#f-recette").value = target.nom;
+    prefillDepuisRecette(target.nom);
     majAvertissements();
   }
 
-  // La recette demande-t-elle de remuer ? Coche l'agitation par défaut.
+  // Does the recipe ask for stirring? Checks agitation by default.
   function majAgitationDepuisRecette() {
     const r = trouverRecette($("#f-recette").value);
     if (!r || r.methode !== "Switch") return;
-    const remue = UI.etapesPour(r).some(e => /remuer/i.test(e.texte));
-    $("#f-agitation-oui").checked = remue;
-    $("#ligne-agitation").hidden = !remue;
-    if (remue && !$("#f-agitation").value) $("#f-agitation").value = 1;
+    const stirs = UI.etapesPour(r).some(e => /remuer/i.test(e.texte));
+    $("#f-agitation-oui").checked = stirs;
+    $("#ligne-agitation").hidden = !stirs;
+    if (stirs && !$("#f-agitation").value) $("#f-agitation").value = 1;
   }
 
-  /* De combien le lait GONFLE en moussant, selon la texture visée. Le vide à
-     remplir divisé par ce facteur donne le lait FROID à mesurer dans le pot.
-     Un flat white est une texture lisse, à peine aérée. Un cappuccino vise un
-     tiers de mousse, soit environ la moitié de volume en plus : c'est pourquoi
-     il part de moins de lait tout en remplissant la même tasse. */
-  const GONFLE_FLAT = 1.1;
-  const GONFLE_CAPPU = 1.5;
+  /* How much the milk SWELLS when frothed, depending on the target texture. The
+     space to fill divided by this factor gives the COLD milk to measure in the
+     jug. A flat white is a smooth texture, barely aerated. A cappuccino aims
+     for a third of foam, about half as much volume again: that is why it
+     starts from less milk while filling the same cup. */
+  const SWELL_FLAT = 1.1;
+  const SWELL_CAPPU = 1.5;
 
-  // Champ lait : visible quand la recette le prévoit, prérempli depuis la tasse.
+  // Milk field: visible when the recipe calls for it, prefilled from the cup.
   function majLait() {
     const r = trouverRecette($("#f-recette").value);
     const visible = !!(r && r.lait);
     $("#champ-lait").hidden = !visible;
     if (!visible) return;
-    const tasse = DATA.state.tasses.find(t => t.nom === $("#f-tasse").value);
-    /* Le volume de café MESURÉ, jamais estimé sur une Brikka : c'est la même
-       raison que dans volumeEstime, et un lait calculé sur un volume faux est un
-       lait faux. Sans mesure on ne préremplit rien et on le dit. */
-    const mesure = parseFloat($("#f-volume").value) ||
+    const cup = DATA.state.tasses.find(t => t.nom === $("#f-tasse").value);
+    /* The MEASURED coffee volume, never estimated on a Brikka: same reason as in
+       volumeEstime, and milk computed from a wrong volume is wrong milk.
+       Without a measurement nothing is prefilled and we say so. */
+    const measured = parseFloat($("#f-volume").value) ||
       volumeEstime(parseFloat($("#f-dose").value), parseFloat($("#f-eau").value));
-    /* Repli sur le rendement DÉCLARÉ de la recette. Ce n'est pas une estimation
-       calculée, c'est un chiffre mesuré et écrit dans la recette : sur une
-       Brikka, volumeEstime() rend 0 exprès, l'ancienne formule annonçait 139 ml
-       là où Chris en mesure 90 à 115. Sans ce repli, le lait ne se calculait
-       jamais sur les recettes Brikka, qui sont précisément celles au lait. */
-    const volCafe = mesure > 0 ? mesure : (r.volumeTypique || 0);
-    const declare = !(mesure > 0) && volCafe > 0;
-    if (!tasse) {
+    /* Fall back to the recipe's DECLARED yield. This is not a computed estimate,
+       it is a measured figure written in the recipe: on a Brikka,
+       volumeEstime() returns 0 on purpose, the old formula announced 139 ml
+       where Chris measures 90 to 115. Without this fallback, the milk was never
+       computed for Brikka recipes, which are precisely the milk ones. */
+    const coffeeVol = measured > 0 ? measured : (r.volumeTypique || 0);
+    const declared = !(measured > 0) && coffeeVol > 0;
+    if (!cup) {
       $("#lait-hint").textContent = I18N.t("lait_choisir_tasse");
       return;
     }
-    if (!(volCafe > 0)) {
+    if (!(coffeeVol > 0)) {
       $("#lait-hint").textContent = I18N.t("lait_sans_volume");
       return;
     }
-    /* Le VIDE à remplir, pas encore le lait à verser : voir plus bas. */
-    const lait = Math.max(0, tasse.contenance_ml - volCafe);
-    if (lait === 0) {
+    /* The SPACE to fill, not yet the milk to pour: see below. */
+    const milk = Math.max(0, cup.contenance_ml - coffeeVol);
+    if (milk === 0) {
       $("#lait-hint").textContent = I18N.t("lait_trop_petit");
       return;
     }
-    /* LES DEUX BOISSONS d'un coup, comptées sur la MÊME base : du lait froid à
-       verser dans le pot. Le lait gonfle en moussant, donc on en verse moins que
-       le vide à remplir, et d'autant moins qu'on le mousse. */
-    const flat = Math.round(lait / GONFLE_FLAT);
-    const cappu = Math.round(lait / GONFLE_CAPPU);
+    /* BOTH DRINKS at once, counted on the SAME basis: cold milk to pour into the
+       jug. Milk swells when frothed, so you pour less than the space to fill,
+       and all the less the more you froth it. */
+    const flat = Math.round(milk / SWELL_FLAT);
+    const cappu = Math.round(milk / SWELL_CAPPU);
     $("#f-lait").value = flat;
     $("#lait-hint").textContent =
-      I18N.t("lait_deux", { e: lait, l: flat, c: cappu, t: tasse.contenance_ml, v: volCafe }) +
-      (declare ? " " + I18N.t("lait_declare") : "");
+      I18N.t("lait_deux", { e: milk, l: flat, c: cappu, t: cup.contenance_ml, v: coffeeVol }) +
+      (declared ? " " + I18N.t("lait_declare") : "");
   }
 
-  // Tasses : liste déroulante, avertissement de contenance, mini éditeur.
+  // Cups: dropdown list, capacity warning, mini editor.
   function remplirSelectTasses() {
     const sel = $("#f-tasse");
     const v = sel.value;
@@ -223,12 +223,12 @@
     if (v && DATA.state.tasses.some(t => t.nom === v)) sel.value = v;
   }
 
-  /* L'avertissement de débordement de tasse a été RETIRÉ. Il comparait le volume
-     attendu à la contenance et criait au débordement, en supposant qu'on sert
-     tout d'un coup. Or on peut très bien verser en deux fois, ce qui rend
-     l'avertissement faux dans un usage parfaitement normal. Un avertissement qui
-     se trompe apprend surtout à ignorer les avertissements.
-     La contenance des tasses reste utile : elle sert au calcul du lait. */
+  /* The cup overflow warning was REMOVED. It compared the expected volume to the
+     capacity and cried overflow, assuming everything is served at once. But
+     you can perfectly well pour in two goes, which makes the warning wrong in
+     a perfectly normal use. A warning that is wrong mostly teaches you to
+     ignore warnings.
+     Cup capacity remains useful: it is used to compute the milk. */
 
 
   function rendreTassesEditeur() {
@@ -243,29 +243,29 @@
     }));
   }
 
-  /* Une recette dont la mouture sort EXPRÈS de la plage de sa machine (la Neo
-     Brew, extra grosse) porte son réglage : la saisie le reprend et ne crie pas. */
+  /* A recipe whose grind is ON PURPOSE outside its machine's range (the Neo
+     Brew, extra coarse) carries its setting: entry keeps it and does not warn. */
   const moletteVoulue = r => !!r && !!GRIND.parseDial(r.dial) && !GRIND.verifierPlage(r.methode, r.dial).ok;
-  function prefillDepuisRecette(nomRecette) {
-    const r = trouverRecette(nomRecette);
+  function prefillDepuisRecette(recipeName) {
+    const r = trouverRecette(recipeName);
     if (!r) return;
-    /* Le formulaire suit désormais la RECETTE, y compris pour l'eau et la
-       température, au lieu de valeurs codées en dur qui l'écrasaient. C'est ce
-       qui fait de "Gérer les recettes" le vrai endroit où régler ses défauts :
-       une seule source de vérité, éditable, et déjà synchronisée entre appareils.
-       Une recette sans cible de température laisse le champ VIDE, ce qui est le
-       cas des Brikka : la température y dépend de la puissance du feu, la fixer
-       d'avance n'aurait aucun sens. */
+    /* The form now follows the RECIPE, including for water and temperature,
+       instead of hard-coded values that overwrote it. That is what makes
+       "Gérer les recettes" the real place to set your defaults: a single
+       source of truth, editable, and already synced across devices.
+       A recipe without a target temperature leaves the field EMPTY, which is
+       the case for the Brikka ones: the temperature depends on the heat
+       setting there, fixing it in advance would make no sense. */
     $("#f-dose").value = r.dose || replis.dose;
     $("#f-eau").value = r.eau || "";
-    // Selon la torréfaction du café choisi quand la source en donne une par torréfaction (v9.00).
-    const tempVisee = temperaturePourCafe(r, DATA.state.cafes.find(c => c.id === $("#f-cafe").value));
-    $("#f-temp").value = tempVisee === "" || tempVisee === undefined ? "" : tempVisee;
-    // Une nouvelle recette repart sans temps de chauffe : c'est une mesure de la
-    // tasse en cours, pas une valeur de la recette. L'aide dit combien viser.
+    // From the chosen coffee's roast when the source gives one per roast level (v9.00).
+    const targetTemp = temperaturePourCafe(r, DATA.state.cafes.find(c => c.id === $("#f-cafe").value));
+    $("#f-temp").value = targetTemp === "" || targetTemp === undefined ? "" : targetTemp;
+    // A new recipe starts with no heating time: it is a measurement of the
+    // current cup, not a recipe value. The hint says how long to aim for.
     ecrireDuree("f-chauffe", "");
     majTempHint();
-    // Le RÉGLAGE du broyeur, pas la cible de la recette : voir MOLETTE_REPLI_USINE.
+    // The grinder SETTING, not the recipe's target: see MOLETTE_REPLI_USINE.
     $("#f-mouture").value = cafeCourantMoulu() ? "" : moletteVoulue(r) ? r.dial : replis.molette;
     if (r.methode === "Brikka") $("#f-puissance").value = r.puissance_feu || replis.feu;
     majAgitationDepuisRecette();
@@ -273,39 +273,39 @@
     majLait();
     majLive();
     majAvertissements();
-    // Le libelle "pas encore notee" est genere : il ne suit pas le TreeWalker.
+    // The "not rated yet" label is generated: it does not follow the TreeWalker.
     majAffichageNote();
   }
 
   function surChoixCafe() {
-    const cafe = DATA.state.cafes.find(c => c.id === $("#f-cafe").value);
-    if (!cafe) { majAvertissements(); return; }
-    // Présélectionne la machine et la recette recommandées, tout reste modifiable.
-    const rReco = trouverRecette(cafe.recette_recommandee);
-    if (rReco) {
-      choisirMethode(rReco.methode, true);
+    const coffee = DATA.state.cafes.find(c => c.id === $("#f-cafe").value);
+    if (!coffee) { majAvertissements(); return; }
+    // Preselects the recommended machine and recipe, everything stays editable.
+    const recommended = trouverRecette(coffee.recette_recommandee);
+    if (recommended) {
+      choisirMethode(recommended.methode, true);
       remplirSelectRecettes();
-      $("#f-recette").value = rReco.nom;
-      prefillDepuisRecette(rReco.nom);
-    } else if (cafe.machine_recommandee === "Brikka" || cafe.machine_recommandee === "Switch") {
-      choisirMethode(cafe.machine_recommandee);
+      $("#f-recette").value = recommended.nom;
+      prefillDepuisRecette(recommended.nom);
+    } else if (coffee.machine_recommandee === "Brikka" || coffee.machine_recommandee === "Switch") {
+      choisirMethode(coffee.machine_recommandee);
       prefillDepuisRecette($("#f-recette").value);
     } else {
-      // Même recette, autre café : la température suit sa torréfaction (v9.00).
+      // Same recipe, other coffee: the temperature follows its roast (v9.00).
       const r = trouverRecette($("#f-recette").value);
-      const t = r && TEMP_PAR_TORREFACTION[r.id] ? temperaturePourCafe(r, cafe) : "";
+      const t = r && TEMP_PAR_TORREFACTION[r.id] ? temperaturePourCafe(r, coffee) : "";
       if (t !== "" && t !== undefined) { $("#f-temp").value = t; majTempHint(); }
     }
     majAvertissements();
     majLive();
   }
 
-  /* TEMPÉRATURE PAR LE TEMPS DE CHAUFFE, Switch seulement. Chris tape le temps
-     que la bouilloire a passé sur le feu ; le degré s'en déduit (modèle dans
-     recettes.js, temps d'ébullition dans Paramètres) et s'écrit dans le champ
-     température, qui reste modifiable à la main et reste la valeur stockée.
-     Sans temps saisi mais avec une cible de recette, l'aide dit combien de temps
-     viser. La Brikka ne voit rien de tout ça : sa ligne est masquée. */
+  /* TEMPERATURE FROM HEATING TIME, Switch only. Chris types how long the
+     kettle spent on the stove; the degree is derived from it (model in
+     recettes.js, boiling time in Settings) and written into the temperature
+     field, which stays editable by hand and remains the stored value.
+     With no time entered but a recipe target, the hint says how long to
+     aim for. The Brikka sees none of this: its row is hidden. */
   function surChauffe() {
     const s = lireDuree("f-chauffe");
     if (s !== "") {
@@ -323,10 +323,10 @@
     const e = replis.ebullition;
     const s = lireDuree("f-chauffe");
     const t = $("#f-temp").value;
-    /* Sans temps d'ébullition il n'y a rien à dire : le repli d'usine en pose
-       un, et Paramètres permet de le corriger. L'ancien paragraphe qui demandait
-       d'aller chronométrer sa bouilloire déformait la mise en page pour un
-       réglage qu'on fait une fois. */
+    /* Without a boiling time there is nothing to say: the factory fallback sets
+       one, and Settings lets you correct it. The old paragraph asking you to
+       go and time your kettle distorted the layout for a setting you make
+       once. */
     if (!(e > 0)) { poserTexte(hint, ""); return; }
     if (s !== "") {
       poserTexte(hint, I18N.t("temp_estimee", { d: fmtTemps(s), t: temperatureDepuisChauffe(s, e, replis.bulles) }));
@@ -337,32 +337,32 @@
     }
   }
 
-  /* La note est facultative. Tant que le curseur n'a pas été touché, il n'a
-     pas de pouce (noteVide, dans le noyau) : on enregistre "" et l'extraction
-     compte comme non notée partout (moyennes, insights, meilleurs réglages, qui
-     filtrent déjà sur note_sur_10 !== ""). Le bouton Effacer ramène à cet état. */
+  /* The rating is optional. As long as the slider has not been touched, it
+     has no thumb (noteVide, in the core): we save "" and the extraction
+     counts as unrated everywhere (averages, insights, best settings, which
+     already filter on note_sur_10 !== ""). The Clear button returns to that state. */
   function majAffichageNote() {
-    const curseur = $("#f-note");
-    const vide = noteVide(curseur);
-    const dit = vide ? I18N.t("n_pas_notee") : curseur.value + " / 10";
-    $("#note-affichee").textContent = dit;
-    curseur.setAttribute("aria-valuetext", dit);
-    $("#f-note-aide").hidden = !vide;
-    $("#f-note-effacer").hidden = vide;
-    peindreCurseur(curseur);
+    const slider = $("#f-note");
+    const empty = noteVide(slider);
+    const label = empty ? I18N.t("n_pas_notee") : slider.value + " / 10";
+    $("#note-affichee").textContent = label;
+    slider.setAttribute("aria-valuetext", label);
+    $("#f-note-aide").hidden = !empty;
+    $("#f-note-effacer").hidden = empty;
+    peindreCurseur(slider);
   }
 
-  /* Ce qui part en base : une chaine vide quand la tasse n est pas notee, pour
-     que les moyennes, les insights et les meilleurs reglages l ecartent tous de
-     la meme facon. Ils filtrent deja sur note_sur_10 !== "". */
+  /* What goes to the database: an empty string when the cup is not rated, so
+     that averages, insights and best settings all exclude it the same way.
+     They already filter on note_sur_10 !== "". */
   function noteSaisie() {
     return noteVide($("#f-note")) ? "" : $("#f-note").value;
   }
 
-  /* Âge du paquet au moment de la tasse, affiché sous le choix du café. En
-     lecture seule : il se DÉDUIT de la date d'ouverture du sachet, le saisir à la
-     main serait une deuxième vérité. Muet tant qu'aucune date d'ouverture n'est
-     renseignée, plutôt que d'afficher un zéro faux. */
+  /* Age of the bag at the time of the cup, shown under the coffee choice.
+     Read-only: it is DERIVED from the bag's opening date, entering it by hand
+     would be a second truth. Silent as long as no opening date is filled in,
+     rather than showing a false zero. */
   function majAgePaquet() {
     const zone = $("#age-paquet");
     if (!zone) return;
@@ -377,9 +377,9 @@
 
   function majAvertissements() {
     const zone = $("#avertissements");
-    const cafe = DATA.state.cafes.find(c => c.id === $("#f-cafe").value);
-    const av = avertissementsCombinaison(cafe, saisie.methode, $("#f-recette").value, DATA.state.recettes);
-    const msgs = av.msgs.slice();
+    const coffee = DATA.state.cafes.find(c => c.id === $("#f-cafe").value);
+    const warnings = avertissementsCombinaison(coffee, saisie.methode, $("#f-recette").value, DATA.state.recettes);
+    const msgs = warnings.msgs.slice();
     const dial = $("#f-mouture").value.trim();
     if (dial && !cafeCourantMoulu() && !moletteVoulue(trouverRecette($("#f-recette").value))) {
       const v = GRIND.verifierPlage(saisie.methode, dial);
@@ -390,22 +390,23 @@
     UI.majAsideSaisie();
   }
 
-  /* Explique le ratio affiché : quelle formule a servi, et pourquoi. Le calcul
-     diffère selon la machine et personne ne peut le deviner en regardant un
-     "1:5,6". Voir DATA.calculs pour la logique. */
-  /* Volume en tasse ESTIMÉ, quand Chris ne l'a pas mesuré.
+  /* Explains the displayed ratio: which formula was used, and why. The
+     calculation differs by machine and nobody can guess it by looking at a
+     "1:5,6". See DATA.calculs for the logic. */
+  /* ESTIMATED cup volume, when Chris has not measured it.
 
-     SWITCH : le papier et le marc retiennent environ 2,1 g d'eau par gramme de
-     café. Le reste passe, donc `eau - 2,1 x dose` est une bonne approximation.
+     SWITCH: the paper and the grounds retain about 2.1 g of water per gram of
+     coffee. The rest passes through, so `eau - 2,1 x dose` is a good approximation.
 
-     BRIKKA : PAS D'ESTIMATION, volontairement. La formule était `eau - 0,7 x
-     dose`, soit 139 ml annoncés pour 150 g de chaudière et 16 g de café. Chris
-     mesure 90 à 115 ml. L'erreur venait du modèle : sur une moka la chaudière ne
-     se vide pas, une partie de l'eau reste sous l'embouchure du tube et une autre
-     part en vapeur, et ces deux pertes dépendent de la flamme et du moment où on
-     retire du feu, pas de la dose. Un chiffre faux est pire que pas de chiffre :
-     il alimentait le ratio, le volume de boisson et le bouton "reprendre".
-     Ne pas remettre de formule Brikka sans données mesurées. */
+     BRIKKA: NO ESTIMATE, on purpose. The formula was `eau - 0,7 x
+     dose`, i.e. 139 ml announced for 150 g in the boiler and 16 g of coffee.
+     Chris measures 90 to 115 ml. The error came from the model: on a moka pot
+     the boiler does not empty, part of the water stays below the mouth of the
+     tube and another part leaves as steam, and both losses depend on the
+     flame and the moment you take it off the heat, not on the dose. A wrong
+     figure is worse than no figure: it fed the ratio, the drink volume and
+     the "reprendre" button.
+     Do not put a Brikka formula back without measured data. */
   function volumeEstime(dose, eau) {
     if (saisie.methode === "Brikka") return 0;
     if (!(dose > 0) || !(eau > 0)) return 0;
@@ -416,9 +417,9 @@
     majCurseurs();
     const dose = parseFloat($f("#f-dose").value);
     const eau = parseFloat($f("#f-eau").value);
-    /* Même logique que DATA.calculs : le ratio principal est EAU sur DOSE sur les
-       deux machines, c'est la convention universelle et la seule comparable à une
-       recette. Le ratio en tasse suit en second, et seulement s'il est mesuré. */
+    /* Same logic as DATA.calculs: the main ratio is WATER over DOSE on both
+       machines, it is the universal convention and the only one comparable to
+       a recipe. The in-cup ratio follows second, and only if it is measured. */
     const volume = parseFloat($f("#f-volume").value);
     const brikka = saisie.methode === "Brikka";
     let ratio = "…", base = "";
@@ -426,74 +427,74 @@
       ratio = "1:" + (eau / dose).toFixed(1);
       base = brikka ? "chaudiere" : "infusion";
     }
-    const enTasse = dose > 0 && volume > 0 ? "1:" + (volume / dose).toFixed(1) : "";
-    const explication = base ? detailRatio(base, dose, eau) : I18N.t("rt_rien");
+    const inCup = dose > 0 && volume > 0 ? "1:" + (volume / dose).toFixed(1) : "";
+    const explanation = base ? detailRatio(base, dose, eau) : I18N.t("rt_rien");
     poser($f("#live-ratio"), I18N.t("lv_ratio") +
-      ' <b class="aide-ratio" tabindex="0" data-info="' + attrTitre(explication) + '">' + ratio + "</b>" +
-      (enTasse ? ' <small>(' + I18N.t("rt_tasse_court") + " " + enTasse + ")</small>" : ""));
+      ' <b class="aide-ratio" tabindex="0" data-info="' + attrTitre(explanation) + '">' + ratio + "</b>" +
+      (inCup ? ' <small>(' + I18N.t("rt_tasse_court") + " " + inCup + ")</small>" : ""));
 
-    // Café déjà moulu : la molette ne s'applique pas, mouture par défaut du paquet.
-    const moulu = cafeCourantMoulu();
-    const champMouture = $f("#f-mouture");
-    champMouture.disabled = moulu;
-    if (moulu && champMouture.value) champMouture.value = "";
-    champMouture.placeholder = moulu ? I18N.t("paquet") : "1.5.0";
+    // Pre-ground coffee: the dial does not apply, the bag's default grind.
+    const preground = cafeCourantMoulu();
+    const grindField = $f("#f-mouture");
+    grindField.disabled = preground;
+    if (preground && grindField.value) grindField.value = "";
+    grindField.placeholder = preground ? I18N.t("paquet") : "1.5.0";
 
-    const dial = champMouture.value.trim();
+    const dial = grindField.value.trim();
     const p = GRIND.parseDial(dial);
-    const horsPlage = !moulu && p && !GRIND.verifierPlage(saisie.methode, dial).ok && !moletteVoulue(trouverRecette($f("#f-recette").value));
+    const outOfRange = !preground && p && !GRIND.verifierPlage(saisie.methode, dial).ok && !moletteVoulue(trouverRecette($f("#f-recette").value));
     poser($f("#live-mouture"), I18N.t("lv_mouture") + " <b>" +
-      (moulu ? I18N.t("paquet")
+      (preground ? I18N.t("paquet")
         : p ? I18N.t("lv_detail", { c: p.crans, u: Math.round(p.microns) })
         : dial ? I18N.t("lv_invalide") : "…") + "</b>");
-    $f("#live-mouture").classList.toggle("hors-plage", !!horsPlage || (!moulu && dial !== "" && !p));
-    // Détail affiché juste sous le champ molette.
-    const detailMouture = $f("#mouture-detail");
-    if (moulu) {
-      poserTexte(detailMouture, I18N.t("paquet"));
-      detailMouture.classList.remove("hint-alerte");
+    $f("#live-mouture").classList.toggle("hors-plage", !!outOfRange || (!preground && dial !== "" && !p));
+    // Detail shown right under the dial field.
+    const grindDetail = $f("#mouture-detail");
+    if (preground) {
+      poserTexte(grindDetail, I18N.t("paquet"));
+      grindDetail.classList.remove("hint-alerte");
     } else if (p) {
-      poserTexte(detailMouture, I18N.t("lv_detail", { c: p.crans, u: Math.round(p.microns) }) + " · " + GRIND.bande(p.microns).nom);
-      detailMouture.classList.toggle("hint-alerte", !!horsPlage);
+      poserTexte(grindDetail, I18N.t("lv_detail", { c: p.crans, u: Math.round(p.microns) }) + " · " + GRIND.bande(p.microns).nom);
+      grindDetail.classList.toggle("hint-alerte", !!outOfRange);
     } else {
-      poserTexte(detailMouture, dial ? I18N.t("lv_invalide") : "");
-      detailMouture.classList.toggle("hint-alerte", !!dial);
+      poserTexte(grindDetail, dial ? I18N.t("lv_invalide") : "");
+      grindDetail.classList.toggle("hint-alerte", !!dial);
     }
 
-    const cafe = DATA.state.cafes.find(c => c.id === $f("#f-cafe").value);
-    let cout = "…";
-    if (cafe && cafe.prix_vnd && cafe.format_grammes && dose > 0) {
-      cout = fmtVND(cafe.prix_vnd / cafe.format_grammes * dose);
-      // Café non pur : seconde valeur, le coût rapporté au café réel.
-      const pct = cafe.pourcentage_cafe_reel === "" || cafe.pourcentage_cafe_reel === undefined ? 100 : Number(cafe.pourcentage_cafe_reel);
+    const coffee = DATA.state.cafes.find(c => c.id === $f("#f-cafe").value);
+    let cost = "…";
+    if (coffee && coffee.prix_vnd && coffee.format_grammes && dose > 0) {
+      cost = fmtVND(coffee.prix_vnd / coffee.format_grammes * dose);
+      // Not pure coffee: second value, the cost relative to the real coffee.
+      const pct = coffee.pourcentage_cafe_reel === "" || coffee.pourcentage_cafe_reel === undefined ? 100 : Number(coffee.pourcentage_cafe_reel);
       if (pct < 100 && pct > 0) {
-        cout += " <small>(" + I18N.t("lv_cout_reel", { v: fmtVND(cafe.prix_vnd / (cafe.format_grammes * pct / 100) * dose) }) + ")</small>";
+        cost += " <small>(" + I18N.t("lv_cout_reel", { v: fmtVND(coffee.prix_vnd / (coffee.format_grammes * pct / 100) * dose) }) + ")</small>";
       }
     }
-    poser($f("#live-cout"), I18N.t("lv_cout") + " <b>" + cout + "</b>");
+    poser($f("#live-cout"), I18N.t("lv_cout") + " <b>" + cost + "</b>");
 
-    // Volume de la boisson : extraction plus eau ajoutée plus lait, en direct.
+    // Drink volume: extraction plus added water plus milk, live.
     const volBase = parseFloat($f("#f-volume").value) || volumeEstime(dose, eau) || 0;
-    const ajoutEau = !$f("#champ-ajout-eau").hidden && $f("#f-ajout-eau-oui").checked ? (parseFloat($f("#f-eau-ajoutee").value) || 0) : 0;
-    const laitMl = !$f("#champ-lait").hidden ? (parseFloat($f("#f-lait").value) || 0) : 0;
-    const spanBoisson = $f("#live-boisson");
-    if (volBase > 0 && (ajoutEau > 0 || laitMl > 0)) {
+    const addedWater = !$f("#champ-ajout-eau").hidden && $f("#f-ajout-eau-oui").checked ? (parseFloat($f("#f-eau-ajoutee").value) || 0) : 0;
+    const milkMl = !$f("#champ-lait").hidden ? (parseFloat($f("#f-lait").value) || 0) : 0;
+    const drinkSpan = $f("#live-boisson");
+    if (volBase > 0 && (addedWater > 0 || milkMl > 0)) {
       const parts = [];
-      if (ajoutEau > 0) parts.push("+" + ajoutEau + " ml");
-      if (laitMl > 0) parts.push("+" + laitMl + " ml " + I18N.t("lv_lait"));
-      spanBoisson.hidden = false;
-      poser(spanBoisson, I18N.t("lv_boisson") + " <b>" + volBase + " ml (" + parts.join(", ") + ") = " + (volBase + ajoutEau + laitMl) + " ml</b>");
+      if (addedWater > 0) parts.push("+" + addedWater + " ml");
+      if (milkMl > 0) parts.push("+" + milkMl + " ml " + I18N.t("lv_lait"));
+      drinkSpan.hidden = false;
+      poser(drinkSpan, I18N.t("lv_boisson") + " <b>" + volBase + " ml (" + parts.join(", ") + ") = " + (volBase + addedWater + milkMl) + " ml</b>");
     } else {
-      spanBoisson.hidden = true;
+      drinkSpan.hidden = true;
     }
 
     const btnVol = $f("#volume-estime");
-    const estime = volumeEstime(dose, eau);
-    if (estime) {
+    const estimate = volumeEstime(dose, eau);
+    if (estimate) {
       btnVol.hidden = false;
-      btnVol.textContent = I18N.t("vol_estime", { v: estime });
+      btnVol.textContent = I18N.t("vol_estime", { v: estimate });
       btnVol.title = I18N.t("vol_titre", { m: saisie.methode });
-      btnVol.dataset.valeur = estime;
+      btnVol.dataset.valeur = estimate;
     } else {
       btnVol.hidden = true;
       delete btnVol.dataset.valeur;
@@ -501,24 +502,24 @@
   }
 
 
-  // Corrections des diagnostics cochés, une ligne chacune, sous les pilules.
-  // Familles opposées de l'axe d'extraction : cocher une de chaque empile deux
-  // corrections qui s'annulent (moudre plus fin ET plus grossier). C'est le signe
-  // d'une extraction inégale, qui a sa propre valeur.
+  // Corrections for the checked diagnostics, one line each, under the pills.
+  // Opposite families on the extraction axis: checking one of each stacks two
+  // corrections that cancel out (grind finer AND coarser). That is the sign
+  // of an uneven extraction, which has its own value.
   const DIAGS_SOUS_EXTRAIT = ["Un peu acide", "Sous-extrait (acide)"];
   const DIAGS_SUR_EXTRAIT = ["Un peu amer", "Sur-extrait (amer)", "Un peu astringent", "Astringent"];
   const DIAG_INEGALE = DIAGNOSTIC_DERIVE;
 
   function majCorrectionDiagnostic() {
-    const lignes = DIAGNOSTICS
+    const lines = DIAGNOSTICS
       .filter(d => saisie.diagnostics.has(d))
       .map(d => I18N.tr(DIAGNOSTIC_CORRECTIONS[d] || ""))
       .filter(Boolean);
 
-    /* Acide ET amer ensemble : le site CONCLUT au lieu de demander à Chris de
-       cocher une troisième pilule. Les deux corrections d'origine s'annulent
-       (moudre plus fin ET plus grossier), donc on les remplace au lieu de les
-       empiler, sinon il lit deux conseils opposés sans savoir lequel suivre. */
+    /* Sour AND bitter together: the site CONCLUDES instead of asking Chris to
+       check a third pill. The two original corrections cancel out (grind
+       finer AND coarser), so they are replaced instead of stacked, otherwise
+       he reads two opposite pieces of advice without knowing which to follow. */
     const inegale = DIAGS_SOUS_EXTRAIT.some(d => saisie.diagnostics.has(d)) &&
       DIAGS_SUR_EXTRAIT.some(d => saisie.diagnostics.has(d));
     if (inegale) {
@@ -528,29 +529,29 @@
       return;
     }
 
-    const chiffree = texteCorrection(REGLAGES.correctionChiffree(extDuFormulaire(), replis.pas, cafeCourantMoulu()));
-    $("#diagnostic-correction").innerHTML = lignes.join("<br>") +
-      (chiffree ? '<span class="corr-chiffree">' + chiffree + "</span>" : "");
+    const quantified = correctionText(REGLAGES.correctionChiffree(extFromForm(), replis.pas, cafeCourantMoulu()));
+    $("#diagnostic-correction").innerHTML = lines.join("<br>") +
+      (quantified ? '<span class="corr-chiffree">' + quantified + "</span>" : "");
   }
 
-  /* LA CORRECTION CHIFFRÉE (v8.48), en mots. Le calcul est REGLAGES.correctionChiffree ;
-     ici seulement la phrase : le premier levier, puis les autres « si ça ne
-     suffit pas ». Vide quand il n'y a rien à chiffrer. */
-  function texteLevier(l) {
+  /* THE QUANTIFIED CORRECTION (v8.48), in words. The calculation is REGLAGES.correctionChiffree;
+     here only the sentence: the first lever, then the others "if that is not
+     enough". Empty when there is nothing to quantify. */
+  function leverText(l) {
     if (l.levier === "mouture") {
       return I18N.t("cc_mouture", { de: l.de, vers: l.vers, e: (l.ecart > 0 ? "+" : "") + l.ecart,
         a: l.microns[0], b: l.microns[1] });
     }
     return I18N.t("cc_" + l.levier, { de: fmtDecimal(l.de, 1), vers: fmtDecimal(l.vers, 1) });
   }
-  function texteCorrection(leviers, court) {
-    if (!leviers.length) return "";
-    const [premier, ...autres] = leviers;
-    return I18N.t("cc_prochaine", { q: texteLevier(premier) }) +
-      (autres.length && !court ? " " + I18N.t("cc_ensuite", { q: autres.map(texteLevier).join(", ") }) : "");
+  function correctionText(levers, brief) {
+    if (!levers.length) return "";
+    const [first, ...others] = levers;
+    return I18N.t("cc_prochaine", { q: leverText(first) }) +
+      (others.length && !brief ? " " + I18N.t("cc_ensuite", { q: others.map(leverText).join(", ") }) : "");
   }
-  // Les champs que la correction lit, tels que le formulaire les porte.
-  function extDuFormulaire() {
+  // The fields the correction reads, as the form holds them.
+  function extFromForm() {
     return {
       methode: saisie.methode, mouture_dial: $("#f-mouture").value.trim().replace(/,/g, "."),
       temperature_c: $("#f-temp").value, puissance_feu: $("#f-puissance").value,
@@ -559,27 +560,27 @@
     };
   }
 
-  /* Appelée à CHAQUE arrivée sur l'écran Saisie pour une nouvelle tasse. La date
-     n'était posée qu'à la remise à zéro du formulaire, c'est-à-dire au démarrage
-     et après un enregistrement : sur un téléphone où la page reste ouverte, elle
-     affichait donc l'heure de la tasse précédente. */
+  /* Called on EVERY arrival on the Entry screen for a new cup. The date was
+     only set when the form was reset, i.e. at startup and after a save: on a
+     phone where the page stays open, it therefore showed the time of the
+     previous cup. */
   function rafraichirDateSaisie() {
     if (saisie.dateTouchee) return;
     $("#f-date").value = maintenantLocal();
   }
 
-  // La date vient de Chris dès qu'il y touche, et plus d'un défaut.
+  // The date comes from Chris as soon as he touches it, no longer from a default.
   function marquerDateTouchee() { saisie.dateTouchee = true; }
 
-  /* Les couples curseur / champ. Le CHAMP reste la source de vérité, le curseur
-     le pilote : tout le reste du code lit le champ, le brouillon l'enregistre,
-     l'édition le remplit. Inverser les rôles aurait demandé de toucher partout.
+  /* The slider / field pairs. The FIELD remains the source of truth, the slider
+     drives it: all the rest of the code reads the field, the draft saves it,
+     editing fills it. Reversing the roles would have meant touching everything.
 
-     La mouture est le seul cas particulier : son champ porte un cadran
-     rotation.numéro.cran, pas un nombre, donc le curseur court sur les CRANS et
-     la conversion passe par le moteur de mouture, comme le convertisseur du
-     guide. */
-  const COUPLES_CURSEUR = [
+     Grind is the only special case: its field holds a dial
+     rotation.number.click, not a number, so the slider runs over CLICKS and
+     the conversion goes through the grind engine, like the Guide's
+     converter. */
+  const SLIDER_PAIRS = [
     { curseur: "f-dose-curseur", champ: "f-dose" },
     { curseur: "f-eau-curseur", champ: "f-eau" },
     { curseur: "f-puissance-curseur", champ: "f-puissance" },
@@ -591,73 +592,73 @@
     },
   ];
 
-  /* LES BOUTONS HAUT ET BAS des champs nombre (v8.35). Chrome masque ses
-     propres fleches sous une certaine largeur : la Temperature, 66 px, n'en
-     avait pas. stepUp/stepDown font le travail, y compris les bornes min et max
-     du champ ; on rejoue ensuite son evenement input, que le reste du
-     formulaire ecoute pour la ligne live, le brouillon et les avertissements.
+  /* THE UP AND DOWN BUTTONS of number fields (v8.35). Chrome hides its own
+     arrows below a certain width: Temperature, 66 px, had none.
+     stepUp/stepDown do the work, including the field's min and max bounds;
+     we then replay its input event, which the rest of the form listens to for
+     the live line, the draft and the warnings.
 
-     Maintenir le bouton repete, comme une vraie fleche de systeme : 400 ms
-     avant le premier repeat, puis un pas toutes les 90 ms. Sans ca, passer de
-     92 a 100 demande huit clics. */
-  function brancherPas() {
-    let minuteur = null, repete = null;
-    const arreter = () => { clearTimeout(minuteur); clearInterval(repete); minuteur = repete = null; };
+     Holding the button repeats, like a real system arrow: 400 ms before the
+     first repeat, then one step every 90 ms. Without it, going from 92 to 100
+     takes eight clicks. */
+  function wireSteppers() {
+    let timer = null, repeater = null;
+    const stop = () => { clearTimeout(timer); clearInterval(repeater); timer = repeater = null; };
     $$("[data-pas]").forEach(b => {
-      const champ = $("#" + b.dataset.pasChamp);
-      if (!champ) return;
-      const pas = () => {
-        if (champ.value === "") champ.value = champ.min || 0;
-        else if (Number(b.dataset.pas) > 0) champ.stepUp();
-        else champ.stepDown();
-        champ.dispatchEvent(new Event("input", { bubbles: true }));
+      const field = $("#" + b.dataset.pasChamp);
+      if (!field) return;
+      const step = () => {
+        if (field.value === "") field.value = field.min || 0;
+        else if (Number(b.dataset.pas) > 0) field.stepUp();
+        else field.stepDown();
+        field.dispatchEvent(new Event("input", { bubbles: true }));
       };
       b.addEventListener("pointerdown", ev => {
-        // Bouton gauche seulement : un clic droit ouvre le menu, il ne compte pas.
+        // Left button only: a right click opens the menu, it does not count.
         if (ev.button !== 0) return;
         ev.preventDefault();
-        pas();
-        minuteur = setTimeout(() => { repete = setInterval(pas, 90); }, 400);
+        step();
+        timer = setTimeout(() => { repeater = setInterval(step, 90); }, 400);
       });
-      ["pointerup", "pointerleave", "pointercancel"].forEach(e => b.addEventListener(e, arreter));
+      ["pointerup", "pointerleave", "pointercancel"].forEach(e => b.addEventListener(e, stop));
     });
-    window.addEventListener("blur", arreter);
+    window.addEventListener("blur", stop);
   }
 
   function brancherCurseurs() {
-    COUPLES_CURSEUR.forEach(c => {
-      const curseur = $("#" + c.curseur), champ = $("#" + c.champ);
-      if (!curseur || !champ) return;
-      curseur.addEventListener("input", () => {
-        peindreCurseur(curseur);
-        champ.value = c.versChamp ? c.versChamp(curseur.value) : curseur.value;
-        /* On rejoue l'événement du CHAMP : c'est lui que le reste du formulaire
-           écoute, pour la ligne live, le brouillon et les avertissements.
-           L'appeler à la main ici les oublierait un jour ou l'autre. */
-        champ.dispatchEvent(new Event("input", { bubbles: true }));
+    SLIDER_PAIRS.forEach(c => {
+      const slider = $("#" + c.curseur), field = $("#" + c.champ);
+      if (!slider || !field) return;
+      slider.addEventListener("input", () => {
+        peindreCurseur(slider);
+        field.value = c.versChamp ? c.versChamp(slider.value) : slider.value;
+        /* Replay the FIELD's event: that is what the rest of the form listens to,
+           for the live line, the draft and the warnings.
+           Calling them by hand here would forget one sooner or later. */
+        field.dispatchEvent(new Event("input", { bubbles: true }));
       });
     });
   }
 
-  /* Remet les curseurs en face de leurs champs. Appelée depuis majLive(), donc
-     après chaque remise à zéro, chaque préremplissage de recette et chaque
-     ouverture d'extraction : ce sont les moments où le champ change SANS que le
-     curseur soit touché. */
+  /* Puts the sliders back in line with their fields. Called from majLive(), so
+     after every reset, every recipe prefill and every opening of an
+     extraction: those are the moments when the field changes WITHOUT the
+     slider being touched. */
   function majCurseurs() {
-    COUPLES_CURSEUR.forEach(c => {
-      const curseur = $("#" + c.curseur), champ = $("#" + c.champ);
-      if (!curseur || !champ) return;
-      const v = c.versCurseur ? c.versCurseur(champ.value) : champ.value;
-      // Une valeur vide ou illisible laisse le curseur où il est : le déplacer
-      // au minimum donnerait à croire à un réglage que Chris n'a pas fait.
-      if (v === null || v === "" || isNaN(Number(v))) { peindreCurseur(curseur); return; }
-      if (String(curseur.value) !== String(v)) curseur.value = v;
-      peindreCurseur(curseur);
+    SLIDER_PAIRS.forEach(c => {
+      const slider = $("#" + c.curseur), field = $("#" + c.champ);
+      if (!slider || !field) return;
+      const v = c.versCurseur ? c.versCurseur(field.value) : field.value;
+      // An empty or unreadable value leaves the slider where it is: moving it
+      // to the minimum would suggest a setting Chris did not make.
+      if (v === null || v === "" || isNaN(Number(v))) { peindreCurseur(slider); return; }
+      if (String(slider.value) !== String(v)) slider.value = v;
+      peindreCurseur(slider);
     });
     peindreCurseur($("#f-note"));
   }
 
-  function reinitialiserSaisie(garderCafe) {
+  function reinitialiserSaisie(keepCoffee) {
     saisie.editId = null;
     saisie.dateTouchee = false;
     saisie.diagnostics.clear();
@@ -667,19 +668,19 @@
     $("#btn-annuler-edition").hidden = true;
     $("#f-date").value = maintenantLocal();
     $("#f-dose").value = replis.dose;
-    /* Le café n'est plus laissé vide. Chris n'a en général qu'un seul café actif
-       à la fois, et le choisir à chaque tasse est un clic pour rien. On prend le
-       premier de la liste, celui que le menu propose déjà en tête.
+    /* The coffee is no longer left empty. Chris usually has only one active
+       coffee at a time, and choosing it for every cup is a pointless click. We
+       take the first in the list, the one the menu already shows on top.
 
-       Volontairement SANS surChoixCafe() : choisir un café à la main applique
-       aussi sa machine et sa recette recommandées, et faire basculer la machine
-       à chaque nouvelle saisie serait bien plus qu'un champ prérempli. */
-    if (!garderCafe) {
-      const premierCafe = cafesSelectionnables()[0];
-      $("#f-cafe").value = premierCafe ? premierCafe.id : "";
+       Deliberately WITHOUT surChoixCafe(): choosing a coffee by hand also
+       applies its recommended machine and recipe, and switching the machine
+       on every new entry would be much more than a prefilled field. */
+    if (!keepCoffee) {
+      const firstCoffee = cafesSelectionnables()[0];
+      $("#f-cafe").value = firstCoffee ? firstCoffee.id : "";
     }
     $("#f-commentaire").value = "";
-    // Sans pouce : le curseur ne doit suggérer aucune note.
+    // No thumb: the slider must not suggest any rating.
     $("#f-note").value = 5;
     marquerNote($("#f-note"), true);
     majAffichageNote();
@@ -703,21 +704,21 @@
     UI.majFamillesVisibles();
     $("#diagnostic-correction").textContent = "";
     UI.chronoRaz();
-    /* EN DERNIER, et c'est le point important : les lignes ci-dessus posent les
-       replis, la recette a le dernier mot. Sans cet appel le formulaire vierge
-       restait vide, et les valeurs par défaut réglées dans Paramètres
-       n'arrivaient que si on rechangeait de recette à la main. Placé plus haut,
-       il se ferait écraser par la remise à zéro du préchauffage.
-       prefillDepuisRecette termine par majAvertissements et majLive. */
+    /* LAST, and this is the important point: the lines above set the fallbacks,
+       the recipe has the final word. Without this call the blank form stayed
+       empty, and the defaults set in Settings only arrived if you changed
+       recipe again by hand. Placed higher up, it would be overwritten by the
+       reset of the preheating.
+       prefillDepuisRecette ends with majAvertissements and majLive. */
     prefillDepuisRecette($("#f-recette").value);
   }
 
-  function chargerExtractionDansSaisie(ext, duplication) {
+  function chargerExtractionDansSaisie(ext, isDuplicate) {
     remplirSelectCafes(ext.cafe_id);
-    saisie.editId = duplication ? null : ext.id;
-    $("#f-date").value = duplication ? maintenantLocal() : ext.date_heure;
-    // Elle vient de l'extraction ouverte, pas d'un défaut : on n'y retouche pas.
-    saisie.dateTouchee = !duplication;
+    saisie.editId = isDuplicate ? null : ext.id;
+    $("#f-date").value = isDuplicate ? maintenantLocal() : ext.date_heure;
+    // It comes from the opened extraction, not from a default: leave it alone.
+    saisie.dateTouchee = !isDuplicate;
     $("#f-cafe").value = ext.cafe_id;
     choisirMethode(ext.methode || "Brikka", true);
     remplirSelectRecettes();
@@ -753,40 +754,40 @@
     majCorrectionDiagnostic();
     saisie.descripteurs = new Set((ext.descripteurs || "").split("|").filter(Boolean));
     $$("#f-descripteurs .tag").forEach(x => x.classList.toggle("actif", saisie.descripteurs.has(x.dataset.tag)));
-    /* Une famille qui vient de recevoir un gout coche doit reapparaitre. */
+    /* A family that has just received a checked taste must reappear. */
     UI.majFamillesVisibles();
-    $("#saisie-titre").textContent = duplication ? I18N.t("s_dupliquee") : I18N.t("s_modifier");
-    $("#btn-enregistrer").textContent = duplication ? I18N.t("s_enregistrer") : I18N.t("s_enregistrer_modif");
-    $("#btn-annuler-edition").hidden = duplication;
+    $("#saisie-titre").textContent = isDuplicate ? I18N.t("s_dupliquee") : I18N.t("s_modifier");
+    $("#btn-enregistrer").textContent = isDuplicate ? I18N.t("s_enregistrer") : I18N.t("s_enregistrer_modif");
+    $("#btn-annuler-edition").hidden = isDuplicate;
     majAvertissements();
     majLive();
-    // Le second argument dit à l'écran Saisie que cette bascule EST l'ouverture
-    // d'une édition, et qu'il ne doit donc pas l'abandonner en arrivant.
+    // The second argument tells the Entry screen that this switch IS the opening
+    // of an edit, so it must not abandon it on arrival.
     activerEcran("saisie", true);
   }
 
-  /* REFAIRE UNE TASSE, c'est reprendre ses RÉGLAGES, pas son résultat (v8.41).
-     La duplication recopiait aussi la note, les goûts, les diagnostics, le
-     commentaire et les temps mesurés : une tasse pas encore brassée arrivait
-     avec le 7 de la veille, exactement la note inventée que « pas encore
-     notée » existe pour empêcher. Sert au bouton Dupliquer de l'historique et
-     au raccourci « Refaire ma dernière tasse » de l'icône. */
-  function reglagesSeuls(ext) {
+  /* REMAKING A CUP means taking its SETTINGS, not its result (v8.41).
+     Duplication also copied the rating, the tastes, the diagnostics, the
+     comment and the measured times: a cup not yet brewed arrived with the
+     previous day's 7, exactly the invented rating that "not rated yet"
+     exists to prevent. Used by the history's Duplicate button and by the
+     icon's "Refaire ma dernière tasse" shortcut. */
+  function settingsOnly(ext) {
     return {
       ...ext, note_sur_10: "", commentaire: "", diagnostic: "", descripteurs: "", ratee: "",
       temps_total_s: "", temps_ecoulement_s: "", volume_extrait_ml: "",
     };
   }
   function refaireTasse(ext) {
-    chargerExtractionDansSaisie(reglagesSeuls(ext), true);
+    chargerExtractionDansSaisie(settingsOnly(ext), true);
   }
-  /* La plus récente par date, pas la dernière du tableau : une tasse ajoutée
-     après coup avec une date passée arrive en fin de liste. */
+  /* The most recent by date, not the last in the array: a cup added after the
+     fact with a past date lands at the end of the list. */
   function refaireDerniere() {
-    const derniere = DATA.state.extractions.reduce(
+    const latest = DATA.state.extractions.reduce(
       (a, e) => (!a || String(e.date_heure) > String(a.date_heure) ? e : a), null);
-    if (!derniere) { activerEcran("saisie"); return false; }
-    refaireTasse(derniere);
+    if (!latest) { activerEcran("saisie"); return false; }
+    refaireTasse(latest);
     return true;
   }
 
@@ -801,7 +802,7 @@
       dose_g: $("#f-dose").value,
       eau_g: $("#f-eau").value,
       mouture_dial: $("#f-mouture").value.trim().replace(/,/g, "."),
-      // Brikka : ni température ni temps de chauffe, l'eau chauffe dans la chaudière.
+      // Brikka: neither temperature nor heating time, the water heats in the boiler.
       temperature_c: saisie.methode === "Switch" ? $("#f-temp").value : "",
       chauffe_s: saisie.methode === "Switch" ? lireDuree("f-chauffe") : "",
       temps_total_s: lireDuree("f-total"),
@@ -828,13 +829,13 @@
     } else {
       await DATA.ajouterExtraction(ext);
       UI.effacerBrouillon();
-      /* Un diagnostic chiffrable : le message propose de préparer la prochaine
-         tasse avec la correction appliquée. Rien ne change sans ce clic, et le
-         message disparaît de lui-même. */
-      const leviers = REGLAGES.correctionChiffree(ext, replis.pas, cafeCourantMoulu());
-      if (leviers.length) {
-        UI.toastAction(I18N.t("t_enregistree") + ". " + texteCorrection(leviers, true), I18N.t("cc_preparer"), () => {
-          refaireTasse({ ...ext, [leviers[0].champ]: leviers[0].vers });
+      /* A quantifiable diagnostic: the message offers to prepare the next cup
+         with the correction applied. Nothing changes without that click, and
+         the message goes away by itself. */
+      const levers = REGLAGES.correctionChiffree(ext, replis.pas, cafeCourantMoulu());
+      if (levers.length) {
+        UI.toastAction(I18N.t("t_enregistree") + ". " + correctionText(levers, true), I18N.t("cc_preparer"), () => {
+          refaireTasse({ ...ext, [levers[0].champ]: levers[0].vers });
           UI.planifierBrouillon();
           toast(I18N.t("cc_prete"));
         });
@@ -846,10 +847,10 @@
     }
   }
 
-  /* Câblage des contrôles de l'écran. Appelé une fois par app.js, au démarrage.
-     Chaque écran câble ce qui lui appartient : le formulaire, le chrono, les
-     options et l'éditeur de tasses vivent ici, et une fonction de câblage de
-     quatre cents lignes dans app.js n'existe plus. */
+  /* Wiring of the screen's controls. Called once by app.js, at startup.
+     Each screen wires what belongs to it: the form, the timer, the options and
+     the cup editor live here, and a four-hundred-line wiring function in
+     app.js no longer exists. */
 
   function cablerSaisie() {
     brancherDictee($("#f-dicter"), $("#f-commentaire"), $("#f-dicter-texte"));
@@ -858,10 +859,10 @@
       prefillDepuisRecette($("#f-recette").value);
     }));
     $("#f-cafe").addEventListener("change", surChoixCafe);
-    /* Dès que Chris touche la date, elle est SIENNE : l'arrivée sur l'écran ne
-       la remplacera plus. Il note parfois une tasse d'hier soir. "input" autant
-       que "change" : sur un champ datetime-local, chaque partie modifiée émet
-       "input", et "change" n'arrive qu'à la validation. */
+    /* As soon as Chris touches the date, it is HIS: arriving on the screen will
+       no longer replace it. He sometimes logs a cup from last night. "input" as
+       well as "change": on a datetime-local field, each edited part emits
+       "input", and "change" only arrives on confirmation. */
     ["input", "change"].forEach(ev => $("#f-date").addEventListener(ev, marquerDateTouchee));
     $("#f-date").addEventListener("change", majAgePaquet);
     $("#f-recette").addEventListener("change", () => { prefillDepuisRecette($("#f-recette").value); majAvertissements(); });
@@ -870,14 +871,14 @@
       $("#" + id).addEventListener("input", majCorrectionDiagnostic));
     ["f-dose", "f-eau", "f-mouture", "f-volume"].forEach(id =>
       $("#" + id).addEventListener("input", () => { majLive(); majAvertissements(); }));
-    // majAvertissements redessine le panneau latéral, le chrono a besoin d'un
-    // rappel explicite : ses paliers sont mis à l'échelle de l'eau saisie.
+    // majAvertissements redraws the side panel, the timer needs an explicit
+    // reminder: its steps are scaled to the water entered.
     $("#f-eau").addEventListener("input", () => UI.majEtapesChrono(false));
-    // Le volume extrait pilote le préremplissage du lait, il doit le rafraîchir.
+    // The extracted volume drives the milk prefill, it must refresh it.
     $("#f-volume").addEventListener("input", majLait);
     ["f-chauffe-min", "f-chauffe-sec"].forEach(id => $("#" + id).addEventListener("input", surChauffe));
     $("#f-prechauffe").addEventListener("change", surPrechauffe);
-    // Une saisie manuelle du degré a toujours le dernier mot ; l'aide suit.
+    // A manual entry of the degree always has the final word; the hint follows.
     $("#f-temp").addEventListener("input", majTempHint);
     brancherNote($("#f-note"), majAffichageNote);
     $("#f-note-effacer").addEventListener("click", () => {
@@ -888,29 +889,29 @@
       $("#f-note").focus();
     });
     $("#chrono-basculer").addEventListener("click", () => UI.basculerChrono());
-    /* Demarrer OUVRE le chrono : on vient de lancer une extraction, les paliers
-       et le bouton d'arret doivent etre sous la main sans un clic de plus. */
+    /* Start OPENS the timer: an extraction has just been started, the steps
+       and the stop button must be at hand without one more click. */
     $("#btn-chrono").addEventListener("click", () => { UI.basculerChrono(true); });
     $("#btn-chrono").addEventListener("click", UI.chronoPrincipal);
     $("#btn-chrono-stop").addEventListener("click", UI.chronoArreter);
     $("#btn-chrono-raz").addEventListener("click", UI.chronoRaz);
-    // UNE SEULE FOIS : les conteneurs survivent aux reconstructions de pilules,
-    // les attacher depuis construirePilules empilerait un jeu par bascule de langue.
+    // ONCE ONLY: the containers survive pill rebuilds, attaching them
+    // from construirePilules would stack one set per language switch.
     UI.brancherPilules();
     UI.cablerBandeRecette();
     brancherCurseurs();
-    brancherPas();
+    wireSteppers();
     activerAppuiLong($("#f-diagnostic"));
     activerAppuiLong($("#f-descripteurs"));
     $("#gouts-plus").addEventListener("click", () => UI.basculerFamilles());
     $("#chrono-bip").addEventListener("change", () => {
-      try { localStorage.setItem("bips", $("#chrono-bip").checked ? "1" : "0"); } catch (e) { /* tant pis */ }
+      try { localStorage.setItem("bips", $("#chrono-bip").checked ? "1" : "0"); } catch (e) { /* never mind */ }
     });
     $("#form-saisie").addEventListener("submit", unSeulALaFois(enregistrerSaisie));
     $("#form-saisie").addEventListener("input", UI.planifierBrouillon);
     $("#form-saisie").addEventListener("change", UI.planifierBrouillon);
-    // visibilitychange est le dernier evenement fiable avant qu'un navigateur
-    // mobile decharge la page : on ecrit tout de suite, sans attendre le debounce.
+    // visibilitychange is the last reliable event before a mobile browser
+    // unloads the page: write right away, without waiting for the debounce.
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") UI.ecrireBrouillon();
     });
@@ -921,7 +922,7 @@
       if (v !== undefined) { $("#f-volume").value = v; majLive(); }
     });
 
-    // Ajout d'eau, agitation, lait, tasse
+    // Added water, agitation, milk, cup
     $("#f-ajout-eau-oui").addEventListener("change", () => {
       $("#f-eau-ajoutee").hidden = !$("#f-ajout-eau-oui").checked;
       majLive();
@@ -934,26 +935,26 @@
     $("#f-lait").addEventListener("input", majLive);
     $("#f-tasse").addEventListener("change", () => { majLait(); majLive(); });
     $("#btn-tasses").addEventListener("click", () => {
-      const ed = $("#tasses-editeur");
-      ed.hidden = !ed.hidden;
-      if (!ed.hidden) rendreTassesEditeur();
+      const editor = $("#tasses-editeur");
+      editor.hidden = !editor.hidden;
+      if (!editor.hidden) rendreTassesEditeur();
     });
     $("#tasse-ajouter").addEventListener("click", async () => {
-      const nom = $("#tasse-nom").value.trim();
+      const name = $("#tasse-nom").value.trim();
       const ml = parseFloat($("#tasse-ml").value);
-      if (!nom || !(ml > 0)) { toast(I18N.t("t_tasse_invalide")); return; }
-      await DATA.ajouterTasse(nom, ml);
+      if (!name || !(ml > 0)) { toast(I18N.t("t_tasse_invalide")); return; }
+      await DATA.ajouterTasse(name, ml);
       $("#tasse-nom").value = "";
       $("#tasse-ml").value = "";
       rendreTassesEditeur();
       remplirSelectTasses();
-      $("#f-tasse").value = nom;
+      $("#f-tasse").value = name;
       majLait();
       majLive();
     });
   }
 
-  // Mis à disposition des autres écrans.
+  // Made available to the other screens.
   Object.assign(UI, {
     brancherCurseurs, cablerSaisie, cafeCourantMoulu,
     cafesSelectionnables, chargerExtractionDansSaisie, choisirMethode, DIAG_INEGALE, DIAGS_SOUS_EXTRAIT, DIAGS_SUR_EXTRAIT, ecrireDuree, enregistrerSaisie,

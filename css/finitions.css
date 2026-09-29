@@ -1,4 +1,4 @@
-/* Carnet d'extraction, feuille 4 sur 4. Le responsive, le mouvement réduit, et les retouches de la refonte. EN DERNIER : ces règles écrasent celles des trois autres feuilles, l'ordre de chargement fait partie du style. */
+/* Brew logbook, sheet 4 of 4. Responsive, reduced motion, and the redesign touch-ups. LAST: these rules override those of the other three sheets, the load order is part of the style. */
 
 /* ---------- Responsive ---------- */
 
@@ -6,8 +6,8 @@
   main { padding: 16px 12px 70px; }
   .kpi-valeur { font-size: 1.4rem; }
   .chrono-valeur { font-size: 1.6rem; }
-  /* Sous 16 px, iOS zoome la page à chaque champ qui prend le focus, et il faut
-     dézoomer à la main pour retrouver le formulaire. 16 px est le seuil. */
+  /* Below 16 px, iOS zooms the page on every field that gets focus, and you must
+     zoom out by hand to get the form back. 16 px is the threshold. */
   input[type="text"], input[type="number"], input[type="date"], input[type="datetime-local"],
   input[type="search"], select, textarea { font-size: 1rem; }
   .modale { padding: 20px 16px; }
@@ -16,10 +16,10 @@
 
 @media (max-width: 860px) {
   .messages-vn { grid-template-columns: 1fr; }
-  /* Au dessus de la barre du bas, qui existe à toute largeur sous 1024 px. Un
-     bottom: 16px posé ici, APRÈS la règle de la barre, remettait le bouton
-     dessus. Et la feuille fermée, posée à 82 px du bas, ne descendait que de sa
-     propre hauteur : son haut dépassait de 78 px et masquait la barre. */
+  /* Above the bottom bar, which exists at every width below 1024 px. A
+     bottom: 16px set here, AFTER the bar's rule, put the button back
+     on top of it. And the closed sheet, set 82 px from the bottom, only went down by its
+     own height: its top stuck out by 78 px and hid the bar. */
   .fab { right: 16px; bottom: calc(var(--barre-basse) + 16px + env(safe-area-inset-bottom)); width: 54px; height: 54px; }
   .panneau-rapide { right: 16px; bottom: calc(var(--barre-basse) + env(safe-area-inset-bottom)); }
   .panneau-rapide:not(.ouvert) { transform: translateY(calc(101% + var(--barre-basse) + env(safe-area-inset-bottom))); }
@@ -32,16 +32,16 @@
   .btn-methode { padding: 14px 8px; }
 }
 
-/* ---------- Mouvement, lisibilité, rendu différé ---------- */
+/* ---------- Motion, readability, deferred rendering ---------- */
 
-/* MOUVEMENT RÉDUIT. Cinq animations et vingt et une transitions, et rien ne les
-   coupait. Ce n'est pas un détail de confort : pour qui souffre de troubles
-   vestibulaires, une interface qui bouge donne la nausée. Le système expose le
-   réglage, il suffit de l'écouter.
+/* REDUCED MOTION. Five animations and twenty-one transitions, and nothing
+   turned them off. It is not a comfort detail: for people with vestibular
+   disorders, an interface that moves causes nausea. The system exposes the
+   setting, we only have to listen to it.
 
-   On ne met pas les durées à zéro, on les met à 0,01 ms : certaines animations
-   ont un gestionnaire de fin, et une durée nulle peut l'empêcher de se déclencher
-   sur certains moteurs. */
+   Durations are not set to zero but to 0.01 ms: some animations
+   have an end handler, and a zero duration can keep it from firing
+   on some engines. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -51,10 +51,10 @@
   }
 }
 
-/* RENDU DIFFÉRÉ de ce qui est hors écran. L'écran Guide fait à lui seul plus de
-   mille lignes de HTML, mises en page d'un bloc alors qu'on n'en voit qu'un
-   dixième. `contain-intrinsic-size` donne une hauteur estimée pour que la barre
-   de défilement ne saute pas pendant qu'on descend. */
+/* DEFERRED RENDERING of what is off screen. The Guide screen alone is over
+   a thousand lines of HTML, laid out in one go when only a tenth
+   is visible. `contain-intrinsic-size` gives an estimated height so the
+   scrollbar does not jump while scrolling down. */
 .ref-bloc,
 .grille-boutiques > .carte,
 .grille-diagnostic > .carte,
@@ -63,20 +63,20 @@
   contain-intrinsic-size: auto 320px;
 }
 
-/* Titres : évite la ligne orpheline d'un seul mot. Ignoré par les moteurs qui ne
-   connaissent pas, donc sans repli à écrire. */
+/* Headings: avoids a single-word orphan line. Ignored by engines that do not
+   know it, so no fallback to write. */
 h1, h2, h3, h4, .ref-titre, .carte h3 {
   text-wrap: balance;
 }
 
-/* Paragraphes de texte long : empêche le mot seul en fin de paragraphe. */
+/* Long text paragraphs: prevents a lone word at the end of a paragraph. */
 .ref-intro, .ecran-intro, .param-aide, .carte-note {
   text-wrap: pretty;
 }
 
-/* TRANSITIONS DE VUE entre écrans. Progressive : les moteurs qui ne connaissent
-   pas l'API gardent l'animation d'apparition existante, ceux qui la connaissent
-   ont un fondu croisé propre. Coupée par le mouvement réduit ci-dessus. */
+/* VIEW TRANSITIONS between screens. Progressive: engines that do not know
+   the API keep the existing appear animation, those that do
+   get a clean crossfade. Turned off by reduced motion above. */
 @view-transition {
   navigation: auto;
 }
@@ -89,9 +89,9 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   }
 }
 
-/* Voile de chargement, visible avant le premier rendu. Retiré par app.js.
-   Le grain tourne doucement plutôt que de clignoter : une animation lente se
-   remarque moins et fatigue moins qu'un pulsement. */
+/* Loading veil, visible before the first render. Removed by app.js.
+   The bean spins gently rather than blinking: a slow animation is
+   less noticeable and less tiring than a pulse. */
 .chargement {
   display: flex;
   align-items: center;
@@ -110,20 +110,20 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 }
 
 /* ==================================================================
-   REFONTE COMPTOIR, ETAPE 4 : LA SAISIE
+   COMPTOIR REDESIGN, STEP 4: THE ENTRY FORM
    ================================================================== */
 
-/* Deux colonnes : le formulaire, puis une colonne FIXE de 360 px qui suit le
-   defilement. C'est la que vivent le chrono, la fiche recette et la fiche cafe,
-   parce qu'on les LIT pendant qu'on remplit le formulaire, on ne les remplit pas. */
-/* La tete de page precede la grille, elle couvre donc toute la largeur. */
+/* Two columns: the form, then a FIXED 360 px column that follows
+   scrolling. That is where the timer, the recipe sheet and the coffee sheet live,
+   because we READ them while filling in the form, we do not fill them in. */
+/* The page head precedes the grid, so it spans the full width. */
 #ecran-saisie .saisie-entete { max-width: 1400px; margin-inline: auto; }
-/* LA DATE AU BORD DU FORMULAIRE (v8.62), pas au-dessus du chrono. Au bout de la
-   tête de page, elle se retrouvait en haut de la colonne de droite, loin de ce
-   qu'on remplit, et Chris ne la voyait pas. La tête garde toute la largeur (le
-   titre ne bouge pas), mais réserve à droite la place de la colonne du chrono :
-   la date s'aligne sur le bord droit des cartes du formulaire. Sur une colonne,
-   la tête prend la largeur du formulaire, pour la même raison. */
+/* THE DATE AT THE FORM'S EDGE (v8.62), not above the timer. At the end of the
+   page head, it ended up at the top of the right column, far from what
+   we fill in, and Chris did not see it. The head keeps the full width (the
+   title does not move), but reserves on the right the room of the timer column:
+   the date aligns with the right edge of the form cards. On a single column,
+   the head takes the form's width, for the same reason. */
 @media (min-width: 1400px) {
   #ecran-saisie .saisie-entete { padding-right: calc(380px + var(--ecart-cartes)); }
 }
@@ -134,8 +134,8 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   #ecran-saisie .saisie-entete { max-width: 720px; }
 }
 
-/* Le numero du bloc : un rond d'encre. Il dit l'ORDRE, ce qu'un titre seul ne
-   fait pas, et c'est un formulaire qu'on remplit de haut en bas. */
+/* The block number: an ink dot. It gives the ORDER, which a title alone does
+   not, and this is a form filled from top to bottom. */
 .bloc-num {
   flex: none;
   width: 30px; height: 30px;
@@ -149,11 +149,11 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   font-weight: 700;
 }
 
-/* ---------- Bloc 1 : cafe, machine, recette sur une rangee ----------
-   La grille elle-meme est .saisie-tete, plus haut dans ce fichier. */
+/* ---------- Block 1: coffee, machine, recipe on one row ----------
+   The grid itself is .saisie-tete, higher up in this file. */
 
-/* Le controle segmente de la machine : deux positions, la retenue posee sur le
-   panneau clair avec une legere ombre, comme une touche enfoncee a l'envers. */
+/* The machine's segmented control: two positions, the selected one set on the
+   light panel with a slight shadow, like a key pressed in reverse. */
 .choix-methode {
   display: flex;
   gap: 3px;
@@ -194,7 +194,7 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 
 .saisie-bloc .grille-nombres > * { min-width: 0; }
 
-/* ---------- Le chrono, dans la colonne de droite ---------- */
+/* ---------- The timer, in the right column ---------- */
 .chrono-bloc { margin-bottom: 0; }
 .chrono-bloc .chrono-grand {
   font-family: var(--serif);
@@ -205,19 +205,19 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 
 .saisie-rappel { font-size: 0.78rem; color: var(--attenue); }
 
-/* ---------- Telephone ---------- */
+/* ---------- Phone ---------- */
 @media (max-width: 1023px) {
-  /* BLOC et non grille : un element sticky ne peut coller que DANS sa propre
-     zone de grille, qui fait ici la hauteur du chrono. Il ne bougeait donc pas
-     d un pixel. En bloc, son bloc contenant est toute la colonne et il colle
-     vraiment. Les enfants se suivent dans l ordre du DOM, qui est deja le bon :
-     chrono, formulaire, fiches. */
+  /* BLOCK, not grid: a sticky element can only stick INSIDE its own
+     grid area, which here is the timer's height. So it did not move
+     a single pixel. As a block, its containing block is the whole column and it
+     really sticks. The children follow DOM order, which is already right:
+     timer, form, sheets. */
   .saisie-layout { display: block; }
   .saisie-aside { position: static; }
-  /* LE CHRONO EN BANDEAU, colle en haut de l'ecran. Il est deja premier dans le
-     DOM, il ne lui reste qu'a coller. Avant, il vivait dans l'aside, qui passe
-     APRES un formulaire de 3 500 px : son position sticky ne collait rien du
-     tout, il etait simplement tout en bas de la page. */
+  /* THE TIMER AS A BANNER, stuck to the top of the screen. It is already first in the
+     DOM, it only needs to stick. Before, it lived in the aside, which comes
+     AFTER a 3500 px form: its position sticky stuck nothing at
+     all, it was simply at the very bottom of the page. */
   #chrono-widget {
     position: sticky;
     top: 0;
@@ -227,7 +227,7 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   }
   #chrono-widget .chrono-grand { font-size: 2.5rem; }
   .saisie-bloc .grille-nombres { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-  /* La barre d'action reste sous la main, au dessus de la barre de navigation. */
+  /* The action bar stays at hand, above the navigation bar. */
   .saisie-actions {
     position: sticky;
     bottom: calc(var(--barre-basse) + 8px);
@@ -244,14 +244,14 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 }
 
 /* ==================================================================
-   REFONTE COMPTOIR, ETAPE 6 : L'HISTORIQUE
+   COMPTOIR REDESIGN, STEP 6: THE HISTORY
    ================================================================== */
 
-/* La recherche vit dans la tete de page, a droite du titre. */
+/* The search lives in the page head, right of the title. */
 #ecran-historique .champ-recherche { width: 280px; max-width: 100%; margin: 0; }
 #ecran-historique .champ-recherche label { display: none; }
-/* Le fond de champ etait coupe : « Chercher dans les commentair ». Plus court,
-   il tient, et l'ecran s'appelle deja Historique. */
+/* The field placeholder was cut off: "Chercher dans les commentair". Shorter,
+   it fits, and the screen is already called Historique. */
 #ecran-historique .champ-recherche input { text-overflow: ellipsis; }
 .historique-filtres .champ label {
   margin: 0;
@@ -270,8 +270,8 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   color: var(--encre);
   max-width: 160px;
 }
-/* La fleche du systeme est retiree au profit d'un chevron dessine : celle du
-   navigateur change de dessin sur chaque plateforme et se colle au bord. */
+/* The system arrow is removed in favour of a drawn chevron: the
+   browser's changes shape on each platform and hugs the edge. */
 .historique-filtres .champ select {
   appearance: none;
   padding-right: 16px;
@@ -290,12 +290,12 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 }
 .historique-filtres .champ:hover { border-color: var(--accent); }
 .historique-filtres .champ:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-fond); }
-/* Les champs de date portent leur propre icone, ils ont besoin d'un peu d'air. */
+/* Date fields carry their own icon, they need a bit of room. */
 .historique-filtres .champ input[type="date"] { min-width: 118px; }
 .historique-filtres .champ input[type="number"] { width: 3.2rem; }
 .historique-filtres .champ select:focus-visible,
 .historique-filtres .champ input:focus-visible { outline: 2px solid var(--accent); border-radius: 6px; }
-/* ---------- Le bandeau resume ---------- */
+/* ---------- The summary banner ---------- */
 .historique-resume {
   display: flex;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -338,7 +338,7 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   margin-top: 2px;
 }
 
-/* Gouts et diagnostic partagent une cellule. */
+/* Tastes and diagnosis share a cell. */
 .h-diag { display: block; color: var(--accent-fort); }
 .h-gouts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 
@@ -347,7 +347,7 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 }
 
 /* ==================================================================
-   REFONTE COMPTOIR, ETAPE 7 : LES ECRANS SECONDAIRES
+   COMPTOIR REDESIGN, STEP 7: THE SECONDARY SCREENS
    ================================================================== */
 
 .modale h3 {
@@ -357,8 +357,8 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   letter-spacing: 0.08em;
   color: var(--attenue);
 }
-/* Les titres de section du guide et des parametres passent en serif : ce sont
-   des titres de contenu, pas des intertitres de bloc. */
+/* Section titles of the guide and preferences switch to serif: they are
+   content headings, not block subheadings. */
 #ecran-guide h3,
 #ecran-parametres h3 {
   font-family: var(--serif);
@@ -369,9 +369,9 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   color: var(--encre);
 }
 
-/* ---------- Le chrono repliable ----------
-   Il vit sous la fiche recette, replie derriere son entete. L'entete EST le
-   bouton, et porte le temps : replie, le chrono reste lisible. */
+/* ---------- The collapsible timer ----------
+   It lives under the recipe sheet, collapsed behind its header. The header IS the
+   button, and carries the time: collapsed, the timer stays readable. */
 #chrono-widget { padding: 0; overflow: hidden; }
 .chrono-entete-ligne:hover { background: var(--panneau-2); }
 .chrono-entete-ligne:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
@@ -383,7 +383,7 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   letter-spacing: 0.08em;
   color: var(--attenue);
 }
-/* Un chevron dessine plutot qu'un caractere : il tourne, et il suit la couleur. */
+/* A drawn chevron rather than a character: it rotates, and follows the colour. */
 .chrono-chevron {
   flex: none;
   width: 9px; height: 9px;
@@ -394,7 +394,7 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 }
 #chrono-widget.ouvert .chrono-chevron { transform: rotate(-135deg) translate(-2px, -2px); }
 #chrono-corps { padding: 0 18px 18px; }
-/* Replie, le temps reste grand : c'est lui qu'on vient lire. */
+/* Collapsed, the time stays large: it is what we come to read. */
 #chrono-widget .chrono-grand {
   font-family: var(--serif);
   font-size: 2.1rem;
@@ -408,9 +408,9 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   .chrono-chevron { transition: none; }
 }
 
-/* Le palier en cours, dans l'entete du chrono : replie, le bandeau doit dire ou
-   on en est. Il s'efface quand le chrono ne tourne pas, et cede la place au
-   libelle « Chrono ». */
+/* The current step, in the timer header: collapsed, the banner must say where
+   we are. It fades out when the timer is not running, and gives way to the
+   "Chrono" label. */
 .chrono-palier {
   flex: 1;
   min-width: 0;
@@ -422,20 +422,20 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 }
 .chrono-palier:empty { display: none; }
 .chrono-palier:not(:empty) + .chrono-chevron { margin-left: 8px; }
-/* Quand un palier est affiche, le mot « Chrono » ne sert plus a rien. */
+/* When a step is shown, the word "Chrono" is no longer useful. */
 .chrono-libelle:has(+ .chrono-palier:not(:empty)) { flex: none; }
 
-/* ---------- Historique en cartes, sous 1024 px ----------
-   Dix colonnes dans 350 px se lisaient en faisant glisser la table, ce qui est
-   la pire facon de lire un journal au pouce. Un seul des deux rendus vit a la
-   fois, le JS ne remplit que celui qui sert. */
+/* ---------- History as cards, below 1024 px ----------
+   Ten columns in 350 px were read by swiping the table, the
+   worst way to read a log with a thumb. Only one of the two renderings lives at a
+   time, the JS only fills the one in use. */
 .h-cartes { display: none; }
 
 @media (max-width: 1023px) {
-  /* L'HISTORIQUE seulement (v8.74) : la règle visait tous les tableaux et
-     masquait sur téléphone ceux du Guide et la comparaison de deux tasses. */
-  /* La TABLE se cache, pas son cadre (v8.79) : les cartes et le message « aucune
-     extraction » vivent dans le même cadre, et le cacher vidait l'historique. */
+  /* The HISTORY only (v8.74): the rule targeted every table and
+     hid on phones those of the Guide and the two-cup comparison. */
+  /* The TABLE is hidden, not its frame (v8.79): the cards and the "aucune
+     extraction" message live in the same frame, and hiding it emptied the history. */
   #ecran-historique .table-conteneur > .table-historique { display: none; }
   #ecran-historique .table-conteneur { background: none; border: 0; box-shadow: none; overflow: visible; }
   .h-cartes { display: flex; flex-direction: column; gap: 10px; }
@@ -469,8 +469,8 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   font-size: 0.84rem;
   color: var(--attenue);
 }
-/* Le pied porte les MEMES cinq actions que la ligne du tableau : elles sont
-   construites par la meme fonction, voir actionsExtraction(). */
+/* The footer carries the SAME five actions as the table row: they are
+   built by the same function, see actionsExtraction(). */
 .h-carte-pied {
   display: flex;
   align-items: center;
@@ -480,7 +480,7 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   border-top: 1px solid var(--lignes-douces);
 }
 .h-carte-pied .actions-ligne { margin-left: auto; gap: 4px; }
-/* Le detail de la carte, en mots : le telephone n'a pas de survol. */
+/* The card's detail, in words: the phone has no hover. */
 .btn-detail-carte {
   border: none; background: transparent; padding: 6px 0;
   font: inherit; font-size: 0.8rem; font-weight: 600;
@@ -496,11 +496,11 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 }
 .h-carte-detail .detail-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 0; background: none; }
 
-/* ---------- Entete de l'historique, refait ---------- */
+/* ---------- History header, redone ---------- */
 
-/* La MACHINE en controle segmente : le filtre le plus utilise se lit et se
-   change sans ouvrir de menu. Le <select> qui le pilote reste dans la page,
-   hors ecran, parce que c'est lui la source de verite du filtrage. */
+/* The MACHINE as a segmented control: the most used filter is read and
+   changed without opening a menu. The <select> driving it stays in the page,
+   off screen, because it is the source of truth for filtering. */
 .filtre-methode {
   display: flex;
   gap: 3px;
@@ -546,10 +546,10 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   .filtre-methode .seg { flex: 1; justify-content: center; }
 }
 
-/* Les EN-TETES passent a la ligne au lieu de se couper. « Goûts et diagnostic »
-   demandait 171 px pour 135 offerts et devenait « Goûts et diag… » ; les
-   cellules, elles, gardent leurs points de suspension, parce qu un nom de cafe
-   tronque reste reconnaissable la ou un intitule de colonne ne l est plus. */
+/* The HEADERS wrap instead of being cut. "Goûts et diagnostic"
+   needed 171 px out of 135 available and became "Goûts et diag…"; the
+   cells keep their ellipsis, because a truncated coffee
+   name stays recognisable where a column title no longer does. */
 .table-historique thead th {
   white-space: normal;
   overflow: visible;
@@ -558,12 +558,12 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   line-height: 1.2;
 }
 
-/* ---------- A1 (v8.82) : les dernières extractions au téléphone ----------
-   Cinq colonnes dans 313 px coupaient tout à trois lettres. Chaque tasse
-   devient une petite fiche : le café en gras et la note à droite, puis l'heure,
-   la recette et les mesures, puis les goûts. Réglé sur la largeur de la CARTE
-   et non de l'écran : à 1 280 px, la carte ne fait que 640 px et coupait encore
-   les noms ; sur un grand écran elle redevient une table d'une ligne par tasse. */
+/* ---------- A1 (v8.82): the latest brews on the phone ----------
+   Five columns in 313 px cut everything to three letters. Each cup
+   becomes a small card: the coffee in bold and the rating on the right, then the time,
+   the recipe and the measurements, then the tastes. Tuned to the width of the CARD
+   and not the screen: at 1280 px, the card is only 640 px and still cut
+   the names; on a large screen it becomes a table with one row per cup again. */
 .table-enveloppe { container: dernieres / inline-size; }
 @container dernieres (max-width: 760px) {
   .table-dernieres, .table-dernieres tbody { display: block; }
@@ -589,7 +589,7 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   .table-dernieres tr.derniere-commentaire td { display: block; padding: 0 2px 10px; max-width: none; }
 }
 
-/* ---------- A3 (v8.82) : l'historique au pouce ---------- */
+/* ---------- A3 (v8.82): the history under the thumb ---------- */
 .h-filtrer, .h-actifs { display: none; }
 .btn-menu-carte {
   border: 1px solid transparent; background: transparent; color: var(--attenue); cursor: pointer;
@@ -617,7 +617,7 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   #ecran-historique:not(.filtres-ouverts) .historique-filtres > .champ,
   #ecran-historique:not(.filtres-ouverts) .historique-filtres-actions,
   #ecran-historique:not(.filtres-ouverts) #h-exporter { display: none; }
-  /* Le résumé sur une ligne : quatre chiffres suffisent, pas quatre blocs. */
+  /* The summary on one line: four figures are enough, not four blocks. */
   .historique-resume { padding: 10px 14px; gap: 4px 16px; }
   .resume-item { flex-direction: row; align-items: baseline; gap: 5px; padding: 0; border-left: none; }
   .resume-valeur { font-size: 1.15rem; }
@@ -625,7 +625,7 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   .resume-note { display: none; }
 }
 
-/* ---------- A4 (v8.84) : la recette sous les yeux ---------- */
+/* ---------- A4 (v8.84): the recipe in plain sight ---------- */
 .bande-recette, .aside-fermer { display: none; }
 @media (max-width: 1399px) {
   .bande-recette:not([hidden]) {
@@ -642,11 +642,11 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   .br-voir { margin-left: auto; font-weight: 700; color: var(--accent-fort); white-space: nowrap; }
   .br-voir::after { content: " ▾"; }
   .bande-recette[aria-expanded="true"] .br-voir::after { content: " ▴"; }
-  /* La fiche ne tombe plus sous le formulaire : elle s'ouvre en feuille. */
+  /* The sheet no longer drops below the form: it opens as a sheet. */
   .saisie-layout:not(.aside-ouvert) .saisie-aside { display: none; }
   .saisie-layout.aside-ouvert .saisie-aside {
     display: grid; gap: 12px; align-content: start;
-    /* Au-dessus du bouton flottant et de la barre Enregistrer, sous la barre du bas. */
+    /* Above the floating button and the Save bar, below the bottom bar. */
     position: fixed; z-index: calc(var(--z-rail) - 1);
     left: max(0px, calc(50% - 380px)); right: max(0px, calc(50% - 380px)); bottom: 0;
     max-height: 80vh; overflow-y: auto; overscroll-behavior: contain;
@@ -660,7 +660,7 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   .saisie-layout.aside-ouvert .saisie-aside { bottom: calc(var(--barre-basse) + env(safe-area-inset-bottom, 0px)); max-height: calc(100vh - var(--barre-basse) - 90px); }
 }
 
-/* ---------- A6 (v8.85) : un Guide qui se feuillette ---------- */
+/* ---------- A6 (v8.85): a Guide you can leaf through ---------- */
 .recette-carte h3 { margin: 0; }
 .recette-bascule {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "nom note" "resume note";
@@ -676,15 +676,15 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 .recette-carte.repliee .recette-corps { display: none; }
 .recette-carte:not(.repliee) .rb-resume { display: none; }
 .recette-corps { display: grid; gap: 12px; margin-top: 12px; }
-/* Le sommaire collé en haut tenait trois rangées au téléphone, 130 px d'écran en
-   permanence : une seule rangée, qui défile au doigt. */
+/* The table of contents stuck at the top took three rows on phones, 130 px of screen
+   permanently: a single row, scrolled with a finger. */
 @media (max-width: 699px) {
   .sommaire.guide-onglets { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; }
   .sommaire.guide-onglets::-webkit-scrollbar { display: none; }
   .sommaire.guide-onglets > * { flex: none; scroll-snap-align: start; }
 }
-/* Le tableau « Quel café, quelle recette » au téléphone : une carte par procédé,
-   chaque case annonce sa torréfaction. */
+/* The "Quel café, quelle recette" table on phones: one card per process,
+   each cell announces its roast. */
 @media (max-width: 699px) {
   .matrice, .matrice tbody, .matrice tr, .matrice th, .matrice td { display: block; }
   .matrice thead { display: none; }
@@ -694,44 +694,44 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   .matrice td { padding: 6px 0 6px 96px; position: relative; border: 0; min-height: 28px; }
   .matrice td::before { content: attr(data-col); position: absolute; left: 0; top: 7px; width: 88px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--attenue); }
   .matrice td.m-vide { display: none; }
-  /* Une ligne par case : la recette, sa température et ta note. « Ou » et « ta
-     meilleure » restent sur ordinateur, ils doublaient la hauteur du tableau. */
+  /* One line per cell: the recipe, its temperature and your rating. "Ou" and "ta
+     meilleure" stay on desktop, they doubled the table's height. */
   .matrice td[data-col] { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
   .matrice td .m-temp, .matrice td .m-chez-toi { display: inline; margin: 0; }
   .matrice td .m-autre, .matrice td .m-meilleure { display: none; }
 }
 
-/* ---------- A7 (v8.86) : des cibles à la taille du doigt ----------
-   Seulement au toucher (pointer: coarse) : à la souris, les petites cibles vont
-   bien et gardent la densité. Deux façons : les boutons qui peuvent grandir
-   grandissent ; ceux dont la taille fait le dessin (pastilles, cases du
-   calendrier) gardent leur trait et agrandissent leur zone invisible. */
+/* ---------- A7 (v8.86): finger-sized targets ----------
+   Only on touch (pointer: coarse): with a mouse, small targets are
+   fine and keep the density. Two ways: buttons that can grow
+   grow; those whose size is the design (chips, calendar
+   cells) keep their stroke and enlarge their invisible area. */
 @media (pointer: coarse) {
   .btn-carre-petit { min-width: 40px; min-height: 40px; }
   .onglets-analyses [role="tab"] { min-height: 40px; }
   #recap-fermer, .lien-carte, .dessin-lien, #dessins-arranger, .lc-cafe, #aside-pap, .recette-video-lien, .lien-recette { min-height: 40px; display: inline-flex; align-items: center; }
   .btn-petit { min-height: 40px; }
   .tag, .pilule, .derniere-tag-plus { position: relative; }
-  /* ::before et non ::after : ::after porte déjà la bulle des diagnostics. */
+  /* ::before and not ::after: ::after already holds the diagnostics bubble. */
   .tag::before, .pilule::before { content: ""; position: absolute; inset: -4px -3px; }
-  /* Une case de 17 px : le trait transparent compte pour le doigt, pas pour l'œil. */
+  /* A 17 px cell: the transparent stroke counts for the finger, not for the eye. */
   #g-heatmap rect { stroke: transparent; stroke-width: 4px; }
 }
 
-/* ---------- A9 (v8.88) : le bouton flottant ne cache plus rien ---------- */
+/* ---------- A9 (v8.88): the floating button no longer hides anything ---------- */
 .fab { transition: transform 200ms ease, opacity 200ms ease; }
 .fab.fab-cache { transform: translateY(28px) scale(0.6); opacity: 0; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { .fab { transition: none; } }
 @media (max-width: 1023px) {
-  /* La page garde une marge en bas de la hauteur de la barre ET du bouton : la
-     dernière ligne ne passe jamais dessous. La règle des 860 px la ramenait à 70 px. */
+  /* The page keeps a bottom margin the height of the bar AND the button: the
+     last line never goes under them. The 860 px rule brought it back to 70 px. */
   main { padding-bottom: calc(var(--barre-basse) + 96px + env(safe-area-inset-bottom, 0px)); }
-  /* Les quatre onglets du bas à la même taille : « Plus » n'était pas un
-     .nav-btn et restait à 12 px quand les trois autres passaient à 14,7. */
+  /* The four bottom tabs at the same size: "Plus" was not a
+     .nav-btn and stayed at 12 px when the other three went to 14.7. */
   .barre-bas .barre-entree { font-size: 0.8rem; }
 }
 
-/* ---------- Le stock dans le coin (v8.89) ---------- */
+/* ---------- The stock in the corner (v8.89) ---------- */
 .stock-coin { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
 .stock-coin[hidden] { display: none; }
 .sc-sachet {
@@ -743,7 +743,7 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 .sc-sachet:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .sc-sachet b { color: var(--encre); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .sc-nom { color: var(--attenue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-/* Le petit bocal : sa hauteur remplie dit le niveau du sachet. */
+/* The small jar: its filled height shows the bag's level. */
 .sc-verre { flex: none; width: 12px; height: 16px; border-radius: 3px 3px 4px 4px; border: 1px solid var(--attenue);
   background: linear-gradient(to top, var(--accent) var(--pc), transparent var(--pc)); }
 .sc-sachet.bas { border-color: color-mix(in srgb, var(--danger) 55%, transparent); }
@@ -751,14 +751,14 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
 .sc-sachet.bas .sc-verre { background: linear-gradient(to top, var(--danger) var(--pc), transparent var(--pc)); border-color: var(--danger); }
 .sc-plus { align-self: center; font-size: 0.75rem; color: var(--attenue); }
 @media (max-width: 699px) {
-  /* Une seule rangée qui défile, pour ne pas pousser le reste vers le bas. */
+  /* A single scrolling row, so as not to push the rest down. */
   .stock-coin { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -2px; padding: 2px; }
   .stock-coin::-webkit-scrollbar { display: none; }
   .sc-sachet { flex: none; }
 }
 @media (pointer: coarse) { .sc-sachet { min-height: 36px; } }
 
-/* ---------- L7 (v8.90) : le mode Brassage, lisible à un mètre ---------- */
+/* ---------- L7 (v8.90): the Brew mode, readable from a metre away ---------- */
 .br-centre { gap: 2px; }
 .br-label { font-size: clamp(0.8rem, 2.4vw, 1rem); letter-spacing: 0.1em; text-transform: uppercase; color: var(--attenue); font-weight: 700; }
 .br-centre #br-cible { font-family: var(--serif); font-weight: 400; font-size: clamp(5rem, 24vw, 8.5rem); line-height: 0.95; color: var(--encre); font-variant-numeric: tabular-nums; }
@@ -782,7 +782,7 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   .br-etape { justify-items: center; }
 }
 
-/* ---------- L6 (v8.91) : les paramètres rangés comme un téléphone ---------- */
+/* ---------- L6 (v8.91): the preferences laid out like a phone ---------- */
 .param-index { display: grid; border: 1px solid var(--lignes); border-radius: var(--rayon); overflow: hidden; background: var(--panneau); align-self: start; }
 .pi-ligne {
   display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 12px; align-items: center; min-height: 54px;
@@ -810,7 +810,7 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   .param-corps:not(.ouverte) .param-pages { display: none; }
   .param-corps.ouverte .param-index { display: none; }
   .param-corps.ouverte .param-retour { display: inline-flex; }
-  /* La table des valeurs par défaut : une fiche par recette, chaque case dit son nom. */
+  /* The default values table: one card per recipe, each cell states its name. */
   .param-tableau { min-width: 0; }
   .param-tableau thead { display: none; }
   .param-tableau, .param-tableau tbody { display: block; }
@@ -821,14 +821,14 @@ h1, h2, h3, h4, .ref-titre, .carte h3 {
   .param-tableau tr.param-groupe, .param-tableau tr.param-groupe td { display: block; padding: 12px 0 2px; }
 }
 
-/* ---------- L4 (v8.92) : la fiche café, un passeport ---------- */
+/* ---------- L4 (v8.92): the coffee sheet, a passport ---------- */
 .fc-passeport { grid-template-columns: 76px minmax(0, 1fr); gap: 16px; align-items: center; }
 .fc-bocal { width: 76px; height: 96px; border-radius: 12px 12px 16px 16px; border: 1px solid var(--lignes); position: relative; overflow: hidden;
   background: linear-gradient(to top, var(--teinte) var(--niveau), var(--panneau-2) var(--niveau)); }
 .fc-bocal::before { content: ""; position: absolute; top: 0; left: 16px; right: 16px; height: 8px; border-radius: 0 0 4px 4px; background: var(--panneau-3); }
 .fc-bocal i { position: absolute; left: 10px; top: 16px; width: 6px; bottom: 12px; border-radius: 3px; background: linear-gradient(to bottom, rgba(255, 255, 255, 0.18), transparent); }
 .fc-identite h2 { margin: 2px 0 8px; }
-/* Le bocal est un bouton (v8.96) : son grain dessiné au centre, ses grammes dessous. */
+/* The jar is a button (v8.96): its bean drawn in the centre, its grams below. */
 .fc-bocal-bloc { display: grid; justify-items: center; gap: 4px; }
 button.fc-bocal { padding: 0; font: inherit; color: var(--encre); cursor: pointer; display: grid; place-items: center; }
 button.fc-bocal:hover { border-color: var(--accent); }
@@ -846,8 +846,8 @@ button.fc-a-compter { white-space: nowrap; font: inherit; font-size: 0.78rem; fo
 .fc-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding: 12px 14px; border-radius: var(--rayon-petit); background: var(--panneau-2); }
 .fc-kpi b { display: block; font-family: var(--serif); font-weight: 400; font-size: clamp(1.4rem, 4vw, 1.9rem); line-height: 1; color: var(--encre); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fc-kpi span { font-size: 0.75rem; color: var(--attenue); }
-/* min-height : dans la grille de la fiche, qui a une hauteur fixe, une rangée qui défile
-   en largeur peut tomber à zéro ; sur ordinateur la barre d'onglets faisait 1 px (v8.95). */
+/* min-height: in the sheet's grid, which has a fixed height, a row that scrolls
+   horizontally can collapse to zero; on desktop the tab bar was 1 px (v8.95). */
 .fc-onglets { display: flex; gap: 4px; border-bottom: 1px solid var(--lignes); overflow-x: auto; scrollbar-width: none; position: sticky; top: -1px; z-index: 2; background: var(--panneau); min-height: 46px; flex-shrink: 0; }
 .fc-onglets::-webkit-scrollbar { display: none; }
 .fc-onglets [role="tab"] { font: inherit; font-size: 0.92rem; flex: none; border: 0; background: none; color: var(--attenue); cursor: pointer; padding: 12px 14px 10px; min-height: 44px; border-bottom: 2px solid transparent; margin-bottom: -1px; }
@@ -861,7 +861,7 @@ button.fc-a-compter { white-space: nowrap; font: inherit; font-size: 0.78rem; fo
   .fc-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
-/* ---------- L3 (v8.93) : le journal, par sachet ---------- */
+/* ---------- L3 (v8.93): the log, by bag ---------- */
 .h-vues { display: inline-flex; gap: 2px; padding: 3px; margin: 0 0 12px; border-radius: 12px; background: var(--panneau-2); }
 .h-vues button { font: inherit; font-size: 0.85rem; border: 0; background: none; color: var(--attenue); cursor: pointer; padding: 8px 14px; min-height: 36px; border-radius: 9px; }
 .h-vues button[aria-pressed="true"] { background: var(--panneau-3); color: var(--encre); font-weight: 700; }
@@ -894,11 +894,11 @@ button.fc-a-compter { white-space: nowrap; font: inherit; font-size: 0.78rem; fo
 .jn-courbe path { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
 .jn-courbe circle { fill: var(--accent-fort); }
 .jn-reglage { margin: 0; font-size: 0.85rem; color: var(--texte); }
-/* Les tasses d'un chapitre : les cartes de l'historique, à toutes les largeurs. */
+/* The cups of a chapter: the history cards, at every width. */
 .h-cartes.jn-tasses { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
 .jn-tout { justify-self: start; }
 
-/* ---------- L5 (v8.94) : le Guide, une bibliothèque ---------- */
+/* ---------- L5 (v8.94): the Guide, a library ---------- */
 #gp-accueil { display: grid; gap: 18px; }
 #gp-accueil[hidden] { display: none; }
 .ga-recherche { display: grid; gap: 8px; }
@@ -928,26 +928,26 @@ button.fc-a-compter { white-space: nowrap; font: inherit; font-size: 0.78rem; fo
 .ga-porte span { font-size: 0.82rem; color: var(--attenue); }
 @media (max-width: 560px) { .ga-portes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
-/* ---------- Le stock sur ordinateur (v8.95) ----------
-   Quatre pastilles sur une ligne élargissaient le bloc du titre à 730 px : « Ta
-   semaine » ne tenait plus à sa droite et passait dessous, l'en-tête doublait
-   de hauteur. Le bloc du titre garde une largeur bornée, les pastilles passent
-   sur deux rangées si besoin. */
+/* ---------- The stock on desktop (v8.95) ----------
+   Four chips on one line widened the title block to 730 px: "Ta
+   semaine" no longer fit on its right and went below, the header doubled
+   in height. The title block keeps a bounded width, the chips go
+   onto two rows if needed. */
 @media (min-width: 700px) {
   #tableau-contenu > .tete-page > .tete-titres { flex: 1 1 260px; max-width: 400px; }
   #tableau-contenu .sc-sachet { max-width: 12rem; }
 }
 
-/* ---------- Ta semaine : les chiffres alignés par le haut (v8.97) ----------
-   Alignés par le bas, le bloc « la meilleure » portait en plus son café et sa
-   recette : son chiffre remontait au-dessus des deux autres. Par le haut, les
-   trois chiffres sont sur une même ligne ; les barres restent posées en bas. */
+/* ---------- Ta semaine: figures aligned at the top (v8.97) ----------
+   Aligned at the bottom, the "la meilleure" block also carried its coffee and its
+   recipe: its figure rose above the other two. At the top, the
+   three figures sit on one line; the bars stay at the bottom. */
 .tete-recap .rc-corps { align-items: start; }
 .tete-recap .rc-corps .rc-semaine { align-self: end; }
 
-/* ---------- v9.00 : le mode Brassage se lit de loin, vraiment ---------- */
-/* Chris brasse le téléphone ou l'ordinateur posé à distance : tout monte d'un
-   gros cran, la frise des étapes surtout, qu'il ne lisait pas de loin. */
+/* ---------- v9.00: the Brew mode reads from afar, for real ---------- */
+/* Chris brews with the phone or computer set at a distance: everything goes up a
+   big notch, the step timeline above all, which he could not read from afar. */
 .br-corps { max-width: 1280px; gap: 28px; }
 .br-titres h2 { font-size: clamp(1.9rem, 5vw, 2.9rem); }
 .br-dose { font-size: clamp(1.05rem, 2.6vw, 1.3rem); }
@@ -984,10 +984,10 @@ button.fc-a-compter { white-space: nowrap; font: inherit; font-size: 0.78rem; fo
   .br-frise li.libre { grid-template-columns: 18px minmax(0, 1fr); }
 }
 
-/* ---------- v9.01 : la frise des étapes au premier plan ---------- */
-/* Chris brasse avec sa balance : le chrono et l'anneau passent en bandeau
-   discret en haut, la liste des étapes prend l'écran, en très gros. La
-   consigne en grand disparaît, elle répétait la ligne surlignée. */
+/* ---------- v9.01: the step timeline in the foreground ---------- */
+/* Chris brews with his scale: the timer and the ring become a discreet
+   banner at the top, the step list takes the screen, very large. The
+   big instruction disappears, it repeated the highlighted line. */
 .br-corps { gap: 14px; }
 .br-scene {
   grid-template-columns: auto minmax(0, 1fr); gap: 16px; align-items: center;

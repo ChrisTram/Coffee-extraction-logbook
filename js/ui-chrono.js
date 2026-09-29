@@ -1,30 +1,30 @@
-/* Chronomètre de l'écran Saisie, et rien d'autre.
+/* Stopwatch for the Entry screen, and nothing else.
  *
- * Sorti de js/ui-saisie.js quand celui-ci a dépassé le plafond de 1 200 lignes.
- * La couture est nette : le chrono a son propre état, son propre verrou d'écran,
- * ses propres paliers de recette, et il est devenu un widget repliable distinct
- * à l'écran. Il est chargé APRÈS ui-saisie.js, dont il emprunte quelques outils.
+ * Split out of js/ui-saisie.js when that file went past the 1,200-line cap.
+ * The seam is clean: the stopwatch has its own state, its own screen lock,
+ * its own recipe steps, and it became a separate collapsible widget on
+ * screen. It loads AFTER ui-saisie.js, from which it borrows a few helpers.
  *
- * Il parle au reste par UI. : le formulaire lui demande de se replier, il écrit
- * les temps dans les champs du formulaire par identifiant. */
+ * It talks to the rest through UI.: the form asks it to collapse, and it
+ * writes the times into the form fields by id. */
 "use strict";
 
 (() => {
 
-  // Emprunté au noyau et à la saisie, tous deux chargés avant nous.
+  // Borrowed from the core and the entry screen, both loaded before us.
   const { $, $f, ecrireDuree, fmtTemps, toast, trouverRecette } = UI;
 
-  // Chronomètre unique : Démarrer, Pause, Reprendre, Arrêter, Reset.
-  // Les paliers viennent de la recette sélectionnée, avec bip discret à chacun.
-  // L'écoulement se déduit : du palier "ouvrir" à l'arrêt du chrono.
+  // Single stopwatch: Start, Pause, Resume, Stop, Reset.
+  // Steps come from the selected recipe, with a soft beep at each one.
+  // Drawdown is derived: from the "open" step to the moment the stopwatch stops.
   const chrono = { etat: "arrete", accumule: 0, departTs: null, interval: null, passes: new Set() };
   let audioCtx = null;
 
-  // Verrou d'écran pendant le chrono : l'écran du téléphone ne doit pas se
-  // verrouiller au milieu d'une extraction, les mains sont mouillées.
-  // L'API n'existe qu'en contexte sécurisé (https), donc PAS en file:// : on
-  // échoue en silence, ce n'est pas une fonction critique. Le système relâche
-  // le verrou dès que l'onglet passe en arrière plan, d'où la reprise sur
+  // Screen lock while timing: the phone screen must not lock in the middle
+  // of a brew, hands are wet.
+  // The API only exists in a secure context (https), so NOT on file://: we
+  // fail silently, it is not a critical feature. The system releases the
+  // lock as soon as the tab goes to the background, hence the re-acquire on
   // visibilitychange.
   let screenWakeLock = null;
 
@@ -34,23 +34,23 @@
       const lock = await navigator.wakeLock.request("screen");
       lock.addEventListener("release", () => { if (screenWakeLock === lock) screenWakeLock = null; });
       screenWakeLock = lock;
-    } catch (e) { /* refusé, ou onglet caché : tant pis */ }
+    } catch (e) { /* refused, or hidden tab: never mind */ }
   }
 
   function releaseWakeLock() {
     if (!screenWakeLock) return;
     const lock = screenWakeLock;
     screenWakeLock = null;
-    lock.release().catch(() => { /* déjà relâché */ });
+    lock.release().catch(() => { /* already released */ });
   }
 
-  // Un seul point de vérité : le verrou suit l'état du chrono.
+  // Single source of truth: the lock follows the stopwatch state.
   function syncWakeLock() {
     if (chrono.etat === "encours") acquireWakeLock();
     else releaseWakeLock();
   }
 
-  function chronoEcoule() {
+  function chronoElapsed() {
     return (chrono.accumule + (chrono.etat === "encours" ? Date.now() - chrono.departTs : 0)) / 1000;
   }
 
@@ -60,9 +60,9 @@
     return UI.etapesPour(r).filter(e => e.t !== null && e.t !== undefined);
   }
 
-  function tOuverture() {
-    const pal = paliersCourants().find(e => /ouvr|open/i.test(e.texte));
-    return pal ? pal.t : null;
+  function openingTime() {
+    const step = paliersCourants().find(e => /ouvr|open/i.test(e.texte));
+    return step ? step.t : null;
   }
 
   function jouerBip() {
@@ -80,43 +80,43 @@
       g.connect(audioCtx.destination);
       o.start();
       o.stop(audioCtx.currentTime + 0.3);
-    } catch (e) { /* audio indisponible */ }
+    } catch (e) { /* audio unavailable */ }
   }
 
-  function majEtapesChrono(avecBips) {
-    const s = chronoEcoule();
-    const paliers = paliersCourants();
-    const zone = $("#chrono-etapes");
-    if (!paliers.length) { zone.hidden = true; return; }
-    zone.hidden = false;
-    let courante = null, suivante = null;
-    paliers.forEach(pal => { if (pal.t <= s) courante = pal; else if (!suivante) suivante = pal; });
-    const texteCourant = courante
-      ? fmtTemps(courante.t) + " · " + courante.texte
+  function majEtapesChrono(withBeeps) {
+    const s = chronoElapsed();
+    const steps = paliersCourants();
+    const area = $("#chrono-etapes");
+    if (!steps.length) { area.hidden = true; return; }
+    area.hidden = false;
+    let current = null, next = null;
+    steps.forEach(step => { if (step.t <= s) current = step; else if (!next) next = step; });
+    const currentText = current
+      ? fmtTemps(current.t) + " · " + current.texte
       : I18N.t("ch_pret");
-    $("#chrono-courante").textContent = texteCourant;
-    /* Le meme palier dans l'entete, pour qu'il se lise SANS deplier : sur
-       telephone le chrono est un bandeau replie colle en haut, et un bandeau qui
-       ne dit pas ou on en est ne fait que prendre de la place. Vide quand le
-       chrono ne tourne pas, sinon il annoncerait un palier qui n'a pas commence. */
-    const court = $("#chrono-palier-court");
-    if (court) court.textContent = chrono.etat === "arrete" ? "" : texteCourant;
-    if (suivante) {
+    $("#chrono-courante").textContent = currentText;
+    /* The same step in the header, so it reads WITHOUT expanding: on a phone
+       the stopwatch is a collapsed strip stuck to the top, and a strip that
+       does not say where you are just takes up space. Empty when the
+       stopwatch is not running, otherwise it would announce a step not yet begun. */
+    const shortLabel = $("#chrono-palier-court");
+    if (shortLabel) shortLabel.textContent = chrono.etat === "arrete" ? "" : currentText;
+    if (next) {
       $("#chrono-suivante").textContent = I18N.t("ch_suivante", {
-        t: fmtTemps(suivante.t), d: Math.max(0, Math.ceil(suivante.t - s)), texte: suivante.texte,
+        t: fmtTemps(next.t), d: Math.max(0, Math.ceil(next.t - s)), texte: next.texte,
       });
     } else {
-      $("#chrono-suivante").textContent = courante ? I18N.t("ch_derniere") : "";
+      $("#chrono-suivante").textContent = current ? I18N.t("ch_derniere") : "";
     }
-    if (avecBips && chrono.etat === "encours") {
-      paliers.forEach(pal => {
-        if (pal.t > 0 && pal.t <= s && !chrono.passes.has(pal.t)) {
-          chrono.passes.add(pal.t);
+    if (withBeeps && chrono.etat === "encours") {
+      steps.forEach(step => {
+        if (step.t > 0 && step.t <= s && !chrono.passes.has(step.t)) {
+          chrono.passes.add(step.t);
           jouerBip();
-          // Le mode Brassage se regarde de loin : une vibration en plus du bip,
-          // là où le téléphone la permet (Android ; l'iPhone n'a pas l'API).
+          // Brew mode is watched from a distance: a vibration on top of the
+          // beep, where the phone allows it (Android; the iPhone lacks the API).
           if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
-            try { navigator.vibrate(120); } catch (e) { /* refusée */ }
+            try { navigator.vibrate(120); } catch (e) { /* refused */ }
           }
         }
       });
@@ -124,7 +124,7 @@
   }
 
   function chronoTic() {
-    $("#chrono-total").textContent = fmtTemps(Math.floor(chronoEcoule()));
+    $("#chrono-total").textContent = fmtTemps(Math.floor(chronoElapsed()));
     majEtapesChrono(true);
   }
 
@@ -134,20 +134,20 @@
     else if (chrono.etat === "encours") b.textContent = I18N.t("ch_pause");
     else b.textContent = I18N.t("ch_reprendre");
     $("#btn-chrono-stop").hidden = chrono.etat === "arrete";
-    $("#btn-chrono-raz").hidden = chrono.etat === "arrete" && chronoEcoule() === 0;
+    $("#btn-chrono-raz").hidden = chrono.etat === "arrete" && chronoElapsed() === 0;
     $(".chrono").classList.toggle("en-cours", chrono.etat === "encours");
-    // Appelée à chaque transition du chrono, c'est le bon endroit pour aligner
-    // le verrou d'écran sans risque d'oubli dans une branche.
+    // Called on every stopwatch transition, the right place to align the
+    // screen lock with no risk of forgetting it in a branch.
     syncWakeLock();
   }
 
   function chronoPrincipal() {
-    /* Le son se débloque DANS le geste (v8.72) : sur iPhone, un contexte audio
-       créé plus tard par le minuteur reste muet. */
+    /* Sound is unlocked INSIDE the gesture (v8.72): on iPhone, an audio
+       context created later by the timer stays silent. */
     try {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === "suspended") audioCtx.resume();
-    } catch (e) { /* audio indisponible */ }
+    } catch (e) { /* audio unavailable */ }
     if (chrono.etat === "arrete") {
       chrono.accumule = 0;
       chrono.passes.clear();
@@ -173,8 +173,8 @@
     const total = Math.round(chrono.accumule / 1000);
     chrono.etat = "arrete";
     ecrireDuree("f-total", total);
-    const tOuv = tOuverture();
-    if (tOuv !== null && total > tOuv) ecrireDuree("f-ecoulement", total - tOuv);
+    const tOpen = openingTime();
+    if (tOpen !== null && total > tOpen) ecrireDuree("f-ecoulement", total - tOpen);
     majBoutonsChrono();
     toast(I18N.t("t_temps"));
   }
@@ -189,29 +189,29 @@
     majEtapesChrono(false);
     majBoutonsChrono();
   }
-  /* LE CHRONO REPLIABLE.
+  /* THE COLLAPSIBLE STOPWATCH.
 
-     Il vit sous la fiche recette, replie, parce qu'il ne sert que pendant
-     l'extraction alors que la recette se relit a chaque etape.
+     It lives under the recipe card, collapsed, because it is only used during
+     the brew while the recipe is reread at every step.
 
-     Deux regles. Le temps reste lisible replie : c'est l'entete qui le porte,
-     un chrono qu'il faut deplier pour lire ne sert a rien. Et il s'ouvre tout
-     seul au demarrage et refuse de se replier tant qu'il tourne : se refermer
-     sur un chrono en marche, c'est perdre les paliers et le bouton d'arret au
-     moment precis ou on en a besoin. */
+     Two rules. The time stays readable when collapsed: the header carries it,
+     a stopwatch you have to expand to read is useless. And it opens by itself
+     on start and refuses to collapse while running: closing on a running
+     stopwatch means losing the steps and the stop button at the exact moment
+     you need them. */
   function chronoTourne() {
     return !$("#btn-chrono-stop").hidden;
   }
 
-  function basculerChrono(ouvrir) {
-    const corps = $("#chrono-corps");
-    if (!corps) return;
-    const veut = ouvrir === undefined ? corps.hidden : ouvrir;
-    /* On ne referme pas un chrono en marche. */
-    const etat = !veut && chronoTourne() ? true : veut;
-    corps.hidden = !etat;
-    $("#chrono-widget").classList.toggle("ouvert", etat);
-    $("#chrono-basculer").setAttribute("aria-expanded", etat ? "true" : "false");
+  function basculerChrono(open) {
+    const body = $("#chrono-corps");
+    if (!body) return;
+    const wants = open === undefined ? body.hidden : open;
+    /* A running stopwatch is never closed. */
+    const isOpen = !wants && chronoTourne() ? true : wants;
+    body.hidden = !isOpen;
+    $("#chrono-widget").classList.toggle("ouvert", isOpen);
+    $("#chrono-basculer").setAttribute("aria-expanded", isOpen ? "true" : "false");
   }
 
   Object.assign(UI, {

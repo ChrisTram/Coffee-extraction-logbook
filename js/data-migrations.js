@@ -1,100 +1,100 @@
-/* Migrations : version de schéma et rattrapages de l'existant.
+/* Migrations: schema version and fixes to existing data.
  *
- * Tout ce qui réécrit des données déjà stockées pour suivre un changement du
- * code vit ici, et nulle part ailleurs. `pour(state, aides)` lie les pas à
- * l'état que data.js possède ; `aides` apporte ce qui écrit dans l'état hors
- * des tables (pierres tombales, lecture des réglages). Les normaliseurs et les
- * semences viennent de DATA_SCHEMA. */
+ * Everything that rewrites already stored data to follow a code change
+ * lives here, and nowhere else. `pour(state, helpers)` binds the steps to the
+ * state owned by data.js; `helpers` brings what writes into the state outside
+ * the tables (tombstones, settings reading). The normalisers and the seeds
+ * come from DATA_SCHEMA. */
 "use strict";
 
 const DATA_MIGRATIONS = (() => {
 
-  function pour(state, aides) {
-    const { marquerSupprime, reglagesCourants } = aides;
+  function pour(state, helpers) {
+    const { marquerSupprime, reglagesCourants } = helpers;
     const { PUISSANCE_FEU_HISTORIQUE, estampiller, nouvelId, dateLocaleAujourdhui, normaliserReglages,
       normaliserRecette, normaliserAchat, recettesDefaut, tassesDefaut } = DATA_SCHEMA;
 
-    // ---------- Migration : anciens noms de recettes et anciennes fiches ----------
-    // Idempotente : peut tourner à chaque chargement sans effet de bord.
-    /* ---------- VERSION DE SCHÉMA ----------
+    // ---------- Migration: old recipe names and old coffee cards ----------
+    // Idempotent: can run on every load without side effects.
+    /* ---------- SCHEMA VERSION ----------
 
-       Il y avait six rattrapages à usage unique, chacun marqué par un drapeau dans
-       `localStorage`, donc PAR APPAREIL, alors que les données qu'ils corrigent
-       sont PARTAGÉES entre appareils. Un appareil qui démarrait avec un stockage
-       vide posait ses drapeaux sur rien, recevait ensuite le document du serveur
-       non migré, et ne le migrait plus jamais. Ce n'est pas théorique : c'est
-       arrivé avec les 150 g de chaudière de la Brikka.
+       There were six one-off fixes, each marked by a flag in
+       `localStorage`, so PER DEVICE, while the data they fix is SHARED
+       between devices. A device starting with empty storage set its flags on
+       nothing, then received the unmigrated document from the server, and
+       never migrated it again. This is not theoretical: it happened with the
+       Brikka's 150 g boiler.
 
-       Maintenant : un numéro de version rangé dans la ligne `reglages`, donc
-       synchronisé avec le reste. On applique les pas dont le numéro dépasse la
-       version du document, puis on écrit la nouvelle version. Un appareil neuf qui
-       reçoit un document déjà migré ne rejoue rien, et un document en retard est
-       rattrapé par le premier appareil qui l'ouvre, quel qu'il soit.
+       Now: a version number stored in the `reglages` row, so synced with
+       everything else. We apply the steps whose number exceeds the document's
+       version, then write the new version. A new device receiving an already
+       migrated document replays nothing, and a document that is behind is
+       caught up by the first device that opens it, whichever it is.
 
-       POUR AJOUTER UNE MIGRATION : un pas de plus à la FIN, avec le numéro suivant,
-       et `SCHEMA_ACTUEL` incrémenté. Ne jamais renuméroter, ne jamais insérer au
-       milieu : le numéro déjà écrit chez Chris est une promesse.
+       TO ADD A MIGRATION: one more step at the END, with the next number,
+       and `SCHEMA_ACTUEL` incremented. Never renumber, never insert in the
+       middle: the number already written at Chris's is a promise.
 
-       Chaque pas ne touche QUE la valeur semée d'avant. Un pas qui écraserait un
-       réglage choisi volontairement serait un bug, pas une migration. */
+       Each step touches ONLY the previously seeded value. A step that
+       overwrote a deliberately chosen setting would be a bug, not a migration. */
     const SCHEMA_ACTUEL = 20;
 
-    // Rattrapage de la puissance de feu des recettes Brikka : l'échelle de Chris a
-    // bougé deux fois, 3 puis 4 puis 2.
-    const majFeuBrikka = (concerne, valeur) => () => {
-      let touche = false;
+    // Fix of the fire power of Brikka recipes: Chris's scale has moved
+    // twice, 3 then 4 then 2.
+    const setBrikkaFire = (applies, value) => () => {
+      let changed = false;
       state.recettes.forEach(rec => {
-        if (rec.methode !== "Brikka" || !concerne(rec)) return;
-        rec.puissance_feu = valeur;
+        if (rec.methode !== "Brikka" || !applies(rec)) return;
+        rec.puissance_feu = value;
         estampiller(rec);
-        touche = true;
+        changed = true;
       });
-      return touche;
+      return changed;
     };
 
     const PAS_DE_SCHEMA = [
-      { v: 1, nom: "feu 3 devient 4", appliquer: majFeuBrikka(r => Number(r.puissance_feu) === 3, 4) },
-      { v: 2, nom: "feu 4 devient 2", appliquer: majFeuBrikka(r => Number(r.puissance_feu) === 4, 2) },
-      // Les recettes semées avant l'existence du champ ne portent rien : la colonne
-      // Feu des Paramètres restait vide et seul le repli sauvait le préremplissage.
+      { v: 1, nom: "feu 3 devient 4", appliquer: setBrikkaFire(r => Number(r.puissance_feu) === 3, 4) },
+      { v: 2, nom: "feu 4 devient 2", appliquer: setBrikkaFire(r => Number(r.puissance_feu) === 4, 2) },
+      // Recipes seeded before the field existed carry nothing: the Fire column
+      // of Settings stayed empty and only the fallback saved the prefill.
       { v: 3, nom: "feu vide devient 2",
-        appliquer: majFeuBrikka(r => r.puissance_feu === "" || r.puissance_feu === undefined, 2) },
-      // 100 g était une estimation, 150 g est la contenance réelle de la chaudière.
-      // Et plus de température cible : sur la Brikka c'est la flamme qui décide.
+        appliquer: setBrikkaFire(r => r.puissance_feu === "" || r.puissance_feu === undefined, 2) },
+      // 100 g was an estimate, 150 g is the real capacity of the boiler.
+      // And no more target temperature: on the Brikka the flame decides.
       { v: 4, nom: "chaudière Brikka a 150 g", appliquer: () => {
-        let touche = false;
+        let changed = false;
         state.recettes.forEach(rec => {
           if (rec.methode !== "Brikka" || Number(rec.eau) !== 100) return;
           rec.eau = 150;
           rec.temp = "";
           estampiller(rec);
-          touche = true;
+          changed = true;
         });
-        return touche;
+        return changed;
       } },
-      /* Molette unique. Le Timemore de Chris reste posé sur 1.5.0, le compromis qui
-         marche sur les deux machines : une cible par recette décrivait un geste
-         qu'il ne fait jamais. Concerne les dix recettes, Switch comprises.
-         Une recette semée APRÈS ce pas avec une autre molette (la Neo Brew,
-         v8.63, extra grosse) n'est pas concernée : sur un carnet neuf, qui joue
-         tous les pas, elle retombait à 1.5.0. */
+      /* Single dial. Chris's Timemore stays set on 1.5.0, the compromise that
+         works on both brewers: one target per recipe described a gesture he
+         never makes. Applies to all ten recipes, Switch ones included.
+         A recipe seeded AFTER this step with another dial (the Neo Brew,
+         v8.63, extra coarse) is not affected: on a new logbook, which plays
+         every step, it fell back to 1.5.0. */
       { v: 5, nom: "molette unique a 1.5.0", appliquer: () => {
-        let touche = false;
+        let changed = false;
         state.recettes.forEach(rec => {
           if (rec.dial === "1.5.0") return;
-          const graine = RECETTES_DEPART.find(d => d.id === rec.id);
-          if (graine && graine.dial !== "1.5.0") return;
+          const seed = RECETTES_DEPART.find(d => d.id === rec.id);
+          if (seed && seed.dial !== "1.5.0") return;
           rec.dial = "1.5.0";
           estampiller(rec);
-          touche = true;
+          changed = true;
         });
-        return touche;
+        return changed;
       } },
-      /* Chronicler et Sweet : 240 g, pas 225. Le document source dit "15 g / 240 g,
-         ratio 1:16" avec un premier versement de 120 g ; la transcription d'origine
-         avait rétréci la recette de 6 %. */
+      /* Chronicler and Sweet: 240 g, not 225. The source document says "15 g / 240 g,
+         ratio 1:16" with a first pour of 120 g; the original transcription
+         had shrunk the recipe by 6 %. */
       { v: 6, nom: "Chronicler a 240 g", appliquer: () => {
-        let touche = false;
+        let changed = false;
         state.recettes.forEach(rec => {
           if (rec.famille !== "chronicler" || Number(rec.eau) !== 225) return;
           rec.eau = 240;
@@ -105,137 +105,138 @@ const DATA_MIGRATIONS = (() => {
           }));
           rec.note = String(rec.note || "").split("225 g").join("240 g").split("affiche 225").join("affiche 240");
           estampiller(rec);
-          touche = true;
+          changed = true;
         });
-        return touche;
+        return changed;
       } },
 
-      /* Trois corrections de TEXTE, vérifiées le 3 septembre 2026.
+      /* Three TEXT corrections, checked on 3 September 2026.
 
-         1. La Brikka se remplit à l'EAU FROIDE. C'est la consigne Bialetti pour ce
-            modèle précisément : sa soupape lestée est calibrée sur la montée en
-            pression que produit l'eau froide, et l'eau préchauffée est la méthode
-            de la Moka Express. La recette dite "classique" prescrivait 80 à 90
-            degrés, donc ni ce que Chris fait ni ce que le fabricant recommande.
+         1. The Brikka is filled with COLD WATER. That is Bialetti's instruction
+            for this model specifically: its weighted valve is calibrated on the
+            pressure rise that cold water produces, and preheated water is the
+            Moka Express method. The so-called "classic" recipe prescribed 80
+            to 90 degrees, so neither what Chris does nor what the maker
+            recommends.
 
-         2. "Écoulement sous 10 secondes, la mouture est trop fine : passer à
-            1.4.0" envoyait dans le mauvais sens. 1.4.0 vaut 582 µm, soit PLUS FIN
-            que 1.5.0 qui vaut 624. Le diagnostic est juste, un lit trop serré fait
-            lâcher la soupape d'un coup ; le remède doit être plus GROSSIER.
+         2. "Flow under 10 seconds, the grind is too fine: go to 1.4.0" sent
+            the wrong way. 1.4.0 is 582 µm, so FINER than 1.5.0 which is 624.
+            The diagnosis is right, a bed packed too tight makes the valve
+            release all at once; the remedy must be COARSER.
 
-         3. Le Costaud (Bloom) promettait "plus fin" alors que le pas v5 a aligné
-            les dix recettes sur 1.5.0. Le texte décrivait un réglage que la fiche
-            ne porte plus.
+         3. The Costaud (Bloom) promised "finer" while step v5 aligned all ten
+            recipes on 1.5.0. The text described a setting the recipe card no
+            longer carries.
 
-         Chaque remplacement est CIBLÉ sur l'ancien texte : une recette que Chris
-         aurait déjà réécrite à la main n'est pas touchée. */
+         Each replacement TARGETS the old text: a recipe Chris had already
+         rewritten by hand is not touched. */
       { v: 7, nom: "eau froide Brikka et sens de la mouture", appliquer: () => {
-        let touche = false;
-        const remplacer = (rec, champ, avant, apres) => {
-          if (String(rec[champ] || "").indexOf(avant) < 0) return false;
-          rec[champ] = String(rec[champ]).split(avant).join(apres);
+        let changed = false;
+        const replaceIn = (rec, field, before, after) => {
+          if (String(rec[field] || "").indexOf(before) < 0) return false;
+          rec[field] = String(rec[field]).split(before).join(after);
           return true;
         };
         state.recettes.forEach(rec => {
-          let bouge = false;
-          // La classique porte variante "Standard", pas une chaine vide.
+          let moved = false;
+          // The classic one carries variant "Standard", not an empty string.
           if (rec.famille === "brikka-classique" && rec.variante !== "Eau préchauffée") {
-            const etapes = (rec.etapes || []).map(e => {
+            const steps = (rec.etapes || []).map(e => {
               if (String(e.texte).indexOf("Préchauffer l'eau à 80 ou 90 degrés") < 0) return e;
-              bouge = true;
+              moved = true;
               return { ...e, texte: "Remplir la chaudière à l'eau FROIDE : c'est la consigne Bialetti pour la Brikka, dont la soupape lestée est calibrée sur cette montée en pression. L'eau préchauffée est la méthode de la Moka Express, pas celle-ci." };
             });
-            if (bouge) rec.etapes = etapes;
+            if (moved) rec.etapes = steps;
           }
-          if (remplacer(rec, "note", "la mouture est trop fine : passer à 1.4.0.",
-            "la mouture est trop fine et la soupape lâche d'un coup : passer à 1.6.0, plus grossier.")) bouge = true;
-          if (remplacer(rec, "pourQui",
+          if (replaceIn(rec, "note", "la mouture est trop fine : passer à 1.4.0.",
+            "la mouture est trop fine et la soupape lâche d'un coup : passer à 1.6.0, plus grossier.")) moved = true;
+          if (replaceIn(rec, "pourQui",
             "seuls la température de départ, la flamme et la mouture changent.",
-            "seuls la température de départ, la flamme et la mouture changent. À savoir avant de comparer : Bialetti recommande l'eau FROIDE pour la Brikka, l'eau préchauffée étant la méthode de la Moka Express. Cette recette applique donc volontairement l'autre méthode.")) bouge = true;
-          if (remplacer(rec, "pourQui", "Plus chaud, plus fin, plus long.",
-            "Plus chaud et plus long. Pour le plus fin, descendre d'un cran à la main : les dix recettes portent 1.5.0 depuis que je ne recompte plus les crans à chaque changement de machine.")) bouge = true;
-          if (bouge) { estampiller(rec); touche = true; }
+            "seuls la température de départ, la flamme et la mouture changent. À savoir avant de comparer : Bialetti recommande l'eau FROIDE pour la Brikka, l'eau préchauffée étant la méthode de la Moka Express. Cette recette applique donc volontairement l'autre méthode.")) moved = true;
+          if (replaceIn(rec, "pourQui", "Plus chaud, plus fin, plus long.",
+            "Plus chaud et plus long. Pour le plus fin, descendre d'un cran à la main : les dix recettes portent 1.5.0 depuis que je ne recompte plus les crans à chaque changement de machine.")) moved = true;
+          if (moved) { estampiller(rec); changed = true; }
         });
-        return touche;
+        return changed;
       } },
 
-      /* Les deux recettes Brikka au lait fusionnent : même dose, même eau, même
-         molette, même feu, et leurs étapes disaient toutes les deux "extraire
-         exactement comme la Brikka classique". Seule la texture du lait changeait.
-         Le renommage recolle l'historique, ce pas retire la recette en trop.
+      /* The two Brikka milk recipes merge: same dose, same water, same dial,
+         same fire, and their steps both said "extract exactly like the
+         classic Brikka". Only the milk texture changed. The renaming
+         reattaches the history, this step removes the extra recipe.
 
-         Uniquement si elle porte encore son nom d'origine : renommée, elle est
-         devenue une recette personnelle et ne nous appartient plus. */
+         Only if it still carries its original name: renamed, it has become a
+         personal recipe and no longer belongs to us. */
       { v: 8, nom: "fusion des deux Brikka au lait", appliquer: () => {
-        let touche = false;
-        const avant = state.recettes.length;
+        let changed = false;
+        const before = state.recettes.length;
         state.recettes = state.recettes.filter(rec =>
           !(rec.id === "brikka-cappuccino" && rec.nom === "Brikka cappuccino"));
-        if (state.recettes.length !== avant) {
+        if (state.recettes.length !== before) {
           marquerSupprime("recettes", "brikka-cappuccino");
-          touche = true;
+          changed = true;
         }
-        /* La SURVIVANTE prend le nom fusionné et le contenu de la semence. Sans
-           ça, l'historique renommé pointerait vers "Brikka au lait" pendant que la
-           recette s'appellerait encore "Brikka flat white" : un nom de recette
-           orphelin, qui casse le panneau latéral et le préremplissage.
+        /* The SURVIVOR takes the merged name and the seed's content. Without
+           that, the renamed history would point to "Brikka au lait" while the
+           recipe would still be called "Brikka flat white": an orphan recipe
+           name, which breaks the side panel and the prefill.
 
-           Le nom d'origine encore en place sert de preuve que la recette n'a pas
-           été retouchée à la main. Renommée, elle appartient à Chris et on n'y
-           touche pas. */
-        const fusionnee = RECETTES_DEPART.find(d => d.id === "brikka-flatwhite");
+           The original name still in place serves as proof that the recipe
+           has not been edited by hand. Renamed, it belongs to Chris and we
+           leave it alone. */
+        const merged = RECETTES_DEPART.find(d => d.id === "brikka-flatwhite");
         state.recettes.forEach(rec => {
-          if (rec.id !== "brikka-flatwhite" || rec.nom !== "Brikka flat white" || !fusionnee) return;
+          if (rec.id !== "brikka-flatwhite" || rec.nom !== "Brikka flat white" || !merged) return;
           ["nom", "sousTitre", "etapes", "pourQui", "note", "volumeTypique", "lait", "cafesAssocies"]
-            .forEach(champ => { rec[champ] = fusionnee[champ]; });
+            .forEach(field => { rec[field] = merged[field]; });
           estampiller(rec);
-          touche = true;
+          changed = true;
         });
-        return touche;
+        return changed;
       } },
 
-    /* Deux recettes de percolation pure rejoignent la graine en v7.92, en
-       deuxième et troisième positions : Better 1 Cup (Hoffmann) et One and Done
-       (Lance Hedrick). Les étiquettes « Recette N » des recettes d'origine
-       suivantes se décalent, et la Sweet, variante de la Chronicler affichée sur
-       la même carte, reprend l'étiquette de sa famille. Ciblé sur l'ancienne
-       étiquette : une étiquette réécrite à la main n'est pas touchée. L'ORDRE
-       d'affichage, lui, est rétabli à chaque chargement par migrerDonnees. */
+    /* Two pure percolation recipes join the seed in v7.92, in second and
+       third positions: Better 1 Cup (Hoffmann) and One and Done (Lance
+       Hedrick). The « Recette N » labels of the following original recipes
+       shift, and the Sweet, a variant of the Chronicler shown on the same
+       card, takes back its family's label. Targeted on the old label: a
+       label rewritten by hand is not touched. The display ORDER, for its
+       part, is restored on every load by migrerDonnees. */
     { v: 9, nom: "numéros des recettes après Hoffmann et One and Done", appliquer: () => {
-      const nouveaux = { "sweet": ["Recette 2", "Recette 1"], "costaud-bloom": ["Recette 3", "Recette 4"],
+      const newNumbers = { "sweet": ["Recette 2", "Recette 1"], "costaud-bloom": ["Recette 3", "Recette 4"],
         "costaud-immersion": ["Recette 4", "Recette 5"], "tetsu-devil": ["Recette 5", "Recette 6"],
         "sherrycipe": ["Recette 6", "Recette 7"] };
-      let touche = false;
+      let changed = false;
       state.recettes.forEach(rec => {
-        const n = nouveaux[rec.id];
+        const n = newNumbers[rec.id];
         if (!n || rec.numero !== n[0]) return;
         rec.numero = n[1];
         estampiller(rec);
-        touche = true;
+        changed = true;
       });
-      return touche;
+      return changed;
     } },
 
-    /* La Sweet passe en fin de liste (v7.95) et prend l'étiquette « Recette 8 ».
-       Ciblé sur l'étiquette posée par le pas v9, sinon rien. */
+    /* The Sweet moves to the end of the list (v7.95) and takes the label « Recette 8 ».
+       Targeted on the label set by step v9, otherwise nothing. */
     { v: 10, nom: "la Sweet en dernier", appliquer: () => {
-      let touche = false;
+      let changed = false;
       state.recettes.forEach(rec => {
         if (rec.id !== "sweet" || rec.numero !== "Recette 1") return;
         rec.numero = "Recette 8";
         estampiller(rec);
-        touche = true;
+        changed = true;
       });
-      return touche;
+      return changed;
     } },
 
-    /* Le 4:00 d'usine des premières versions s'était ÉCRIT dans les réglages
-       synchronisés, donc le passage du défaut à zéro (v7.95) ne l'a jamais
-       effacé : Chris voyait toujours « elle bout en 4:00 ». Sa bouilloire fait
-       beaucoup de petites bulles au fond, dont quelques-unes remontent, vers
-       1:30 : c'est 85 à 90 degrés, et le gros bouillon suit d'une trentaine de
-       secondes, soit 2:00. Ciblé sur la valeur inventée uniquement : une
-       durée chronométrée à la main n'est pas touchée. */
+    /* The factory 4:00 of the first versions had been WRITTEN into the synced
+       settings, so moving the default to zero (v7.95) never erased it: Chris
+       still saw « elle bout en 4:00 ». His kettle makes lots of small bubbles
+       at the bottom, a few of which rise, around 1:30: that is 85 to 90
+       degrees, and the full boil follows some thirty seconds later, so 2:00.
+       Targeted on the invented value only: a duration timed by hand is not
+       touched. */
     { v: 11, nom: "bouilloire recalée de 4:00 a 2:00", appliquer: () => {
       const r = reglagesCourants();
       if (Number(r.ebullition_s) !== 240) return false;
@@ -243,172 +244,173 @@ const DATA_MIGRATIONS = (() => {
       return true;
     } },
 
-    /* Hoffmann, Better 1 Cup : le tourbillon se fait PENDANT le premier bloom,
-       pour mouiller tout le lit, et le pas de la fiche ne le disait pas assez
-       (demande de Chris, 14 septembre 2026). Ciblé sur l'ancien texte : une fiche
-       réécrite à la main n'est pas touchée. */
+    /* Hoffmann, Better 1 Cup: the swirl happens DURING the first bloom, to wet
+       the whole bed, and the recipe step did not say it clearly enough
+       (Chris's request, 14 September 2026). Targeted on the old text: a
+       recipe rewritten by hand is not touched. */
     { v: 12, nom: "Hoffmann, tourbillon pendant le bloom", appliquer: () => {
-      const avant = "Bloom : verser 50 g lentement, en quinze secondes environ, vanne OUVERTE. Tourbillon doux de la carafe.";
-      const apres = "Bloom : verser 50 g lentement, en quinze secondes environ, vanne OUVERTE. PENDANT le bloom, tourbillon doux du porte-filtre pour mouiller tout le lit, aucune poche sèche.";
-      let touche = false;
+      const before = "Bloom : verser 50 g lentement, en quinze secondes environ, vanne OUVERTE. Tourbillon doux de la carafe.";
+      const after = "Bloom : verser 50 g lentement, en quinze secondes environ, vanne OUVERTE. PENDANT le bloom, tourbillon doux du porte-filtre pour mouiller tout le lit, aucune poche sèche.";
+      let changed = false;
       state.recettes.forEach(rec => {
         if (rec.id !== "hoffmann-1cup") return;
-        const etapes = (rec.etapes || []).map(e => (e.texte === avant ? { ...e, texte: apres } : e));
-        if (etapes.every((e, i) => e === rec.etapes[i])) return;
-        rec.etapes = etapes;
+        const steps = (rec.etapes || []).map(e => (e.texte === before ? { ...e, texte: after } : e));
+        if (steps.every((e, i) => e === rec.etapes[i])) return;
+        rec.etapes = steps;
         estampiller(rec);
-        touche = true;
+        changed = true;
       });
-      return touche;
+      return changed;
     } },
 
-    /* Le « AUCUNE cuillère » du dernier pas Hoffmann n'était pas de lui : la
-       vidéo d'origine dit un tourbillon doux, et la Part 2 accepte un petit coup
-       de cuillère quand on ne peut pas faire tourner le porte-filtre, ce qui est
-       le cas d'un Switch sur la balance. Chris l'a relevé le 14 septembre 2026.
-       Ciblé sur l'ancien texte, la note aussi. */
+    /* The « AUCUNE cuillère » of the last Hoffmann step was not his: the
+       original video says a gentle swirl, and Part 2 accepts a quick stir
+       with a spoon when the dripper cannot be swirled, which is the case of a
+       Switch on the scale. Chris spotted it on 14 September 2026.
+       Targeted on the old text, the note too. */
     { v: 13, nom: "Hoffmann, la cuillère est permise", appliquer: () => {
-      const avant = "Tourbillon doux, AUCUNE cuillère. Laisser s'écouler, fin vers 2:45 à 3:15.";
-      const apres = "Tourbillon doux du porte-filtre, ou un petit coup de cuillère, un aller et un retour, si le Switch est trop lourd à faire tourner sur la balance : même effet, décoller la mouture des parois et aplanir le lit. Laisser s'écouler, fin vers 2:45 à 3:15.";
-      const noteAvant = "Il conseille medium-fine, un cran plus fin qu'en 500 ml.";
-      const noteApres = "Il conseille medium-fine, un cran plus fin qu'en 500 ml. Dans la Part 2 il accepte la cuillère à la place du tourbillon final, en douceur.";
-      let touche = false;
+      const before = "Tourbillon doux, AUCUNE cuillère. Laisser s'écouler, fin vers 2:45 à 3:15.";
+      const after = "Tourbillon doux du porte-filtre, ou un petit coup de cuillère, un aller et un retour, si le Switch est trop lourd à faire tourner sur la balance : même effet, décoller la mouture des parois et aplanir le lit. Laisser s'écouler, fin vers 2:45 à 3:15.";
+      const noteBefore = "Il conseille medium-fine, un cran plus fin qu'en 500 ml.";
+      const noteAfter = "Il conseille medium-fine, un cran plus fin qu'en 500 ml. Dans la Part 2 il accepte la cuillère à la place du tourbillon final, en douceur.";
+      let changed = false;
       state.recettes.forEach(rec => {
         if (rec.id !== "hoffmann-1cup") return;
-        let bouge = false;
-        const etapes = (rec.etapes || []).map(e => {
-          if (e.texte !== avant) return e;
-          bouge = true;
-          return { ...e, texte: apres };
+        let moved = false;
+        const steps = (rec.etapes || []).map(e => {
+          if (e.texte !== before) return e;
+          moved = true;
+          return { ...e, texte: after };
         });
-        const note = String(rec.note || "");
-        if (note.includes(noteAvant) && !note.includes(noteApres)) {
-          rec.note = note.split(noteAvant).join(noteApres);
-          bouge = true;
+        const noteText = String(rec.note || "");
+        if (noteText.includes(noteBefore) && !noteText.includes(noteAfter)) {
+          rec.note = noteText.split(noteBefore).join(noteAfter);
+          moved = true;
         }
-        if (!bouge) return;
-        rec.etapes = etapes;
+        if (!moved) return;
+        rec.etapes = steps;
         estampiller(rec);
-        touche = true;
+        changed = true;
       });
-      return touche;
+      return changed;
     } },
 
-    /* Le feu revient a 3, demande de Chris. Troisieme mouvement de cette
-       echelle apres 3 vers 4 (v1) et 4 vers 2 (v2) : les recettes DEJA
-       enregistrees doivent suivre la semence, sinon un carnet existant reste a 2
-       pendant qu'un carnet neuf demarre a 3.
+    /* Fire goes back to 3, Chris's request. Third move of this scale after
+       3 to 4 (v1) and 4 to 2 (v2): ALREADY saved recipes must follow the
+       seed, otherwise an existing logbook stays at 2 while a new logbook
+       starts at 3.
 
-       Ne touche que les Brikka encore a 2, la valeur semee : une recette que
-       Chris aurait lui-meme reglee ailleurs garde son chiffre. */
+       Only touches Brikkas still at 2, the seeded value: a recipe Chris
+       set himself to something else keeps its number. */
     { v: 14, nom: "feu 2 redevient 3",
-      appliquer: majFeuBrikka(r => Number(r.puissance_feu) === 2, 3) },
+      appliquer: setBrikkaFire(r => Number(r.puissance_feu) === 2, 3) },
 
-    /* La bouilloire chauffe en courbe (v8.59), plus en droite : les degrés
-       estimés sous l'ancien modèle étaient trop bas en milieu de chauffe (82 au
-       lieu de 88 à 1:30). Une tasse Switch dont la température vaut EXACTEMENT
-       l'ancienne estimation depuis son temps de chauffe n'a pas été corrigée à
-       la main : elle prend la nouvelle. Un degré retouché ne correspond plus à
-       la droite et n'est pas touché. Idempotent : après passage, la tasse ne
-       correspond plus à la droite, sauf aux deux bouts, où les deux modèles
-       disent la même chose. */
+    /* The kettle heats along a curve (v8.59), no longer a straight line: the
+       degrees estimated under the old model were too low mid-heating (82
+       instead of 88 at 1:30). A Switch cup whose temperature equals EXACTLY
+       the old estimate from its heating time was not corrected by hand: it
+       takes the new one. A retouched degree no longer matches the line and
+       is not touched. Idempotent: after the pass, the cup no longer matches
+       the line, except at both ends, where the two models say the same
+       thing. */
     { v: 15, nom: "bouilloire en courbe", appliquer: () => {
       const r = reglagesCourants();
       const e = Number(r.ebullition_s);
       if (!(e > 0)) return false;
-      let touche = false;
+      let changed = false;
       state.extractions.forEach(x => {
         if (x.methode !== "Switch" || x.chauffe_s === "" || x.chauffe_s === undefined) return;
         const s = Number(x.chauffe_s);
         if (!Number.isFinite(s) || s < 0 || x.temperature_c === "" || x.temperature_c === undefined) return;
-        const droite = Math.round(28 + 72 * Math.min(1, s / e));
-        if (Number(x.temperature_c) !== droite) return;
-        const courbe = temperatureDepuisChauffe(s, e, r.bulles_s);
-        if (courbe === "" || courbe === droite) return;
-        x.temperature_c = courbe;
+        const linear = Math.round(28 + 72 * Math.min(1, s / e));
+        if (Number(x.temperature_c) !== linear) return;
+        const curved = temperatureDepuisChauffe(s, e, r.bulles_s);
+        if (curved === "" || curved === linear) return;
+        x.temperature_c = curved;
         estampiller(x);
-        touche = true;
+        changed = true;
       });
-      return touche;
+      return changed;
     } },
 
-    /* Les vidéos des recettes (v8.64) : une recette d'origine déjà stockée
-       reçoit le lien de sa graine. Ciblé sur un champ VIDE : un lien posé à la
-       main n'est pas remplacé. */
+    /* Recipe videos (v8.64): an already stored original recipe receives its
+       seed's link. Targeted on an EMPTY field: a link set by hand is not
+       replaced. */
     { v: 16, nom: "videos des recettes", appliquer: () => {
-      let touche = false;
+      let changed = false;
       state.recettes.forEach(rec => {
-        const graine = RECETTES_DEPART.find(d => d.id === rec.id);
-        if (!graine || !graine.video || rec.video) return;
-        rec.video = graine.video;
+        const seed = RECETTES_DEPART.find(d => d.id === rec.id);
+        if (!seed || !seed.video || rec.video) return;
+        rec.video = seed.video;
         estampiller(rec);
-        touche = true;
+        changed = true;
       });
-      return touche;
+      return changed;
     } },
 
-    /* « The Tetsu Devil » devient « Tetsu 4:6 » (v8.65, demande de Chris) : la
-       recette est la méthode 4:6, pas la « Devil » de Tetsu, qui se fait à deux
-       températures. La recette stockée change de nom si elle porte encore
-       l'ancien (un nom retouché à la main n'est pas touché). Ses tasses et ses
-       cafés suivent par RENOMMAGES_RECETTES, à l'étape 1 de migrerDonnees. */
+    /* « The Tetsu Devil » becomes « Tetsu 4:6 » (v8.65, Chris's request): the
+       recipe is the 4:6 method, not Tetsu's « Devil », which is made at two
+       temperatures. The stored recipe is renamed if it still carries the old
+       name (a name edited by hand is not touched). Its cups and coffees
+       follow through RENOMMAGES_RECETTES, in step 1 of migrerDonnees. */
     { v: 17, nom: "Tetsu Devil devient Tetsu 4:6", appliquer: () => {
-      const avant = "The Tetsu Devil", apres = "Tetsu 4:6";
-      let touche = false;
+      const before = "The Tetsu Devil", after = "Tetsu 4:6";
+      let changed = false;
       state.recettes.forEach(rec => {
-        if (rec.id !== "tetsu-devil" || rec.nom !== avant) return;
-        rec.nom = apres;
+        if (rec.id !== "tetsu-devil" || rec.nom !== before) return;
+        rec.nom = after;
         estampiller(rec);
-        touche = true;
+        changed = true;
       });
-      return touche;
+      return changed;
     } },
 
-    /* La Brikka au lait portait le numéro 3, affiché à côté de la « Recette 3 »
-       (One and Done) du Guide (v8.74). Ciblé sur la valeur d'origine. */
+    /* The Brikka au lait carried number 3, shown next to the « Recette 3 »
+       (One and Done) of the Guide (v8.74). Targeted on the original value. */
     { v: 18, nom: "Brikka au lait sans numero", appliquer: () => {
-      let touche = false;
+      let changed = false;
       state.recettes.forEach(rec => {
         if (rec.id !== "brikka-flatwhite" || String(rec.numero) !== "3") return;
         rec.numero = "";
         estampiller(rec);
-        touche = true;
+        changed = true;
       });
-      return touche;
+      return changed;
     } },
-    /* Deux colonnes de sachet, restant_g et restant_le (v8.96). Rien à
-       rattraper : vides, elles laissent le calcul d'avant. Le pas n'existe que
-       pour monter la version, afin qu'un onglet resté sur l'ancienne soit refusé
-       par la synchro au lieu d'effacer ces colonnes qu'il ne connaît pas. */
+    /* Two bag columns, restant_g and restant_le (v8.96). Nothing to catch
+       up: empty, they keep the previous computation. The step only exists
+       to bump the version, so that a tab still on the old one is rejected
+       by the sync instead of erasing these columns it does not know. */
     { v: 19, nom: "compte a la main des sachets", appliquer: () => false },
-    /* Tetsu 4:6 (v9.00) : la fiche donne la température par torréfaction
-       (Philocoffea : 93, 88, 83 °C), se verse à l'œil et non plus toutes les 45
-       secondes, et sa note cite la vidéo d'origine. Champ par champ, ciblé sur
-       le texte semé d'avant : un champ retouché à la main n'est pas touché. */
+    /* Tetsu 4:6 (v9.00): the recipe card gives the temperature by roast
+       (Philocoffea: 93, 88, 83 °C), is poured by eye and no longer every 45
+       seconds, and its note cites the original video. Field by field,
+       targeted on the previously seeded text: a field edited by hand is not
+       touched. */
     { v: 20, nom: "Tetsu 4:6, temperature par torrefaction", appliquer: () => {
-      const origine = recettesDefaut().find(d => d.id === "tetsu-devil");
-      if (!origine) return false;
-      const avant = {
+      const original = recettesDefaut().find(d => d.id === "tetsu-devil");
+      if (!original) return false;
+      const before = {
         tempTexte: "93 °C",
         totalTexte: "total environ 3:25",
         pourQui: "Les cafés complexes et chers que je ne veux pas rater, et ceux dont je veux régler moi même l'équilibre. Vanne OUVERTE du début à la fin. Verser dès que le lit vient de s'assécher en surface, environ toutes les 30 à 45 secondes.",
         note: "La méthode 4:6 de Tetsu Kasuya, champion du monde 2016 : 40 pour cent de l'eau règle l'acidité et le sucre, 60 pour cent le corps. Ne pas confondre avec sa recette « Devil », à deux températures (90 puis 70 °C), dont elle portait le nom jusqu'à la v8.65. Mouture medium coarse, 2.0.0 : cinq numéros plus ouverts que la zone commune avec la Brikka (25 crans). La vidéo est une démonstration de TALES COFFEE, pas de Tetsu lui même.",
       };
-      let touche = false;
+      let changed = false;
       state.recettes.forEach(rec => {
         if (rec.id !== "tetsu-devil") return;
-        let change = false;
-        Object.keys(avant).forEach(k => {
-          if (rec[k] === avant[k]) { rec[k] = origine[k]; change = true; }
+        let edited = false;
+        Object.keys(before).forEach(k => {
+          if (rec[k] === before[k]) { rec[k] = original[k]; edited = true; }
         });
-        if (change) { estampiller(rec); touche = true; }
+        if (edited) { estampiller(rec); changed = true; }
       });
-      return touche;
+      return changed;
     } },
     ];
 
-    /* Applique les pas manquants et écrit la nouvelle version. Renvoie vrai si
-       quelque chose a bougé, pour que l'appelant sache qu'il faut persister. */
+    /* Applies the missing steps and writes the new version. Returns true if
+       something moved, so the caller knows it must persist. */
     function appliquerSchema() {
       const version = Number(reglagesCourants().schema_version) || 0;
       if (version >= SCHEMA_ACTUEL) return false;
@@ -421,24 +423,24 @@ const DATA_MIGRATIONS = (() => {
     }
 
     function migrerDonnees() {
-      // 1. Renomme les anciennes recettes dans l'historique et les cafés.
-      /* ESTAMPILLÉ (v8.65) : sans nouvelle date de mise à jour, la synchro
-         gardait la ligne du serveur, à l'ancien nom, et chaque appareil
-         renommait de son côté à chaque chargement sans jamais le publier. Une
-         ligne renommée ne porte plus un nom de la table, donc elle n'est
-         estampillée qu'une fois. */
+      // 1. Renames old recipes in the history and the coffees.
+      /* STAMPED (v8.65): without a new update date, the sync kept the
+         server row, with the old name, and each device renamed on its own
+         side on every load without ever publishing it. A renamed row no
+         longer carries a name from the table, so it is stamped only
+         once. */
       state.extractions.forEach(e => {
         if (RENOMMAGES_RECETTES[e.recette]) { e.recette = RENOMMAGES_RECETTES[e.recette]; estampiller(e); }
       });
       state.cafes.forEach(c => {
         if (RENOMMAGES_RECETTES[c.recette_recommandee]) { c.recette_recommandee = RENOMMAGES_RECETTES[c.recette_recommandee]; estampiller(c); }
       });
-      // 2. Retire les recettes d'origine de l'ancienne génération, garde les
-      //    recettes personnelles, et garantit la présence des nouvelles.
-      const avaitAnciennes = state.recettes.some(r => ANCIENS_SEED_IDS.includes(r.id));
-      if (avaitAnciennes) {
-        const persos = state.recettes.filter(r => !ANCIENS_SEED_IDS.includes(r.id) && !RECETTES_DEPART.some(d => d.id === r.id));
-        state.recettes = recettesDefaut().concat(persos);
+      // 2. Removes the original recipes of the old generation, keeps the
+      //    personal recipes, and guarantees the new ones are present.
+      const hadOldOnes = state.recettes.some(r => ANCIENS_SEED_IDS.includes(r.id));
+      if (hadOldOnes) {
+        const personal = state.recettes.filter(r => !ANCIENS_SEED_IDS.includes(r.id) && !RECETTES_DEPART.some(d => d.id === r.id));
+        state.recettes = recettesDefaut().concat(personal);
       } else {
         RECETTES_DEPART.forEach(d => {
           const idx = state.recettes.findIndex(r => r.id === d.id);
@@ -446,8 +448,8 @@ const DATA_MIGRATIONS = (() => {
             state.recettes.push(normaliserRecette({ ...d, etapes: d.etapes.map(e => ({ ...e })), cafesAssocies: [...d.cafesAssocies] }));
             return;
           }
-          // Mise à niveau structurelle : familles et variantes (v7), sans toucher
-          // aux paramètres que l'utilisateur aurait édités.
+          // Structural upgrade: families and variants (v7), without touching
+          // the parameters the user may have edited.
           const ex = state.recettes[idx];
           if ((d.variante || "") && (ex.variante || "") !== d.variante) {
             if (ex.nom !== d.nom) {
@@ -460,17 +462,17 @@ const DATA_MIGRATIONS = (() => {
           }
         });
       }
-      // 2 bis. ORDRE d'affichage : les recettes d'origine dans l'ordre de la
-      //    graine, les personnelles ensuite dans leur ordre. Idempotent. Sans ça,
-      //    une recette ajoutée à la graine arrivait en fin de liste chez qui avait
-      //    déjà des données, quelle que soit sa position dans RECETTES_DEPART.
-      const rang = new Map(RECETTES_DEPART.map((d, i) => [d.id, i]));
+      // 2 bis. Display ORDER: the original recipes in the seed's order, the
+      //    personal ones afterwards in their own order. Idempotent. Without it,
+      //    a recipe added to the seed landed at the end of the list for anyone
+      //    who already had data, whatever its position in RECETTES_DEPART.
+      const rank = new Map(RECETTES_DEPART.map((d, i) => [d.id, i]));
       state.recettes = state.recettes
-        .map((r, i) => ({ r, cle: rang.has(r.id) ? rang.get(r.id) : RECETTES_DEPART.length + i }))
+        .map((r, i) => ({ r, cle: rank.has(r.id) ? rank.get(r.id) : RECETTES_DEPART.length + i }))
         .sort((x, y) => x.cle - y.cle)
         .map(x => x.r);
-      // 3. Met à jour les fiches Sáng Tạo 4 et Balanced si elles n'ont pas
-      //    encore reçu leurs corrections (marquées par le tag).
+      // 3. Updates the Sáng Tạo 4 and Balanced cards if they have not
+      //    received their corrections yet (marked by the tag).
       const c1 = state.cafes.find(c => c.id === "c1" && (c.nom || "").includes("Sáng Tạo"));
       if (c1 && !c1.tag) {
         Object.assign(c1, {
@@ -490,11 +492,11 @@ const DATA_MIGRATIONS = (() => {
           machine_recommandee: "Les deux", recette_recommandee: "The Coffee Chronicler's Recipe",
         });
       }
-      // 4. Tasses par défaut si absentes.
+      // 4. Default cups if missing.
       if (!state.tasses.length) state.tasses = tassesDefaut();
-      // 5. Date d'ajout des cafés : si absente, on prend la date de la première
-      //    extraction du café (meilleure approximation pour l'existant). Les
-      //    cafés jamais extraits restent sans date (rien d'affiché).
+      // 5. Date the coffees were added: if missing, take the date of the
+      //    coffee's first extraction (best approximation for existing data).
+      //    Coffees never extracted stay without a date (nothing shown).
       state.cafes.forEach(c => {
         if (c.date_ajout) return;
         const dates = state.extractions
@@ -502,11 +504,11 @@ const DATA_MIGRATIONS = (() => {
           .map(e => e.date_heure).sort();
         if (dates.length) c.date_ajout = dates[0].slice(0, 10);
       });
-      // 6 ter. Puissance de feu : 3 sur toutes les extractions Brikka qui n'en ont
-      //    pas. Sans valeur de départ, le champ resterait vide sur tout l'historique
-      //    et aucune comparaison ne serait possible avant des semaines.
-      //    IDEMPOTENTE : ne touche que les lignes dont le champ est vide, donc une
-      //    valeur saisie ou corrigée à la main n'est jamais écrasée.
+      // 6 ter. Fire power: 3 on every Brikka extraction that has none.
+      //    Without a starting value, the field would stay empty across the whole
+      //    history and no comparison would be possible for weeks.
+      //    IDEMPOTENT: only touches rows whose field is empty, so a value
+      //    entered or corrected by hand is never overwritten.
       state.extractions.forEach(e => {
         if (e.methode === "Brikka" && (e.puissance_feu === "" || e.puissance_feu === undefined)) {
           e.puissance_feu = PUISSANCE_FEU_HISTORIQUE;
@@ -514,31 +516,31 @@ const DATA_MIGRATIONS = (() => {
         }
       });
 
-      // Les rattrapages de valeurs semées vivent dans PAS_DE_SCHEMA, plus haut :
-      // ils dépendent d'un numéro de version stocké AVEC les données.
+      // The fixes of seeded values live in PAS_DE_SCHEMA, above:
+      // they depend on a version number stored WITH the data.
       appliquerSchema();
 
-      // 6 bis. Les extractions faites à l'eau préchauffée quittent "Brikka
-      //    classique" pour la variante dédiée. Le préchauffage n'est pas un détail
-      //    de service : il change la montée en pression, la durée et le
-      //    comportement de la soupape, donc c'est un protocole distinct qui mérite
-      //    sa ligne dans les comparaisons.
-      //    IDEMPOTENTE par construction : après le déplacement, `recette` ne vaut
-      //    plus "Brikka classique", donc un rechargement ne redéplace rien. Et on
-      //    ne touche QUE les lignes qui portent exactement l'ancien nom, une
-      //    extraction déjà rangée à la main est laissée en place.
-      const RECETTE_PRECHAUFFEE = "Brikka classique (eau préchauffée)";
+      // 6 bis. Extractions made with preheated water leave "Brikka
+      //    classique" for the dedicated variant. Preheating is not a serving
+      //    detail: it changes the pressure rise, the duration and the
+      //    behaviour of the valve, so it is a distinct protocol that deserves
+      //    its own line in the comparisons.
+      //    IDEMPOTENT by construction: after the move, `recette` is no longer
+      //    "Brikka classique", so a reload moves nothing again. And we only
+      //    touch rows carrying exactly the old name, an extraction already
+      //    filed by hand is left in place.
+      const PREHEATED_RECIPE = "Brikka classique (eau préchauffée)";
       state.extractions.forEach(e => {
         if (e.recette === "Brikka classique" && Number(e.eau_prechauffee) === 1) {
-          e.recette = RECETTE_PRECHAUFFEE;
+          e.recette = PREHEATED_RECIPE;
           estampiller(e);
         }
       });
 
-      // 7. Achats : un sachet implicite pour chaque café qui a un format mais aucun
-      //    achat. IDEMPOTENTE grâce au test "aucun achat pour ce café", donc elle ne
-      //    recrée rien à chaque chargement et n'écrase aucun achat saisi à la main.
-      //    Sans elle, le stock serait incalculable sur tout l'existant.
+      // 7. Purchases: an implicit bag for each coffee that has a size but no
+      //    purchase. IDEMPOTENT thanks to the "no purchase for this coffee" test,
+      //    so it recreates nothing on each load and overwrites no purchase entered
+      //    by hand. Without it, stock could not be computed for all existing data.
       state.cafes.forEach(c => {
         if (!(Number(c.format_grammes) > 0)) return;
         if (state.achats.some(a => a.cafe_id === c.id)) return;

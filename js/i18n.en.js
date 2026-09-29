@@ -1,13 +1,13 @@
-// Paquet ANGLAIS, chargé à la demande. Le mécanisme est dans js/i18n.js.
+// ENGLISH bundle, loaded on demand. The mechanism lives in js/i18n.js.
 //
-// Téléchargé UNIQUEMENT si le site passe en anglais. Le français ne le consulte
-// jamais : tr(), diag(), tag() et compagnie renvoient leur entrée telle quelle
-// tant que la langue vaut "fr", et les gabarits se rabattent sur leur moitié
-// française. Ça représente 29 Ko gzippés sur les 39 du fichier d'origine.
+// Downloaded ONLY if the site switches to English. French never reads it:
+// tr(), diag(), tag() and friends return their input unchanged
+// as long as the language is "fr", and templates fall back on their French
+// half. That is 29 KB gzipped out of the 39 of the original file.
 "use strict";
 
 const I18N_EN = {
-  // Moitiés anglaises des gabarits, mêmes clés et même ordre que dans i18n.js.
+  // English halves of the templates, same keys and same order as in i18n.js.
   T: {
     doc_title: "Brew journal: Brikka and Switch",
     kpi_auj: "today",
@@ -680,8 +680,8 @@ const I18N_EN = {
     "Si l'écoulement dure moins de 10 secondes, la mouture est trop fine et la soupape lâche d'un coup : passer à 1.5.4, le plus gros de la plage Brikka. Noter le temps total ET le temps d'écoulement, c'est leur écart qui dit combien de temps la mouture a cuit.": "If the flow lasts under 10 seconds, the grind is too fine and the valve releases all at once: go to 1.5.4, the coarsest of the Brikka range. Note the total time AND the flow time, the gap between them tells you how long the grounds cooked.",
     "Les lavés d'altitude et les torréfactions claires, grains fermés qui résistent et sortent ACIDES ET CREUX avec les autres recettes. Plus chaud et plus long. Pour le plus fin, descendre d'un cran à la main : les recettes portent 1.5.0, sauf la Neo Brew, depuis que je ne recompte plus les crans à chaque changement de machine. Le bloom sert à saturer un grain dense, pas à dégazer.": "High-altitude washed coffees and light roasts, dense beans that resist and come out SOUR AND HOLLOW with the other recipes. Hotter and longer. For the finest, go one click finer by hand: the recipes carry 1.5.0, except the Neo Brew, since I stopped recounting clicks every time I switch machines. The bloom is there to saturate a dense bean, not to degas it.",
     "La méthode 4:6 de Tetsu Kasuya, champion du monde 2016 : 40 pour cent de l'eau règle l'acidité et le sucre, 60 pour cent le corps. Ne pas confondre avec sa recette « Devil », à deux températures (90 puis 70 °C), dont elle portait le nom jusqu'à la v8.65. Mouture medium coarse, 2.0.0 : cinq numéros plus ouverts que la zone commune avec la Brikka (25 crans). La vidéo est une démonstration de TALES COFFEE, pas de Tetsu lui même.": "Tetsu Kasuya's 4:6 method, 2016 world champion: 40 percent of the water sets acidity and sweetness, 60 percent the body. Not to be confused with his « Devil » recipe, with two temperatures (90 then 70 °C), whose name it carried until v8.65. Medium-coarse grind, 2.0.0: five numbers coarser than the range shared with the Brikka (25 clicks). The video is a demonstration by TALES COFFEE, not by Tetsu himself.",
-    /* Les textes des recettes d'origine (v8.77), par leur phrase française exacte :
-       une recette modifiée dans l'appli garde son texte, sans traduction. */
+    /* The texts of the built-in recipes (v8.77), keyed by their exact French sentence:
+       a recipe edited in the app keeps its text, untranslated. */
     "La base quotidienne de la Brikka": "The everyday Brikka baseline",
     "dépend de la puissance du feu": "depends on burner power",
     "environ 1:7, environ 90 ml en tasse": "about 1:7, about 90 ml in the cup",
@@ -1011,7 +1011,7 @@ const I18N_EN = {
       "Comparer deux extractions": "Compare two brews",
       "Comparer": "Compare",
       "Annuler": "Cancel",
-      // Quand cocher chaque diagnostic. Passent par I18N.tr, donc par UI.
+      // When to tick each diagnostic. They go through I18N.tr, hence through UI.
       "Rien ne dépasse, tu la referais à l'identique.": "Nothing sticks out, you would brew it again exactly the same.",
       "Ça pique légèrement en attaque, sans être franchement citronné.": "A slight sharpness up front, without being outright lemony.",
       "Acidité vive, et du creux derrière : la tasse semble inachevée.": "Sharp acidity with a hollow behind it: the cup feels unfinished.",
@@ -1073,8 +1073,8 @@ const I18N_EN = {
       "Calendrier d'activité": "Activity calendar",
       "Moins": "Less",
       "Plus": "More",
-      // Légende du calendrier : depuis que l'échelle de couleur est ABSOLUE, elle
-      // annonce des nombres réels au lieu d'un vague "moins vers plus".
+      // Calendar legend: since the color scale became ABSOLUTE, it
+      // shows real numbers instead of a vague "less to more".
       "Aucune": "None",
       "4 et plus": "4 or more",
       "Note moyenne par café": "Average score by coffee",
@@ -1428,7 +1428,7 @@ const I18N_EN = {
       "Vérifie la ligne thành phần au dos du paquet.": "Check the thành phần line on the back of the bag.",
       "Actif": "Active",
   
-      // Nouveaux champs de saisie
+      // New entry fields
       "Volume extrait (ml)": "Extracted volume (ml)",
       "Tasse utilisée": "Cup used",
       "Versée chaude dans la chaudière, comme la recette le demande.": "Poured hot into the boiler, as the recipe asks.",
@@ -1442,7 +1442,7 @@ const I18N_EN = {
       "Arrêter et reporter": "Stop and fill in",
       "Déduit tout seul : du palier \"ouvrir\" à l'arrêt du chrono.": "Deduced automatically: from the \"open\" checkpoint to the timer stop.",
   
-      // Choisir son Costaud et récapitulatif
+      // Choosing your Costaud, and summary
       "Choisir son Costaud : le test": "Choosing your Costaud: the test",
       "Y a-t-il du sucré et du corps": "Is there sweetness and body",
       "derrière": "behind",
@@ -1456,7 +1456,7 @@ const I18N_EN = {
       "Récapitulatif mouture des recettes Switch": "Grind recap for the Switch recipes",
       "Les quatre premières restent dans la zone commune avec la Brikka à 1.2.0. Les deux dernières demandent d'ouvrir de deux numéros de plus.": "The first four stay in the shared zone with the Brikka at 1.2.0. The last two require opening two more numbers.",
   
-      // Lire une étiquette vietnamienne
+      // Reading a Vietnamese label
       "Lire une étiquette vietnamienne": "Reading a Vietnamese label",
       "liste des ingrédients, obligatoire, classée par poids décroissant. Le seul texte fiable de l'emballage, le reste est du marketing. Le premier endroit où regarder avant d'acheter.": "the ingredient list, mandatory, sorted by decreasing weight. The only reliable text on the packaging, the rest is marketing. The first place to look before buying.",
       "le pourcentage réel de café. Un café pur n'affiche pas de pourcentage, il écrit 100% cà phê ou liste ses variétés. Un pourcentage affiché est déjà un aveu.": "the real coffee percentage. A pure coffee shows no percentage, it writes 100% cà phê or lists its varieties. A displayed percentage is already a confession.",
@@ -1496,7 +1496,7 @@ const I18N_EN = {
       "Démarrer": "Start",
       "Étape suivante": "Next step",
   
-      // Corrections associées aux diagnostics
+      // Fixes linked to the diagnostics
       "Rien à changer, note le réglage.": "Nothing to change, write the setting down.",
       "Répartition : égaliser le lit sans jamais tasser. En Brikka, ne pas trop remplir le panier. Au Switch, remuer et verser en spirale.": "Distribution: level the bed and never tamp. On the Brikka, do not overfill the basket. On the Switch, stir and pour in a spiral.",
       "Presque bon : deux crans plus grossier, et remuer moins.": "Almost there: two clicks coarser, and stir less.",
@@ -1515,7 +1515,7 @@ const I18N_EN = {
       "Fraîcheur : vérifier la date de torréfaction, resserrer le sachet.": "Freshness: check the roast date, seal the bag tighter.",
       "Torréfaction trop foncée, aucun réglage ne l'enlèvera.": "Roast too dark, no setting will remove it.",
   
-      // Variantes du 4:6
+      // 4:6 variants
       "Classique": "Classic",
       "Plus de sucre": "More sweetness",
       "Équilibre": "Balance",

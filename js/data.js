@@ -1,18 +1,18 @@
-/* Couche de données : l'état, les mutations, la synchro et le démarrage.
+/* Data layer: the state, the mutations, the sync and the startup.
  *
- * Principe : la vérité vit dans les CSV du dossier lié, IndexedDB garde en
- * permanence une copie de travail pour ne rien perdre, et le serveur D1 fait
- * converger les appareils. Ce fichier POSSÈDE l'état et le fait évoluer ; ce
- * qui n'a pas besoin de l'état vit à côté :
+ * Principle: the truth lives in the CSV files of the linked folder, IndexedDB
+ * always keeps a working copy so nothing is lost, and the D1 server makes the
+ * devices converge. This file OWNS the state and evolves it; whatever does
+ * not need the state lives next to it:
  *
- *   data-csv.js         lire et écrire le format CSV
- *   data-schema.js      colonnes, normalisation, semences
- *   data-store.js       IndexedDB, File System Access, téléchargement
- *   data-calculs.js     champs dérivés et lecture des sachets (lecture seule)
- *   data-migrations.js  version de schéma et rattrapages de l'existant
+ *   data-csv.js         read and write the CSV format
+ *   data-schema.js      columns, normalisation, seeds
+ *   data-store.js       IndexedDB, File System Access, download
+ *   data-calculs.js     derived fields and bag lookups (read only)
+ *   data-migrations.js  schema version and catch-ups of existing data
  *
- * La façade DATA rendue en bas expose le même nom qu'avant pour chaque
- * fonction, où qu'elle vive : le reste du site n'a pas bougé. */
+ * The DATA facade returned at the bottom exposes the same name as before for
+ * each function, wherever it lives: the rest of the site did not move. */
 "use strict";
 
 const DATA = (() => {
@@ -29,46 +29,46 @@ const DATA = (() => {
     extractions: [],
     recettes: [],
     tasses: [],
-    // Un achat = un sachet. Sans cette table, un café racheté gardait UNE seule
-    // date de torréfaction, donc la fraîcheur mentait dès le deuxième sachet, et
-    // le stock restant n'était pas calculable.
+    // One purchase = one bag. Without this table, a re-bought coffee kept ONE
+    // single roast date, so freshness lied from the second bag on, and the
+    // remaining stock could not be computed.
     achats: [],
     reglages: [],
     dirHandle: null,
     fsDisponible: typeof window !== "undefined" && "showDirectoryPicker" in window,
     demoActive: false,
 
-    // Synchronisation entre appareils. `tombes` retient les suppressions
-    // ({table: {id: horodatage}}) : sans elles, une ligne supprimée sur le
-    // téléphone reviendrait au prochain échange avec le bureau, qui l'a encore.
-    // Hors des CSV, c'est de la mécanique de synchro, pas de la donnée café.
+    // Sync between devices. `tombes` remembers deletions
+    // ({table: {id: timestamp}}): without them, a row deleted on the phone
+    // would come back at the next exchange with the desktop, which still has it.
+    // Outside the CSV files: this is sync machinery, not coffee data.
     tombes: typeof SYNC === "undefined" ? {} : SYNC.tombesVides(),
     syncEtat: "inconnu",
     syncLe: null,
-    // Taille du document sur le serveur et plafond qu'il accepte, en octets.
-    // Renvoyés à chaque échange ; le panneau Données prévient passé la moitié.
+    // Size of the document on the server and the cap it accepts, in bytes.
+    // Returned on every exchange; the Data panel warns past the halfway mark.
     syncTaille: 0,
     syncPlafond: 0,
   };
 
-  /* Lecture seule et rattrapages, liés à l'état ci-dessus. Les fonctions
-     passées en aides sont des déclarations, donc déjà hissées à ce point. */
+  /* Read-only helpers and catch-ups, bound to the state above. The functions
+     passed as helpers are declarations, so already hoisted at this point. */
   const { cafeDe, calculs, sachetALaDate, sachetCourant, stockSachet } = DATA_CALCULS.pour(state);
   const { migrerDonnees, appliquerSchema, SCHEMA_ACTUEL } =
     DATA_MIGRATIONS.pour(state, { marquerSupprime, reglagesCourants });
 
-  /* Pose une pierre tombale. La date sert à trancher contre une éventuelle
-     réécriture de la même ligne sur l'autre appareil. */
+  /* Lays a tombstone. The date is used to decide against a possible rewrite
+     of the same row on the other device. */
   function marquerSupprime(table, id) {
     if (!state.tombes[table]) state.tombes[table] = {};
     state.tombes[table][id] = maintenant();
   }
 
-  /* LA RÉVISION (v8.75) : elle change à chaque notification qui touche les
-     données. L'interface garde ses calculs par tasse tant qu'elle ne bouge pas,
-     au lieu de tout recalculer à chaque rendu et à chaque frappe. Une
-     notification « sync » (l'état de la synchro seul) ne la change pas, et les
-     abonnés savent qu'ils n'ont rien à redessiner que la pastille. */
+  /* THE REVISION (v8.75): it changes with every notification that touches the
+     data. The interface keeps its per-cup calculations as long as it does not
+     move, instead of recomputing everything on every render and keystroke. A
+     "sync" notification (only the sync status) does not change it, and the
+     subscribers know they have nothing to redraw but the status dot. */
   const abonnes = [];
   let revision = 0;
   function abonner(fn) { abonnes.push(fn); }
@@ -82,9 +82,9 @@ const DATA = (() => {
     return state.reglages[0] || normaliserReglages({});
   }
 
-  /* Écrit les réglages et les fait voyager. Comme toute mutation, ça estampille :
-     l'appareil qui règle en dernier gagne la fusion, ce qui est exactement ce
-     qu'on veut pour une préférence. */
+  /* Writes the settings and makes them travel. Like every mutation, it stamps:
+     the device that sets last wins the merge, which is exactly what we want
+     for a preference. */
   async function majReglages(partiel) {
     const fusion = estampiller(normaliserReglages({ ...reglagesCourants(), ...partiel }));
     state.reglages = [fusion];
@@ -100,8 +100,8 @@ const DATA = (() => {
     const a = estampiller(normaliserAchat(achat));
     a.id = nouvelId("a", state.achats);
     state.achats.push(a);
-    // La fiche café suit le dernier sachet : format, prix et date de
-    // torréfaction affichés ailleurs doivent rester cohérents avec lui.
+    // The coffee record follows the latest bag: format, price and roast date
+    // shown elsewhere must stay consistent with it.
     const cafe = state.cafes.find(c => c.id === a.cafe_id);
     if (cafe) {
       if (a.format_grammes !== "") cafe.format_grammes = a.format_grammes;
@@ -113,10 +113,10 @@ const DATA = (() => {
     return a;
   }
 
-  /* CORRIGER LE STOCK À LA MAIN (v8.96). Écrit le compte sur le sachet en
-     cours ; sans sachet enregistré pour ce café, en crée un d'aujourd'hui, au
-     format du café, pour y poser le compte. L'heure est celle des tasses, en
-     local à la minute, pour que « les tasses d'après » se compare en texte. */
+  /* CORRECTING THE STOCK BY HAND (v8.96). Writes the count on the current
+     bag; with no bag recorded for this coffee, creates one dated today, in the
+     coffee's format, to hold the count. The time is the cups' one, local and to
+     the minute, so that "the cups after" compares as text. */
   async function corrigerStock(cafeId, grammes) {
     const g = Math.round(Number(grammes) * 10) / 10;
     if (!Number.isFinite(g) || g < 0) return null;
@@ -146,7 +146,7 @@ const DATA = (() => {
     await persister();
   }
 
-  async function sauverLocal() {
+  async function saveLocal() {
     await kvSetPlusieurs({
       cafes: state.cafes, extractions: state.extractions, recettes: state.recettes,
       tasses: state.tasses, demoActive: state.demoActive, achats: state.achats,
@@ -156,19 +156,19 @@ const DATA = (() => {
 
   // ---------- File System Access ----------
 
-  let ecritureEnAttente = null;
+  let pendingWrite = null;
   async function sauverFichiers() {
     if (!state.dirHandle) return false;
-    // Regroupe les écritures rapprochées.
-    if (ecritureEnAttente) clearTimeout(ecritureEnAttente);
+    // Groups writes that come close together.
+    if (pendingWrite) clearTimeout(pendingWrite);
     return new Promise(resolve => {
-      ecritureEnAttente = setTimeout(async () => {
+      pendingWrite = setTimeout(async () => {
         try {
-          /* SANS DEMANDER (v8.72). La demande de permission, faite ici depuis un
-             minuteur, hors de tout geste, était refusée en silence après un
-             redémarrage : les CSV cessaient d'être écrits et le badge disait
-             toujours « lié ». Maintenant on regarde seulement ; si la permission
-             est partie, le badge dit « à réautoriser » et un toucher la redemande. */
+          /* WITHOUT ASKING (v8.72). The permission request, made here from a
+             timer, outside any gesture, was silently refused after a restart:
+             the CSV files stopped being written and the badge still said
+             "linked". Now we only look; if the permission is gone, the badge
+             says "to re-authorise" and a tap asks for it again. */
           const ok = await state.dirHandle.queryPermission({ mode: "readwrite" }) === "granted";
           if (state.fichierAReautoriser !== !ok) { state.fichierAReautoriser = !ok; notifier(); }
           if (!ok) { resolve(false); return; }
@@ -191,8 +191,8 @@ const DATA = (() => {
     const handle = await window.showDirectoryPicker({ mode: "readwrite" });
     if (!await verifierPermission(handle)) throw new Error("Permission refusée");
     state.dirHandle = handle;
-    /* Lier un dossier en sortant de la démo (v8.71) : les 62 tasses de démo
-       seraient devenues de vraies données, puis parties au serveur. */
+    /* Linking a folder while leaving the demo (v8.71): the 62 demo cups
+       would have become real data, then gone to the server. */
     if (state.demoActive) {
       state.extractions = []; state.achats = [];
       state.cafes = CAFES_DEPART.map(normaliserCafe);
@@ -231,12 +231,12 @@ const DATA = (() => {
       state.demoActive = false;
     }
     await kvSet("dirHandle", handle);
-    await sauverLocal();
+    await saveLocal();
     notifier();
     return handle.name;
   }
 
-  // Au toucher du badge « à réautoriser » : un vrai geste, la demande passe.
+  // On a tap of the "to re-authorise" badge: a real gesture, the request goes through.
   async function reautoriserDossier() {
     if (!state.dirHandle) return false;
     const ok = await verifierPermission(state.dirHandle);
@@ -252,9 +252,9 @@ const DATA = (() => {
     notifier();
   }
 
-  // ---------- Import et export ----------
+  // ---------- Import and export ----------
 
-  function detecterTable(rows) {
+  function detectTable(rows) {
     if (!rows.length) return null;
     const cles = Object.keys(rows[0]);
     if (cles.includes("date_achat")) return "achats";
@@ -265,18 +265,18 @@ const DATA = (() => {
     return null;
   }
 
-  /* L'IMPORT (v8.71). Trois défauts corrigés d'un coup :
-     - une table sans branche (les achats) tombait dans le « sinon » et
-       ÉCRASAIT toutes les extractions ; chaque table a maintenant sa branche,
-       et une table inconnue est refusée ;
-     - la table était remplacée en entier : l'import FUSIONNE par identifiant,
-       une ligne absente du fichier reste en place ;
-     - une ligne identique à celle qu'on a garde sa date, seules les lignes
-       nouvelles ou changées sont estampillées (reporterHorodatage).
-     Une ligne sans identifiant en reçoit un ; un identifiant en double garde sa
-     dernière ligne. analyserImport décrit tout ça AVANT, pour la confirmation.
-     Le fichier complet exporté (JSON) se réimporte aussi, par la même fusion
-     que la synchro. */
+  /* THE IMPORT (v8.71). Three defects fixed at once:
+     - a table without a branch (the purchases) fell into the "else" and
+       OVERWROTE all the extractions; each table now has its branch, and an
+       unknown table is refused;
+     - the table was replaced whole: the import now MERGES by id, a row
+       missing from the file stays in place;
+     - a row identical to the one we have keeps its date, only new or
+       changed rows are stamped (reporterHorodatage).
+     A row without an id gets one; a duplicated id keeps its last row.
+     analyserImport describes all of this BEFORE, for the confirmation.
+     The full exported file (JSON) can be re-imported too, through the same
+     merge as the sync. */
   const IMPORT = {
     cafes: { cols: () => CAFE_COLS, norm: r => normaliserCafe(r), pref: "c" },
     extractions: { cols: () => EXT_COLS, norm: r => normaliserExtraction(r), pref: "e" },
@@ -286,7 +286,7 @@ const DATA = (() => {
     reglages: { cols: () => REGLAGE_COLS, norm: r => normaliserReglages(r), pref: "g" },
   };
 
-  function preparerImport(texte) {
+  function prepareImport(texte) {
     if (/^\s*\{/.test(texte)) {
       let doc;
       try { doc = JSON.parse(texte); } catch (e) { throw new Error(I18N.t("imp_json_illisible")); }
@@ -295,7 +295,7 @@ const DATA = (() => {
       return { table: "tout", doc, n, nouvelles: 0, modifiees: 0, sansId: 0, doublons: 0 };
     }
     const rows = csvParse(texte);
-    const table = detecterTable(rows);
+    const table = detectTable(rows);
     if (!table) throw new Error(I18N.t("imp_inconnue"));
     const def = IMPORT[table];
     const actuelles = table === "reglages" ? state.reglages : state[table];
@@ -314,15 +314,15 @@ const DATA = (() => {
   }
 
   function analyserImport(texte) {
-    const p = preparerImport(texte);
+    const p = prepareImport(texte);
     return { table: p.table, n: p.n, nouvelles: p.nouvelles, modifiees: p.modifiees, sansId: p.sansId, doublons: p.doublons };
   }
 
   async function importerTexteCSV(texte) {
-    const p = preparerImport(texte);
+    const p = prepareImport(texte);
     if (p.table === "tout") {
-      const fusion = SYNC.fusionner(chargeUtileLocale(), p.doc);
-      adopterTables(fusion);
+      const fusion = SYNC.fusionner(localPayload(), p.doc);
+      adoptTables(fusion);
     } else {
       const parId = new Map(state[p.table].map(l => [l.id, l]));
       p.lignes.forEach(l => parId.set(l.id, l));
@@ -335,7 +335,7 @@ const DATA = (() => {
     return { table: p.table, n: p.n };
   }
 
-  // Les tables telles qu'elles sont, et les pierres tombales. Le fichier complet.
+  // The tables as they are, and the tombstones. The full file.
   function exporterTout() {
     telecharger("cafes.csv", csvSerialiser(state.cafes, CAFE_COLS));
     telecharger("extractions.csv", csvSerialiser(state.extractions, EXT_COLS));
@@ -343,7 +343,7 @@ const DATA = (() => {
     telecharger("tasses.csv", csvSerialiser(state.tasses, TASSE_COLS));
     telecharger("achats.csv", csvSerialiser(state.achats, ACHAT_COLS));
     telecharger("reglages.csv", csvSerialiser(state.reglages, REGLAGE_COLS));
-    telecharger("carnet-complet.json", JSON.stringify({ ...chargeUtileLocale(), exporte_le: new Date().toISOString() }),
+    telecharger("carnet-complet.json", JSON.stringify({ ...localPayload(), exporte_le: new Date().toISOString() }),
       "application/json;charset=utf-8");
   }
 
@@ -353,12 +353,12 @@ const DATA = (() => {
   }
   function exporterRecettes() { telecharger("recettes.csv", csvRecettes()); }
 
-  // ---------- Démo ----------
+  // ---------- Demo ----------
 
-  /* Le jeu de démonstration est chargé À LA DEMANDE : il ne sert qu'au bouton de
-     la modale d'accueil, que Chris ne reverra jamais puisqu'il a ses données.
-     Précaché quand même, pour que la démo marche hors ligne comme le reste. */
-  function chargerScriptDemo() {
+  /* The demo data set is loaded ON DEMAND: it only serves the button of the
+     welcome dialog, which Chris will never see again since he has his data.
+     Precached anyway, so the demo works offline like everything else. */
+  function loadDemoScript() {
     if (typeof DEMO_CAFES_CSV !== "undefined") return Promise.resolve(true);
     return new Promise(resolve => {
       const s = document.createElement("script");
@@ -369,66 +369,66 @@ const DATA = (() => {
     });
   }
 
-  /* LA DÉMO RAJEUNIT (v8.38). Ses dates sont écrites en dur dans le CSV : six
-     semaines après leur écriture, les 30 derniers jours du tableau de bord
-     étaient vides, les chiffres de la semaine à zéro, et le graphe traçait une
-     tendance sur un mois sans une tasse. Tout ce qui porte une date (tasses,
-     torréfaction, ajout du café) glisse du même nombre de jours entiers, pour
-     que la dernière tasse tombe hier : les écarts entre dates, donc l'âge des
-     paquets et les séries, restent exactement ceux du jeu d'origine. */
-  function rajeunirDemo(cafes, extractions) {
+  /* THE DEMO GETS YOUNGER (v8.38). Its dates are hard-coded in the CSV: six
+     weeks after they were written, the last 30 days of the dashboard were
+     empty, the week's figures at zero, and the chart drew a trend over a
+     month without a single cup. Everything that carries a date (cups, roast,
+     coffee added) shifts by the same number of whole days, so that the last
+     cup lands yesterday: the gaps between dates, hence the age of the bags and
+     the streaks, stay exactly those of the original set. */
+  function rejuvenateDemo(cafes, extractions) {
     const dates = extractions.map(e => String(e.date_heure).slice(0, 10)).filter(Boolean).sort();
     if (!dates.length) return;
     const derniere = new Date(dates[dates.length - 1] + "T12:00");
     const hier = new Date(); hier.setHours(12, 0, 0, 0); hier.setDate(hier.getDate() - 1);
     const jours = Math.round((hier - derniere) / 86400000);
     if (jours <= 0) return;
-    const decaler = v => {
+    const shift = v => {
       if (!/^\d{4}-\d{2}-\d{2}/.test(String(v || ""))) return v;
       const d = new Date(String(v).slice(0, 10) + "T12:00");
       d.setDate(d.getDate() + jours);
       const iso = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
       return iso + String(v).slice(10);
     };
-    extractions.forEach(e => { e.date_heure = decaler(e.date_heure); });
+    extractions.forEach(e => { e.date_heure = shift(e.date_heure); });
     cafes.forEach(c => {
-      c.date_torrefaction = decaler(c.date_torrefaction);
-      c.date_ajout = decaler(c.date_ajout);
+      c.date_torrefaction = shift(c.date_torrefaction);
+      c.date_ajout = shift(c.date_ajout);
     });
   }
 
   async function chargerDemo() {
-    // Un échec laisse les données en place plutôt que de vider l'état à moitié.
-    if (!await chargerScriptDemo()) throw new Error("Jeu de démonstration indisponible.");
+    // A failure leaves the data in place rather than half-emptying the state.
+    if (!await loadDemoScript()) throw new Error("Jeu de démonstration indisponible.");
     state.cafes = csvParse(DEMO_CAFES_CSV).map(normaliserCafe);
     state.extractions = csvParse(DEMO_EXTRACTIONS_CSV).map(normaliserExtraction);
-    rajeunirDemo(state.cafes, state.extractions);
+    rejuvenateDemo(state.cafes, state.extractions);
     state.recettes = recettesDefaut();
     state.tasses = tassesDefaut();
-    // La demo n'a pas de fichier d'achats : la migration en fabrique un sachet
-    // implicite par cafe, ce qui suffit a faire vivre le stock en demonstration.
+    // The demo has no purchases file: the migration builds one implicit bag
+    // per coffee, which is enough to bring the stock to life in the demo.
     state.achats = [];
     migrerDonnees();
-    /* Ces sachets implicites n'ont pas de date d'ouverture, et sans elle aucune
-       tasse n'a de jour du sachet : la fiche café montrait une courbe vide et la
-       règle « âge du paquet » ne parlait jamais en démonstration (v8.46). La
-       démo ouvre donc chaque sachet le jour où elle l'achète. */
+    /* These implicit bags have no opening date, and without it no cup has a
+       bag day: the coffee record showed an empty curve and the "bag age" rule
+       never spoke in the demo (v8.46). So the demo opens each bag on the day
+       it buys it. */
     state.achats.forEach(a => { if (!a.date_ouverture) a.date_ouverture = a.date_achat; });
     state.demoActive = true;
-    await sauverLocal();
+    await saveLocal();
     notifier();
   }
 
   async function viderDonnees() {
-    /* Des pierres tombales pour tout ce qui part (v8.71) : sans elles, la
-       synchro suivante ramenait tout du serveur, et « vider » ne vidait rien. */
-    const garderSemees = (table, semees) => state[table]
+    /* Tombstones for everything that goes (v8.71): without them, the next
+       sync brought everything back from the server, and "empty" emptied nothing. */
+    const keepSeeded = (table, semees) => state[table]
       .filter(l => !semees.some(s => s.id === l.id)).forEach(l => marquerSupprime(table, l.id));
     state.extractions.forEach(l => marquerSupprime("extractions", l.id));
     state.achats.forEach(l => marquerSupprime("achats", l.id));
-    garderSemees("cafes", CAFES_DEPART);
-    garderSemees("recettes", RECETTES_DEPART);
-    garderSemees("tasses", TASSES_DEPART);
+    keepSeeded("cafes", CAFES_DEPART);
+    keepSeeded("recettes", RECETTES_DEPART);
+    keepSeeded("tasses", TASSES_DEPART);
     state.extractions = [];
     state.cafes = CAFES_DEPART.map(normaliserCafe);
     state.recettes = recettesDefaut();
@@ -440,21 +440,21 @@ const DATA = (() => {
 
   // ---------- Mutations ----------
 
-  // ---------- Synchronisation entre appareils ----------
+  // ---------- Sync between devices ----------
 
-  // Une rafale de modifications (édition d'une recette, saisie enchaînée) ne
-  // doit pas produire une rafale de requêtes.
+  // A burst of changes (editing a recipe, back-to-back entries) must not
+  // produce a burst of requests.
   const SYNC_DEBOUNCE_MS = 1500;
-  let syncMinuteur = null;
-  let syncEnCours = false;
-  let syncRedemandee = false;
+  let syncTimer = null;
+  let syncInFlight = false;
+  let syncRequeued = false;
   let generation = 0;
-  // Relances après un échec : 5 s, 15 s, 1 min, puis toutes les 5 min.
-  const RELANCES_MS = [5000, 15000, 60000, 300000];
-  let echecsSync = 0;
-  let relanceMinuteur = null;
+  // Retries after a failure: 5 s, 15 s, 1 min, then every 5 min.
+  const RETRY_DELAYS_MS = [5000, 15000, 60000, 300000];
+  let syncFailures = 0;
+  let retryTimer = null;
 
-  function chargeUtileLocale() {
+  function localPayload() {
     return {
       tables: {
         cafes: state.cafes,
@@ -465,14 +465,14 @@ const DATA = (() => {
         reglages: state.reglages,
       },
       tombes: state.tombes,
-      // L'onglet dit sa version : le serveur refuse un onglet plus ancien que
-      // le document, qui effacerait les colonnes qu'il ne connaît pas (v8.71).
+      // The tab states its version: the server refuses a tab older than the
+      // document, which would erase the columns it does not know (v8.71).
       schema: SCHEMA_ACTUEL,
     };
   }
 
-  // Adopte des tables fusionnées, normalisées, avec les recettes et tasses de départ en secours.
-  function adopterTables(fusion) {
+  // Adopts merged, normalised tables, with the starter recipes and cups as a fallback.
+  function adoptTables(fusion) {
     state.cafes = (fusion.tables.cafes || []).map(normaliserCafe);
     state.extractions = (fusion.tables.extractions || []).map(normaliserExtraction);
     state.recettes = (fusion.tables.recettes || []).map(normaliserRecette);
@@ -485,92 +485,91 @@ const DATA = (() => {
   }
 
   function syncPossible() {
-    // JAMAIS en démo : sans ce garde fou, charger la démonstration sur un
-    // appareil enverrait 62 fausses extractions dans les vraies données.
+    // NEVER in demo: without this guard, loading the demo on a device
+    // would send 62 fake extractions into the real data.
     return typeof SYNC !== "undefined" && SYNC.disponible() && !state.demoActive;
   }
 
-  /* Échange avec le serveur et ADOPTE le résultat fusionné. Ne passe pas par
-     persister() : cela relancerait une synchro en boucle. */
+  /* Exchanges with the server and ADOPTS the merged result. Does not go
+     through persister(): that would restart a sync in a loop. */
   async function synchroniser(manuelle) {
     if (!syncPossible()) {
       state.syncEtat = typeof SYNC === "undefined" || !SYNC.disponible() ? "local" : "demo";
       if (manuelle) notifier();
       return state.syncEtat;
     }
-    /* Une synchro demandée pendant qu'une autre est en vol n'est plus perdue
-       (v8.71) : elle repart dès que la première a fini. */
-    if (syncEnCours) { syncRedemandee = true; return state.syncEtat; }
-    syncEnCours = true;
-    syncRedemandee = false;
+    /* A sync requested while another is in flight is no longer lost
+       (v8.71): it starts again as soon as the first one is done. */
+    if (syncInFlight) { syncRequeued = true; return state.syncEtat; }
+    syncInFlight = true;
+    syncRequeued = false;
     state.syncEtat = "encours";
     notifier("sync");
-    let tablesAvant = null;
+    let tablesBefore = null;
 
-    const generationEnvoyee = generation;
+    const sentGeneration = generation;
     try {
-      const recu = await SYNC.echanger(chargeUtileLocale());
-      tablesAvant = JSON.stringify(chargeUtileLocale().tables);
+      const recu = await SYNC.echanger(localPayload());
+      tablesBefore = JSON.stringify(localPayload().tables);
       reglerDecalage((Number(recu.serverTime) || Date.now()) - Date.now());
-      /* FUSIONNÉE avec l'état tel qu'il est au retour, plus substituée : ce qui
-         a été saisi pendant l'échange reste. */
-      adopterTables(SYNC.fusionner(recu, chargeUtileLocale()));
+      /* MERGED with the state as it is on return, no longer substituted:
+         whatever was entered during the exchange stays. */
+      adoptTables(SYNC.fusionner(recu, localPayload()));
       state.syncTaille = Number(recu.taille) || 0;
       state.syncPlafond = Number(recu.plafond) || 0;
       migrerDonnees();
-      await sauverLocal();
+      await saveLocal();
       sauverFichiers();
       state.syncEtat = "ok";
       state.syncLe = Date.now();
-      echecsSync = 0;
-      if (generation !== generationEnvoyee) syncRedemandee = true;
+      syncFailures = 0;
+      if (generation !== sentGeneration) syncRequeued = true;
     } catch (error) {
-      // On garde les données locales telles quelles : une synchro ratée ne doit
-      // jamais faire perdre une saisie. Relance avec un délai croissant (v8.71),
-      // sauf si le serveur dit que cet onglet est trop ancien : il faut recharger.
+      // The local data is kept as is: a failed sync must never lose an
+      // entry. Retry with a growing delay (v8.71), unless the server says
+      // this tab is too old: it has to reload.
       state.syncEtat = error && error.code ? error.code : "erreur";
       if (state.syncEtat !== "version-perimee" && state.syncEtat !== "session-expiree") {
-        const delai = RELANCES_MS[Math.min(echecsSync, RELANCES_MS.length - 1)];
-        echecsSync++;
-        clearTimeout(relanceMinuteur);
-        relanceMinuteur = setTimeout(() => synchroniser(false), delai);
+        const delai = RETRY_DELAYS_MS[Math.min(syncFailures, RETRY_DELAYS_MS.length - 1)];
+        syncFailures++;
+        clearTimeout(retryTimer);
+        retryTimer = setTimeout(() => synchroniser(false), delai);
       }
     } finally {
-      syncEnCours = false;
-      // Rien n'a bougé dans les tables : seule la pastille de synchro change.
-      notifier(tablesAvant !== null && tablesAvant !== JSON.stringify(chargeUtileLocale().tables) ? undefined : "sync");
-      if (syncRedemandee) planifierSync();
+      syncInFlight = false;
+      // Nothing moved in the tables: only the sync status dot changes.
+      notifier(tablesBefore !== null && tablesBefore !== JSON.stringify(localPayload().tables) ? undefined : "sync");
+      if (syncRequeued) scheduleSync();
     }
     return state.syncEtat;
   }
 
-  function planifierSync() {
+  function scheduleSync() {
     if (!syncPossible()) return;
-    clearTimeout(syncMinuteur);
-    syncMinuteur = setTimeout(() => { synchroniser(false); }, SYNC_DEBOUNCE_MS);
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => { synchroniser(false); }, SYNC_DEBOUNCE_MS);
   }
 
-  /* Chaque persistance change la génération : une synchro qui revient sait si
-     quelque chose a bougé pendant son vol. Une écriture locale ratée (stockage
-     plein) est signalée, et la synchro part quand même : la tasse ne vit plus
-     seulement en mémoire (v8.71). */
+  /* Every persist bumps the generation: a sync that comes back knows whether
+     something moved during its flight. A failed local write (storage full)
+     is reported, and the sync goes out anyway: the cup no longer lives only
+     in memory (v8.71). */
   async function persister() {
     generation++;
     try {
-      await sauverLocal();
+      await saveLocal();
     } catch (e) {
       console.error("Stockage local impossible", e);
       if (typeof window !== "undefined" && window.dispatchEvent) window.dispatchEvent(new CustomEvent("carnet-stockage-ko"));
     }
     sauverFichiers();
     notifier();
-    planifierSync();
+    scheduleSync();
   }
 
-  /* Réinsère une extraction supprimée SOUS SON ID D'ORIGINE. Sert à l'annulation
-     de suppression : la ligne est déjà partie, tombstone comprise, et cette
-     écriture postérieure la fait revenir partout, y compris sur les autres
-     appareils. */
+  /* Re-inserts a deleted extraction UNDER ITS ORIGINAL ID. Used to undo a
+     deletion: the row is already gone, tombstone included, and this later
+     write brings it back everywhere, including on the other devices. */
   async function restaurerExtraction(ext) {
     if (!ext || !ext.id) return null;
     const e = estampiller(normaliserExtraction(ext));
@@ -620,14 +619,14 @@ const DATA = (() => {
     if (idx < 0) return null;
     const c = estampiller(normaliserCafe(cafe));
     c.id = id;
-    // La date d'ajout ne s'édite pas : on conserve celle en place.
+    // The date added is not editable: keep the one in place.
     if (!c.date_ajout) c.date_ajout = state.cafes[idx].date_ajout || "";
     state.cafes[idx] = c;
     await persister();
     return c;
   }
 
-  // ---------- Recettes : mutations ----------
+  // ---------- Recipes: mutations ----------
 
   function estRecetteDorigine(id) {
     return RECETTES_DEPART.some(r => r.id === id);
@@ -647,19 +646,19 @@ const DATA = (() => {
   async function modifierRecette(id, recette) {
     const idx = state.recettes.findIndex(x => x.id === id);
     if (idx < 0) return null;
-    const ancienNom = state.recettes[idx].nom;
+    const oldName = state.recettes[idx].nom;
     const r = estampiller(normaliserRecette(recette));
     r.id = id;
-    // Une recette d'origine garde ses marqueurs structurels (variantes du 4:6).
+    // An original recipe keeps its structural markers (4:6 variants).
     if (estRecetteDorigine(id)) {
       const origine = RECETTES_DEPART.find(x => x.id === id);
       r.variantes = origine.variantes;
     }
     state.recettes[idx] = r;
-    // Si le nom change, suit dans les extractions et les cafés.
-    if (ancienNom && r.nom !== ancienNom) {
-      state.extractions.forEach(e => { if (e.recette === ancienNom) e.recette = r.nom; });
-      state.cafes.forEach(c => { if (c.recette_recommandee === ancienNom) c.recette_recommandee = r.nom; });
+    // If the name changes, follow it in the extractions and the coffees.
+    if (oldName && r.nom !== oldName) {
+      state.extractions.forEach(e => { if (e.recette === oldName) e.recette = r.nom; });
+      state.cafes.forEach(c => { if (c.recette_recommandee === oldName) c.recette_recommandee = r.nom; });
     }
     await persister();
     return r;
@@ -677,11 +676,11 @@ const DATA = (() => {
     estampiller(r);
     if (idx < 0) state.recettes.push(r);
     else {
-      const ancienNom = state.recettes[idx].nom;
+      const oldName = state.recettes[idx].nom;
       state.recettes[idx] = r;
-      if (ancienNom && ancienNom !== r.nom) {
-        state.extractions.forEach(e => { if (e.recette === ancienNom) e.recette = r.nom; });
-        state.cafes.forEach(c => { if (c.recette_recommandee === ancienNom) c.recette_recommandee = r.nom; });
+      if (oldName && oldName !== r.nom) {
+        state.extractions.forEach(e => { if (e.recette === oldName) e.recette = r.nom; });
+        state.cafes.forEach(c => { if (c.recette_recommandee === oldName) c.recette_recommandee = r.nom; });
       }
     }
     await persister();
@@ -696,7 +695,7 @@ const DATA = (() => {
     return true;
   }
 
-  // ---------- Tasses : mutations ----------
+  // ---------- Cups: mutations ----------
 
   async function ajouterTasse(nom, contenance) {
     let n = 1, id = "tp" + n;
@@ -735,8 +734,8 @@ const DATA = (() => {
     const handle = await kvGet("dirHandle");
     if (handle) {
       state.dirHandle = handle;
-      // La permission sera demandée au premier geste utilisateur, on tente une
-      // relecture silencieuse si elle est déjà accordée.
+      // The permission will be requested on the first user gesture; we try a
+      // silent re-read if it is already granted.
       try {
         if (await handle.queryPermission({ mode: "readwrite" }) === "granted") {
           const tc = await lireFichier(state.dirHandle, "cafes.csv");
@@ -758,19 +757,19 @@ const DATA = (() => {
     if (tombes && typeof tombes === "object") state.tombes = tombes;
 
     migrerDonnees();
-    await sauverLocal();
+    await saveLocal();
 
-    /* Plus de synchro ici (v8.72) : elle bloquait le premier affichage. C'est
-       app.js qui la lance juste après le premier rendu, et qui n'ouvre l'accueil
-       que si le serveur n'a rien renvoyé non plus. */
+    /* No more sync here (v8.72): it blocked the first display. It is app.js
+       that starts it right after the first render, and that only opens the
+       welcome dialog if the server returned nothing either. */
     return state.cafes.length > 0 || state.extractions.length > 0;
   }
 
   return {
     state, abonner, notifier, init, revisionDonnees,
     synchroniser, syncPossible, reporterHorodatage,
-    /* csvRecettes est exposee pour que l aller-retour CSV soit testable sur le
-       VRAI chemin d export : c est lui qui perdait puissance_feu. */
+    /* csvRecettes is exposed so the CSV round trip is testable on the REAL
+       export path: that is the one that lost puissance_feu. */
     csvParse, csvSerialiser, csvRecettes, CAFE_COLS, EXT_COLS, RECETTE_COLS, ACHAT_COLS,
     sachetCourant, stockSachet, ajouterAchat, supprimerAchat, corrigerStock,
     calculs, cafeDe,
@@ -780,13 +779,13 @@ const DATA = (() => {
     ajouterExtraction, modifierExtraction, supprimerExtraction, restaurerExtraction,
     ajouterCafe, modifierCafe,
     ajouterRecette, modifierRecette, reinitialiserRecette, supprimerRecette, estRecetteDorigine,
-    // Exposée pour les tests : c'est elle qui décide qu'une température vide
-    // reste vide au lieu de tomber à 0, et qu'une puissance de feu survit.
+    // Exposed for the tests: it decides that an empty temperature stays
+    // empty instead of dropping to 0, and that a heat level survives.
     sachetALaDate,
     normaliserRecette, normaliserReglages, normaliserExtraction,
     reglagesCourants, majReglages, REGLAGE_COLS, REGLAGE_ID,
-    // Exposée pour les tests : c'est elle qui rattrape les recettes STOCKÉES
-    // quand les valeurs semées changent, et ce rattrapage est marqué une fois.
+    // Exposed for the tests: it catches up the STORED recipes when the
+    // seeded values change, and that catch-up is marked once.
     migrerDonnees,
     ajouterTasse, supprimerTasse,
     kvGet, kvSet,

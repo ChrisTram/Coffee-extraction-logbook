@@ -1,33 +1,33 @@
-/* Brouillon de saisie : ce que le formulaire contenait quand la page a été
- * déchargée, remis en place au démarrage.
+/* Entry draft: what the form held when the page was unloaded, put back in
+ * place at startup.
  *
- * Fichier à part depuis la v7.93 : il ne partage avec l'écran de saisie que
- * l'objet `saisie` et les identifiants de champs, et il l'appelle par UI. Il
- * se charge APRÈS ui-saisie.js pour emprunter `saisie`, qui est un objet muté
- * en place, donc sûr à emprunter. */
+ * A separate file since v7.93: it shares with the entry screen only the
+ * `saisie` object and the field ids, and it calls it through UI. It loads
+ * AFTER ui-saisie.js to borrow `saisie`, which is an object mutated in
+ * place, so safe to borrow. */
 "use strict";
 
 (() => {
 
-  // Emprunté au noyau, et l'état de la saisie, exposé par ui-saisie.js.
+  // Borrowed from the core, plus the entry state, exposed by ui-saisie.js.
   const { $, $$, basculerEtat, marquerNote, noteVide, saisie } = UI;
 
-  /* ---------- Brouillon de saisie ----------
-     Sur téléphone, quitter l'onglet pendant une extraction suffit à ce que le
-     navigateur décharge la page pour récupérer de la mémoire. Sans brouillon,
-     tout ce qui était tapé disparaît, et c'est justement pendant l'extraction
-     qu'on sort de l'appli.
+  /* ---------- Entry draft ----------
+     On a phone, leaving the tab during an extraction is enough for the
+     browser to unload the page to reclaim memory. Without a draft, everything
+     typed disappears, and it is precisely during the extraction that you
+     step out of the app.
 
-     Volontairement en localStorage et PAS dans les données synchronisées : un
-     brouillon est propre à un appareil, l'envoyer sur le serveur ferait
-     apparaître une saisie fantôme sur l'autre. */
+     Deliberately in localStorage and NOT in the synced data: a draft belongs
+     to one device, sending it to the server would make a ghost entry appear
+     on the other one. */
   const CLE_BROUILLON = "brouillon-saisie";
   const BROUILLON_MAX_MS = 24 * 60 * 60 * 1000;
-  /* La DATE du brouillon a sa propre durée de validité, bien plus courte. Le
-     brouillon existe pour survivre au déchargement de la page pendant une
-     extraction, ce qui se compte en minutes ; garder son horodatage 24 h faisait
-     réapparaître la date de la veille sur une saisie neuve. Deux heures couvrent
-     largement une séance, interruptions comprises. */
+  /* The draft's DATE has its own, much shorter, validity. The draft exists to
+     survive the page being unloaded during an extraction, which is counted in
+     minutes; keeping its timestamp for 24 h brought back the previous day's
+     date on a fresh entry. Two hours easily cover a session, interruptions
+     included. */
   const DATE_BROUILLON_MAX_MS = 2 * 60 * 60 * 1000;
   const CHAMPS_BROUILLON = [
     "f-date", "f-cafe", "f-recette", "f-dose", "f-eau", "f-mouture", "f-temp",
@@ -36,46 +36,46 @@
     "f-commentaire", "f-total-min", "f-total-sec", "f-ecoulement-min", "f-ecoulement-sec",
     "f-puissance",
   ];
-  // « ratée » et l'agitation étaient oubliées à la reprise (v8.72).
+  // "ratée" and agitation were forgotten on restore (v8.72).
   const CASES_BROUILLON = ["f-prechauffe", "f-ajout-eau-oui", "f-ratee", "f-agitation-oui"];
-  let brouillonMinuteur = null;
+  let draftTimer = null;
 
   function ecrireBrouillon() {
-    // On ne sauvegarde JAMAIS pendant l'édition d'une extraction existante :
-    // le brouillon écraserait le formulaire au prochain démarrage avec des
-    // valeurs qui appartiennent à une ligne déjà enregistrée.
+    // NEVER save while editing an existing extraction: the draft would
+    // overwrite the form at the next startup with values that belong to a
+    // row already saved.
     if (saisie.editId) return;
-    const valeurs = {};
-    CHAMPS_BROUILLON.forEach(id => { const el = $("#" + id); if (el) valeurs[id] = el.value; });
-    CASES_BROUILLON.forEach(id => { const el = $("#" + id); if (el) valeurs[id] = el.checked; });
+    const values = {};
+    CHAMPS_BROUILLON.forEach(id => { const el = $("#" + id); if (el) values[id] = el.value; });
+    CASES_BROUILLON.forEach(id => { const el = $("#" + id); if (el) values[id] = el.checked; });
     try {
       localStorage.setItem(CLE_BROUILLON, JSON.stringify({
         le: Date.now(),
         methode: saisie.methode,
         diagnostics: [...saisie.diagnostics],
         descripteurs: [...saisie.descripteurs],
-        /* La note vit dans la valeur du curseur ET dans son état « pas encore
-           notée » (v8.40). Sans l'état, une note donnée avant que la page soit
-           déchargée revenait non notée. */
+        /* The rating lives in the slider's value AND in its "not rated yet"
+           state (v8.40). Without the state, a rating given before the page
+           was unloaded came back unrated. */
         noteVide: noteVide($("#f-note")),
-        valeurs,
+        valeurs: values,
       }));
-    } catch (e) { /* stockage plein ou refusé, tant pis */ }
+    } catch (e) { /* storage full or refused, never mind */ }
   }
 
   function planifierBrouillon() {
-    clearTimeout(brouillonMinuteur);
-    brouillonMinuteur = setTimeout(ecrireBrouillon, 400);
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(ecrireBrouillon, 400);
   }
 
   function effacerBrouillon() {
-    clearTimeout(brouillonMinuteur);
-    try { localStorage.removeItem(CLE_BROUILLON); } catch (e) { /* tant pis */ }
+    clearTimeout(draftTimer);
+    try { localStorage.removeItem(CLE_BROUILLON); } catch (e) { /* never mind */ }
   }
 
-  /* Ne restaure que si le brouillon dit quelque chose : sans ce test, le
-     formulaire vierge sauvegardé au premier chargement déclencherait un message
-     "brouillon repris" à chaque ouverture, ce qui serait absurde. */
+  /* Only restores if the draft says something: without this test, the blank
+     form saved at first load would trigger a "draft restored" message at
+     every opening, which would be absurd. */
   function brouillonUtile(b) {
     const v = b.valeurs || {};
     return Boolean(v["f-cafe"] || (v["f-commentaire"] || "").trim() ||
@@ -90,34 +90,34 @@
     if (Date.now() - (b.le || 0) > BROUILLON_MAX_MS) { effacerBrouillon(); return false; }
     if (!brouillonUtile(b)) return false;
 
-    /* SANS garderRecette (v8.37) : avec, la méthode du brouillon s'appliquait
-       mais la liste des recettes restait celle de la méthode d'avant. Une
-       recette Switch posée dans un menu de recettes Brikka n'existe pas, et le
-       navigateur laissait le menu VIDE. Chris arrivait alors sur la saisie sans
-       recette, à chaque fois qu'il avait brassé au Switch la veille. */
+    /* WITHOUT garderRecette (v8.37): with it, the draft's method applied but
+       the recipe list stayed the one of the previous method. A Switch recipe
+       set in a menu of Brikka recipes does not exist, and the browser left
+       the menu EMPTY. Chris then landed on the entry screen without a recipe,
+       every time he had brewed on the Switch the day before. */
     if (b.methode) UI.choisirMethode(b.methode);
-    const dateFraiche = Date.now() - (b.le || 0) <= DATE_BROUILLON_MAX_MS;
-    Object.entries(b.valeurs).forEach(([id, valeur]) => {
-      // Une date périmée ne remplace pas l'heure qu'il est.
-      if (id === "f-date" && !dateFraiche) return;
+    const freshDate = Date.now() - (b.le || 0) <= DATE_BROUILLON_MAX_MS;
+    Object.entries(b.valeurs).forEach(([id, value]) => {
+      // A stale date does not replace the current time.
+      if (id === "f-date" && !freshDate) return;
       const el = $("#" + id);
-      if (el && valeur !== undefined && valeur !== null) el.value = valeur;
+      if (el && value !== undefined && value !== null) el.value = value;
     });
-    /* Une date reprise d'un brouillon frais vient de Chris, pas d'un défaut :
-       l'arrivée sur l'écran ne doit donc pas la remplacer. */
-    if (dateFraiche && b.valeurs["f-date"]) saisie.dateTouchee = true;
+    /* A date restored from a fresh draft comes from Chris, not from a default:
+       arriving on the screen must therefore not replace it. */
+    if (freshDate && b.valeurs["f-date"]) saisie.dateTouchee = true;
     CASES_BROUILLON.forEach(id => { const el = $("#" + id); if (el) el.checked = !!b.valeurs[id]; });
 
-    /* JAMAIS de café ni de recette vides après une reprise : un brouillon peut
-       garder un café désactivé depuis, une recette renommée ou supprimée, ou
-       une valeur vide. On retombe alors sur le premier café et la première
-       recette de la méthode, comme sur un formulaire neuf : la plupart du
-       temps c'est celle que Chris garde, et c'est un clic de moins. */
+    /* NEVER an empty coffee or recipe after a restore: a draft can keep a
+       coffee deactivated since, a recipe renamed or deleted, or an empty
+       value. We then fall back on the first coffee and the method's first
+       recipe, as on a fresh form: most of the time it is the one Chris
+       keeps, and it is one click less. */
     if (!$("#f-cafe").value) {
-      const premier = UI.cafesSelectionnables()[0];
-      if (premier) $("#f-cafe").value = premier.id;
+      const first = UI.cafesSelectionnables()[0];
+      if (first) $("#f-cafe").value = first.id;
     }
-    // Sans prefillDepuisRecette : il écraserait la dose et l'eau du brouillon.
+    // Without prefillDepuisRecette: it would overwrite the draft's dose and water.
     if (!$("#f-recette").value) UI.remplirSelectRecettes();
 
     saisie.diagnostics = new Set(b.diagnostics || []);
@@ -125,13 +125,12 @@
     $$("#f-diagnostic .pilule").forEach(x => basculerEtat(x, saisie.diagnostics.has(x.dataset.diag)));
     $$("#f-descripteurs .tag").forEach(x => basculerEtat(x, saisie.descripteurs.has(x.dataset.tag)));
 
-    /* PAR LA FONCTION OFFICIELLE, pas a la main. Cette ligne ecrivait
-        directement la valeur du champ, en ignorant « pas encore notee » : apres
-        la reprise d'un brouillon non note, l'ecran annoncait « 5 » sur une tasse
-        que l'enregistrement allait ranger comme NON NOTEE. Le curseur etant lui
-        aussi pose sur 5, rien ne trahissait l'ecart. Elle oubliait aussi le
-        « / 10 » et l'etat inactif du stepper. */
-    // Un brouillon d'avant la v8.40 n'a pas l'état : il reste non noté.
+    /* THROUGH THE OFFICIAL FUNCTION, not by hand. This line wrote the field's
+        value directly, ignoring "not rated yet": after restoring an unrated
+        draft, the screen announced "5" on a cup that saving was going to
+        file as UNRATED. With the slider also sitting on 5, nothing betrayed
+        the gap. It also forgot the "/ 10" and the stepper's inactive state. */
+    // A draft from before v8.40 has no state: it stays unrated.
     marquerNote($("#f-note"), b.noteVide !== false);
     UI.majAffichageNote();
     $("#f-eau-ajoutee").hidden = !$("#f-ajout-eau-oui").checked;
@@ -142,7 +141,7 @@
     return true;
   }
 
-  // Mis à disposition de la saisie (câblage, enregistrement) et d'app.js (démarrage).
+  // Made available to the entry screen (wiring, saving) and to app.js (startup).
   Object.assign(UI, {
     BROUILLON_MAX_MS, CASES_BROUILLON, CHAMPS_BROUILLON, CLE_BROUILLON, DATE_BROUILLON_MAX_MS,
     brouillonUtile, ecrireBrouillon, effacerBrouillon, planifierBrouillon, restaurerBrouillon,

@@ -1,32 +1,32 @@
-// Internationalisation : français par défaut, anglais en bascule.
-// Trois mécanismes :
-// 1. UI : correspondance de textes pour tout le contenu statique de la page.
-//    Chaque fragment de texte français est la clé, l'anglais la valeur.
-// 2. T : gabarits pour les chaînes construites en JavaScript, avec variables.
-// 3. Cartes d'affichage pour les valeurs de données (diagnostics, descripteurs) :
-//    la valeur stockée reste française, seul l'affichage change.
+// Internationalisation: French by default, English as a toggle.
+// Three mechanisms:
+// 1. UI: text mapping for all the static content of the page.
+//    Each French text fragment is the key, the English text the value.
+// 2. T: templates for strings built in JavaScript, with variables.
+// 3. Display maps for data values (diagnostics, descriptors):
+//    the stored value stays French, only the display changes.
 "use strict";
 
 const I18N = (() => {
 
   let lang = "fr";
-  /* Souhait enregistré, PAS la langue courante : basculer avant d'avoir le paquet
-     afficherait une page qui se déclare anglaise et rend du français par repli.
-     C'est preparer(), appelée au démarrage, qui tranche une fois le paquet là. */
+  /* Saved wish, NOT the current language: switching before the bundle is here
+     would show a page that declares itself English and renders French as fallback.
+     preparer(), called at startup, decides once the bundle has arrived. */
   let langueSouhaitee = "fr";
   try {
     const l = localStorage.getItem("langue");
     if (l === "en") langueSouhaitee = "en";
-  } catch (e) { /* indisponible */ }
+  } catch (e) { /* unavailable */ }
 
-  // ---------- 1. Contenu statique : français vers anglais ----------
+  // ---------- 1. Static content: French to English ----------
 
-  /* Vide en français, rempli par js/i18n.en.js au passage en anglais. En
-     français ces tables ne servent à rien : la fonction de traduction
-     correspondante renvoie son entrée telle quelle. */
+  /* Empty in French, filled by js/i18n.en.js when switching to English. In
+     French these tables are useless: the matching translation function
+     returns its input unchanged. */
   const UI = {};
 
-  // ---------- 2. Gabarits pour les chaînes dynamiques ----------
+  // ---------- 2. Templates for dynamic strings ----------
 
   const T = {
     doc_title: { fr: "Carnet d'extraction : Brikka et Switch" },
@@ -117,11 +117,11 @@ const I18N = (() => {
     tip_cafeine: { fr: "Caféine : environ {mg} mg" },
     b_extractions: { fr: "{n} extractions" },
 
-    // Insights automatiques du tableau de bord. Phrases construites en JS, donc
-    // gabarits T et pas entrées UI. Éviter les pluriels variables dans les
-    // formulations : les nombres arrivent déjà formatés.
-    /* Les phrases ne portent PLUS les chiffres (v8.36) : ils sont dans la
-       preuve, juste dessous, et les lire deux fois ne dit rien de plus. */
+    // Automatic dashboard insights. Sentences built in JS, hence T
+    // templates and not UI entries. Avoid variable plurals in the
+    // wording: numbers arrive already formatted.
+    /* The sentences NO LONGER carry the figures (v8.36): they are in the
+       evidence just below, and reading them twice adds nothing. */
     ins_cafe_levier: { fr: "Sur ton {cafe} en {machine}, {levier} {valeur} sort au dessus du reste." },
     ins_global: { fr: "Toutes tasses confondues : {p}" },
     lev_feu: { fr: "puissance de feu" },
@@ -142,8 +142,8 @@ const I18N = (() => {
 
 
     ins_puissance: { fr: "Sur la Brikka, une puissance de feu de {feu} te réussit mieux." },
-    /* Trois constats de plus (v8.42) : des données déjà saisies, qu'aucune règle
-       ne lisait. */
+    /* Three more insights (v8.42): data already entered that no rule
+       was reading. */
     ins_temp: { fr: "Au Switch, l'eau {plage} te réussit mieux." },
     ins_temp_basse: { fr: "sous 91 °C" },
     ins_temp_moyenne: { fr: "entre 91 et 93 °C" },
@@ -156,14 +156,14 @@ const I18N = (() => {
     ins_agit_oui: { fr: "remuées" },
     ins_agit_non: { fr: "sans agitation" },
 
-    /* La preuve sous la phrase (v8.36). */
+    /* The evidence under the sentence (v8.36). */
     ins_reste: { fr: "le reste" },
     ins_reste_temps: { fr: "le reste du temps" },
     ins_reste_jour: { fr: "le reste de la journée" },
     ins_reste_reglages: { fr: "les autres réglages" },
     ins_precedent: { fr: "Constat précédent" },
     ins_suivant: { fr: "Constat suivant" },
-    /* La place de la dernière tasse (v8.39). */
+    /* The rank of the latest cup (v8.39). */
     pl_parmi: { fr: "Parmi tes {n} tasses notées de {cafe}" },
     pl_meilleure: { fr: "La meilleure" },
     pl_ex_aequo: { fr: "La meilleure, à égalité" },
@@ -176,7 +176,7 @@ const I18N = (() => {
     pl_recette: { fr: "recette {v}" },
     pl_ta_moyenne: { fr: "ta moyenne {v}" },
     pl_la_tasse: { fr: "la tasse" },
-    /* Les lectures des analyses (v8.39). */
+    /* The readings of the analyses (v8.39). */
     lec_cafes: { fr: "{a} tient la tête avec {ma} de moyenne ; {b} ferme la marche à {mb}." },
     lec_cafes_deux: { fr: "{a} passe devant {b}, {ma} contre {mb}." },
     lec_recettes: { fr: "{a} est ta recette la mieux notée, {ma} de moyenne ; {b} la moins réussie, {mb}." },
@@ -200,7 +200,7 @@ const I18N = (() => {
     ins_solide: { fr: "Solide" },
     ins_probable: { fr: "Probable" },
     ins_vide: { fr: "Pas encore assez de matière. Une tendance ne veut dire quelque chose qu'à partir de {n} extractions notées dans chacun des groupes comparés." },
-    // États de la synchronisation entre appareils.
+    // States of the sync between devices.
     sync_local: { fr: "Synchronisation indisponible en local : tes données restent sur cet appareil." },
     sync_demo: { fr: "Démonstration : rien n'est synchronisé." },
     sync_encours: { fr: "Synchronisation en cours..." },
@@ -245,8 +245,8 @@ const I18N = (() => {
     hm_n: { fr: "{n} extraction" },
     hm_ns: { fr: "{n} extractions" },
     hm_note: { fr: "note moyenne {x}" },
-    // Cartes qui peuvent rester vides avec des données parfaitement valides.
-    // Chaque message donne la cause RÉELLE et l'action qui la débloque.
+    // Cards that can stay empty with perfectly valid data.
+    // Each message gives the REAL cause and the action that unblocks it.
     vide_rien: { fr: "Aucune extraction notée pour l'instant. Note tes tasses et ce graphique se remplira." },
     vide_mouture_moulu: { fr: "Tous tes cafés extraits sont marqués déjà moulus, donc aucun réglage de molette n'est enregistré : ce n'est pas un bug. Une extraction avec un café en grains et le nuage démarre." },
     vide_mouture: { fr: "Aucun réglage de molette enregistré sur tes extractions notées." },
@@ -256,7 +256,7 @@ const I18N = (() => {
     vide_duel_une_machine: { fr: "Tu n'as encore utilisé qu'une seule machine. Passe un même café en Brikka et au Switch pour les comparer." },
     vide_duel: { fr: "Aucun café n'est encore passé dans les deux machines avec une note." },
 
-    // Stock du sachet en cours.
+    // Stock of the current bag.
     stock_reste: { fr: "reste {g} g, environ {n} tasses" },
     stock_vide: { fr: "sachet fini" },
     stock_titre: { fr: "Sachet de {f} g. {c} g consommés, {r} g restants. Estimation à {d} g par tasse, {src}." },
@@ -268,7 +268,7 @@ const I18N = (() => {
     t_sachet: { fr: "Sachet enregistre" },
     t_brouillon: { fr: "Brouillon repris" },
 
-    // Détail dépliable et comparateur de l historique.
+    // Expandable detail and comparator of the history.
     d_cafe: { fr: "Café" },
     d_methode: { fr: "Méthode" },
     d_recette: { fr: "Recette" },
@@ -310,7 +310,7 @@ const I18N = (() => {
     oui: { fr: "oui" },
     non: { fr: "non" },
 
-    // Ecran Mes meilleurs reglages.
+    // My best settings screen.
     rg_moyenne: { fr: "{m} de moyenne sur {n} tasses" },
     rg_sur: { fr: "sur {n} tasses" },
     rg_mieux: { fr: "{x} point de mieux que ta moyenne sur ce café" },
@@ -369,7 +369,7 @@ const I18N = (() => {
     rt_rien: { fr: "Renseigne la dose et l eau, ou le volume extrait, pour voir le ratio." },
 
     kpi_regularite: { fr: "régularité, à café et recette égaux" },
-    /* Les trois chiffres sortis des tuiles : ils se lisent en ligne. */
+    /* The three figures taken out of the tiles: they read inline. */
     tb_derniere: { fr: "Dernière tasse, {q}" },
     tb_sur10: { fr: "sur 10" },
     q_maintenant: { fr: "maintenant, {h}" },
@@ -748,22 +748,22 @@ const I18N = (() => {
     c_ok: { fr: "Confirmer" },
   };
 
-  // ---------- 3. Cartes d'affichage pour les valeurs de données ----------
+  // ---------- 3. Display maps for data values ----------
 
-  /* Vide en français, rempli par js/i18n.en.js au passage en anglais. En
-     français ces tables ne servent à rien : la fonction de traduction
-     correspondante renvoie son entrée telle quelle. */
+  /* Empty in French, filled by js/i18n.en.js when switching to English. In
+     French these tables are useless: the matching translation function
+     returns its input unchanged. */
   const DIAG = {};
 
-  /* Vide en français, rempli par js/i18n.en.js au passage en anglais. En
-     français ces tables ne servent à rien : la fonction de traduction
-     correspondante renvoie son entrée telle quelle. */
+  /* Empty in French, filled by js/i18n.en.js when switching to English. In
+     French these tables are useless: the matching translation function
+     returns its input unchanged. */
   const TAGS = {};
 
-  // Définition courte de chaque descripteur, affichée en infobulle et sous le
-  // bloc quand on coche un tag. Format : { fr, en }. Pas de guillemets doubles
-  // dans les textes (ils partent dans des attributs title).
-  /* Les définitions, en français ici, en anglais dans i18n.en.js. */
+  // Short definition of each descriptor, shown as a tooltip and under the
+  // block when a tag is ticked. Format: { fr, en }. No double quotes
+  // in the texts (they go into title attributes).
+  /* The definitions, in French here, in English in i18n.en.js. */
   const TAGS_INFO = {
     "acidité vive": "Vivacité agréable, qui rend la tasse vivante. Une qualité, pas un défaut.",
     "acidulé": "Petite pointe acide franche et plaisante, comme une pomme croquante.",
@@ -843,24 +843,24 @@ const I18N = (() => {
     "papier": "Carton ou papier mouillé, café éventé ou filtre mal rincé.",
   };
 
-  /* Vide en français, rempli par js/i18n.en.js au passage en anglais. En
-     français ces tables ne servent à rien : la fonction de traduction
-     correspondante renvoie son entrée telle quelle. */
+  /* Empty in French, filled by js/i18n.en.js when switching to English. In
+     French these tables are useless: the matching translation function
+     returns its input unchanged. */
   const GROUPES = {};
 
-  const METH = {}; // rempli par js/i18n.en.js
+  const METH = {}; // filled by js/i18n.en.js
 
-  const MACHINES = {}; // rempli par js/i18n.en.js
+  const MACHINES = {}; // filled by js/i18n.en.js
 
-  // ---------- Moteur ----------
+  // ---------- Engine ----------
 
-  const registre = []; // { node, fr, en, prefixe, suffixe }
-  const attributs = []; // { el, attr, fr, en } : placeholder, title, aria-label
-  let scanFait = false;
-  /* Le scan a-t-il eu un dictionnaire sous la main ? En français il n'y en a
-     pas, et un scan à vide n'enregistre rien : il devra être refait quand le
-     paquet anglais arrivera. Voir fusionnerPaquet(). */
-  let scanAvecDico = false;
+  const registry = []; // { node, fr, en, prefixe, suffixe }
+  const attrEntries = []; // { el, attr, fr, en }: placeholder, title, aria-label
+  let scanDone = false;
+  /* Did the scan have a dictionary at hand? In French there is none,
+     and an empty scan records nothing: it must be redone when the
+     English bundle arrives. See mergeBundle(). */
+  let scanHadDict = false;
 
   const ZONES_JS = "#grille-recettes,#h-corps,#kpis,#dernieres-liste,#recettes-liste,#cafes-liste," +
     "#conv-resultat,#table-plages,#avertissements,#aside-recette,#aside-cafe,#duel-machines," +
@@ -877,8 +877,8 @@ const I18N = (() => {
     "#carte-recap,#legende-30j,#aside-video,#matrice-recettes,#fiche-comparaison,#fiche-duo,#fiche-empreinte,#fiche-trajectoire,#fiche-moulin," +
     "#dessins-panneau,#bulle-tasse,#dessin-frise,#dessin-podium,#dessin-progression,#dessin-frise-lecture,#dessin-podium-lecture,#dessin-progression-lecture";
 
-  function scanner() {
-    const marche = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+  function scan() {
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
       acceptNode(n) {
         const p = n.parentElement;
         if (!p) return NodeFilter.FILTER_REJECT;
@@ -891,68 +891,68 @@ const I18N = (() => {
       },
     });
     let n;
-    while ((n = marche.nextNode())) {
-      const brut = n.nodeValue;
-      const cle = brut.trim();
-      if (!cle || !UI[cle]) continue;
-      const debut = (brut.match(/^\s*/) || [""])[0];
-      const fin = /\s$/.test(brut) ? " " : "";
-      registre.push({ node: n, fr: brut, en: debut + UI[cle] + fin });
+    while ((n = walker.nextNode())) {
+      const raw = n.nodeValue;
+      const key = raw.trim();
+      if (!key || !UI[key]) continue;
+      const lead = (raw.match(/^\s*/) || [""])[0];
+      const trail = /\s$/.test(raw) ? " " : "";
+      registry.push({ node: n, fr: raw, en: lead + UI[key] + trail });
     }
 
-    /* LES ATTRIBUTS DE TEXTE. Le parcours ci-dessus ne voit que des nœuds de
-       texte : les fonds de champ, les infobulles et les étiquettes pour lecteurs
-       d'écran lui échappent, et restaient donc en français en mode anglais.
+    /* TEXT ATTRIBUTES. The walk above only sees text nodes:
+       placeholders, tooltips and screen reader labels escape it,
+       and so stayed French in English mode.
 
-       Même règle que le texte, et c'est ce qui rend le passage sûr : enregistrés
-       SEULEMENT s'ils ont une entrée au dictionnaire. Le fond du champ molette
-       vaut "1.5.0" ou "du paquet" selon que le café est déjà moulu, et c'est le
-       code de saisie qui en décide : sans entrée, il n'est jamais capturé, donc
-       jamais réécrit ici.
+       Same rule as for text, and that is what makes the pass safe: recorded
+       ONLY if they have a dictionary entry. The grinder field placeholder
+       is "1.5.0" or "du paquet" depending on whether the coffee is pre-ground,
+       and the entry code decides that: with no entry, it is never captured, so
+       never rewritten here.
 
-       Les zones régénérées par le JS sont exclues comme pour le texte. Y garder
-       une référence serait pire qu'inutile : le nœud est remplacé à chaque
-       rendu, et le code qui le régénère traduit déjà ce qu'il écrit. */
+       Zones regenerated by JS are excluded, as for text. Keeping a
+       reference to them would be worse than useless: the node is replaced on
+       every render, and the code regenerating it already translates what it writes. */
     ["placeholder", "title", "aria-label"].forEach(attr => {
       document.querySelectorAll("[" + attr + "]").forEach(el => {
         if (el.closest && el.closest(ZONES_JS)) return;
         const fr = el.getAttribute(attr);
-        if (fr && UI[fr]) attributs.push({ el, attr, fr, en: UI[fr] });
+        if (fr && UI[fr]) attrEntries.push({ el, attr, fr, en: UI[fr] });
       });
     });
-    scanFait = true;
-    scanAvecDico = Object.keys(UI).length > 0;
+    scanDone = true;
+    scanHadDict = Object.keys(UI).length > 0;
   }
 
   function appliquerStatique() {
-    if (!scanFait) scanner();
-    registre.forEach(r => {
-      try { r.node.nodeValue = lang === "en" ? r.en : r.fr; } catch (e) { /* noeud disparu */ }
+    if (!scanDone) scan();
+    registry.forEach(r => {
+      try { r.node.nodeValue = lang === "en" ? r.en : r.fr; } catch (e) { /* node gone */ }
     });
     document.documentElement.setAttribute("data-lang", lang);
     document.documentElement.setAttribute("lang", lang);
     document.title = t("doc_title");
-    attributs.forEach(a => {
-      try { a.el.setAttribute(a.attr, lang === "en" ? a.en : a.fr); } catch (e) { /* noeud disparu */ }
+    attrEntries.forEach(a => {
+      try { a.el.setAttribute(a.attr, lang === "en" ? a.en : a.fr); } catch (e) { /* node gone */ }
     });
   }
 
-  function t(cle, vars) {
-    const e = T[cle];
-    let s = e ? (e[lang] || e.fr) : cle;
+  function t(key, vars) {
+    const e = T[key];
+    let s = e ? (e[lang] || e.fr) : key;
     if (vars) Object.keys(vars).forEach(k => { s = s.split("{" + k + "}").join(vars[k]); });
     return s;
   }
 
-  // hasOwnProperty (v8.77) : un café nommé « constructor » affichait une fonction en anglais.
+  // hasOwnProperty (v8.77): a coffee named « constructor » showed a function in English.
   function tr(texte) { return lang === "en" && Object.prototype.hasOwnProperty.call(UI, texte) ? UI[texte] : texte; }
-  // Plage de molette "0.8.3 à 1.5.4" : le "à" devient "to" en anglais.
+  // Grinder range "0.8.3 à 1.5.4": the "à" becomes "to" in English.
   function mol(s) { return lang === "en" ? String(s).replace(" à ", " to ") : s; }
   function diag(d) { return lang === "en" ? (DIAG[d] || d) : d; }
   function tag(d) { return lang === "en" ? (TAGS[d] || d) : d; }
-  /* Les valeurs sont des CHAINES francaises, et le paquet anglais les remplace
-     par un couple { fr, en } au chargement. On accepte donc les deux formes :
-     une chaine seule veut dire francais. */
+  /* The values are French STRINGS, and the English bundle replaces them
+     with a { fr, en } pair on load. So both forms are accepted:
+     a bare string means French. */
   function tagInfo(d) {
     const e = TAGS_INFO[d];
     if (!e) return "";
@@ -965,73 +965,73 @@ const I18N = (() => {
   function jours() { return t("jours").split("|"); }
   function mois() { return t("mois").split("|"); }
 
-  const abonnes = [];
-  function abonner(fn) { abonnes.push(fn); }
+  const subscribers = [];
+  function abonner(fn) { subscribers.push(fn); }
 
-  /* CHARGEMENT DU PAQUET ANGLAIS.
+  /* LOADING THE ENGLISH BUNDLE.
 
-     Les dictionnaires ci-dessus sont vides en français, et c'est volontaire :
-     tr(), diag(), tag() et compagnie renvoient leur entrée telle quelle tant que
-     la langue vaut "fr", et les gabarits se rabattent sur leur moitié française.
-     Le français n'a donc littéralement aucun usage de 29 Ko gzippés d'anglais.
+     The dictionaries above are empty in French, on purpose:
+     tr(), diag(), tag() and friends return their input unchanged as long as
+     the language is "fr", and templates fall back on their French half.
+     French therefore has literally no use for 29 KB gzipped of English.
 
-     Le paquet les remplit SUR PLACE, sans réaffecter les constantes : le reste du
-     fichier garde ses références, il n'y a rien à recâbler. */
-  let paquetEn = null;
+     The bundle fills them IN PLACE, without reassigning the constants: the rest
+     of the file keeps its references, nothing needs rewiring. */
+  let enBundle = null;
 
-  function fusionnerPaquet(p) {
+  function mergeBundle(p) {
     if (!p) return false;
-    /* Le scan précédent s'est fait sans dictionnaire, donc il n'a rien
-       enregistré : il faut le refaire maintenant que le paquet est là. La
-       condition compte. Rescanner après une traduction déjà appliquée
-       enregistrerait l'anglais affiché comme étant le texte français, et le
-       retour au français rendrait de l'anglais. */
-    if (!scanAvecDico) { scanFait = false; registre.length = 0; attributs.length = 0; }
+    /* The previous scan ran without a dictionary, so it recorded
+       nothing: it must be redone now that the bundle is here. The
+       condition matters. Rescanning after a translation was already applied
+       would record the displayed English as the French text, and
+       switching back to French would render English. */
+    if (!scanHadDict) { scanDone = false; registry.length = 0; attrEntries.length = 0; }
     Object.entries(p.T || {}).forEach(([k, v]) => { if (T[k]) T[k].en = v; });
     Object.entries(p.TAGS_INFO || {}).forEach(([k, v]) => {
       if (TAGS_INFO[k] !== undefined) TAGS_INFO[k] = { fr: TAGS_INFO[k], en: v };
     });
     [["UI", UI], ["DIAG", DIAG], ["TAGS", TAGS], ["GROUPES", GROUPES],
-      ["METH", METH], ["MACHINES", MACHINES]].forEach(([nom, cible]) => {
-      Object.assign(cible, p[nom] || {});
+      ["METH", METH], ["MACHINES", MACHINES]].forEach(([name, target]) => {
+      Object.assign(target, p[name] || {});
     });
     return true;
   }
 
-  function chargerAnglais() {
-    if (paquetEn) return paquetEn;
-    if (typeof I18N_EN !== "undefined") { fusionnerPaquet(I18N_EN); paquetEn = Promise.resolve(true); return paquetEn; }
-    paquetEn = new Promise(resolve => {
+  function loadEnglish() {
+    if (enBundle) return enBundle;
+    if (typeof I18N_EN !== "undefined") { mergeBundle(I18N_EN); enBundle = Promise.resolve(true); return enBundle; }
+    enBundle = new Promise(resolve => {
       const s = document.createElement("script");
       s.src = OUTILS.urlVersionnee("js/i18n.en.js");
-      s.onload = () => resolve(fusionnerPaquet(typeof I18N_EN !== "undefined" ? I18N_EN : null));
-      // Échec de chargement : on reste en français plutôt que d'afficher une
-      // moitié de site traduite. paquetEn revient à null pour permettre un retry.
-      s.onerror = () => { paquetEn = null; resolve(false); };
+      s.onload = () => resolve(mergeBundle(typeof I18N_EN !== "undefined" ? I18N_EN : null));
+      // Load failure: stay in French rather than show a half
+      // translated site. enBundle goes back to null to allow a retry.
+      s.onerror = () => { enBundle = null; resolve(false); };
       document.head.appendChild(s);
     });
-    return paquetEn;
+    return enBundle;
   }
 
-  function appliquerLangue(nouvelle) {
-    lang = nouvelle;
-    try { localStorage.setItem("langue", lang); } catch (e) { /* indisponible */ }
+  function applyLanguage(next) {
+    lang = next;
+    try { localStorage.setItem("langue", lang); } catch (e) { /* unavailable */ }
     appliquerStatique();
-    abonnes.forEach(fn => { try { fn(); } catch (e) { console.error(e); } });
+    subscribers.forEach(fn => { try { fn(); } catch (e) { console.error(e); } });
   }
 
   async function basculer() {
-    const cible = lang === "fr" ? "en" : "fr";
-    if (cible === "en" && !await chargerAnglais()) return;
-    appliquerLangue(cible);
+    const target = lang === "fr" ? "en" : "fr";
+    if (target === "en" && !await loadEnglish()) return;
+    applyLanguage(target);
   }
 
-  /* Appelée au démarrage quand la langue enregistrée est l'anglais : le paquet
-     doit être là AVANT le premier rendu, sinon la page s'affiche en français puis
-     clignote. */
-  async function preparer(langueVoulue) {
-    if (langueVoulue !== "en") return;
-    if (await chargerAnglais()) lang = "en";
+  /* Called at startup when the saved language is English: the bundle
+     must be here BEFORE the first render, otherwise the page shows in French and then
+     flickers. */
+  async function preparer(wantedLang) {
+    if (wantedLang !== "en") return;
+    if (await loadEnglish()) lang = "en";
   }
 
   return {

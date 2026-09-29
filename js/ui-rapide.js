@@ -1,49 +1,49 @@
-/* Saisie rapide : le panneau qui flotte par-dessus tous les écrans.
+/* Quick entry: the panel that floats above every screen.
  *
- * Trois gestes, café, recette, note, et la tasse est enregistrée avec les
- * valeurs de la recette. Séparé de l'écran de saisie parce qu'il n'en partage
- * ni l'état (pas de brouillon, pas de chrono, pas d'édition) ni le formulaire :
- * il ne lui emprunte que la liste des cafés sélectionnables, par UI. */
+ * Three gestures, coffee, recipe, rating, and the cup is saved with the
+ * recipe's values. Kept apart from the entry screen because it shares neither
+ * its state (no draft, no timer, no editing) nor its form: the only thing it
+ * borrows is the list of selectable coffees, through UI. */
 "use strict";
 
 (() => {
 
-  // Emprunté au noyau, chargé avant nous.
+  // Borrowed from the core, loaded before us.
   const { $, activerEcran, brancherNote, maintenantLocal, marquerNote, noteVide, peindreCurseur, recettesDeMethode, replis, toast, trouverRecette, unSeulALaFois } = UI;
 
-  let rapideOuvert = false;
+  let quickOpen = false;
 
-  // Le câblage a besoin de savoir si le panneau est ouvert, pas de pouvoir
-  // l'ouvrir en écrivant dans une variable.
-  function rapideEstOuvert() { return rapideOuvert; }
+  // The wiring needs to know whether the panel is open, not to be able to
+  // open it by writing to a variable.
+  function rapideEstOuvert() { return quickOpen; }
 
-  function basculerRapide(forcer) {
-    rapideOuvert = forcer !== undefined ? forcer : !rapideOuvert;
-    $("#panneau-rapide").classList.toggle("ouvert", rapideOuvert);
-    $("#fab-rapide").classList.toggle("ouvert", rapideOuvert);
-    /* Le voile ne sert pas qu'a assombrir : il donne une cible de fermeture de
-       la taille de l'ecran, ce qu'une croix de 30 px ne fait pas au pouce. */
-    $("#voile-rapide").hidden = !rapideOuvert;
+  function basculerRapide(force) {
+    quickOpen = force !== undefined ? force : !quickOpen;
+    $("#panneau-rapide").classList.toggle("ouvert", quickOpen);
+    $("#fab-rapide").classList.toggle("ouvert", quickOpen);
+    /* The veil is not only there to darken: it gives a screen-sized close
+       target, which a 30 px cross does not do for a thumb. */
+    $("#voile-rapide").hidden = !quickOpen;
     if (rapideEstOuvert()) majPanneauRapide();
   }
 
   function majPanneauRapide() {
-    const selCafe = $("#q-cafe");
-    const v = selCafe.value;
-    const cafes = UI.cafesSelectionnables();
-    selCafe.innerHTML = '<option value="">' + I18N.t("choisir_cafe") + "</option>" +
-      cafes.map(c => '<option value="' + OUTILS.echap(c.id) + '">' + OUTILS.echap(c.nom) + "</option>").join("");
-    if (v && cafes.some(c => c.id === v)) selCafe.value = v;
-    /* Même défaut que le formulaire complet : le panneau rapide REFUSE
-       d'enregistrer sans café, donc l'ouvrir sur un champ vide garantissait un
-       aller-retour. On ne préremplit que si rien n'est déjà choisi, pour ne pas
-       écraser une sélection en cours. */
-    if (!selCafe.value && cafes[0]) selCafe.value = cafes[0].id;
-    // Chaque ouverture repart SANS note : on note après avoir bu.
+    const coffeeSelect = $("#q-cafe");
+    const v = coffeeSelect.value;
+    const coffees = UI.cafesSelectionnables();
+    coffeeSelect.innerHTML = '<option value="">' + I18N.t("choisir_cafe") + "</option>" +
+      coffees.map(c => '<option value="' + OUTILS.echap(c.id) + '">' + OUTILS.echap(c.nom) + "</option>").join("");
+    if (v && coffees.some(c => c.id === v)) coffeeSelect.value = v;
+    /* Same default as the full form: the quick panel REFUSES to save without
+       a coffee, so opening it on an empty field guaranteed a round trip. We
+       only prefill when nothing is chosen yet, so as not to overwrite a
+       selection in progress. */
+    if (!coffeeSelect.value && coffees[0]) coffeeSelect.value = coffees[0].id;
+    // Every opening starts WITHOUT a rating: you rate after drinking.
     $("#q-note").value = 5;
     marquerNote($("#q-note"), true);
-    /* L'heure de l'enregistrement, affichee parce qu'elle n'est pas modifiable
-       ici : la feuille enregistre MAINTENANT, autant le montrer. */
+    /* The save time, shown because it cannot be edited here: the sheet saves
+       NOW, might as well say so. */
     $("#q-quand").textContent = I18N.t("q_maintenant", {
       h: new Date().toLocaleTimeString(I18N.locale(), { hour: "2-digit", minute: "2-digit" }),
     });
@@ -52,17 +52,17 @@
     majReprisRapide();
   }
 
-  /* Même règle que le formulaire complet : pas de pouce tant qu'on n'a pas
-     touché, et une note vide s'affiche comme telle. */
+  /* Same rule as the full form: no thumb until it has been touched, and an
+     empty rating shows as such. */
   function majAffichageNoteRapide() {
-    const curseur = $("#q-note");
-    const vide = noteVide(curseur);
-    const dit = vide ? I18N.t("n_pas_notee") : curseur.value + " / 10";
-    $("#q-note-affichee").textContent = dit;
-    curseur.setAttribute("aria-valuetext", dit);
-    $("#q-note-aide").hidden = !vide;
-    $("#q-note-effacer").hidden = vide;
-    peindreCurseur(curseur);
+    const slider = $("#q-note");
+    const empty = noteVide(slider);
+    const shown = empty ? I18N.t("n_pas_notee") : slider.value + " / 10";
+    $("#q-note-affichee").textContent = shown;
+    slider.setAttribute("aria-valuetext", shown);
+    $("#q-note-aide").hidden = !empty;
+    $("#q-note-effacer").hidden = empty;
+    peindreCurseur(slider);
   }
 
   function noteRapide() {
@@ -72,68 +72,67 @@
   function majRecettesRapide() {
     const sel = $("#q-recette");
     const v = sel.value;
-    const groupes = ["Brikka", "Switch"].map(m => {
-      const liste = recettesDeMethode(m);
-      if (!liste.length) return "";
+    const groups = ["Brikka", "Switch"].map(m => {
+      const list = recettesDeMethode(m);
+      if (!list.length) return "";
       return '<optgroup label="' + m + '">' +
-        liste.map(r => "<option>" + r.nom + "</option>").join("") + "</optgroup>";
+        list.map(r => "<option>" + r.nom + "</option>").join("") + "</optgroup>";
     }).join("");
-    sel.innerHTML = groupes;
+    sel.innerHTML = groups;
     if (v && trouverRecette(v)) sel.value = v;
     majAvertRapide();
   }
 
   function surChoixCafeRapide() {
-    const cafe = DATA.state.cafes.find(c => c.id === $("#q-cafe").value);
-    if (cafe) {
-      const r = trouverRecette(cafe.recette_recommandee);
+    const coffee = DATA.state.cafes.find(c => c.id === $("#q-cafe").value);
+    if (coffee) {
+      const r = trouverRecette(coffee.recette_recommandee);
       if (r && r.actif !== 0) $("#q-recette").value = r.nom;
     }
     majAvertRapide();
   }
 
   function majAvertRapide() {
-    const cafe = DATA.state.cafes.find(c => c.id === $("#q-cafe").value);
+    const coffee = DATA.state.cafes.find(c => c.id === $("#q-cafe").value);
     const r = trouverRecette($("#q-recette").value);
-    const av = r ? avertissementsCombinaison(cafe, r.methode, r.nom, DATA.state.recettes) : { msgs: [] };
-    $("#q-avert").textContent = av.msgs.length ? "⚠ " + av.msgs[0] : "";
+    const warn = r ? avertissementsCombinaison(coffee, r.methode, r.nom, DATA.state.recettes) : { msgs: [] };
+    $("#q-avert").textContent = warn.msgs.length ? "⚠ " + warn.msgs[0] : "";
     majReprisRapide();
   }
 
-  /* CE QUE LA RECETTE IMPOSE, en chiffres. La feuille n'a que trois champs et
-     enregistre tout le reste depuis la recette : sans cette ligne il fallait
-     connaitre la recette par coeur pour savoir ce qu'on venait d'ecrire. La
-     pastille de machine est la aussi, c'est le seul endroit ou la methode se
-     voit dans cette feuille. */
+  /* WHAT THE RECIPE IMPOSES, in numbers. The sheet has only three fields and
+     saves everything else from the recipe: without this line you had to know
+     the recipe by heart to know what you had just written. The machine dot is
+     here too, it is the only place the method shows in this sheet. */
   function majReprisRapide() {
     const r = trouverRecette($("#q-recette").value);
-    const cible = $("#q-repris");
-    if (!r) { cible.innerHTML = ""; return; }
-    const bouts = [];
-    if (r.dose) bouts.push(r.dose + " g");
-    if (r.eau) bouts.push(r.eau + " g");
-    if (r.dial) bouts.push(I18N.t("molette") + " " + r.dial);
-    cible.innerHTML =
+    const target = $("#q-repris");
+    if (!r) { target.innerHTML = ""; return; }
+    const parts = [];
+    if (r.dose) parts.push(r.dose + " g");
+    if (r.eau) parts.push(r.eau + " g");
+    if (r.dial) parts.push(I18N.t("molette") + " " + r.dial);
+    target.innerHTML =
       '<span class="pastille-methode ' + String(r.methode).toLowerCase() + '"></span>' +
-      "<span>" + (bouts.length ? I18N.t("q_repris", { v: bouts.join(", ") }) : I18N.tr(r.methode)) + "</span>";
+      "<span>" + (parts.length ? I18N.t("q_repris", { v: parts.join(", ") }) : I18N.tr(r.methode)) + "</span>";
   }
 
   async function enregistrerRapide() {
-    const cafeId = $("#q-cafe").value;
+    const coffeeId = $("#q-cafe").value;
     const r = trouverRecette($("#q-recette").value);
-    if (!cafeId) { toast(I18N.t("t_choisis_cafe")); return; }
+    if (!coffeeId) { toast(I18N.t("t_choisis_cafe")); return; }
     if (!r) { toast(I18N.t("t_choisis_recette")); return; }
-    // Le café choisi dans le panneau. Un café déjà moulu n'a pas de réglage de
-    // molette à enregistrer : la valeur de la recette serait une invention.
-    const cafeQ = DATA.state.cafes.find(c => c.id === cafeId);
+    // The coffee chosen in the panel. A pre-ground coffee has no grinder
+    // setting to save: the recipe's value would be made up.
+    const quickCoffee = DATA.state.cafes.find(c => c.id === coffeeId);
     await DATA.ajouterExtraction({
       date_heure: maintenantLocal(),
-      cafe_id: cafeId,
+      cafe_id: coffeeId,
       methode: r.methode,
       recette: r.nom,
       dose_g: r.dose || replis.dose,
       eau_g: r.eau,
-      mouture_dial: cafeQ && Number(cafeQ.deja_moulu) === 1 ? "" : r.dial,
+      mouture_dial: quickCoffee && Number(quickCoffee.deja_moulu) === 1 ? "" : r.dial,
       temperature_c: r.temp,
       temps_total_s: "",
       temps_ecoulement_s: "",
@@ -144,12 +143,12 @@
       descripteurs: "",
       commentaire: "",
     });
-    const note = noteRapide();
-    toast(note === "" ? I18N.t("t_rapide_sans_note", { r: r.nom }) : I18N.t("t_rapide", { r: r.nom, n: note }));
+    const rating = noteRapide();
+    toast(rating === "" ? I18N.t("t_rapide_sans_note", { r: r.nom }) : I18N.t("t_rapide", { r: r.nom, n: rating }));
     basculerRapide(false);
   }
 
-  /* Câblage du panneau. Appelé une fois par app.js, au démarrage. */
+  /* Panel wiring. Called once by app.js, at startup. */
   function cablerRapide() {
     $("#fab-rapide").addEventListener("click", () => basculerRapide());
     $("#q-fermer").addEventListener("click", () => basculerRapide(false));
@@ -166,24 +165,24 @@
     $("#q-enregistrer").addEventListener("click", unSeulALaFois(enregistrerRapide));
     $("#q-complet").addEventListener("click", () => { basculerRapide(false); activerEcran("saisie"); });
 
-    /* A9 (v8.88) : LE BOUTON S'EFFACE QUAND ON DESCEND. Posé en bas à droite, il
-       masquait la fin des commentaires et une colonne de la dernière tasse. Il
-       part quand tu fais défiler vers le bas, revient dès que tu remontes, et ne
-       bouge pas tant que son panneau est ouvert. Huit pixels de marge : un doigt
-       qui tremble ne le fait pas clignoter. */
+    /* A9 (v8.88): THE BUTTON STEPS ASIDE WHEN YOU SCROLL DOWN. Sitting at the
+       bottom right, it hid the end of the comments and a column of the last
+       cup. It leaves when you scroll down, comes back as soon as you scroll
+       up, and stays put while its panel is open. Eight pixels of slack: a
+       shaky finger does not make it flicker. */
     const fab = $("#fab-rapide");
-    // Deux lectures et une classe : pas besoin d'attendre une image, le calcul est trop léger.
-    let dernierY = window.scrollY;
+    // Two reads and a class: no need to wait for a frame, the work is too light.
+    let lastY = window.scrollY;
     window.addEventListener("scroll", () => {
       const y = window.scrollY;
-      if (rapideOuvert || y < 120) fab.classList.remove("fab-cache");
-      else if (y > dernierY + 8) fab.classList.add("fab-cache");
-      else if (y < dernierY - 8) fab.classList.remove("fab-cache");
-      if (Math.abs(y - dernierY) > 8) dernierY = y;
+      if (quickOpen || y < 120) fab.classList.remove("fab-cache");
+      else if (y > lastY + 8) fab.classList.add("fab-cache");
+      else if (y < lastY - 8) fab.classList.remove("fab-cache");
+      if (Math.abs(y - lastY) > 8) lastY = y;
     }, { passive: true });
   }
 
-  // Mis à disposition des autres écrans.
+  // Made available to the other screens.
   Object.assign(UI, {
     basculerRapide, cablerRapide, enregistrerRapide, majAffichageNoteRapide, majAvertRapide,
     majReprisRapide,

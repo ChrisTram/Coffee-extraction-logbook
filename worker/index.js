@@ -1,19 +1,19 @@
-/* Cloudflare Worker : porte d'entree du site.
+/* Cloudflare Worker: the site's front door.
  *
- * Le site lui meme est 100 pour cent statique et ne connait rien de
- * l'authentification. Ce Worker s'intercale devant les fichiers statiques
- * (assets.run_worker_first = true dans wrangler.jsonc) et ne les sert que
- * si la requete porte un cookie de session valide.
+ * The site itself is 100 percent static and knows nothing about
+ * authentication. This Worker sits in front of the static files
+ * (assets.run_worker_first = true in wrangler.jsonc) and only serves them
+ * if the request carries a valid session cookie.
  *
- * Un seul compte, pas d'inscription, pas de reinitialisation. Les trois
- * valeurs sensibles sont des secrets Cloudflare, jamais dans le depot :
- *   AUTH_USERNAME  l'identifiant
- *   AUTH_PASSWORD  le mot de passe
- *   AUTH_SECRET    la cle de signature des cookies de session
- * Si l'une manque, le Worker refuse tout (fermeture par defaut).
+ * A single account, no sign-up, no reset. The three sensitive values are
+ * Cloudflare secrets, never in the repository:
+ *   AUTH_USERNAME  the username
+ *   AUTH_PASSWORD  the password
+ *   AUTH_SECRET    the signing key of the session cookies
+ * If one is missing, the Worker refuses everything (fail closed).
  *
- * Ouvrir index.html en file:// continue de marcher exactement comme avant :
- * ce fichier n'existe que sur Cloudflare.
+ * Opening index.html over file:// keeps working exactly as before:
+ * this file only exists on Cloudflare.
  */
 
 import { sauvegarderDocument, handleSync } from "./sync.js";
@@ -30,8 +30,8 @@ const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
 export default {
-  /* La sauvegarde quotidienne du document (v8.71), declenchee par le cron de
-     wrangler.jsonc. Sans base liee, rien a sauvegarder. */
+  /* The daily backup of the document (v8.71), triggered by the cron in
+     wrangler.jsonc. Without a bound database, nothing to back up. */
   async scheduled(event, env, ctx) {
     if (!env.DB) return;
     ctx.waitUntil(sauvegarderDocument(env.DB, Date.now()).catch(e => console.error("sauvegarde", e && e.message)));
@@ -54,10 +54,10 @@ export default {
       return loginResponse(safeTarget(url.searchParams.get("next")), null, 200);
     }
 
-    // L'API de synchronisation est DERRIÈRE la même session que le reste. Un
-    // appel non authentifié reçoit un 401 en JSON, pas une redirection : le
-    // client sait alors qu'il doit renvoyer l'utilisateur sur /login au lieu de
-    // parser une page HTML comme si c'était des données.
+    // The sync API sits BEHIND the same session as everything else. An
+    // unauthenticated call gets a 401 in JSON, not a redirect: the client
+    // then knows it must send the user to /login instead of parsing an HTML
+    // page as if it were data.
     if (url.pathname === SYNC_PATH) {
       if (!signedIn) {
         return new Response(JSON.stringify({ erreur: "session-expiree" }), {
@@ -73,7 +73,7 @@ export default {
       return redirectTo(`${LOGIN_PATH}?next=${wanted}`, url);
     }
 
-    return servePrivately(await allegerSiUtile(await env.ASSETS.fetch(request), url), url);
+    return servePrivately(await minifyIfUseful(await env.ASSETS.fetch(request), url), url);
   },
 };
 
@@ -81,10 +81,10 @@ export default {
 
 const REQUIRED_SECRETS = ["AUTH_USERNAME", "AUTH_PASSWORD", "AUTH_SECRET"];
 
-/* Nomme les secrets absents. Les NOMS ne sont pas sensibles, ils sont dans le
-   depot public; les valeurs ne sont evidemment jamais rendues. Sans ca, un
-   503 ne dit pas laquelle des trois manque et le diagnostic se fait a
-   l'aveugle. */
+/* Names the missing secrets. The NAMES are not sensitive, they are in the
+   public repository; the values are obviously never returned. Without
+   this, a 503 does not say which of the three is missing and diagnosis is
+   done blind. */
 function missingSecrets(env) {
   return REQUIRED_SECRETS.filter((name) => {
     const value = env[name];
@@ -125,7 +125,7 @@ function misconfigured(missing) {
   );
 }
 
-/* ---------- Signature et session ---------- */
+/* ---------- Signing and session ---------- */
 
 async function importKey(secret) {
   return crypto.subtle.importKey(
@@ -150,8 +150,8 @@ async function verifySignature(secret, payload, signature) {
   return crypto.subtle.verify("HMAC", key, bytes, encoder.encode(payload));
 }
 
-/* Comparaison a temps constant : on compare les HMAC des deux valeurs plutot
-   que les valeurs elles memes, un attaquant ne controle pas la sortie. */
+/* Constant-time comparison: we compare the HMACs of both values rather
+   than the values themselves, an attacker does not control the output. */
 async function passwordMatches(config, submitted) {
   if (typeof submitted !== "string" || submitted.length === 0) return false;
   const [given, expected] = await Promise.all([
@@ -203,18 +203,18 @@ function readCookie(request, name) {
   return null;
 }
 
-/* ---------- Ecrans ---------- */
+/* ---------- Screens ---------- */
 
 async function submitLogin(request, config, url, env) {
-  /* UNE VRAIE LIMITE D'ESSAIS (v8.73). Le délai de 700 ms après un échec ne
-     freinait pas des essais lancés en parallèle. La limite de Cloudflare
-     (binding LOGIN_LIMITER, wrangler.jsonc) compte les essais par adresse ;
-     sans binding, on garde le seul délai. */
+  /* A REAL ATTEMPT LIMIT (v8.73). The 700 ms delay after a failure did not
+     slow down attempts fired in parallel. The Cloudflare limit (binding
+     LOGIN_LIMITER, wrangler.jsonc) counts attempts per address; without
+     the binding, only the delay remains. */
   if (env && env.LOGIN_LIMITER) {
     try {
       const { success } = await env.LOGIN_LIMITER.limit({ key: request.headers.get("CF-Connecting-IP") || "inconnue" });
       if (!success) return loginResponse("/", "trop", 429);
-    } catch (error) { /* limite indisponible : on continue avec le délai */ }
+    } catch (error) { /* limit unavailable: carry on with the delay */ }
   }
   let form;
   try {
@@ -256,7 +256,7 @@ function redirectTo(path, url) {
   });
 }
 
-/* Anti redirection ouverte : on n'accepte qu'un chemin interne. */
+/* Open redirect guard: only an internal path is accepted. */
 function safeTarget(value) {
   if (typeof value !== "string" || !value.startsWith("/")) return "/";
   if (value.startsWith("//") || value.startsWith("/\\")) return "/";
@@ -264,61 +264,61 @@ function safeTarget(value) {
   return value;
 }
 
-/* Le contenu est prive : jamais de cache partage, jamais d'indexation.
+/* The content is private: never a shared cache, never indexing.
 
-   Les fichiers de code portent leur version dans l'URL (js/app.js?v=7.82,
-   voir tools/bump_version.mjs) : une URL donnee ne changera plus jamais de
-   contenu, donc le navigateur peut la garder un an sans revalider. Sans ca,
-   chaque ouverture repartait sur le reseau pour seize fichiers deja presents
-   sur l'appareil. Tout le reste, index.html en tete, reste en no-cache : c'est
-   lui qui porte les nouvelles URL quand la version change. */
+   Code files carry their version in the URL (js/app.js?v=7.82, see
+   tools/bump_version.mjs): a given URL will never change content again, so
+   the browser can keep it for a year without revalidating. Without this,
+   every opening went back to the network for sixteen files already on the
+   device. Everything else, index.html first, stays no-cache: it is the one
+   carrying the new URLs when the version changes. */
 const IMMUTABLE_PATH = /^\/(js|css)\//;
 
-/* Les polices n'ont pas de ?v= et n'en auront pas : la version vit dans
-   index.html et sw.js, pas dans la feuille de style, et ajouter un troisieme
-   endroit ou l'ecrire serait un oubli de plus a chaque montee. Un fichier de
-   police est immuable par CONTRAT : on ne remplace jamais le contenu d'un
-   .woff2 sous le meme nom, on en publie un autre. Sans cette ligne, les cinq
-   polices repartaient revalider a chaque ouverture. */
+/* Fonts have no ?v= and will not get one: the version lives in index.html
+   and sw.js, not in the stylesheet, and adding a third place to write it
+   would be one more thing to forget on each bump. A font file is immutable
+   by CONTRACT: the content of a .woff2 is never replaced under the same
+   name, another one is published. Without this line, the five fonts went
+   back to revalidate on every opening. */
 const FONT_PATH = /\.woff2?$/;
 
-/* ALLÉGER SANS ÉTAPE DE BUILD (v8.75). La feuille de style porte 45 Ko de
-   commentaires, et la page 14 Ko : ils documentent le dépôt mais n'ont rien à
-   faire dans le téléphone. Ils sont retirés au moment de servir, rien ne change
-   dans les sources. Seulement les commentaires : pas d'espaces touchés dans le
-   HTML (les messages à copier sont en <pre>), et la feuille garde ses lignes.
-   Les fichiers versionnés sont immuables : leur version allégée est mise en
-   cache par URL, calculée une fois. */
-export function allegerCss(texte) {
-  return texte.replace(/\/\*[\s\S]*?\*\//g, "").split("\n").map(l => l.trim()).filter(Boolean).join("\n");
+/* MINIFYING WITHOUT A BUILD STEP (v8.75). The stylesheet carries 45 KB of
+   comments, and the page 14 KB: they document the repository but have no
+   business on the phone. They are stripped at serve time, nothing changes
+   in the sources. Only the comments: no whitespace touched in the HTML (the
+   messages to copy are in <pre>), and the stylesheet keeps its lines.
+   Versioned files are immutable: their minified version is cached by URL,
+   computed once. */
+export function allegerCss(text) {
+  return text.replace(/\/\*[\s\S]*?\*\//g, "").split("\n").map(l => l.trim()).filter(Boolean).join("\n");
 }
-export function allegerHtml(texte) {
-  return texte.replace(/<!--[\s\S]*?-->/g, "");
+export function allegerHtml(text) {
+  return text.replace(/<!--[\s\S]*?-->/g, "");
 }
-async function allegerSiUtile(response, url) {
+async function minifyIfUseful(response, url) {
   if (!response.ok) return response;
   const type = String(response.headers.get("Content-Type") || "");
   const css = type.includes("text/css"), html = type.includes("text/html");
   if (!css && !html) return response;
   const cache = typeof caches !== "undefined" && url.searchParams.has("v") ? caches.default : null;
   if (cache) {
-    const deja = await cache.match(url.toString());
-    if (deja) return deja;
+    const cached = await cache.match(url.toString());
+    if (cached) return cached;
   }
-  const texte = await response.text();
-  const allege = new Response(css ? allegerCss(texte) : allegerHtml(texte), response);
-  allege.headers.delete("Content-Length");
-  if (cache) await cache.put(url.toString(), allege.clone());
-  return allege;
+  const text = await response.text();
+  const minified = new Response(css ? allegerCss(text) : allegerHtml(text), response);
+  minified.headers.delete("Content-Length");
+  if (cache) await cache.put(url.toString(), minified.clone());
+  return minified;
 }
 
-/* LA POLITIQUE DE SÉCURITÉ DE L'APPLI (v8.73). Deuxième verrou derrière
-   l'échappement : aucun script ne s'exécute s'il ne vient pas du site, sauf le
-   petit script du thème dans index.html, autorisé par son empreinte. Un test
-   recalcule cette empreinte : modifier ce script sans la mettre à jour le
-   bloquerait, le test le signale avant. Le lecteur des vidéos de recettes vient
-   de youtube-nocookie. Et personne ne peut encadrer le carnet dans sa page. */
-export const EMPREINTE_SCRIPT_THEME = "sha256-nY9y9O22i6u8EQ2vZ5f6UkDQTs/tpCtl0HirifsGAJ8=";
+/* THE APP'S SECURITY POLICY (v8.73). Second lock behind escaping: no
+   script runs unless it comes from the site, except the small theme script
+   in index.html, allowed by its hash. A test recomputes that hash:
+   changing this script without updating it would block it, and the test
+   flags it first. The recipe video player comes from youtube-nocookie.
+   And nobody can frame the logbook in their page. */
+export const EMPREINTE_SCRIPT_THEME = "sha256-E0DO0KwBV+TWsbuy+0OAxmRouDQMDfBZSyl6f2Ek81E=";
 export const POLITIQUE_SECURITE = [
   "default-src 'self'",
   "script-src 'self' '" + EMPREINTE_SCRIPT_THEME + "'",
@@ -366,7 +366,7 @@ function loginResponse(target, error, status) {
   });
 }
 
-/* ---------- Encodage ---------- */
+/* ---------- Encoding ---------- */
 
 function base64UrlEncode(bytes) {
   let binary = "";
@@ -394,10 +394,11 @@ function escapeHtml(value) {
     .replace(/"/g, "&quot;");
 }
 
-/* ---------- Page de connexion ----------
-   Autonome, aux couleurs du theme sombre du site. Bilingue comme le reste
-   de l'interface : les textes portent data-fr et data-en, la langue suit le
-   meme reglage localStorage que l'application (cle "langue"). */
+/* ---------- Login page ----------
+   Self-contained, in the colours of the site's dark theme. Bilingual like
+   the rest of the interface: the texts carry data-fr and data-en, the
+   language follows the same localStorage setting as the app (key
+   "langue"). */
 
 function loginPage(target, error) {
   const messages = {
@@ -559,26 +560,26 @@ function loginPage(target, error) {
 <script>
   (function () {
     var lang = "fr";
-    try { if (localStorage.getItem("langue") === "en") lang = "en"; } catch (e) { /* indisponible */ }
+    try { if (localStorage.getItem("langue") === "en") lang = "en"; } catch (e) { /* unavailable */ }
 
-    var bouton = document.getElementById("bascule-langue");
+    var button = document.getElementById("bascule-langue");
 
-    function appliquer() {
+    function apply() {
       document.documentElement.lang = lang;
-      var noeuds = document.querySelectorAll("[data-fr]");
-      for (var i = 0; i < noeuds.length; i += 1) {
-        noeuds[i].textContent = noeuds[i].getAttribute("data-" + lang);
+      var nodes = document.querySelectorAll("[data-fr]");
+      for (var i = 0; i < nodes.length; i += 1) {
+        nodes[i].textContent = nodes[i].getAttribute("data-" + lang);
       }
-      bouton.textContent = lang === "fr" ? "EN" : "FR";
+      button.textContent = lang === "fr" ? "EN" : "FR";
     }
 
-    bouton.addEventListener("click", function () {
+    button.addEventListener("click", function () {
       lang = lang === "fr" ? "en" : "fr";
-      try { localStorage.setItem("langue", lang); } catch (e) { /* indisponible */ }
-      appliquer();
+      try { localStorage.setItem("langue", lang); } catch (e) { /* unavailable */ }
+      apply();
     });
 
-    appliquer();
+    apply();
   })();
 </script>
 </html>`;

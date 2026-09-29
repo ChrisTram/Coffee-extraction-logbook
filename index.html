@@ -4,18 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Carnet d'extraction : Brikka et Switch</title>
-<!-- Version du site, source unique : le pied de page la lit, et les fichiers
-     chargés à la demande la mettent dans leur URL. Se pose avec
-     node tools/bump_version.mjs X, jamais à la main. -->
-<meta name="app-version" content="9.01">
-<link rel="stylesheet" href="css/socle.css?v=9.01">
-<link rel="stylesheet" href="css/ecrans.css?v=9.01">
-<link rel="stylesheet" href="css/fenetres.css?v=9.01">
-<link rel="stylesheet" href="css/finitions.css?v=9.01">
-<!-- crossorigin use-credentials : sans ça le navigateur récupère le manifeste
-     SANS cookie, la porte d'entrée le redirige vers /login, et il essaie de
-     parser du HTML en JSON. Résultat : "Manifest: Syntax error" et une PWA qui
-     n'est pas installable du tout. Invisible en local, où il n'y a pas de porte. -->
+<!-- Site version, single source of truth: the footer reads it, and files
+     loaded on demand put it in their URL. Set it with
+     node tools/bump_version.mjs X, never by hand. -->
+<meta name="app-version" content="9.02">
+<link rel="stylesheet" href="css/socle.css?v=9.02">
+<link rel="stylesheet" href="css/ecrans.css?v=9.02">
+<link rel="stylesheet" href="css/fenetres.css?v=9.02">
+<link rel="stylesheet" href="css/finitions.css?v=9.02">
+<!-- crossorigin use-credentials: without it the browser fetches the manifest
+     WITHOUT cookies, the front door redirects it to /login, and it tries to
+     parse HTML as JSON. Result: "Manifest: Syntax error" and a PWA that
+     cannot be installed at all. Invisible locally, where there is no door. -->
 <link rel="manifest" href="manifest.json" crossorigin="use-credentials">
 <meta name="theme-color" content="#f4ede3" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#111113" media="(prefers-color-scheme: dark)">
@@ -23,50 +23,50 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Carnet">
-<!-- Le SEUL script non différé de la page, et il le reste : appliquer le thème
-     après le premier rendu se voit, c'est un clignotement à chaque ouverture.
-     Sans choix enregistré on suit le système, ce qui est le bon défaut pour une
-     application posée sur un téléphone qui passe en mode nuit tout seul. -->
+<!-- The ONLY non-deferred script on the page, and it stays that way: applying the
+     theme after the first render is visible, a flash on every open.
+     With no saved choice we follow the system, the right default for an
+     app sitting on a phone that switches to night mode by itself. -->
 <script>
 (() => {
   let choix = null, palette = null;
   try {
     choix = localStorage.getItem("theme");
     palette = localStorage.getItem("sombre");
-  } catch (e) { /* navigation privée */ }
+  } catch (e) { /* private browsing */ }
   const sombre = choix ? choix === "sombre"
     : !matchMedia("(prefers-color-scheme: light)").matches;
   document.documentElement.setAttribute("data-theme", sombre ? "sombre" : "clair");
-  // La palette sombre : Graphite par défaut, Nuit si elle a été choisie.
+  // The dark palette: Graphite by default, Nuit if it was chosen.
   document.documentElement.setAttribute("data-sombre", palette === "nuit" ? "nuit" : "graphite");
-  // La barre d'état suit la palette dès le chargement (v8.72), pas seulement après un changement de thème.
+  // The status bar follows the palette from load time (v8.72), not only after a theme change.
   const teinte = sombre ? (palette === "nuit" ? "#0b1017" : "#111113") : "#f4ede3";
   document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute("content", teinte));
 })();
 </script>
-<!-- Préchargés (v8.75) : les deux polices du premier écran et les graphiques du
-     tableau de bord étaient découverts tard, après toute la feuille de style et
-     les scripts. bump_version.mjs versionne le lien des graphiques. -->
+<!-- Preloaded (v8.75): the two first-screen fonts and the dashboard charts
+     were discovered late, after the whole stylesheet and
+     the scripts. bump_version.mjs versions the charts link. -->
 <link rel="preload" href="css/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="css/fonts/instrument-serif-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="js/vendor/chart.umd.js?v=9.01" as="script">
+<link rel="preload" href="js/vendor/chart.umd.js?v=9.02" as="script">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%98%95%3C/text%3E%3C/svg%3E">
 </head>
 <body>
 
 <!-- ================= NAVIGATION =================
 
-     UN SEUL element .rail dans le DOM, deux mises en page. Sur ordinateur c'est
-     le rail de gauche et il porte les six ecrans. Sous 1024 px il devient la
-     feuille « Plus » qui monte du bas, et les trois ecrans quotidiens passent
-     dans la barre du bas : le CSS cache alors les entrees en double.
+     A SINGLE .rail element in the DOM, two layouts. On desktop it is
+     the left rail and it holds all six screens. Below 1024 px it becomes the
+     "Plus" sheet that slides up from the bottom, and the three daily screens move
+     into the bottom bar: the CSS then hides the duplicate entries.
 
-     Dupliquer le rail et la feuille aurait duplique #btn-lang, #btn-theme et
-     #btn-donnees, que app.js adresse par identifiant. Deux elements pour un
-     identifiant, c'est le second qui ne repond plus.
+     Duplicating the rail and the sheet would have duplicated #btn-lang, #btn-theme and
+     #btn-donnees, which app.js addresses by id. Two elements for one
+     id means the second one stops responding.
 
-     Toutes les entrees portent .nav-btn et data-ecran : activerEcran() et
-     app.js les cablent deja toutes, la navigation n'a rien a apprendre. -->
+     Every entry carries .nav-btn and data-ecran: activerEcran() and
+     app.js already wire them all, the navigation has nothing to learn. -->
 <nav class="rail" id="rail" aria-label="Navigation principale">
   <a class="rail-marque" href="#tableau">
     <span class="rail-logo" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 9.5h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M7 3.5v2M11 3.5v2"/></svg></span>
@@ -76,8 +76,8 @@
     </span>
   </a>
 
-  <!-- Sur ordinateur, « Nouvelle tasse » ouvre la saisie COMPLETE : le bouton
-       flottant de saisie rapide disparait au dela de 1024 px. -->
+  <!-- On desktop, "Nouvelle tasse" opens the FULL entry form: the floating
+       quick entry button disappears above 1024 px. -->
   <button class="btn btn-primaire rail-nouvelle" data-va="saisie"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg><span>Nouvelle tasse</span></button>
 
   <div class="rail-entrees">
@@ -103,8 +103,8 @@
   </div>
 </nav>
 
-<!-- Barre du bas, telephone seulement. Quatre entrees : les trois ecrans
-     quotidiens, et « Plus » qui ouvre le rail en feuille. -->
+<!-- Bottom bar, phone only. Four entries: the three daily
+     screens, and "Plus" which opens the rail as a sheet. -->
 <nav class="barre-bas" aria-label="Navigation">
   <button class="nav-btn barre-entree" data-ecran="tableau"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="8" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="11" width="7" height="10" rx="1.5"/></svg><span>Tableau</span></button>
   <button class="nav-btn barre-entree" data-ecran="saisie"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h8"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span>Saisie</span></button>
@@ -114,9 +114,9 @@
 
 <div id="voile-nav" class="voile-nav" hidden></div>
 
-<!-- Retiré par app.js dès que le premier écran est rendu. Volontairement dans le
-     HTML et pas créé en JS : il doit être visible AVANT que le moindre script ne
-     s'exécute, c'est tout son intérêt. -->
+<!-- Removed by app.js as soon as the first screen is rendered. Deliberately in the
+     HTML and not created in JS: it must be visible BEFORE any script
+     runs, that is the whole point. -->
 <div id="chargement" class="chargement" role="status" aria-live="polite">
   <span class="chargement-grain" aria-hidden="true">☕</span>
   <span>Chargement de ton carnet…</span>
@@ -124,7 +124,7 @@
 
 <main>
 
-<!-- ================= ECRAN 1 : TABLEAU DE BORD ================= -->
+<!-- ================= SCREEN 1: DASHBOARD ================= -->
 <section id="ecran-tableau" class="ecran actif">
   <div id="tableau-vide" class="etat-vide" hidden>
     <p class="etat-vide-icone">☕</p>
@@ -138,48 +138,48 @@
 
   <div id="tableau-contenu">
 
-    <!-- TETE DE PAGE. La surligne et le titre remplacent l'ancienne entete :
-         c'est maintenant l'ecran qui dit son nom. -->
+    <!-- PAGE HEAD. The overline and the title replace the old header:
+         the screen now states its own name. -->
     <div class="tete-page">
       <div class="tete-titres">
         <p class="surligne" id="tableau-surligne"></p>
         <h2 class="titre-page">Tableau de bord</h2>
-        <!-- Le stock (v8.89) : ce qui reste dans chaque sachet ouvert, en grammes,
-             sous le titre. Discret, mais lisible sans faire défiler. -->
+        <!-- The stock (v8.89): what is left in each open bag, in grams,
+             under the title. Discreet, but readable without scrolling. -->
         <div class="stock-coin" id="stock-coin" role="group" aria-label="Le café qui reste dans tes sachets"></div>
       </div>
-      <!-- Le récap de la semaine passée (v8.51), rendu par js/ui-dessins.js :
-           montré la semaine suivante, jusqu'à ce qu'on le referme. Dans la TÊTE
-           de page depuis la v8.67, à droite du titre : en carte pleine largeur
-           il poussait les dernières extractions sous la ligne de flottaison. -->
+      <!-- Last week's recap (v8.51), rendered by js/ui-dessins.js:
+           shown the following week, until it is dismissed. In the page HEAD
+           since v8.67, right of the title: as a full-width card
+           it pushed the latest brews below the fold. -->
       <article class="carte carte-recap tete-recap" id="carte-recap" hidden></article>
     </div>
 
     <div class="grille-tableau">
 
-      <!-- RANGEE 1 : la derniere tasse, et les chiffres cles -->
+      <!-- ROW 1: the last cup, and the key figures -->
       <article class="carte carte-derniere col-2" id="carte-derniere" hidden></article>
 
       <article class="carte carte-chiffres">
         <h3>Chiffres clés</h3>
         <div class="kpis" id="kpis"></div>
-        <!-- Total, note globale et cafeine n'ont plus de tuile : quatre chiffres
-             se lisent d'un coup d'oeil, sept se comptent. Ils restent ici. -->
+        <!-- Total, overall rating and caffeine no longer have a tile: four figures
+             read at a glance, seven have to be counted. They stay here. -->
         <ul class="kpi-secondaires" id="kpis-secondaires"></ul>
       </article>
 
-      <!-- RANGEE 2 : les cinq dernieres en vraie table, et le calendrier. Juste
-           sous la derniere tasse depuis la v8.67 : Chris veut les voir sans
-           faire defiler, le graphe et les constats passent dessous. -->
+      <!-- ROW 2: the last five in a real table, and the calendar. Right
+           under the last cup since v8.67: Chris wants to see them without
+           scrolling, the chart and the insights go below. -->
       <article class="carte col-2">
         <h3>Les dernières extractions</h3>
         <div class="table-enveloppe">
           <table class="table-dernieres">
-            <!-- Largeurs imposees par colonne : la table doit tenir dans sa
-                 carte, une carte ne defile pas horizontalement. -->
+            <!-- Widths set per column: the table must fit in its
+                 card, a card does not scroll horizontally. -->
             <colgroup><col class="c-quand"><col class="c-cafe"><col class="c-mesures"><col class="c-gouts"><col class="c-note"></colgroup>
-            <!-- En-tetes caches a l'oeil, lus par les lecteurs d'ecran : une
-                 table sans en-tetes est une grille d'inconnues a l'oreille. -->
+            <!-- Headers hidden from the eye, read by screen readers: a
+                 table without headers is a grid of unknowns to the ear. -->
             <thead class="hors-ecran">
               <tr><th scope="col">Heure</th><th scope="col">Café</th>
                 <th scope="col">Recette et mesures</th><th scope="col">Goûts</th><th scope="col">Note</th></tr>
@@ -193,22 +193,22 @@
       <article class="carte">
         <h3 id="heatmap-titre">Les dernières semaines</h3>
         <div id="g-heatmap" class="heatmap-conteneur"></div>
-        <!-- La legende de l'echelle : sans elle, le calendrier est une suite de
-             bruns dont personne ne sait ce qu'ils valent. Elle etait tombee a la
-             refonte, son style etait reste. -->
+        <!-- The scale legend: without it, the calendar is a series of
+             browns nobody knows the meaning of. It had been dropped in the
+             redesign, its style had stayed. -->
         <div class="legende-heatmap" id="heatmap-legende" aria-hidden="true"></div>
         <div class="mini-stats" id="heatmap-stats"></div>
       </article>
 
-      <!-- RANGEE 3 : le graphe 30 jours et les insights. Le graphe a une
-           HAUTEUR FIXE (v8.39) : il s'etirait a la hauteur des insights, et
-           chaque constat de plus l'allongeait. Les constats defilent un par un
-           dans la carte voisine, qui ne pousse donc plus rien. -->
+      <!-- ROW 3: the 30-day chart and the insights. The chart has a
+           FIXED HEIGHT (v8.39): it stretched to the height of the insights, and
+           every extra insight made it longer. The insights scroll one by one
+           in the neighbouring card, which therefore pushes nothing anymore. -->
       <article class="carte col-2">
         <h3>Note et tasses, 30 derniers jours</h3>
         <div class="canvas-30j"><canvas id="g-30jours"></canvas></div>
-        <!-- Les cafés du mois (v8.61) : chaque pavé a la couleur de son café, et
-             chaque nom ici ouvre sa fiche. Rempli par UI.rendreCafes30j. -->
+        <!-- The coffees of the month (v8.61): each block has its coffee's colour, and
+             each name here opens its sheet. Filled by UI.rendreCafes30j. -->
         <div class="legende-cafes" id="legende-30j" aria-label="Les cafés des 30 derniers jours" hidden></div>
       </article>
 
@@ -221,13 +221,13 @@
         <button type="button" class="lien-carte" data-va="reglages">Voir mes meilleurs réglages</button>
       </article>
 
-      <!-- RANGEE 3 bis : TES CAFÉS EN DESSINS (v8.49), rendus par js/ui-dessins.js.
-           Chaque dessin est un raccourci vers la page qu'il résume ; un bocal de
-           l'étagère ouvre la fiche de son café. -->
+      <!-- ROW 3b: YOUR COFFEES IN DRAWINGS (v8.49), rendered by js/ui-dessins.js.
+           Each drawing is a shortcut to the page it summarises; a jar on
+           the shelf opens its coffee's sheet. -->
       <article class="carte carte-dessins col-plein" id="carte-dessins">
         <div class="carte-tete">
           <div><h3>Tes cafés en dessins</h3><p class="carte-sous">Touche un dessin pour ouvrir ce qu'il résume.</p></div>
-          <!-- Arranger (v8.57) : lesquels voir et dans quel ordre, derrière un seul bouton. -->
+          <!-- Arrange (v8.57): which ones to see and in what order, behind a single button. -->
           <button type="button" class="btn btn-petit btn-discret" id="dessins-arranger" aria-expanded="false" aria-controls="dessins-panneau">Arranger</button>
         </div>
         <div class="dessins-panneau" id="dessins-panneau" hidden></div>
@@ -271,12 +271,12 @@
         </div>
       </article>
 
-      <!-- RANGEE 4 : LES ANALYSES, EN ONGLETS (v8.39). Six graphiques
-           s'empilaient ici en six cartes : on les faisait defiler sans les
-           lire. Une carte, un onglet par question, et a cote de chaque
-           graphique sa lecture en une phrase. Les identifiants des canvas et des
-           messages de carte vide n'ont pas change : le rendu ne sait rien des
-           onglets. -->
+      <!-- ROW 4: THE ANALYSES, IN TABS (v8.39). Six charts
+           used to stack here in six cards: we scrolled past them without
+           reading. One card, one tab per question, and next to each
+           chart its reading in one sentence. The canvas ids and
+           empty-card messages have not changed: the rendering knows nothing of
+           tabs. -->
       <article class="carte carte-analyses col-plein">
         <div class="carte-tete">
           <h3>Analyses</h3>
@@ -291,9 +291,9 @@
           </div>
         </div>
 
-        <!-- La PILE : les six panneaux dans la meme case de grille, un seul
-             visible. Tous restent dessines, donc chaque graphe nait a sa vraie
-             taille ; un panneau en display: none donnait un canvas de 0 x 0. -->
+        <!-- The STACK: the six panels in the same grid cell, only one
+             visible. All stay rendered, so each chart is born at its real
+             size; a panel with display: none gave a 0 x 0 canvas. -->
         <div class="analyses-pile">
         <div class="analyse courant" role="tabpanel" id="analyse-cafes" aria-labelledby="onglet-cafes">
           <div class="analyse-graphe"><div class="canvas-h240"><canvas id="g-cafes"></canvas></div></div>
@@ -321,7 +321,7 @@
             <p class="carte-note" id="note-gouts"></p>
           </div>
         </div>
-        <!-- La roue des arômes (v8.45) : SVG maison, dessinée par CHARTS.roueAromes. -->
+        <!-- The aroma wheel (v8.45): hand-made SVG, drawn by CHARTS.roueAromes. -->
         <div class="analyse" role="tabpanel" id="analyse-aromes" aria-labelledby="onglet-aromes" aria-hidden="true" inert>
           <div class="analyse-graphe">
             <div class="roue-boite" id="boite-aromes">
@@ -353,50 +353,50 @@
   </div>
 </section>
 
-<!-- ================= ECRAN 2 : SAISIE ================= -->
+<!-- ================= SCREEN 2: ENTRY ================= -->
 <section id="ecran-saisie" class="ecran">
-  <!-- La tete de page PRECEDE la grille : elle couvre les deux colonnes, comme
-       sur les autres ecrans. Dans le formulaire, elle ne surplombait que la
-       colonne de gauche. -->
+  <!-- The page head PRECEDES the grid: it spans both columns, as
+       on the other screens. Inside the form, it only topped the
+       left column. -->
   <div class="tete-page saisie-entete">
     <div class="tete-titres">
-      <!-- #saisie-titre reste l'identifiant que le JS ecrit : « Nouvelle
-           extraction », « Modifier l'extraction », « Extraction dupliquée ».
-           C'est la surligne qui dit ce qu'on fait, le titre ne bouge pas. -->
+      <!-- #saisie-titre stays the id the JS writes to: "Nouvelle
+           extraction", "Modifier l'extraction", "Extraction dupliquée".
+           The overline says what we are doing, the title does not move. -->
       <p class="surligne" id="saisie-titre">Nouvelle extraction</p>
       <h2 class="titre-page">Une tasse de plus</h2>
     </div>
     <div class="champ champ-datetime tete-actions">
       <label for="f-date">Date et heure</label>
-      <!-- form= rattache le champ au formulaire alors qu il vit dans la tete de
-           page, hors de ses balises. Sans lui, la date est un controle orphelin :
-           l enregistrement la lit quand meme par identifiant, mais la page ment
-           sur sa structure et la touche Entree n y soumet plus rien. -->
+      <!-- form= ties the field to the form even though it lives in the page
+           head, outside its tags. Without it, the date is an orphan control:
+           saving still reads it by id, but the page lies
+           about its structure and the Enter key no longer submits anything there. -->
       <input type="datetime-local" id="f-date" form="form-saisie">
     </div>
   </div>
 
   <div class="saisie-layout">
-  <!-- LE CHRONO EST ICI, avant le formulaire, et non dans l'aside : sur
-       telephone il doit venir EN PREMIER et se coller en haut de l'ecran,
-       c'est la seule chose qu'on regarde pendant que ca coule. Sur ordinateur
-       le CSS le replace en haut de la colonne de droite. -->
+  <!-- THE TIMER IS HERE, before the form, and not in the aside: on
+       phone it must come FIRST and stick to the top of the screen,
+       it is the only thing we look at while it drips. On desktop
+       the CSS moves it back to the top of the right column. -->
     <div class="chrono carte carte-sombre chrono-bloc" id="chrono-widget">
-      <!-- L'entete est le bouton d'ouverture, et porte le temps : replie, le
-           chrono reste lisible. Un chrono qu'il faut deplier pour lire ne sert
-           a rien. -->
+      <!-- The header is the toggle button, and carries the time: collapsed, the
+           timer stays readable. A timer you must expand to read is
+           useless. -->
       <button type="button" class="chrono-entete-ligne" id="chrono-basculer"
               aria-expanded="false" aria-controls="chrono-corps">
         <span class="chrono-valeur chrono-grand" id="chrono-total">0:00</span>
         <span class="chrono-libelle">Chrono</span>
-        <!-- Le palier en cours, lisible SANS deplier : replie, le bandeau doit
-             dire ou on en est, sinon il ne fait que prendre de la place. -->
+        <!-- The current step, readable WITHOUT expanding: collapsed, the banner must
+             say where we are, otherwise it just takes up space. -->
         <span class="chrono-palier" id="chrono-palier-court"></span>
         <span class="chrono-chevron" aria-hidden="true"></span>
       </button>
-      <!-- A4 (v8.84) : sous 1 400 px, la recette choisie en une ligne, collée au
-           chrono. Un toucher ouvre la fiche entière (recette, vidéo, tasses
-           jumelles, café) en feuille par-dessus le formulaire. -->
+      <!-- A4 (v8.84): below 1400 px, the chosen recipe on one line, stuck to the
+           timer. A tap opens the whole sheet (recipe, video, twin
+           cups, coffee) as a sheet over the form. -->
       <button type="button" class="bande-recette" id="bande-recette" aria-expanded="false" aria-controls="saisie-aside" hidden></button>
       <div id="chrono-corps" hidden>
       <label class="label-inline chrono-bip-label" title="Bip discret à chaque palier de la recette">
@@ -410,7 +410,7 @@
         <button type="button" class="btn btn-primaire" id="btn-chrono">Démarrer</button>
         <button type="button" class="btn" id="btn-chrono-stop" hidden>Arrêter et reporter</button>
         <button type="button" class="btn btn-discret" id="btn-chrono-raz" hidden>Remettre à zéro</button>
-        <!-- Le même chrono en plein écran (v8.47), lisible à un mètre. -->
+        <!-- The same timer full screen (v8.47), readable from a metre away. -->
         <button type="button" class="btn btn-brassage" id="btn-brassage">Mode Brassage</button>
       </div>
       <div class="grille-nombres chrono-manuels">
@@ -436,10 +436,10 @@
   <form id="form-saisie" autocomplete="off">
     <p class="champ-hint legende-requis"><span class="requis">*</span> <span>= obligatoire, tout le reste est optionnel.</span></p>
 
-    <!-- Le formulaire est découpé en trois BLOCS titrés (v7.95) : le café et la
-         recette sur une rangée, les réglages chiffrés avec la ligne live en pied,
-         puis ce qu'on a en bouche. Avant, dix-huit champs se suivaient sans
-         respiration et Chris ne savait plus où poser les yeux. -->
+    <!-- The form is split into three titled BLOCKS (v7.95): the coffee and the
+         recipe on one row, the numeric settings with the live line at the bottom,
+         then what we taste. Before, eighteen fields followed each other with no
+         breathing room and Chris no longer knew where to look. -->
     <section class="saisie-bloc">
     <h3 class="saisie-bloc-titre"><span class="bloc-num" aria-hidden="true">1</span>Le café et la recette</h3>
     <div class="saisie-tete">
@@ -447,8 +447,8 @@
       <label for="f-cafe">Café</label>
       <div class="ligne-cafe">
         <select id="f-cafe"></select>
-        <!-- Icône seule : en texte, le bouton écrasait le menu des cafés sur la
-             rangée café, méthode, recette. -->
+        <!-- Icon only: as text, the button squashed the coffee menu on the
+             coffee, method, recipe row. -->
         <button type="button" class="btn btn-carre" id="btn-gerer-cafes" title="Gérer les cafés" aria-label="Gérer les cafés"><svg class="ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h8"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
       </div>
     </div>
@@ -468,7 +468,7 @@
     </div>
 
     <div id="avertissements" class="avertissements" aria-live="polite"></div>
-    <!-- Déduit de la date d'ouverture du sachet, jamais saisi ici. -->
+    <!-- Derived from the bag's opening date, never entered here. -->
     <p class="age-paquet" id="age-paquet" hidden></p>
     </section>
 
@@ -489,26 +489,26 @@
           <input type="number" id="f-eau" enterkeyhint="next" step="1" min="10" max="1000" inputmode="decimal">
         </div>
       </div>
-      <!-- Switch seulement : sur la Brikka l'eau chauffe dans la chaudière, il
-           n'y a pas de température à saisir, seulement la case eau préchauffée. -->
+      <!-- Switch only: on the Brikka the water heats in the boiler, there
+           is no temperature to enter, only the preheated water checkbox. -->
       <div class="champ" id="champ-temp">
         <label for="f-temp">Température (°C)</label>
-        <!-- Switch : la température se déduit du TEMPS passé par la bouilloire
-             sur le feu. Même bouilloire et même feu à chaque fois, donc une mesure
-             reproductible, là où « petites bulles » était un jugement à l'oeil.
-             Le temps est stocké (chauffe_s) ET le degré estimé, corrigeable à la
-             main, reste la température de l'extraction. La Brikka n'est pas
-             concernée, elle part à l'eau froide : la ligne est masquée. -->
-        <!-- Temps et degré tiennent sur UNE ligne : empilés, la cellule Température
-             devenait deux fois plus haute que ses voisines et creusait un trou au
-             milieu de la grille. -->
+        <!-- Switch: the temperature is derived from the TIME the kettle spends
+             on the stove. Same kettle and same burner every time, so a
+             reproducible measure, where "small bubbles" was a judgement by eye.
+             The time is stored (chauffe_s) AND the estimated degree, editable by
+             hand, remains the brew temperature. The Brikka is not
+             concerned, it starts with cold water: the line is hidden. -->
+        <!-- Time and degree fit on ONE line: stacked, the Temperature cell
+             became twice as tall as its neighbours and dug a hole in the
+             middle of the grid. -->
         <div class="ligne-temp">
           <div class="duree" id="ligne-chauffe">
             <input type="number" id="f-chauffe-min" step="1" min="0" max="30" inputmode="numeric" placeholder="0" aria-label="Bouilloire sur le feu, minutes"><span>min</span>
             <input type="number" id="f-chauffe-sec" step="1" min="0" max="59" inputmode="numeric" placeholder="00" aria-label="Bouilloire sur le feu, secondes"><span>s</span>
           </div>
-          <!-- Les fleches du navigateur n'apparaissent pas sous une certaine
-               largeur, et ce champ fait 66 px : on les dessine. Voir .champ-pas. -->
+          <!-- The browser's arrows do not appear below a certain
+               width, and this field is 66 px wide: we draw them. See .champ-pas. -->
           <div class="champ-pas">
             <input type="number" id="f-temp" enterkeyhint="next" step="1" min="60" max="100" inputmode="decimal" aria-label="Température estimée ou mesurée (°C)">
             <span class="pas">
@@ -554,9 +554,9 @@
       </div>
     </div>
 
-    <!-- Les cases à cocher sortent de la grille chiffrée : sans libellé au dessus
-         elles s'alignaient plus haut que leurs voisines. Regroupées, elles se
-         lisent comme ce qu'elles sont, des options. -->
+    <!-- The checkboxes leave the numeric grid: with no label above
+         they sat higher than their neighbours. Grouped, they
+         read as what they are, options. -->
     <div class="options-saisie">
       <div class="option-saisie" id="champ-prechauffe" hidden>
         <label class="label-inline"><span class="interrupteur"><input type="checkbox" id="f-prechauffe"><i aria-hidden="true"></i></span> Eau préchauffée</label>
@@ -597,21 +597,21 @@
     <section class="saisie-bloc">
     <h3 class="saisie-bloc-titre"><span class="bloc-num" aria-hidden="true">3</span>En bouche</h3>
     <div class="champ">
-      <!-- La note est FACULTATIVE : Chris enregistre souvent l'extraction en
-           sortant la tasse et revient noter après l'avoir bue. -->
+      <!-- The rating is OPTIONAL: Chris often saves the brew while
+           taking the cup out and comes back to rate it after drinking. -->
       <div class="note-tete">
         <label for="f-note">Note : <b id="note-affichee">pas encore notée</b></label>
         <button type="button" class="note-effacer" id="f-note-effacer" hidden>Effacer la note</button>
       </div>
-      <!-- La classe curseur-inactif EST l'état « pas encore notée » (v8.40),
-           sans style depuis la v8.68 : le libellé au-dessus dit l'état. -->
+      <!-- The curseur-inactif class IS the "not rated yet" state (v8.40),
+           unstyled since v8.68: the label above states it. -->
       <input type="range" id="f-note" min="0" max="10" step="0.5" value="5" class="curseur-note curseur-inactif" aria-describedby="f-note-aide">
       <small class="note-aide" id="f-note-aide">Touche la piste pour noter, ou reviens plus tard.</small>
     </div>
 
-    <!-- Avec la NOTE, pas avec les options d'extraction. Celles-ci décrivent
-         comment on extrait ; "ratée" juge le résultat, exactement comme la note
-         juste au-dessus. Rangée ailleurs, elle ne se trouvait pas. -->
+    <!-- With the RATING, not with the brew options. Those describe
+         how we brew; "ratée" judges the result, exactly like the rating
+         just above. Placed elsewhere, nobody found it. -->
     <div class="champ champ-ratee">
       <label class="label-inline"><input type="checkbox" id="f-ratee"> Extraction ratée, je me suis planté</label>
       <span class="champ-hint">Un geste manqué, pas un réglage. Écartée des analyses, gardée dans les comptages.</span>
@@ -626,18 +626,18 @@
     <div class="champ">
       <span class="label">Descripteurs</span>
       <div class="tags" id="f-descripteurs"></div>
-      <!-- Les familles peu utilisees restent repliees : les dix deployees
-           faisaient 1 672 px de bloc. Une famille qui contient un gout coche
-           reste toujours visible, voir majFamillesVisibles(). -->
+      <!-- Rarely used families stay collapsed: all ten expanded
+           made a 1672 px block. A family containing a checked taste
+           always stays visible, see majFamillesVisibles(). -->
       <button type="button" class="lien-carte" id="gouts-plus" aria-expanded="false" hidden></button>
     </div>
 
     <div class="champ">
       <div class="comm-tete">
         <label for="f-commentaire">Commentaire</label>
-        <!-- Dictée (v8.43) : visible seulement si le navigateur sait reconnaître
-             la voix ET qu'on est en ligne, la reconnaissance passant par ses
-             serveurs. -->
+        <!-- Dictation (v8.43): visible only if the browser can recognise
+             speech AND we are online, since recognition goes through its
+             servers. -->
         <button type="button" class="dicter" id="f-dicter" aria-pressed="false" hidden><svg class="ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg><span id="f-dicter-texte">Dicter</span></button>
       </div>
       <textarea id="f-commentaire" enterkeyhint="done" rows="2" placeholder="Libre, par exemple : superbe tasse, ronde et sucrée"></textarea>
@@ -654,20 +654,20 @@
 
   <aside class="saisie-aside" id="saisie-aside" aria-label="Recette, café et chrono">
     <button type="button" class="btn btn-petit aside-fermer" id="aside-fermer">Fermer la fiche</button>
-    <!-- La fiche recette EN PREMIER : c'est ce qu'on relit a chaque etape. Le
-         chrono, lui, ne sert que pendant l'extraction, il vit replie sous elle
-         et s'ouvre d'un clic (ou tout seul quand on le demarre). -->
+    <!-- The recipe sheet FIRST: it is what we reread at each step. The
+         timer only matters during the brew, it lives collapsed under it
+         and opens with a click (or by itself when started). -->
     <div class="carte aside-carte" id="aside-recette"></div>
-    <!-- La vidéo de la recette (v8.69), à part pour ne pas se couper quand la fiche se redessine. -->
+    <!-- The recipe video (v8.69), kept apart so it does not cut off when the sheet redraws. -->
     <div class="carte aside-carte aside-video" id="aside-video" hidden></div>
-    <!-- Tasses jumelles (v8.44) : entre la recette et le café, cachée sous deux. -->
+    <!-- Twin cups (v8.44): between the recipe and the coffee, hidden below two. -->
     <div class="carte aside-carte" id="aside-jumelles" hidden></div>
     <div class="carte aside-carte" id="aside-cafe"></div>
   </aside>
   </div>
 </section>
 
-<!-- ================= ECRAN 3 : HISTORIQUE ================= -->
+<!-- ================= SCREEN 3: HISTORY ================= -->
 <section id="ecran-historique" class="ecran">
 
   <div class="tete-page">
@@ -684,21 +684,21 @@
     </div>
   </div>
 
-  <!-- Les filtres, en pastilles. Ce sont des <select> natifs habilles : ils
-       ouvrent deja un menu, savent le clavier, la frappe et la roue du
-       telephone, ce qu'un menu ecrit a la main aurait tout a reapprendre. -->
+  <!-- The filters, as chips. They are styled native <select>s: they
+       already open a menu, handle the keyboard, typing and the phone's
+       wheel, all of which a hand-written menu would have to relearn. -->
   <div class="historique-filtres" id="h-panneau">
-    <!-- A3 (v8.82) : sous 1 024 px, les filtres se replient derrière ce bouton ;
-         ceux qui sont actifs restent visibles en pastilles, avec leur croix. -->
+    <!-- A3 (v8.82): below 1024 px, the filters fold behind this button;
+         the active ones stay visible as chips, with their cross. -->
     <button type="button" class="btn btn-petit h-filtrer" id="h-filtrer" aria-expanded="false" aria-controls="h-panneau">Filtrer</button>
     <div class="h-actifs" id="h-actifs"></div>
     <div class="champ">
       <label for="h-cafe">Café</label>
       <select id="h-cafe"><option value="">Tous</option></select>
     </div>
-    <!-- La machine en controle SEGMENTE : c'est le filtre qu'on touche le plus,
-         il se lit et se change sans ouvrir de menu. Les boutons pilotent le
-         <select>, qui reste la source de verite du filtrage. -->
+    <!-- The machine as a SEGMENTED control: it is the most touched filter,
+         read and changed without opening a menu. The buttons drive the
+         <select>, which stays the source of truth for filtering. -->
     <div class="filtre-methode" role="group" aria-label="Méthode">
       <button type="button" class="seg" data-methode="" aria-pressed="true">Toutes</button>
       <button type="button" class="seg seg-brikka" data-methode="Brikka" aria-pressed="false">Brikka</button>
@@ -738,12 +738,12 @@
     </div>
   </div>
 
-  <!-- Le bandeau resume : ce que le filtre courant raconte, en quatre chiffres.
-       Le compte seul disait « 12 sur 62 » sans jamais dire si ces douze etaient
-       bonnes. -->
+  <!-- The summary banner: what the current filter tells, in four figures.
+       The count alone said "12 sur 62" without ever saying whether those twelve
+       were good. -->
   <div class="historique-resume" id="h-resume"></div>
   <p class="historique-compte" id="h-compte"></p>
-  <!-- L3 (v8.93) : le journal par sachet, ou la liste par date. -->
+  <!-- L3 (v8.93): the log by bag, or the list by date. -->
   <div class="h-vues" role="group" aria-label="Ranger l'historique">
     <button type="button" data-vue="sachet" aria-pressed="true">Par sachet</button>
     <button type="button" data-vue="date" aria-pressed="false">Par date</button>
@@ -756,10 +756,10 @@
   </div>
   <div class="table-conteneur carte">
     <table class="table-historique" id="h-table">
-      <!-- Largeurs par colonne : pixels pour les colonnes chiffrees et les
-           actions, le reste partage a parts egales entre cafe, recette et gouts,
-           quelle que soit la largeur du cadre. Les pourcentages par position
-           donnaient 52 px aux gouts sur un ecran de 1600. -->
+      <!-- Widths per column: pixels for the numeric columns and the
+           actions, the rest split equally between coffee, recipe and tastes,
+           whatever the frame width. Percentages by position
+           gave 52 px to tastes on a 1600 screen. -->
       <colgroup>
         <col class="c-date"><col class="c-cafe"><col class="c-methode"><col class="c-recette">
         <col class="c-dose"><col class="c-mouture"><col class="c-ratio"><col class="c-note">
@@ -781,9 +781,9 @@
       </thead>
       <tbody id="h-corps"></tbody>
     </table>
-    <!-- Sous 1024 px, des cartes par jour remplacent la table : dix colonnes
-         dans 350 px se lisaient en faisant glisser, ce qui est la pire facon de
-         lire un journal au pouce. Un seul des deux est rempli a la fois. -->
+    <!-- Below 1024 px, cards per day replace the table: ten columns
+         in 350 px were read by swiping, the worst way to
+         read a log with a thumb. Only one of the two is filled at a time. -->
     <div class="h-cartes" id="h-cartes"></div>
     <div class="etat-vide etat-vide-mini" id="h-vide" hidden>
       <p>Aucune extraction ne correspond à ces filtres.</p>
@@ -791,7 +791,7 @@
   </div>
 </section>
 
-<!-- ================= ECRAN : MES REGLAGES ================= -->
+<!-- ================= SCREEN: MY SETTINGS ================= -->
 <section id="ecran-reglages" class="ecran">
   <div class="tete-page">
     <div class="tete-titres">
@@ -803,7 +803,7 @@
   <div id="reglages-liste"></div>
 </section>
 
-<!-- ================= ECRAN 4 : GUIDE (référence + achats) ================= -->
+<!-- ================= SCREEN 4: GUIDE (reference + purchases) ================= -->
 <section id="ecran-guide" class="ecran">
   <div class="tete-page">
     <div class="tete-titres">
@@ -812,8 +812,8 @@
     </div>
   </div>
   <nav class="sommaire guide-onglets" aria-label="Sommaire du guide">
-    <!-- LES ONGLETS DU GUIDE (v8.52). Chaque lien montre le panneau qui contient
-         sa cible ; les ancres restent, pour le clavier et les liens internes. -->
+    <!-- THE GUIDE TABS (v8.52). Each link shows the panel that contains
+         its target; the anchors stay, for the keyboard and internal links. -->
     <a href="#ref-accueil" data-guide="accueil">Accueil</a>
     <a href="#ref-recettes" data-guide="recettes">Recettes</a>
     <a href="#ref-moulin" data-guide="moulin">Moulin</a>
@@ -826,9 +826,9 @@
     <a href="#gd-messages" data-guide="messages">Messages à copier</a>
   </nav>
 
-  <!-- L5 (v8.94) : l'entrée du Guide. On y entre par ce qu'on cherche : un champ
-       qui trouve une recette, un mot ou un conseil ; les deux recettes qui vont
-       au café du moment ; et une porte par rubrique. -->
+  <!-- L5 (v8.94): the Guide's entrance. You enter by what you are looking for: a field
+       that finds a recipe, a word or a tip; the two recipes that suit
+       the current coffee; and one door per section. -->
   <div class="guide-panneau" id="gp-accueil" data-panneau="accueil">
     <h2 id="ref-accueil" class="hors-ecran">Accueil du Guide</h2>
     <div class="ga-recherche">
@@ -858,8 +858,8 @@
         </div>
         <button type="button" class="btn btn-petit" id="conv-appliquer">Utiliser comme réglage par défaut</button>
       </div>
-      <!-- Le curseur est en CRANS, l'unité réelle du moulin : un cran de la
-           molette égale un cran ici, donc ce qu'on lit se reproduit à la main. -->
+      <!-- The slider is in CLICKS, the grinder's real unit: one click of the
+           dial equals one click here, so what you read can be reproduced by hand. -->
       <label class="label" for="conv-slider">Faire glisser, un pas égale un cran</label>
       <input type="range" id="conv-slider" min="0" max="150" step="1" value="75" class="conv-slider">
       <div class="conv-slider-reperes" id="conv-reperes" aria-hidden="true"></div>
@@ -954,21 +954,21 @@
   </div>
 
   <div class="guide-panneau" id="gp-recettes" data-panneau="recettes">
-  <!-- Recettes : descendu ici, un onglet entier leur est consacré. -->
+  <!-- Recipes: moved down here, a whole tab is dedicated to them. -->
   <div class="ref-titre-ligne">
     <h2 id="ref-recettes" class="ref-titre">Recettes</h2>
     <button class="btn btn-petit" id="btn-gerer-recettes">Gérer les recettes</button>
   </div>
   <p class="ref-intro">Trois recettes Brikka et dix recettes Switch. Le principe qui les gouverne toutes : le Switch ne doit pas refaire ce que la Brikka fait mieux. Toutes portent ma molette unique, 1.5.0, sauf la Tetsu Neo Brew, extra grosse, et la plupart gardent dans leur note la mouture que leur source recommandait. Chaque recette est éditable, et les recettes d'origine restent restaurables à tout moment.</p>
-  <!-- Quel café, quelle recette (v8.74) : la table vit dans recettes.js
-       (MATRICE_CAFE_RECETTE), ui-guide.js la dessine avec tes moyennes. -->
+  <!-- Which coffee, which recipe (v8.74): the table lives in recettes.js
+       (MATRICE_CAFE_RECETTE), ui-guide.js draws it with your averages. -->
   <details class="carte matrice-carte" id="matrice-carte" open>
     <summary>Quel café, quelle recette</summary>
     <p class="carte-note">Le procédé en ligne, la torréfaction en colonne. Chaque case donne la recette de départ, sa température et une autre à essayer ; « chez toi », c'est ta moyenne sur les cafés de ce profil. Touche une recette pour l'ouvrir.</p>
     <div class="table-conteneur"><table class="table-ref matrice" id="matrice-recettes"></table></div>
   </details>
-  <!-- Filtres de la bibliothèque (v8.52) : par machine, et par profil de café
-       déduit des cafés associés à chaque recette. -->
+  <!-- Library filters (v8.52): by machine, and by coffee profile
+       derived from the coffees associated with each recipe. -->
   <div class="biblio-filtres" id="biblio-filtres" role="group" aria-label="Filtrer les recettes">
     <button type="button" class="pilule" data-filtre="tout" aria-pressed="true">Toutes</button>
     <button type="button" class="pilule" data-filtre="Brikka" aria-pressed="false"><span class="pastille-methode brikka"></span>Brikka</button>
@@ -992,7 +992,7 @@
     <p class="carte-note">Les recommandations d'origine restent dans la note de chaque recette, par exemple 600 à 700 microns pour la Chronicler. Pour changer de réglage, le curseur du moulin plus haut, ou l'écran Paramètres.</p>
   </div>
 
-  <!-- Bloc Tetsu variantes, rempli par JS dans la carte de la recette 5 -->
+  <!-- Tetsu variants block, filled by JS in the card of recipe 5 -->
   </div>
 
   <div class="guide-panneau" id="gp-vocabulaire" data-panneau="vocabulaire">
@@ -1349,7 +1349,7 @@ Cảm ơn shop.</pre>
 </section>
 
 
-<!-- ================= ECRAN 7 : PARAMETRES ================= -->
+<!-- ================= SCREEN 7: PREFERENCES ================= -->
 <section id="ecran-parametres" class="ecran">
   <div class="tete-page">
     <div class="tete-titres">
@@ -1357,9 +1357,9 @@ Cảm ơn shop.</pre>
       <h2 class="titre-page">Paramètres</h2>
     </div>
   </div>
-  <!-- L6 (v8.91) : les paramètres rangés comme ceux d'un téléphone. Une liste
-       courte dont chaque ligne dit sa valeur ; chaque réglage a sa page. Sur
-       ordinateur, la liste à gauche et la page à droite. -->
+  <!-- L6 (v8.91): the preferences laid out like a phone's. A short
+       list where each line states its value; each setting has its page. On
+       desktop, the list on the left and the page on the right. -->
   <div class="param-corps" id="param-corps">
     <nav class="param-index" aria-label="Rubriques des paramètres">
       <button type="button" class="pi-ligne" data-section="ps-recettes"><svg class="pi-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h9"></path></svg><span class="pi-titre">Machines et recettes</span><span class="pi-valeur" id="piv-recettes"></span></button>
@@ -1435,7 +1435,7 @@ Cảm ơn shop.</pre>
     </div>
   </article>
 
-  <!-- Les pas de la correction chiffrée (v8.48), synchronisés avec le matériel. -->
+  <!-- The steps of the numeric correction (v8.48), synced with the equipment. -->
   <article class="carte param-section" id="ps-pas">
     <h3>Mes pas de correction</h3>
     <p class="param-aide">Quand tu coches un diagnostic, la saisie chiffre la correction pour la tasse suivante : « Un peu amer » sur 1.4.2 devient 1.4.4. Ces pas valent pour un diagnostic « un peu » ; un diagnostic franc les double. La molette reste dans la plage de la machine.</p>
@@ -1453,10 +1453,10 @@ Cảm ơn shop.</pre>
     <p class="param-aide">Ces réglages restent locaux et ne se synchronisent pas : un téléphone et un ordinateur n'ont pas les mêmes besoins.</p>
     <div class="grille-nombres">
       <div class="champ"><label class="label-inline"><input type="checkbox" id="param-bips"> Bip du chronomètre à chaque palier</label></div>
-      <!-- Préférence de LECTURE : elle change ce que les chiffres du tableau de
-           bord racontent, pas les données. Elle vivait en bandeau au-dessus des
-           chiffres ; un réglage qu'on change une fois par mois n'a rien à faire
-           en tête de l'écran qu'on ouvre dix fois par jour. -->
+      <!-- READING preference: it changes what the dashboard figures
+           tell, not the data. It used to live in a banner above the
+           figures; a setting changed once a month has no business
+           at the top of the screen opened ten times a day. -->
       <div class="champ">
         <label class="label-inline"><input type="checkbox" id="param-ratees"> Inclure les ratées dans les analyses</label>
         <span class="champ-hint" id="compte-ratees"></span>
@@ -1464,7 +1464,7 @@ Cảm ơn shop.</pre>
     </div>
     <p class="param-aide">Le thème et la langue se règlent en bas du menu, sous « Plus » sur téléphone.</p>
   </article>
-      <!-- Un seul enregistrement pour les pages qui s'enregistrent : la même action qu'avant, sous chaque page. -->
+      <!-- A single save for the pages that save: the same action as before, under each page. -->
       <div class="saisie-actions param-actions" id="param-actions">
         <button class="btn btn-primaire" id="param-enregistrer">Enregistrer</button>
         <button class="btn btn-discret" id="param-annuler">Annuler mes changements</button>
@@ -1475,7 +1475,7 @@ Cảm ơn shop.</pre>
 
 </main>
 
-<!-- ================= MODALE PREMIER LANCEMENT ================= -->
+<!-- ================= FIRST LAUNCH MODAL ================= -->
 <dialog id="modale-accueil" aria-labelledby="modale-accueil-titre" class="modale">
   <h2 id="modale-accueil-titre">Bienvenue dans ton carnet d'extraction</h2>
   <p>Où veux tu garder tes données ? Elles vivent dans deux fichiers CSV que tu peux ouvrir dans un tableur. Une copie de travail reste toujours dans le navigateur.</p>
@@ -1500,7 +1500,7 @@ Cảm ơn shop.</pre>
   <button class="btn btn-discret modale-fermer" id="acc-plus-tard">Plus tard</button>
 </dialog>
 
-<!-- ================= MODALE GESTION DES DONNEES ================= -->
+<!-- ================= DATA MANAGEMENT MODAL ================= -->
 <dialog id="modale-donnees" aria-labelledby="modale-donnees-titre" class="modale">
   <h2 id="modale-donnees-titre">Données</h2>
   <p id="donnees-statut"></p>
@@ -1521,7 +1521,7 @@ Cảm ơn shop.</pre>
   <button class="btn btn-discret modale-fermer" data-ferme="modale-donnees">Fermer</button>
 </dialog>
 
-<!-- ================= MODALE CAFES ================= -->
+<!-- ================= COFFEES MODAL ================= -->
 <dialog id="modale-cafes" aria-labelledby="modale-cafes-titre" class="modale modale-large">
   <h2 id="modale-cafes-titre">Mes cafés</h2>
   <div class="cafes-liste" id="cafes-liste"></div>
@@ -1585,7 +1585,7 @@ Cảm ơn shop.</pre>
   <button class="btn btn-discret modale-fermer" data-ferme="modale-cafes">Fermer</button>
 </dialog>
 
-<!-- ================= MODALE RECETTES ================= -->
+<!-- ================= RECIPES MODAL ================= -->
 
 
 <dialog id="modale-recettes" aria-labelledby="modale-recettes-titre" class="modale modale-large">
@@ -1618,7 +1618,7 @@ Cảm ơn shop.</pre>
     <div class="champ"><label for="r-pourqui">Pour quels cafés</label><textarea id="r-pourqui" rows="2"></textarea></div>
     <div class="champ"><label for="r-cafes">Cafés associés, un par ligne</label><textarea id="r-cafes" rows="3"></textarea></div>
     <div class="champ"><label for="r-note">Note ou remarque</label><input type="text" id="r-note" enterkeyhint="done"></div>
-    <!-- La vidéo de la recette (v8.64) : YouTube s'intègre dans le Guide, tout autre lien s'y ouvre. -->
+    <!-- The recipe video (v8.64): YouTube embeds in the Guide, any other link opens there. -->
     <div class="champ"><label for="r-video">Vidéo ou source (lien)</label><input type="text" id="r-video" inputmode="url" enterkeyhint="done" placeholder="https://www.youtube.com/watch?v=…"></div>
     <div class="grille-nombres">
       <div class="champ"><label class="label-inline"><input type="checkbox" id="r-defaut"> Recette par défaut</label></div>
@@ -1635,7 +1635,7 @@ Cảm ơn shop.</pre>
   <button class="btn btn-discret modale-fermer" data-ferme="modale-recettes">Fermer</button>
 </dialog>
 
-<!-- ================= SAISIE RAPIDE FLOTTANTE ================= -->
+<!-- ================= FLOATING QUICK ENTRY ================= -->
 <button id="fab-rapide" class="fab" title="Saisie rapide" aria-label="Saisie rapide"><svg class="fab-tasse" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 9.5h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M7 3.5v2M11 3.5v2"/></svg><svg class="fab-croix" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg></button>
 <div id="voile-rapide" class="voile-nav" hidden></div>
 <div id="panneau-rapide" class="panneau-rapide" role="dialog" aria-label="Saisie rapide">
@@ -1654,8 +1654,8 @@ Cảm ơn shop.</pre>
   <div class="champ">
     <label for="q-recette">Recette</label>
     <select id="q-recette"></select>
-    <!-- Ce que la recette impose, en clair. La note de bas de panneau annoncait
-         que dose, eau et mouture etaient reprises sans jamais dire lesquelles. -->
+    <!-- What the recipe imposes, spelled out. The panel's footnote announced
+         that dose, water and grind were carried over without ever saying which. -->
     <p class="rapide-repris" id="q-repris"></p>
   </div>
   <div class="champ">
@@ -1663,10 +1663,10 @@ Cảm ơn shop.</pre>
       <label for="q-note">Note : <b id="q-note-affichee">pas encore notée</b></label>
       <button type="button" class="note-effacer" id="q-note-effacer" hidden>Effacer la note</button>
     </div>
-    <!-- Même règle que le formulaire complet : pas de note inventée. On note
-         souvent APRÈS avoir bu, et la saisie rapide sert justement à enregistrer
-         la tasse en la sortant. Le curseur n'a pas de pouce tant qu'on n'y a
-         pas touché. -->
+    <!-- Same rule as the full form: no invented rating. We often rate
+         AFTER drinking, and the quick entry is precisely for saving
+         the cup as it comes out. The slider has no thumb until it has
+         been touched. -->
     <input type="range" id="q-note" min="0" max="10" step="0.5" value="5" class="curseur-note curseur-inactif" aria-describedby="q-note-aide">
     <small class="note-aide" id="q-note-aide">Touche la piste pour noter, ou reviens plus tard.</small>
   </div>
@@ -1678,9 +1678,9 @@ Cảm ơn shop.</pre>
 
 </div>
 
-<!-- ================= MODE PAS A PAS ================= -->
-<!-- Le mode Brassage (v8.47), rendu par js/ui-brassage.js : le chrono de la
-     saisie en plein écran. Il pilote UI.chrono, il n'en a pas d'autre. -->
+<!-- ================= STEP BY STEP MODE ================= -->
+<!-- The Brew mode (v8.47), rendered by js/ui-brassage.js: the entry
+     timer full screen. It drives UI.chrono, it has no timer of its own. -->
 <dialog id="modale-brassage" class="brassage" aria-labelledby="br-titre">
   <div class="br-tete">
     <div class="br-titres">
@@ -1701,7 +1701,7 @@ Cảm ơn shop.</pre>
           <circle class="br-fond-anneau" cx="60" cy="60" r="52"></circle>
           <circle class="br-trace" id="br-trace" cx="60" cy="60" r="52" stroke-dasharray="326.73" stroke-dashoffset="326.73"></circle>
         </svg>
-        <!-- L7 (v8.90) : au centre, ce qu'il faut atteindre, en énorme ; le temps passe dessous. -->
+        <!-- L7 (v8.90): in the centre, the target to reach, huge; the time goes below. -->
         <div class="br-centre" aria-live="off"><span class="br-label" id="br-label"></span><b id="br-cible"></b><span class="br-dans" id="br-dans"></span></div>
       </div>
       <div class="br-etape">
@@ -1731,11 +1731,11 @@ Cảm ơn shop.</pre>
   </div>
 </dialog>
 
-<!-- La bulle d'une tasse (v8.55), ouverte depuis un point de dessin par
-     js/ui-dessins.js ; elle se range dans le dialogue ouvert s'il y en a un. -->
+<!-- A cup's bubble (v8.55), opened from a drawing's dot by
+     js/ui-dessins.js; it tucks into the open dialog if there is one. -->
 <div id="bulle-tasse" class="bulle-tasse" role="dialog" aria-label="Une tasse" hidden></div>
 
-<!-- La fiche d'un café (v8.46), rendue par js/ui-fiche.js. -->
+<!-- A coffee's sheet (v8.46), rendered by js/ui-fiche.js. -->
 <dialog id="modale-fiche" class="modale modale-fiche" aria-labelledby="fiche-nom">
   <div id="fiche-contenu" class="fc-contenu"></div>
   <div class="saisie-actions fc-actions">
@@ -1773,10 +1773,10 @@ Cảm ơn shop.</pre>
   </div>
 </dialog>
 
-<!-- ================= MODALE CONFIRMATION ================= -->
-<!-- Remplace les confirm() natifs. Sur téléphone c'étaient des boîtes système
-     qui cassaient l'impression d'application installée. Les textes sont posés
-     par UI.confirmer() à chaque ouverture, dans la langue courante. -->
+<!-- ================= CONFIRMATION MODAL ================= -->
+<!-- Replaces native confirm(). On phones they were system boxes
+     that broke the feel of an installed app. The texts are set
+     by UI.confirmer() at each opening, in the current language. -->
 <dialog id="modale-confirmer" class="modale modale-confirmer" aria-labelledby="confirmer-titre">
   <h2 id="confirmer-titre"></h2>
   <p id="confirmer-texte"></p>
@@ -1792,40 +1792,40 @@ Cảm ơn shop.</pre>
   <span id="version-site"></span>
 </footer>
 
-<!-- TOUS EN defer, et surtout pas en async : defer preserve l'ordre, async non,
-     et data.js exploserait en cherchant SYNC ou GRIND. Le telechargement se fait
-     desormais en parallele du parsing du HTML au lieu de le bloquer. -->
-<script defer src="js/outils.js?v=9.01"></script>
-<script defer src="js/i18n.js?v=9.01"></script>
-<script defer src="js/grind.js?v=9.01"></script>
-<script defer src="js/recettes.js?v=9.01"></script>
-<!-- sync.js AVANT data.js : data.js s'en sert au chargement. -->
-<script defer src="js/sync.js?v=9.01"></script>
-<script defer src="js/data-csv.js?v=9.01"></script>
-<script defer src="js/data-schema.js?v=9.01"></script>
-<script defer src="js/data-store.js?v=9.01"></script>
-<script defer src="js/data-calculs.js?v=9.01"></script>
-<script defer src="js/data-migrations.js?v=9.01"></script>
-<script defer src="js/data.js?v=9.01"></script>
-<script defer src="js/reglages.js?v=9.01"></script>
-<script defer src="js/charts.js?v=9.01"></script>
-<script defer src="js/ui-noyau.js?v=9.01"></script>
-<script defer src="js/ui-constats.js?v=9.01"></script>
-<script defer src="js/ui-derniere.js?v=9.01"></script>
-<script defer src="js/ui-tableau.js?v=9.01"></script>
-<script defer src="js/ui-saisie.js?v=9.01"></script>
-<script defer src="js/ui-saisie-aside.js?v=9.01"></script>
-<script defer src="js/ui-pilules.js?v=9.01"></script>
-<script defer src="js/ui-chrono.js?v=9.01"></script>
-<script defer src="js/ui-brouillon.js?v=9.01"></script>
-<script defer src="js/ui-rapide.js?v=9.01"></script>
-<script defer src="js/ui-historique.js?v=9.01"></script>
-<script defer src="js/ui-journal.js?v=9.01"></script>
-<script defer src="js/ui-guide.js?v=9.01"></script>
-<script defer src="js/ui-catalogue.js?v=9.01"></script>
-<script defer src="js/ui-fiche.js?v=9.01"></script>
-<script defer src="js/ui-brassage.js?v=9.01"></script>
-<script defer src="js/ui-dessins.js?v=9.01"></script>
-<script defer src="js/app.js?v=9.01"></script>
+<!-- ALL defer, and definitely not async: defer preserves order, async does not,
+     and data.js would blow up looking for SYNC or GRIND. The download now
+     runs in parallel with HTML parsing instead of blocking it. -->
+<script defer src="js/outils.js?v=9.02"></script>
+<script defer src="js/i18n.js?v=9.02"></script>
+<script defer src="js/grind.js?v=9.02"></script>
+<script defer src="js/recettes.js?v=9.02"></script>
+<!-- sync.js BEFORE data.js: data.js uses it at load time. -->
+<script defer src="js/sync.js?v=9.02"></script>
+<script defer src="js/data-csv.js?v=9.02"></script>
+<script defer src="js/data-schema.js?v=9.02"></script>
+<script defer src="js/data-store.js?v=9.02"></script>
+<script defer src="js/data-calculs.js?v=9.02"></script>
+<script defer src="js/data-migrations.js?v=9.02"></script>
+<script defer src="js/data.js?v=9.02"></script>
+<script defer src="js/reglages.js?v=9.02"></script>
+<script defer src="js/charts.js?v=9.02"></script>
+<script defer src="js/ui-noyau.js?v=9.02"></script>
+<script defer src="js/ui-constats.js?v=9.02"></script>
+<script defer src="js/ui-derniere.js?v=9.02"></script>
+<script defer src="js/ui-tableau.js?v=9.02"></script>
+<script defer src="js/ui-saisie.js?v=9.02"></script>
+<script defer src="js/ui-saisie-aside.js?v=9.02"></script>
+<script defer src="js/ui-pilules.js?v=9.02"></script>
+<script defer src="js/ui-chrono.js?v=9.02"></script>
+<script defer src="js/ui-brouillon.js?v=9.02"></script>
+<script defer src="js/ui-rapide.js?v=9.02"></script>
+<script defer src="js/ui-historique.js?v=9.02"></script>
+<script defer src="js/ui-journal.js?v=9.02"></script>
+<script defer src="js/ui-guide.js?v=9.02"></script>
+<script defer src="js/ui-catalogue.js?v=9.02"></script>
+<script defer src="js/ui-fiche.js?v=9.02"></script>
+<script defer src="js/ui-brassage.js?v=9.02"></script>
+<script defer src="js/ui-dessins.js?v=9.02"></script>
+<script defer src="js/app.js?v=9.02"></script>
 </body>
 </html>

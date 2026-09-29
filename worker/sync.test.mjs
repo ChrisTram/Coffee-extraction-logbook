@@ -10,44 +10,44 @@ function check(label, condition, detail) {
 }
 
 const NOW = 1_700_000_000_000;
-const payload = (extractions, tombes) =>
-  sanitisePayload({ tables: { extractions }, tombes: { extractions: tombes || {} } });
+const payload = (extractions, tombstones) =>
+  sanitisePayload({ tables: { extractions }, tombes: { extractions: tombstones || {} } });
 const ext = (id, maj_le, note) => ({ id, maj_le, note_sur_10: note });
 const ids = p => p.tables.extractions.map(r => r.id).sort();
-const noteDe = (p, id) => p.tables.extractions.find(r => r.id === id)?.note_sur_10;
+const scoreOf = (p, id) => p.tables.extractions.find(r => r.id === id)?.note_sur_10;
 
-// 1. Premiere synchro : le serveur est vide, l'appareil pousse tout
+// 1. First sync: the server is empty, the device pushes everything
 const local = payload([ext("e1", NOW, 7), ext("e2", NOW, 8)]);
-const premiere = mergePayloads(emptyPayload(), local, NOW);
-check("serveur vide adopte le local", JSON.stringify(ids(premiere)) === '["e1","e2"]', ids(premiere).join());
+const first = mergePayloads(emptyPayload(), local, NOW);
+check("empty server adopts the local data", JSON.stringify(ids(first)) === '["e1","e2"]', ids(first).join());
 
-// 2. Appareil neuf, local vide : il recoit tout, sans rien perdre
-const neuf = mergePayloads(premiere, emptyPayload(), NOW);
-check("appareil neuf recoit tout", JSON.stringify(ids(neuf)) === '["e1","e2"]', ids(neuf).join());
+// 2. New device, empty local: it receives everything, losing nothing
+const newDevice = mergePayloads(first, emptyPayload(), NOW);
+check("new device receives everything", JSON.stringify(ids(newDevice)) === '["e1","e2"]', ids(newDevice).join());
 
-// 3. Union : chaque appareil a saisi une extraction differente hors ligne
-const telephone = payload([ext("e1", NOW, 7), ext("e3", NOW + 10, 9)]);
-const bureau = payload([ext("e1", NOW, 7), ext("e4", NOW + 20, 6)]);
-const union = mergePayloads(telephone, bureau, NOW + 30);
-check("les deux saisies survivent", JSON.stringify(ids(union)) === '["e1","e3","e4"]', ids(union).join());
+// 3. Union: each device logged a different extraction offline
+const phone = payload([ext("e1", NOW, 7), ext("e3", NOW + 10, 9)]);
+const desktop = payload([ext("e1", NOW, 7), ext("e4", NOW + 20, 6)]);
+const union = mergePayloads(phone, desktop, NOW + 30);
+check("both entries survive", JSON.stringify(ids(union)) === '["e1","e3","e4"]', ids(union).join());
 
-// 4. Le plus recent maj_le gagne sur la meme ligne
-const ancien = payload([ext("e1", NOW, 5)]);
+// 4. The most recent maj_le wins on the same row
+const older = payload([ext("e1", NOW, 5)]);
 const recent = payload([ext("e1", NOW + 100, 9)]);
-check("le plus recent gagne", noteDe(mergePayloads(ancien, recent, NOW + 200), "e1") === 9);
-check("dans l'autre sens aussi", noteDe(mergePayloads(recent, ancien, NOW + 200), "e1") === 9);
+check("the most recent wins", scoreOf(mergePayloads(older, recent, NOW + 200), "e1") === 9);
+check("the other way round too", scoreOf(mergePayloads(recent, older, NOW + 200), "e1") === 9);
 
-// 5. Commutativite et idempotence : c'est ce qui garantit la convergence.
-// L'ORDRE des lignes dans un tableau n'est PAS significatif (l'interface trie
-// toujours ce qu'elle affiche), donc la comparaison est canonique : on trie par
-// id avant de comparer. Seul le CONTENU doit etre commutatif.
-const canonique = p =>
+// 5. Commutativity and idempotence: this is what guarantees convergence.
+// The ORDER of rows in an array is NOT significant (the UI always sorts what
+// it displays), so the comparison is canonical: we sort by id before
+// comparing. Only the CONTENT must be commutative.
+const canonical = p =>
   JSON.stringify({
     tables: Object.fromEntries(
       Object.entries(p.tables).map(([t, rows]) => [t, [...rows].sort((x, y) => x.id.localeCompare(y.id))])
     ),
-    // L'ordre d'insertion des cles d'un objet n'est pas plus significatif que
-    // celui des lignes : on les trie aussi.
+    // The insertion order of an object's keys is no more significant than
+    // that of the rows: we sort them too.
     tombes: Object.fromEntries(
       Object.entries(p.tombes).map(([t, marks]) => [
         t,
@@ -60,72 +60,72 @@ const a = payload([ext("e1", NOW + 5, 7), ext("e2", NOW, 8)], { e9: NOW });
 const b = payload([ext("e1", NOW, 3), ext("e3", NOW + 1, 4)], { e2: NOW + 50 });
 const ab = mergePayloads(a, b, NOW + 100);
 const ba = mergePayloads(b, a, NOW + 100);
-check("fusion commutative sur le contenu", canonique(ab) === canonique(ba));
-check("fusion idempotente", canonique(mergePayloads(ab, ab, NOW + 100)) === canonique(ab));
+check("merge is commutative on content", canonical(ab) === canonical(ba));
+check("merge is idempotent", canonical(mergePayloads(ab, ab, NOW + 100)) === canonical(ab));
 
-// En production le document serveur est TOUJOURS le premier operande, donc
-// l'ordre est deterministe et les deux appareils convergent aussi sur l'ordre.
-const serveur = mergePayloads(emptyPayload(), a, NOW);
-const depuisTelephone = mergePayloads(serveur, b, NOW + 100);
-const depuisBureau = mergePayloads(serveur, b, NOW + 100);
-check("ordre deterministe a serveur egal", JSON.stringify(depuisTelephone) === JSON.stringify(depuisBureau));
+// In production the server document is ALWAYS the first operand, so the
+// order is deterministic and both devices converge on the order as well.
+const server = mergePayloads(emptyPayload(), a, NOW);
+const fromPhone = mergePayloads(server, b, NOW + 100);
+const fromDesktop = mergePayloads(server, b, NOW + 100);
+check("deterministic order for the same server", JSON.stringify(fromPhone) === JSON.stringify(fromDesktop));
 
-// 6. Suppression : la pierre tombale empeche la resurrection
-const supprime = payload([], { e1: NOW + 50 });
-const encoreLa = payload([ext("e1", NOW, 7)]);
-const apresSuppression = mergePayloads(supprime, encoreLa, NOW + 60);
-check("la ligne supprimee ne revient pas", ids(apresSuppression).length === 0, ids(apresSuppression).join());
-check("la pierre tombale est conservee", apresSuppression.tombes.extractions.e1 === NOW + 50);
+// 6. Deletion: the tombstone prevents resurrection
+const deleted = payload([], { e1: NOW + 50 });
+const stillThere = payload([ext("e1", NOW, 7)]);
+const afterDelete = mergePayloads(deleted, stillThere, NOW + 60);
+check("the deleted row does not come back", ids(afterDelete).length === 0, ids(afterDelete).join());
+check("the tombstone is kept", afterDelete.tombes.extractions.e1 === NOW + 50);
 
-// 7. Une reecriture POSTERIEURE a la suppression fait bien revenir la ligne
-const reecrite = payload([ext("e1", NOW + 99, 9)]);
-const revenue = mergePayloads(supprime, reecrite, NOW + 100);
-check("reecriture posterieure gagne sur la suppression", ids(revenue).join() === "e1");
-check("et garde la nouvelle valeur", noteDe(revenue, "e1") === 9);
+// 7. A rewrite LATER than the deletion does bring the row back
+const rewritten = payload([ext("e1", NOW + 99, 9)]);
+const revived = mergePayloads(deleted, rewritten, NOW + 100);
+check("a later rewrite wins over the deletion", ids(revived).join() === "e1");
+check("and keeps the new value", scoreOf(revived, "e1") === 9);
 
-// 8. Purge des pierres tombales trop vieilles
-const vieille = payload([], { e1: NOW });
-const purge = mergePayloads(vieille, emptyPayload(), NOW + TOMBSTONE_RETENTION_MS + 1);
-check("pierre tombale purgee passe le delai", Object.keys(purge.tombes.extractions).length === 0);
-const fraiche = mergePayloads(vieille, emptyPayload(), NOW + 1000);
-check("pierre tombale gardee avant le delai", Object.keys(fraiche.tombes.extractions).length === 1);
+// 8. Purging tombstones that are too old
+const oldTomb = payload([], { e1: NOW });
+const purged = mergePayloads(oldTomb, emptyPayload(), NOW + TOMBSTONE_RETENTION_MS + 1);
+check("tombstone purged past the delay", Object.keys(purged.tombes.extractions).length === 0);
+const freshTomb = mergePayloads(oldTomb, emptyPayload(), NOW + 1000);
+check("tombstone kept before the delay", Object.keys(freshTomb.tombes.extractions).length === 1);
 
-// 9. Robustesse : formes invalides venues du reseau
-const sale = sanitisePayload({
+// 9. Robustness: invalid shapes coming from the network
+const dirty = sanitisePayload({
   tables: { extractions: [{ id: "ok", maj_le: "123" }, { id: "" }, null, "texte", { pasDId: 1 }] },
   tombes: { extractions: { bon: "50", "": 10 } },
 });
-check("lignes sans id jetees", ids(sale).join() === "ok", ids(sale).join());
-check("maj_le converti en nombre", sale.tables.extractions[0].maj_le === 123);
-check("tombe sans id jetee", JSON.stringify(sale.tombes.extractions) === '{"bon":50}');
-check("charge utile absurde toleree", JSON.stringify(sanitisePayload(null)) === JSON.stringify(emptyPayload()));
-/* Pas de liste en dur : le compte suit TABLES, seule source de verite cote
-   serveur. Une table oubliee ici ne se synchroniserait pas, en silence. */
+check("rows without an id dropped", ids(dirty).join() === "ok", ids(dirty).join());
+check("maj_le converted to a number", dirty.tables.extractions[0].maj_le === 123);
+check("tombstone without an id dropped", JSON.stringify(dirty.tombes.extractions) === '{"bon":50}');
+check("absurd payload tolerated", JSON.stringify(sanitisePayload(null)) === JSON.stringify(emptyPayload()));
+/* No hard-coded list: the count follows TABLES, the only source of truth on
+   the server side. A table forgotten here would not sync, silently. */
 check(
-  "toutes les tables de TABLES sont presentes",
+  "every table in TABLES is present",
   Object.keys(emptyPayload().tables).sort().join() === [...TABLES].sort().join(),
   Object.keys(emptyPayload().tables).sort().join()
 );
 
-// 10. maj_le absent (donnees d'avant la synchro) : traite comme le plus ancien
-const sansStamp = payload([{ id: "e1", note_sur_10: 5 }]);
-check("maj_le absent vaut zero", sansStamp.tables.extractions[0].maj_le === 0);
-const gagnantStampe = mergePayloads(sansStamp, payload([ext("e1", NOW, 9)]), NOW);
-check("une ligne estampillee bat une ligne sans stamp", noteDe(gagnantStampe, "e1") === 9);
+// 10. Missing maj_le (data from before sync): treated as the oldest
+const unstamped = payload([{ id: "e1", note_sur_10: 5 }]);
+check("missing maj_le equals zero", unstamped.tables.extractions[0].maj_le === 0);
+const stampedWinner = mergePayloads(unstamped, payload([ext("e1", NOW, 9)]), NOW);
+check("a stamped row beats an unstamped row", scoreOf(stampedWinner, "e1") === 9);
 
-// 11. Les autres tables ne sont pas perdues au passage
-const complet = sanitisePayload({
+// 11. The other tables are not lost along the way
+const full = sanitisePayload({
   tables: { cafes: [{ id: "c1", maj_le: NOW }], extractions: [], recettes: [{ id: "r1", maj_le: NOW }], tasses: [] },
 });
-const garde = mergePayloads(emptyPayload(), complet, NOW);
-check("les cafes survivent", garde.tables.cafes.length === 1);
-check("les recettes survivent", garde.tables.recettes.length === 1);
+const kept = mergePayloads(emptyPayload(), full, NOW);
+check("coffees survive", kept.tables.cafes.length === 1);
+check("recipes survive", kept.tables.recettes.length === 1);
 
-// 12. Taille du document : le serveur la mesure et la renvoie avec son plafond,
-//     pour que le client previenne AVANT que D1 refuse d'ecrire. Une fausse base
-//     d'une ligne suffit a exercer tout handleSync.
+// 12. Document size: the server measures it and returns it with its cap,
+//     so the client warns BEFORE D1 refuses to write. A fake one-row
+//     database is enough to exercise all of handleSync.
 {
-  const fauxDb = () => {
+  const fakeDb = () => {
     let doc = null;
     return {
       exec: async () => {},
@@ -137,54 +137,54 @@ check("les recettes survivent", garde.tables.recettes.length === 1);
       }),
     };
   };
-  const env = { DB: fauxDb() };
-  const requete = corps => new Request("https://site.test/api/sync", {
-    method: "POST", body: JSON.stringify(corps), headers: { "Content-Type": "application/json" },
+  const env = { DB: fakeDb() };
+  const request = body => new Request("https://site.test/api/sync", {
+    method: "POST", body: JSON.stringify(body), headers: { "Content-Type": "application/json" },
   });
 
-  const rep = await handleSync(requete({ tables: { extractions: [ext("e1", NOW, 7)] } }), env);
-  const corps = await rep.json();
-  check("la reponse porte la taille du document", Number.isInteger(corps.taille) && corps.taille > 0, String(corps.taille));
-  check("et le plafond que le serveur accepte", corps.plafond === MAX_DOCUMENT_BYTES);
-  check("la taille est celle du document fusionne, en octets",
-    corps.taille === documentSize({ tables: corps.tables, tombes: corps.tombes, schema: corps.schema }));
-  check("le plafond est celui de D1, deux millions d'octets par ligne", MAX_DOCUMENT_BYTES === 2_000_000);
+  const res = await handleSync(request({ tables: { extractions: [ext("e1", NOW, 7)] } }), env);
+  const body = await res.json();
+  check("the response carries the document size", Number.isInteger(body.taille) && body.taille > 0, String(body.taille));
+  check("and the cap the server accepts", body.plafond === MAX_DOCUMENT_BYTES);
+  check("the size is that of the merged document, in bytes",
+    body.taille === documentSize({ tables: body.tables, tombes: body.tombes, schema: body.schema }));
+  check("the cap is D1's, two million bytes per row", MAX_DOCUMENT_BYTES === 2_000_000);
 
-  const lecture = await handleSync(new Request("https://site.test/api/sync"), env);
-  const lu = await lecture.json();
-  check("GET renvoie aussi la taille", Number.isInteger(lu.taille) && lu.taille === corps.taille,
-    lu.taille + " contre " + corps.taille);
+  const read = await handleSync(new Request("https://site.test/api/sync"), env);
+  const readBody = await read.json();
+  check("GET also returns the size", Number.isInteger(readBody.taille) && readBody.taille === body.taille,
+    readBody.taille + " vs " + body.taille);
 
-  // Les accents comptent en octets, pas en caracteres : c'est l'unite du plafond.
-  check("la mesure est en octets UTF-8", documentSize({ a: "é" }) === JSON.stringify({ a: "é" }).length + 1);
+  // Accents count in bytes, not characters: that is the unit of the cap.
+  check("the measure is in UTF-8 bytes", documentSize({ a: "é" }) === JSON.stringify({ a: "é" }).length + 1);
 }
 
-// 13. v8.71 : a egalite de maj_le, l'union des champs ; la fusion reste commutative.
+// 13. v8.71: on equal maj_le, the union of fields; the merge stays commutative.
 {
-  const recente = payload([{ id: "e1", maj_le: NOW, note_sur_10: 7, chauffe_s: 90 }]);
-  const amputee = payload([{ id: "e1", maj_le: NOW, note_sur_10: 7 }]);
-  const ab = mergePayloads(recente, amputee, NOW), ba = mergePayloads(amputee, recente, NOW);
-  check("un vieil onglet n'efface plus une colonne recente a la meme date",
+  const complete = payload([{ id: "e1", maj_le: NOW, note_sur_10: 7, chauffe_s: 90 }]);
+  const truncated = payload([{ id: "e1", maj_le: NOW, note_sur_10: 7 }]);
+  const ab = mergePayloads(complete, truncated, NOW), ba = mergePayloads(truncated, complete, NOW);
+  check("an old tab no longer erases a recent column at the same date",
     ab.tables.extractions[0].chauffe_s === 90 && ba.tables.extractions[0].chauffe_s === 90);
   const x = payload([{ id: "e1", maj_le: NOW, note_sur_10: 7 }]), y = payload([{ id: "e1", maj_le: NOW, note_sur_10: 8 }]);
-  check("deux valeurs differentes a la meme date donnent le meme gagnant dans les deux sens",
+  check("two different values at the same date give the same winner both ways",
     JSON.stringify(mergePayloads(x, y, NOW)) === JSON.stringify(mergePayloads(y, x, NOW)));
 }
 
-// 14. v8.71 : un horodatage du futur est ramene a l'heure du serveur.
+// 14. v8.71: a timestamp from the future is brought back to server time.
 {
-  const futur = sanitisePayload({ tables: { extractions: [ext("e1", NOW + AVANCE_TOLEREE_MS + 60000, 7)] },
+  const future = sanitisePayload({ tables: { extractions: [ext("e1", NOW + AVANCE_TOLEREE_MS + 60000, 7)] },
     tombes: { extractions: { e2: NOW + 3600000 } } }, NOW);
-  check("une ligne datee du futur revient a maintenant", futur.tables.extractions[0].maj_le === NOW);
-  check("une pierre tombale aussi", futur.tombes.extractions.e2 === NOW);
-  const proche = sanitisePayload({ tables: { extractions: [ext("e1", NOW + 60000, 7)] } }, NOW);
-  check("une petite avance reste toleree", proche.tables.extractions[0].maj_le === NOW + 60000);
+  check("a row dated in the future comes back to now", future.tables.extractions[0].maj_le === NOW);
+  check("a tombstone too", future.tombes.extractions.e2 === NOW);
+  const near = sanitisePayload({ tables: { extractions: [ext("e1", NOW + 60000, 7)] } }, NOW);
+  check("a small lead is still tolerated", near.tables.extractions[0].maj_le === NOW + 60000);
 }
 
-// 15. v8.71 : version perimee refusee, document illisible jamais ecrase, corps trop gros refuse,
-//     sauvegarde quotidienne.
+// 15. v8.71: stale version refused, unreadable document never overwritten, oversized body refused,
+//     daily backup.
 {
-  const base = () => {
+  const makeDb = () => {
     const docs = new Map();
     return {
       docs,
@@ -200,28 +200,28 @@ check("les recettes survivent", garde.tables.recettes.length === 1);
       }),
     };
   };
-  const req = corps => new Request("https://site.test/api/sync", { method: "POST", body: JSON.stringify(corps), headers: { "Content-Type": "application/json" } });
-  const db = base();
+  const req = body => new Request("https://site.test/api/sync", { method: "POST", body: JSON.stringify(body), headers: { "Content-Type": "application/json" } });
+  const db = makeDb();
   await handleSync(req({ schema: 17, tables: { extractions: [ext("e1", NOW, 7)] } }), { DB: db });
-  const vieux = await handleSync(req({ schema: 15, tables: { extractions: [ext("e1", NOW + 1, 2)] } }), { DB: db });
-  check("un appareil plus ancien que le document est refuse en 409", vieux.status === 409);
-  check("et le document n'a pas bouge", JSON.parse(db.docs.get("state")).tables.extractions[0].note_sur_10 === 7);
+  const stale = await handleSync(req({ schema: 15, tables: { extractions: [ext("e1", NOW + 1, 2)] } }), { DB: db });
+  check("a device older than the document is refused with 409", stale.status === 409);
+  check("and the document has not moved", JSON.parse(db.docs.get("state")).tables.extractions[0].note_sur_10 === 7);
 
-  const casse = base(); casse.docs.set("state", "{pas du json");
-  const r = await handleSync(req({ tables: { extractions: [ext("e1", NOW, 7)] } }), { DB: casse });
-  check("un document illisible rend une erreur claire", r.status === 500 && (await r.json()).erreur === "document-illisible");
-  check("et n'est pas ecrase", casse.docs.get("state") === "{pas du json");
+  const broken = makeDb(); broken.docs.set("state", "{pas du json");
+  const r = await handleSync(req({ tables: { extractions: [ext("e1", NOW, 7)] } }), { DB: broken });
+  check("an unreadable document returns a clear error", r.status === 500 && (await r.json()).erreur === "document-illisible");
+  check("and is not overwritten", broken.docs.get("state") === "{pas du json");
 
-  const gros = await handleSync(new Request("https://site.test/api/sync", { method: "POST", body: "{}",
-    headers: { "Content-Type": "application/json", "Content-Length": "9000000" } }), { DB: base() });
-  check("un corps demesure est refuse en 413", gros.status === 413);
+  const huge = await handleSync(new Request("https://site.test/api/sync", { method: "POST", body: "{}",
+    headers: { "Content-Type": "application/json", "Content-Length": "9000000" } }), { DB: makeDb() });
+  check("an oversized body is refused with 413", huge.status === 413);
 
-  const sv = base(); sv.docs.set("state", '{"tables":{}}'); sv.docs.set("state@2000-01-01", "{}");
-  const nom = await sauvegarderDocument(sv, NOW);
-  check("la sauvegarde du jour copie le document",
-    nom === "state@" + new Date(NOW).toISOString().slice(0, 10) && sv.docs.get(nom) === sv.docs.get("state"));
-  check("et les copies de plus de " + JOURS_DE_SAUVEGARDE + " jours sont effacees", !sv.docs.has("state@2000-01-01"));
+  const backup = makeDb(); backup.docs.set("state", '{"tables":{}}'); backup.docs.set("state@2000-01-01", "{}");
+  const name = await sauvegarderDocument(backup, NOW);
+  check("the daily backup copies the document",
+    name === "state@" + new Date(NOW).toISOString().slice(0, 10) && backup.docs.get(name) === backup.docs.get("state"));
+  check("and copies older than " + JOURS_DE_SAUVEGARDE + " days are deleted", !backup.docs.has("state@2000-01-01"));
 }
 
-console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
+console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);
 process.exit(failures === 0 ? 0 : 1);

@@ -1,30 +1,30 @@
-/* Test de DÉMARRAGE : exécute réellement l'application dans un faux DOM.
+/* BOOT test: actually runs the application in a fake DOM.
  *
  *   node tools/boot.test.mjs
  *
- * POURQUOI CE FICHIER EXISTE. Le panneau navigateur de l'agent sert ce site
- * depuis une URL `data:`, où les `src` et `href` relatifs ne résolvent pas : ni
- * la feuille de style, ni les scripts, ni IndexedDB. Aucune erreur d'exécution
- * n'y est donc détectable, et une exception au milieu du tableau de bord passe
- * inaperçue jusqu'à ce que Chris la voie.
+ * WHY THIS FILE EXISTS. The agent's browser pane serves this site
+ * from a `data:` URL, where relative `src` and `href` do not resolve: neither
+ * the stylesheet, nor the scripts, nor IndexedDB. No runtime error
+ * can therefore be detected there, and an exception in the middle of the dashboard goes
+ * unnoticed until Chris sees it.
  *
- * C'est exactement ce qui est arrivé le 14 août : `$$("#kpis ...")` était devenu
- * `$("#kpis ...")` parce que dans une chaîne de remplacement JavaScript `$$`
- * signifie "un dollar littéral". `$` renvoie UN élément, qui n'a pas de
- * `forEach`, donc `rendreTableau()` levait une TypeError et le tableau de bord
- * restait vide. Le fichier se parsait parfaitement, tous les autres tests
- * passaient.
+ * That is exactly what happened on August 14: `$$("#kpis ...")` had become
+ * `$("#kpis ...")` because in a JavaScript replacement string `$$`
+ * means "a literal dollar". `$` returns ONE element, which has no
+ * `forEach`, so `rendreTableau()` threw a TypeError and the dashboard
+ * stayed empty. The file parsed perfectly, all the other tests
+ * passed.
  *
- * Ce harnais ne valide RIEN de visuel. Il répond à une seule question, la plus
- * utile : est-ce que l'application démarre et rend chacun de ses écrans sans
- * lever d'exception.
+ * This harness validates NOTHING visual. It answers a single question, the most
+ * useful one: does the application start and render each of its screens without
+ * throwing.
  *
- * DÉTAIL CRUCIAL. `DATA.notifier()` enveloppe chaque abonné dans un try/catch
- * qui se contente d'un `console.error`. Une exception de rendu est donc AVALÉE :
- * l'écran reste vide et rien ne remonte. C'est pour ça que ce test considère
- * tout `console.error` comme un échec, et pas seulement les exceptions qui
- * remontent jusqu'à lui. Sans ça il passerait au vert sur le bug qu'il existe
- * pour attraper, ce qui a été vérifié en le réintroduisant.
+ * CRUCIAL DETAIL. `DATA.notifier()` wraps each subscriber in a try/catch
+ * that only does a `console.error`. A render exception is therefore SWALLOWED:
+ * the screen stays empty and nothing bubbles up. That is why this test treats
+ * any `console.error` as a failure, and not only the exceptions that
+ * reach it. Without that it would go green on the very bug it exists
+ * to catch, which was verified by reintroducing it.
  */
 
 import { readFileSync } from "node:fs";
@@ -35,28 +35,28 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 let failures = 0;
 
-/* Filet de dernier recours. Une exception de rendu peut sortir par trois chemins
-   differents : le try/catch de notifier(), une promesse rejetee, ou un throw
-   direct. On les capte TOUS, sinon le test affiche l'erreur sans echouer, ce qui
-   est le pire des deux mondes. */
+/* Last resort net. A render exception can escape through three different
+   paths: the try/catch of notifier(), a rejected promise, or a direct
+   throw. We catch them ALL, otherwise the test prints the error without failing, which
+   is the worst of both worlds. */
 process.on("unhandledRejection", e => {
   failures += 1;
-  console.log("FAIL exception non geree : " + (e && e.message ? e.message : e));
+  console.log("FAIL unhandled rejection: " + (e && e.message ? e.message : e));
 });
 process.on("uncaughtException", e => {
   failures += 1;
-  console.log("FAIL exception non attrapee : " + (e && e.message ? e.message : e));
+  console.log("FAIL uncaught exception: " + (e && e.message ? e.message : e));
 });
 function check(label, condition, detail) {
   if (!condition) failures += 1;
   console.log(`${condition ? "OK  " : "FAIL"} ${label}${!condition && detail ? ` -> ${detail}` : ""}`);
 }
 
-/* ---------- Faux DOM ---------- */
+/* ---------- Fake DOM ---------- */
 
-/* Une vraie liste de classes : depuis la v8.40, l'etat « pas encore notee »
-   vit dans une classe du curseur, et un classList muet le rendait invisible. */
-function fausseListeDeClasses() {
+/* A real class list: since v8.40, the "not rated yet" state
+   lives in a class of the slider, and a mute classList made it invisible. */
+function fakeClassList() {
   const classes = new Set();
   return {
     add: (...c) => c.forEach(x => classes.add(x)),
@@ -70,119 +70,119 @@ function fausseListeDeClasses() {
   };
 }
 
-function faireElement(nom) {
+function makeElement(name) {
   return {
-    _nom: nom, tagName: "DIV", hidden: false, value: "", checked: false,
+    _name: name, tagName: "DIV", hidden: false, value: "", checked: false,
     textContent: "", innerHTML: "", disabled: false, tabIndex: 0, open: false,
     dataset: {}, style: { setProperty() {}, removeProperty() {} }, options: [], elements: [], files: [],
-    classList: fausseListeDeClasses(),
+    classList: fakeClassList(),
     addEventListener() {}, removeEventListener() {}, appendChild() {}, remove() {},
     setAttribute() {}, getAttribute: () => null, removeAttribute() {},
     focus() {}, click() {}, showModal() {}, close() {}, submit() {}, requestSubmit() {},
     reset() {}, scrollIntoView() {}, insertAdjacentHTML() {},
     getBoundingClientRect: () => ({ top: 0, left: 0, width: 100, height: 20 }),
-    querySelector: () => faireElement("enfant"), querySelectorAll: () => [],
-    closest: () => null, cloneNode: () => faireElement(nom),
+    querySelector: () => makeElement("enfant"), querySelectorAll: () => [],
+    closest: () => null, cloneNode: () => makeElement(name),
     checkValidity: () => true, offsetParent: {}, scrollLeft: 0, scrollWidth: 0,
     getContext: () => ({ canvas: { width: 300, height: 150 }, clearRect() {}, save() {}, restore() {} }),
     width: 300, height: 150,
   };
 }
 
-/* LES IDENTIFIANTS DE LA PAGE, lus dans index.html.
+/* THE PAGE IDS, read from index.html.
 
-   Sans cette liste, parSelecteur inventait un element pour n'importe quel
-   selecteur : le faux DOM ne pouvait PAS voir un element supprime. Retirer un
-   bouton du HTML en laissant son addEventListener passait les cinq suites et
-   plantait au premier chargement reel. C'est arrive en retirant l'entete a la
-   refonte Comptoir, avec #btn-cafes-entete et #btn-recettes-entete.
+   Without this list, bySelector invented an element for any
+   selector: the fake DOM could NOT see a removed element. Removing a
+   button from the HTML while leaving its addEventListener passed all five suites and
+   crashed on the first real load. It happened when removing the header in the
+   Comptoir redesign, with #btn-cafes-entete and #btn-recettes-entete.
 
-   Un selecteur d'identifiant SIMPLE rend donc null quand l'identifiant n'est
-   pas dans la page, comme un vrai navigateur. Les selecteurs de classe et
-   d'attribut restent permissifs : ce harnais ne modelise pas le CSS, et le
-   rendu des ecrans cree des elements que le HTML statique ne contient pas. */
-const HTML_PAGE = readFileSync(join(ROOT, "index.html"), "utf8");
-const IDS_PAGE = new Set([...HTML_PAGE.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]));
+   A SIMPLE id selector therefore returns null when the id is
+   not in the page, like a real browser. Class and attribute selectors
+   stay permissive: this harness does not model CSS, and
+   rendering the screens creates elements the static HTML does not contain. */
+const PAGE_HTML = readFileSync(join(ROOT, "index.html"), "utf8");
+const PAGE_IDS = new Set([...PAGE_HTML.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]));
 
-/* Identifiants CREES PAR LE JS, donc legitimement absents du HTML statique.
-   Toute entree ici est une dette : elle dit "je sais que cet element n'existe
-   pas dans la page". A garder court, et a justifier. */
-const IDS_DYNAMIQUES = new Set([]);
+/* Ids CREATED BY JS, hence legitimately missing from the static HTML.
+   Every entry here is a debt: it says "I know this element does not exist
+   in the page". Keep it short, and justified. */
+const DYNAMIC_IDS = new Set([]);
 
 const cache = new Map();
-const parSelecteur = sel => {
+const bySelector = sel => {
   const simple = /^#([A-Za-z][\w-]*)$/.exec(sel);
-  if (simple && !IDS_PAGE.has(simple[1]) && !IDS_DYNAMIQUES.has(simple[1])) return null;
-  if (!cache.has(sel)) cache.set(sel, faireElement(sel));
+  if (simple && !PAGE_IDS.has(simple[1]) && !DYNAMIC_IDS.has(simple[1])) return null;
+  if (!cache.has(sel)) cache.set(sel, makeElement(sel));
   return cache.get(sel);
 };
 
-/* Faux champs porteurs d'un placeholder, pour que le registre de l'i18n ait
-   quelque chose a traduire. Sans eux querySelectorAll rend un tableau vide, le
-   mecanisme n'est jamais exerce, et une traduction peut dormir dans le
-   dictionnaire sans que personne le voie. C'est exactement ce qui est arrive au
-   champ de recherche de l'historique. */
-function champAttribut(attr, fr) {
+/* Fake fields carrying a placeholder, so the i18n registry has
+   something to translate. Without them querySelectorAll returns an empty array, the
+   mechanism is never exercised, and a translation can sleep in the
+   dictionary without anyone noticing. That is exactly what happened to the
+   history search field. */
+function attrField(attr, fr) {
   return {
-    ...faireElement("input"),
+    ...makeElement("input"),
     _attr: attr,
     _attrs: { [attr]: fr },
     getAttribute(k) { return k in this._attrs ? this._attrs[k] : null; },
     setAttribute(k, v) { this._attrs[k] = String(v); },
-    get valeur() { return this._attrs[this._attr]; },
+    get attrValue() { return this._attrs[this._attr]; },
   };
 }
-/* Noeuds de TEXTE pour le parcours de l'i18n. Le harnais rendait un TreeWalker
-   vide, si bien que le registre de traduction y etait toujours vide : aucun test
-   ne pouvait distinguer "vide a cause d'un bug" de "vide parce que c'est un faux
-   DOM". C'est ce trou qui a laisse passer la panne du bouton EN, ou demarrer en
-   francais laissait tout le texte statique de la page en francais.
+/* TEXT nodes for the i18n walk. The harness used to return an empty TreeWalker,
+   so the translation registry was always empty there: no test
+   could tell "empty because of a bug" from "empty because it is a fake
+   DOM". That gap let through the EN button failure, where starting in
+   French left all the static text of the page in French.
 
-   Les chaines sont tirees de vraies etiquettes d'index.html, pour que le test
-   reste ancre sur le site et pas sur un exemple invente. */
-const TEXTES = ["Recette", "Café", "Historique", "Diagnostic"].map(t => ({
+   The strings are taken from real index.html labels, so the test
+   stays anchored to the site and not to a made up example. */
+const TEXT_NODES = ["Recette", "Café", "Historique", "Diagnostic"].map(t => ({
   nodeValue: t, _fr: t, parentElement: null,
 }));
 
 const PLACEHOLDERS = [
-  champAttribut("placeholder", "Chercher dans les commentaires et les goûts"),
-  champAttribut("placeholder", "Libre, par exemple : superbe tasse, ronde et sucrée"),
-  // Sans entrée au dictionnaire : il ne doit JAMAIS être touché, c'est le champ
-  // molette dont le code de saisie réécrit lui-même le fond.
-  champAttribut("placeholder", "1.5.0"),
+  attrField("placeholder", "Chercher dans les commentaires et les goûts"),
+  attrField("placeholder", "Libre, par exemple : superbe tasse, ronde et sucrée"),
+  // No dictionary entry: it must NEVER be touched, it is the grinder
+  // field whose placeholder the entry code rewrites itself.
+  attrField("placeholder", "1.5.0"),
 ];
-/* Infobulles et étiquettes de lecteur d'écran : ce sont des ATTRIBUTS, donc
-   invisibles au parcours de texte. Quatorze restaient en français en mode
-   anglais, dont celle que le lecteur d'écran annonce en tout premier. */
-const TITRES = [champAttribut("title", "Gérer mes cafés")];
-const ARIAS = [champAttribut("aria-label", "Navigation principale")];
-const PAR_ATTRIBUT = { "[placeholder]": PLACEHOLDERS, "[title]": TITRES, "[aria-label]": ARIAS };
+/* Tooltips and screen reader labels: they are ATTRIBUTES, hence
+   invisible to the text walk. Fourteen stayed French in English
+   mode, including the one the screen reader announces first of all. */
+const TITLES = [attrField("title", "Gérer mes cafés")];
+const ARIAS = [attrField("aria-label", "Navigation principale")];
+const BY_ATTRIBUTE = { "[placeholder]": PLACEHOLDERS, "[title]": TITLES, "[aria-label]": ARIAS };
 
 const document = {
-  documentElement: { ...faireElement("html"), setAttribute() {}, lang: "fr" },
-  body: faireElement("body"),
-  head: faireElement("head"),
+  documentElement: { ...makeElement("html"), setAttribute() {}, lang: "fr" },
+  body: makeElement("body"),
+  head: makeElement("head"),
   title: "",
   visibilityState: "visible",
   _handlers: {},
-  querySelector: parSelecteur,
-  /* Volontairement vide : le rendu du contenu n'est pas l'objet du test, seule
-     compte l'absence d'exception. Un tableau reste itérable. Seul [placeholder]
-     rend quelque chose, pour exercer le registre de traduction ci-dessus. */
-  querySelectorAll: sel => PAR_ATTRIBUT[sel] || [],
-  getElementById: id => parSelecteur("#" + id),
-  createElement: faireElement,
-  addEventListener(nom, fn) { this._handlers[nom] = fn; },
-  /* Un compteur NEUF à chaque appel. Un compteur partagé ferait qu'un second
-     scan ne verrait plus rien, et le test vérifierait le compteur au lieu du
-     mécanisme qu'il croit vérifier. */
+  querySelector: bySelector,
+  /* Empty on purpose: rendering content is not what this test is about, only
+     the absence of exceptions counts. An array stays iterable. Only [placeholder]
+     returns something, to exercise the translation registry above. */
+  querySelectorAll: sel => BY_ATTRIBUTE[sel] || [],
+  getElementById: id => bySelector("#" + id),
+  createElement: makeElement,
+  addEventListener(name, fn) { this._handlers[name] = fn; },
+  /* A FRESH counter on every call. A shared counter would mean a second
+     scan sees nothing anymore, and the test would check the counter instead of the
+     mechanism it thinks it checks. */
   createTreeWalker: () => {
     let i = 0;
-    return { nextNode: () => (i < TEXTES.length ? TEXTES[i++] : null) };
+    return { nextNode: () => (i < TEXT_NODES.length ? TEXT_NODES[i++] : null) };
   },
 };
 
-const magasin = new Map();
+const store = new Map();
 const indexedDB = {
   open() {
     const req = {};
@@ -192,15 +192,15 @@ const indexedDB = {
         createObjectStore() {},
         transaction: () => ({
           objectStore: () => ({
-            put(v, k) { magasin.set(k, v); return {}; },
+            put(v, k) { store.set(k, v); return {}; },
             get(k) {
-              const r = { result: magasin.get(k) };
+              const r = { result: store.get(k) };
               setTimeout(() => r.onsuccess && r.onsuccess(), 0);
               return r;
             },
           }),
           set oncomplete(fn) { setTimeout(fn, 0); },
-          set onerror(fn) { /* jamais déclenché ici */ },
+          set onerror(fn) { /* never fired here */ },
         }),
       };
       req.result = db;
@@ -211,20 +211,20 @@ const indexedDB = {
   },
 };
 
-/* Un VRAI stockage en mémoire, pas un puits sans fond. L'ancien faux acceptait
-   les écritures et renvoyait toujours null : toute préférence qui passe par
-   localStorage était donc intestable, et un test qui la manipulait passait au
-   vert sans rien vérifier. C'est le cas de l'inclusion des ratées dans les
-   analyses, du thème et des bips. */
-const magasinLocal = new Map();
+/* A REAL in-memory storage, not a bottomless pit. The old fake accepted
+   writes and always returned null: any preference going through
+   localStorage was therefore untestable, and a test that touched it went
+   green without checking anything. That is the case for including failed cups in the
+   analyses, the theme and the beeps. */
+const localStore = new Map();
 const localStorage = {
-  getItem: k => (magasinLocal.has(k) ? magasinLocal.get(k) : null),
-  setItem(k, v) { magasinLocal.set(k, String(v)); },
-  removeItem(k) { magasinLocal.delete(k); },
+  getItem: k => (localStore.has(k) ? localStore.get(k) : null),
+  setItem(k, v) { localStore.set(k, String(v)); },
+  removeItem(k) { localStore.delete(k); },
 };
 const window = {
   _handlers: {},
-  addEventListener(nom, fn) { this._handlers[nom] = fn; },
+  addEventListener(name, fn) { this._handlers[name] = fn; },
   matchMedia: () => ({ matches: false, addEventListener() {} }),
   scrollTo() {},
   localStorage,
@@ -244,19 +244,19 @@ const AudioContext = function () {
   };
 };
 
-// Coquille de Chart.js : on ne teste pas le rendu graphique. `defaults` accepte
-// n'importe quel chemin, sinon il faudrait recopier toute son arborescence.
-const creuse = () => new Proxy({}, {
-  get: (t, k) => (k in t ? t[k] : (t[k] = creuse())),
+// Chart.js shell: we do not test chart rendering. `defaults` accepts
+// any path, otherwise its whole tree would have to be copied.
+const hollow = () => new Proxy({}, {
+  get: (t, k) => (k in t ? t[k] : (t[k] = hollow())),
   set: (t, k, v) => ((t[k] = v), true),
 });
 function Chart() {
   return { destroy() {}, update() {}, data: { labels: [], datasets: [] } };
 }
 Chart.getChart = () => null;
-Chart.defaults = creuse();
+Chart.defaults = hollow();
 
-/* ---------- Exécution ---------- */
+/* ---------- Execution ---------- */
 
 const SCRIPTS = ["js/outils.js", "js/i18n.en.js", "js/i18n.js", "js/grind.js", "js/recettes.js", "js/demo-data.js",
   "js/sync.js", "js/data-csv.js", "js/data-schema.js", "js/data-store.js", "js/data-calculs.js",
@@ -264,43 +264,43 @@ const SCRIPTS = ["js/outils.js", "js/i18n.en.js", "js/i18n.js", "js/grind.js", "
   "js/ui-noyau.js", "js/ui-constats.js", "js/ui-derniere.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-saisie-aside.js", "js/ui-pilules.js", "js/ui-chrono.js", "js/ui-brouillon.js", "js/ui-rapide.js", "js/ui-historique.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/ui-fiche.js", "js/ui-brassage.js", "js/ui-dessins.js", "js/app.js"];
 const source = SCRIPTS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 
-// console.error interceptée : c'est par là que sortent les erreurs de rendu.
-const erreursConsole = [];
-const faussseConsole = {
+// Intercepted console.error: that is where render errors come out.
+const consoleErrors = [];
+const fakeConsole = {
   log: (...a) => console.log("     [app]", ...a),
   warn: () => {},
-  error: (...a) => erreursConsole.push(a.map(x => (x && x.message) || String(x)).join(" ")),
+  error: (...a) => consoleErrors.push(a.map(x => (x && x.message) || String(x)).join(" ")),
 };
 
-const lancer = new Function(
+const run = new Function(
   "document", "window", "localStorage", "location", "history", "navigator",
   "getComputedStyle", "requestAnimationFrame", "performance", "Chart", "indexedDB",
   "setTimeout", "clearTimeout", "setInterval", "clearInterval", "NodeFilter", "AudioContext",
-  /* UI est rendu au test depuis le decoupage de l'interface en sept fichiers :
-     c'est la surface que les ecrans se partagent, donc le seul point d'entree
-     pour declencher une action d'ecran sans simuler un clic. */
+  /* UI is returned to the test since the interface was split into seven files:
+     it is the surface the screens share, hence the only entry point
+     to trigger a screen action without simulating a click. */
   source + "\nreturn { DATA, I18N, CHARTS, REGLAGES, GRIND, UI };"
 );
 
-const api = lancer(document, window, localStorage, location, history, navigator,
+const api = run(document, window, localStorage, location, history, navigator,
   getComputedStyle, requestAnimationFrame, performance, Chart, indexedDB,
   setTimeout, clearTimeout, setInterval, clearInterval, NodeFilter, AudioContext,
-  faussseConsole);
+  fakeConsole);
 
-/* Le compte suit la liste plutot que d etre fige : elle bouge des qu un
-   fichier est scinde, comme i18n en v7.55. Ce qui compte est que le harnais
-   charge la MEME chose que le navigateur, verifie juste apres. */
-check("tous les scripts du site se chargent", SCRIPTS.length >= 9, String(SCRIPTS.length));
-check("toutes les globales sont exposées",
+/* The count follows the list rather than being frozen: the list moves as soon as a
+   file is split, like i18n in v7.55. What matters is that the harness
+   loads the SAME thing as the browser, checked right after. */
+check("all the site scripts load", SCRIPTS.length >= 9, String(SCRIPTS.length));
+check("all the globals are exposed",
   ["DATA", "I18N", "CHARTS", "REGLAGES", "GRIND"].every(k => api[k]),
   ["DATA", "I18N", "CHARTS", "REGLAGES", "GRIND"].filter(k => !api[k]).join(", "));
-check("app.js enregistre bien DOMContentLoaded", typeof document._handlers.DOMContentLoaded === "function");
+check("app.js does register DOMContentLoaded", typeof document._handlers.DOMContentLoaded === "function");
 
 await document._handlers.DOMContentLoaded();
 await new Promise(r => setTimeout(r, 300));
-check("demarrer() va au bout sans exception", true);
+check("demarrer() runs to completion without exception", true);
 
-// Des données réalistes, dont une extraction sans temps d'écoulement, cas courant.
+// Realistic data, including an extraction with no flow time, a common case.
 api.DATA.state.cafes = [
   { id: "c1", nom: "Bana Cofe G4", actif: 1, deja_moulu: 1, prix_vnd: 120000, format_grammes: 250,
     pourcentage_cafe_reel: 100, date_ajout: "2026-08-01", tag: "", espece: "Blend" },
@@ -318,9 +318,9 @@ api.DATA.state.extractions = [
     note_sur_10: 4.5, diagnostic: "Acide ET amer (extraction inégale)", descripteurs: "brûlé",
     commentaire: "a pete d un coup", puissance_feu: 3 },
 ];
-/* Sans note : le cas par defaut depuis que la note est facultative. Toutes les
-   moyennes, insights et classements filtrent sur note_sur_10 !== "", cette ligne
-   verifie qu'aucun ecran ne trebuche dessus. */
+/* Unrated: the default case since rating became optional. All the
+   averages, insights and rankings filter on note_sur_10 !== "", this row
+   checks that no screen trips over it. */
 api.DATA.state.extractions.push({
   id: "e3", date_heure: "2026-08-16T09:10", cafe_id: "c1", methode: "Brikka",
   recette: "Brikka classique", dose_g: 16, eau_g: 150, mouture_dial: "1.5.0",
@@ -331,742 +331,742 @@ api.DATA.state.extractions.push({
 
 api.DATA.notifier();
 await new Promise(r => setTimeout(r, 200));
-check("notifier() avec des données ne jette pas", true);
-check("une extraction sans note ne fausse pas les moyennes",
+check("notifier() with data does not throw", true);
+check("an unrated extraction does not skew the averages",
   api.DATA.state.extractions.filter(e => e.note_sur_10 !== "").length === 2,
   String(api.DATA.state.extractions.filter(e => e.note_sur_10 !== "").length));
 
-// Chaque écran, un par un. Une exception dans l'un d'eux serait invisible sinon,
-// et c'est précisément ce qui s'était produit sur le tableau de bord.
-const ECRANS = ["tableau", "saisie", "historique", "reglages", "guide", "parametres"];
-for (const nom of ECRANS) {
-  location.hash = "#" + nom;
-  let jete = null;
+// Each screen, one by one. An exception in one of them would be invisible otherwise,
+// and that is precisely what had happened on the dashboard.
+const SCREENS = ["tableau", "saisie", "historique", "reglages", "guide", "parametres"];
+for (const name of SCREENS) {
+  location.hash = "#" + name;
+  let thrown = null;
   try {
     if (window._handlers.hashchange) window._handlers.hashchange();
     await new Promise(r => setTimeout(r, 60));
-  } catch (e) { jete = e; }
-  check("écran " + nom + " rendu sans exception", jete === null, jete && jete.message);
+  } catch (e) { thrown = e; }
+  check("screen " + name + " rendered without exception", thrown === null, thrown && thrown.message);
 }
 
-// Le tableau de bord une derniere fois, avec des donnees, en direct : c'est le
-// chemin exact qui etait casse.
+// The dashboard one last time, with data, directly: that is the
+// exact path that was broken.
 location.hash = "#tableau";
-let jeteTableau = null;
+let dashboardThrown = null;
 try {
   if (window._handlers.hashchange) window._handlers.hashchange();
   await new Promise(r => setTimeout(r, 100));
-} catch (e) { jeteTableau = e; }
-check("tableau de bord avec donnees, chemin direct", jeteTableau === null, jeteTableau && jeteTableau.message);
+} catch (e) { dashboardThrown = e; }
+check("dashboard with data, direct path", dashboardThrown === null, dashboardThrown && dashboardThrown.message);
 
-// La bascule de langue rejoue tout ce qui est généré : autre chemin où une
-// exception passerait inaperçue.
+// The language toggle replays everything generated: another path where an
+// exception would go unnoticed.
 await api.I18N.basculer();
 await new Promise(r => setTimeout(r, 150));
-check("bascule EN sans exception", api.I18N.lang() === "en", api.I18N.lang());
-/* Le paquet doit vraiment avoir ete fusionne, pas juste la langue changee : une
-   page qui se declare anglaise en rendant du francais serait pire que rien. */
-check("le paquet anglais est bien fusionne", api.I18N.tr("Recette") === "Recipe", api.I18N.tr("Recette"));
-check("les gabarits aussi", api.I18N.t("btn_modifier") !== api.I18N.t("btn_modifier").toLowerCase() || true);
+check("EN toggle without exception", api.I18N.lang() === "en", api.I18N.lang());
+/* The bundle must really have been merged, not just the language changed: a
+   page declaring itself English while rendering French would be worse than nothing. */
+check("the English bundle is actually merged", api.I18N.tr("Recette") === "Recipe", api.I18N.tr("Recette"));
+check("templates too", api.I18N.t("btn_modifier") !== api.I18N.t("btn_modifier").toLowerCase() || true);
 
-/* LE TEXTE STATIQUE DE LA PAGE, pas seulement les zones générées.
+/* THE STATIC TEXT OF THE PAGE, not only the generated zones.
 
-   Depuis que le paquet anglais se charge à la demande, démarrer en français
-   laisse les dictionnaires vides. Le scan des nœuds de texte tournait donc à
-   vide au démarrage, son drapeau passait à true, et il ne recommençait jamais :
-   cliquer sur EN ne traduisait plus que ce que le JS régénère. La page devenait
-   moitié française, moitié anglaise, et rien ne levait la moindre erreur. */
-check("le texte statique de la page se traduit",
-  TEXTES[0].nodeValue === "Recipe", TEXTES.map(n => n.nodeValue).join(" | "));
-check("et pas seulement le premier nœud",
-  TEXTES.every(n => n.nodeValue !== n._fr), TEXTES.map(n => n.nodeValue).join(" | "));
+   Since the English bundle loads on demand, starting in French
+   leaves the dictionaries empty. The text node scan therefore ran
+   empty at startup, its flag went to true, and it never started again:
+   clicking EN only translated what JS regenerates. The page became
+   half French, half English, and nothing raised the slightest error. */
+check("the static text of the page gets translated",
+  TEXT_NODES[0].nodeValue === "Recipe", TEXT_NODES.map(n => n.nodeValue).join(" | "));
+check("and not only the first node",
+  TEXT_NODES.every(n => n.nodeValue !== n._fr), TEXT_NODES.map(n => n.nodeValue).join(" | "));
 
-/* LES PLACEHOLDERS AUSSI. La traduction du champ de recherche existait dans le
-   dictionnaire depuis la v7.58 sans jamais s'afficher : les placeholders
-   passaient par un cas codé en dur qui ne couvrait qu'un seul champ. Une
-   traduction qui dort ne lève rien et ne se voit qu'en lisant l'anglais. */
-check("le fond du champ de recherche se traduit",
-  PLACEHOLDERS[0].valeur === "Search comments and flavours", PLACEHOLDERS[0].valeur);
-check("celui du commentaire aussi, sans cas particulier",
-  PLACEHOLDERS[1].valeur.startsWith("Free text"), PLACEHOLDERS[1].valeur);
-/* Le filtre du dictionnaire est ce qui rend le passage sûr : un fond sans
-   traduction n'est pas capturé, donc jamais réécrit. Le champ molette vaut
-   "1.5.0" ou "du paquet" selon le café, et c'est le code de saisie qui décide. */
-check("un fond sans traduction reste intact",
-  PLACEHOLDERS[2].valeur === "1.5.0", PLACEHOLDERS[2].valeur);
+/* PLACEHOLDERS TOO. The search field translation had been in the
+   dictionary since v7.58 without ever showing: placeholders
+   went through a hardcoded case that only covered a single field. A
+   sleeping translation raises nothing and only shows when reading the English. */
+check("the search field placeholder gets translated",
+  PLACEHOLDERS[0].attrValue === "Search comments and flavours", PLACEHOLDERS[0].attrValue);
+check("the comment one too, with no special case",
+  PLACEHOLDERS[1].attrValue.startsWith("Free text"), PLACEHOLDERS[1].attrValue);
+/* The dictionary filter is what makes the pass safe: a placeholder with no
+   translation is not captured, so never rewritten. The grinder field is
+   "1.5.0" or "du paquet" depending on the coffee, and the entry code decides. */
+check("a placeholder with no translation stays intact",
+  PLACEHOLDERS[2].attrValue === "1.5.0", PLACEHOLDERS[2].attrValue);
 
-/* LES INFOBULLES ET LES ÉTIQUETTES DE LECTEUR D'ÉCRAN. Ce sont des attributs,
-   invisibles au parcours de texte : quatorze restaient en français en mode
-   anglais, dont "Navigation principale", c'est-à-dire la toute première chose
-   qu'un lecteur d'écran annonce. */
-check("les infobulles se traduisent",
-  TITRES[0].valeur === "Manage my coffees", TITRES[0].valeur);
-check("les étiquettes de lecteur d'écran aussi",
-  ARIAS[0].valeur === "Main navigation", ARIAS[0].valeur);
+/* TOOLTIPS AND SCREEN READER LABELS. They are attributes,
+   invisible to the text walk: fourteen stayed French in English
+   mode, including "Navigation principale", that is the very first thing
+   a screen reader announces. */
+check("tooltips get translated",
+  TITLES[0].attrValue === "Manage my coffees", TITLES[0].attrValue);
+check("screen reader labels too",
+  ARIAS[0].attrValue === "Main navigation", ARIAS[0].attrValue);
 
 await api.I18N.basculer();
 await new Promise(r => setTimeout(r, 150));
-check("retour FR sans exception", api.I18N.lang() === "fr", api.I18N.lang());
-check("et les fonds de champ repassent en français",
-  PLACEHOLDERS[0].valeur === "Chercher dans les commentaires et les goûts",
-  PLACEHOLDERS[0].valeur);
-/* Le retour au français doit rendre le TEXTE D'ORIGINE. C'est le risque du
-   correctif : un second scan lancé alors que l'anglais est déjà affiché
-   enregistrerait l'anglais comme s'il était le français, et le bouton FR
-   rendrait de l'anglais. */
-check("et le texte statique aussi, dans sa version d'origine",
-  TEXTES.every(n => n.nodeValue === n._fr), TEXTES.map(n => n.nodeValue).join(" | "));
+check("back to FR without exception", api.I18N.lang() === "fr", api.I18N.lang());
+check("and the placeholders go back to French",
+  PLACEHOLDERS[0].attrValue === "Chercher dans les commentaires et les goûts",
+  PLACEHOLDERS[0].attrValue);
+/* Going back to French must render the ORIGINAL TEXT. That is the risk of the
+   fix: a second scan run while English is already displayed
+   would record the English as if it were the French, and the FR button
+   would render English. */
+check("and the static text too, in its original version",
+  TEXT_NODES.every(n => n.nodeValue === n._fr), TEXT_NODES.map(n => n.nodeValue).join(" | "));
 
-/* Le formulaire vierge doit porter les valeurs par defaut de la RECETTE.
-   Tombe deux fois : d'abord parce que le formulaire ignorait la recette, ensuite
-   parce que reinitialiserSaisie remettait tout a zero SANS la reappliquer. Le
-   champ eau restait vide alors que la Brikka demande 150 g, et l'ecran
-   Parametres ne servait a rien sur le cas le plus courant.
-   Ce test passe par le demarrage reel, sans crochet de test dans app.js :
-   demarrer() finit par reinitialiserSaisie(), c'est exactement le chemin casse. */
+/* The blank form must carry the RECIPE defaults.
+   Broke twice: first because the form ignored the recipe, then
+   because reinitialiserSaisie reset everything WITHOUT reapplying it. The
+   water field stayed empty while the Brikka asks for 150 g, and the
+   Parametres screen was useless in the most common case.
+   This test goes through the real startup, with no test hook in app.js:
+   demarrer() ends with reinitialiserSaisie(), which is exactly the broken path. */
 const brikka = api.DATA.state.recettes.find(r => r.methode === "Brikka");
-check("une recette Brikka existe apres demarrage", !!brikka);
+check("a Brikka recipe exists after startup", !!brikka);
 if (brikka) {
-  check("la recette Brikka porte 150 g d'eau", Number(brikka.eau) === 150, String(brikka.eau));
-  check("la recette Brikka n'impose aucune temperature", brikka.temp === "", JSON.stringify(brikka.temp));
-  check("le formulaire vierge herite de l'eau de la recette",
+  check("the Brikka recipe carries 150 g of water", Number(brikka.eau) === 150, String(brikka.eau));
+  check("the Brikka recipe imposes no temperature", brikka.temp === "", JSON.stringify(brikka.temp));
+  check("the blank form inherits the recipe water",
     String(document.querySelector("#f-eau").value) === String(brikka.eau),
     JSON.stringify(document.querySelector("#f-eau").value));
-  check("le formulaire vierge laisse la temperature vide en Brikka",
+  check("the blank form leaves the temperature empty for the Brikka",
     document.querySelector("#f-temp").value === "",
     JSON.stringify(document.querySelector("#f-temp").value));
-  check("le formulaire vierge herite de la puissance de feu",
+  check("the blank form inherits the burner power",
     String(document.querySelector("#f-puissance").value) === String(brikka.puissance_feu),
     JSON.stringify(document.querySelector("#f-puissance").value));
 }
 
-// Aucun fond de champ ne doit annoncer une valeur par defaut qui n'existe pas.
-const htmlSaisie = readFileSync(join(ROOT, "index.html"), "utf8");
-const champTemp = (htmlSaisie.match(/<input[^>]*id="f-temp"[^>]*>/) || [""])[0];
-check("le champ temperature n'a plus de fond trompeur", !champTemp.includes("placeholder"), champTemp);
+// No field placeholder may announce a default value that does not exist.
+const entryHtml = readFileSync(join(ROOT, "index.html"), "utf8");
+const tempField = (entryHtml.match(/<input[^>]*id="f-temp"[^>]*>/) || [""])[0];
+check("the temperature field no longer has a misleading placeholder", !tempField.includes("placeholder"), tempField);
 
-/* La molette preremplie doit etre le reglage REEL du broyeur, pas la cible de la
-   recette. Chris laisse son C5 sur 1.5.0, le compromis qui marche sur les deux
-   machines, alors que la recette Brikka vise 1.2.0. Le formulaire lui faisait
-   donc enregistrer une mouture qu'il n'avait pas utilisee. */
+/* The prefilled grinder setting must be the grinder's REAL setting, not the
+   recipe target. Chris leaves his C5 on 1.5.0, the compromise that works on both
+   machines, while the Brikka recipe aims for 1.2.0. The form therefore made him
+   record a grind he had not used. */
 {
-  const mouture = String(document.querySelector("#f-mouture").value);
-  check("le formulaire vierge prend le reglage du broyeur, 1.5.0",
-    mouture === "1.5.0", JSON.stringify(mouture));
-  // Chris a demande le 24 aout que TOUTES les recettes portent son reglage
-  // unique : il ne recompte pas les crans a chaque changement de machine, donc
-  // une cible par recette decrivait un geste qu'il ne fait jamais.
-  // Seule exception voulue, la Neo Brew (v8.63) : son extra gros est la recette.
-  check("toutes les recettes portent la meme molette que le broyeur, sauf la Neo Brew",
+  const grind = String(document.querySelector("#f-mouture").value);
+  check("the blank form takes the grinder setting, 1.5.0",
+    grind === "1.5.0", JSON.stringify(grind));
+  // Chris asked on August 24 that ALL recipes carry his single
+  // setting: he does not recount clicks every time he switches machines, so
+  // a per recipe target described a gesture he never makes.
+  // Only intended exception, the Neo Brew (v8.63): its extra coarse grind is the recipe.
+  check("every recipe carries the same grinder setting as the grinder, except the Neo Brew",
     api.DATA.state.recettes.every(r => r.dial === "1.5.0" || r.id === "neo-brew"),
     [...new Set(api.DATA.state.recettes.map(r => r.dial))].join(", "));
-  check("1.5.0 reste valide sur les deux machines",
+  check("1.5.0 stays valid on both machines",
     api.GRIND.verifierPlage("Brikka", "1.5.0").ok && api.GRIND.verifierPlage("Switch", "1.5.0").ok);
 }
 
-/* LE PANNEAU RAPIDE ENREGISTRE VRAIMENT.
+/* THE QUICK PANEL REALLY SAVES.
 
-   enregistrerRapide() lisait `cafeQ`, un nom qui n'existait nulle part. En mode
-   strict cette lecture leve une ReferenceError AVANT l'appel a
-   ajouterExtraction : le bouton du panneau rapide ne faisait rien, et la tasse
-   partait en fumee. Personne ne l'avait vu parce que rien ne peut signaler un
-   nom libre inconnu tant que 3 400 lignes partagent une seule portee.
+   enregistrerRapide() read `cafeQ`, a name that existed nowhere. In strict
+   mode that read throws a ReferenceError BEFORE the call to
+   ajouterExtraction: the quick panel button did nothing, and the cup
+   went up in smoke. Nobody had seen it because nothing can flag an
+   unknown free name as long as 3,400 lines share a single scope.
 
-   Le controle statique de tools/modules.test.mjs empeche ce nom de revenir.
-   Celui-ci verifie le comportement : la tasse arrive bien en base. */
+   The static check in tools/modules.test.mjs prevents that name from coming back.
+   This one checks the behaviour: the cup does reach the database. */
 {
-  const cafe = api.DATA.state.cafes.find(c => c.actif !== 0);
-  const recette = api.DATA.state.recettes.find(r => r.actif !== 0);
-  check("un cafe et une recette existent pour la saisie rapide", !!cafe && !!recette);
-  if (cafe && recette) {
-    document.querySelector("#q-cafe").value = cafe.id;
-    document.querySelector("#q-recette").value = recette.nom;
+  const coffee = api.DATA.state.cafes.find(c => c.actif !== 0);
+  const recipe = api.DATA.state.recettes.find(r => r.actif !== 0);
+  check("a coffee and a recipe exist for quick entry", !!coffee && !!recipe);
+  if (coffee && recipe) {
+    document.querySelector("#q-cafe").value = coffee.id;
+    document.querySelector("#q-recette").value = recipe.nom;
     document.querySelector("#q-note").value = "";
-    const avant = api.DATA.state.extractions.length;
-    let leve = null;
-    try { await api.UI.enregistrerRapide(); } catch (e) { leve = e; }
-    check("la saisie rapide n'explose pas", !leve, leve && leve.message);
-    check("et la tasse est bien enregistree",
-      api.DATA.state.extractions.length === avant + 1,
-      api.DATA.state.extractions.length + " au lieu de " + (avant + 1));
-    const derniere = api.DATA.state.extractions[api.DATA.state.extractions.length - 1];
-    check("sur le cafe choisi dans le panneau", derniere && derniere.cafe_id === cafe.id,
-      derniere && derniere.cafe_id);
-    /* Un cafe deja moulu n'a pas de reglage de molette a enregistrer : reprendre
-       celui de la recette serait inventer un geste que Chris n'a pas fait. */
-    const moulu = Number(cafe.deja_moulu) === 1;
-    check("la molette suit l'etat du cafe, moulu ou non",
-      derniere && (moulu ? derniere.mouture_dial === "" : derniere.mouture_dial === recette.dial),
-      derniere && JSON.stringify(derniere.mouture_dial));
+    const before = api.DATA.state.extractions.length;
+    let raised = null;
+    try { await api.UI.enregistrerRapide(); } catch (e) { raised = e; }
+    check("quick entry does not blow up", !raised, raised && raised.message);
+    check("and the cup is actually saved",
+      api.DATA.state.extractions.length === before + 1,
+      api.DATA.state.extractions.length + " instead of " + (before + 1));
+    const last = api.DATA.state.extractions[api.DATA.state.extractions.length - 1];
+    check("on the coffee chosen in the panel", last && last.cafe_id === coffee.id,
+      last && last.cafe_id);
+    /* A pre-ground coffee has no grinder setting to record: taking
+       the recipe one would invent a gesture Chris did not make. */
+    const preGround = Number(coffee.deja_moulu) === 1;
+    check("the grinder setting follows the coffee state, ground or not",
+      last && (preGround ? last.mouture_dial === "" : last.mouture_dial === recipe.dial),
+      last && JSON.stringify(last.mouture_dial));
   }
 }
 
-/* LA REGLETTE NE SE REDESSINE PAS QUAND LE CURSEUR BOUGE.
+/* THE GRIND RULER DOES NOT REDRAW WHEN THE SLIDER MOVES.
 
-   Chris traverse le curseur du convertisseur cran par cran. Chaque cran
-   redessinait 151 tirets de graduation, 15 boites de methodes, les bandes, l'axe
-   des microns et les marqueurs, puis reattachait les infobulles sur chaque
-   noeud. Un anti-rebond masquait le cout ; il ne l'enlevait pas.
+   Chris drags the converter slider click by click. Each click
+   redrew 151 tick marks, 15 method boxes, the bands, the micron
+   axis and the markers, then reattached the tooltips on every
+   node. A debounce hid the cost; it did not remove it.
 
-   Le faux DOM du harnais est trop sommaire pour observer ca, alors on fabrique
-   un element temoin qui compte ses ecritures. C'est le seul point du fichier ou
-   on ne se sert pas du faux DOM commun, et c'est assume : sans compteur, ce test
-   ne pourrait rien affirmer. */
+   The harness fake DOM is too rough to observe that, so we build
+   a probe element that counts its writes. It is the only place in the file where
+   we do not use the common fake DOM, and that is deliberate: without a counter, this test
+   could assert nothing. */
 {
-  const noeud = () => ({
+  const node = () => ({
     attrs: {}, classes: new Set(), textContent: "",
     setAttribute(k, v) { this.attrs[k] = String(v); },
     removeAttribute(k) { delete this.attrs[k]; },
     classList: { toggle(c, on) { if (on) this.p.classes.add(c); else this.p.classes.delete(c); } },
   });
-  const lier = n => { n.classList.p = n; return n; };
-  const trait = lier(noeud()), etiquette = lier(noeud());
-  const boites = new Map();
-  let reconstructions = 0;
-  const temoin = {
+  const link = n => { n.classList.p = n; return n; };
+  const cursorLine = link(node()), label = link(node());
+  const boxes = new Map();
+  let rebuilds = 0;
+  const probe = {
     firstChild: null,
-    set innerHTML(v) { reconstructions++; this.firstChild = { v }; },
+    set innerHTML(v) { rebuilds++; this.firstChild = { v }; },
     get innerHTML() { return ""; },
     querySelector(sel) {
-      if (sel === "[data-curseur]") return trait;
-      if (sel === "[data-curseur-label]") return etiquette;
-      if (!boites.has(sel)) boites.set(sel, lier(noeud()));
-      return boites.get(sel);
+      if (sel === "[data-curseur]") return cursorLine;
+      if (sel === "[data-curseur-label]") return label;
+      if (!boxes.has(sel)) boxes.set(sel, link(node()));
+      return boxes.get(sel);
     },
     querySelectorAll: () => [],
   };
 
-  api.CHARTS.diagramme(temoin, "1.5.0", "1.5.0");
-  check("la reglette se construit au premier appel", reconstructions === 1, String(reconstructions));
-  const x1 = trait.attrs.x1;
-  check("et le curseur est place", x1 !== undefined && trait.attrs.display === undefined,
-    JSON.stringify(trait.attrs));
+  api.CHARTS.diagramme(probe, "1.5.0", "1.5.0");
+  check("the ruler is built on the first call", rebuilds === 1, String(rebuilds));
+  const x1 = cursorLine.attrs.x1;
+  check("and the cursor is placed", x1 !== undefined && cursorLine.attrs.display === undefined,
+    JSON.stringify(cursorLine.attrs));
 
-  api.CHARTS.diagramme(temoin, "1.6.0", "1.5.0");
-  check("deplacer le curseur ne redessine rien", reconstructions === 1, String(reconstructions));
-  check("mais le curseur a bien bouge", trait.attrs.x1 !== x1,
-    x1 + " puis " + trait.attrs.x1);
-  check("et son etiquette suit", etiquette.textContent.includes("1.6.0"), etiquette.textContent);
+  api.CHARTS.diagramme(probe, "1.6.0", "1.5.0");
+  check("moving the cursor redraws nothing", rebuilds === 1, String(rebuilds));
+  check("but the cursor did move", cursorLine.attrs.x1 !== x1,
+    x1 + " then " + cursorLine.attrs.x1);
+  check("and its label follows", label.textContent.includes("1.6.0"), label.textContent);
 
-  /* Le squelette porte le reglage par defaut et les libelles traduits : si l'un
-     des deux change, il DOIT etre refait, sinon la reglette montre l'ancien. */
-  api.CHARTS.diagramme(temoin, "1.6.0", "2.0.0");
-  check("changer le reglage par defaut le redessine", reconstructions === 2, String(reconstructions));
+  /* The skeleton carries the default setting and the translated labels: if either
+     changes, it MUST be rebuilt, otherwise the ruler shows the old one. */
+  api.CHARTS.diagramme(probe, "1.6.0", "2.0.0");
+  check("changing the default setting redraws it", rebuilds === 2, String(rebuilds));
 
-  api.CHARTS.diagramme(temoin, "", "2.0.0");
-  check("sans dial, le curseur se masque au lieu de disparaitre",
-    trait.attrs.display === "none" && reconstructions === 2,
-    JSON.stringify(trait.attrs) + " apres " + reconstructions + " constructions");
+  api.CHARTS.diagramme(probe, "", "2.0.0");
+  check("with no dial, the cursor hides instead of disappearing",
+    cursorLine.attrs.display === "none" && rebuilds === 2,
+    JSON.stringify(cursorLine.attrs) + " after " + rebuilds + " builds");
 }
 
-/* CLIQUER SUR SAISIE OUVRE UNE SAISIE, JAMAIS UNE ÉDITION D'IL Y A DIX MINUTES.
+/* CLICKING ENTRY OPENS AN ENTRY, NEVER AN EDIT FROM TEN MINUTES AGO.
 
-   Chris ouvrait une extraction depuis l'historique, allait ailleurs, revenait par
-   l'onglet Saisie, et le formulaire tenait toujours la MODIFICATION : il croyait
-   noter une nouvelle tasse et il en écrasait une ancienne. Perte de données
-   silencieuse.
+   Chris opened an extraction from the history, went elsewhere, came back through
+   the Entry tab, and the form still held the EDIT: he thought he was
+   rating a new cup and he overwrote an old one. Silent
+   data loss.
 
-   Une garde existait. Elle reposait sur un drapeau partagé, posé avant un corps
-   de quarante lignes et remis à zéro après, sans finally : une exception au
-   milieu le laissait à true pour toujours, et la garde ne se déclenchait plus
-   jamais. « Parfois », puis tout le temps. L'information passe maintenant en
-   paramètre, elle meurt donc avec l'appel.
+   A guard existed. It relied on a shared flag, set before a forty line
+   body and reset after it, with no finally: an exception in the
+   middle left it at true forever, and the guard never fired
+   again. "Sometimes", then all the time. The information is now passed as a
+   parameter, so it dies with the call.
 
-   Les contrôles qui cherchaient ces lignes dans le source passaient au vert
-   pendant tout ce temps : ils vérifiaient que le mécanisme était ÉCRIT, pas
-   qu'il marchait. D'où ce test, qui rejoue le geste. */
+   The checks that looked for those lines in the source stayed green
+   the whole time: they checked that the mechanism was WRITTEN, not
+   that it worked. Hence this test, which replays the gesture. */
 {
   const ext = api.DATA.state.extractions[0];
-  check("une extraction existe pour le test d'edition", !!ext);
+  check("an extraction exists for the edit test", !!ext);
   if (ext) {
     api.UI.chargerExtractionDansSaisie(ext);
-    check("ouvrir une extraction depuis l'historique met bien en edition",
+    check("opening an extraction from the history does enter edit mode",
       api.UI.saisie.editId === ext.id, JSON.stringify(api.UI.saisie.editId));
 
-    // Le geste de Chris : il part ailleurs, puis revient par l'onglet Saisie.
+    // Chris's gesture: he goes elsewhere, then comes back through the Entry tab.
     api.UI.activerEcran("historique");
     api.UI.activerEcran("saisie");
-    check("revenir par l'onglet Saisie abandonne l'edition",
+    check("coming back through the Entry tab drops the edit",
       api.UI.saisie.editId === null, JSON.stringify(api.UI.saisie.editId));
 
-    /* Sans detour non plus : rouvrir l'ecran ou l'on est deja doit compter. */
+    /* No detour either: reopening the screen you are already on must count. */
     api.UI.chargerExtractionDansSaisie(ext);
     api.UI.activerEcran("saisie");
-    check("et sans meme changer d'ecran entre les deux",
+    check("and without even changing screen in between",
       api.UI.saisie.editId === null, JSON.stringify(api.UI.saisie.editId));
 
-    /* L'ouverture LEGITIME, elle, doit survivre : chargerExtractionDansSaisie
-       bascule sur l'ecran Saisie, et cette bascule-la ne doit surtout pas
-       annuler l'edition qu'on vient de demander. */
+    /* The LEGITIMATE opening, for its part, must survive: chargerExtractionDansSaisie
+       switches to the Entry screen, and that particular switch must certainly not
+       cancel the edit just requested. */
     api.UI.chargerExtractionDansSaisie(ext);
-    check("mais ouvrir une edition ne s'annule pas elle-meme",
+    check("but opening an edit does not cancel itself",
       api.UI.saisie.editId === ext.id, JSON.stringify(api.UI.saisie.editId));
     api.UI.reinitialiserSaisie();
   }
 }
 
-/* UNE NOUVELLE SAISIE ARRIVE AVEC UN CAFE DEJA CHOISI.
+/* A NEW ENTRY ARRIVES WITH A COFFEE ALREADY CHOSEN.
 
-   Chris n'a en general qu'un seul cafe actif a la fois : le choisir a chaque
-   tasse etait un clic pour rien, et un champ vide en tete de formulaire donne
-   l'impression qu'il manque quelque chose.
+   Chris usually has only one active coffee at a time: choosing it for every
+   cup was a pointless click, and an empty field at the top of the form gives
+   the impression something is missing.
 
-   Le point delicat est ce qu'on ne fait PAS. Choisir un cafe A LA MAIN applique
-   aussi sa machine et sa recette recommandees ; declencher cette cascade au
-   preremplissage ferait basculer la machine a chaque nouvelle saisie, ce qui
-   deborde largement de "remplis ce champ". */
+   The tricky part is what we do NOT do. Choosing a coffee BY HAND also applies
+   its recommended machine and recipe; triggering that cascade on
+   prefill would switch the machine on every new entry, which
+   goes far beyond "fill in this field". */
 {
   api.UI.choisirMethode("Brikka");
   api.UI.reinitialiserSaisie();
-  const actifs = api.DATA.state.cafes.filter(c => c.actif !== 0);
-  const champCafe = document.querySelector("#f-cafe");
-  check("le formulaire vierge propose un cafe",
-    actifs.length > 0 && champCafe.value === actifs[0].id,
-    JSON.stringify(champCafe.value) + " pour " + JSON.stringify(actifs[0] && actifs[0].id));
-  check("et la machine ne bascule pas toute seule",
+  const active = api.DATA.state.cafes.filter(c => c.actif !== 0);
+  const coffeeField = document.querySelector("#f-cafe");
+  check("the blank form offers a coffee",
+    active.length > 0 && coffeeField.value === active[0].id,
+    JSON.stringify(coffeeField.value) + " for " + JSON.stringify(active[0] && active[0].id));
+  check("and the machine does not switch on its own",
     api.UI.saisie.methode === "Brikka", api.UI.saisie.methode);
 
-  /* Le panneau rapide REFUSE d'enregistrer sans cafe : l'ouvrir sur un champ
-     vide garantissait un aller-retour. */
+  /* The quick panel REFUSES to save without a coffee: opening it on an empty
+     field guaranteed a round trip. */
   document.querySelector("#q-cafe").value = "";
   api.UI.majPanneauRapide();
-  check("le panneau rapide aussi",
-    document.querySelector("#q-cafe").value === actifs[0].id,
+  check("the quick panel too",
+    document.querySelector("#q-cafe").value === active[0].id,
     JSON.stringify(document.querySelector("#q-cafe").value));
 }
 
-/* LA DATE D'UNE NOUVELLE SAISIE EST L'HEURE QU'IL EST.
+/* THE DATE OF A NEW ENTRY IS THE CURRENT TIME.
 
-   Elle n'était posée que par reinitialiserSaisie(), qui ne tourne qu'au démarrage
-   et après un enregistrement. Sur un téléphone où la page reste ouverte toute la
-   journée, arriver sur Saisie à 16 h affichait l'heure de la tasse précédente. */
+   It was only set by reinitialiserSaisie(), which only runs at startup
+   and after a save. On a phone where the page stays open all
+   day, landing on Entry at 4 pm showed the time of the previous cup. */
 {
-  const champ = document.querySelector("#f-date");
-  champ.value = "2020-01-01T08:00";
+  const field = document.querySelector("#f-date");
+  field.value = "2020-01-01T08:00";
   api.UI.activerEcran("historique");
   api.UI.activerEcran("saisie");
-  check("arriver sur Saisie remet la date a l'heure qu'il est",
-    champ.value.slice(0, 4) !== "2020", champ.value);
+  check("landing on Entry resets the date to the current time",
+    field.value.slice(0, 4) !== "2020", field.value);
 
-  /* Mais une date REGLEE A LA MAIN lui appartient : Chris note parfois une tasse
-     d'hier soir, et la lui reprendre serait pire que le bug qu'on corrige. */
-  champ.value = "2020-01-01T08:00";
+  /* But a date SET BY HAND belongs to him: Chris sometimes logs a cup
+     from last night, and taking it back from him would be worse than the bug being fixed. */
+  field.value = "2020-01-01T08:00";
   api.UI.marquerDateTouchee();
   api.UI.activerEcran("historique");
   api.UI.activerEcran("saisie");
-  check("mais une date choisie a la main est respectee",
-    champ.value === "2020-01-01T08:00", champ.value);
+  check("but a date chosen by hand is respected",
+    field.value === "2020-01-01T08:00", field.value);
 
-  // La remise a zero du formulaire rend la date au systeme.
+  // Resetting the form hands the date back to the system.
   api.UI.reinitialiserSaisie();
-  check("et la remise a zero la rend au systeme",
-    champ.value.slice(0, 4) !== "2020", champ.value);
+  check("and the reset hands it back to the system",
+    field.value.slice(0, 4) !== "2020", field.value);
 }
 
-/* LE TABLEAU D'HISTORIQUE A AUTANT DE CELLULES QUE D'EN-TETES.
+/* THE HISTORY TABLE HAS AS MANY CELLS AS HEADERS.
 
-   Les largeurs de colonnes sont FIGEES en pourcentages dans la feuille de style,
-   par position. Ajouter une colonne demande donc de toucher quatre endroits : le
-   <th> dans index.html, le <td> dans le rendu, la largeur en CSS, et le colspan
-   de la ligne de detail. En oublier un ne leve rien : le tableau se decale, les
-   largeurs glissent d'une colonne, et le detail deborde ou retrecit.
+   Column widths are FIXED as percentages in the stylesheet,
+   by position. Adding a column therefore means touching four places: the
+   <th> in index.html, the <td> in the render, the width in CSS, and the colspan
+   of the detail row. Forgetting one raises nothing: the table shifts, the
+   widths slide by one column, and the detail overflows or shrinks.
 
-   On compare donc ce qui est REELLEMENT rendu a ce que la page declare. */
+   So we compare what is ACTUALLY rendered with what the page declares. */
 {
   const htmlPage = readFileSync(join(ROOT, "index.html"), "utf8");
-  /* Borne au thead de CE tableau : l'écran Guide en contient d'autres, et
-     compter les <th> de la page entière donnait 43 colonnes. */
-  const debutTable = htmlPage.indexOf('id="h-table"');
-  const theadHisto = htmlPage.slice(debutTable, htmlPage.indexOf("</thead>", debutTable));
-  const entetes = (theadHisto.match(/<th\b[^>]*>/g) || []).length;
+  /* Bounded to the thead of THIS table: the Guide screen has others, and
+     counting the <th> of the whole page gave 43 columns. */
+  const tableStart = htmlPage.indexOf('id="h-table"');
+  const historyThead = htmlPage.slice(tableStart, htmlPage.indexOf("</thead>", tableStart));
+  const headerCount = (historyThead.match(/<th\b[^>]*>/g) || []).length;
 
-  // Ces controles lisent la TABLE : la vue par date (L3, v8.93, par sachet par defaut).
+  // These checks read the TABLE: the by date view (L3, v8.93, by bag by default).
   localStorage.setItem("historique-vue", "date");
   api.UI.rendreHistorique();
-  /* La premiere ligne du corps est un INTERTITRE de jour depuis que l'historique
-     est groupe : un <td> en colspan, pas une extraction. On cherche la premiere
-     ligne de donnees, ce que ce controle a toujours voulu dire. */
-  const lignes = document.querySelector("#h-corps").innerHTML.split("</tr>");
-  const premiere = lignes.find(l => l.includes("ligne-histo")) || "";
-  const cellules = (premiere.match(/<td/g) || []).length;
+  /* The first body row is a day SUBHEADING since the history
+     is grouped: a <td> with colspan, not an extraction. We look for the first
+     data row, which is what this check always meant. */
+  const rows = document.querySelector("#h-corps").innerHTML.split("</tr>");
+  const firstRow = rows.find(l => l.includes("ligne-histo")) || "";
+  const cells = (firstRow.match(/<td/g) || []).length;
 
-  check("le tableau d'historique rend une ligne", cellules > 0, String(cellules));
-  check("autant de cellules que d'en-tetes",
-    cellules === entetes, cellules + " cellules pour " + entetes + " en-tetes");
+  check("the history table renders a row", cells > 0, String(cells));
+  check("as many cells as headers",
+    cells === headerCount, cells + " cells for " + headerCount + " headers");
 
-  /* Le detail depliable s'etale sur TOUTE la largeur : son colspan doit suivre.
-     Trop court, il laisse des colonnes vides a droite ; trop long, il elargit le
-     tableau d'une colonne fantome. */
-  const histo = readFileSync(join(ROOT, "js/ui-historique.js"), "utf8");
-  const colspan = Number((histo.match(/colspan="(\d+)"/) || [])[1]);
-  check("et le detail deplie couvre exactement ces colonnes",
-    colspan === entetes, colspan + " contre " + entetes);
+  /* The expandable detail spans the WHOLE width: its colspan must follow.
+     Too short, it leaves empty columns on the right; too long, it widens the
+     table by a ghost column. */
+  const historySrc = readFileSync(join(ROOT, "js/ui-historique.js"), "utf8");
+  const colspan = Number((historySrc.match(/colspan="(\d+)"/) || [])[1]);
+  check("and the expanded detail covers exactly those columns",
+    colspan === headerCount, colspan + " against " + headerCount);
 
-  /* Les largeurs vivent dans le <colgroup> : une <col> par colonne, en pixels
-     pour les colonnes chiffrees et les actions, rien pour cafe, recette et
-     gouts qui se partagent le reste. Une <col> de moins et le navigateur
-     redistribue a sa facon ; une largeur sur une colonne de texte et elle
-     recommence a tronquer. */
-  const colgroup = htmlPage.slice(debutTable, htmlPage.indexOf("</colgroup>", debutTable));
+  /* Widths live in the <colgroup>: one <col> per column, in pixels
+     for numeric columns and actions, nothing for coffee, recipe and
+     flavours which share the rest. One <col> less and the browser
+     redistributes its own way; a width on a text column and it
+     starts truncating again. */
+  const colgroup = htmlPage.slice(tableStart, htmlPage.indexOf("</colgroup>", tableStart));
   const cols = [...colgroup.matchAll(/<col class="(c-[a-z]+)"/g)].map(m => m[1]);
-  check("chaque colonne a sa <col>", cols.length === entetes, cols.length + " col pour " + entetes + " colonnes");
+  check("each column has its <col>", cols.length === headerCount, cols.length + " col for " + headerCount + " columns");
   const cssPage = ["socle", "ecrans", "fenetres", "finitions"].map(f => readFileSync(join(ROOT, "css/" + f + ".css"), "utf8")).join("\n");
-  const fixees = cols.filter(c => cssPage.includes(".table-historique col." + c + " { width: ") &&
+  const fixed = cols.filter(c => cssPage.includes(".table-historique col." + c + " { width: ") &&
     /\d+px/.test(cssPage.split(".table-historique col." + c + " { width: ")[1].split(";")[0]));
-  const libres = cols.filter(c => !fixees.includes(c));
-  check("les colonnes chiffrees et les actions ont une largeur en pixels",
-    fixees.length === entetes - 3, fixees.join(", "));
-  check("cafe, recette et gouts se partagent le reste",
-    libres.join(",") === "c-cafe,c-recette,c-gouts", libres.join(", "));
+  const flexible = cols.filter(c => !fixed.includes(c));
+  check("numeric columns and actions have a width in pixels",
+    fixed.length === headerCount - 3, fixed.join(", "));
+  check("coffee, recipe and flavours share the rest",
+    flexible.join(",") === "c-cafe,c-recette,c-gouts", flexible.join(", "));
 }
 
-/* LES EXTRACTIONS RATEES : ecartees des CONSEILS, gardees dans les COMPTAGES.
+/* FAILED EXTRACTIONS: left out of the ADVICE, kept in the COUNTS.
 
-   Une tasse ratee decrit un geste manque, pas un reglage. La garder dans les
-   analyses peut faire condamner un reglage correct. Mais Chris a bien utilise le
-   cafe, donc les comptages la gardent : tasses, grammes, cout, calendrier.
+   A failed cup describes a botched gesture, not a setting. Keeping it in the
+   analyses can condemn a correct setting. But Chris did use the
+   coffee, so the counts keep it: cups, grams, cost, calendar.
 
-   C'est toute la regle, et elle tient dans les deux premiers controles. */
+   That is the whole rule, and it fits in the first two checks. */
 {
   const total = api.DATA.state.extractions.length;
-  const cible = api.DATA.state.extractions[0];
-  cible.ratee = 1;
+  const target = api.DATA.state.extractions[0];
+  target.ratee = 1;
 
-  check("une tasse marquee est reconnue comme ratee", api.UI.estRatee(cible));
-  check("et les autres ne le sont pas", !api.UI.estRatee(api.DATA.state.extractions[1]));
+  check("a flagged cup is recognised as failed", api.UI.estRatee(target));
+  check("and the others are not", !api.UI.estRatee(api.DATA.state.extractions[1]));
 
   api.UI.basculerRatees(false);
-  check("les analyses l'ecartent par defaut",
+  check("the analyses leave it out by default",
     api.UI.extAnalysables().length === total - 1,
-    api.UI.extAnalysables().length + " sur " + total);
-  check("mais les comptages la gardent, le cafe a bien ete utilise",
+    api.UI.extAnalysables().length + " of " + total);
+  check("but the counts keep it, the coffee was indeed used",
     api.UI.extAvecCalculs().length === total, String(api.UI.extAvecCalculs().length));
 
-  /* "J'ai merde" et "ce reglage ne marche pas" ne se distinguent pas toujours de
-     l'exterieur : Chris doit pouvoir les reintegrer d'un clic. */
+  /* "I messed up" and "this setting does not work" cannot always be told apart from
+     the outside: Chris must be able to put them back in with one click. */
   api.UI.basculerRatees(true);
-  check("et il peut les reintegrer", api.UI.extAnalysables().length === total,
+  check("and he can put them back in", api.UI.extAnalysables().length === total,
     String(api.UI.extAnalysables().length));
   api.UI.basculerRatees(false);
 
-  /* UNE TASSE RATEE SE VOIT, sur les deux surfaces qui la montrent.
+  /* A FAILED CUP SHOWS, on both surfaces that display it.
 
-     L'ancienne version cherchait la classe "badge-ratee" : elle a casse des que
-     les cinq dernieres sont passees en table, ou la marque s'appelle autrement.
-     Un test ecrit sur un nom de classe verifie le nom de classe. Celui-ci
-     verifie la REGLE : le mot que Chris lit est la, et la ligne porte un etat
-     distinct, quel que soit le nom qu'on donne a l'un ou a l'autre. */
+     The old version looked for the "badge-ratee" class: it broke as soon as
+     the last five switched to a table, where the mark is called something else.
+     A test written on a class name checks the class name. This one
+     checks the RULE: the word Chris reads is there, and the row carries a distinct
+     state, whatever name either of them is given. */
   api.UI.rendreTableau();
-  const mot = api.I18N.t("rt_badge");
+  const word = api.I18N.t("rt_badge");
   const table = document.querySelector("#dernieres-liste").innerHTML;
-  check("une tasse ratee est nommee dans les cinq dernieres", table.includes(mot), mot);
-  check("et sa ligne porte un etat distinct, pas seulement un mot",
+  check("a failed cup is named in the last five", table.includes(word), word);
+  check("and its row carries a distinct state, not just a word",
     /class="[^"]*ratee/.test(table));
-  /* La grande carte montre LA DERNIERE tasse, qui n'est pas forcement celle
-     qu'on vient de marquer. On marque donc la plus recente, le temps du
-     controle, et on la remet comme elle etait. */
-  const recente = [...api.DATA.state.extractions]
+  /* The big card shows THE LATEST cup, which is not necessarily the one
+     just flagged. So we flag the most recent one for the duration of the
+     check, and put it back as it was. */
+  const latest = [...api.DATA.state.extractions]
     .sort((x, y) => y.date_heure.localeCompare(x.date_heure))[0];
-  const avant = recente.ratee;
-  recente.ratee = 1;
+  const before = latest.ratee;
+  latest.ratee = 1;
   api.UI.rendreTableau();
-  check("la carte de la derniere tasse le dit aussi",
-    document.querySelector("#carte-derniere").innerHTML.includes(mot));
-  recente.ratee = avant;
+  check("the latest cup card says so too",
+    document.querySelector("#carte-derniere").innerHTML.includes(word));
+  latest.ratee = before;
   api.UI.rendreTableau();
-  check("et ne le dit plus quand la tasse ne l'est pas",
-    !document.querySelector("#carte-derniere").innerHTML.includes(mot));
+  check("and no longer says so when the cup is not failed",
+    !document.querySelector("#carte-derniere").innerHTML.includes(word));
 
-  /* L'historique est le JOURNAL : il montre tout par defaut, et c'est le filtre
-     qui trie. Une tasse ratee doit y rester visible, c'est justement la que
-     Chris veut la retrouver. */
+  /* The history is the LOG: it shows everything by default, and the filter
+     does the sorting. A failed cup must stay visible there, that is precisely where
+     Chris wants to find it. */
   document.querySelector("#h-ratee").value = "";
-  check("l'historique les garde par defaut",
+  check("the history keeps them by default",
     api.UI.filtrerHistorique().length === total, String(api.UI.filtrerHistorique().length));
   document.querySelector("#h-ratee").value = "ratee";
-  check("le filtre isole les ratees",
+  check("the filter isolates the failed ones",
     api.UI.filtrerHistorique().length === 1, String(api.UI.filtrerHistorique().length));
   document.querySelector("#h-ratee").value = "ok";
-  check("et sait aussi les mettre de cote",
+  check("and can also set them aside",
     api.UI.filtrerHistorique().length === total - 1, String(api.UI.filtrerHistorique().length));
   document.querySelector("#h-ratee").value = "";
 
-  /* LA BASCULE DANS LA LIGNE D'HISTORIQUE. La premiere version n'offrait que la
-     case du formulaire de saisie : marquer une tasse DEJA enregistree demandait
-     de l'ouvrir en modification, cocher, enregistrer. Quatre gestes pour un
-     jugement binaire, et sur une tasse passee c'est le cas courant, puisqu'on
-     sait qu'on a foire APRES avoir bu. */
+  /* THE TOGGLE IN THE HISTORY ROW. The first version only offered the
+     checkbox of the entry form: flagging an ALREADY saved cup required
+     opening it for editing, ticking, saving. Four gestures for a
+     binary judgement, and on a past cup that is the usual case, since you
+     know you messed up AFTER drinking. */
   api.UI.rendreHistorique();
   {
     const h = document.querySelector("#h-corps").innerHTML;
-    const lignes = api.UI.filtrerHistorique().length;
-    check("chaque ligne d'historique porte la bascule",
-      (h.match(/data-action="ratee"/g) || []).length === lignes,
-      (h.match(/data-action="ratee"/g) || []).length + " pour " + lignes + " lignes");
-    /* Son etat se lit sans survol, sinon reperer les lignes ecartees demanderait
-       de passer sur chacune. */
-    check("et seule la tasse ratee l'affiche allumee",
+    const rowCount = api.UI.filtrerHistorique().length;
+    check("each history row carries the toggle",
+      (h.match(/data-action="ratee"/g) || []).length === rowCount,
+      (h.match(/data-action="ratee"/g) || []).length + " for " + rowCount + " rows");
+    /* Its state reads without hovering, otherwise spotting the excluded rows would require
+       going over each one. */
+    check("and only the failed cup shows it lit",
       (h.match(/aria-pressed="true"/g) || []).length === 1 &&
       (h.match(/actif-ratee/g) || []).length === 1,
       h.match(/aria-pressed="true"/g) + " / " + h.match(/actif-ratee/g));
-    check("le badge la signale aussi", (h.match(/badge-ratee/g) || []).length === 1);
+    check("the badge flags it too", (h.match(/badge-ratee/g) || []).length === 1);
   }
 
-  // La colonne doit survivre a un aller-retour CSV, sinon le drapeau se perd.
-  check("la colonne ratee est dans le format d'echange",
+  // The column must survive a CSV round trip, otherwise the flag gets lost.
+  check("the ratee column is in the exchange format",
     readFileSync(join(ROOT, "js/data-schema.js"), "utf8").includes('"puissance_feu", "ratee"'));
-  cible.ratee = "";
+  target.ratee = "";
 }
 
-/* LES CURSEURS SUIVENT LEURS CHAMPS.
+/* THE SLIDERS FOLLOW THEIR FIELDS.
 
-   Le champ nombre reste la SOURCE DE VERITE : tout le code le lit, le brouillon
-   l'enregistre, l'edition le remplit. Le curseur ne fait que le piloter. Il faut
-   donc qu'il se replace quand le champ change sans lui, ce qui arrive a chaque
-   remise a zero, chaque prereplissage de recette et chaque ouverture
-   d'extraction. Un curseur reste sinon sur sa position d'avant et affiche un
-   reglage que Chris n'a pas fait. */
+   The number field stays the SOURCE OF TRUTH: all the code reads it, the draft
+   saves it, editing fills it. The slider only drives it. It must
+   therefore reposition itself when the field changes without it, which happens on every
+   reset, every recipe prefill and every extraction
+   opening. Otherwise a slider stays at its previous position and shows a
+   setting Chris did not make. */
 {
-  const champ = document.querySelector("#f-dose");
-  const curseur = document.querySelector("#f-dose-curseur");
-  champ.value = "18";
-  curseur.value = "9";
+  const field = document.querySelector("#f-dose");
+  const slider = document.querySelector("#f-dose-curseur");
+  field.value = "18";
+  slider.value = "9";
   api.UI.majCurseurs();
-  check("le curseur se replace sur la valeur du champ",
-    String(curseur.value) === "18", curseur.value);
+  check("the slider repositions on the field value",
+    String(slider.value) === "18", slider.value);
 
-  /* La mouture n'est pas un nombre : le champ porte un cadran
-     rotation.numero.cran et le curseur court sur les CRANS. */
-  const champM = document.querySelector("#f-mouture");
-  const curseurM = document.querySelector("#f-mouture-curseur");
-  champM.value = "1.5.0";
-  curseurM.value = "0";
+  /* The grind is not a number: the field carries a dial
+     rotation.number.click and the slider runs over the CLICKS. */
+  const grindField = document.querySelector("#f-mouture");
+  const grindSlider = document.querySelector("#f-mouture-curseur");
+  grindField.value = "1.5.0";
+  grindSlider.value = "0";
   api.UI.majCurseurs();
-  check("celui de la mouture convertit le cadran en crans",
-    String(curseurM.value) === String(api.GRIND.parseDial("1.5.0").crans),
-    curseurM.value + " pour " + api.GRIND.parseDial("1.5.0").crans);
+  check("the grind one converts the dial into clicks",
+    String(grindSlider.value) === String(api.GRIND.parseDial("1.5.0").crans),
+    grindSlider.value + " for " + api.GRIND.parseDial("1.5.0").crans);
 
-  /* Un champ vide laisse le curseur ou il est. Le ramener au minimum
-     afficherait une dose de 5 g que personne n'a choisie. */
-  champ.value = "";
-  curseur.value = "18";
+  /* An empty field leaves the slider where it is. Bringing it back to the minimum
+     would show a 5 g dose that nobody chose. */
+  field.value = "";
+  slider.value = "18";
   api.UI.majCurseurs();
-  check("un champ vide ne deplace pas son curseur",
-    String(curseur.value) === "18", curseur.value);
+  check("an empty field does not move its slider",
+    String(slider.value) === "18", slider.value);
 }
 
-/* Chaque curseur pilote un champ qui existe, et emprunte SON etiquette. */
+/* Each slider drives a field that exists, and borrows ITS label. */
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
   const ids = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(m => m[1]));
-  const curseurs = [...ids].filter(id => id.endsWith("-curseur") && id.startsWith("f-"));
-  check("des curseurs ont bien ete poses", curseurs.length >= 4, String(curseurs.length));
+  const sliders = [...ids].filter(id => id.endsWith("-curseur") && id.startsWith("f-"));
+  check("sliders were indeed set up", sliders.length >= 4, String(sliders.length));
 
-  const orphelins = curseurs.filter(id => !ids.has(id.slice(0, -"-curseur".length)));
-  check("chaque curseur pilote un champ existant", orphelins.length === 0, orphelins.join(", "));
+  const orphans = sliders.filter(id => !ids.has(id.slice(0, -"-curseur".length)));
+  check("each slider drives an existing field", orphans.length === 0, orphans.join(", "));
 
-  /* aria-labelledby plutot qu'un aria-label : le curseur reprend le libelle DEJA
-     traduit de son champ. Zero chaine nouvelle, et les deux controles annoncent
-     la meme chose. Encore faut-il que la cible existe. */
-  const sansNom = curseurs.filter(id => {
-    const balise = (html.match(new RegExp('<input[^>]*\\bid="' + id + '"[^>]*>')) || [""])[0];
-    const cible = (balise.match(/aria-labelledby="([^"]+)"/) || [])[1];
-    return !cible || !ids.has(cible);
+  /* aria-labelledby rather than an aria-label: the slider reuses the ALREADY
+     translated label of its field. Zero new strings, and both controls announce
+     the same thing. The target still has to exist. */
+  const unnamed = sliders.filter(id => {
+    const tag = (html.match(new RegExp('<input[^>]*\\bid="' + id + '"[^>]*>')) || [""])[0];
+    const target = (tag.match(/aria-labelledby="([^"]+)"/) || [])[1];
+    return !target || !ids.has(target);
   });
-  check("et emprunte une etiquette qui existe", sansNom.length === 0, sansNom.join(", "));
+  check("and borrows a label that exists", unnamed.length === 0, unnamed.join(", "));
 }
 
-/* LE LAIT, EN CHIFFRES, POUR LES DEUX BOISSONS.
+/* MILK, IN NUMBERS, FOR BOTH DRINKS.
 
-   Le calcul existait (contenance de la tasse moins volume de cafe) mais ne
-   donnait jamais de nombre sur une Brikka : volumeEstime() y rend 0 VOLONTAIRE-
-   MENT, l'ancienne formule annoncait 139 ml la ou Chris en mesure 90 a 115. Sans
-   volume mesure, il refusait donc de repondre, et les recettes au lait sont
-   precisement des recettes Brikka.
+   The calculation existed (cup capacity minus coffee volume) but never
+   gave a number on a Brikka: volumeEstime() returns 0 there ON PURPOSE,
+   the old formula announced 139 ml where Chris measures 90 to 115. With no
+   measured volume, it therefore refused to answer, and the milk recipes are
+   precisely Brikka recipes.
 
-   Il se rabat maintenant sur le rendement DECLARE de la recette, qui est un
-   chiffre mesure et ecrit, pas une formule fausse. Et il donne les DEUX
-   boissons : le cappuccino prend environ 20 % de lait liquide en moins, la
-   mousse occupant le volume. */
+   It now falls back on the DECLARED yield of the recipe, which is a
+   measured and written figure, not a wrong formula. And it gives BOTH
+   drinks: the cappuccino takes about 20 % less liquid milk, the
+   foam taking up the volume. */
 {
-  const laitiere = api.DATA.state.recettes.find(r => r.lait);
-  check("une recette au lait existe", !!laitiere, laitiere && laitiere.nom);
-  check("et elle declare son rendement", laitiere && laitiere.volumeTypique > 0,
-    laitiere && String(laitiere.volumeTypique));
+  const milkRecipe = api.DATA.state.recettes.find(r => r.lait);
+  check("a milk recipe exists", !!milkRecipe, milkRecipe && milkRecipe.nom);
+  check("and it declares its yield", milkRecipe && milkRecipe.volumeTypique > 0,
+    milkRecipe && String(milkRecipe.volumeTypique));
 
-  const tasse = api.DATA.state.tasses.find(t => Number(t.contenance_ml) === 150);
-  check("une tasse de 150 ml existe pour le calcul", !!tasse, tasse && tasse.nom);
+  const cup = api.DATA.state.tasses.find(t => Number(t.contenance_ml) === 150);
+  check("a 150 ml cup exists for the calculation", !!cup, cup && cup.nom);
 
-  if (laitiere && tasse) {
-    document.querySelector("#f-recette").value = laitiere.nom;
-    document.querySelector("#f-tasse").value = tasse.nom;
+  if (milkRecipe && cup) {
+    document.querySelector("#f-recette").value = milkRecipe.nom;
+    document.querySelector("#f-tasse").value = cup.nom;
     document.querySelector("#f-volume").value = "";
     api.UI.majLait();
 
-    /* 150 de tasse moins 90 de cafe = 60 ml de VIDE a remplir. Les deux
-       nombres affiches sont du lait FROID a mesurer, comptes sur cette meme
-       base : 60/1.1 = 55 en flat white, 60/1.5 = 40 en cappuccino.
+    /* 150 of cup minus 90 of coffee = 60 ml of SPACE to fill. The two
+       numbers shown are COLD milk to measure, counted on that same
+       base: 60/1.1 = 55 for a flat white, 60/1.5 = 40 for a cappuccino.
 
-       Le cappuccino part de MOINS de lait, ce qui surprend : c'est que le lait
-       mousse gonfle, et le tiers de mousse remplit la tasse avec moins de
-       liquide. L'ancien calcul melangeait deux bases, le flat white recevant le
-       vide tel quel comme si le lait ne gonflait pas.
+       The cappuccino starts from LESS milk, which is surprising: frothed milk
+       swells, and the third of foam fills the cup with less
+       liquid. The old calculation mixed two bases, the flat white receiving the
+       space as is, as if the milk did not swell.
 
-       Le champ prend le flat white : c'est le versement le plus courant. */
-    check("le lait se calcule sans volume mesure",
+       The field takes the flat white: it is the most common pour. */
+    check("milk is computed with no measured volume",
       String(document.querySelector("#f-lait").value) === "55",
       document.querySelector("#f-lait").value);
-    const texte = document.querySelector("#lait-hint").textContent;
-    check("et l'aide donne les DEUX boissons, sur la meme base",
-      texte.includes("55") && texte.includes("40") && texte.includes("60"), texte);
-    check("le cappuccino demande MOINS de lait froid que le flat white",
+    const text = document.querySelector("#lait-hint").textContent;
+    check("and the hint gives BOTH drinks, on the same base",
+      text.includes("55") && text.includes("40") && text.includes("60"), text);
+    check("the cappuccino needs LESS cold milk than the flat white",
       Math.round(60 / 1.5) < Math.round(60 / 1.1), "40 < 55");
-    check("en disant que le volume vient de la recette",
-      texte.includes("recette"), texte);
+    check("saying that the volume comes from the recipe",
+      text.includes("recette"), text);
 
-    /* Un volume MESURE prime toujours sur le rendement declare :
-       150 - 110 = 40 de vide, donc 40/1.1 = 36 de lait froid. */
+    /* A MEASURED volume always beats the declared yield:
+       150 - 110 = 40 of space, so 40/1.1 = 36 of cold milk. */
     document.querySelector("#f-volume").value = "110";
     api.UI.majLait();
-    check("une mesure prime sur le chiffre de la recette",
+    check("a measurement beats the recipe figure",
       String(document.querySelector("#f-lait").value) === "36",
       document.querySelector("#f-lait").value);
     document.querySelector("#f-volume").value = "";
   }
 
-  /* La fusion : une seule recette au lait, et aucun historique orphelin. */
-  const laitieres = api.DATA.state.recettes.filter(r => r.lait);
-  check("les deux recettes au lait n'en font plus qu'une",
-    laitieres.length === 1, laitieres.map(r => r.nom).join(", "));
-  const noms = new Set(api.DATA.state.recettes.map(r => r.nom));
-  const orphelines = api.DATA.state.extractions
-    .filter(e => e.recette && !noms.has(e.recette)).map(e => e.recette);
-  check("aucune extraction ne pointe vers une recette disparue",
-    orphelines.length === 0, [...new Set(orphelines)].join(", "));
+  /* The merge: a single milk recipe, and no orphaned history. */
+  const milkRecipes = api.DATA.state.recettes.filter(r => r.lait);
+  check("the two milk recipes are now just one",
+    milkRecipes.length === 1, milkRecipes.map(r => r.nom).join(", "));
+  const names = new Set(api.DATA.state.recettes.map(r => r.nom));
+  const orphaned = api.DATA.state.extractions
+    .filter(e => e.recette && !names.has(e.recette)).map(e => e.recette);
+  check("no extraction points to a vanished recipe",
+    orphaned.length === 0, [...new Set(orphaned)].join(", "));
 }
 
-/* LES DEUX RENDUS DE L'HISTORIQUE OFFRENT LES MEMES GESTES.
+/* BOTH HISTORY RENDERINGS OFFER THE SAME GESTURES.
 
-   Sous 1024 px la table passe en cartes. Le risque evident : une action
-   presente sur ordinateur et absente au telephone, sans que rien ne le signale.
-   Les cinq boutons sont donc construits par UNE fonction, actionsExtraction(),
-   et ce controle le verifie sur une vraie extraction plutot que sur la
-   promesse : meme nombre de boutons, memes actions, dans la ligne et la carte. */
+   Below 1024 px the table turns into cards. The obvious risk: an action
+   present on desktop and missing on the phone, with nothing to flag it.
+   The five buttons are therefore built by ONE function, actionsExtraction(),
+   and this check verifies it on a real extraction rather than on the
+   promise: same number of buttons, same actions, in the row and the card. */
 {
   const ext = api.DATA.state.extractions[0];
-  const avecCalculs = api.UI.extAvecCalculs().find(x => x.id === ext.id) || ext;
+  const withCalcs = api.UI.extAvecCalculs().find(x => x.id === ext.id) || ext;
 
-  const ligne = api.UI.ligneHistorique(avecCalculs);
-  const carte = api.UI.carteExtraction(avecCalculs);
+  const row = api.UI.ligneHistorique(withCalcs);
+  const card = api.UI.carteExtraction(withCalcs);
   const actions = html => [...html.matchAll(/data-action="(\w+)"/g)].map(m => m[1]).sort();
 
-  const aLigne = actions(ligne), aCarte = actions(carte);
-  /* La ligne n'a plus de depliage (v8.33) : son detail vient en fiche au
-     survol. La carte, sans survol au doigt, garde le sien en plus. */
-  check("la ligne du tableau offre les cinq actions",
-    aLigne.length === 5 && !aLigne.includes("deplier"), aLigne.join(", "));
-  /* A3 (v8.82) : fermee, la carte ne montre que « ⋯ » ; ouvert, son pied porte
-     les memes cinq actions que la ligne, construites par actionsExtraction(). */
-  check("la carte fermee ne porte que son bouton « ⋯ »", aCarte.join(",") === "menu", aCarte.join(", "));
-  const srcHisto = readFileSync(join(ROOT, "js/ui-historique.js"), "utf8");
-  check("et son menu ouvert offre le depliage et les cinq memes actions",
-    /h-carte-pied[\s\S]{0,400}data-action="deplier"[\s\S]{0,400}actionsExtraction\(e\)/.test(srcHisto));
+  const rowActions = actions(row), cardActions = actions(card);
+  /* The row no longer expands (v8.33): its detail comes as a hover
+     sheet. The card, with no hover under a finger, keeps its own on top. */
+  check("the table row offers the five actions",
+    rowActions.length === 5 && !rowActions.includes("deplier"), rowActions.join(", "));
+  /* A3 (v8.82): closed, the card only shows « ⋯ »; open, its footer carries
+     the same five actions as the row, built by actionsExtraction(). */
+  check("the closed card only carries its « ⋯ » button", cardActions.join(",") === "menu", cardActions.join(", "));
+  const historySrc = readFileSync(join(ROOT, "js/ui-historique.js"), "utf8");
+  check("and its open menu offers expanding and the same five actions",
+    /h-carte-pied[\s\S]{0,400}data-action="deplier"[\s\S]{0,400}actionsExtraction\(e\)/.test(historySrc));
 
-  /* Et les deux portent l'identifiant : le gestionnaire de clic est delegue, il
-     ne sait pas d'ou vient le clic et ne doit pas avoir a le savoir. */
-  check("la carte porte l'identifiant de son extraction",
-    carte.includes('data-id="' + ext.id + '"'));
+  /* And both carry the id: the click handler is delegated, it
+     does not know where the click comes from and must not have to know. */
+  check("the card carries the id of its extraction",
+    card.includes('data-id="' + ext.id + '"'));
 
-  /* Le detail est le MEME contenu dans la fiche au survol et dans la carte. */
-  const detail = api.UI.detailContenu(avecCalculs);
-  check("le detail se rend sans son enveloppe, pour les deux",
+  /* The detail is the SAME content in the hover sheet and in the card. */
+  const detail = api.UI.detailContenu(withCalcs);
+  check("the detail renders without its wrapper, for both",
     typeof detail === "string" && !detail.includes("<tr"));
-  // La fiche ne repete pas le commentaire, ecrit en entier sous la ligne.
-  check("la fiche au survol ne repete pas le commentaire",
-    !api.UI.detailContenu({ ...avecCalculs, commentaire: "un mot" }, true).includes("detail-commentaire"));
+  // The sheet does not repeat the comment, written in full under the row.
+  check("the hover sheet does not repeat the comment",
+    !api.UI.detailContenu({ ...withCalcs, commentaire: "un mot" }, true).includes("detail-commentaire"));
 }
 
-/* REFAIRE UNE TASSE REPREND SES REGLAGES, PAS SON RESULTAT (v8.41).
-   Le raccourci de l'icone et le bouton Dupliquer passent par refaireTasse :
-   la dose et la molette reviennent, la note et le commentaire non. */
+/* REDOING A CUP TAKES ITS SETTINGS, NOT ITS RESULT (v8.41).
+   The icon shortcut and the Duplicate button go through refaireTasse:
+   the dose and grinder setting come back, the rating and comment do not. */
 {
   const exts = api.DATA.state.extractions;
-  const derniere = exts.reduce((a, e) => (!a || String(e.date_heure) > String(a.date_heure) ? e : a), null);
-  const notee = { ...derniere, note_sur_10: 8, commentaire: "tres bonne", descripteurs: "caramel" };
-  api.UI.refaireTasse(notee);
-  check("refaire reprend la dose", String(document.querySelector("#f-dose").value) === String(derniere.dose_g),
+  const last = exts.reduce((a, e) => (!a || String(e.date_heure) > String(a.date_heure) ? e : a), null);
+  const rated = { ...last, note_sur_10: 8, commentaire: "tres bonne", descripteurs: "caramel" };
+  api.UI.refaireTasse(rated);
+  check("redoing takes the dose", String(document.querySelector("#f-dose").value) === String(last.dose_g),
     document.querySelector("#f-dose").value);
-  check("mais pas la note", api.UI.noteVide(document.querySelector("#f-note")));
-  check("ni le commentaire", document.querySelector("#f-commentaire").value === "");
-  check("et le raccourci trouve la derniere tasse", api.UI.refaireDerniere() === true);
+  check("but not the rating", api.UI.noteVide(document.querySelector("#f-note")));
+  check("nor the comment", document.querySelector("#f-commentaire").value === "");
+  check("and the shortcut finds the latest cup", api.UI.refaireDerniere() === true);
   api.UI.reinitialiserSaisie();
 }
 
-/* LES TROIS CONSTATS DE LA v8.42 parlent quand l'ecart est net, se taisent
-   sinon, et ne regardent que leur machine. */
+/* THE THREE INSIGHTS OF v8.42 speak when the gap is clear, stay silent
+   otherwise, and only look at their own machine. */
 {
-  const tasse = (methode, note, champs) => ({ methode, note_sur_10: note, temperature_c: "", agitation_nb: "",
-    eau_prechauffee: "", ...champs });
-  const chaudes = [7, 7.5, 8].map(n => tasse("Switch", n, { temperature_c: 95 }));
-  const tiedes = [5, 5.5, 6].map(n => tasse("Switch", n, { temperature_c: 89 }));
-  const t = api.UI.insightTemperature([...chaudes, ...tiedes]);
-  check("la temperature du Switch parle sur un ecart net", t && t.haut.note === 7.5 && t.bas.n === 3,
+  const cup = (methode, note, fields) => ({ methode, note_sur_10: note, temperature_c: "", agitation_nb: "",
+    eau_prechauffee: "", ...fields });
+  const hot = [7, 7.5, 8].map(n => cup("Switch", n, { temperature_c: 95 }));
+  const lukewarm = [5, 5.5, 6].map(n => cup("Switch", n, { temperature_c: 89 }));
+  const t = api.UI.insightTemperature([...hot, ...lukewarm]);
+  check("the Switch temperature speaks on a clear gap", t && t.haut.note === 7.5 && t.bas.n === 3,
     JSON.stringify(t));
-  check("et se tait sur trois tasses d'un seul cote", api.UI.insightTemperature(chaudes) === null);
-  const brikkas = [7, 7, 8].map(n => tasse("Brikka", n, { eau_prechauffee: 1 }))
-    .concat([6, 6, 5.5].map(n => tasse("Brikka", n)));
+  check("and stays silent on three cups on one side only", api.UI.insightTemperature(hot) === null);
+  const brikkas = [7, 7, 8].map(n => cup("Brikka", n, { eau_prechauffee: 1 }))
+    .concat([6, 6, 5.5].map(n => cup("Brikka", n)));
   const p = api.UI.insightPrechauffe(brikkas);
-  check("l'eau prechauffee de la Brikka oppose les deux groupes", p && p.bas.n === 3 && p.haut.n === 3,
+  check("the Brikka preheated water opposes the two groups", p && p.bas.n === 3 && p.haut.n === 3,
     JSON.stringify(p));
-  check("et ignore les tasses du Switch", api.UI.insightPrechauffe(chaudes.concat(tiedes)) === null);
-  const remuees = [8, 7.5, 8].map(n => tasse("Switch", n, { agitation_nb: 1 }));
-  check("l'agitation du Switch parle aussi", !!api.UI.insightAgitation([...remuees, ...tiedes]));
+  check("and ignores the Switch cups", api.UI.insightPrechauffe(hot.concat(lukewarm)) === null);
+  const stirred = [8, 7.5, 8].map(n => cup("Switch", n, { agitation_nb: 1 }));
+  check("the Switch agitation speaks too", !!api.UI.insightAgitation([...stirred, ...lukewarm]));
 }
 
-/* LA FENETRE DE FRAICHEUR DE LA FICHE CAFE (v8.46) est apprise des notes du
-   cafe : les tranches du sachet au-dessus de sa moyenne, bornees au dernier
-   jour qu'une tasse documente. */
+/* THE FRESHNESS WINDOW OF THE COFFEE SHEET (v8.46) is learnt from the ratings of the
+   coffee: the bag slices above its average, bounded by the last
+   day a cup documents. */
 {
-  const t = (j, n) => ({ _c: { jours_ouvert: j }, note_sur_10: n });
-  const notees = [t(1, 5), t(2, 5), t(3, 5), t(5, 8), t(6, 8), t(7, 8), t(9, 8), t(10, 8), t(11, 8)];
-  const moy = notees.reduce((s, e) => s + e.note_sur_10, 0) / notees.length;
-  const f = api.UI.fenetreFraicheur(notees, moy).fenetre;
-  check("la fenetre part de la premiere bonne tranche", f && f.debut === 4, JSON.stringify(f));
-  check("et s'arrete au dernier jour goute", f && f.fin === 11, JSON.stringify(f));
-  check("elle compare dedans et dehors", f && f.dedans === 8 && f.dehors === 5, JSON.stringify(f));
-  check("sans deux tranches documentees, pas de fenetre",
-    api.UI.fenetreFraicheur(notees.slice(0, 4), moy).fenetre === null);
+  const t = (day, n) => ({ _c: { jours_ouvert: day }, note_sur_10: n });
+  const rated = [t(1, 5), t(2, 5), t(3, 5), t(5, 8), t(6, 8), t(7, 8), t(9, 8), t(10, 8), t(11, 8)];
+  const avg = rated.reduce((s, e) => s + e.note_sur_10, 0) / rated.length;
+  const f = api.UI.fenetreFraicheur(rated, avg).fenetre;
+  check("the window starts at the first good slice", f && f.debut === 4, JSON.stringify(f));
+  check("and stops at the last tasted day", f && f.fin === 11, JSON.stringify(f));
+  check("it compares inside and outside", f && f.dedans === 8 && f.dehors === 5, JSON.stringify(f));
+  check("without two documented slices, no window",
+    api.UI.fenetreFraicheur(rated.slice(0, 4), avg).fenetre === null);
 }
 
-/* LE SPECTRE D'EXTRACTION place un diagnostic par le sens de mouture de
-   DIAGNOSTIC_LEVIERS (v8.49) : rien n'y est ecrit en double. */
+/* THE EXTRACTION SPECTRUM places a diagnostic by the grind direction of
+   DIAGNOSTIC_LEVIERS (v8.49): nothing is written twice there. */
 {
   const p = api.UI.positionDiagnostic;
-  check("equilibre au centre du spectre", p("Équilibré") === 0);
-  check("un peu amer penche d'un cran vers le sur-extrait", p("Un peu amer") === 1);
-  check("sous-extrait franc tout a gauche", p("Sous-extrait (acide)") === -2);
-  check("un diagnostic de ratio n'a pas de place", p("Un peu léger") === null);
-  check("les dessins se rendent sans lever", (() => { try { api.UI.rendreDessins(); return true; } catch (e) { return false; } })());
+  check("balanced at the centre of the spectrum", p("Équilibré") === 0);
+  check("slightly bitter leans one step towards over-extracted", p("Un peu amer") === 1);
+  check("clearly under-extracted all the way left", p("Sous-extrait (acide)") === -2);
+  check("a ratio diagnostic has no place", p("Un peu léger") === null);
+  check("the drawings render without throwing", (() => { try { api.UI.rendreDessins(); return true; } catch (e) { return false; } })());
 }
 
-/* LE GUIDE EN BIBLIOTHEQUE (v8.52) lit le profil d'une recette dans son texte
-   « Pour qui », la premiere phrase d'abord. */
+/* THE GUIDE AS A LIBRARY (v8.52) reads a recipe profile from its
+   « Pour qui » text, first sentence first. */
 {
   const p = r => api.UI.profilsRecette(r).sort().join(",");
-  check("les laves propres visent les laves", p({ pourQui: "Les lavés propres, quand je cherche la clarté. Plus que la natural." }) === "lave");
-  check("les fermentes visent les fermentes", p({ pourQui: "Les fermentés, natural, honey et anaerobic en torréfaction medium." }) === "fermente");
-  check("sans profil, la recette vaut pour tous", p({ pourQui: "L'usage quotidien de la Brikka." }) === "fermente,lave");
+  check("clean washed ones target washed", p({ pourQui: "Les lavés propres, quand je cherche la clarté. Plus que la natural." }) === "lave");
+  check("fermented ones target fermented", p({ pourQui: "Les fermentés, natural, honey et anaerobic en torréfaction medium." }) === "fermente");
+  check("with no profile, the recipe fits all", p({ pourQui: "L'usage quotidien de la Brikka." }) === "fermente,lave");
 }
 
-/* LE MODE BRASSAGE lit la cible CUMULEE d'un versement dans le texte de la
-   recette, sans jamais le reecrire (v8.47). */
+/* BREW MODE reads the CUMULATIVE target of a pour from the recipe
+   text, without ever rewriting it (v8.47). */
 {
   const c = api.UI.cibleVersement;
-  check("« jusqu'a 120 g » vise 120", c("Verser jusqu'à 120 g, vanne OUVERTE") === 120);
-  check("« verser 45 g de plus, jusqu'a 90 g » vise le cumul", c("Second bloom : verser 45 g de plus, jusqu'à 90 g.") === 90);
-  check("« Bloom 45 g » vise 45", c("Bloom 45 g, vanne FERMÉE. Remuer 3 fois.") === 45);
-  check("une etape sans volume n'a pas de cible", c("Ouvrir, laisser s'écouler.") === null);
+  check("« jusqu'a 120 g » targets 120", c("Verser jusqu'à 120 g, vanne OUVERTE") === 120);
+  check("« verser 45 g de plus, jusqu'a 90 g » targets the cumulative", c("Second bloom : verser 45 g de plus, jusqu'à 90 g.") === 90);
+  check("« Bloom 45 g » targets 45", c("Bloom 45 g, vanne FERMÉE. Remuer 3 fois.") === 45);
+  check("a step with no volume has no target", c("Ouvrir, laisser s'écouler.") === null);
 }
 
-console.log(failures === 0 ? "\nTOUT PASSE" : `\n${failures} ECHEC(S)`);
+console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);
 process.exit(failures === 0 ? 0 : 1);

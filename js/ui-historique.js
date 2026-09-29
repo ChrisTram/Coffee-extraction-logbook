@@ -1,29 +1,28 @@
-/* Écran d'historique : le tableau, ses filtres, son tri, son comparateur.
+/* History screen: the table, its filters, its sorting, its comparator.
  *
- * Le tri et les lignes dépliées vivent ici et nulle part ailleurs : ce sont des
- * préférences d'affichage, elles ne se synchronisent pas et ne se rangent pas
- * dans les données. */
+ * The sorting and the expanded rows live here and nowhere else: they are
+ * display preferences, they do not sync and are not stored in the data. */
 "use strict";
 
 (() => {
 
-  // Emprunté au noyau, chargé avant nous.
+  // Borrowed from the core, loaded before us.
   const { $, icone, $$, antiRebond, attrTitre, cleLocale, detailRatio, diagsAffiches, estRatee,
     extAnalysables, extAvecCalculs, fmtDateCourte, fmtDateHeure, fmtDecimal, fmtTemps, fmtVND,
     moyenne, supprimerExtractionAvecRetour, toast } = UI;
 
-  // ---------- Historique ----------
+  // ---------- History ----------
 
   const tri = { colonne: "date_heure", sens: -1 };
 
-  /* Retire les diacritiques pour que "brule" trouve "brûlé" et "cafe" trouve
-     "café". Sans ça une recherche en français est inutilisable au clavier. */
+  /* Strips diacritics so that "brule" finds "brûlé" and "cafe" finds
+     "café". Without it a search in French is unusable from the keyboard. */
   function sansAccents(s) {
     return String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   }
 
-  /* Tout ce dans quoi une recherche a du sens : ce que Chris a ÉCRIT, plus ce
-     qu'il a choisi. Pas les nombres, on a des filtres dédiés pour ça. */
+  /* Everything a search makes sense in: what Chris WROTE, plus what he
+     chose. Not the numbers, there are dedicated filters for that. */
   function texteCherchable(e) {
     const cafe = DATA.cafeDe(e);
     return sansAccents([
@@ -34,37 +33,37 @@
 
   function filtrerHistorique() {
     const exts = extAvecCalculs();
-    const fCafe = $("#h-cafe").value;
-    const fMethode = $("#h-methode").value;
+    const fCoffee = $("#h-cafe").value;
+    const fMethod = $("#h-methode").value;
     const fDiag = $("#h-diagnostic").value;
-    const fNote = parseFloat($("#h-note-min").value);
-    const fDu = $("#h-du").value;
-    const fAu = $("#h-au").value;
-    /* Recherche insensible à la casse ET aux accents : taper "brule" doit trouver
-       "brûlé". normalize + suppression des diacritiques, c'est la seule façon
-       correcte de le faire en français sans table de correspondance. */
+    const fScore = parseFloat($("#h-note-min").value);
+    const fFrom = $("#h-du").value;
+    const fTo = $("#h-au").value;
+    /* Search insensitive to case AND accents: typing "brule" must find
+       "brûlé". normalize plus stripping the diacritics is the only correct
+       way to do it in French without a lookup table. */
     const q = sansAccents($("#h-recherche").value.trim().toLowerCase());
-    /* "" toutes, "ok" les réussies, "ratee" les ratées. Le filtre vit ici et pas
-       dans extAnalysables() : l'historique est le journal, il montre tout par
-       défaut, et c'est Chris qui demande à ne voir qu'un camp. */
-    const fRatee = $("#h-ratee").value;
+    /* "" all, "ok" the successful ones, "ratee" the failed ones. The filter
+       lives here and not in extAnalysables(): the history is the log, it shows
+       everything by default, and it is Chris who asks to see only one side. */
+    const fFailed = $("#h-ratee").value;
     return exts.filter(e =>
-      (!fRatee || (fRatee === "ratee" ? estRatee(e) : !estRatee(e))) &&
+      (!fFailed || (fFailed === "ratee" ? estRatee(e) : !estRatee(e))) &&
       (!q || texteCherchable(e).includes(q)) &&
-      (!fCafe || e.cafe_id === fCafe) &&
-      (!fMethode || e.methode === fMethode) &&
+      (!fCoffee || e.cafe_id === fCoffee) &&
+      (!fMethod || e.methode === fMethod) &&
       (!fDiag || (e.diagnostic || "").split("|").includes(fDiag)) &&
-      (isNaN(fNote) || (e.note_sur_10 !== "" && e.note_sur_10 >= fNote)) &&
-      (!fDu || e.date_heure.slice(0, 10) >= fDu) &&
-      (!fAu || e.date_heure.slice(0, 10) <= fAu)
+      (isNaN(fScore) || (e.note_sur_10 !== "" && e.note_sur_10 >= fScore)) &&
+      (!fFrom || e.date_heure.slice(0, 10) >= fFrom) &&
+      (!fTo || e.date_heure.slice(0, 10) <= fTo)
     );
   }
 
   function valeurTri(e, col) {
     if (col === "cafe_nom") return e._c.cafe_nom;
-    /* Les colonnes numériques vides doivent finir en BAS quel que soit le sens,
-       d'où -1 plutôt que "" : une chaîne vide se comparerait comme du texte et
-       remonterait en tête au tri croissant. */
+    /* Empty numeric columns must end up at the BOTTOM whatever the direction,
+       hence -1 rather than "": an empty string would compare as text and
+       rise to the top in ascending order. */
     if (col === "dose_g" || col === "temps_total_s" || col === "temperature_c" || col === "puissance_feu") {
       return e[col] === "" || e[col] === undefined ? -1 : Number(e[col]);
     }
@@ -74,43 +73,43 @@
     return e[col] === "" ? -1 : e[col];
   }
 
-  /* Version différée pour les FILTRES seulement. Les autres appels (suppression,
-     tri, retour d'édition) restent immédiats : ils suivent un geste unique, il n'y
-     a rien à regrouper. */
+  /* Deferred version for the FILTERS only. The other calls (deletion, sort,
+     return from editing) stay immediate: they follow a single gesture, there
+     is nothing to group. */
   const rendreHistoriqueDifferee = antiRebond(() => rendreHistorique());
 
-  /* L'etat visible du controle segmente, aligne sur le <select> qui fait foi. */
+  /* The visible state of the segmented control, aligned on the <select> that is authoritative. */
   function majSegmentMethode() {
     const v = $("#h-methode") ? $("#h-methode").value : "";
     $$(".filtre-methode .seg").forEach(b =>
       b.setAttribute("aria-pressed", b.dataset.methode === v ? "true" : "false"));
   }
 
-  /* EN CARTES ou en table : le seuil est celui du reste du site, 1024 px. */
+  /* AS CARDS or as a table: the threshold is the rest of the site's, 1024 px. */
   function enCartes() {
     return typeof matchMedia === "function" && matchMedia("(max-width: 1023px)").matches;
   }
 
-  /* PAR TRANCHES DE 100 (v8.75). L'historique dessinait toutes les tasses à
-     chaque rendu ; il en montre cent, puis cent de plus à la demande. Le compte
-     et le résumé, eux, portent toujours sur toute la liste filtrée. */
+  /* IN SLICES OF 100 (v8.75). The history drew every cup on each render; it
+     now shows a hundred, then a hundred more on demand. The count and the
+     summary, however, always cover the whole filtered list. */
   const TRANCHE_HISTORIQUE = 100;
-  let limiteHistorique = TRANCHE_HISTORIQUE;
-  function boutonPlus(reste) {
+  let historyLimit = TRANCHE_HISTORIQUE;
+  function moreButton(reste) {
     return reste > 0
       ? '<button type="button" class="btn btn-petit h-plus" id="h-plus">' +
         I18N.t("h_plus", { n: Math.min(reste, TRANCHE_HISTORIQUE), t: reste }) + "</button>"
       : "";
   }
-  function cablerPlus() {
+  function wireMore() {
     const b = $("#h-plus");
-    if (b) b.addEventListener("click", () => { limiteHistorique += TRANCHE_HISTORIQUE; rendreHistorique(); });
+    if (b) b.addEventListener("click", () => { historyLimit += TRANCHE_HISTORIQUE; rendreHistorique(); });
   }
 
   function rendreHistorique() {
     const liste = filtrerHistorique().sort((a, b) => {
       const va = valeurTri(a, tri.colonne), vb = valeurTri(b, tri.colonne);
-      // Le texte se trie avec ses accents (v8.72) : « Là Việt » ne file plus après « Z ».
+      // Text sorts with its accents (v8.72): "Là Việt" no longer runs after "Z".
       if (typeof va === "string" && typeof vb === "string") return va.localeCompare(vb, I18N.locale()) * tri.sens;
       if (va < vb) return -tri.sens;
       if (va > vb) return tri.sens;
@@ -121,8 +120,8 @@
     });
     $("#h-vide").hidden = liste.length > 0;
 
-    /* La surligne dit le TOTAL et depuis quand, pas le filtre : c'est
-       l'identite de l'ecran, le filtre a son propre bandeau juste dessous. */
+    /* The overline tells the TOTAL and since when, not the filter: it is the
+       screen's identity, the filter has its own banner just below. */
     const toutes = extAvecCalculs();
     const premiere = toutes.length
       ? toutes.reduce((a, e) => (a && a.date_heure < e.date_heure ? a : e)).date_heure : "";
@@ -138,18 +137,18 @@
     rendreResume(liste);
     majFiltresActifs();
 
-    /* PLUS D'INTERTITRE DE JOUR (v8.29). Chris n'en voulait pas : une ligne
-       entiere pour un nom de jour, c'est une ligne de moins pour une tasse. La
-       date complete se lit au debut de chaque ligne, comme partout ailleurs. */
-    /* Les cartes du telephone. On vide l'autre conteneur : deux rendus vivants
-       en meme temps, ce sont deux fois les memes identifiants dans la page. */
-    /* L3 (v8.93) : PAR SACHET, le journal remplace la table et les cartes. Les
-       filtres, le résumé et le compte au-dessus restent les mêmes. */
+    /* NO MORE DAY SUBHEADING (v8.29). Chris did not want it: a whole row for
+       a day name is one row less for a cup. The full date reads at the start
+       of each row, like everywhere else. */
+    /* The phone cards. The other container is emptied: two live renders at
+       the same time mean the same ids twice in the page. */
+    /* L3 (v8.93): BY BAG, the journal replaces the table and the cards. The
+       filters, the summary and the count above stay the same. */
     UI.majVues();
-    const parSachet = UI.vueHistorique() === "sachet" && liste.length > 0;
-    $("#h-journal").hidden = !parSachet;
-    $("#ecran-historique .table-conteneur").hidden = parSachet;
-    if (parSachet) {
+    const byBag = UI.vueHistorique() === "sachet" && liste.length > 0;
+    $("#h-journal").hidden = !byBag;
+    $("#ecran-historique .table-conteneur").hidden = byBag;
+    if (byBag) {
       $("#h-corps").innerHTML = "";
       $("#h-cartes").innerHTML = "";
       UI.rendreJournal(liste);
@@ -157,40 +156,40 @@
       return;
     }
     $("#h-journal").innerHTML = "";
-    const visibles = liste.slice(0, limiteHistorique);
+    const visibles = liste.slice(0, historyLimit);
     const reste = liste.length - visibles.length;
     if (enCartes()) {
       $("#h-corps").innerHTML = "";
-      $("#h-cartes").innerHTML = rendreCartes(visibles) + boutonPlus(reste);
-      cablerPlus();
+      $("#h-cartes").innerHTML = rendreCartes(visibles) + moreButton(reste);
+      wireMore();
       majBarreComparaison();
       return;
     }
     $("#h-cartes").innerHTML = "";
     $("#h-corps").innerHTML = visibles.map(e => ligneHistorique(e)).join("") +
-      (reste > 0 ? '<tr class="h-ligne-plus"><td colspan="10">' + boutonPlus(reste) + "</td></tr>" : "");
-    cablerPlus();
-    affichees = new Map(visibles.map(e => [e.id, e]));
+      (reste > 0 ? '<tr class="h-ligne-plus"><td colspan="10">' + moreButton(reste) + "</td></tr>" : "");
+    wireMore();
+    displayed = new Map(visibles.map(e => [e.id, e]));
     majBarreComparaison();
   }
 
-  /* LES CARTES : la meme liste, chaque carte porte sa date complete. */
-  // Les cartes dont le menu « ⋯ » est ouvert, gardées d'un rendu à l'autre.
-  const menusOuverts = new Set();
+  /* THE CARDS: the same list, each card carries its full date. */
+  // The cards whose "⋯" menu is open, kept from one render to the next.
+  const openMenus = new Set();
 
-  /* LES FILTRES ACTIFS EN PASTILLES (A3, v8.82). Le panneau replié au téléphone
-     ne doit pas cacher qu'un filtre tourne : chaque filtre posé a sa pastille et
-     sa croix, et le bouton compte combien il y en a. La machine a déjà son
-     contrôle visible et la recherche son champ : elles n'en ont pas. */
+  /* ACTIVE FILTERS AS PILLS (A3, v8.82). The panel folded on the phone must
+     not hide that a filter is running: each filter set has its pill and its
+     cross, and the button counts how many there are. The machine already has
+     its visible control and the search its field: they get none. */
   function majFiltresActifs() {
     const actifs = [];
-    const texteSelect = id => { const s = $("#" + id); return s.options[s.selectedIndex] ? s.options[s.selectedIndex].textContent : s.value; };
+    const selectText = id => { const s = $("#" + id); return s.options[s.selectedIndex] ? s.options[s.selectedIndex].textContent : s.value; };
     [["h-cafe", "h_f_cafe"], ["h-diagnostic", "h_f_diag"], ["h-ratee", "h_f_ratees"]].forEach(([id, cle]) => {
-      if ($("#" + id).value) actifs.push([id, I18N.t(cle) + " : " + texteSelect(id)]);
+      if ($("#" + id).value) actifs.push([id, I18N.t(cle) + " : " + selectText(id)]);
     });
     if ($("#h-note-min").value) actifs.push(["h-note-min", I18N.t("h_f_note", { n: $("#h-note-min").value })]);
     const du = $("#h-du").value, au = $("#h-au").value;
-    // Un seul jour (depuis le récap de la semaine) : une pastille, pas deux.
+    // A single day (from the week recap): one pill, not two.
     if (du && du === au) actifs.push(["h-du h-au", I18N.t("h_f_le", { d: fmtDateCourte(du) })]);
     else {
       if (du) actifs.push(["h-du", I18N.t("h_f_du", { d: fmtDateCourte(du) })]);
@@ -206,12 +205,12 @@
     return liste.map(carteExtraction).join("");
   }
 
-  /* LE BANDEAU RESUME : ce que le filtre courant raconte.
+  /* THE SUMMARY BANNER: what the current filter tells.
 
-     Le compte seul disait « 12 sur 62 » sans jamais dire si ces douze etaient
-     bonnes, ce qui est la question qu'on se pose en filtrant. Les ratees sont
-     comptees a part : ce sont elles qui expliquent une moyenne basse, et la
-     moyenne les ecarte pour la meme raison que les analyses le font. */
+     The count alone said "12 out of 62" without ever saying whether those
+     twelve were good, which is the question one asks when filtering. The
+     failed ones are counted apart: they are what explains a low average, and
+     the average leaves them out for the same reason the analyses do. */
   function rendreResume(liste) {
     const cible = $("#h-resume");
     if (!liste.length) { cible.innerHTML = ""; cible.hidden = true; return; }
@@ -234,16 +233,16 @@
       bloc(ratees, I18N.t("h_res_ratees"));
   }
 
-  /* Le COMMENTAIRE dans la ligne, tronque. Il n'etait visible qu'en depliant,
-     alors que c'est le seul champ qui dit POURQUOI une tasse etait bonne. La
-     ligne porte deja une bulle avec le texte entier au survol. */
-  /* Le commentaire sur sa PROPRE ligne, en pleine largeur. Mesure faite, les dix
-     colonnes demandent 1741 px pour 992 disponibles : lui reserver une colonne
-     revenait a lui donner trois mots. Ici il a toute la table, il n'est plus
-     tronque du tout, et les colonnes chiffrees restent lisibles.
+  /* The COMMENT in the row, truncated. It was only visible when expanding,
+     while it is the only field that says WHY a cup was good. The row already
+     carries a bubble with the whole text on hover. */
+  /* The comment on its OWN row, full width. Measured, the ten columns ask
+     for 1741 px out of 992 available: giving it a column amounted to giving
+     it three words. Here it has the whole table, it is no longer truncated
+     at all, and the numeric columns stay readable.
 
-     Elle porte le meme data-id que sa ligne : cliquer dessus ouvre la meme
-     extraction, sinon la moitie de la surface d'une tasse ne repond pas. */
+     It carries the same data-id as its row: clicking it opens the same
+     extraction, otherwise half the surface of a cup does not respond. */
   function commentaireHistorique(e) {
     const c = String(e.commentaire || "").trim();
     if (!c) return "";
@@ -251,33 +250,33 @@
       attrTitre(c) + "</td></tr>";
   }
 
-  /* Les gouts de la ligne, trois au plus puis « +n », comme sur la carte des
-     cinq dernieres : deux vues du meme objet doivent dire la meme chose. */
-  const MAX_GOUTS_HISTO = 3;
+  /* The row's tastes, three at most then "+n", as on the card of the last
+     five: two views of the same object must say the same thing. */
+  const MAX_HISTORY_TASTES = 3;
   function goutsHistorique(e) {
     const tags = String(e.descripteurs || "").split("|").filter(Boolean);
     if (!tags.length) return "";
-    const vus = tags.slice(0, MAX_GOUTS_HISTO).map(t => '<span class="derniere-tag">' + I18N.tag(t) + "</span>");
+    const vus = tags.slice(0, MAX_HISTORY_TASTES).map(t => '<span class="derniere-tag">' + I18N.tag(t) + "</span>");
     const reste = tags.length - vus.length;
     return '<span class="h-gouts">' + vus.join("") +
       (reste > 0 ? '<span class="derniere-tag derniere-tag-plus">+' + reste + "</span>" : "") + "</span>";
   }
 
-  /* Le détail : le carnet stocke 22 champs par extraction et le tableau en
-     montre 12. Le reste (écoulement, tasse, volume, lait, agitation, coût...)
-     se lit dans la FICHE AU SURVOL sur ordinateur, et dans la carte dépliée sur
-     téléphone. detailsOuverts ne sert plus qu'aux cartes. */
+  /* The detail: the logbook stores 22 fields per extraction and the table
+     shows 12. The rest (drawdown, cup, volume, milk, agitation, cost...) reads
+     in the HOVER SHEET on desktop, and in the expanded card on the phone.
+     detailsOuverts now only serves the cards. */
   const detailsOuverts = new Set();
   const comparaison = new Set();
-  // Les extractions de la table affichée, par id : la fiche les relit au survol.
-  let affichees = new Map();
+  // The extractions of the displayed table, by id: the sheet re-reads them on hover.
+  let displayed = new Map();
 
-  /* Le CONTENU du detail, sans son enveloppe : la fiche au survol le pose dans
-     un div flottant, la carte du telephone dans un div deplie. Un seul contenu,
-     donc jamais deux versions du detail qui divergent. sansCommentaire : la
-     table ecrit deja le commentaire en entier sous la ligne, la fiche ne le
-     repete pas. */
-  function detailContenu(e, sansCommentaire) {
+  /* The CONTENT of the detail, without its wrapper: the hover sheet puts it in
+     a floating div, the phone card in an expanded div. A single content, so
+     never two versions of the detail that diverge. withoutComment: the
+     table already writes the whole comment under the row, the sheet does not
+     repeat it. */
+  function detailContenu(e, withoutComment) {
     const item = (cle, valeur) => valeur === "" || valeur === undefined || valeur === null
       ? "" : '<div class="detail-item"><span>' + I18N.t(cle) + "</span><b>" + valeur + "</b></div>";
     const cases = [
@@ -298,38 +297,38 @@
     ].filter(Boolean).join("");
     const tags = (e.descripteurs || "").split("|").filter(Boolean)
       .map(t => '<span class="detail-tag">' + I18N.tag(t) + "</span>").join("");
-    const commentaire = sansCommentaire ? "" : e.commentaire;
+    const commentaire = withoutComment ? "" : e.commentaire;
     return (cases ? '<div class="detail-grille">' + cases + "</div>" : "") +
       (tags ? '<div class="detail-tags">' + tags + "</div>" : "") +
       (commentaire ? '<p class="detail-commentaire">' + commentaire + "</p>" : "") +
       (cases || tags || commentaire ? "" : '<p class="detail-vide">' + I18N.t("d_rien") + "</p>");
   }
 
-  /* La date de la ligne : le jour en encre, l'heure en attenue. fmtDateHeure
-     rend « 9 août 14:43 » ; on coupe sur la derniere espace. */
-  function dateDeuxTons(dh) {
+  /* The row's date: the day in ink, the time muted. fmtDateHeure returns
+     "9 Aug 14:43"; we cut on the last space. */
+  function twoToneDate(dh) {
     const texte = fmtDateHeure(dh);
     const i = texte.lastIndexOf(" ");
     if (i < 0) return "<time>" + texte + "</time>";
     return "<time>" + texte.slice(0, i) + '</time><span class="heure">' + texte.slice(i + 1) + "</span>";
   }
 
-  /* Plus de fleche de depliage (v8.33) : le detail vient en fiche au survol,
-     voir brancherFiche(). */
+  /* No more expand arrow (v8.33): the detail comes as a hover sheet, see
+     wireHoverSheet(). */
   function ligneHistorique(e) {
     const compare = comparaison.has(e.id);
     return '<tr data-id="' + e.id + '" class="ligne-histo' + (compare ? " comparee" : "") + '">' +
-      '<td><span class="td-date">' + dateDeuxTons(e.date_heure) + "</span></td>" +
+      '<td><span class="td-date">' + twoToneDate(e.date_heure) + "</span></td>" +
       '<td class="td-texte">' + I18N.tr(e._c.cafe_nom) + "</td>" +
       '<td><span class="chip-methode ' + e.methode.toLowerCase() + '">' + e.methode + "</span></td>" +
       '<td class="td-recette">' + (e.recette || "") + "</td>" +
-      /* Dose et eau ensemble, comme sur la carte des cinq dernières : ce sont
-         deux moitiés d'un même geste, et les séparer en deux colonnes aurait
-         coûté de la largeur sans rien apprendre. */
+      /* Dose and water together, as on the card of the last five: they are
+         two halves of the same gesture, and splitting them into two columns
+         would have cost width without teaching anything. */
       '<td class="td-num">' + (e.dose_g !== "" && e.eau_g !== "" ? e.dose_g + " → " + e.eau_g + " <small>g</small>" : "") + "</td>" +
-      /* Le complement (microns, ratio en tasse ou en boisson) passe SOUS la
-         valeur, en petit : sur une ligne, « 1.2.0 (499 µm) » se tronquait en
-         « 1.2.0 (49… » dans sa colonne. */
+      /* The complement (microns, ratio in the cup or in the drink) goes UNDER
+         the value, small: on one line, "1.2.0 (499 µm)" was truncated to
+         "1.2.0 (49…" in its column. */
       '<td class="td-num">' + (e.mouture_dial ? e.mouture_dial + '<small class="sous">' + e._c.microns + " µm</small>"
         : e._c.moulu ? "<small>" + I18N.t("paquet") + "</small>" : "") + "</td>" +
       '<td class="td-num" title="' + attrTitre(detailRatio(e._c.ratioBase, e.dose_g, e.eau_g)) + '">' +
@@ -339,11 +338,11 @@
       '<td class="note-cellule">' + (estRatee(e)
         ? '<span class="badge-ratee" title="' + attrTitre(I18N.t("rt_badge_titre")) + '">' + I18N.t("rt_badge") + "</span>"
         : "") + (e.note_sur_10 !== "" ? fmtDecimal(Number(e.note_sur_10), 1) : "") + "</td>" +
-      /* GOUTS ET DIAGNOSTIC dans la meme cellule, pas dans deux colonnes : une
-         colonne de plus demande quatre retouches coordonnees (voir DECISIONS,
-         « Le piege des largeurs figees ») et se decale en silence si on en
-         oublie une. */
-      // Pas de bulle du commentaire ici : il est ecrit en entier juste dessous.
+      /* TASTES AND DIAGNOSIS in the same cell, not in two columns: one more
+         column asks for four coordinated edits (see DECISIONS, "The trap of
+         frozen widths") and shifts silently if one of them is
+         forgotten. */
+      // No comment bubble here: it is written in full just below.
       '<td class="chip-diagnostic">' +
       (e.diagnostic ? '<span class="h-diag">' + diagsAffiches(e.diagnostic) + "</span>" : "") +
       goutsHistorique(e) + "</td>" +
@@ -351,17 +350,17 @@
       commentaireHistorique(e);
   }
 
-  /* LES CINQ ACTIONS, ecrites UNE fois et rendues par la ligne comme par la
-     carte. C'est ce qui garantit qu'un geste possible sur ordinateur l'est aussi
-     sur telephone : deux listes separees divergent au premier ajout. Le clic est
-     delegue sur data-action, donc rien d'autre n'a besoin de le savoir. */
+  /* THE FIVE ACTIONS, written ONCE and rendered by the row as by the card.
+     That is what guarantees that a gesture possible on desktop is also
+     possible on the phone: two separate lists diverge at the first addition.
+     The click is delegated on data-action, so nothing else needs to know. */
   function actionsExtraction(e) {
     const compare = comparaison.has(e.id);
     return '<div class="actions-ligne">' +
       '<button class="btn-ligne' + (compare ? " actif" : "") + '" data-action="comparer" title="' +
       attrTitre(I18N.t("h_comparer")) + '">' + icone("comparer") + "</button>" +
-      /* La bascule ratée, en PREMIER des actions d'écriture : c'est celle qui se
-         clique le plus souvent après coup, et son état est visible sans survol. */
+      /* The failed toggle, FIRST among the write actions: it is the one
+         clicked most often after the fact, and its state shows without hover. */
       '<button class="btn-ligne' + (estRatee(e) ? " actif-ratee" : "") + '" data-action="ratee" aria-pressed="' +
       estRatee(e) + '" title="' + attrTitre(I18N.t(estRatee(e) ? "h_derater" : "h_rater")) + '">' + icone("ratee") + "</button>" +
       '<button class="btn-ligne" data-action="dupliquer" title="Dupliquer pour refaire la même">' + icone("dupliquer") + "</button>" +
@@ -370,17 +369,17 @@
       "</div>";
   }
 
-  /* UNE TASSE EN CARTE, pour le telephone. Mêmes informations que la ligne, mais
-     empilees : heure, machine, cafe, recette, dose et eau, ratio, note, gouts et
-     diagnostic, commentaire, et les cinq mêmes actions. */
-  /* A3 (v8.82) : LA CARTE COMPACTE. 260 px par tasse faisaient vingt écrans pour
-     soixante tasses. La recette et les chiffres partagent une ligne, le
-     commentaire tient sur une, et les six actions passent derrière « ⋯ » : on
-     les ouvre pour une tasse, on ne les lit pas sur toutes. La date reste sur
-     chaque carte, sans intertitre de jour, comme Chris l'a voulu en v8.29. */
+  /* ONE CUP AS A CARD, for the phone. Same information as the row, but
+     stacked: time, machine, coffee, recipe, dose and water, ratio, rating,
+     tastes and diagnosis, comment, and the same five actions. */
+  /* A3 (v8.82): THE COMPACT CARD. 260 px per cup made twenty screens for
+     sixty cups. The recipe and the figures share a line, the comment fits on
+     one, and the six actions go behind "⋯": you open them for one cup, you
+     do not read them on all. The date stays on each card, without a day
+     subheading, as Chris wanted in v8.29. */
   function carteExtraction(e) {
     const ouvert = detailsOuverts.has(e.id);
-    const menu = ouvert || menusOuverts.has(e.id);
+    const menu = ouvert || openMenus.has(e.id);
     const meta = [];
     if (e.recette) meta.push('<span class="h-carte-recette">' + I18N.tr(e.recette) + "</span>");
     if (e.dose_g !== "" && e.eau_g !== "") meta.push(e.dose_g + " → " + e.eau_g + " g");
@@ -406,8 +405,8 @@
         : "") +
       (e.commentaire ? '<p class="h-carte-commentaire">' + attrTitre(e.commentaire) + "</p>" : "") +
       (!menu ? "" : '<div class="h-carte-pied">' +
-        /* En mots et non en fleche : le telephone n'a pas de survol, le detail
-           s'y deplie, et le bouton dit ce qu'il fait. */
+        /* In words and not as an arrow: the phone has no hover, the detail
+           expands there, and the button says what it does. */
         '<button type="button" class="btn-detail-carte" data-action="deplier" aria-expanded="' + ouvert + '">' +
         I18N.t(ouvert ? "h_detail_masquer" : "h_detail") + "</button>" +
         actionsExtraction(e) +
@@ -416,18 +415,18 @@
       "</article>";
   }
 
-  /* Comparateur : deux extractions côte à côte, différences surlignées. C'est le
-     test croisé en version manuelle, celui que le guide recommande (même café
-     dans les deux machines le même jour) et qui n'existait pas.
+  /* Comparator: two extractions side by side, differences highlighted. It is
+     the manual version of the cross test the guide recommends (same coffee in
+     both machines on the same day), which did not exist.
 
-     La sélection passe par un bouton de la colonne Actions et PAS par une colonne
-     de cases à cocher : le tableau vient d'être figé à neuf colonnes, en ajouter
-     une casserait les largeurs. */
+     Selection goes through a button in the Actions column and NOT through a
+     column of checkboxes: the table has just been frozen at nine columns,
+     adding one would break the widths. */
   function basculerComparaison(id) {
     if (comparaison.has(id)) comparaison.delete(id);
     else {
-      // Au delà de deux, la plus ancienne sélection cède sa place : plus simple
-      // que de refuser le clic, et ça permet d'enchaîner les comparaisons.
+      // Beyond two, the oldest selection gives up its place: simpler than
+      // refusing the click, and it lets comparisons follow one another.
       if (comparaison.size >= 2) comparaison.delete([...comparaison][0]);
       comparaison.add(id);
     }
@@ -444,7 +443,7 @@
     $("#comparaison-ouvrir").disabled = comparaison.size !== 2;
   }
 
-  // Lignes du tableau de comparaison. Chaque entrée sait lire sa valeur affichable.
+  // Rows of the comparison table. Each entry knows how to read its displayable value.
   function champsComparaison() {
     return [
       { cle: "d_cafe", lire: e => I18N.tr(e._c.cafe_nom) },
@@ -481,8 +480,8 @@
     $("#comparaison-corps").innerHTML = champsComparaison().map(c => {
       const va = String(c.lire(a) || ""), vb = String(c.lire(b) || "");
       if (!va && !vb) return "";
-      // Surligner UNIQUEMENT ce qui diffère : c'est là que se trouve l'explication
-      // de l'écart de note, le reste est du bruit visuel.
+      // Highlight ONLY what differs: that is where the explanation of the
+      // rating gap lies, the rest is visual noise.
       const differe = va !== vb;
       return '<tr' + (differe ? ' class="differe"' : "") + "><th>" + I18N.t(c.cle) + "</th>" +
         "<td>" + va + "</td><td>" + vb + "</td></tr>";
@@ -495,11 +494,11 @@
     $("#modale-comparaison").showModal();
   }
 
-  /* ---------- Mes meilleurs réglages ----------
-     Le calcul vit dans js/reglages.js, sans DOM, pour être testable sans
-     navigateur. Ici, uniquement l'affichage. */
-  // Ouvre la fiche du café (js/ui-fiche.js), par délégation sur data-fiche.
-  const boutonFiche = c => '<button type="button" class="btn btn-petit btn-discret" data-fiche="' + c.id + '">' +
+  /* ---------- My best settings ----------
+     The calculation lives in js/reglages.js, without DOM, to be testable
+     without a browser. Here, only the display. */
+  // Opens the coffee sheet (js/ui-fiche.js), by delegation on data-fiche.
+  const sheetButton = c => '<button type="button" class="btn btn-petit btn-discret" data-fiche="' + c.id + '">' +
     I18N.t("fi_voir") + "</button>";
 
   function carteReglage(bilan) {
@@ -517,19 +516,19 @@
           s: REGLAGES.MIN_TASSES, note: fmtDecimal(t.note, 1), k: t.fois, n: bilan.manque,
         }) + "</p>" +
         '<div class="reglage-actions"><button type="button" class="btn btn-petit" data-refaire="' + t.id + '">' +
-        I18N.t("rg_refaire") + "</button>" + boutonFiche(c) + "</div></article>";
+        I18N.t("rg_refaire") + "</button>" + sheetButton(c) + "</div></article>";
     }
     if (!bilan.meilleure) {
       const cle = bilan.raison === "aucune" ? "rg_aucune"
         : bilan.raison === "pas_assez" ? "rg_pas_assez" : "rg_eparpille";
       return '<article class="carte reglage' + (c.actif === 0 ? " inactif" : "") + '">' + entete +
         '<p class="carte-vide">' + I18N.t(cle, { n: bilan.manque, s: REGLAGES.MIN_TASSES }) + "</p>" +
-        '<div class="reglage-actions">' + boutonFiche(c) + "</div></article>";
+        '<div class="reglage-actions">' + sheetButton(c) + "</div></article>";
     }
 
     const m = bilan.meilleure;
-    // Écart entre la combinaison gagnante et la moyenne du café : c'est lui qui
-    // dit si le réglage vaut vraiment le coup ou si tout se vaut.
+    // Gap between the winning combination and the coffee's average: it is
+    // what says whether the setting is really worth it or everything is equal.
     const ecart = m.moyenne - bilan.moyenne;
     const chips = [
       m.recette ? '<span class="reglage-chip">' + I18N.tr(m.recette) + "</span>" : "",
@@ -546,16 +545,16 @@
         { x: fmtDecimal(Math.abs(ecart), 1) }) : "") + "</span></div>" +
       '<div class="reglage-chips">' + chips + "</div>" +
       '<div class="reglage-actions"><button type="button" class="btn btn-petit" data-refaire="' + m.referenceId + '">' +
-      I18N.t("rg_refaire") + "</button>" + boutonFiche(c) + "</div></article>";
+      I18N.t("rg_refaire") + "</button>" + sheetButton(c) + "</div></article>";
   }
 
   function rendreReglages() {
-    /* Un conseil, donc le jeu analysable : une tasse ratée décrit un geste
-       manqué et ferait condamner un réglage correct. */
+    /* Advice, so the analysable set: a failed cup describes a missed gesture
+       and would get a correct setting condemned. */
     const exts = extAnalysables();
-    const bilans = REGLAGES.tous(DATA.state.cafes, exts);
-    $("#reglages-liste").innerHTML = bilans.length
-      ? bilans.map(carteReglage).join("")
+    const summaries = REGLAGES.tous(DATA.state.cafes, exts);
+    $("#reglages-liste").innerHTML = summaries.length
+      ? summaries.map(carteReglage).join("")
       : '<p class="carte-vide">' + I18N.t("rg_sans_cafe") + "</p>";
     $$("[data-refaire]").forEach(b => b.addEventListener("click", () => {
       const ext = DATA.state.extractions.find(e => e.id === b.dataset.refaire);
@@ -578,50 +577,50 @@
     selDiag.value = vd;
   }
 
-  // Mis à disposition des autres écrans.
-  /* Câblage des contrôles de l'historique. Appelé une fois par app.js. */
+  // Made available to the other screens.
+  /* Wiring of the history controls. Called once by app.js. */
   const FILTRES = ["h-recherche", "h-cafe", "h-methode", "h-diagnostic", "h-note-min", "h-du", "h-au", "h-ratee"];
 
-  /* LA FICHE AU SURVOL (v8.33), a la place de la fleche qui depliait une ligne
-     de detail : Chris la trouvait laide, et deplier poussait toute la table vers
-     le bas. La fiche flotte sous la ligne survolee (au-dessus si la place
-     manque), apres un court delai pour ne pas clignoter quand la souris ne fait
-     que traverser la table. Elle ne montre que ce que la ligne ne dit pas.
+  /* THE HOVER SHEET (v8.33), in place of the arrow that expanded a detail
+     row: Chris found it ugly, and expanding pushed the whole table down. The
+     sheet floats under the hovered row (above if space runs out), after a
+     short delay so it does not flicker when the mouse only crosses the
+     table. It only shows what the row does not say.
 
-     Seulement avec une vraie souris : au doigt il n'y a pas de survol, les
-     cartes du telephone gardent leur detail deplie. Elle se cache sur les
-     boutons d'action, qu'elle ne doit pas gener, et au defilement. */
-  function brancherFiche() {
+     Only with a real mouse: under a finger there is no hover, the phone
+     cards keep their expanded detail. It hides over the action buttons,
+     which it must not get in the way of, and on scroll. */
+  function wireHoverSheet() {
     if (typeof matchMedia !== "function" || !matchMedia("(hover: hover) and (pointer: fine)").matches) return;
     const fiche = document.createElement("div");
     fiche.className = "h-fiche";
     fiche.setAttribute("role", "tooltip");
     fiche.hidden = true;
     document.body.appendChild(fiche);
-    let minuteur = null, idCourant = null, sourisX = 0;
+    let minuteur = null, currentId = null, mouseX = 0;
 
     const cacher = () => {
       clearTimeout(minuteur);
-      idCourant = null;
+      currentId = null;
       fiche.classList.remove("visible");
       fiche.hidden = true;
     };
     const montrer = id => {
-      const e = affichees.get(id);
+      const e = displayed.get(id);
       const ligne = $('#h-corps tr.ligne-histo[data-id="' + id + '"]');
       if (!e || !ligne) return;
       const contenu = detailContenu(e, true);
       if (contenu.includes("detail-vide")) return;
       fiche.innerHTML = contenu;
       fiche.hidden = false;
-      // Sous le groupe entier, la ligne ET son commentaire : on ne recouvre pas ce qu'on lit.
+      // Under the whole group, the row AND its comment: we do not cover what is being read.
       const suite = ligne.nextElementSibling;
       const dernier = suite && suite.classList.contains("ligne-commentaire") ? suite : ligne;
       const bas = dernier.getBoundingClientRect().bottom;
       const haut = ligne.getBoundingClientRect().top;
       const l = fiche.offsetWidth, h = fiche.offsetHeight;
       const top = bas + 6 + h <= window.innerHeight - 12 ? bas + 6 : Math.max(12, haut - 6 - h);
-      const left = Math.min(Math.max(12, sourisX - 60), window.innerWidth - l - 12);
+      const left = Math.min(Math.max(12, mouseX - 60), window.innerWidth - l - 12);
       fiche.style.top = Math.round(top) + "px";
       fiche.style.left = Math.round(left) + "px";
       requestAnimationFrame(() => fiche.classList.add("visible"));
@@ -629,26 +628,26 @@
 
     const corps = $("#h-corps");
     corps.addEventListener("mousemove", ev => {
-      sourisX = ev.clientX;
+      mouseX = ev.clientX;
       const ligne = ev.target.closest("[data-id]");
-      const surAction = ev.target.closest(".actions-ligne");
-      const id = ligne && !surAction ? ligne.dataset.id : null;
-      if (id === idCourant) return;
+      const onAction = ev.target.closest(".actions-ligne");
+      const id = ligne && !onAction ? ligne.dataset.id : null;
+      if (id === currentId) return;
       cacher();
       if (!id) return;
-      idCourant = id;
+      currentId = id;
       minuteur = setTimeout(() => montrer(id), 280);
     });
     corps.addEventListener("mouseleave", cacher);
-    /* N'importe quel clic, pas seulement dans la table : la fiche vit sur le
-       body, et un clic sur le rail change d'ecran sans quitter la ligne. */
+    /* Any click, not only in the table: the sheet lives on the body, and a
+       click on the rail changes screen without leaving the row. */
     document.addEventListener("click", cacher, true);
     window.addEventListener("scroll", cacher, { passive: true, capture: true });
   }
 
-  /* OUVRIR L'HISTORIQUE SUR UN FILTRE (v8.87), par exemple un jour du récap de
-     la semaine. Les autres filtres repartent de zéro : on arrive pour voir CE
-     jour-là, pas ce jour-là croisé avec un café choisi il y a une semaine. */
+  /* OPENING THE HISTORY ON A FILTER (v8.87), for example a day of the week
+     recap. The other filters start from scratch: we come to see THAT day,
+     not that day crossed with a coffee chosen a week ago. */
   function ouvrirHistoriqueSur(valeurs) {
     FILTRES.forEach(id => { $("#" + id).value = ""; });
     Object.entries(valeurs).forEach(([id, v]) => { $("#" + id).value = v; });
@@ -662,7 +661,7 @@
       FILTRES.forEach(id => { $("#" + id).value = ""; });
       rendreHistorique();
     });
-    // A3 : le panneau des filtres se replie au téléphone, les actifs restent en pastilles.
+    // A3: the filter panel folds on the phone, the active ones stay as pills.
     $("#h-filtrer").addEventListener("click", () => {
       const ouvert = $("#ecran-historique").classList.toggle("filtres-ouverts");
       $("#h-filtrer").setAttribute("aria-expanded", String(ouvert));
@@ -682,32 +681,32 @@
       else { tri.colonne = th.dataset.tri; tri.sens = -1; }
       rendreHistorique();
     }));
-    /* LES DEUX CONTENEURS, table et cartes : le meme gestionnaire sert les deux
-       rendus. Attache au seul #h-corps, il laissait les six actions des cartes
-       rendues mais mortes. */
-    const surClicHistorique = async ev => {
+    /* BOTH CONTAINERS, table and cards: the same handler serves both
+       renders. Attached to #h-corps alone, it left the six card actions
+       rendered but dead. */
+    const onHistoryClick = async ev => {
       const btn = ev.target.closest("[data-action]");
       if (!btn) {
-        /* Cliquer la LIGNE ouvre l'extraction en édition, comme les cinq
-           dernières du tableau de bord. Sans ça, seul le crayon fonctionnait :
-           une cible de 24 px pour une ligne qui a l'air cliquable entière. */
+        /* Clicking the ROW opens the extraction for editing, like the last
+           five on the dashboard. Without it, only the pencil worked: a 24 px
+           target for a row that looks clickable as a whole. */
         const ligne = ev.target.closest("[data-id]");
         if (!ligne) return;
-        /* Une sélection de texte n'est pas un clic. Sans ce test, copier un
-           commentaire depuis le détail déplié ouvrirait l'édition. */
+        /* A text selection is not a click. Without this test, copying a
+           comment from the expanded detail would open the editor. */
         const selection = window.getSelection ? String(window.getSelection()) : "";
         if (selection.trim()) return;
-        const extLigne = DATA.state.extractions.find(e => e.id === ligne.dataset.id);
-        if (extLigne) UI.chargerExtractionDansSaisie(extLigne, false);
+        const rowExt = DATA.state.extractions.find(e => e.id === ligne.dataset.id);
+        if (rowExt) UI.chargerExtractionDansSaisie(rowExt, false);
         return;
       }
       const id = btn.closest("[data-id]").dataset.id;
       const ext = DATA.state.extractions.find(e => e.id === id);
       if (!ext) return;
       if (btn.dataset.action === "supprimer") {
-        // Plus de confirm() natif : le retour arrière remplace la question. Une
-        // boîte système sur téléphone casse l'impression d'application, et elle
-        // ne passe pas par la couche i18n.
+        // No more native confirm(): the undo replaces the question. A system
+        // box on the phone breaks the app feel, and it does not go through
+        // the i18n layer.
         await supprimerExtractionAvecRetour(ext);
       } else if (btn.dataset.action === "modifier") {
         UI.chargerExtractionDansSaisie(ext, false);
@@ -715,8 +714,8 @@
         UI.refaireTasse(ext);
         toast(I18N.t("t_dupliquee"));
       } else if (btn.dataset.action === "menu") {
-        if (menusOuverts.has(id)) menusOuverts.delete(id);
-        else menusOuverts.add(id);
+        if (openMenus.has(id)) openMenus.delete(id);
+        else openMenus.add(id);
         rendreHistorique();
       } else if (btn.dataset.action === "deplier") {
         if (detailsOuverts.has(id)) detailsOuverts.delete(id);
@@ -725,27 +724,27 @@
       } else if (btn.dataset.action === "comparer") {
         basculerComparaison(id);
       } else if (btn.dataset.action === "ratee") {
-        /* Un clic écrit. Pas de confirmation : le geste est réversible du même
-           bouton, et demander confirmation pour une bascule serait plus lourd
-           que la bascule elle-même. */
+        /* One click writes. No confirmation: the gesture is reversible from
+           the same button, and asking to confirm a toggle would be heavier
+           than the toggle itself. */
         await DATA.modifierExtraction(id, { ...ext, ratee: Number(ext.ratee) === 1 ? "" : 1 });
         toast(I18N.t(Number(ext.ratee) === 1 ? "t_deratee" : "t_ratee"));
       }
     };
-    [$("#h-corps"), $("#h-cartes"), $("#h-journal")].forEach(z => z.addEventListener("click", surClicHistorique));
+    [$("#h-corps"), $("#h-cartes"), $("#h-journal")].forEach(z => z.addEventListener("click", onHistoryClick));
     UI.cablerJournal(rendreHistorique);
-    brancherFiche();
+    wireHoverSheet();
 
-    /* Le controle segmente de la machine PILOTE le <select>, qui reste la source
-       de verite : tout le filtrage, la reinitialisation et l'export lisent lui.
-       Deux sources pour un meme filtre, c'est deux etats qui divergent. */
+    /* The machine's segmented control DRIVES the <select>, which stays the
+       source of truth: all the filtering, the reset and the export read it.
+       Two sources for the same filter means two states that diverge. */
     $$(".filtre-methode .seg").forEach(b => b.addEventListener("click", () => {
       const sel = $("#h-methode");
       sel.value = b.dataset.methode;
       sel.dispatchEvent(new Event("input", { bubbles: true }));
       majSegmentMethode();
     }));
-    /* La reinitialisation passe par le select : le segment doit suivre. */
+    /* The reset goes through the select: the segment must follow. */
     $("#h-reinitialiser").addEventListener("click", () => setTimeout(majSegmentMethode, 0));
     $("#comparaison-ouvrir").addEventListener("click", ouvrirComparaison);
     $("#comparaison-vider").addEventListener("click", () => { comparaison.clear(); rendreHistorique(); });

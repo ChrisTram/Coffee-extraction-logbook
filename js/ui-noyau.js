@@ -1,37 +1,36 @@
-/* Noyau de l'interface : les outils partagés, le thème et la navigation.
+/* Interface core: the shared tools, the theme and the navigation.
  *
- * Tout le reste de l'interface est bâti là-dessus, donc ce fichier se charge en
- * premier et expose l'objet UI que les autres augmentent. Il ne connaît AUCUN
- * écran en particulier : quand il doit en redessiner un, il passe par UI, et
- * c'est volontaire. Un noyau qui appellerait rendreHistorique() directement ne
- * serait plus un noyau, ce serait l'application entière avec des étapes.
+ * The whole rest of the interface is built on top of it, so this file loads
+ * first and exposes the UI object that the others extend. It knows NO screen
+ * in particular: when it must redraw one, it goes through UI, and that is
+ * deliberate. A core that called rendreHistorique() directly would no longer
+ * be a core, it would be the whole application with extra steps.
  *
- * Un nom placé ici est un nom que tous les écrans peuvent utiliser. C'est un
- * engagement : avant d'en ajouter un, vérifier qu'au moins deux écrans en ont
- * vraiment besoin. */
+ * A name placed here is a name every screen may use. That is a commitment:
+ * before adding one, check that at least two screens really need it. */
 "use strict";
 
 const UI = (() => {
 
-  // ---------- Petits outils ----------
+  // ---------- Small tools ----------
 
   const $ = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
 
-  /* Bascule l'état visuel ET l'état annoncé d'un même geste. Les séparer serait
-     la garantie qu'ils divergent : c'est déjà arrivé sur d'autres projets, la
-     classe suit et l'attribut reste figé. */
-  /* Appui LONG sur une pilule ou un tag : ouvre sa définition. Le survol n'existe
-     pas au doigt et un tap ne déclenche pas :focus-visible, donc sur téléphone la
-     moitié du vocabulaire était inatteignable. L'appui court garde son rôle de
-     bascule, et on annule la bulle dès que le doigt bouge pour ne pas la déclencher
-     pendant un défilement. */
+  /* Toggles the visual state AND the announced state in one gesture. Keeping
+     them apart would guarantee they diverge: it already happened on other
+     projects, the class follows and the attribute stays frozen. */
+  /* LONG PRESS on a pill or a tag: opens its definition. Hover does not exist
+     under a finger and a tap does not trigger :focus-visible, so on the phone
+     half of the vocabulary was unreachable. The short press keeps its toggle
+     role, and the bubble is cancelled as soon as the finger moves so it does
+     not fire during a scroll. */
   const APPUI_LONG_MS = 450;
 
   function activerAppuiLong(racine) {
     let minuteur = null, cible = null;
-    // Vrai entre l'ouverture d'une bulle par appui long et le clic qui la suit.
-    let bulleOuverteALInstant = false;
+    // True between a bubble opened by long press and the click that follows it.
+    let bubbleJustOpened = false;
     const fermer = () => {
       racine.querySelectorAll(".info-ouverte").forEach(x => x.classList.remove("info-ouverte"));
     };
@@ -41,18 +40,18 @@ const UI = (() => {
       const el = ev.target.closest("[data-info]");
       if (!el) return;
       cible = el;
-      bulleOuverteALInstant = false;
+      bubbleJustOpened = false;
       minuteur = setTimeout(() => {
         fermer();
         el.classList.add("info-ouverte");
-        bulleOuverteALInstant = true;
+        bubbleJustOpened = true;
         minuteur = null;
       }, APPUI_LONG_MS);
     });
     racine.addEventListener("pointermove", annuler);
     racine.addEventListener("pointerup", () => {
-      // Un appui long a déjà ouvert la bulle : le clic qui suit ne doit pas
-      // basculer la pilule en plus. On laisse le clic passer sinon.
+      // A long press already opened the bubble: the click that follows must
+      // not also toggle the pill. Otherwise the click is let through.
       if (cible && cible.classList.contains("info-ouverte")) {
         setTimeout(fermer, 2500);
       }
@@ -60,31 +59,31 @@ const UI = (() => {
     });
     racine.addEventListener("pointercancel", () => { annuler(); fermer(); });
 
-    /* Le clic qui SUIT un appui long ne doit rien faire de plus : la bulle est
-       déjà ouverte, c'était tout ce qu'on demandait. Sans ça, lire la définition
-       d'un descripteur le sélectionnait au passage, et l'appui long est le seul
-       moyen d'ouvrir la bulle sans souris.
+    /* The click that FOLLOWS a long press must do nothing more: the bubble is
+       already open, that was all that was asked. Without this, reading the
+       definition of a descriptor selected it on the way, and the long press is
+       the only way to open the bubble without a mouse.
 
-       En phase de CAPTURE sur le conteneur, donc avant la cible et avant la
-       remontée : c'est ce qui permet à stopPropagation() d'empêcher le
-       gestionnaire délégué, posé sur ce même conteneur, de voir l'événement. */
+       In the CAPTURE phase on the container, so before the target and before
+       bubbling: that is what lets stopPropagation() keep the delegated
+       handler, set on this same container, from seeing the event. */
     racine.addEventListener("click", ev => {
-      if (!bulleOuverteALInstant) return;
-      bulleOuverteALInstant = false;
+      if (!bubbleJustOpened) return;
+      bubbleJustOpened = false;
       ev.stopPropagation();
       ev.preventDefault();
     }, true);
   }
 
-  /* Retarde un appel jusqu'à ce que les frappes s'arrêtent. Une fonction par
-     usage, pas une file partagée : deux champs différents ne doivent pas
-     s'annuler l'un l'autre. */
-  /* Signature d'une table : de quoi savoir si elle a bougé, sans la comparer
-     ligne à ligne. maj_le bouge à chaque mutation (voir estampiller dans
-     data.js), la longueur couvre les suppressions. */
-  /* Cache de recherche pour les éléments STATIQUES d'index.html. À n'utiliser que
-     sur des nœuds jamais remplacés : un nœud issu d'un innerHTML serait mis en
-     cache détaché, et les écritures suivantes partiraient dans le vide. */
+  /* Delays a call until the keystrokes stop. One function per use, not a
+     shared queue: two different fields must not cancel each other. */
+  /* Signature of a table: enough to know whether it moved, without comparing
+     it row by row. maj_le moves on every mutation (see estampiller in
+     data.js), the length covers deletions. */
+  /* Lookup cache for the STATIC elements of index.html. Only use it on nodes
+     that are never replaced ("jamais remplacés", a phrase the tests look for):
+     a node coming from an innerHTML would be cached detached, and the
+     following writes would go into the void. */
   const cacheChamps = new Map();
   function $f(sel) {
     let el = cacheChamps.get(sel);
@@ -92,10 +91,10 @@ const UI = (() => {
     return el;
   }
 
-  /* N'écrit QUE si ça change. Une affectation innerHTML invalide la mise en page
-     même quand le contenu est identique, et la ligne live est réécrite à chaque
-     caractère alors que la plupart des frappes n'en changent aucune partie :
-     taper dans la molette ne touche ni au ratio ni au coût. */
+  /* Writes ONLY if it changes. An innerHTML assignment invalidates the layout
+     even when the content is identical, and the live line is rewritten on
+     every character while most keystrokes change none of its parts: typing
+     in the dial touches neither the ratio nor the cost. */
   function poser(el, html) {
     if (el && el.innerHTML !== html) el.innerHTML = html;
   }
@@ -110,8 +109,8 @@ const UI = (() => {
     return tableau.length + ":" + max;
   }
 
-  /* N execute la fonction que si la signature a changé depuis la dernière fois.
-     La cle separe les memoires : deux appelants ne doivent pas se marcher dessus. */
+  /* Runs the function only if the signature changed since last time.
+     The key separates the memories: two callers must not step on each other. */
   const signatures = new Map();
   function siChange(cle, tableau, fn) {
     const s = signatureTable(tableau);
@@ -121,8 +120,8 @@ const UI = (() => {
     return true;
   }
 
-  /* Force le prochain rendu, quelle que soit la signature. Sert à la bascule de
-     langue : les données n'ont pas bougé, mais tout le texte doit être refait. */
+  /* Forces the next render, whatever the signature. Used by the language
+     toggle: the data did not move, but all the text must be redone. */
   function oublierSignatures() {
     signatures.clear();
   }
@@ -148,13 +147,13 @@ const UI = (() => {
     toast._h = setTimeout(() => t.setAttribute("hidden", ""), 2600);
   }
 
-  /* Message avec un bouton d'action, cinq secondes. Sert à l'annulation d'une
-     suppression, qui est DÉJÀ faite quand ce message s'affiche : voir
-     supprimerExtractionAvecRetour. Le bouton disparaît avec le message, il n'y a
-     donc pas de suite à gérer. */
-  /* UN SEUL À LA FOIS (v8.71) : deux touches sur « Enregistrer » pendant
-     l'écriture créaient deux tasses. L'appel suivant est ignoré tant que le
-     premier n'a pas fini. */
+  /* Message with an action button, five seconds. Used to undo a deletion,
+     which is ALREADY done when this message shows: see
+     supprimerExtractionAvecRetour. The button disappears with the message, so
+     there is no follow-up to handle. */
+  /* ONE AT A TIME (v8.71): two taps on "Save" during the write created two
+     cups. The next call is ignored as long as the first one has not
+     finished. */
   function unSeulALaFois(fn) {
     let enCours = false;
     return async (...args) => {
@@ -164,26 +163,26 @@ const UI = (() => {
     };
   }
 
-  /* LES MISES À JOUR SE SIGNALENT (v8.72). Il fallait « recharger deux fois » :
-     la PWA installée reprend depuis la mémoire au lieu de recharger, et rien ne
-     surveillait les nouvelles versions. Au retour sur l'appli on demande au
-     service worker de vérifier, et quand un nouveau prend la main, un message
-     propose de recharger, une seule fois, et seulement s'il y avait déjà une
-     version (pas à la toute première installation). */
+  /* UPDATES ANNOUNCE THEMSELVES (v8.72). It took "reloading twice": the
+     installed PWA resumes from memory instead of reloading, and nothing
+     watched for new versions. On returning to the app we ask the service
+     worker to check, and when a new one takes over, a message offers to
+     reload, only once, and only if there already was a version (not on the
+     very first install). */
   function surveillerMisesAJour() {
     if (!("serviceWorker" in navigator) || !location.protocol.startsWith("http")) return;
-    const avaitVersion = !!navigator.serviceWorker.controller;
-    let proposee = false;
+    const hadVersion = !!navigator.serviceWorker.controller;
+    let offered = false;
     navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (!avaitVersion || proposee) return;
-      proposee = true;
+      if (!hadVersion || offered) return;
+      offered = true;
       toastAction(I18N.t("maj_prete"), I18N.t("maj_recharger"), () => location.reload(), true);
     });
     navigator.serviceWorker.register("sw.js").then(reg => {
       document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "visible") reg.update().catch(() => { /* hors ligne */ });
+        if (document.visibilityState === "visible") reg.update().catch(() => { /* offline */ });
       });
-    }).catch(() => { /* pas critique */ });
+    }).catch(() => { /* not critical */ });
   }
 
   function toastAction(message, libelle, action, persistant) {
@@ -209,15 +208,15 @@ const UI = (() => {
     }, 5000);
   }
 
-  /* Question oui ou non dans un <dialog>, à la place de confirm().
+  /* Yes or no question in a <dialog>, instead of confirm().
 
-     Sur le téléphone, confirm() est une boîte système : elle sort du thème,
-     ignore la langue de la page (le message passe par I18N mais pas ses
-     boutons) et casse l'impression d'application installée. Ici tout est dans
-     la page. Le choix SÛR reçoit le focus : Entrée annule, il faut viser pour
-     confirmer. Échap ferme le dialogue natif, donc annule aussi.
+     On the phone, confirm() is a system box: it leaves the theme, ignores the
+     page language (the message goes through I18N but not its buttons) and
+     breaks the feel of an installed app. Here everything is in the page. The
+     SAFE choice gets the focus: Enter cancels, you have to aim to confirm.
+     Escape closes the native dialog, so it cancels too.
 
-     Renvoie une promesse de booléen, pour que l'appelant s'écrive comme avant :
+     Returns a promise of a boolean, so the caller reads as before:
      `if (!await confirmer(texte)) return;`. */
   function confirmer(message, options) {
     const d = $("#modale-confirmer");
@@ -229,29 +228,29 @@ const UI = (() => {
     ok.textContent = (options && options.libelle) || I18N.t("c_ok");
     non.textContent = I18N.t("t_annuler");
     ok.classList.toggle("btn-danger", danger);
-    // Réaffectés à chaque ouverture : un seul gestionnaire, jamais empilés.
+    // Reassigned on each opening: a single handler, never stacked.
     ok.onclick = () => d.close("ok");
     non.onclick = () => d.close("annuler");
     return new Promise(resolve => {
-      const surFermeture = () => {
-        d.removeEventListener("close", surFermeture);
+      const onClose = () => {
+        d.removeEventListener("close", onClose);
         resolve(d.returnValue === "ok");
       };
-      d.addEventListener("close", surFermeture);
+      d.addEventListener("close", onClose);
       d.returnValue = "";
       d.showModal();
       non.focus();
     });
   }
 
-  /* Supprime pour de vrai, immédiatement, et propose de revenir en arrière.
+  /* Deletes for real, immediately, and offers to go back.
 
-     L'ordre compte et il est délibéré. Retarder la suppression aurait été plus
-     simple à écrire, mais fermer l'onglet pendant le délai aurait alors ANNULÉ
-     une suppression que Chris croyait faite. Ici la ligne part tout de suite,
-     part à la synchro tout de suite, et l'annulation la réinsère comme une
-     nouvelle écriture, ce que la fusion sait gérer : elle est postérieure à la
-     pierre tombale, donc elle gagne. */
+     The order matters and it is deliberate. Delaying the deletion would have
+     been simpler to write, but closing the tab during the delay would then
+     have CANCELLED a deletion Chris believed done. Here the row goes right
+     away, goes to the sync right away, and the undo re-inserts it as a new
+     write, which the merge knows how to handle: it is later than the
+     tombstone, so it wins. */
   async function supprimerExtractionAvecRetour(ext) {
     const copie = { ...ext };
     delete copie._c;
@@ -275,7 +274,7 @@ const UI = (() => {
     return Math.round(n).toLocaleString("fr-FR") + " ₫";
   }
 
-  // Une seule définition, dans outils.js : voir l'en-tête de ce fichier là.
+  // A single definition, in outils.js: see that file's header.
   const { moyenne, cleLocale } = OUTILS;
 
   function maintenantLocal() {
@@ -284,11 +283,11 @@ const UI = (() => {
     return d.toISOString().slice(0, 16);
   }
 
-  /* LA PISTE D'UN CURSEUR. Les curseurs sont dessines en CSS (piste fine, pouce
-     borde d'accent) au lieu d'accent-color, qui rend differemment sur chaque
-     moteur. Le CSS ne connait pas la valeur : on lui pose --pc, la part de
-     course parcourue, et le degrade de la piste s'arrete la. A appeler a chaque
-     input ET a chaque ecriture de .value par le code, sinon la piste ment. */
+  /* THE TRACK OF A SLIDER. Sliders are drawn in CSS (thin track, thumb with
+     an accent border) instead of accent-color, which renders differently on
+     each engine. The CSS does not know the value: we give it --pc, the share
+     of travel covered, and the track gradient stops there. Call it on every
+     input AND on every write of .value by the code, or the track lies. */
   function peindreCurseur(curseur) {
     if (!curseur) return;
     const min = Number(curseur.min) || 0, max = Number(curseur.max);
@@ -297,40 +296,40 @@ const UI = (() => {
     curseur.style.setProperty("--pc", Math.max(0, Math.min(100, pc)) + "%");
   }
 
-  /* LA NOTE SANS POUCE (v8.40). Un curseur ne peut pas être vide : l'absence de
-     note vivait dans une case « pas encore notée », à décocher EN PLUS de régler
-     la note. Elle vit maintenant sur le curseur lui même, par la classe
-     curseur-inactif, tant qu'on n'y a pas touché. Poser le doigt n'importe où
-     sur la piste note, en un seul geste. Depuis la v8.68 cette classe n'a plus
-     de style : le curseur garde la même allure, le libellé dit l'état.
-     Même mécanisme dans la saisie et dans la saisie rapide. */
+  /* THE RATING WITHOUT A THUMB (v8.40). A slider cannot be empty: the absence
+     of a rating lived in a "not rated yet" box, to untick ON TOP of setting
+     the rating. It now lives on the slider itself, through the
+     curseur-inactif class, as long as it has not been touched. Putting a
+     finger anywhere on the track rates, in a single gesture. Since v8.68 this
+     class has no style: the slider keeps the same look, the label tells the
+     state. Same mechanism in the entry form and in the quick entry. */
   function noteVide(curseur) {
     return !!curseur && curseur.classList.contains("curseur-inactif");
   }
   function marquerNote(curseur, vide) {
     if (curseur) curseur.classList.toggle("curseur-inactif", vide);
   }
-  /* Les touches qui CHANGENT la valeur. Tabuler à travers le curseur ne doit pas
-     noter la tasse : l'ancien keydown sans filtre le faisait. */
-  const TOUCHES_CURSEUR = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"];
-  /* pointerdown en plus d'input : poser le doigt là où le curseur est déjà ne
-     déclenche aucun input, et la note serait restée vide sans le savoir. */
+  /* The keys that CHANGE the value. Tabbing through the slider must not rate
+     the cup: the old unfiltered keydown did. */
+  const SLIDER_KEYS = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"];
+  /* pointerdown on top of input: putting the finger where the slider already
+     is fires no input, and the rating would have stayed empty unknowingly. */
   function brancherNote(curseur, apres) {
     const toucher = () => { marquerNote(curseur, false); apres(); };
     curseur.addEventListener("input", toucher);
     curseur.addEventListener("pointerdown", toucher);
-    curseur.addEventListener("keydown", ev => { if (TOUCHES_CURSEUR.includes(ev.key)) toucher(); });
+    curseur.addEventListener("keydown", ev => { if (SLIDER_KEYS.includes(ev.key)) toucher(); });
   }
 
-  /* LA DICTÉE DU COMMENTAIRE (v8.43). Parler pendant que la tasse refroidit,
-     les mains prises. La reconnaissance vocale de Chrome et de Safari passe par
-     leurs serveurs : le bouton n'existe que si le navigateur la connaît ET
-     qu'on est en ligne, et il se cache dès que la connexion tombe. Le texte
-     dicté S'AJOUTE à ce qui est déjà écrit et reste modifiable : rien ne part
-     en base avant Enregistrer. */
+  /* DICTATING THE COMMENT (v8.43). Speaking while the cup cools down, hands
+     busy. Chrome's and Safari's speech recognition goes through their
+     servers: the button only exists if the browser knows it AND we are
+     online, and it hides as soon as the connection drops. The dictated text
+     is ADDED to what is already written and stays editable: nothing goes to
+     storage before Save. */
   function brancherDictee(bouton, champ, libelle) {
-    const Reco = typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
-    if (!bouton || !champ || !Reco) return;
+    const Recognition = typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
+    if (!bouton || !champ || !Recognition) return;
     const visible = () => { bouton.hidden = typeof navigator !== "undefined" && navigator.onLine === false; };
     visible();
     window.addEventListener("online", visible);
@@ -342,7 +341,7 @@ const UI = (() => {
     };
     bouton.addEventListener("click", () => {
       if (reco) { reco.stop(); return; }
-      reco = new Reco();
+      reco = new Recognition();
       reco.lang = I18N.locale();
       reco.interimResults = false;
       reco.continuous = false;
@@ -362,12 +361,12 @@ const UI = (() => {
     });
   }
 
-  /* LES ICONES EN TRAIT. Meme dessin que la navigation : 1,8 px, bouts ronds,
-     couleur du texte. Elles remplacent les glyphes Unicode (⇄ ⚠ ⧉ ✎ 🗑) des
-     boutons d'action, qui changeaient de dessin selon la plateforme et que la
-     regle « jamais d'emoji » de la navigation interdisait deja ailleurs. Le
-     nom est une cle, pas du texte : ce qui se lit est le title du bouton. */
-  const ICONES = {
+  /* LINE ICONS. Same drawing as the navigation: 1.8 px, round caps, text
+     colour. They replace the Unicode glyphs (⇄ ⚠ ⧉ ✎ 🗑) of the action
+     buttons, which changed drawing with the platform and which the
+     navigation's "never an emoji" rule already forbade elsewhere. The name
+     is a key, not text: what is read is the button's title. */
+  const ICONS = {
     chevron: '<path d="m9 6 6 6-6 6"/>',
     gauche: '<path d="m15 6-6 6 6 6"/>',
     comparer: '<path d="M4 8h13"/><path d="m14 5 3 3-3 3"/><path d="M20 16H7"/><path d="m10 13-3 3 3 3"/>',
@@ -381,7 +380,7 @@ const UI = (() => {
   function icone(nom) {
     return '<svg class="ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"' +
       ' stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-      (ICONES[nom] || "") + "</svg>";
+      (ICONS[nom] || "") + "</svg>";
   }
 
   function fmtDateHeure(dh) {
@@ -391,9 +390,9 @@ const UI = (() => {
       d.toLocaleTimeString(I18N.locale(), { hour: "2-digit", minute: "2-digit" });
   }
 
-  /* LE JOUR EN MOTS (v8.82), pour les intertitres des listes groupées par jour :
-     « Aujourd'hui », « Hier », puis « Samedi 26 septembre ». L'année ne s'écrit
-     que si ce n'est pas celle en cours. */
+  /* THE DAY IN WORDS (v8.82), for the subheadings of lists grouped by day:
+     "Today", "Yesterday", then "Saturday 26 September". The year is only
+     written if it is not the current one. */
   function libelleJour(dh) {
     const d = new Date(dh);
     if (isNaN(d)) return String(dh);
@@ -406,15 +405,15 @@ const UI = (() => {
       year: d.getFullYear() === auj.getFullYear() ? undefined : "numeric" });
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
-  // La clé du jour d'une date_heure, pour grouper : "2026-09-26".
+  // The day key of a date_heure, for grouping: "2026-09-26".
   const cleJour = dh => String(dh).slice(0, 10);
   function fmtHeure(dh) {
     const d = new Date(dh);
     return isNaN(d) ? "" : d.toLocaleTimeString(I18N.locale(), { hour: "2-digit", minute: "2-digit" });
   }
 
-  // "2026-08-12" vers "12 août 2026", en construisant la date en LOCAL
-  // (new Date("2026-08-12") serait interprété en UTC).
+  // "2026-08-12" to "12 Aug 2026", building the date in LOCAL time
+  // (new Date("2026-08-12") would be read as UTC).
   function fmtDateCourte(s) {
     const [a, m, j] = String(s).split("-").map(Number);
     if (!a || !m || !j) return s;
@@ -425,9 +424,9 @@ const UI = (() => {
     return Number(n.toFixed(dec)).toLocaleString(I18N.locale(), { maximumFractionDigits: dec });
   }
 
-  function animerCompteur(el, cible, decimales, suffixe, prefixe) {
+  function animerCompteur(el, cible, decimals, suffixe, prefixe) {
     const duree = 750, depart = performance.now();
-    const dec = decimales || 0;
+    const dec = decimals || 0;
     function pas(t) {
       const p = Math.min(1, (t - depart) / duree);
       const eased = 1 - Math.pow(1 - p, 3);
@@ -439,20 +438,20 @@ const UI = (() => {
     requestAnimationFrame(pas);
   }
 
-  // Recettes vivantes (éditables, stockées avec les données).
+  // Live recipes (editable, stored with the data).
   function recettesVivantes() { return DATA.state.recettes.filter(r => r.actif !== 0); }
   function recettesDeMethode(m) { return recettesVivantes().filter(r => r.methode === m); }
   function trouverRecette(nom) { return DATA.state.recettes.find(r => r.nom === nom); }
   function recetteAvecVariantes() { return recettesVivantes().find(r => r.variantes); }
 
-  // Attribut title : la valeur complete d'une cellule tronquee, au survol.
-  // Les guillemets doubles casseraient l'attribut, on les neutralise.
-  // L'échappement commun (OUTILS.echap), sous son ancien nom.
+  // title attribute: the full value of a truncated cell, on hover.
+  // Double quotes would break the attribute, so they are neutralised.
+  // The shared escaping (OUTILS.echap), under its old name.
   function attrTitre(texte) {
     return OUTILS.echap(texte || "");
   }
 
-  // "Sous-extrait (acide)|Astringent" vers un affichage traduit "Under-extracted (sour), Astringent".
+  // "Sous-extrait (acide)|Astringent" to a translated display "Under-extracted (sour), Astringent".
   function diagsAffiches(s) {
     return (s || "").split("|").filter(Boolean).map(d => I18N.diag(d)).join(", ");
   }
@@ -463,51 +462,51 @@ const UI = (() => {
     return "";
   }
 
-  /* Vrai quand la tasse a été marquée ratée. Une colonne vide veut dire "pas
-     dit", donc non ratée : c'est le cas de tout ce qui précède le drapeau. */
+  /* True when the cup was marked failed. An empty column means "not said",
+     so not failed: that is the case of everything before the flag. */
   function estRatee(e) { return Number(e.ratee) === 1; }
 
-  const CLE_INCLURE_RATEES = "inclure-ratees";
-  /* Préférence de LECTURE, donc locale comme le thème et les bips : elle change
-     ce que les chiffres racontent, pas les données. Rien à synchroniser. */
+  const INCLUDE_FAILED_KEY = "inclure-ratees";
+  /* A READING preference, so local like the theme and the beeps: it changes
+     what the figures tell, not the data. Nothing to sync. */
   function inclureRatees() {
-    try { return localStorage.getItem(CLE_INCLURE_RATEES) === "1"; } catch (e) { return false; }
+    try { return localStorage.getItem(INCLUDE_FAILED_KEY) === "1"; } catch (e) { return false; }
   }
 
   function basculerRatees(inclure) {
-    try { localStorage.setItem(CLE_INCLURE_RATEES, inclure ? "1" : "0"); } catch (e) { /* tant pis */ }
+    try { localStorage.setItem(INCLUDE_FAILED_KEY, inclure ? "1" : "0"); } catch (e) { /* too bad */ }
   }
 
-  /* Les extractions dont on tire des CONSEILS : insights, meilleurs réglages,
-     goûts, duel des machines, tendance. Une tasse ratée décrit un geste manqué,
-     pas un réglage, et la garder peut faire condamner un réglage correct.
+  /* The extractions we draw ADVICE from: insights, best settings, tastes,
+     machine duel, trend. A failed cup describes a missed gesture, not a
+     setting, and keeping it can get a correct setting condemned.
 
-     Les COMPTAGES gardent tout, toujours : tasses bues, grammes consommés, coût,
-     calendrier d'activité, stock des sachets. Le café a bien été utilisé, et une
-     erreur de geste n'efface pas la dépense. C'est la ligne de partage, et elle
-     tient en une phrase : ce qui décrit CE QUI S'EST PASSÉ compte tout, ce qui
-     conseille CE QU'IL FAUT FAIRE écarte les ratées. */
+     COUNTS keep everything, always: cups drunk, grams used, cost, activity
+     calendar, bag stock. The coffee was indeed used, and a gesture error does
+     not erase the expense. That is the dividing line, and it fits in one
+     sentence: what describes WHAT HAPPENED counts everything, what advises
+     WHAT TO DO leaves the failed ones out. */
   function extAnalysables() {
     const tout = extAvecCalculs();
     return inclureRatees() ? tout : tout.filter(e => !estRatee(e));
   }
 
-  /* GARDÉES EN MÉMOIRE (v8.75). Chaque rendu, et chaque frappe dans la saisie,
-     recalculait ratio, âge du sachet et le reste pour tout l'historique, des
-     dizaines de fois par rendu du tableau de bord. Le calcul est refait quand
-     les données bougent : révision de DATA, ou tables remplacées ou allongées
-     (chargement, synchro, ajout). Une copie du tableau est rendue à chaque
-     appel : un appelant qui trie ne dérange pas les autres. */
-  /* Chaque tasse garde son calcul tant que SON contenu ne change pas (même
-     modifiée sur place, par un chemin qui ne notifie pas), et tant que les cafés
-     et les sachets dont il dépend n'ont pas bougé (révision de DATA, tables
-     remplacées ou allongées). Le tableau rendu est neuf à chaque appel. */
-  let memoGlobal = null, memoVersion = 0;
+  /* KEPT IN MEMORY (v8.75). Every render, and every keystroke in the entry
+     form, recomputed ratio, bag age and the rest for the whole history, dozens
+     of times per dashboard render. The calculation is redone when the data
+     moves: DATA revision, or tables replaced or grown (load, sync, add). A
+     copy of the array is returned on every call: a caller that sorts does
+     not disturb the others. */
+  /* Each cup keeps its calculation as long as ITS content does not change
+     (even modified in place, by a path that does not notify), and as long as
+     the coffees and bags it depends on have not moved (DATA revision, tables
+     replaced or grown). The returned array is new on every call. */
+  let globalMemo = null, memoVersion = 0;
   const memoParTasse = new WeakMap();
   function extAvecCalculs() {
     const s = DATA.state;
     const cle = [DATA.revisionDonnees ? DATA.revisionDonnees() : 0, s.cafes, s.cafes.length, s.achats, s.achats.length];
-    if (!memoGlobal || cle.some((v, i) => v !== memoGlobal[i])) { memoGlobal = cle; memoVersion++; }
+    if (!globalMemo || cle.some((v, i) => v !== globalMemo[i])) { globalMemo = cle; memoVersion++; }
     return s.extractions.map(e => {
       const sig = JSON.stringify(e);
       const m = memoParTasse.get(e);
@@ -518,45 +517,45 @@ const UI = (() => {
     });
   }
 
-  // Dose prise quand rien ne la preremplit (recette sans dose, formulaire
-  // vierge). 15 g est la dose de toutes les recettes Switch d'origine.
+  // Dose used when nothing prefills it (recipe without a dose, blank form).
+  // 15 g is the dose of all the original Switch recipes.
   const DOSE_REPLI_USINE = 15;
 
-  // Puissance de feu par défaut, échelle personnelle de 1 à 10, Brikka seulement.
-  /* 3 depuis que Chris l'a redemande. L'echelle a deja fait 3, puis 4, puis 2
-     (pas de schema v1 et v2) : elle revient a son point de depart. */
+  // Default heat level, personal scale from 1 to 10, Brikka only.
+  /* 3 since Chris asked for it again. The scale has already been 3, then 4,
+     then 2 (schema steps v1 and v2): it comes back to its starting point. */
   const FEU_REPLI_USINE = 3;
 
-  /* Réglage RÉEL du broyeur, celui où la molette est physiquement posée. Ce n'est
-     pas la même chose que le dial d'une recette, qui est une CIBLE : la Brikka
-     vise 1.2.0 et le Switch 1.6.0, mais Chris laisse son C5 sur 1.5.0, le
-     "compromis qui marche dans les deux" de son guide, pour ne pas recompter les
-     crans à chaque changement de machine. Le formulaire préremplissait la cible
-     et lui faisait donc enregistrer une mouture qu'il n'avait pas utilisée.
-     La cible reste visible dans le panneau latéral, et l'avertissement de plage
-     continue de signaler un écart réel. */
+  /* The grinder's REAL setting, the one where the dial physically sits. It is
+     not the same thing as a recipe's dial, which is a TARGET: the Brikka aims
+     for 1.2.0 and the Switch for 1.6.0, but Chris leaves his C5 on 1.5.0, the
+     "compromise that works for both" from his guide, so as not to recount the
+     clicks at every machine change. The form prefilled the target and so made
+     him record a grind he had not used.
+     The target stays visible in the side panel, and the range warning keeps
+     reporting a real gap. */
   const MOLETTE_REPLI_USINE = "1.5.0";
 
-  /* VUE en lecture sur la table `reglages`, qui se synchronise. Ces trois
-     valeurs décrivent le MATÉRIEL de Chris : sa molette de broyeur est la même
-     vue du téléphone et de l'ordinateur. Elles vivaient en localStorage, donc son
-     téléphone ignorait ce qu'il réglait sur l'ordinateur, et il ne pouvait pas le
-     voir puisque ce sont des champs préremplis d'apparence normale.
+  /* Read VIEW on the `reglages` table, which syncs. These three values
+     describe Chris's EQUIPMENT: his grinder dial is the same seen from the
+     phone and from the computer. They lived in localStorage, so his phone
+     ignored what he set on the computer, and he could not see it since these
+     are prefilled fields that look normal.
 
-     Le thème et les bips, eux, restent locaux à juste titre : un téléphone en
-     cuisine et un ordinateur n'ont pas les mêmes besoins.
+     The theme and the beeps, however, rightly stay local: a phone in the
+     kitchen and a computer do not have the same needs.
 
-     `replis` reste un objet simple parce qu'il est lu partout dans le code de
-     rendu ; il est juste rafraîchi depuis DATA à chaque notification. */
+     `replis` stays a plain object because it is read everywhere in the
+     rendering code; it is just refreshed from DATA on every notification. */
   const CLE_REPLIS = "replis-saisie";
-  /* Temps d'ébullition de la bouilloire, en secondes, depuis l'eau du robinet.
-     ZÉRO tant que Chris ne l'a pas chronométrée : sans mesure, pas
-     d'estimation, l'aide de saisie demande de la faire une fois. */
-  /* DEUX MINUTES, mesurees par Chris sur sa bouilloire : eau du robinet au gros
-     bouillon. Valait 0 jusqu'ici, et le modele refuse de calculer sans temps
-     d'ebullition : l'estimation du degre depuis le temps de chauffe ne partait
-     donc JAMAIS tant qu'on n'etait pas alle la regler dans Parametres. Un repli
-     d'usine juste vaut mieux qu'un repli neutre qui desactive la fonction. */
+  /* Kettle boiling time, in seconds, from tap water.
+     ZERO as long as Chris has not timed it: without a measure, no estimate,
+     the entry help asks to do it once. */
+  /* TWO MINUTES, measured by Chris on his kettle: tap water to a rolling
+     boil. It was 0 until now, and the model refuses to compute without a
+     boiling time: the temperature estimate from the heating time therefore
+     NEVER started unless one went to set it in Settings. A correct factory
+     fallback beats a neutral fallback that disables the feature. */
   const EBULLITION_USINE = 120;
   const replis = { dose: DOSE_REPLI_USINE, feu: FEU_REPLI_USINE, molette: MOLETTE_REPLI_USINE, ebullition: EBULLITION_USINE, bulles: "" };
 
@@ -567,16 +566,16 @@ const UI = (() => {
     replis.molette = r.mouture_dial;
     replis.ebullition = r.ebullition_s;
     replis.bulles = r.bulles_s;
-    // Les pas de la correction chiffrée (v8.48), tels quels : les colonnes de la ligne.
+    // The steps of the numeric correction (v8.48), as is: the row's columns.
     replis.dessins = r.dessins || "";
     replis.pas = { pas_crans: r.pas_crans, pas_degres: r.pas_degres, pas_feu: r.pas_feu,
       pas_eau_g: r.pas_eau_g, pas_dose_g: r.pas_dose_g };
   }
 
-  /* Reprise unique des réglages posés avant la synchro. Sans elle, Chris
-     retrouverait les valeurs d'usine et devrait tout reposer à la main. Marquée
-     une fois, et seulement si la table est encore vide : une reprise qui
-     écraserait un réglage déjà synchronisé serait pire que pas de reprise. */
+  /* One-time takeover of the settings set before the sync. Without it, Chris
+     would find the factory values again and have to set everything by hand.
+     Marked once, and only if the table is still empty: a takeover that
+     overwrote an already synced setting would be worse than none. */
   async function reprendreReplisLocaux() {
     let brut = null;
     try {
@@ -605,25 +604,25 @@ const UI = (() => {
     });
   }
 
-  // ---------- Thème ----------
+  // ---------- Theme ----------
 
-  /* Les deux palettes sombres (v8.34) : data-theme dit la famille, data-sombre
-     la palette. La couleur de la barre d etat suit la palette. */
-  const TEINTES = { clair: "#f4ede3", graphite: "#111113", nuit: "#0b1017" };
+  /* The two dark palettes (v8.34): data-theme gives the family, data-sombre
+     the palette. The status bar colour follows the palette. */
+  const TINTS = { clair: "#f4ede3", graphite: "#111113", nuit: "#0b1017" };
   function appliquerTheme(theme, palette) {
     document.documentElement.setAttribute("data-theme", theme);
     if (palette) document.documentElement.setAttribute("data-sombre", palette);
     try {
       localStorage.setItem("theme", theme);
       if (palette) localStorage.setItem("sombre", palette);
-    } catch (e) { /* indisponible, tant pis */ }
-    /* La barre d'état de la PWA installée suit le thème. Les deux balises du
-       <head> ne connaissent que la préférence du système, et le navigateur
-       retient celle dont le media correspond : on écrit donc la couleur choisie
-       dans les DEUX, sinon celle qu'il retient contredirait le choix. */
+    } catch (e) { /* unavailable, too bad */ }
+    /* The status bar of the installed PWA follows the theme. The two tags of
+       the <head> only know the system preference, and the browser keeps the
+       one whose media matches: so we write the chosen colour into BOTH,
+       otherwise the one it keeps would contradict the choice. */
     const teinte = theme === "sombre"
-      ? TEINTES[document.documentElement.getAttribute("data-sombre")] || TEINTES.graphite
-      : TEINTES.clair;
+      ? TINTS[document.documentElement.getAttribute("data-sombre")] || TINTS.graphite
+      : TINTS.clair;
     document.querySelectorAll('meta[name="theme-color"]')
       .forEach(m => m.setAttribute("content", teinte));
     if (typeof Chart !== "undefined") {
@@ -632,81 +631,81 @@ const UI = (() => {
     }
   }
 
-  /* La restauration au chargement vit dans le <head> d'index.html, pas ici : un
-     script différé n'agit qu'après le premier rendu, et le thème clair
-     clignotait donc en sombre à chaque ouverture. */
+  /* The restore on load lives in the <head> of index.html, not here: a
+     deferred script only acts after the first render, and the light theme
+     therefore flashed dark on every opening. */
 
   // ---------- Navigation ----------
 
   const ECRANS = ["tableau", "saisie", "historique", "reglages", "guide", "parametres"];
 
-  /* Anciens noms d'écran encore présents dans un signet ou un raccourci PWA.
-     "reference" a fusionné dans "guide" : la référence et le guide d'achat
-     parlaient du même matériel et se consultaient l'un après l'autre. */
+  /* Old screen names still present in a bookmark or a PWA shortcut.
+     "reference" merged into "guide": the reference and the buying guide
+     talked about the same equipment and were read one after the other. */
   const ECRANS_RENOMMES = { reference: "guide" };
   function normaliserEcran(nom) {
     return ECRANS_RENOMMES[nom] || nom;
   }
-  /* État de navigation, en un seul objet muté en place plutôt qu'en variables
-     séparées. La forme compte : plusieurs fichiers le lisent et l'écrivent, et
-     un objet partagé se lit partout à jour, là où une variable empruntée serait
-     figée sur sa valeur du chargement. */
+  /* Navigation state, in a single object mutated in place rather than in
+     separate variables. The shape matters: several files read and write it,
+     and a shared object reads up to date everywhere, where a borrowed
+     variable would be frozen on its value at load time. */
   const nav = { ecran: "tableau" };
 
-  /* Enveloppe un changement d'écran dans une transition de vue quand le moteur
-     sait le faire. Sinon on appelle directement : le repli est le comportement
-     d'avant, pas une version dégradée.
+  /* Wraps a screen change in a view transition when the engine can do it.
+     Otherwise we call directly: the fallback is the previous behaviour, not
+     a degraded version.
 
-     On respecte aussi le mouvement réduit ici et pas seulement en CSS : lancer la
-     machinerie pour l'annuler ensuite serait du travail pour rien. */
+     Reduced motion is also respected here and not only in CSS: starting the
+     machinery only to cancel it afterwards would be work for nothing. */
   function avecTransition(fn) {
     const bouge = typeof matchMedia === "function" &&
       matchMedia("(prefers-reduced-motion: reduce)").matches;
-    /* Document CACHÉ (onglet en arrière-plan, fenêtre réduite) : le navigateur
-       n'a aucune occasion de rendu, donc la fonction de mise à jour attendrait
-       indéfiniment et l'écran ne basculerait qu'au retour. On bascule tout de
-       suite, sans animation : personne ne la regarde. */
+    /* HIDDEN document (background tab, minimised window): the browser has no
+       rendering opportunity, so the update callback would wait forever and
+       the screen would only switch on return. We switch right away, without
+       animation: nobody is watching it. */
     const cache = typeof document.visibilityState === "string" && document.visibilityState === "hidden";
     if (bouge || cache || !document.startViewTransition) { fn(); return; }
     const transition = document.startViewTransition(fn);
-    /* Une transition interrompue par la suivante, ou sautée, rejette ses
-       promesses : c'est normal, et sans ce catch chaque bascule rapide d'écran
-       laissait un "Uncaught (in promise)" dans la console. */
+    /* A transition interrupted by the next one, or skipped, rejects its
+       promises: that is normal, and without this catch every quick screen
+       switch left an "Uncaught (in promise)" in the console. */
     if (transition && transition.ready) transition.ready.catch(() => {});
     if (transition && transition.finished) transition.finished.catch(() => {});
   }
 
-  /* pourEdition : vrai UNIQUEMENT quand c'est chargerExtractionDansSaisie qui
-     ouvre l'écran. C'était un drapeau partagé, posé avant un corps de quarante
-     lignes et remis à zéro après, sans finally : une exception au milieu le
-     laissait à true pour toujours et l'abandon d'édition ci-dessous ne se
-     déclenchait plus jamais. Chris rouvrait alors une ancienne extraction en
-     croyant en saisir une nouvelle, et la modifiait sans le vouloir.
+  /* pourEdition: true ONLY when chargerExtractionDansSaisie opens the
+     screen. It used to be a shared flag, set before a forty-line body and
+     reset after, without finally: an exception in the middle left it true
+     forever and the edit abandonment below never fired again. Chris then
+     reopened an old extraction believing he was entering a new one, and
+     modified it without meaning to.
 
-     En paramètre, il n'y a plus d'état à laisser coincé : l'information
-     appartient à l'appel, elle vit le temps de l'appel. */
+     As a parameter, there is no state left to get stuck: the information
+     belongs to the call, it lives as long as the call. */
   function activerEcran(nom, pourEdition) {
-    /* Arriver sur Saisie par la navigation veut dire "je veux noter une tasse",
-       jamais "reprends la modification d'il y a dix minutes". On abandonne donc
-       l'edition en cours, et on le DIT : sans le message, l'abandon serait aussi
-       silencieux que le bug qu'il corrige. Rien n'est perdu en base, l'extraction
-       modifiee n'avait pas ete enregistree et reste ouvrable depuis l'historique. */
+    /* Arriving on Entry through the navigation means "I want to log a cup",
+       never "resume the edit from ten minutes ago". So we abandon the edit in
+       progress, and we SAY so: without the message, the abandonment would be
+       as silent as the bug it fixes. Nothing is lost in storage, the modified
+       extraction had not been saved and can still be opened from the history. */
     if (nom === "saisie" && UI.saisie.editId && !pourEdition) {
       UI.reinitialiserSaisie();
       toast(I18N.t("t_edition_abandonnee"));
     }
-    /* Arriver sur Saisie pour une NOUVELLE tasse doit montrer l'heure qu'il est.
-       Ici et pas dans rendreEcranCourant : celui-ci se rejoue à chaque
-       notification de données, et la date sauterait pendant qu'on remplit le
-       formulaire. À l'arrivée, une fois, c'est ce qu'on veut. */
+    /* Arriving on Entry for a NEW cup must show the current time. Here and
+       not in rendreEcranCourant: that one replays on every data
+       notification, and the date would jump while filling in the form. On
+       arrival, once, is what we want. */
     if (nom === "saisie" && !UI.saisie.editId) UI.rafraichirDateSaisie();
     nav.ecran = nom;
-    // Seule la bascule VISUELLE entre dans la transition. L'abandon d'édition
-    // ci-dessus est de la logique métier : il se produit dans tous les cas.
+    // Only the VISUAL switch goes into the transition. The edit abandonment
+    // above is business logic: it happens in every case.
     avecTransition(() => {
       $$(".ecran").forEach(e => e.classList.remove("actif"));
-      /* aria-current="page" et pas aria-pressed : ce sont des liens de navigation
-          déguisés en boutons, pas des bascules. */
+      /* aria-current="page" and not aria-pressed: these are navigation links
+          disguised as buttons, not toggles. */
       $$(".nav-btn").forEach(b => {
         b.classList.toggle("actif", b.dataset.ecran === nom);
         if (b.dataset.ecran === nom) b.setAttribute("aria-current", "page");

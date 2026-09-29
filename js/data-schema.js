@@ -1,10 +1,10 @@
-/* Schéma des données : colonnes, normalisation, valeurs de départ.
+/* Data schema: columns, normalisation, seed values.
  *
- * Pur : aucune de ces fonctions ne lit ni n'écrit l'état, elles transforment
- * une ligne en une ligne. C'est la couche qui décide ce qu'est une extraction
- * valide, quelles colonnes vont dans un CSV et lesquelles n'y vont jamais
- * (maj_le), et ce que valent les recettes et les tasses semées. Dépend de
- * GRIND (validation de la molette) et des semences de recettes.js. */
+ * Pure: none of these functions reads or writes state, they turn a row into
+ * a row. This is the layer that decides what a valid brew is, which columns
+ * go into a CSV and which never do (maj_le), and what the seeded recipes and
+ * cups are worth. Depends on GRIND (dial validation) and on the seeds in
+ * recettes.js. */
 "use strict";
 
 const DATA_SCHEMA = (() => {
@@ -18,9 +18,9 @@ const DATA_SCHEMA = (() => {
     "volume_extrait_ml", "eau_ajoutee_ml", "lait_ml", "agitation_nb", "tasse", "eau_prechauffee",
     "note_sur_10", "diagnostic", "descripteurs", "commentaire", "puissance_feu", "ratee", "chauffe_s"];
 
-  /* Réglages du matériel de Chris. UNE seule ligne, d'id fixe, parce que c'est
-     un utilisateur unique : voir normaliserReglages pour le pourquoi de la
-     table. maj_le n'est pas dans les colonnes, comme partout ailleurs. */
+  /* Settings for Chris's equipment. ONE single row, with a fixed id, because
+     there is a single user: see normaliserReglages for why it is a table.
+     maj_le is not in the columns, as everywhere else. */
   const REGLAGE_ID = "moi";
 
   const REGLAGE_COLS = ["id", "dose_g", "puissance_feu", "mouture_dial", "schema_version", "ebullition_s",
@@ -33,125 +33,121 @@ const DATA_SCHEMA = (() => {
 
   const TASSE_COLS = ["id", "nom", "contenance_ml"];
 
-  /* Valeur de RATTRAPAGE des extractions Brikka déjà enregistrées, qui n'avaient
-     pas ce champ. Ce n'est PAS le défaut du formulaire (voir DEFAULT_PUISSANCE_FEU
-     dans app.js, à 4) : l'historique garde ce qui était plausible au moment où il
-     a été saisi, on ne réécrit pas le passé quand le réglage courant change. */
+  /* BACKFILL value for Brikka brews already saved, which did not have this
+     field. This is NOT the form default (see DEFAULT_PUISSANCE_FEU in app.js,
+     at 4): history keeps what was plausible when it was entered, we do not
+     rewrite the past when the current setting changes. */
   const PUISSANCE_FEU_HISTORIQUE = 3;
 
   const ACHAT_COLS = ["id", "cafe_id", "date_achat", "format_grammes", "prix_vnd", "date_torrefaction", "date_ouverture",
     "restant_g", "restant_le"];
 
-  /* L'HEURE DU CARNET (v8.71) : celle de l'appareil corrigée de son écart avec
-     le serveur, mesuré à chaque synchro. Un téléphone en avance de dix minutes
-     gagnait toutes les fusions pendant dix minutes. Un écart de moins de deux
-     secondes est du bruit de réseau : ignoré. */
-  let decalage = 0;
-  function maintenant() { return Date.now() + decalage; }
+  /* THE LOGBOOK CLOCK (v8.71): the device clock corrected by its offset from
+     the server, measured on every sync. A phone ten minutes fast won every
+     merge for ten minutes. An offset under two seconds is network noise:
+     ignored. */
+  let clockOffset = 0;
+  function maintenant() { return Date.now() + clockOffset; }
   function reglerDecalage(ms) {
     const n = Number(ms);
-    decalage = Number.isFinite(n) && Math.abs(n) > 2000 ? n : 0;
+    clockOffset = Number.isFinite(n) && Math.abs(n) > 2000 ? n : 0;
   }
 
-  /* Estampille une ligne qu'on vient d'écrire, pour que la fusion sache qui est
-     le plus récent. À appeler dans les MUTATIONS uniquement. */
+  /* Stamps a row that was just written, so the merge knows which is the
+     most recent. Call it in MUTATIONS only. */
   function estampiller(row) {
     row.maj_le = maintenant();
     return row;
   }
 
-  /* AUCUNE BALISE NE PEUT ENTRER (v8.73). Les textes saisis (noms, commentaires,
-     recettes) s'affichent en HTML à des dizaines d'endroits : un nom piégé
-     arrivé par un CSV ou la synchro (« <img onerror=…> ») aurait exécuté du code
-     sur le site, avec accès au carnet. Les chevrons sont remplacés à l'entrée
-     par leurs cousins typographiques ‹ ›, qui se lisent pareil et ne forment
-     jamais de balise. Deuxième verrou : la politique de sécurité du Worker
-     interdit tout script en ligne. Les identifiants, eux, ne gardent que des
-     caractères sûrs. */
-  const texte = v => String(v === undefined || v === null ? "" : v).replace(/</g, "‹").replace(/>/g, "›");
-  const idSur = v => String(v === undefined || v === null ? "" : v).trim().replace(/[^\w\-.@]/g, "");
+  /* NO TAG CAN GET IN (v8.73). Entered text (names, comments, recipes) is
+     rendered as HTML in dozens of places: a booby-trapped name arriving via a
+     CSV or the sync ("<img onerror=…>") would have run code on the site, with
+     access to the logbook. Angle brackets are replaced on input with their
+     typographic cousins ‹ ›, which read the same and never form a tag. Second
+     lock: the Worker's security policy forbids any inline script. Ids only
+     keep safe characters. */
+  const safeText = v => String(v === undefined || v === null ? "" : v).replace(/</g, "‹").replace(/>/g, "›");
+  const safeId = v => String(v === undefined || v === null ? "" : v).trim().replace(/[^\w\-.@]/g, "");
 
-  // Un nombre, ou vide quand la valeur manque : jamais 0 par défaut (v8.71).
-  // Un CSV sans colonne note donnait des notes de 0/10.
-  const nombreOuVide = v => (v === "" || v === undefined || v === null ? "" : Number(v));
+  // A number, or empty when the value is missing: never 0 by default (v8.71).
+  // A CSV without a score column gave scores of 0/10.
+  const numberOrEmpty = v => (v === "" || v === undefined || v === null ? "" : Number(v));
 
-  /* Reporte les horodatages connus sur des lignes qui viennent d'un CSV.
-     INDISPENSABLE : les CSV ne transportent pas `maj_le`, donc relire le dossier
-     lié remettrait tout à zéro. Conséquence si on ne le fait pas, et c'était un
-     vrai bug : modifier une extraction hors ligne puis RECHARGER la page avant
-     que la synchro passe faisait perdre la modification, écrasée par la version
-     du serveur qui, elle, était estampillée.
+  /* Carries known timestamps over to rows coming from a CSV.
+     ESSENTIAL: CSVs do not carry `maj_le`, so rereading the linked folder
+     would reset everything to zero. Consequence if we skip it, and it was a
+     real bug: editing a brew offline then RELOADING the page before the sync
+     ran lost the edit, overwritten by the server version, which was stamped.
 
-     Si le CONTENU a changé par rapport à ce qu'on avait en mémoire, on estampille
-     à maintenant : une édition au tableur est un geste délibéré, elle doit gagner
-     la fusion. Une ligne inconnue est nouvelle, donc estampillée aussi. */
-  function reporterHorodatage(lues, connues, cols) {
-    const parId = new Map((connues || []).map(r => [r.id, r]));
-    const champs = cols.filter(c => c !== "id");
-    return lues.map(ligne => {
-      const avant = parId.get(ligne.id);
-      if (!avant) return estampiller(ligne);
-      const identique = champs.every(c => {
-        const a = avant[c], b = ligne[c];
+     If the CONTENT changed compared with what we had in memory, we stamp it
+     now: a spreadsheet edit is a deliberate act, it must win the merge. An
+     unknown row is new, so it is stamped too. */
+  function reporterHorodatage(readRows, known, cols) {
+    const byId = new Map((known || []).map(r => [r.id, r]));
+    const fields = cols.filter(c => c !== "id");
+    return readRows.map(row => {
+      const prev = byId.get(row.id);
+      if (!prev) return estampiller(row);
+      const same = fields.every(c => {
+        const a = prev[c], b = row[c];
         return String(a === undefined || a === null ? "" : a) === String(b === undefined || b === null ? "" : b);
       });
-      ligne.maj_le = identique ? (Number(avant.maj_le) || 0) : maintenant();
-      return ligne;
+      row.maj_le = same ? (Number(prev.maj_le) || 0) : maintenant();
+      return row;
     });
   }
 
   function normaliserCafe(r) {
     return {
-      id: idSur(r.id),
-      // Horodatage de synchronisation. PRÉSERVÉ tel quel ici : normaliser est
-      // appelé au chargement comme à l'écriture, et restamper au chargement
-      // ferait croire à chaque appareil qu'il est le plus récent. Ce sont les
-      // mutations qui estampillent, explicitement. Jamais dans les CSV : les
-      // colonnes exportées sont listées à la main (voir csvSerialiser).
+      id: safeId(r.id),
+      // Sync timestamp. KEPT as is here: normalising runs on load as well
+      // as on write, and restamping on load would make every device believe
+      // it is the most recent. Mutations do the stamping, explicitly. Never
+      // in CSVs: the exported columns are listed by hand (see csvSerialiser).
       maj_le: Number(r.maj_le) || 0,
-      nom: texte(r.nom), torrefacteur: texte(r.torrefacteur), origine: texte(r.origine),
-      espece: texte(r.espece), procede: texte(r.procede), torrefaction: texte(r.torrefaction),
+      nom: safeText(r.nom), torrefacteur: safeText(r.torrefacteur), origine: safeText(r.origine),
+      espece: safeText(r.espece), procede: safeText(r.procede), torrefaction: safeText(r.torrefaction),
       deja_moulu: Number(r.deja_moulu) === 1 ? 1 : 0,
       pourcentage_cafe_reel: r.pourcentage_cafe_reel === "" || r.pourcentage_cafe_reel === undefined
         ? 100 : Math.max(1, Math.min(100, Number(r.pourcentage_cafe_reel) || 100)),
-      tag: texte(r.tag),
-      notes_annoncees: texte(r.notes_annoncees),
+      tag: safeText(r.tag),
+      notes_annoncees: safeText(r.notes_annoncees),
       format_grammes: r.format_grammes === "" || r.format_grammes === undefined ? "" : Number(r.format_grammes),
       prix_vnd: r.prix_vnd === "" || r.prix_vnd === undefined ? "" : Number(r.prix_vnd),
       date_torrefaction: r.date_torrefaction || "",
-      machine_recommandee: texte(r.machine_recommandee),
-      recette_recommandee: texte(r.recette_recommandee),
+      machine_recommandee: safeText(r.machine_recommandee),
+      recette_recommandee: safeText(r.recette_recommandee),
       date_ajout: r.date_ajout || "",
       actif: Number(r.actif) === 0 ? 0 : 1,
     };
   }
 
-  // Date du jour en LOCAL (jamais toISOString, décalage à UTC+7). Même
-  // définition que partout ailleurs : outils.js.
+  // Today's date in LOCAL time (never toISOString, UTC+7 offset). Same
+  // definition as everywhere else: outils.js.
   function dateLocaleAujourdhui() {
     return OUTILS.cleLocale(new Date());
   }
 
   function normaliserExtraction(r) {
     return {
-      id: idSur(r.id),
-      // Horodatage de synchronisation. PRÉSERVÉ tel quel ici : normaliser est
-      // appelé au chargement comme à l'écriture, et restamper au chargement
-      // ferait croire à chaque appareil qu'il est le plus récent. Ce sont les
-      // mutations qui estampillent, explicitement. Jamais dans les CSV : les
-      // colonnes exportées sont listées à la main (voir csvSerialiser).
+      id: safeId(r.id),
+      // Sync timestamp. KEPT as is here: normalising runs on load as well
+      // as on write, and restamping on load would make every device believe
+      // it is the most recent. Mutations do the stamping, explicitly. Never
+      // in CSVs: the exported columns are listed by hand (see csvSerialiser).
       maj_le: Number(r.maj_le) || 0,
       date_heure: r.date_heure || "",
       cafe_id: r.cafe_id || "",
-      methode: texte(r.methode),
-      recette: texte(r.recette),
-      dose_g: nombreOuVide(r.dose_g),
-      eau_g: nombreOuVide(r.eau_g),
-      mouture_dial: texte(r.mouture_dial),
-      temperature_c: nombreOuVide(r.temperature_c),
-      temps_total_s: nombreOuVide(r.temps_total_s),
-      temps_ecoulement_s: nombreOuVide(r.temps_ecoulement_s),
-      // volume_tasse_ml est l'ancien nom du champ, accepté en lecture.
+      methode: safeText(r.methode),
+      recette: safeText(r.recette),
+      dose_g: numberOrEmpty(r.dose_g),
+      eau_g: numberOrEmpty(r.eau_g),
+      mouture_dial: safeText(r.mouture_dial),
+      temperature_c: numberOrEmpty(r.temperature_c),
+      temps_total_s: numberOrEmpty(r.temps_total_s),
+      temps_ecoulement_s: numberOrEmpty(r.temps_ecoulement_s),
+      // volume_tasse_ml is the field's old name, accepted on read.
       volume_extrait_ml: (() => {
         const v = r.volume_extrait_ml !== undefined && r.volume_extrait_ml !== "" ? r.volume_extrait_ml : r.volume_tasse_ml;
         return v === "" || v === undefined ? "" : Number(v);
@@ -159,144 +155,142 @@ const DATA_SCHEMA = (() => {
       eau_ajoutee_ml: r.eau_ajoutee_ml === "" || r.eau_ajoutee_ml === undefined ? "" : Number(r.eau_ajoutee_ml),
       lait_ml: r.lait_ml === "" || r.lait_ml === undefined ? "" : Number(r.lait_ml),
       agitation_nb: r.agitation_nb === "" || r.agitation_nb === undefined ? "" : Number(r.agitation_nb),
-      tasse: texte(r.tasse),
+      tasse: safeText(r.tasse),
       eau_prechauffee: Number(r.eau_prechauffee) === 1 ? 1 : "",
-      // Puissance de feu, echelle personnelle de 1 a 10. Bornee et arrondie :
-      // une valeur hors plage editee au tableur est ramenee dedans, pas jetee.
+      // Heat power, personal scale from 1 to 10. Clamped and rounded: an
+      // out-of-range value edited in a spreadsheet is brought back in, not dropped.
       puissance_feu: r.puissance_feu === "" || r.puissance_feu === undefined || r.puissance_feu === null
         ? "" : Math.max(1, Math.min(10, Math.round(Number(r.puissance_feu)) || 1)),
-      note_sur_10: nombreOuVide(r.note_sur_10),
-      diagnostic: texte(r.diagnostic),
-      descripteurs: texte(r.descripteurs),
-      commentaire: texte(r.commentaire),
-      /* Ratée : 1 ou vide. Vide veut dire "pas dit", pas "réussie", et c'est la
-         valeur de toutes les tasses antérieures au drapeau. Aucune migration
-         n'est nécessaire pour autant : une colonne absente d'un vieux CSV relit
-         vide, ce qui est exactement le bon défaut. */
+      note_sur_10: numberOrEmpty(r.note_sur_10),
+      diagnostic: safeText(r.diagnostic),
+      descripteurs: safeText(r.descripteurs),
+      commentaire: safeText(r.commentaire),
+      /* Failed: 1 or empty. Empty means "not said", not "successful", and it
+         is the value of every cup older than the flag. No migration is needed
+         for all that: a column missing from an old CSV reads back empty,
+         which is exactly the right default. */
       ratee: Number(r.ratee) === 1 ? 1 : "",
-      /* Temps passé par la bouilloire sur le feu, en secondes, Switch seulement.
-         C'est la mesure de Chris ; la température stockée en est l'estimation,
-         corrigeable à la main. Vide pour la Brikka et pour tout l'historique
-         antérieur : une colonne absente relit vide, aucune migration. */
+      /* Time the kettle spent on the heat, in seconds, Switch only. This is
+         Chris's measurement; the stored temperature is its estimate,
+         correctable by hand. Empty for the Brikka and for all earlier
+         history: a missing column reads back empty, no migration. */
       chauffe_s: r.chauffe_s === "" || r.chauffe_s === undefined || r.chauffe_s === null
         ? "" : Math.max(0, Math.round(Number(r.chauffe_s)) || 0),
     };
   }
 
-  // Recette : forme JS interne <-> ligne CSV lisible au tableur.
-  // Les étapes sont encodées une par segment "m:ss texte" ou "- texte",
-  // séparées par " || ". Les cafés associés sont séparés par " ; ".
-  /* Réglages du matériel. Une TABLE d'une ligne plutôt qu'un mécanisme dédié :
-     la fusion par maj_le, les tombstones et l'assainissement réseau existent
-     déjà. Ces trois valeurs décrivent le MATÉRIEL de Chris, pas son appareil :
-     sa molette de broyeur est la même vue du téléphone et de l'ordinateur, alors
-     que le thème et les bips restent en localStorage à juste titre. */
+  // Recipe: internal JS shape <-> CSV row readable in a spreadsheet.
+  // Steps are encoded one per segment "m:ss text" or "- text",
+  // separated by " || ". Associated coffees are separated by " ; ".
+  /* Equipment settings. A one-row TABLE rather than a dedicated mechanism:
+     merging by maj_le, tombstones and network sanitising already exist.
+     These three values describe Chris's EQUIPMENT, not his device: his
+     grinder dial is the same seen from the phone and the computer, whereas
+     the theme and the beeps rightly stay in localStorage. */
   function normaliserReglages(r) {
-    const nombre = (v, min, max, defaut) => {
+    const num = (v, min, max, fallback) => {
       const n = Number(v);
-      return Number.isFinite(n) && n >= min && n <= max ? n : defaut;
+      return Number.isFinite(n) && n >= min && n <= max ? n : fallback;
     };
     return {
       id: REGLAGE_ID,
       maj_le: Number(r && r.maj_le) || 0,
-      dose_g: nombre(r && r.dose_g, 0.1, 100, 15),
-      /* 3, comme le repli d'usine de l'interface et la semence des recettes :
-         trois endroits, une seule valeur, sinon un carnet neuf et un carnet
-         existant n'annoncent pas le meme feu. */
-      puissance_feu: nombre(r && r.puissance_feu, 1, 10, 3),
+      dose_g: num(r && r.dose_g, 0.1, 100, 15),
+      /* 3, like the interface's factory fallback and the recipe seed: three
+         places, one single value, otherwise a new logbook and an existing
+         logbook do not announce the same heat. */
+      puissance_feu: num(r && r.puissance_feu, 1, 10, 3),
       mouture_dial: typeof (r && r.mouture_dial) === "string" && GRIND.parseDial(r.mouture_dial)
         ? r.mouture_dial : "1.5.0",
-      // Version de schéma du document, voir PAS_DE_SCHEMA. Rangée ici parce que
-      // cette ligne est le seul endroit synchronisé qui ne soit pas une donnée
-      // de café : la version doit voyager avec les données qu'elle décrit.
-      schema_version: nombre(r && r.schema_version, 0, 999, 0),
-      /* Temps que met la bouilloire de Chris à bouillir depuis l'eau du robinet,
-         en secondes. Décrit son MATÉRIEL, donc synchronisé comme la molette. Sert
-         à estimer la température du Switch depuis le temps de chauffe.
+      // Schema version of the document, see PAS_DE_SCHEMA. Stored here because
+      // this row is the only synced place that is not coffee data: the
+      // version must travel with the data it describes.
+      schema_version: num(r && r.schema_version, 0, 999, 0),
+      /* Time Chris's kettle takes to boil from tap water, in seconds.
+         Describes his EQUIPMENT, so synced like the dial. Used to estimate the
+         Switch temperature from the heating time.
 
-         120 SECONDES par défaut, et non zéro. Le choix d'origine était zéro, avec
-         une raison valable : sans mesure, une valeur d'usine INVENTÉE produirait
-         des degrés faux d'apparence sérieuse. Son prix était que la fonction
-         restait éteinte tant qu'on n'allait pas la régler, et rien ne le disait
-         au moment où on tapait un temps de chauffe. Chris a depuis mesuré sa
-         bouilloire, 2 minutes du robinet au gros bouillon : la valeur n'est plus
-         inventée, et le raisonnement d'origine ne s'applique plus. C'est CE
-         défaut qui alimente replis.ebullition, pas la constante d'interface. */
-      ebullition_s: nombre(r && r.ebullition_s, 30, 1800, 120),
-      /* Le second repère de la bouilloire (v8.59) : les premières bulles qui
-         REMONTENT, vers 88 °C. Il courbe l'estimation du degré (recettes.js).
-         1:30 par défaut, ce que Chris a chronométré ; une ligne d'avant la
-         v8.59 le prend sans migration. Un repère posé après l'ébullition n'est
-         pas refusé ici : le modèle le remplace par les trois quarts du temps
-         d'ébullition. */
-      bulles_s: nombre(r && r.bulles_s, 10, 1790, 90),
-      /* Les PAS de la correction chiffrée (v8.48), pour un diagnostic « un peu » ;
-         un diagnostic franc les double. Des défauts tirés des phrases de
-         correction (« un ou deux crans », « 2 à 3 degrés », « un gramme de café »),
-         réglables dans Paramètres. Une ligne d'avant la v8.48 n'a pas ces
-         colonnes : elle prend les défauts, sans migration. */
-      pas_crans: nombre(r && r.pas_crans, 1, 10, 2),
-      pas_degres: nombre(r && r.pas_degres, 1, 6, 2),
-      pas_feu: nombre(r && r.pas_feu, 1, 3, 1),
-      pas_eau_g: nombre(r && r.pas_eau_g, 5, 60, 15),
-      pas_dose_g: nombre(r && r.pas_dose_g, 0.5, 3, 1),
-      /* Les dessins du tableau de bord (v8.57), dans l'ordre choisi, « ! » devant
-         ceux qui sont masqués : « etagere,!horloge,podium ». Vide = l'ordre
-         d'origine, tout visible. Un nom inconnu est ignoré à la lecture. */
+         120 SECONDS by default, not zero. The original choice was zero, with
+         a valid reason: without a measurement, an INVENTED factory value
+         would produce wrong degrees that look serious. Its cost was that the
+         feature stayed off until you went to set it, and nothing said so
+         when you typed a heating time. Chris has since measured his kettle,
+         2 minutes from tap to rolling boil: the value is no longer invented,
+         and the original reasoning no longer applies. THIS default is what
+         feeds replis.ebullition, not the interface constant. */
+      ebullition_s: num(r && r.ebullition_s, 30, 1800, 120),
+      /* The kettle's second marker (v8.59): the first bubbles RISING, around
+         88 °C. It bends the degree estimate (recettes.js). 1:30 by default,
+         what Chris timed; a row from before v8.59 takes it without
+         migration. A marker set after the boil is not refused here: the
+         model replaces it with three quarters of the boil time. */
+      bulles_s: num(r && r.bulles_s, 10, 1790, 90),
+      /* The STEPS of the quantified correction (v8.48), for a "slightly"
+         diagnosis; a strong diagnosis doubles them. Defaults drawn from the
+         correction sentences ("un ou deux crans", "2 à 3 degrés", "un gramme
+         de café"), adjustable in Settings. A row from before v8.48 lacks these
+         columns: it takes the defaults, without migration. */
+      pas_crans: num(r && r.pas_crans, 1, 10, 2),
+      pas_degres: num(r && r.pas_degres, 1, 6, 2),
+      pas_feu: num(r && r.pas_feu, 1, 3, 1),
+      pas_eau_g: num(r && r.pas_eau_g, 5, 60, 15),
+      pas_dose_g: num(r && r.pas_dose_g, 0.5, 3, 1),
+      /* The dashboard drawings (v8.57), in the chosen order, "!" in front of
+         hidden ones: "etagere,!horloge,podium". Empty = the original order,
+         all visible. An unknown name is ignored on read. */
       dessins: String(r && r.dessins || "").replace(/[^a-z!,]/g, "").slice(0, 200),
     };
   }
 
   function normaliserRecette(r) {
     return {
-      id: idSur(r.id),
-      // Horodatage de synchronisation. PRÉSERVÉ tel quel ici : normaliser est
-      // appelé au chargement comme à l'écriture, et restamper au chargement
-      // ferait croire à chaque appareil qu'il est le plus récent. Ce sont les
-      // mutations qui estampillent, explicitement. Jamais dans les CSV : les
-      // colonnes exportées sont listées à la main (voir csvSerialiser).
+      id: safeId(r.id),
+      // Sync timestamp. KEPT as is here: normalising runs on load as well
+      // as on write, and restamping on load would make every device believe
+      // it is the most recent. Mutations do the stamping, explicitly. Never
+      // in CSVs: the exported columns are listed by hand (see csvSerialiser).
       maj_le: Number(r.maj_le) || 0,
-      nom: texte(r.nom),
-      numero: texte(r.numero),
+      nom: safeText(r.nom),
+      numero: safeText(r.numero),
       methode: r.methode === "Switch" ? "Switch" : "Brikka",
-      famille: texte(r.famille),
-      variante: texte(r.variante),
+      famille: safeText(r.famille),
+      variante: safeText(r.variante),
       lait: r.lait !== undefined && r.lait !== "" ? (Number(r.lait) === 1 || r.lait === true) : false,
-      sousTitre: texte(r.sous_titre !== undefined ? r.sous_titre : r.sousTitre),
+      sousTitre: safeText(r.sous_titre !== undefined ? r.sous_titre : r.sousTitre),
       dose: Number(r.dose_g !== undefined ? r.dose_g : r.dose) || 0,
       eau: Number(r.eau_g !== undefined ? r.eau_g : r.eau) || 0,
-      // "" veut dire AUCUNE cible, ce qui n'est pas la même chose que 0 degré.
-      // Sur la Brikka la température dépend de la flamme, la fixer n'a pas de sens.
+      // "" means NO target, which is not the same thing as 0 degrees.
+      // On the Brikka the temperature depends on the flame, fixing it makes no sense.
       temp: (() => {
         const v = r.temperature_c !== undefined ? r.temperature_c : r.temp;
         return v === "" || v === null || v === undefined ? "" : (Number(v) || "");
       })(),
-      // Puissance de feu visee par la recette, Brikka seulement. Preremplit la
-      // saisie comme le font la dose et la molette.
+      // Heat power targeted by the recipe, Brikka only. Prefills the entry
+      // form like the dose and the dial do.
       puissance_feu: r.puissance_feu === "" || r.puissance_feu === undefined || r.puissance_feu === null
         ? "" : Math.max(1, Math.min(10, Math.round(Number(r.puissance_feu)) || 1)),
-      /* Rendement TYPIQUE en tasse, déclaré par la recette. Ce n'est pas une
-         estimation calculée : la Brikka n'en a volontairement aucune, l'ancienne
-         formule annonçait 139 ml là où Chris en mesure 90 à 115. C'est un chiffre
-         mesuré, écrit dans la recette, et il sert à calculer le lait quand le
-         volume de la tasse n'a pas été relevé. */
+      /* TYPICAL cup yield, declared by the recipe. It is not a computed
+         estimate: the Brikka deliberately has none, the old formula announced
+         139 ml where Chris measures 90 to 115. It is a measured figure,
+         written in the recipe, and it is used to compute the milk when the
+         cup volume was not recorded. */
       volumeTypique: (() => {
         const v = r.volume_typique !== undefined ? r.volume_typique : r.volumeTypique;
         return v === "" || v === null || v === undefined ? "" : (Number(v) || "");
       })(),
-      tempTexte: texte(r.temp_texte !== undefined ? r.temp_texte : r.tempTexte),
-      dial: texte(r.mouture_dial !== undefined ? r.mouture_dial : r.dial),
-      ratioTexte: texte(r.ratio_texte !== undefined ? r.ratio_texte : r.ratioTexte),
-      totalTexte: texte(r.total_texte !== undefined ? r.total_texte : r.totalTexte),
+      tempTexte: safeText(r.temp_texte !== undefined ? r.temp_texte : r.tempTexte),
+      dial: safeText(r.mouture_dial !== undefined ? r.mouture_dial : r.dial),
+      ratioTexte: safeText(r.ratio_texte !== undefined ? r.ratio_texte : r.ratioTexte),
+      totalTexte: safeText(r.total_texte !== undefined ? r.total_texte : r.totalTexte),
       etapes: (Array.isArray(r.etapes) ? r.etapes
-        : texteVersEtapes(String(r.etapes || "").split("||").join("\n"))).map(e => ({ ...e, texte: texte(e.texte) })),
-      pourQui: texte(r.pour_qui !== undefined ? r.pour_qui : r.pourQui),
+        : texteVersEtapes(String(r.etapes || "").split("||").join("\n"))).map(e => ({ ...e, texte: safeText(e.texte) })),
+      pourQui: safeText(r.pour_qui !== undefined ? r.pour_qui : r.pourQui),
       cafesAssocies: (Array.isArray(r.cafesAssocies) ? r.cafesAssocies
-        : String(r.cafes_associes || "").split(";").map(s => s.trim()).filter(Boolean)).map(texte),
-      note: texte(r.note),
-      /* La vidéo de la recette (v8.64) : un lien, YouTube ou autre. Le Guide
-         intègre le lecteur quand c'est YouTube, sinon il donne le lien. Seuls
-         http et https passent : un lien « javascript: » ne s'écrit jamais. */
+        : String(r.cafes_associes || "").split(";").map(s => s.trim()).filter(Boolean)).map(safeText),
+      note: safeText(r.note),
+      /* The recipe video (v8.64): a link, YouTube or other. The Guide embeds
+         the player when it is YouTube, otherwise it gives the link. Only
+         http and https pass: a "javascript:" link is never written. */
       video: /^https?:\/\//i.test(String(r.video || "").trim()) ? String(r.video).trim().slice(0, 300) : "",
       parDefaut: r.par_defaut !== undefined ? Number(r.par_defaut) === 1 : !!r.parDefaut,
       avancee: r.avancee !== undefined && r.avancee !== "" ? (Number(r.avancee) === 1 || r.avancee === true) : false,
@@ -321,11 +315,11 @@ const DATA_SCHEMA = (() => {
       avancee: r.avancee ? 1 : 0,
       variantes: r.variantes ? 1 : 0,
       actif: r.actif,
-      /* puissance_feu manquait ici alors qu'elle figure dans RECETTE_COLS depuis
-         qu'elle existe : csvSerialiser lit ligne[colonne], donc la colonne
-         sortait VIDE. Exporter les recettes puis les relire effacait la cible de
-         feu des dix recettes, sans rien signaler. Le controle des colonnes
-         couvertes, dans tools/data.test.mjs, empeche desormais l'oubli. */
+      /* puissance_feu was missing here although it has been in RECETTE_COLS
+         since it existed: csvSerialiser reads ligne[colonne], so the column
+         came out EMPTY. Exporting the recipes then reading them back erased
+         the heat target of all ten recipes, silently. The covered-columns
+         check, in tools/data.test.mjs, now prevents the omission. */
       puissance_feu: r.puissance_feu,
       volume_typique: r.volumeTypique,
       video: r.video,
@@ -342,20 +336,20 @@ const DATA_SCHEMA = (() => {
 
   function normaliserAchat(r) {
     return {
-      id: idSur(r.id),
+      id: safeId(r.id),
       maj_le: Number(r.maj_le) || 0,
       cafe_id: r.cafe_id || "",
       date_achat: r.date_achat || "",
       format_grammes: r.format_grammes === "" || r.format_grammes === undefined ? "" : Number(r.format_grammes),
       prix_vnd: r.prix_vnd === "" || r.prix_vnd === undefined ? "" : Number(r.prix_vnd),
       date_torrefaction: r.date_torrefaction || "",
-      /* Jour où le sachet a été OUVERT, la seule fraîcheur qui compte ici. Vide
-         tant qu'il dort dans le placard, ce qui est une information en soi. */
+      /* Day the bag was OPENED, the only freshness that counts here. Empty
+         while it sleeps in the cupboard, which is information in itself. */
       date_ouverture: r.date_ouverture || "",
-      /* LE COMPTE À LA MAIN (v8.96) : les grammes que Chris a pesés ou estimés
-         dans le sachet, et quand (« AAAA-MM-JJTHH:MM », l'heure locale des
-         tasses). Le stock repart de ce chiffre au lieu du format plein, et
-         seules les tasses d'après s'en retirent. */
+      /* THE MANUAL COUNT (v8.96): the grams Chris weighed or estimated in the
+         bag, and when ("AAAA-MM-JJTHH:MM", the cups' local time). Stock
+         restarts from this figure instead of the full bag size, and only the
+         cups after it are subtracted. */
       restant_g: r.restant_g === "" || r.restant_g === undefined || r.restant_g === null ||
         !Number.isFinite(Number(r.restant_g)) ? "" : Number(r.restant_g),
       restant_le: r.restant_le || "",
@@ -364,14 +358,13 @@ const DATA_SCHEMA = (() => {
 
   function normaliserTasse(r) {
     return {
-      id: idSur(r.id),
-      // Horodatage de synchronisation. PRÉSERVÉ tel quel ici : normaliser est
-      // appelé au chargement comme à l'écriture, et restamper au chargement
-      // ferait croire à chaque appareil qu'il est le plus récent. Ce sont les
-      // mutations qui estampillent, explicitement. Jamais dans les CSV : les
-      // colonnes exportées sont listées à la main (voir csvSerialiser).
+      id: safeId(r.id),
+      // Sync timestamp. KEPT as is here: normalising runs on load as well
+      // as on write, and restamping on load would make every device believe
+      // it is the most recent. Mutations do the stamping, explicitly. Never
+      // in CSVs: the exported columns are listed by hand (see csvSerialiser).
       maj_le: Number(r.maj_le) || 0,
-      nom: texte(r.nom),
+      nom: safeText(r.nom),
       contenance_ml: Number(r.contenance_ml) || 0,
     };
   }
@@ -380,17 +373,16 @@ const DATA_SCHEMA = (() => {
     return TASSES_DEPART.map(t => normaliserTasse(t));
   }
 
-  /* DES IDENTIFIANTS QUI NE SE TÉLESCOPENT PLUS (v8.71). L'identifiant valait
-     « longueur de la liste + 1 » : le téléphone et l'ordinateur fabriquaient
-     tous deux « e124 », et à la synchro l'une des deux tasses écrasait l'autre
-     sans rien dire. Maintenant : l'heure en base 36 et quatre caractères au
-     hasard. Les anciens identifiants restent valides, aucun code ne les lit
-     comme des nombres. */
-  function nouvelId(prefixe, liste) {
+  /* IDS THAT NO LONGER COLLIDE (v8.71). The id used to be "list length + 1":
+     the phone and the computer both produced "e124", and on sync one of the
+     two cups silently overwrote the other. Now: the time in base 36 plus
+     four random characters. Old ids stay valid, no code reads them as
+     numbers. */
+  function nouvelId(prefix, list) {
     let id;
     do {
-      id = prefixe + maintenant().toString(36) + Math.random().toString(36).slice(2, 6);
-    } while (liste.some(x => x.id === id));
+      id = prefix + maintenant().toString(36) + Math.random().toString(36).slice(2, 6);
+    } while (list.some(x => x.id === id));
     return id;
   }
 

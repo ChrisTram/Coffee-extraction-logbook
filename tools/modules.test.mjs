@@ -1,29 +1,29 @@
-/* Tests des FRONTIERES entre les fichiers de l'interface.
+/* Tests of the BOUNDARIES between the interface files.
  *
  *   node tools/modules.test.mjs
  *
- * L'interface tenait dans un seul fichier de 3 400 lignes, une seule fonction,
- * une seule portee. Tout se voyait de partout, donc rien ne pouvait mal se
- * cabler. Le decoupage en sept fichiers a supprime ce filet : chaque fichier a
- * maintenant sa portee, et un nom oublie ne se voit plus a l'ecriture. Ce
- * fichier remet le filet, en statique.
+ * The interface used to fit in a single 3,400 line file, a single function,
+ * a single scope. Everything was visible from everywhere, so nothing could be
+ * miswired. Splitting it into seven files removed that safety net: each file
+ * now has its own scope, and a forgotten name no longer shows up while writing.
+ * This file puts the net back, statically.
  *
- * Les trois fautes que ce decoupage rend possibles, par ordre de mechancete :
+ * The three mistakes this split makes possible, from nastiest down:
  *
- *   1. Emprunter un `let` du noyau. La destructuration lie une VALEUR : le
- *      fichier emprunteur reste fige sur la valeur du chargement, pour toujours,
- *      sans que rien ne le signale. C'est arrive pendant le decoupage lui-meme,
- *      sur l'ecran courant, et seule une relecture l'a attrape. L'etat partage
- *      doit etre un objet mute en place, comme `saisie`, `chrono` ou `nav`.
+ *   1. Borrowing a `let` from the core. Destructuring binds a VALUE: the
+ *      borrowing file stays frozen on the value at load time, forever,
+ *      with nothing to flag it. It happened during the split itself,
+ *      on the current screen, and only a review caught it. Shared state
+ *      must be an object mutated in place, like `saisie`, `chrono` or `nav`.
  *
- *   2. Appeler une fonction d'un autre ecran sans passer par UI. Le fichier se
- *      charge sans broncher et la panne arrive au clic, dans le navigateur.
+ *   2. Calling a function of another screen without going through UI. The file
+ *      loads without a hitch and the failure comes on click, in the browser.
  *
- *   3. Definir une fonction sans l'exposer alors qu'un autre fichier l'appelle.
- *      Meme symptome, meme delai.
+ *   3. Defining a function without exposing it while another file calls it.
+ *      Same symptom, same delay.
  *
- * On lit les fichiers, on ne les execute pas : boot.test.mjs se charge de faire
- * tourner l'application pour de vrai.
+ * We read the files, we do not execute them: boot.test.mjs takes care of
+ * running the application for real.
  */
 
 import { readFileSync } from "node:fs";
@@ -33,42 +33,42 @@ import { fileURLToPath } from "node:url";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 let failures = 0;
-function check(nom, ok, detail) {
-  if (ok) console.log("OK   " + nom);
-  else { failures++; console.log("FAIL " + nom + (detail ? "  -> " + detail : "")); }
+function check(name, ok, detail) {
+  if (ok) console.log("OK   " + name);
+  else { failures++; console.log("FAIL " + name + (detail ? "  -> " + detail : "")); }
 }
 
-/* Un lexeur juste assez complet pour savoir OU sont les identifiants libres.
-   Les expressions regulieres ne suffisent pas : un nom apparait aussi dans des
-   chaines, des commentaires et comme propriete, et les confondre donnerait des
-   alertes fausses en pagaille, donc un test qu'on finirait par ignorer. */
+/* A lexer just complete enough to know WHERE the free identifiers are.
+   Regular expressions are not enough: a name also appears in strings,
+   comments and as a property, and mixing them up would give false alarms
+   galore, hence a test that would end up being ignored. */
 function lexer(src) {
-  const jetons = [];
-  let i = 0, prec = null;
-  const pousser = (type, deb, fin) => {
-    const j = { type, deb, fin, txt: src.slice(deb, fin) };
-    jetons.push(j);
-    if (type !== "espace" && type !== "commentaire") prec = j;
+  const tokens = [];
+  let i = 0, prev = null;
+  const push = (type, start, end) => {
+    const j = { type, start, end, text: src.slice(start, end) };
+    tokens.push(j);
+    if (type !== "space" && type !== "comment") prev = j;
   };
   while (i < src.length) {
     const c = src[i];
     if (" \t\n\r".includes(c)) {
       const d = i; while (i < src.length && " \t\n\r".includes(src[i])) i++;
-      pousser("espace", d, i); continue;
+      push("space", d, i); continue;
     }
     if (c === "/" && src[i + 1] === "/") {
       const d = i; while (i < src.length && src[i] !== "\n") i++;
-      pousser("commentaire", d, i); continue;
+      push("comment", d, i); continue;
     }
     if (c === "/" && src[i + 1] === "*") {
       const d = i; i += 2;
       while (i < src.length && !(src[i] === "*" && src[i + 1] === "/")) i++;
-      i += 2; pousser("commentaire", d, i); continue;
+      i += 2; push("comment", d, i); continue;
     }
     if (c === '"' || c === "'") {
       const d = i, q = c; i++;
       while (i < src.length && src[i] !== q) { if (src[i] === "\\") i++; i++; }
-      i++; pousser("chaine", d, i); continue;
+      i++; push("string", d, i); continue;
     }
     if (c === "`") {
       const d = i; i++;
@@ -89,66 +89,66 @@ function lexer(src) {
         }
         i++;
       }
-      i++; pousser("gabarit", d, i); continue;
+      i++; push("template", d, i); continue;
     }
     if (c === "/") {
-      // Regex ou division : cela depend du jeton precedent, pas du caractere.
-      const p = prec ? prec.txt : null;
-      const divise = p !== null && (/^[\w$]+$/.test(p) || p === ")" || p === "]") &&
+      // Regex or division: it depends on the previous token, not on the character.
+      const p = prev ? prev.text : null;
+      const isDivision = p !== null && (/^[\w$]+$/.test(p) || p === ")" || p === "]") &&
         !["return", "typeof", "case", "in", "of", "new", "delete", "void",
           "instanceof", "do", "else", "yield", "await"].includes(p);
-      if (divise) { pousser("op", i, i + 1); i++; continue; }
-      const d = i; i++; let crochet = false;
+      if (isDivision) { push("op", i, i + 1); i++; continue; }
+      const d = i; i++; let inClass = false;
       while (i < src.length) {
         const x = src[i];
         if (x === "\\") { i += 2; continue; }
-        if (x === "[") crochet = true;
-        else if (x === "]") crochet = false;
-        else if ((x === "/" && !crochet) || x === "\n") break;
+        if (x === "[") inClass = true;
+        else if (x === "]") inClass = false;
+        else if ((x === "/" && !inClass) || x === "\n") break;
         i++;
       }
       i++; while (i < src.length && /[a-z]/.test(src[i])) i++;
-      pousser("regex", d, i); continue;
+      push("regex", d, i); continue;
     }
     if (/[A-Za-z_$]/.test(c)) {
       const d = i; while (i < src.length && /[\w$]/.test(src[i])) i++;
-      pousser("ident", d, i); continue;
+      push("ident", d, i); continue;
     }
     if (/[0-9]/.test(c)) {
       const d = i; while (i < src.length && /[\w.]/.test(src[i])) i++;
-      pousser("nombre", d, i); continue;
+      push("number", d, i); continue;
     }
-    /* Les operateurs de plus d'un caractere doivent sortir en UN jeton. Sans
-       cela `=>` devient `=` puis `>`, et toute la reconnaissance des fonctions
-       flechees tombe en silence : chaque parametre passe alors pour un nom
-       inconnu, et le test noie sa vraie alerte dans cinquante fausses. */
+    /* Operators longer than one character must come out as ONE token. Without
+       that, `=>` becomes `=` then `>`, and all recognition of arrow functions
+       silently falls apart: every parameter then looks like an unknown name,
+       and the test drowns its real alarm in fifty false ones. */
     const multi = OPS.find(o => src.startsWith(o, i));
     const n = multi ? multi.length : 1;
-    pousser("op", i, i + n); i += n;
+    push("op", i, i + n); i += n;
   }
-  return jetons;
+  return tokens;
 }
 
-// Du plus long au plus court : `===` doit gagner contre `==`.
+// Longest to shortest: `===` must win over `==`.
 const OPS = ["...", "===", "!==", "**=", "&&=", "||=", "??=", "=>", "==", "!=", "<=", ">=",
   "&&", "||", "??", "?.", "++", "--", "+=", "-=", "*=", "/=", "%=", "**", "<<", ">>"];
 
-const FICHIERS = ["js/ui-noyau.js", "js/ui-constats.js", "js/ui-derniere.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-saisie-aside.js", "js/ui-pilules.js", "js/ui-chrono.js", "js/ui-brouillon.js", "js/ui-rapide.js",
+const FILES = ["js/ui-noyau.js", "js/ui-constats.js", "js/ui-derniere.js", "js/ui-tableau.js", "js/ui-saisie.js", "js/ui-saisie-aside.js", "js/ui-pilules.js", "js/ui-chrono.js", "js/ui-brouillon.js", "js/ui-rapide.js",
   "js/ui-historique.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalogue.js", "js/ui-fiche.js", "js/ui-brassage.js", "js/ui-dessins.js", "js/app.js"];
 
-const MOTS_CLES = new Set(["if","else","for","while","do","return","function","const","let","var",
+const KEYWORDS = new Set(["if","else","for","while","do","return","function","const","let","var",
   "new","typeof","instanceof","in","of","delete","void","this","null","true","false","undefined",
   "class","extends","super","try","catch","finally","throw","switch","case","default","break",
   "continue","async","await","yield","import","export","from","as","static","get","set","arguments"]);
 
-/* Les autres couches du site. On les RELEVE dans leurs fichiers au lieu de les
-   lister ici : recettes.js à lui seul publie une trentaine de constantes, et une
-   liste écrite à la main aurait divergé au premier ajout, transformant ce test
-   en source de fausses alertes. Ce qui revient à le désactiver. */
-const AUTRES_COUCHES = ["js/outils.js", "js/i18n.js", "js/grind.js", "js/recettes.js", "js/sync.js",
+/* The other layers of the site. We COLLECT them from their files instead of
+   listing them here: recettes.js alone publishes some thirty constants, and a
+   handwritten list would have drifted at the first addition, turning this test
+   into a source of false alarms. Which amounts to disabling it. */
+const OTHER_LAYERS = ["js/outils.js", "js/i18n.js", "js/grind.js", "js/recettes.js", "js/sync.js",
   "js/data-csv.js", "js/data-schema.js", "js/data-store.js", "js/data-calculs.js", "js/data-migrations.js",
   "js/data.js", "js/reglages.js", "js/charts.js", "js/demo-data.js"];
-const GLOBAUX = new Set(["Chart",
+const GLOBALS = new Set(["Chart",
   "UI","document","window","location","history","navigator","localStorage","sessionStorage",
   "console","Math","JSON","Date","Number","String","Boolean","Array","Object","Set","Map","WeakMap","Promise",
   "RegExp","Error","Intl","Blob","URL","File","FileReader","FormData","Headers","Request","Response",
@@ -159,241 +159,241 @@ const GLOBAUX = new Set(["Chart",
   "parseInt","parseFloat","isNaN","isFinite","encodeURIComponent","decodeURIComponent",
   "structuredClone","crypto","performance","getComputedStyle","scrollTo","btoa","atob","Infinity","NaN"]);
 
-for (const f of AUTRES_COUCHES) {
+for (const f of OTHER_LAYERS) {
   const s = readFileSync(join(ROOT, f), "utf8");
-  for (const m of s.matchAll(/^(?:const|let|var|function|async function) ([\w$]+)/gm)) GLOBAUX.add(m[1]);
+  for (const m of s.matchAll(/^(?:const|let|var|function|async function) ([\w$]+)/gm)) GLOBALS.add(m[1]);
 }
 
-/* Ce que chaque fichier declare, emprunte et expose. Les declarations sont
-   relevees a toute profondeur : parametres compris, sans quoi chaque parametre
-   passerait pour un nom inconnu. */
-const infos = {};
-for (const f of FICHIERS) {
+/* What each file declares, borrows and exposes. Declarations are
+   collected at every depth, parameters included, otherwise every parameter
+   would look like an unknown name. */
+const info = {};
+for (const f of FILES) {
   const src = readFileSync(join(ROOT, f), "utf8");
-  const jetons = lexer(src);
+  const tokens = lexer(src);
   const sig = [];
-  jetons.forEach((j, k) => { if (j.type !== "espace" && j.type !== "commentaire") sig.push(k); });
-  const rang = new Map(); sig.forEach((k, r) => rang.set(k, r));
-  const av = k => (rang.get(k) > 0 ? jetons[sig[rang.get(k) - 1]] : null);
-  const ap = k => (rang.get(k) + 1 < sig.length ? jetons[sig[rang.get(k) + 1]] : null);
+  tokens.forEach((j, k) => { if (j.type !== "space" && j.type !== "comment") sig.push(k); });
+  const rank = new Map(); sig.forEach((k, r) => rank.set(k, r));
+  const before = k => (rank.get(k) > 0 ? tokens[sig[rank.get(k) - 1]] : null);
+  const after = k => (rank.get(k) + 1 < sig.length ? tokens[sig[rank.get(k) + 1]] : null);
 
-  /* Les VRAIES listes de parametres : celles qui suivent `function` ou `catch`,
-     et celles dont la parenthese fermante est suivie d'une fleche. Sans cette
-     precision, `addEventListener("click", majLive)` passerait pour une
-     declaration de parametre nomme majLive. */
-  const dansParams = new Set();
+  /* The REAL parameter lists: those following `function` or `catch`,
+     and those whose closing parenthesis is followed by an arrow. Without this
+     precision, `addEventListener("click", majLive)` would look like a
+     declaration of a parameter named majLive. */
+  const inParams = new Set();
   for (let r = 0; r < sig.length; r++) {
-    if (jetons[sig[r]].txt !== "(") continue;
+    if (tokens[sig[r]].text !== "(") continue;
     let n = 1, r2 = r;
     while (n > 0 && r2 + 1 < sig.length) {
-      r2++; const t = jetons[sig[r2]].txt;
+      r2++; const t = tokens[sig[r2]].text;
       if (t === "(") n++; else if (t === ")") n--;
     }
-    const apF = r2 + 1 < sig.length ? jetons[sig[r2 + 1]].txt : null;
-    const av1 = r > 0 ? jetons[sig[r - 1]].txt : null;
-    const av2 = r > 1 ? jetons[sig[r - 2]].txt : null;
-    if (apF === "=>" || av1 === "function" || av1 === "catch" || av2 === "function")
-      for (let x = r + 1; x < r2; x++) dansParams.add(sig[x]);
+    const afterClose = r2 + 1 < sig.length ? tokens[sig[r2 + 1]].text : null;
+    const prev1 = r > 0 ? tokens[sig[r - 1]].text : null;
+    const prev2 = r > 1 ? tokens[sig[r - 2]].text : null;
+    if (afterClose === "=>" || prev1 === "function" || prev1 === "catch" || prev2 === "function")
+      for (let x = r + 1; x < r2; x++) inParams.add(sig[x]);
   }
 
-  /* Les noms lies par une DECLARATION, qui ne suivent pas tous le mot-cle :
-       let tasses = 0, joursActifs = 0, serie = 0;      <- apres une virgule
-       const { joursActifs, serie } = calculer();       <- dans un motif
-       const { _c, ...reste } = extraction;             <- apres un etalement
-     On parcourt donc la declaration entiere jusqu'a son point-virgule, en
-     retenant les noms qui sont en position de LIAISON : juste apres le mot-cle,
-     apres une virgule de premier niveau, ou n'importe ou dans un motif. */
-  const dansMotif = new Set();
+  /* Names bound by a DECLARATION, which do not all follow the keyword:
+       let tasses = 0, joursActifs = 0, serie = 0;      <- after a comma
+       const { joursActifs, serie } = calculer();       <- inside a pattern
+       const { _c, ...reste } = extraction;             <- after a spread
+     So we walk the whole declaration up to its semicolon, keeping
+     the names that are in BINDING position: right after the keyword,
+     after a top-level comma, or anywhere inside a pattern. */
+  const inPattern = new Set();
   for (let r = 0; r < sig.length; r++) {
-    if (!["const", "let", "var"].includes(jetons[sig[r]].txt)) continue;
-    let prof = 0, attendNom = true;
+    if (!["const", "let", "var"].includes(tokens[sig[r]].text)) continue;
+    let depth = 0, expectName = true;
     for (let x = r + 1; x < sig.length; x++) {
-      const t = jetons[sig[x]].txt;
-      if (t === ";" && prof === 0) break;
-      if ("({[".includes(t)) { prof++; continue; }
-      if (")}]".includes(t)) { prof--; if (prof < 0) break; continue; }
-      if (t === "," && prof === 0) { attendNom = true; continue; }
-      if (t === "=" && prof === 0) { attendNom = false; continue; }
-      // Dans un motif (prof > 0 juste apres le mot-cle) tout nom est une liaison.
-      const dansUnMotif = prof > 0 && "({[".includes(jetons[sig[r + 1]].txt);
-      if (jetons[sig[x]].type === "ident" && (attendNom || dansUnMotif)) {
-        dansMotif.add(sig[x]);
-        if (prof === 0) attendNom = false;
+      const t = tokens[sig[x]].text;
+      if (t === ";" && depth === 0) break;
+      if ("({[".includes(t)) { depth++; continue; }
+      if (")}]".includes(t)) { depth--; if (depth < 0) break; continue; }
+      if (t === "," && depth === 0) { expectName = true; continue; }
+      if (t === "=" && depth === 0) { expectName = false; continue; }
+      // Inside a pattern (depth > 0 right after the keyword) every name is a binding.
+      const insideAPattern = depth > 0 && "({[".includes(tokens[sig[r + 1]].text);
+      if (tokens[sig[x]].type === "ident" && (expectName || insideAPattern)) {
+        inPattern.add(sig[x]);
+        if (depth === 0) expectName = false;
       }
     }
   }
 
-  const declares = new Set(), libres = [], viaUI = new Set(), reaffectes = new Set();
-  for (let k = 0; k < jetons.length; k++) {
-    const j = jetons[k];
-    if (j.type !== "ident" || MOTS_CLES.has(j.txt)) continue;
-    const p = av(k), s = ap(k);
-    if (p && (p.txt === "." || p.txt === "?.")) {
-      if (p.txt === "." && rang.get(k) >= 2 && jetons[sig[rang.get(k) - 2]].txt === "UI") viaUI.add(j.txt);
+  const declared = new Set(), free = [], viaUI = new Set(), reassigned = new Set();
+  for (let k = 0; k < tokens.length; k++) {
+    const j = tokens[k];
+    if (j.type !== "ident" || KEYWORDS.has(j.text)) continue;
+    const p = before(k), s = after(k);
+    if (p && (p.text === "." || p.text === "?.")) {
+      if (p.text === "." && rank.get(k) >= 2 && tokens[sig[rank.get(k) - 2]].text === "UI") viaUI.add(j.text);
       continue;
     }
-    if (s && s.txt === ":" && p && (p.txt === "{" || p.txt === ",")) continue;   // cle d'objet
-    const estDecl = p && ["const", "let", "var", "function", "class"].includes(p.txt);
-    // `...` pour le parametre de reste : `(...args) => ...`
-    const estParam = dansParams.has(k) && p && ["(", ",", "{", "[", "..."].includes(p.txt) &&
-      s && [",", ")", "=", "}", "]"].includes(s.txt);
-    const flecheNue = s && s.txt === "=>" && (!p || ![")", ".", "?."].includes(p.txt));
-    const estMotif = dansMotif.has(k);
-    if (estDecl || estParam || flecheNue || estMotif) { declares.add(j.txt); continue; }
-    if (s && ["=", "+=", "-=", "++", "--"].includes(s.txt)) reaffectes.add(j.txt);
-    libres.push({ nom: j.txt, ligne: src.slice(0, j.deb).split("\n").length });
+    if (s && s.text === ":" && p && (p.text === "{" || p.text === ",")) continue;   // object key
+    const isDecl = p && ["const", "let", "var", "function", "class"].includes(p.text);
+    // `...` for the rest parameter: `(...args) => ...`
+    const isParam = inParams.has(k) && p && ["(", ",", "{", "[", "..."].includes(p.text) &&
+      s && [",", ")", "=", "}", "]"].includes(s.text);
+    const bareArrow = s && s.text === "=>" && (!p || ![")", ".", "?."].includes(p.text));
+    const isPattern = inPattern.has(k);
+    if (isDecl || isParam || bareArrow || isPattern) { declared.add(j.text); continue; }
+    if (s && ["=", "+=", "-=", "++", "--"].includes(s.text)) reassigned.add(j.text);
+    free.push({ name: j.text, line: src.slice(0, j.start).split("\n").length });
   }
 
-  // L'en-tete d'emprunt : `const { a, b } = UI;`
-  const emp = src.match(/const \{([^}]*)\} = UI;/);
-  const empruntes = new Set(emp ? emp[1].split(",").map(x => x.trim()).filter(Boolean) : []);
+  // The borrowing header: `const { a, b } = UI;`
+  const borrowMatch = src.match(/const \{([^}]*)\} = UI;/);
+  const borrowed = new Set(borrowMatch ? borrowMatch[1].split(",").map(x => x.trim()).filter(Boolean) : []);
 
-  /* Ce que le fichier expose : le `return {...}` du noyau, ou l'Object.assign
-     des autres. On lit la liste declaree, pas les definitions : un nom defini
-     mais absent de la liste est exactement la faute qu'on cherche. */
-  const exp = src.match(/Object\.assign\(UI, \{([\s\S]*?)\}\);/) || src.match(/  return \{([\s\S]*?)\n  \};/);
-  const exposes = new Set(exp ? exp[1].split(",").map(x => x.trim()).filter(Boolean) : []);
+  /* What the file exposes: the core's `return {...}`, or the Object.assign
+     of the others. We read the declared list, not the definitions: a name defined
+     but missing from the list is exactly the mistake we are looking for. */
+  const exposeMatch = src.match(/Object\.assign\(UI, \{([\s\S]*?)\}\);/) || src.match(/  return \{([\s\S]*?)\n  \};/);
+  const exposed = new Set(exposeMatch ? exposeMatch[1].split(",").map(x => x.trim()).filter(Boolean) : []);
 
-  infos[f] = { src, declares, libres, empruntes, exposes, viaUI, reaffectes };
+  info[f] = { src, declared, free, borrowed, exposed, viaUI, reassigned };
 }
 
-const noyau = infos["js/ui-noyau.js"];
+const core = info["js/ui-noyau.js"];
 
-/* 1. AUCUN NOM LIBRE INCONNU.
-   Un nom qui n'est ni declare sur place, ni emprunte au noyau, ni un global du
-   site est un appel qui partira en erreur au premier clic. */
+/* 1. NO UNKNOWN FREE NAME.
+   A name that is neither declared locally, nor borrowed from the core, nor a
+   site global is a call that will throw on the first click. */
 {
-  const inconnus = [];
-  for (const f of FICHIERS) {
-    const { declares, libres, empruntes } = infos[f];
-    const vus = new Set();
-    for (const { nom, ligne } of libres) {
-      if (vus.has(nom) || declares.has(nom) || empruntes.has(nom) || GLOBAUX.has(nom)) continue;
-      vus.add(nom);
-      inconnus.push(f + ":" + ligne + " " + nom);
+  const unknown = [];
+  for (const f of FILES) {
+    const { declared, free, borrowed } = info[f];
+    const seen = new Set();
+    for (const { name, line } of free) {
+      if (seen.has(name) || declared.has(name) || borrowed.has(name) || GLOBALS.has(name)) continue;
+      seen.add(name);
+      unknown.push(f + ":" + line + " " + name);
     }
   }
-  check("aucun fichier n'appelle un nom qu'il n'a ni chez lui ni emprunté",
-    inconnus.length === 0, inconnus.join(", "));
+  check("no file calls a name it neither owns nor borrows",
+    unknown.length === 0, unknown.join(", "));
 }
 
-/* 2. TOUT CE QUI EST LU PAR UI EST BIEN POSE SUR UI.
-   `UI.rendreHistorique()` sur un nom que personne n'expose ne casse qu'au clic. */
+/* 2. EVERYTHING READ THROUGH UI IS ACTUALLY SET ON UI.
+   `UI.rendreHistorique()` on a name nobody exposes only breaks on click. */
 {
-  const tousExposes = new Set();
-  for (const f of FICHIERS) for (const n of infos[f].exposes) tousExposes.add(n);
-  const orphelins = [];
-  for (const f of FICHIERS)
-    for (const n of infos[f].viaUI)
-      if (!tousExposes.has(n)) orphelins.push(f + " lit UI." + n);
-  check("tout ce qui est lu sur UI est exposé par un fichier",
-    orphelins.length === 0, orphelins.join(", "));
+  const allExposed = new Set();
+  for (const f of FILES) for (const n of info[f].exposed) allExposed.add(n);
+  const orphans = [];
+  for (const f of FILES)
+    for (const n of info[f].viaUI)
+      if (!allExposed.has(n)) orphans.push(f + " reads UI." + n);
+  check("everything read on UI is exposed by a file",
+    orphans.length === 0, orphans.join(", "));
 }
 
-/* 3. LA FAUTE SILENCIEUSE : emprunter un `let` du noyau.
-   La destructuration lie une valeur. Emprunter une variable que le noyau
-   reaffecte ensuite fige l'emprunteur sur la valeur du chargement, et rien
-   n'avertit. L'etat partage doit etre un objet mute en place. */
+/* 3. THE SILENT MISTAKE: borrowing a `let` from the core.
+   Destructuring binds a value. Borrowing a variable that the core
+   later reassigns freezes the borrower on the value at load time, and nothing
+   warns. Shared state must be an object mutated in place. */
 {
-  const mutablesNoyau = new Set(
-    [...noyau.src.matchAll(/^  (?:let|var) ([\w$]+)\s*=/gm)].map(m => m[1]));
-  const fautes = [];
-  for (const f of FICHIERS) {
+  const coreMutables = new Set(
+    [...core.src.matchAll(/^  (?:let|var) ([\w$]+)\s*=/gm)].map(m => m[1]));
+  const faults = [];
+  for (const f of FILES) {
     if (f === "js/ui-noyau.js") continue;
-    for (const n of infos[f].empruntes) if (mutablesNoyau.has(n)) fautes.push(f + " emprunte le let " + n);
+    for (const n of info[f].borrowed) if (coreMutables.has(n)) faults.push(f + " borrows the let " + n);
   }
-  check("aucun fichier n'emprunte une variable réassignable du noyau",
-    fautes.length === 0, fautes.join(", "));
+  check("no file borrows a reassignable variable from the core",
+    faults.length === 0, faults.join(", "));
 
-  // Le pendant bruyant : reaffecter un nom emprunte leve en mode strict.
-  const reaff = [];
-  for (const f of FICHIERS) {
+  // The noisy counterpart: reassigning a borrowed name throws in strict mode.
+  const reassignFaults = [];
+  for (const f of FILES) {
     if (f === "js/ui-noyau.js") continue;
-    for (const n of infos[f].reaffectes) if (infos[f].empruntes.has(n)) reaff.push(f + " réaffecte " + n);
+    for (const n of info[f].reassigned) if (info[f].borrowed.has(n)) reassignFaults.push(f + " reassigns " + n);
   }
-  check("aucun fichier ne réaffecte un nom emprunté", reaff.length === 0, reaff.join(", "));
+  check("no file reassigns a borrowed name", reassignFaults.length === 0, reassignFaults.join(", "));
 
-  /* L'etat de navigation, lui, est un objet PARTAGE et doit le rester : c'est
-     precisement la forme qui a corrige la faute ci-dessus. */
-  check("l'état de navigation est un objet partagé, pas des variables",
-    noyau.src.includes('const nav = { ecran: "tableau" }'));
+  /* Navigation state, for its part, is a SHARED object and must stay so: that is
+     precisely the shape that fixed the mistake above. */
+  check("navigation state is a shared object, not variables",
+    core.src.includes('const nav = { ecran: "tableau" }'));
 }
 
-/* 4. LE NOYAU RESTE UN NOYAU.
-   Il se charge en premier, donc il ne peut rien emprunter. Et il ne doit
-   connaitre aucun ecran en particulier : quand il en redessine un, il passe par
-   UI, decide au moment de l'appel. */
+/* 4. THE CORE STAYS A CORE.
+   It loads first, so it cannot borrow anything. And it must not know
+   any screen in particular: when it redraws one, it goes through
+   UI, resolved at call time. */
 {
-  check("le noyau n'emprunte rien, il se charge en premier", noyau.empruntes.size === 0);
-  check("le noyau définit UI", noyau.src.includes("const UI = (() => {"));
-  check("les autres fichiers augmentent UI sans le redéfinir",
-    FICHIERS.slice(1).every(f => !infos[f].src.includes("const UI =")));
-  /* Le noyau ne cite un écran que par UI, jamais en appel direct. On regarde les
-     noms LIBRES relevés par le lexeur, pas la source brute : l'en-tête de ce
-     fichier-ci explique justement la règle en écrivant rendreHistorique(), et
-     une recherche textuelle se ferait piéger par son propre commentaire. */
-  const ecrans = ["rendreTableau", "rendreHistorique", "rendreReglages", "rendreParametres", "rendreConvertisseur"];
-  const directs = ecrans.filter(n => noyau.libres.some(x => x.nom === n));
-  check("le noyau n'appelle aucun écran directement", directs.length === 0, directs.join(", "));
+  check("the core borrows nothing, it loads first", core.borrowed.size === 0);
+  check("the core defines UI", core.src.includes("const UI = (() => {"));
+  check("the other files extend UI without redefining it",
+    FILES.slice(1).every(f => !info[f].src.includes("const UI =")));
+  /* The core only mentions a screen through UI, never as a direct call. We look at the
+     FREE names collected by the lexer, not the raw source: the header of this very
+     file explains the rule by writing rendreHistorique(), and a
+     text search would be fooled by its own comment. */
+  const screens = ["rendreTableau", "rendreHistorique", "rendreReglages", "rendreParametres", "rendreConvertisseur"];
+  const directs = screens.filter(n => core.free.some(x => x.name === n));
+  check("the core calls no screen directly", directs.length === 0, directs.join(", "));
 }
 
-/* 5. LES TROIS LISTES DE FICHIERS RESTENT D'ACCORD.
-   La page, le service worker et le harnais de demarrage declarent la meme liste
-   a trois endroits. En oublier un donne trois pannes differentes : ecran blanc,
-   application hors ligne cassee, ou test qui passe alors que le site est mort.
-   index.html contre sw.js est deja verifie dans data.test.mjs ; il manquait le
-   harnais, celui dont la panne est la plus trompeuse. */
+/* 5. THE THREE FILE LISTS STAY IN AGREEMENT.
+   The page, the service worker and the boot harness declare the same list
+   in three places. Forgetting one gives three different failures: blank screen,
+   broken offline app, or a test that passes while the site is dead.
+   index.html against sw.js is already checked in data.test.mjs; the
+   harness was missing, the one whose failure is the most misleading. */
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
   const boot = readFileSync(join(ROOT, "tools/boot.test.mjs"), "utf8");
-  // Sans le ?v= : la version fait partie de l'URL, pas du nom de fichier.
-  const dansPage = [...html.matchAll(/<script\b[^>]*src="(js\/[^"?]+)/g)].map(m => m[1]);
-  const oublies = dansPage.filter(s => !boot.includes('"' + s + '"'));
-  check("le harnais de démarrage charge tous les scripts de la page",
-    oublies.length === 0, oublies.join(", "));
-  const fantomes = FICHIERS.filter(f => !dansPage.includes(f));
-  check("et tous les fichiers d'interface sont bien dans la page",
-    fantomes.length === 0, fantomes.join(", "));
+  // Without the ?v=: the version is part of the URL, not of the file name.
+  const inPage = [...html.matchAll(/<script\b[^>]*src="(js\/[^"?]+)/g)].map(m => m[1]);
+  const missing = inPage.filter(s => !boot.includes('"' + s + '"'));
+  check("the boot harness loads every script of the page",
+    missing.length === 0, missing.join(", "));
+  const ghosts = FILES.filter(f => !inPage.includes(f));
+  check("and every interface file is actually in the page",
+    ghosts.length === 0, ghosts.join(", "));
 }
 
-/* 6. LA TAILLE, PUISQUE C'ETAIT LE MOTIF DU DECOUPAGE.
-   Un plafond genereux : il n'est pas la pour imposer un style, seulement pour
-   qu'on remarque le jour ou un fichier redevient un fourre-tout. */
+/* 6. SIZE, SINCE IT WAS THE REASON FOR THE SPLIT.
+   A generous cap: it is not there to impose a style, only so that
+   we notice the day a file turns back into a catch-all. */
 {
-  const gros = FICHIERS.filter(f => infos[f].src.split("\n").length > 1200);
-  check("aucun fichier d'interface ne repasse au-dessus de 1200 lignes",
-    gros.length === 0, gros.map(f => f + " " + infos[f].src.split("\n").length).join(", "));
-  /* Le plafond vaut pour TOUTES les couches depuis la v7.87 : data.js etait la
-     derniere IIFE geante, 1 417 lignes et six metiers, et il echappait au
-     controle parce que celui-ci ne regardait que l'interface. */
-  const grosAilleurs = AUTRES_COUCHES.filter(f =>
+  const oversized = FILES.filter(f => info[f].src.split("\n").length > 1200);
+  check("no interface file goes back above 1200 lines",
+    oversized.length === 0, oversized.map(f => f + " " + info[f].src.split("\n").length).join(", "));
+  /* The cap applies to ALL layers since v7.87: data.js was the
+     last giant IIFE, 1,417 lines and six jobs, and it escaped the
+     check because the check only looked at the interface. */
+  const oversizedElsewhere = OTHER_LAYERS.filter(f =>
     readFileSync(join(ROOT, f), "utf8").split("\n").length > 1200);
-  check("aucune autre couche ne depasse 1200 lignes non plus",
-    grosAilleurs.length === 0, grosAilleurs.join(", "));
+  check("no other layer exceeds 1200 lines either",
+    oversizedElsewhere.length === 0, oversizedElsewhere.join(", "));
 }
 
-/* 7. CHAQUE ECRAN CABLE SES PROPRES CONTROLES.
-   cabler() dans app.js faisait 401 lignes et posait 95 ecouteurs sur des champs
-   qu'elle ne connaissait que par leur identifiant. Chaque ecran a maintenant
-   son cablerX(), et app.js ne garde que ce qui n'appartient a aucun ecran. Un
-   identifiant d'ecran qui reapparait dans app.js est une regression. */
+/* 7. EACH SCREEN WIRES ITS OWN CONTROLS.
+   cabler() in app.js was 401 lines long and set 95 listeners on fields
+   it only knew by their id. Each screen now has
+   its own cablerX(), and app.js only keeps what belongs to no screen. A
+   screen id reappearing in app.js is a regression. */
 {
-  const app = infos["js/app.js"].src;
+  const app = info["js/app.js"].src;
   const prefixes = ['$("#f-', '$("#q-', '$("#h-', '$("#conv-', '$("#param-', '$("#recette-',
     '$("#cafe-', '$("#pap-', '$("#btn-chrono', '$("#tasse-', '$("#sachet-', '$("#dernieres-'];
-  // $$("#f-...") est une LECTURE du DOM pour redessiner, pas un cablage : on ne
-  // regarde que les $( precedes d'autre chose qu'un dollar.
-  const echapper = s => s.replace(/[$()]/g, c => "\\" + c);
-  const fuites = prefixes.filter(p => new RegExp("(^|[^$])" + echapper(p)).test(app));
-  check("app.js ne câble plus aucun contrôle d'écran", fuites.length === 0, fuites.join(" "));
-  const cableurs = ["cablerTableau", "cablerSaisie", "cablerRapide", "cablerHistorique", "cablerGuide", "cablerCatalogue"];
-  const absents = cableurs.filter(c => !FICHIERS.some(f => f !== "js/app.js" && infos[f].exposes.has(c)));
-  check("chaque écran expose son câbleur", absents.length === 0, absents.join(", "));
-  const oublies = cableurs.filter(c => !app.includes("UI." + c + "()"));
-  check("et app.js les appelle tous", oublies.length === 0, oublies.join(", "));
-  const lignes = app.split("\n").length;
-  check("app.js reste sous 450 lignes", lignes <= 450, String(lignes));
+  // $$("#f-...") is a DOM READ for redrawing, not wiring: we only
+  // look at $( preceded by something other than a dollar.
+  const escapeRe = s => s.replace(/[$()]/g, c => "\\" + c);
+  const leaks = prefixes.filter(p => new RegExp("(^|[^$])" + escapeRe(p)).test(app));
+  check("app.js no longer wires any screen control", leaks.length === 0, leaks.join(" "));
+  const wirers = ["cablerTableau", "cablerSaisie", "cablerRapide", "cablerHistorique", "cablerGuide", "cablerCatalogue"];
+  const absent = wirers.filter(c => !FILES.some(f => f !== "js/app.js" && info[f].exposed.has(c)));
+  check("each screen exposes its wirer", absent.length === 0, absent.join(", "));
+  const notCalled = wirers.filter(c => !app.includes("UI." + c + "()"));
+  check("and app.js calls them all", notCalled.length === 0, notCalled.join(", "));
+  const lineCount = app.split("\n").length;
+  check("app.js stays under 450 lines", lineCount <= 450, String(lineCount));
 }
 
-console.log(failures === 0 ? "\nTOUT PASSE" : "\n" + failures + " ECHEC(S)");
+console.log(failures === 0 ? "\nALL PASS" : "\n" + failures + " FAILURE(S)");
 process.exit(failures === 0 ? 0 : 1);

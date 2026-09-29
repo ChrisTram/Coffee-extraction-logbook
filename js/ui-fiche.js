@@ -1,126 +1,126 @@
-/* La FICHE D'UN CAFÉ (v8.46) : tout ce que le carnet sait d'un café, au même
- * endroit.
+/* The COFFEE CARD (v8.46): everything the logbook knows about a coffee, in
+ * one place.
  *
- * Avant elle, c'était éclaté : le sachet et son stock dans « Mes cafés », le
- * meilleur réglage dans « Mes meilleurs réglages », les goûts dans
- * l'historique, la fraîcheur dans la colonne de la saisie. Et rien ne montrait
- * comment un café évolue au fil de son sachet.
+ * Before it, this was scattered: the bag and its stock in « Mes cafés », the
+ * best setting in « Mes meilleurs réglages », the tastes in the history, the
+ * freshness in the entry form column. And nothing showed how a coffee
+ * evolves over the life of its bag.
  *
- * La fraîcheur part de la DATE D'OUVERTURE du sachet, pas de la torréfaction :
- * les paquets de Chris n'en portent presque jamais. Chaque tasse a donc son jour
- * du sachet (DATA.calculs, jours_ouvert), et la FENÊTRE est apprise de ses
- * notes : les tranches de jours où les tasses de CE café dépassent sa moyenne,
- * dès MIN_TRANCHE tasses par tranche. Tant qu'il n'y en a pas assez, la fiche
- * montre la courbe sans fenêtre, et le dit.
+ * Freshness starts from the bag's OPENING DATE, not the roast date: Chris's
+ * bags almost never carry one. Each cup therefore has its day of the bag
+ * (DATA.calculs, jours_ouvert), and the WINDOW is learned from its ratings:
+ * the day bands where the cups of THIS coffee beat its average, from
+ * MIN_PER_BAND cups per band. As long as there are not enough, the card
+ * shows the curve without a window, and says so.
  *
- * S'ouvre depuis « Mes meilleurs réglages » et « Mes cafés », dans un dialogue
- * de la page. Aucune donnée nouvelle : tout est déjà saisi. */
+ * Opens from « Mes meilleurs réglages » and « Mes cafés », in a dialog on
+ * the page. No new data: everything is already entered. */
 "use strict";
 
 (() => {
 
   const { $, extAnalysables, extAvecCalculs, fmtDecimal, moyenne, replis, toast } = UI;
 
-  /* Les tranches de jours du sachet, en jours depuis l'ouverture (0 = le jour
-     même). Serrées au début, là où le café bouge le plus, puis plus larges. */
-  const TRANCHES = [[0, 3], [4, 7], [8, 11], [12, 15], [16, 21], [22, 28], [29, 60]];
-  const MIN_TRANCHE = 3;
-  const REACHAT_TASSES = 3;
-  let ficheId = null;
-  // L4 : l'onglet ouvert, et si l'ouverture a posé une entrée dans l'historique du navigateur.
-  let ongletFiche = "reglage";
-  let entreeFiche = false;
-  // Vrai quand la fiche se ferme pour ouvrir un autre écran : l'entrée d'historique devient alors la sienne.
-  let fermeturePourAller = false;
-  // Le café d'en face dans « Comparer avec… » (v8.56), remis à zéro à chaque fiche.
+  /* The day bands of the bag, in days since opening (0 = the day itself).
+     Tight at the start, where the coffee moves the most, then wider. */
+  const BANDS = [[0, 3], [4, 7], [8, 11], [12, 15], [16, 21], [22, 28], [29, 60]];
+  const MIN_PER_BAND = 3;
+  const REORDER_CUPS = 3;
+  let openId = null;
+  // L4: the open tab, and whether opening pushed an entry into the browser history.
+  let sheetTab = "reglage";
+  let historyEntry = false;
+  // True when the card closes to open another screen: the history entry then becomes that screen's.
+  let closingToNavigate = false;
+  // The coffee on the other side in « Comparer avec… » (v8.56), reset on each card.
   let compareId = "";
 
   const echap = OUTILS.echap;
   const note1 = n => fmtDecimal(n, 1);
 
-  function dateLocale(s) {
+  function localDate(s) {
     const [a, m, j] = String(s).slice(0, 10).split("-").map(Number);
     return a && m && j ? new Date(a, m - 1, j) : null;
   }
-  function jourCourt(s) {
-    const d = dateLocale(s);
+  function shortDay(s) {
+    const d = localDate(s);
     return d ? d.toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" }) : "";
   }
 
-  /* Le jour du sachet EN COURS, compté comme les tasses : 0 le jour de
-     l'ouverture. Null sans sachet ouvert. */
-  function jourCourant(cafeId) {
+  /* The day of the CURRENT bag, counted like the cups: 0 on the opening
+     day. Null without an open bag. */
+  function currentBagDay(cafeId) {
     const s = DATA.sachetCourant(cafeId);
     if (!s || !s.date_ouverture) return null;
-    const d = dateLocale(s.date_ouverture);
+    const d = localDate(s.date_ouverture);
     if (!d) return null;
-    const auj = new Date(); auj.setHours(0, 0, 0, 0);
-    return { jour: Math.max(0, Math.round((auj - d) / 86400000)), ouverture: s.date_ouverture };
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return { jour: Math.max(0, Math.round((today - d) / 86400000)), ouverture: s.date_ouverture };
   }
 
-  /* LA FENÊTRE APPRISE. Les tranches qui ont assez de tasses ; parmi elles,
-     celles au-dessus de la moyenne du café. La fenêtre va de la première bonne
-     à la dernière bonne : un creux isolé au milieu d'un bon sachet est du
-     bruit, pas une fermeture. Il faut au moins deux tranches documentées, sinon
-     il n'y a rien à comparer. */
-  function fenetre(notees, moyCafe) {
-    const tranches = TRANCHES.map(([a, b]) => {
-      const notes = notees.filter(e => e._c.jours_ouvert !== "" && e._c.jours_ouvert >= a && e._c.jours_ouvert <= b)
+  /* THE LEARNED WINDOW. The bands with enough cups; among them, those above
+     the coffee's average. The window runs from the first good one to the
+     last good one: an isolated dip in the middle of a good bag is noise, not
+     a closing. At least two documented bands are needed, otherwise there is
+     nothing to compare. */
+  function learnWindow(rated, coffeeAvg) {
+    const bands = BANDS.map(([a, b]) => {
+      const ratings = rated.filter(e => e._c.jours_ouvert !== "" && e._c.jours_ouvert >= a && e._c.jours_ouvert <= b)
         .map(e => Number(e.note_sur_10));
-      return { a, b, n: notes.length, moy: notes.length ? moyenne(notes) : null };
+      return { a, b, n: ratings.length, moy: ratings.length ? moyenne(ratings) : null };
     });
-    const documentees = tranches.filter(t => t.n >= MIN_TRANCHE);
-    if (documentees.length < 2) return { tranches, fenetre: null };
-    const bonnes = documentees.filter(t => t.moy >= moyCafe);
-    if (!bonnes.length || bonnes.length === documentees.length) return { tranches, fenetre: null };
-    /* La fin s'arrête au dernier jour qu'une tasse documente : la dernière
-       tranche court jusqu'au jour 60, et annoncer « encore 19 jours » sur des
-       jours que personne n'a goûtés serait inventer. */
-    const jours = notees.filter(e => e._c.jours_ouvert !== "").map(e => e._c.jours_ouvert);
-    const debut = bonnes[0].a, fin = Math.min(bonnes[bonnes.length - 1].b, Math.max(...jours));
-    const dedans = notees.filter(e => e._c.jours_ouvert !== "" && e._c.jours_ouvert >= debut && e._c.jours_ouvert <= fin);
-    const dehors = notees.filter(e => e._c.jours_ouvert !== "" && (e._c.jours_ouvert < debut || e._c.jours_ouvert > fin));
-    if (!dedans.length || !dehors.length) return { tranches, fenetre: null };
+    const documented = bands.filter(t => t.n >= MIN_PER_BAND);
+    if (documented.length < 2) return { tranches: bands, fenetre: null };
+    const good = documented.filter(t => t.moy >= coffeeAvg);
+    if (!good.length || good.length === documented.length) return { tranches: bands, fenetre: null };
+    /* The end stops at the last day a cup documents: the last band runs to
+       day 60, and announcing « encore 19 jours » on days nobody tasted would
+       be making it up. */
+    const days = rated.filter(e => e._c.jours_ouvert !== "").map(e => e._c.jours_ouvert);
+    const start = good[0].a, end = Math.min(good[good.length - 1].b, Math.max(...days));
+    const inside = rated.filter(e => e._c.jours_ouvert !== "" && e._c.jours_ouvert >= start && e._c.jours_ouvert <= end);
+    const outside = rated.filter(e => e._c.jours_ouvert !== "" && (e._c.jours_ouvert < start || e._c.jours_ouvert > end));
+    if (!inside.length || !outside.length) return { tranches: bands, fenetre: null };
     return {
-      tranches,
+      tranches: bands,
       fenetre: {
-        debut, fin,
-        dedans: moyenne(dedans.map(e => Number(e.note_sur_10))),
-        dehors: moyenne(dehors.map(e => Number(e.note_sur_10))),
+        debut: start, fin: end,
+        dedans: moyenne(inside.map(e => Number(e.note_sur_10))),
+        dehors: moyenne(outside.map(e => Number(e.note_sur_10))),
       },
     };
   }
 
-  /* La boutique du Guide, retrouvée par le torréfacteur : les liens vivent dans
-     l'écran Guide, rangés par maison. Rien si le torréfacteur n'y est pas. */
-  function lienBoutique(cafe) {
-    const t = String(cafe.torrefacteur || "").trim().toLowerCase();
+  /* The Guide shop, found by roaster: the links live in the Guide screen,
+     sorted by house. Nothing if the roaster is not there. */
+  function shopLink(coffee) {
+    const t = String(coffee.torrefacteur || "").trim().toLowerCase();
     if (!t) return null;
-    const titres = Array.from(document.querySelectorAll(".boutique h3"));
-    const h = titres.find(x => {
-      const nom = (x.firstChild && x.firstChild.nodeValue ? x.firstChild.nodeValue : x.textContent).trim().toLowerCase();
-      return nom && (nom.startsWith(t) || t.startsWith(nom));
+    const headings = Array.from(document.querySelectorAll(".boutique h3"));
+    const h = headings.find(x => {
+      const name = (x.firstChild && x.firstChild.nodeValue ? x.firstChild.nodeValue : x.textContent).trim().toLowerCase();
+      return name && (name.startsWith(t) || t.startsWith(name));
     });
     const a = h && h.querySelector("a[href]");
     return a ? a.getAttribute("href") : null;
   }
 
-  /* Le grain de café du bocal : une ellipse et sa fente, en trait. */
-  const GRAIN = '<svg class="fc-grain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" ' +
+  /* The coffee bean in the jar: an ellipse and its slit, in outline. */
+  const BEAN_SVG = '<svg class="fc-grain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" ' +
     'stroke-linecap="round" aria-hidden="true"><ellipse cx="12" cy="12" rx="6.2" ry="8.8" transform="rotate(32 12 12)"/>' +
     '<path d="M8.6 6.2c2.6 2.2 1.2 4.6 3.4 6.6s3.2 2.4 3.4 5"/></svg>';
 
-  /* LE COMPTE À LA MAIN (v8.96) : un champ, prérempli du stock calculé. Caché
-     tant qu'on n'a pas cliqué le bocal ou « Corriger ». */
-  function editeurStock(stock) {
-    // Un stock négatif est faux : champ vide plutôt qu'un 0 à effacer, le format en indication.
-    const actuel = stock && stock.restant > 0 ? Math.round(stock.restant) : "";
-    const indication = stock ? stock.format : 250;
+  /* MANUAL COUNT (v8.96): one field, prefilled with the computed stock.
+     Hidden until the jar or « Corriger » has been clicked. */
+  function stockEditor(stock) {
+    // A negative stock is wrong: an empty field rather than a 0 to erase, the bag size as a hint.
+    const current = stock && stock.restant > 0 ? Math.round(stock.restant) : "";
+    const hint = stock ? stock.format : 250;
     return '<form class="fc-stock-edition" id="fc-stock-edition" hidden>' +
       '<label for="fc-stock-g">' + I18N.t("fi_stock_label") + "</label>" +
       '<div class="fc-stock-ligne">' +
-        '<input type="number" id="fc-stock-g" min="0" max="5000" step="1" inputmode="decimal" value="' + actuel +
-          '" placeholder="' + indication + '">' +
+        '<input type="number" id="fc-stock-g" min="0" max="5000" step="1" inputmode="decimal" value="' + current +
+          '" placeholder="' + hint + '">' +
         "<span>g</span>" +
         '<button type="submit" class="btn btn-petit btn-primaire">' + I18N.t("fi_stock_enregistrer") + "</button>" +
         '<button type="button" class="btn btn-petit btn-discret" data-stock-annuler>' + I18N.t("fi_stock_annuler") + "</button>" +
@@ -128,40 +128,40 @@
       '<p class="fc-muet">' + I18N.t("fi_stock_aide") + "</p></form>";
   }
 
-  function blocSachet(cafe, exts, notees, moyCafe) {
+  function bagBlock(coffee, exts, rated, coffeeAvg) {
     const doses = exts.filter(e => Number(e.dose_g) > 0).map(e => Number(e.dose_g));
     const dose = doses.length ? moyenne(doses) : replis.dose;
-    const stock = DATA.stockSachet(cafe.id, replis.dose);
-    const jc = jourCourant(cafe.id);
-    const f = fenetre(notees, moyCafe);
+    const stock = DATA.stockSachet(coffee.id, replis.dose);
+    const jc = currentBagDay(coffee.id);
+    const f = learnWindow(rated, coffeeAvg);
     let html = '<section class="fc-bloc fc-sachet"><h3 class="fc-h">' + I18N.t("fi_sachet") + "</h3>";
     if (stock) {
-      const reste = Math.max(0, stock.restant);
-      const tasses = Math.floor(reste / dose);
-      const pc = Math.max(0, Math.min(100, (reste / stock.format) * 100));
-      html += '<div class="fc-jauge" role="img" aria-label="' + echap(I18N.t("fi_jauge", { r: fmtDecimal(reste, 0), f: stock.format })) +
+      const left = Math.max(0, stock.restant);
+      const cups = Math.floor(left / dose);
+      const pc = Math.max(0, Math.min(100, (left / stock.format) * 100));
+      html += '<div class="fc-jauge" role="img" aria-label="' + echap(I18N.t("fi_jauge", { r: fmtDecimal(left, 0), f: stock.format })) +
         '"><i style="width:' + pc.toFixed(1) + '%"></i></div>' +
-        '<div class="fc-ligne"><span><b>' + fmtDecimal(reste, 0) + " g</b> " + I18N.t("fi_sur", { f: stock.format }) +
+        '<div class="fc-ligne"><span><b>' + fmtDecimal(left, 0) + " g</b> " + I18N.t("fi_sur", { f: stock.format }) +
           ' <button type="button" class="fc-corriger" data-stock-edit>' + I18N.t("fi_stock_corriger") + "</button></span>" +
-        "<span>" + (stock.restant <= 0 ? I18N.t("stock_vide") : I18N.t("fi_tasses", { n: tasses })) + "</span></div>" +
+        "<span>" + (stock.restant <= 0 ? I18N.t("stock_vide") : I18N.t("fi_tasses", { n: cups })) + "</span></div>" +
         (stock.corrige ? '<p class="fc-muet">' + I18N.t("fi_stock_compte", {
           d: new Date(stock.corrige).toLocaleDateString(I18N.locale(), { day: "numeric", month: "long" }) }) + "</p>" : "");
-      if (tasses <= REACHAT_TASSES) {
-        const lien = lienBoutique(cafe);
+      if (cups <= REORDER_CUPS) {
+        const link = shopLink(coffee);
         html += '<p class="fc-reachat">' + I18N.t("fi_reachat") +
-          (lien ? ' <a href="' + echap(lien) + '" target="_blank" rel="noopener">' +
-            I18N.t("fi_boutique", { t: echap(cafe.torrefacteur) }) + "</a>" : "") + "</p>";
+          (link ? ' <a href="' + echap(link) + '" target="_blank" rel="noopener">' +
+            I18N.t("fi_boutique", { t: echap(coffee.torrefacteur) }) + "</a>" : "") + "</p>";
       }
     } else {
       html += '<p class="fc-muet">' + I18N.t("fi_sans_stock") +
         ' <button type="button" class="fc-corriger" data-stock-edit>' + I18N.t("fi_stock_saisir") + "</button></p>";
     }
-    // Supprimer le sachet en cours, saisi par erreur (v8.77) : la fonction existait sans bouton.
-    const sachet = DATA.sachetCourant(cafe.id);
-    if (sachet) html += '<button type="button" class="btn btn-petit btn-discret fc-suppr-sachet" data-suppr-sachet="' + echap(sachet.id) + '">' + I18N.t("fi_suppr_sachet") + "</button>";
+    // Delete the current bag, entered by mistake (v8.77): the function existed without a button.
+    const bag = DATA.sachetCourant(coffee.id);
+    if (bag) html += '<button type="button" class="btn btn-petit btn-discret fc-suppr-sachet" data-suppr-sachet="' + echap(bag.id) + '">' + I18N.t("fi_suppr_sachet") + "</button>";
 
-    // La réglette de fraîcheur : jour 1 à gauche, la fenêtre en accent, aujourd'hui en trait.
-    const max = Math.max(28, ...notees.map(e => e._c.jours_ouvert === "" ? 0 : e._c.jours_ouvert), jc ? jc.jour : 0);
+    // The freshness ruler: day 1 on the left, the window in accent, today as a line.
+    const max = Math.max(28, ...rated.map(e => e._c.jours_ouvert === "" ? 0 : e._c.jours_ouvert), jc ? jc.jour : 0);
     const x = j => Math.max(0, Math.min(100, (j / max) * 100));
     if (f.fenetre || jc) {
       html += '<div class="fc-fraicheur" aria-hidden="true">' +
@@ -172,28 +172,28 @@
         (f.fenetre ? "<span>" + I18N.t("fi_fenetre_leg", { a: f.fenetre.debut + 1, b: Math.min(f.fenetre.fin, max) + 1 }) + "</span>" : "") +
         "<span>" + I18N.t("fi_jour", { n: max + 1 }) + "</span></div>";
     }
-    const phrases = [];
-    if (jc) phrases.push(I18N.t("fi_ouvert", { n: jc.jour + 1, d: jourCourt(jc.ouverture) }));
+    const sentences = [];
+    if (jc) sentences.push(I18N.t("fi_ouvert", { n: jc.jour + 1, d: shortDay(jc.ouverture) }));
     if (f.fenetre) {
-      phrases.push(I18N.t("fi_fenetre", {
+      sentences.push(I18N.t("fi_fenetre", {
         a: f.fenetre.debut + 1, b: Math.min(f.fenetre.fin, max) + 1, x: note1(f.fenetre.dedans), y: note1(f.fenetre.dehors),
       }));
       if (jc) {
-        const cle = jc.jour < f.fenetre.debut ? "fi_avant" : jc.jour > f.fenetre.fin ? "fi_apres"
+        const key = jc.jour < f.fenetre.debut ? "fi_avant" : jc.jour > f.fenetre.fin ? "fi_apres"
           : jc.jour === f.fenetre.fin ? "fi_dedans_bord" : "fi_dedans";
-        phrases.push(I18N.t(cle, { n: Math.abs((jc.jour < f.fenetre.debut ? f.fenetre.debut : f.fenetre.fin) - jc.jour) }));
+        sentences.push(I18N.t(key, { n: Math.abs((jc.jour < f.fenetre.debut ? f.fenetre.debut : f.fenetre.fin) - jc.jour) }));
       }
-    } else if (notees.some(e => e._c.jours_ouvert !== "")) {
-      phrases.push(I18N.t("fi_pas_de_fenetre", { n: MIN_TRANCHE }));
+    } else if (rated.some(e => e._c.jours_ouvert !== "")) {
+      sentences.push(I18N.t("fi_pas_de_fenetre", { n: MIN_PER_BAND }));
     }
-    if (phrases.length) html += '<p class="fc-texte">' + phrases.join(" ") + "</p>";
+    if (sentences.length) html += '<p class="fc-texte">' + sentences.join(" ") + "</p>";
     return { html: html + "</section>", fenetre: f, max, jc };
   }
 
-  /* La courbe : chaque tasse en point, la moyenne de chaque tranche en ligne,
-     la fenêtre en fond. Même échelle de notes que partout, de 0 à 10. */
-  function blocCourbe(notees, f, max, jc) {
-    const points = notees.filter(e => e._c.jours_ouvert !== "");
+  /* The curve: each cup as a dot, each band's average as a line, the window
+     as background. Same rating scale as everywhere, from 0 to 10. */
+  function curveBlock(rated, f, max, jc) {
+    const points = rated.filter(e => e._c.jours_ouvert !== "");
     let html = '<section class="fc-bloc fc-courbe"><h3 class="fc-h">' + I18N.t("fi_courbe") + "</h3>";
     if (points.length < 2) return html + '<p class="fc-muet">' + I18N.t("fi_courbe_vide") + "</p></section>";
     const G = 30, D = 312, H = 12, B = 132, L = 320;
@@ -210,12 +210,12 @@
     });
     points.forEach(e => {
       svg += '<circle cx="' + x(e._c.jours_ouvert).toFixed(1) + '" cy="' + y(Number(e.note_sur_10)).toFixed(1) +
-        '" r="3" class="fc-c-point" data-tasse="' + echap(e.id) + '"><title>' + echap(jourCourt(e.date_heure) + " : " + note1(Number(e.note_sur_10))) + "</title></circle>";
+        '" r="3" class="fc-c-point" data-tasse="' + echap(e.id) + '"><title>' + echap(shortDay(e.date_heure) + " : " + note1(Number(e.note_sur_10))) + "</title></circle>";
     });
-    const moyens = f.tranches.filter(t => t.n > 0 && t.a <= max)
+    const bandAverages = f.tranches.filter(t => t.n > 0 && t.a <= max)
       .map(t => [x((t.a + Math.min(t.b, max)) / 2), y(t.moy)]);
-    if (moyens.length > 1) {
-      svg += '<path d="M' + moyens.map(p => p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" L") + '" class="fc-c-ligne"></path>';
+    if (bandAverages.length > 1) {
+      svg += '<path d="M' + bandAverages.map(p => p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" L") + '" class="fc-c-ligne"></path>';
     }
     if (jc && jc.jour <= max) {
       svg += '<line x1="' + x(jc.jour) + '" y1="' + H + '" x2="' + x(jc.jour) + '" y2="' + B + '" class="fc-c-auj"></line>';
@@ -226,192 +226,192 @@
       echap(I18N.t("fi_courbe_aria", { n: points.length })) + '">' + svg + "</svg></section>";
   }
 
-  function blocDernieres(exts) {
-    const dernieres = exts.slice().sort((a, b) => String(b.date_heure).localeCompare(String(a.date_heure))).slice(0, 5);
+  function latestBlock(exts) {
+    const latest = exts.slice().sort((a, b) => String(b.date_heure).localeCompare(String(a.date_heure))).slice(0, 5);
     return '<section class="fc-bloc fc-dernieres"><h3 class="fc-h">' + I18N.t("fi_dernieres") + "</h3>" +
-      '<ol class="fc-liste">' + dernieres.map(e =>
-        '<li><span class="fc-date">' + jourCourt(e.date_heure) + '</span><span class="fc-quoi">' +
+      '<ol class="fc-liste">' + latest.map(e =>
+        '<li><span class="fc-date">' + shortDay(e.date_heure) + '</span><span class="fc-quoi">' +
         '<span class="pastille-methode ' + String(e.methode || "").toLowerCase() + '"></span>' + echap(I18N.tr(e.recette || "")) +
         (e.mouture_dial ? " · " + echap(e.mouture_dial) : "") + "</span><b>" +
         (e.note_sur_10 === "" ? "·" : note1(Number(e.note_sur_10))) + "</b></li>").join("") + "</ol></section>";
   }
 
-  function rendreFiche() {
-    const cafe = DATA.state.cafes.find(c => c.id === ficheId);
+  function renderSheet() {
+    const coffee = DATA.state.cafes.find(c => c.id === openId);
     const zone = $("#fiche-contenu");
-    if (!cafe || !zone) return;
-    // Ce qui s'est passé (dernières tasses, stock) contre ce qui conseille
-    // (moyennes, fenêtre, réglage) : la même règle que le tableau de bord.
-    const exts = extAvecCalculs().filter(e => e.cafe_id === cafe.id);
-    const notees = extAnalysables().filter(e => e.cafe_id === cafe.id && e.note_sur_10 !== "");
-    const moyCafe = notees.length ? moyenne(notees.map(e => Number(e.note_sur_10))) : 0;
+    if (!coffee || !zone) return;
+    // What happened (latest cups, stock) versus what advises
+    // (averages, window, setting): the same rule as the dashboard.
+    const exts = extAvecCalculs().filter(e => e.cafe_id === coffee.id);
+    const rated = extAnalysables().filter(e => e.cafe_id === coffee.id && e.note_sur_10 !== "");
+    const coffeeAvg = rated.length ? moyenne(rated.map(e => Number(e.note_sur_10))) : 0;
     const machines = {};
     exts.forEach(e => { if (e.methode) machines[e.methode] = (machines[e.methode] || 0) + 1; });
     const machine = Object.entries(machines).sort((a, b) => b[1] - a[1])[0];
-    const pct = Number(cafe.pourcentage_cafe_reel);
+    const pct = Number(coffee.pourcentage_cafe_reel);
     const chips = [
-      cafe.torrefacteur, cafe.origine, [cafe.espece, cafe.procede].filter(Boolean).join(" · "), cafe.torrefaction,
+      coffee.torrefacteur, coffee.origine, [coffee.espece, coffee.procede].filter(Boolean).join(" · "), coffee.torrefaction,
     ].filter(Boolean).map(t => '<span class="fc-chip">' + echap(t) + "</span>").join("") +
       (pct > 0 && pct < 100 ? '<span class="fc-chip fc-chip-alerte">' + pct + " % " + I18N.t("pct_cafe") + "</span>" : "") +
       (machine ? '<span class="fc-chip"><span class="pastille-methode ' + machine[0].toLowerCase() + '"></span>' +
         I18N.t("fi_surtout", { m: I18N.machine(machine[0]) }) + "</span>" : "");
 
-    const sachet = blocSachet(cafe, exts, notees, moyCafe);
-    const bilan = REGLAGES.pourCafe(cafe.id, extAnalysables());
-    /* L4 (v8.92) : LA FICHE, UN PASSEPORT. Neuf blocs l'un sous l'autre faisaient
-       2 750 px au téléphone. En tête, qui est ce café : son bocal au niveau du
-       sachet, sa teinte selon la torréfaction, et quatre chiffres. Dessous, quatre
-       onglets : comment tu le réussis, ce qu'il te donne, ses sachets, ses tasses. */
-    const stock = DATA.stockSachet(cafe.id, replis.dose);
-    const niveau = stock ? Math.max(0, Math.min(100, (stock.restant / stock.format) * 100)) : 60;
-    const torref = String(cafe.torrefaction || "").toLowerCase();
-    const teinte = /clair|light|blond/.test(torref) ? "#c48a4d" : /fonc|dark|brun/.test(torref) ? "#5a3219" : "#8f5a33";
-    const meilleure = notees.length ? Math.max(...notees.map(e => Number(e.note_sur_10))) : null;
+    const bag = bagBlock(coffee, exts, rated, coffeeAvg);
+    const report = REGLAGES.pourCafe(coffee.id, extAnalysables());
+    /* L4 (v8.92): THE CARD, A PASSPORT. Nine blocks stacked one under another
+       made 2,750 px on the phone. At the top, who this coffee is: its jar at
+       the bag's level, its shade by roast, and four figures. Below, four
+       tabs: how you nail it, what it gives you, its bags, its cups. */
+    const stock = DATA.stockSachet(coffee.id, replis.dose);
+    const level = stock ? Math.max(0, Math.min(100, (stock.restant / stock.format) * 100)) : 60;
+    const roast = String(coffee.torrefaction || "").toLowerCase();
+    const tint = /clair|light|blond/.test(roast) ? "#c48a4d" : /fonc|dark|brun/.test(roast) ? "#5a3219" : "#8f5a33";
+    const best = rated.length ? Math.max(...rated.map(e => Number(e.note_sur_10))) : null;
     const doses = exts.filter(e => Number(e.dose_g) > 0).map(e => Number(e.dose_g));
-    const cout = UI.coutParTasse(cafe, doses.length ? moyenne(doses) : replis.dose);
+    const cost = UI.coutParTasse(coffee, doses.length ? moyenne(doses) : replis.dose);
     const kpi = (v, l) => '<div class="fc-kpi"><b>' + v + "</b><span>" + l + "</span></div>";
-    const ONGLETS = [["reglage", "fi_o_reglage"], ["gouts", "fi_o_gouts"], ["sachets", "fi_o_sachets"], ["tasses", "fi_o_tasses"]];
-    if (!ONGLETS.some(([k]) => k === ongletFiche)) ongletFiche = "reglage";
-    const panneau = (cle, html) => '<div class="fc-panneau" role="tabpanel" id="fc-p-' + cle + '" aria-labelledby="fc-o-' + cle + '"' +
-      (cle === ongletFiche ? "" : " hidden") + '><div class="fc-grille">' + html + "</div></div>";
-    const blocGouts = '<section class="fc-bloc fc-gouts"><h3 class="fc-h">' + I18N.t("fi_gouts") + "</h3>" +
+    const TABS = [["reglage", "fi_o_reglage"], ["gouts", "fi_o_gouts"], ["sachets", "fi_o_sachets"], ["tasses", "fi_o_tasses"]];
+    if (!TABS.some(([k]) => k === sheetTab)) sheetTab = "reglage";
+    const panneau = (key, html) => '<div class="fc-panneau" role="tabpanel" id="fc-p-' + key + '" aria-labelledby="fc-o-' + key + '"' +
+      (key === sheetTab ? "" : " hidden") + '><div class="fc-grille">' + html + "</div></div>";
+    const tastesBlock = '<section class="fc-bloc fc-gouts"><h3 class="fc-h">' + I18N.t("fi_gouts") + "</h3>" +
       '<div class="fc-roue"><svg id="fiche-roue" class="roue" viewBox="0 0 300 300" role="img" aria-label="' +
       echap(I18N.t("fi_roue_aria")) + '"></svg><div class="roue-detail" id="fiche-roue-detail" aria-live="polite"></div></div>' +
       '<p class="fc-muet" id="fiche-roue-vide" hidden>' + I18N.t("fi_gouts_vide") + "</p></section>";
-    const blocReglage = '<section class="fc-bloc fc-reglage"><h3 class="fc-h">' + I18N.t("fi_reglage") + "</h3>" +
-      UI.carteReglage({ cafe, ...bilan }) + "</section>";
-    /* Les dessins de ce café (v8.50), rendus par js/ui-dessins.js. */
-    const blocEmpreinte = '<section class="fc-bloc"><h3 class="fc-h">' + I18N.t("fi_empreinte") + "</h3>" +
+    const settingBlock = '<section class="fc-bloc fc-reglage"><h3 class="fc-h">' + I18N.t("fi_reglage") + "</h3>" +
+      UI.carteReglage({ cafe: coffee, ...report }) + "</section>";
+    /* The drawings of this coffee (v8.50), rendered by js/ui-dessins.js. */
+    const fingerprintBlock = '<section class="fc-bloc"><h3 class="fc-h">' + I18N.t("fi_empreinte") + "</h3>" +
       '<svg id="fiche-empreinte" class="fc-dessin" viewBox="0 0 320 210" role="img" aria-label="' + echap(I18N.t("fi_empreinte")) + '"></svg>' +
       '<p class="fc-texte" id="fiche-empreinte-lecture"></p></section>';
-    const blocTrajectoire = '<section class="fc-bloc"><h3 class="fc-h">' + I18N.t("fi_trajectoire") + "</h3>" +
+    const trajectoryBlock = '<section class="fc-bloc"><h3 class="fc-h">' + I18N.t("fi_trajectoire") + "</h3>" +
       '<svg id="fiche-trajectoire" class="fc-dessin" viewBox="0 0 320 172" role="img" aria-label="' + echap(I18N.t("fi_trajectoire")) + '"></svg>' +
       '<p class="fc-texte" id="fiche-trajectoire-lecture"></p></section>';
-    const blocMoulin = '<section class="fc-bloc"><h3 class="fc-h">' + I18N.t("fi_moulin") + "</h3>" +
+    const grinderBlock = '<section class="fc-bloc"><h3 class="fc-h">' + I18N.t("fi_moulin") + "</h3>" +
       '<svg id="fiche-moulin" class="fc-dessin" viewBox="0 0 320 126" role="img" aria-label="' + echap(I18N.t("fi_moulin")) + '"></svg>' +
       '<p class="fc-texte" id="fiche-moulin-lecture"></p></section>';
     zone.innerHTML =
       '<header class="fc-tete fc-passeport">' +
-        /* LE BOCAL SE CORRIGE D'UN CLIC (v8.96) : ses grammes dessous, un grain
-           dessiné dedans pour qu'un sachet vide ne ressemble plus à une image
-           manquante, et le clic ouvre le compte à la main juste en dessous. */
+        /* THE JAR IS CORRECTED WITH ONE CLICK (v8.96): its grams below, a bean
+           drawn inside so that an empty bag no longer looks like a missing
+           image, and the click opens the manual count just below. */
         '<div class="fc-bocal-bloc">' +
           '<button type="button" class="fc-bocal" data-stock-edit aria-label="' +
             echap(I18N.t("fi_stock_aria", { g: stock ? fmtDecimal(Math.max(0, stock.restant), 0) : "?" })) +
-            '" style="--niveau:' + niveau.toFixed(0) + "%;--teinte:" + teinte + '"><i></i>' + GRAIN + "</button>" +
-          /* Sous zéro, le calcul se trompe forcément (tasses d'un autre sachet, sachet
-             non saisi) : « à compter » invite à corriger, là où « 0 g » faisait
-             croire à un sachet vide. */
+            '" style="--niveau:' + level.toFixed(0) + "%;--teinte:" + tint + '"><i></i>' + BEAN_SVG + "</button>" +
+          /* Below zero, the computation is necessarily wrong (cups from another bag,
+             bag not entered): « à compter » invites a correction, where « 0 g »
+             suggested an empty bag. */
           (stock && stock.restant < 0
             ? '<button type="button" class="fc-bocal-g fc-a-compter" data-stock-edit>' + I18N.t("fi_stock_a_compter") + "</button>"
             : '<span class="fc-bocal-g">' + (stock ? fmtDecimal(stock.restant, 0) + " g" : "") + "</span>") +
         "</div>" +
         '<div class="fc-identite"><p class="surligne">' + I18N.t("fi_surligne") + "</p>" +
-        '<h2 id="fiche-nom">' + echap(cafe.nom) + "</h2>" + '<div class="fc-chips">' + chips + "</div></div>" +
+        '<h2 id="fiche-nom">' + echap(coffee.nom) + "</h2>" + '<div class="fc-chips">' + chips + "</div></div>" +
       "</header>" +
-      editeurStock(stock) +
+      stockEditor(stock) +
       '<div class="fc-kpis">' +
         kpi(exts.length, I18N.t("fi_k_tasses")) +
-        kpi(notees.length ? note1(moyCafe) : "·", I18N.t("fi_k_moyenne")) +
-        kpi(meilleure !== null ? note1(meilleure) : "·", I18N.t("fi_k_meilleure")) +
-        // Le prix seul : « 7 348 ₫ la tasse de 14,7 g » redirait l'étiquette dessous.
-        kpi(cout ? echap(String(cout).replace(/^([^₫]*₫).*$/, "$1")) : "·", I18N.t("fi_k_cout")) +
+        kpi(rated.length ? note1(coffeeAvg) : "·", I18N.t("fi_k_moyenne")) +
+        kpi(best !== null ? note1(best) : "·", I18N.t("fi_k_meilleure")) +
+        // Price only: « 7 348 ₫ la tasse de 14,7 g » would repeat the label below.
+        kpi(cost ? echap(String(cost).replace(/^([^₫]*₫).*$/, "$1")) : "·", I18N.t("fi_k_cout")) +
       "</div>" +
       '<div class="fc-onglets" role="tablist" aria-label="' + echap(I18N.t("fi_onglets")) + '">' +
-        ONGLETS.map(([k, cle]) => '<button type="button" role="tab" id="fc-o-' + k + '" data-onglet="' + k + '" aria-controls="fc-p-' + k +
-          '" aria-selected="' + (k === ongletFiche) + '" tabindex="' + (k === ongletFiche ? 0 : -1) + '">' + I18N.t(cle) + "</button>").join("") +
+        TABS.map(([k, key]) => '<button type="button" role="tab" id="fc-o-' + k + '" data-onglet="' + k + '" aria-controls="fc-p-' + k +
+          '" aria-selected="' + (k === sheetTab) + '" tabindex="' + (k === sheetTab ? 0 : -1) + '">' + I18N.t(key) + "</button>").join("") +
       "</div>" +
-      panneau("reglage", blocReglage + blocMoulin + blocTrajectoire) +
-      panneau("gouts", blocGouts + blocEmpreinte) +
-      panneau("sachets", sachet.html + blocCourbe(notees, sachet.fenetre, sachet.max, sachet.jc)) +
-      panneau("tasses", blocDernieres(exts) + blocComparer(cafe));
-    UI.dessinerEmpreinte("fiche-empreinte", cafe.id);
-    UI.dessinerTrajectoire("fiche-trajectoire", cafe.id);
-    UI.dessinerMoulin("fiche-moulin", cafe.id);
-    rendreComparaison();
-    const nbGouts = CHARTS.roueAromes(notees, { svg: "fiche-roue", detail: "fiche-roue-detail", lecture: "" });
-    $("#fiche-roue-vide").hidden = nbGouts > 0;
-    $(".fc-roue").hidden = nbGouts === 0;
+      panneau("reglage", settingBlock + grinderBlock + trajectoryBlock) +
+      panneau("gouts", tastesBlock + fingerprintBlock) +
+      panneau("sachets", bag.html + curveBlock(rated, bag.fenetre, bag.max, bag.jc)) +
+      panneau("tasses", latestBlock(exts) + compareBlock(coffee));
+    UI.dessinerEmpreinte("fiche-empreinte", coffee.id);
+    UI.dessinerTrajectoire("fiche-trajectoire", coffee.id);
+    UI.dessinerMoulin("fiche-moulin", coffee.id);
+    renderComparison();
+    const tasteCount = CHARTS.roueAromes(rated, { svg: "fiche-roue", detail: "fiche-roue-detail", lecture: "" });
+    $("#fiche-roue-vide").hidden = tasteCount > 0;
+    $(".fc-roue").hidden = tasteCount === 0;
   }
 
-  /* DEUX CAFÉS CÔTE À CÔTE (v8.56). « Comparer avec… » en pied de fiche : les deux
-     empreintes superposées, et face à face ce qui aide à choisir quoi racheter,
-     leur moyenne, leur machine, leur meilleur réglage, leur fenêtre de fraîcheur,
-     leur coût par tasse et le goût qui revient. Tout vient des mêmes calculs que
-     le reste de la fiche. */
-  function blocComparer(cafe) {
-    const autres = DATA.state.cafes.filter(c => c.id !== cafe.id && DATA.state.extractions.some(e => e.cafe_id === c.id));
-    if (!autres.length) return "";
+  /* TWO COFFEES SIDE BY SIDE (v8.56). « Comparer avec… » at the foot of the card:
+     the two fingerprints overlaid, and face to face what helps choose what to
+     buy again, their average, their brewer, their best setting, their
+     freshness window, their cost per cup and the recurring taste. Everything
+     comes from the same computations as the rest of the card. */
+  function compareBlock(coffee) {
+    const others = DATA.state.cafes.filter(c => c.id !== coffee.id && DATA.state.extractions.some(e => e.cafe_id === c.id));
+    if (!others.length) return "";
     return '<section class="fc-bloc fc-comparer"><div class="fc-comparer-tete"><h3 class="fc-h">' + I18N.t("fi_comparer") + "</h3>" +
       '<select id="fiche-comparer" aria-label="' + echap(I18N.t("fi_comparer")) + '"><option value="">' + echap(I18N.t("fi_comparer_choisir")) + "</option>" +
-      autres.map(c => '<option value="' + echap(c.id) + '"' + (c.id === compareId ? " selected" : "") + ">" + echap(c.nom) + "</option>").join("") +
+      others.map(c => '<option value="' + echap(c.id) + '"' + (c.id === compareId ? " selected" : "") + ">" + echap(c.nom) + "</option>").join("") +
       '</select></div><div id="fiche-comparaison"></div></section>';
   }
-  function resumeCafe(c) {
-    const notees = extAnalysables().filter(e => e.cafe_id === c.id && e.note_sur_10 !== "");
+  function coffeeSummary(c) {
+    const rated = extAnalysables().filter(e => e.cafe_id === c.id && e.note_sur_10 !== "");
     const exts = extAvecCalculs().filter(e => e.cafe_id === c.id);
-    const moy = notees.length ? moyenne(notees.map(e => Number(e.note_sur_10))) : null;
+    const avg = rated.length ? moyenne(rated.map(e => Number(e.note_sur_10))) : null;
     const machines = {};
     exts.forEach(e => { if (e.methode) machines[e.methode] = (machines[e.methode] || 0) + 1; });
     const machine = Object.keys(machines).sort((a, b) => machines[b] - machines[a])[0];
-    const bilan = REGLAGES.pourCafe(c.id, extAnalysables());
-    const m = bilan.meilleure;
-    const f = fenetre(notees, moy || 0).fenetre;
+    const report = REGLAGES.pourCafe(c.id, extAnalysables());
+    const m = report.meilleure;
+    const f = learnWindow(rated, avg || 0).fenetre;
     const doses = exts.filter(e => Number(e.dose_g) > 0).map(e => Number(e.dose_g));
     const tags = {};
-    notees.forEach(e => String(e.descripteurs || "").split("|").filter(Boolean).forEach(t => { tags[t] = (tags[t] || 0) + 1; }));
-    const gout = Object.keys(tags).sort((a, b) => tags[b] - tags[a])[0];
+    rated.forEach(e => String(e.descripteurs || "").split("|").filter(Boolean).forEach(t => { tags[t] = (tags[t] || 0) + 1; }));
+    const topTaste = Object.keys(tags).sort((a, b) => tags[b] - tags[a])[0];
     return [
-      moy === null ? I18N.t("fi_pas_notee") : I18N.t("fi_cmp_moyenne", { m: note1(moy), n: notees.length }),
+      avg === null ? I18N.t("fi_pas_notee") : I18N.t("fi_cmp_moyenne", { m: note1(avg), n: rated.length }),
       machine ? I18N.machine(machine) : "·",
       m ? [I18N.tr(m.recette || ""), m.mouture || ""].filter(Boolean).join(" · ") + ", " + note1(m.moyenne) : I18N.t("fi_cmp_pas_de_reglage"),
       f ? I18N.t("fi_cmp_jours", { a: f.debut + 1, b: f.fin + 1 }) : I18N.t("fi_cmp_pas_de_fenetre"),
       UI.coutParTasse(c, doses.length ? moyenne(doses) : replis.dose) || "·",
-      gout ? I18N.tag(gout) : "·",
+      topTaste ? I18N.tag(topTaste) : "·",
     ];
   }
-  function rendreComparaison() {
+  function renderComparison() {
     const zone = $("#fiche-comparaison");
     if (!zone) return;
-    const a = DATA.state.cafes.find(c => c.id === ficheId), b = DATA.state.cafes.find(c => c.id === compareId);
+    const a = DATA.state.cafes.find(c => c.id === openId), b = DATA.state.cafes.find(c => c.id === compareId);
     if (!a || !b) { zone.innerHTML = ""; return; }
-    const ra = resumeCafe(a), rb = resumeCafe(b);
-    const lignes = ["fi_cmp_note", "fi_cmp_machine", "fi_cmp_reglage", "fi_cmp_fenetre", "fi_cmp_cout", "fi_cmp_gout"];
+    const ra = coffeeSummary(a), rb = coffeeSummary(b);
+    const rows = ["fi_cmp_note", "fi_cmp_machine", "fi_cmp_reglage", "fi_cmp_fenetre", "fi_cmp_cout", "fi_cmp_gout"];
     zone.innerHTML = '<div class="fc-comparer-corps"><div>' +
       '<svg id="fiche-duo" class="fc-dessin" viewBox="0 0 320 210" role="img" aria-label="' + echap(I18N.t("fi_duo_aria", { a: a.nom, b: b.nom })) + '"></svg>' +
       '<div class="fc-duo-leg"><span><i class="fc-duo-a"></i>' + echap(a.nom) + '</span><span><i class="fc-duo-b"></i>' + echap(b.nom) + "</span></div>" +
       '<p class="fc-texte" id="fiche-duo-lecture"></p></div>' +
       '<table class="fc-duo-table"><thead><tr><th></th><th>' + echap(a.nom) + "</th><th>" + echap(b.nom) + "</th></tr></thead><tbody>" +
-      lignes.map((cle, i) => "<tr><th>" + echap(I18N.t(cle)) + "</th><td>" + echap(ra[i]) + "</td><td>" + echap(rb[i]) + "</td></tr>").join("") +
+      rows.map((key, i) => "<tr><th>" + echap(I18N.t(key)) + "</th><td>" + echap(ra[i]) + "</td><td>" + echap(rb[i]) + "</td></tr>").join("") +
       "</tbody></table></div>";
     UI.dessinerEmpreinte("fiche-duo", a.id, b.id);
   }
 
   function ouvrirFiche(cafeId) {
     if (!DATA.state.cafes.some(c => c.id === cafeId)) return;
-    if (cafeId !== ficheId) { compareId = ""; ongletFiche = "reglage"; }
-    ficheId = cafeId;
-    rendreFiche();
+    if (cafeId !== openId) { compareId = ""; sheetTab = "reglage"; }
+    openId = cafeId;
+    renderSheet();
     const m = $("#modale-fiche");
-    /* Le bouton retour du téléphone referme la fiche au lieu de quitter l'écran :
-       l'ouverture pose une entrée dans l'historique du navigateur (sans toucher
-       à l'adresse, qui pilote les écrans). */
+    /* The phone back button closes the card instead of leaving the screen:
+       opening pushes an entry into the browser history (without touching
+       the address, which drives the screens). */
     if (!m.open) {
-      try { history.pushState({ fiche: cafeId }, ""); entreeFiche = true; } catch (e) { entreeFiche = false; }
+      try { history.pushState({ fiche: cafeId }, ""); historyEntry = true; } catch (e) { historyEntry = false; }
       m.showModal();
     }
-    const haut = $("#fiche-contenu");
-    if (haut) haut.scrollTop = 0;
+    const scroller = $("#fiche-contenu");
+    if (scroller) scroller.scrollTop = 0;
   }
 
-  // Re-rendue quand les données ou la langue changent, si elle est ouverte.
+  // Re-rendered when the data or the language changes, if it is open.
   function rendreFicheOuverte() {
     const m = $("#modale-fiche");
-    if (m && m.open) rendreFiche();
+    if (m && m.open) renderSheet();
   }
 
-  function montrerOnglet(k, focus) {
-    ongletFiche = k;
+  function showTab(k, focus) {
+    sheetTab = k;
     document.querySelectorAll(".fc-onglets [role=tab]").forEach(b => {
       const on = b.dataset.onglet === k;
       b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1;
@@ -421,61 +421,61 @@
   }
 
   function cablerFiche() {
-    // Les onglets de la fiche : le contenu est réécrit à chaque rendu, on délègue.
+    // The card tabs: the content is rewritten on each render, so we delegate.
     $("#fiche-contenu").addEventListener("click", ev => {
       const b = ev.target.closest(".fc-onglets [data-onglet]");
-      if (b) montrerOnglet(b.dataset.onglet);
+      if (b) showTab(b.dataset.onglet);
     });
     $("#fiche-contenu").addEventListener("keydown", ev => {
       const b = ev.target.closest(".fc-onglets [data-onglet]");
       if (!b) return;
-      const liste = [...document.querySelectorAll(".fc-onglets [data-onglet]")];
-      const i = liste.indexOf(b);
-      const j = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: liste.length - 1 }[ev.key];
+      const list = [...document.querySelectorAll(".fc-onglets [data-onglet]")];
+      const i = list.indexOf(b);
+      const j = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: list.length - 1 }[ev.key];
       if (j === undefined) return;
       ev.preventDefault();
-      montrerOnglet(liste[(j + liste.length) % liste.length].dataset.onglet, true);
+      showTab(list[(j + list.length) % list.length].dataset.onglet, true);
     });
-    // Retour du téléphone : on referme ; fermer autrement retire l'entrée posée.
+    // Phone back: we close; closing any other way removes the pushed entry.
     window.addEventListener("popstate", () => {
       const m = $("#modale-fiche");
-      if (m.open && entreeFiche) { entreeFiche = false; m.close(); }
+      if (m.open && historyEntry) { historyEntry = false; m.close(); }
     });
     $("#modale-fiche").addEventListener("close", () => {
-      /* Fermer simplement retire l'entrée posée à l'ouverture. Fermer pour aller
-         ailleurs (Brasser, Modifier) la laisse : activerEcran la réécrit à son
-         adresse, et reculer maintenant annulerait ce changement d'écran. */
-      if (entreeFiche && !fermeturePourAller) { try { history.back(); } catch (e) { /* rien à retirer */ } }
-      entreeFiche = false;
-      fermeturePourAller = false;
+      /* Simply closing removes the entry pushed on opening. Closing to go
+         elsewhere (Brew, Edit) leaves it: activerEcran rewrites it to its
+         address, and going back now would cancel that screen change. */
+      if (historyEntry && !closingToNavigate) { try { history.back(); } catch (e) { /* nothing to remove */ } }
+      historyEntry = false;
+      closingToNavigate = false;
     });
-    /* Le compte à la main : ouvrir, annuler, enregistrer (v8.96). */
-    const editeur = () => $("#fc-stock-edition");
-    const fermerEditeur = () => { const f = editeur(); if (f) f.hidden = true; };
+    /* The manual count: open, cancel, save (v8.96). */
+    const editor = () => $("#fc-stock-edition");
+    const closeEditor = () => { const f = editor(); if (f) f.hidden = true; };
     $("#fiche-contenu").addEventListener("click", ev => {
-      if (ev.target.closest("[data-stock-annuler]")) { fermerEditeur(); return; }
+      if (ev.target.closest("[data-stock-annuler]")) { closeEditor(); return; }
       if (!ev.target.closest("[data-stock-edit]")) return;
-      const f = editeur();
+      const f = editor();
       if (!f) return;
       f.hidden = false;
       f.scrollIntoView({ block: "nearest" });
-      const champ = $("#fc-stock-g");
-      champ.focus();
-      champ.select();
+      const field = $("#fc-stock-g");
+      field.focus();
+      field.select();
     });
     $("#fiche-contenu").addEventListener("keydown", ev => {
-      // Échap ferme le compte, pas la fiche entière.
+      // Escape closes the count, not the whole card.
       if (ev.key !== "Escape" || !ev.target.closest("#fc-stock-edition")) return;
       ev.preventDefault();
       ev.stopPropagation();
-      fermerEditeur();
+      closeEditor();
     });
     $("#fiche-contenu").addEventListener("submit", async ev => {
       if (!ev.target.closest("#fc-stock-edition")) return;
       ev.preventDefault();
       const g = Number(String($("#fc-stock-g").value).replace(",", "."));
       if (!Number.isFinite(g) || g < 0) { $("#fc-stock-g").focus(); return; }
-      await DATA.corrigerStock(ficheId, g);
+      await DATA.corrigerStock(openId, g);
       toast(I18N.t("t_stock_corrige", { g: fmtDecimal(g, 0) }));
     });
     $("#fiche-contenu").addEventListener("click", async ev => {
@@ -487,20 +487,20 @@
       UI.toast(I18N.t("t_sachet_supprime"));
     });
     $("#fiche-brasser").addEventListener("click", () => {
-      const id = ficheId;
-      fermeturePourAller = true;
+      const id = openId;
+      closingToNavigate = true;
       $("#modale-fiche").close();
       UI.reinitialiserSaisie();
       const sel = $("#f-cafe");
       sel.value = id;
       if (sel.value === id) UI.surChoixCafe();
       else toast(I18N.t("fi_inactif"));
-      // Sans édition en cours (reinitialiserSaisie vient de la fermer) : rien à abandonner.
+      // No edit in progress (reinitialiserSaisie just closed it): nothing to abandon.
       UI.activerEcran("saisie");
     });
     $("#fiche-modifier").addEventListener("click", () => {
-      const id = ficheId;
-      fermeturePourAller = true;
+      const id = openId;
+      closingToNavigate = true;
       $("#modale-fiche").close();
       UI.ouvrirModaleCafes();
       UI.ouvrirFormCafe(id);
@@ -508,9 +508,9 @@
     $("#fiche-contenu").addEventListener("change", ev => {
       if (ev.target.id !== "fiche-comparer") return;
       compareId = ev.target.value;
-      rendreComparaison();
+      renderComparison();
     });
-    // Le bouton « Refaire » de la carte du meilleur réglage, rendue dans la fiche.
+    // The « Refaire » button of the best setting card, rendered in the coffee card.
     $("#fiche-contenu").addEventListener("click", ev => {
       const b = ev.target.closest("[data-refaire]");
       if (!b) return;
@@ -520,7 +520,7 @@
       UI.refaireTasse(ext);
       toast(I18N.t("rg_preremplie"));
     });
-    // Délégué sur le document : les boutons « Fiche » naissent avec leurs listes.
+    // Delegated on the document: the « Fiche » buttons are born with their lists.
     document.addEventListener("click", ev => {
       const b = ev.target.closest && ev.target.closest("[data-fiche]");
       if (b) ouvrirFiche(b.dataset.fiche);
@@ -528,7 +528,7 @@
     DATA.abonner(rendreFicheOuverte);
   }
 
-  // Sous des noms qui disent ce qu'ils sont hors de ce fichier : l'étagère du tableau de bord s'en sert.
-  const fenetreFraicheur = fenetre, jourSachet = jourCourant, TRANCHES_SACHET = TRANCHES;
+  // Under names that say what they are outside this file: the dashboard shelf uses them.
+  const fenetreFraicheur = learnWindow, jourSachet = currentBagDay, TRANCHES_SACHET = BANDS;
   Object.assign(UI, { cablerFiche, fenetreFraicheur, jourSachet, ouvrirFiche, rendreFicheOuverte, TRANCHES_SACHET });
 })();

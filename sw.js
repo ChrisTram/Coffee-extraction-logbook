@@ -1,39 +1,39 @@
-/* Service worker : rend le site utilisable hors ligne, sans jamais servir une
- * version perimee quand le reseau est la.
+/* Service worker: makes the site usable offline, without ever serving a
+ * stale version when the network is there.
  *
- * STRATEGIE : reseau d'abord, cache en secours. Le choix inverse (cache
- * d'abord) obligerait a incrementer CACHE_NAME a chaque deploiement, et un
- * oubli laisserait une vieille version installee sur le telephone pour
- * toujours. Le site est petit et servi depuis le reseau Cloudflare, donc le
- * cout d'un aller retour reseau est negligeable devant ce risque.
+ * STRATEGY: network first, cache as fallback. The opposite choice (cache
+ * first) would require bumping CACHE_NAME on every deployment, and a
+ * slip would leave an old version installed on the phone
+ * forever. The site is small and served from the Cloudflare network, so the
+ * cost of a network round trip is negligible compared with that risk.
  *
- * VERSIONNAGE DES ASSETS (v7.82). Les scripts et la feuille de style portent
- * ?v=VERSION dans leur URL, ici comme dans index.html. Le Worker renvoie ces
- * URL avec un Cache-Control d'un an : le navigateur ne redemande donc plus les
- * seize fichiers a chaque ouverture, il ne redemande que index.html, dont
- * l'URL ne change pas et qui reste en no-cache. Une nouvelle version change
- * les URL, donc le cache HTTP tombe tout seul. La VERSION ci-dessous doit
- * etre celle du <meta name="app-version"> d'index.html : tools/bump_version.mjs
- * ecrit les deux, et un test refuse qu'elles divergent.
+ * ASSET VERSIONING (v7.82). Scripts and the stylesheet carry
+ * ?v=VERSION in their URL, here as in index.html. The Worker returns these
+ * URLs with a one-year Cache-Control: the browser therefore no longer refetches
+ * the sixteen files on every open, it only refetches index.html, whose
+ * URL does not change and which stays no-cache. A new version changes
+ * the URLs, so the HTTP cache drops by itself. The VERSION below must
+ * match the <meta name="app-version"> of index.html: tools/bump_version.mjs
+ * writes both, and a test refuses to let them diverge.
  *
- * DEUX PIEGES traites ici :
- *  - La porte d'entree (worker/index.js) redirige vers /login quand la session
- *    a expire. Une reponse issue d'une redirection ne doit JAMAIS entrer dans
- *    le cache, sinon la page de connexion se retrouverait servie a la place de
- *    l'application. On teste response.redirected.
- *  - /login et /logout ne passent jamais par le cache, sinon la connexion et
- *    la deconnexion cessent de fonctionner.
+ * TWO TRAPS handled here:
+ *  - The front door (worker/index.js) redirects to /login when the session
+ *    has expired. A response coming from a redirect must NEVER enter the
+ *    cache, otherwise the login page would be served instead of the
+ *    application. We test response.redirected.
+ *  - /login and /logout never go through the cache, otherwise login and
+ *    logout stop working.
  */
 
-const VERSION = "9.01";
+const VERSION = "9.02";
 const CACHE_NAME = "carnet-extraction";
 
-const versionnee = url => url + "?v=" + VERSION;
+const versioned = url => url + "?v=" + VERSION;
 
-// Le strict necessaire pour demarrer hors ligne. L'ordre n'importe pas, chaque
-// entree est mise en cache independamment : une seule qui echoue ne fait pas
-// echouer l'installation. Les fichiers de code portent la version dans leur
-// URL, les autres (page, manifeste, icones) non : leur URL ne bouge jamais.
+// The bare minimum to start offline. Order does not matter, each
+// entry is cached independently: a single failing one does not make
+// the install fail. Code files carry the version in their
+// URL, the others (page, manifest, icons) do not: their URL never changes.
 const PRECACHE_URLS = [
   "./",
   "./index.html",
@@ -45,27 +45,27 @@ const PRECACHE_URLS = [
   "./css/ecrans.css",
   "./css/fenetres.css",
   "./css/finitions.css",
-  /* Les polices. Sans elles dans le precache, la premiere ouverture hors ligne
-     affiche le repli puis saute a la vraie police des que le reseau revient.
-     Leur URL ne porte pas de version : un fichier de police ne change jamais
-     sous le meme nom, on en publie un nouveau (voir worker/index.js). */
+  /* The fonts. Without them in the precache, the first offline open
+     shows the fallback then jumps to the real font once the network returns.
+     Their URL carries no version: a font file never changes
+     under the same name, a new one is published (see worker/index.js). */
   "./css/fonts/instrument-serif-latin.woff2",
   "./css/fonts/instrument-serif-latin-ext.woff2",
   "./css/fonts/manrope-latin.woff2",
   "./css/fonts/manrope-latin-ext.woff2",
   "./css/fonts/manrope-vietnamese.woff2",
-  // Plus chargée par une balise script depuis la v7.54, mais toujours précachée :
-  // le chargement à la demande doit fonctionner hors ligne.
+  // No longer loaded by a script tag since v7.54, but still precached:
+  // on-demand loading must work offline.
   "./js/vendor/chart.umd.js",
   "./js/outils.js",
   "./js/i18n.js",
-  // Chargé à la demande depuis la v7.55, mais précaché pour que la bascule de
-  // langue fonctionne aussi hors ligne.
+  // Loaded on demand since v7.55, but precached so the language
+  // switch also works offline.
   "./js/i18n.en.js",
   "./js/grind.js",
   "./js/recettes.js",
-  // Chargé à la demande depuis la v7.56, précaché pour que la démo marche
-  // hors ligne comme le reste du site.
+  // Loaded on demand since v7.56, precached so the demo works
+  // offline like the rest of the site.
   "./js/demo-data.js",
   "./js/sync.js",
   "./js/data-csv.js",
@@ -94,7 +94,7 @@ const PRECACHE_URLS = [
   "./js/ui-brassage.js",
   "./js/ui-dessins.js",
   "./js/app.js",
-].map(versionnee));
+].map(versioned));
 
 const NEVER_CACHED = ["/login", "/logout"];
 const DELAI_NAVIGATION_MS = 3000;
@@ -111,9 +111,9 @@ self.addEventListener("install", event => {
             const response = await fetch(new Request(url, { cache: "reload" }));
             if (isCacheable(response)) await cache.put(url, response);
           } catch (error) {
-            // Hors ligne a l'installation, ou porte fermee : on reessaiera au
-            // premier chargement en ligne, le gestionnaire fetch remplit le
-            // cache au fur et a mesure.
+            // Offline at install time, or door closed: we retry on the
+            // first online load, the fetch handler fills the
+            // cache as it goes.
           }
         })
       );
@@ -125,14 +125,14 @@ self.addEventListener("install", event => {
 self.addEventListener("activate", event => {
   event.waitUntil(
     (async () => {
-      const noms = await caches.keys();
-      await Promise.all(noms.filter(n => n !== CACHE_NAME).map(n => caches.delete(n)));
-      /* Les fichiers d'une version precedente ont une autre URL : ils ne
-         seront plus jamais demandes, on les jette pour que le cache ne grossisse
-         pas d'un jeu complet a chaque deploiement. */
+      const names = await caches.keys();
+      await Promise.all(names.filter(n => n !== CACHE_NAME).map(n => caches.delete(n)));
+      /* Files from a previous version have another URL: they will
+         never be requested again, so we drop them to keep the cache from growing
+         by a full set on every deployment. */
       const cache = await caches.open(CACHE_NAME);
-      const cles = await cache.keys();
-      await Promise.all(cles.map(async req => {
+      const keys = await cache.keys();
+      await Promise.all(keys.map(async req => {
         const v = new URL(req.url).searchParams.get("v");
         if (v !== null && v !== VERSION) await cache.delete(req);
       }));
@@ -149,14 +149,14 @@ self.addEventListener("fetch", event => {
   if (url.origin !== self.location.origin) return;
   if (NEVER_CACHED.includes(url.pathname)) return;
 
-  /* FICHIERS VERSIONNÉS (?v=) : CACHE D'ABORD (v8.72). Ils sont immuables par
-     contrat (même URL, même contenu), inutile d'attendre le réseau pour eux, ni
-     de les réécrire dans le cache à chaque ouverture. */
+  /* VERSIONED FILES (?v=): CACHE FIRST (v8.72). They are immutable by
+     contract (same URL, same content), no need to wait for the network, nor
+     to rewrite them into the cache on every open. */
   if (url.searchParams.has("v")) {
     event.respondWith(
       (async () => {
-        const enCache = await caches.match(request);
-        if (enCache) return enCache;
+        const cached = await caches.match(request);
+        if (cached) return cached;
         const response = await fetch(request);
         if (isCacheable(response)) (await caches.open(CACHE_NAME)).put(request, response.clone());
         return response;
@@ -168,37 +168,37 @@ self.addEventListener("fetch", event => {
   event.respondWith(
     (async () => {
       try {
-        /* NAVIGATION : TROIS SECONDES AU PLUS (v8.72). En réseau faible, la page
-           attendait le réseau sans limite avant de retomber sur le cache, et le
-           voile de chargement restait des dizaines de secondes. */
+        /* NAVIGATION: THREE SECONDS AT MOST (v8.72). On a weak network, the page
+           waited for the network without limit before falling back to the cache, and
+           the loading veil stayed up for tens of seconds. */
         const response = request.mode === "navigate"
           ? await Promise.race([
             fetch(request),
-            new Promise((_, rejeter) => setTimeout(() => rejeter(new Error("lent")), DELAI_NAVIGATION_MS)),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("slow")), DELAI_NAVIGATION_MS)),
           ])
           : await fetch(request);
-        // Une redirection vers /login veut dire session expiree : on la laisse
-        // passer telle quelle pour que l'utilisateur se reconnecte, et on ne
-        // met surtout rien en cache.
+        // A redirect to /login means the session expired: we let it
+        // through as is so the user logs in again, and above all we
+        // cache nothing.
         if (isCacheable(response)) {
           const cache = await caches.open(CACHE_NAME);
           cache.put(request, response.clone());
         }
         return response;
       } catch (error) {
-        // D'abord l'URL exacte (version comprise), puis sans parametres : hors
-        // ligne, un fichier d'une version voisine vaut mieux qu'un ecran blanc.
+        // First the exact URL (version included), then without parameters:
+        // offline, a file from a neighbouring version beats a blank screen.
         const exact = await caches.match(request);
         if (exact) return exact;
-        const enCache = await caches.match(request, { ignoreSearch: true });
-        if (enCache) return enCache;
-        // Navigation hors ligne sans correspondance exacte : on retombe sur la
-        // coquille de l'application, tout le reste vit en local de toute facon.
+        const cached = await caches.match(request, { ignoreSearch: true });
+        if (cached) return cached;
+        // Offline navigation with no exact match: fall back on the
+        // app shell, everything else lives locally anyway.
         if (request.mode === "navigate") {
-          // "./" d'abord : Cloudflare redirige /index.html vers /, et une
-          // réponse redirigée n'est jamais mise en cache.
-          const coquille = (await caches.match("./")) || (await caches.match("./index.html"));
-          if (coquille) return coquille;
+          // "./" first: Cloudflare redirects /index.html to /, and a
+          // redirected response is never cached.
+          const shell = (await caches.match("./")) || (await caches.match("./index.html"));
+          if (shell) return shell;
         }
         throw error;
       }

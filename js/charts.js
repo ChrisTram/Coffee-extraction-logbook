@@ -1,13 +1,13 @@
-// Graphiques : Chart.js embarqué localement, plus heatmap et réglette en SVG maison.
-// Couleurs de données validées pour le daltonisme, ne pas les changer à la
-// légère : Brikka #2a78d6, Switch #eb6834, les deux machines #cc79a7.
-// Ces trois-là décrivent une MACHINE, et rien d'autre ne doit les emprunter.
+// Charts: Chart.js bundled locally, plus a home-made SVG heatmap and ruler.
+// Data colours validated for colour blindness, do not change them
+// lightly: Brikka #2a78d6, Switch #eb6834, both machines #cc79a7.
+// These three describe a MACHINE, and nothing else may borrow them.
 //
-// Le trio vient de la palette Okabe-Ito, la référence des couleurs sûres pour le
-// daltonisme : bleu, vermillon, rose-violet. Les deux machines portaient un vert
-// émeraude #1baf7a, sûr lui aussi mais criard sur une palette entièrement chaude
-// et impossible à regarder longtemps. Le rose poudré garde la propriété et perd
-// le cri.
+// The trio comes from the Okabe-Ito palette, the reference for colours safe
+// for colour blindness: blue, vermilion, pink-purple. Both machines used an
+// emerald green #1baf7a, safe as well but garish on an entirely warm palette
+// and impossible to look at for long. The powder pink keeps the property and
+// loses the garishness.
 "use strict";
 
 const CHARTS = (() => {
@@ -47,68 +47,68 @@ const CHARTS = (() => {
     Chart.defaults.plugins.tooltip.bodyColor = cssVar("--tooltip-texte");
     Chart.defaults.plugins.tooltip.padding = 10;
     Chart.defaults.plugins.tooltip.cornerRadius = 8;
-    // Pas d'animation quand le système demande moins de mouvement (v8.75).
+    // No animation when the system asks for less motion (v8.75).
     Chart.defaults.animation.duration = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 700;
     Chart.defaults.animation.easing = "easeOutQuart";
     Chart.defaults.maintainAspectRatio = false;
   }
 
-  /* CHARGEMENT À LA DEMANDE DE CHART.JS.
+  /* LOADING CHART.JS ON DEMAND.
 
-     La bibliothèque pèse 68 Ko gzippés, soit 30 % du poids du site, et ne sert
-     QUE sur le tableau de bord. La heatmap et la réglette du moulin sont du SVG
-     maison et n'en dépendent pas : ouvrir le site sur Saisie, Historique ou Guide
-     ne doit donc rien télécharger de tout ça.
+     The library weighs 68 KB gzipped, that is 30 % of the site's weight, and
+     serves ONLY on the dashboard. The heatmap and the grinder ruler are
+     home-made SVG and do not depend on it: opening the site on Entry, History
+     or Guide must therefore download none of it.
 
-     Elle reste PRÉCACHÉE par le service worker : le chargement différé marche
-     donc aussi hors ligne, il lit simplement le cache au lieu du réseau.
+     It stays PRECACHED by the service worker: the deferred load therefore
+     also works offline, it simply reads the cache instead of the network.
 
-     La file d'attente garde le DERNIER appel par canvas. Pendant le
-     téléchargement, un rendu peut être redemandé plusieurs fois (bascule de
-     langue, notification de données) : rejouer tout serait du gâchis, et rejouer
-     le premier afficherait un graphe périmé. */
-  let chartPret = typeof Chart !== "undefined";
-  let chargementChart = null;
+     The queue keeps the LAST call per canvas. During the download, a render
+     may be requested several times (language toggle, data notification):
+     replaying everything would be waste, and replaying the first one would
+     show a stale chart. */
+  let chartReady = typeof Chart !== "undefined";
+  let chartLoading = null;
   const enAttente = new Map();
 
   function chargerChart() {
-    if (chartPret) return Promise.resolve(true);
-    if (!chargementChart) {
-      chargementChart = new Promise(resolve => {
+    if (chartReady) return Promise.resolve(true);
+    if (!chartLoading) {
+      chartLoading = new Promise(resolve => {
         const s = document.createElement("script");
         s.src = OUTILS.urlVersionnee("js/vendor/chart.umd.js");
         s.onload = () => {
-          chartPret = true;
+          chartReady = true;
           appliquerDefauts();
           resolve(true);
         };
-        // Un échec ne doit pas casser le tableau de bord : les KPI, les insights
-        // et la heatmap SVG restent parfaitement lisibles sans les graphes.
-        s.onerror = () => { chargementChart = null; resolve(false); };
+        // A failure must not break the dashboard: the KPIs, the insights
+        // and the SVG heatmap stay perfectly readable without the charts.
+        s.onerror = () => { chartLoading = null; resolve(false); };
         document.head.appendChild(s);
       });
     }
-    return chargementChart;
+    return chartLoading;
   }
 
-  function viderFile() {
-    const travaux = [...enAttente.entries()];
+  function flushQueue() {
+    const jobs = [...enAttente.entries()];
     enAttente.clear();
-    travaux.forEach(([id, config]) => creer(id, config));
+    jobs.forEach(([id, config]) => creer(id, config));
   }
 
   function creer(idCanvas, config) {
     const el = document.getElementById(idCanvas);
     if (!el) return null;
-    if (!chartPret) {
+    if (!chartReady) {
       enAttente.set(idCanvas, config);
-      chargerChart().then(ok => { if (ok) viderFile(); else enAttente.clear(); });
+      chargerChart().then(ok => { if (ok) flushQueue(); else enAttente.clear(); });
       return null;
     }
-    /* METTRE À JOUR PLUTÔT QUE RECRÉER (v8.75). Chaque rendu détruisait puis
-       reconstruisait les graphiques, avec 700 ms d'animation, même dans les
-       onglets fermés. Même toile, même type : on change les données et les
-       options, sans animation. */
+    /* UPDATE RATHER THAN RECREATE (v8.75). Every render destroyed then
+       rebuilt the charts, with 700 ms of animation, even in the closed
+       tabs. Same canvas, same type: we change the data and the options,
+       without animation. */
     const ancien = registre[idCanvas];
     if (ancien && ancien.canvas === el && ancien.config.type === config.type) {
       ancien.data = config.data;
@@ -126,36 +126,36 @@ const CHARTS = (() => {
     enAttente.clear();
   }
 
-  // Barres du nombre d'extractions par jour, note moyenne du jour en ligne,
-  // grammes de café en ligne pointillée, caféine et détail dans le tooltip.
-  /* Trois séries visibles et pas quatre. La courbe des grammes de café était une
-     quatrième ligne sur un graphique qui en portait déjà trois, sur un axe caché
-     de surcroît : elle chargeait la vue sans être lisible. Le chiffre est passé
-     dans l'infobulle, où il se consulte quand on le cherche. */
-  function barresEtLigne30j(idCanvas, labels, comptes, moyennes, details, tendance, cafesParJour) {
-    const plusBasse = Math.min(...moyennes.filter(n => n !== null), 10);
-    const plancher = plusBasse < 4 ? Math.max(0, Math.floor(plusBasse / 2) * 2) : 4;
-    /* UN PAVÉ PAR TASSE (v8.58). Une barre pleine dans une bande de soixante pixels
-       graduée jusqu'à 3 : une journée à une tasse et une à deux se ressemblaient,
-       et Chris en fait une ou deux presque tous les jours. Chaque tasse est
-       maintenant un pavé empilé, séparé du suivant par un filet de la couleur de la
-       carte : on les COMPTE au lieu de lire une hauteur. L'échelle s'arrête au
-       plus gros jour du mois (au moins 2), avec un repère par tasse. */
-    const plusGros = Math.max(2, ...comptes.map(Number).filter(Number.isFinite));
+  // Bars of the number of extractions per day, the day's average rating as a
+  // line, grams of coffee as a dotted line, caffeine and detail in the tooltip.
+  /* Three visible series and not four. The coffee grams curve was a fourth
+     line on a chart that already carried three, on a hidden axis on top of
+     that: it loaded the view without being readable. The figure moved into
+     the tooltip, where it is looked up when one wants it. */
+  function barresEtLigne30j(idCanvas, labels, comptes, moyennes, details, tendance, coffeesPerDay) {
+    const lowest = Math.min(...moyennes.filter(n => n !== null), 10);
+    const plancher = lowest < 4 ? Math.max(0, Math.floor(lowest / 2) * 2) : 4;
+    /* ONE BLOCK PER CUP (v8.58). A full bar in a sixty-pixel band graduated
+       up to 3: a one-cup day and a two-cup day looked alike, and Chris makes
+       one or two almost every day. Each cup is now a stacked block, separated
+       from the next by a hairline of the card colour: we COUNT them instead
+       of reading a height. The scale stops at the month's biggest day (at
+       least 2), with one tick per cup. */
+    const maxCups = Math.max(2, ...comptes.map(Number).filter(Number.isFinite));
     const filet = cssVar("--panneau");
-    /* LA COULEUR DU CAFÉ (v8.61) : le k-ième pavé d'un jour prend la teinte du
-       café de la k-ième tasse de ce jour (rang calculé par UI.rendreCafes30j,
-       qui écrit la légende avec les mêmes jetons). Sans rang, le gris neutre. */
+    /* THE COFFEE COLOUR (v8.61): the k-th block of a day takes the tint of
+       the coffee of that day's k-th cup (rank computed by UI.rendreCafes30j,
+       which writes the legend with the same tokens). Without a rank, neutral grey. */
     const neutre = cssVar("--barre-neutre");
     const teintes = [1, 2, 3, 4, 5].map(n => cssVar("--cafe-" + n));
     const teinte = (i, k) => {
-      const r = cafesParJour && cafesParJour[i] ? cafesParJour[i][k] : -1;
+      const r = coffeesPerDay && coffeesPerDay[i] ? coffeesPerDay[i][k] : -1;
       return r >= 0 && teintes[r] ? teintes[r] : neutre;
     };
-    const paves = Array.from({ length: plusGros }, (_, k) => ({
+    const paves = Array.from({ length: maxCups }, (_, k) => ({
       type: "bar", label: I18N.t("l_tasses_jour"), pave: k + 1, yAxisID: "y", stack: "tasses",
       data: comptes.map(c => (Number(c) > k ? 1 : null)),
-      // Le filet entre deux pavés est la couleur de la carte, pas celle d'une série.
+      // The hairline between two blocks is the card colour, not a series colour.
       backgroundColor: comptes.map((_, i) => teinte(i, k)), borderColor: filet,
       borderWidth: 1.5, borderSkipped: false, borderRadius: 3, maxBarThickness: 16,
     }));
@@ -169,12 +169,12 @@ const CHARTS = (() => {
             spanGaps: true, tension: 0.35, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2,
           },
           {
-            /* Tendance : même axe de note que les points bruts, sinon on
-               comparerait deux échelles différentes sans le voir. Trait épais et
-               sans point, pour qu'on la lise comme un fond et pas comme une
-               mesure de plus. La COULEUR sert la même intention : celle de la
-               note qu'elle lisse, en translucide. Une teinte étrangère la
-               faisait passer pour une troisième donnée, ce qu'elle n'est pas. */
+            /* Trend: same rating axis as the raw points, otherwise we would
+               compare two different scales without seeing it. Thick stroke
+               and no point, so it reads as a background and not as one more
+               measure. The COLOUR serves the same intent: that of the
+               rating it smooths, translucent. A foreign tint made it pass
+               for a third piece of data, which it is not. */
             type: "line", label: I18N.t("l_tendance"), data: tendance || [], yAxisID: "y2",
             borderColor: cssVar("--tendance"), backgroundColor: cssVar("--tendance"),
             spanGaps: true, tension: 0.4, pointRadius: 0, pointHoverRadius: 4, borderWidth: 3,
@@ -186,11 +186,11 @@ const CHARTS = (() => {
       options: {
         interaction: { mode: "index", intersect: false },
         plugins: {
-          /* Les pavés sortent de la légende : leur couleur est celle des cafés,
-             nommés sous le graphe par la légende des cafés. */
+          /* The blocks leave the legend: their colour is the coffees', named
+             under the chart by the coffee legend. */
           legend: { labels: { filter: (item, data) => !data.datasets[item.datasetIndex].pave } },
           tooltip: {
-            // Dans l'infobulle aussi : le premier pavé porte le total du jour.
+            // In the tooltip too: the first block carries the day's total.
             filter: item => !(item.dataset.pave > 1) && !(item.dataset.pave === 1 && !Number(comptes[item.dataIndex])),
             callbacks: {
               label: item => (item.dataset.pave
@@ -204,19 +204,19 @@ const CHARTS = (() => {
             },
           },
         },
-        /* DEUX BANDES EMPILÉES (v8.39) et non deux axes superposés. Les barres
-           des tasses et la ligne des notes partageaient la même hauteur, l'une
-           graduée à gauche, l'autre à droite : il fallait deviner quelle
-           graduation lisait quoi, et le nombre de tasses du jour ne se lisait
-           pas d'un coup d'oeil. Ici, la note en haut sur deux tiers, les tasses
-           en bas sur un tiers, chacune avec sa graduation à gauche, le même
-           axe des jours dessous. */
+        /* TWO STACKED BANDS (v8.39) and not two overlaid axes. The cup bars
+           and the rating line shared the same height, one graduated on the
+           left, the other on the right: you had to guess which graduation
+           read what, and the day's number of cups did not read at a
+           glance. Here, the rating on top over two thirds, the cups at the
+           bottom over one third, each with its graduation on the left, the
+           same day axis below. */
         scales: {
           x: { stacked: true, grid: { display: false }, ticks: { maxTicksLimit: 8 } },
-          /* Chart.js empile les axes d'une même pile dans l'ordre où ils sont
-             déclarés, du bas vers le haut : les tasses d'abord, la note ensuite. */
+          /* Chart.js stacks the axes of one stack in the order they are
+             declared, from bottom to top: the cups first, the rating next. */
           y: {
-            stack: "trente", stackWeight: 1, position: "left", stacked: true, min: 0, max: plusGros,
+            stack: "trente", stackWeight: 1, position: "left", stacked: true, min: 0, max: maxCups,
             ticks: { stepSize: 1 },
             grid: { color: cssVar("--lignes-douces"), drawTicks: false },
             title: { display: true, text: I18N.t("axe_tasses") },
@@ -231,25 +231,25 @@ const CHARTS = (() => {
     });
   }
 
-  /* LIBELLE COURT pour les axes et les legendes. Dans une carte d'une colonne,
-     « The Coffee Chronicler's Recipe (Sweet) » se coupait en plein mot et
-     donnait « icler's Recipe (Sweet) », qui ne designe rien. On tronque au mot
-     entier avec des points de suspension ; le nom complet reste dans
-     l'infobulle, que Chart.js construit a part. */
-  const MAX_LIBELLE = 18;
-  function libelleCourt(texte) {
+  /* SHORT LABEL for axes and legends. In a one-column card,
+     "The Coffee Chronicler's Recipe (Sweet)" was cut mid-word and gave
+     "icler's Recipe (Sweet)", which names nothing. We truncate at a whole
+     word with an ellipsis; the full name stays in the tooltip, which
+     Chart.js builds separately. */
+  const MAX_LABEL = 18;
+  function shortLabel(texte) {
     const t = String(texte == null ? "" : texte);
-    if (t.length <= MAX_LIBELLE) return t;
-    return t.slice(0, MAX_LIBELLE).replace(/\s+\S*$/, "") + "…";
+    if (t.length <= MAX_LABEL) return t;
+    return t.slice(0, MAX_LABEL).replace(/\s+\S*$/, "") + "…";
   }
 
-  function barresHorizontales(idCanvas, items, couleurs, titreX, max) {
+  function barresHorizontales(idCanvas, items, couleurs, xTitle, max) {
     creer(idCanvas, {
       type: "bar",
       data: {
-        /* Le libelle COURT sur l'axe, le complet dans l'infobulle : c'est le
-           titre du tooltip ci-dessous qui le restitue. */
-        labels: items.map(i => libelleCourt(i.label)),
+        /* The SHORT label on the axis, the full one in the tooltip: it is the
+           tooltip title below that restores it. */
+        labels: items.map(i => shortLabel(i.label)),
         datasets: [{
           data: items.map(i => i.value),
           backgroundColor: couleurs || items.map(() => cssVar("--accent")),
@@ -270,21 +270,21 @@ const CHARTS = (() => {
           } },
         },
         scales: {
-          x: { beginAtZero: true, max: max || undefined, title: titreX ? { display: true, text: titreX } : undefined },
+          x: { beginAtZero: true, max: max || undefined, title: xTitle ? { display: true, text: xTitle } : undefined },
           y: { grid: { display: false } },
         },
       },
     });
   }
 
-  function comparatifMachines(idCanvas, cafesLabels, notesBrikka, notesSwitch) {
+  function comparatifMachines(idCanvas, coffeeLabels, brikkaScores, switchScores) {
     creer(idCanvas, {
       type: "bar",
       data: {
-        labels: cafesLabels,
+        labels: coffeeLabels,
         datasets: [
-          { label: "Brikka", data: notesBrikka, backgroundColor: C_BRIKKA, borderRadius: 5, maxBarThickness: 24 },
-          { label: "Switch", data: notesSwitch, backgroundColor: C_SWITCH, borderRadius: 5, maxBarThickness: 24 },
+          { label: "Brikka", data: brikkaScores, backgroundColor: C_BRIKKA, borderRadius: 5, maxBarThickness: 24 },
+          { label: "Switch", data: switchScores, backgroundColor: C_SWITCH, borderRadius: 5, maxBarThickness: 24 },
         ],
       },
       options: {
@@ -296,13 +296,13 @@ const CHARTS = (() => {
     });
   }
 
-  function nuage(idCanvas, ptsBrikka, ptsSwitch, titreX, unite) {
+  function nuage(idCanvas, brikkaPoints, switchPoints, xTitle, unite) {
     creer(idCanvas, {
       type: "scatter",
       data: {
         datasets: [
-          { label: "Brikka", data: ptsBrikka, backgroundColor: C_BRIKKA + "cc", pointRadius: 5, pointHoverRadius: 7 },
-          { label: "Switch", data: ptsSwitch, backgroundColor: C_SWITCH + "cc", pointRadius: 5, pointHoverRadius: 7 },
+          { label: "Brikka", data: brikkaPoints, backgroundColor: C_BRIKKA + "cc", pointRadius: 5, pointHoverRadius: 7 },
+          { label: "Switch", data: switchPoints, backgroundColor: C_SWITCH + "cc", pointRadius: 5, pointHoverRadius: 7 },
         ],
       },
       options: {
@@ -313,7 +313,7 @@ const CHARTS = (() => {
           } } },
         },
         scales: {
-          x: { title: { display: true, text: titreX } },
+          x: { title: { display: true, text: xTitle } },
           y: { min: 0, max: 10, title: { display: true, text: I18N.t("axe_note") } },
         },
       },
@@ -335,13 +335,13 @@ const CHARTS = (() => {
       options: {
         cutout: "62%",
         plugins: {
-          /* La legende de l'anneau vit dans une colonne etroite : « Acide ET
-             amer (extraction inegale) » y tenait sur trois pixels. Elle est
-             raccourcie au mot entier, et l'infobulle donne le nom complet. */
+          /* The ring's legend lives in a narrow column: "Acide ET amer
+             (extraction inegale)" fitted there in three pixels. It is
+             shortened at a whole word, and the tooltip gives the full name. */
           legend: {
             position: "right",
             labels: { generateLabels: ch => Chart.defaults.plugins.legend.labels
-              .generateLabels(ch).map(l => ({ ...l, text: libelleCourt(l.text) })) },
+              .generateLabels(ch).map(l => ({ ...l, text: shortLabel(l.text) })) },
           },
           tooltip: { callbacks: { title: ctx => labels[ctx[0].dataIndex] || "" } },
         },
@@ -349,85 +349,85 @@ const CHARTS = (() => {
     });
   }
 
-  // ---------- Heatmap calendaire en SVG ----------
+  // ---------- Calendar heatmap in SVG ----------
 
-  // Clé de date en heure locale, définie une seule fois dans outils.js.
+  // Date key in local time, defined only once in outils.js.
   const cleLocale = OUTILS.cleLocale;
 
-  function heatmap(conteneur, parJour, infoParJour, nbSemaines) {
+  function heatmap(conteneur, parJour, infoParJour, weekCount) {
     const el = typeof conteneur === "string" ? document.getElementById(conteneur) : conteneur;
     if (!el) return;
-    const semaines = nbSemaines || 16;
+    const semaines = weekCount || 16;
     const cell = 17, gap = 4, gauche = 34, haut = 22;
     const largeur = gauche + semaines * (cell + gap);
     const hauteur = haut + 7 * (cell + gap);
 
     const aujourdhui = new Date();
     aujourdhui.setHours(0, 0, 0, 0);
-    // Recule jusqu'au lundi de la semaine courante puis remonte nbSemaines moins 1.
-    const jourSem = (aujourdhui.getDay() + 6) % 7; // 0 = lundi
+    // Goes back to the Monday of the current week then up weekCount minus 1.
+    const dayOfWeek = (aujourdhui.getDay() + 6) % 7; // 0 = Monday
     const debut = new Date(aujourdhui);
-    debut.setDate(debut.getDate() - jourSem - (semaines - 1) * 7);
+    debut.setDate(debut.getDate() - dayOfWeek - (semaines - 1) * 7);
 
     const JOURS = I18N.jours();
-    const MOIS = I18N.mois();
-    const cleAujourdhui = cleLocale(aujourdhui);
+    const MONTHS = I18N.mois();
+    const todayKey = cleLocale(aujourdhui);
 
-    // ÉCHELLE ABSOLUE, et pas relative au maximum. Avec une échelle relative,
-    // un jour à une extraction se peignait dans la teinte la plus foncée dès
-    // que le maximum valait 1, et la même couleur changeait de sens dès que le
-    // maximum bougeait. Ici une couleur veut toujours dire la même chose, ce qui
-    // rend la légende utile : 1, 2, 3, 4 et plus.
-    const niveauDe = v => (v <= 0 ? 0 : Math.min(4, v));
+    // ABSOLUTE SCALE, not relative to the maximum. With a relative scale, a
+    // one-extraction day was painted in the darkest tint as soon as the
+    // maximum was 1, and the same colour changed meaning as soon as the
+    // maximum moved. Here a colour always means the same thing, which makes
+    // the legend useful: 1, 2, 3, 4 and more.
+    const levelOf = v => (v <= 0 ? 0 : Math.min(4, v));
 
     let svg = '<svg viewBox="0 0 ' + largeur + " " + hauteur + '" class="heatmap-svg" role="img" aria-label="' + I18N.t("hm_aria") + '">';
     [0, 2, 4, 6].forEach(j => {
       svg += '<text x="0" y="' + (haut + j * (cell + gap) + cell - 4) + '" class="hm-label">' + JOURS[j] + "</text>";
     });
 
-    let dernierMois = -1;
+    let lastMonth = -1;
     const d = new Date(debut);
     for (let s = 0; s < semaines; s++) {
       for (let j = 0; j < 7; j++) {
         if (d > aujourdhui) break;
         const cle = cleLocale(d);
         const v = parJour[cle] || 0;
-        const niveau = niveauDe(v);
+        const niveau = levelOf(v);
         const x = gauche + s * (cell + gap);
         const y = haut + j * (cell + gap);
-        // Étiquette de mois sur la colonne qui contient le 1er : plus fiable que
-        // de tester le lundi, qui pouvait sauter un mois.
-        if (d.getDate() <= 7 && d.getMonth() !== dernierMois) {
-          dernierMois = d.getMonth();
-          svg += '<text x="' + x + '" y="12" class="hm-label">' + MOIS[dernierMois] + "</text>";
+        // Month label on the column that holds the 1st: more reliable than
+        // testing the Monday, which could skip a month.
+        if (d.getDate() <= 7 && d.getMonth() !== lastMonth) {
+          lastMonth = d.getMonth();
+          svg += '<text x="' + x + '" y="12" class="hm-label">' + MONTHS[lastMonth] + "</text>";
         }
         const info = infoParJour[cle] || "";
-        const dateLoc = d.toLocaleDateString(I18N.locale(), { weekday: "long", day: "numeric", month: "long" });
+        const localDate = d.toLocaleDateString(I18N.locale(), { weekday: "long", day: "numeric", month: "long" });
         const compte = v === 0 ? I18N.t("hm_aucune") : I18N.t(v > 1 ? "hm_ns" : "hm_n", { n: v });
-        // Le jour courant est cerclé : sans repère, s'orienter dans une grille de
-        // plus de cent cases demande de compter les colonnes.
-        const estAujourdhui = cle === cleAujourdhui;
+        // The current day is circled: without a landmark, finding your way in
+        // a grid of more than a hundred cells means counting the columns.
+        const isToday = cle === todayKey;
         svg += '<rect x="' + x + '" y="' + y + '" width="' + cell + '" height="' + cell +
-          '" rx="3" class="hm-cell hm-n' + niveau + (estAujourdhui ? " hm-aujourdhui" : "") +
+          '" rx="3" class="hm-cell hm-n' + niveau + (isToday ? " hm-aujourdhui" : "") +
           '" tabindex="0" data-tip="' +
-          dateLoc + " : " + compte + (info ? ", " + info : "") + '"></rect>';
+          localDate + " : " + compte + (info ? ", " + info : "") + '"></rect>';
         d.setDate(d.getDate() + 1);
       }
     }
     svg += "</svg>";
     el.innerHTML = svg;
-    // Sur petit écran, montre d'abord la période récente (à droite).
+    // On a small screen, show the recent period first (on the right).
     el.scrollLeft = el.scrollWidth;
     attacherTooltips(el);
   }
 
-  // ---------- Diagramme officiel de granulométrie du C5 ESP, en SVG ----------
-  // Deux axes alignés (rotations en haut, microns en bas), boîtes de méthodes,
-  // bandes de granulométrie, zone hachurée au delà de la butée, marqueurs
-  // personnels, et mise en évidence des méthodes compatibles avec le réglage
-  // saisi dans le convertisseur.
+  // ---------- Official particle size chart of the C5 ESP, in SVG ----------
+  // Two aligned axes (rotations on top, microns at the bottom), method boxes,
+  // particle size bands, hatched area beyond the stop, personal markers, and
+  // highlighting of the methods compatible with the setting entered in the
+  // converter.
 
-  const DIAG_RANGEES = [
+  const DIAG_ROWS = [
     ["espresso", "v60", "coldbrew"],
     ["turkish", "brikka", "frenchpress"],
     ["aeropress"],
@@ -438,110 +438,110 @@ const CHARTS = (() => {
     ["cupping"],
   ];
 
-  /* Squelette de la reglette, garde par conteneur. Il ne depend que du reglage
-     par defaut et de la langue : tant que ces deux la ne bougent pas, deplacer
-     le curseur ne doit rien redessiner d'autre que le curseur. */
-  const reglettes = new WeakMap();
+  /* Skeleton of the ruler, kept per container. It only depends on the default
+     setting and the language: as long as those two do not move, moving the
+     cursor must redraw nothing but the cursor. */
+  const rulers = new WeakMap();
 
-  function diagramme(conteneur, dialCourant, dialDefaut) {
+  function diagramme(conteneur, currentDial, defaultDial) {
     const el = typeof conteneur === "string" ? document.getElementById(conteneur) : conteneur;
     if (!el) return;
-    let cache = reglettes.get(el);
-    // La langue compte : les noms de methodes et les infobulles sont dans le SVG.
-    if (!cache || cache.defaut !== dialDefaut || cache.lang !== I18N.lang() || !el.firstChild) {
-      cache = construireReglette(el, dialDefaut);
-      reglettes.set(el, cache);
+    let cache = rulers.get(el);
+    // The language matters: the method names and the tooltips are in the SVG.
+    if (!cache || cache.defaut !== defaultDial || cache.lang !== I18N.lang() || !el.firstChild) {
+      cache = buildRuler(el, defaultDial);
+      rulers.set(el, cache);
     }
-    placerCurseur(cache, dialCourant);
+    placeCursor(cache, currentDial);
   }
 
-  function construireReglette(el, dialDefaut) {
+  function buildRuler(el, defaultDial) {
     const maxU = 1400;
     const largeur = 900, gauche = 14, droite = 14;
     const zone = largeur - gauche - droite;
-    const hautAxe = 34;          // axe des rotations
-    const debutBoites = 48;
-    const ligneH = 34;
-    const hBoite = 24;
-    const yBandes = debutBoites + DIAG_RANGEES.length * ligneH + 8;
-    const hBandes = 24;
-    const hauteur = yBandes + hBandes + 34;
+    const axisTop = 34;          // rotations axis
+    const boxesTop = 48;
+    const rowH = 34;
+    const boxH = 24;
+    const bandsY = boxesTop + DIAG_ROWS.length * rowH + 8;
+    const bandsH = 24;
+    const hauteur = bandsY + bandsH + 34;
     const x = u => gauche + Math.max(0, Math.min(maxU, u)) / maxU * zone;
-    const uCran = GRIND.MICRONS_PAR_CRAN;
+    const umPerStep = GRIND.MICRONS_PAR_CRAN;
 
     let svg = '<svg viewBox="0 0 ' + largeur + " " + hauteur + '" class="diagramme-svg" role="img" aria-label="' + I18N.t("rg_aria") + '">';
     svg += '<defs><pattern id="hachures" width="9" height="9" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">' +
       '<line x1="0" y1="0" x2="0" y2="9" class="dg-hachure"></line></pattern></defs>';
 
-    // Zone hors de portée du moulin, au delà de la butée.
-    const xButee = x(GRIND.MICRONS_BUTEE);
-    svg += '<rect x="' + xButee + '" y="' + hautAxe + '" width="' + (x(maxU) - xButee) + '" height="' + (yBandes - hautAxe) + '" fill="url(#hachures)" class="dg-zone-hors"></rect>';
+    // Area out of the grinder's reach, beyond the stop.
+    const xStop = x(GRIND.MICRONS_BUTEE);
+    svg += '<rect x="' + xStop + '" y="' + axisTop + '" width="' + (x(maxU) - xStop) + '" height="' + (bandsY - axisTop) + '" fill="url(#hachures)" class="dg-zone-hors"></rect>';
 
-    // Axe du haut : rotations, graduation tous les 0.2.0 (10 crans), tirets par cran.
+    // Top axis: rotations, a graduation every 0.2.0 (10 clicks), a tick per click.
     svg += '<text x="' + gauche + '" y="12" class="dg-titre-axe">' + I18N.t("dg_rotations") + "</text>";
     for (let c = 0; c <= GRIND.CRANS_MAX; c++) {
-      const gx = x(c * uCran);
-      const majeur = c % 10 === 0;
-      svg += '<line x1="' + gx + '" y1="' + (hautAxe - (majeur ? 9 : 4)) + '" x2="' + gx + '" y2="' + hautAxe + '" class="dg-tick"></line>';
-      if (majeur) {
-        svg += '<text x="' + gx + '" y="' + (hautAxe - 13) + '" text-anchor="middle" class="dg-axe">' + GRIND.dialDepuisCrans(c) + "</text>";
+      const gx = x(c * umPerStep);
+      const major = c % 10 === 0;
+      svg += '<line x1="' + gx + '" y1="' + (axisTop - (major ? 9 : 4)) + '" x2="' + gx + '" y2="' + axisTop + '" class="dg-tick"></line>';
+      if (major) {
+        svg += '<text x="' + gx + '" y="' + (axisTop - 13) + '" text-anchor="middle" class="dg-axe">' + GRIND.dialDepuisCrans(c) + "</text>";
       }
     }
-    svg += '<line x1="' + gauche + '" y1="' + hautAxe + '" x2="' + x(GRIND.MICRONS_BUTEE) + '" y2="' + hautAxe + '" class="dg-ligne"></line>';
+    svg += '<line x1="' + gauche + '" y1="' + axisTop + '" x2="' + x(GRIND.MICRONS_BUTEE) + '" y2="' + axisTop + '" class="dg-ligne"></line>';
 
-    /* Boîtes de méthodes. Les classes de compatibilité ne sont PAS posées ici :
-       elles dépendent du curseur, donc elles changent à chaque cran. On garde
-       les bornes de chaque boîte pour pouvoir les rejouer sans tout relire. */
+    /* Method boxes. The compatibility classes are NOT set here: they depend
+       on the cursor, so they change on every click. We keep the bounds of
+       each box to be able to replay them without rereading everything. */
     const boites = [];
-    DIAG_RANGEES.forEach((rangee, i) => {
-      const y = debutBoites + i * ligneH;
+    DIAG_ROWS.forEach((rangee, i) => {
+      const y = boxesTop + i * rowH;
       rangee.forEach(id => {
         const m = GRIND.METHODES.find(v => v.id === id);
         if (!m) return;
         const x1 = x(m.minU), x2 = x(Math.min(m.maxU, maxU));
-        const estSaisie = id === "brikka" || id === "switch";
+        const isOwn = id === "brikka" || id === "switch";
         boites.push({ id, minU: m.minU, maxU: m.maxU });
-        svg += '<g class="dg-boite' + (estSaisie ? " dg-boite-perso" : "") + '" data-boite="' + id + '" data-tip="' +
+        svg += '<g class="dg-boite' + (isOwn ? " dg-boite-perso" : "") + '" data-boite="' + id + '" data-tip="' +
           I18N.methode(m.nom) + " : " + I18N.t("rg_tip_court", { min: m.minU, max: m.maxU, minC: m.minC, maxC: m.maxC, mol: I18N.mol(m.molette) }) + '">' +
-          '<rect x="' + x1 + '" y="' + y + '" width="' + Math.max(4, x2 - x1) + '" height="' + hBoite + '" rx="4"' +
-          (estSaisie ? ' style="stroke:' + (id === "brikka" ? C_BRIKKA : C_SWITCH) + '"' : "") + "></rect>" +
-          '<text x="' + ((x1 + x2) / 2) + '" y="' + (y + hBoite / 2 + 4) + '" text-anchor="middle" class="dg-nom">' + I18N.methode(m.nom) + "</text></g>";
+          '<rect x="' + x1 + '" y="' + y + '" width="' + Math.max(4, x2 - x1) + '" height="' + boxH + '" rx="4"' +
+          (isOwn ? ' style="stroke:' + (id === "brikka" ? C_BRIKKA : C_SWITCH) + '"' : "") + "></rect>" +
+          '<text x="' + ((x1 + x2) / 2) + '" y="' + (y + boxH / 2 + 4) + '" text-anchor="middle" class="dg-nom">' + I18N.methode(m.nom) + "</text></g>";
       });
     });
 
-    // Bandes de granulométrie et axe des microns.
+    // Particle size bands and the microns axis.
     GRIND.BANDES.forEach(b => {
-      const finB = b.max === Infinity ? maxU : b.max;
-      const x1 = x(b.min), x2 = x(finB);
-      svg += '<rect x="' + x1 + '" y="' + yBandes + '" width="' + (x2 - x1) + '" height="' + hBandes + '" class="dg-bande"></rect>' +
-        '<text x="' + ((x1 + x2) / 2) + '" y="' + (yBandes + hBandes / 2 + 4) + '" text-anchor="middle" class="dg-bande-nom">' + b.nom + "</text>";
+      const bandEnd = b.max === Infinity ? maxU : b.max;
+      const x1 = x(b.min), x2 = x(bandEnd);
+      svg += '<rect x="' + x1 + '" y="' + bandsY + '" width="' + (x2 - x1) + '" height="' + bandsH + '" class="dg-bande"></rect>' +
+        '<text x="' + ((x1 + x2) / 2) + '" y="' + (bandsY + bandsH / 2 + 4) + '" text-anchor="middle" class="dg-bande-nom">' + b.nom + "</text>";
     });
     for (let u = 0; u <= maxU; u += 200) {
-      svg += '<text x="' + x(u) + '" y="' + (yBandes + hBandes + 18) + '" text-anchor="middle" class="dg-axe">' + u + (u === maxU ? " µm" : "") + "</text>";
+      svg += '<text x="' + x(u) + '" y="' + (bandsY + bandsH + 18) + '" text-anchor="middle" class="dg-axe">' + u + (u === maxU ? " µm" : "") + "</text>";
     }
 
-    // Marqueurs personnels.
+    // Personal markers.
     GRIND.REFERENCES.forEach(r => {
-      const u = r.crans * uCran;
+      const u = r.crans * umPerStep;
       const gx = x(u);
-      svg += '<line x1="' + gx + '" y1="' + hautAxe + '" x2="' + gx + '" y2="' + (yBandes + hBandes) + '" class="dg-ref" style="stroke:' + r.couleur + '"></line>' +
-        '<circle cx="' + gx + '" cy="' + (hautAxe + 5) + '" r="4.5" style="fill:' + r.couleur + '" class="dg-ref-point" data-tip="' +
+      svg += '<line x1="' + gx + '" y1="' + axisTop + '" x2="' + gx + '" y2="' + (bandsY + bandsH) + '" class="dg-ref" style="stroke:' + r.couleur + '"></line>' +
+        '<circle cx="' + gx + '" cy="' + (axisTop + 5) + '" r="4.5" style="fill:' + r.couleur + '" class="dg-ref-point" data-tip="' +
         r.dial + " : " + I18N.tr(r.usage) + ", " + r.crans + " " + I18N.t("cv_crans") + ", " + I18N.t("cv_environ") + " " + Math.round(u) + ' µm"></circle>';
     });
 
-    /* Réglage par défaut de Chris, trait vert épais. Distinct du curseur noir :
-       en glissant, il doit voir d'un coup d'oeil de combien il s'écarte de ce
-       qu'il a réellement sur le moulin. */
-    const pd = dialDefaut ? GRIND.parseDial(dialDefaut) : null;
+    /* Chris's default setting, thick green stroke. Distinct from the black
+       cursor: while sliding, he must see at a glance how far he strays from
+       what he really has on the grinder. */
+    const pd = defaultDial ? GRIND.parseDial(defaultDial) : null;
     if (pd) {
       const dx = x(pd.microns);
-      svg += '<line x1="' + dx + '" y1="' + (hautAxe - 4) + '" x2="' + dx + '" y2="' + (yBandes + hBandes) + '" class="dg-defaut"></line>';
+      svg += '<line x1="' + dx + '" y1="' + (axisTop - 4) + '" x2="' + dx + '" y2="' + (bandsY + bandsH) + '" class="dg-defaut"></line>';
     }
 
-    /* Curseur du convertisseur. Il est TOUJOURS dans le squelette, masqué par display, l attribut SVG, quand
-       il n'y a rien à montrer : le créer et le détruire au fil des mouvements
-       reviendrait à refaire à la main ce qu'on essaie justement d'éviter. */
-    svg += '<line x1="0" y1="' + (hautAxe - 10) + '" x2="0" y2="' + (yBandes + hBandes) + '" class="dg-curseur" data-curseur display="none"></line>' +
+    /* Converter cursor. It is ALWAYS in the skeleton, hidden by display, the SVG attribute, when
+       there is nothing to show: creating and destroying it as it moves
+       would mean redoing by hand exactly what we are trying to avoid. */
+    svg += '<line x1="0" y1="' + (axisTop - 10) + '" x2="0" y2="' + (bandsY + bandsH) + '" class="dg-curseur" data-curseur display="none"></line>' +
       '<text x="0" y="' + (hauteur - 2) + '" text-anchor="middle" class="dg-curseur-label" data-curseur-label display="none"></text>';
 
     svg += "</svg>";
@@ -549,17 +549,17 @@ const CHARTS = (() => {
     attacherTooltips(el);
 
     return {
-      defaut: dialDefaut, lang: I18N.lang(), x, boites,
+      defaut: defaultDial, lang: I18N.lang(), x, boites,
       trait: el.querySelector("[data-curseur]"),
       etiquette: el.querySelector("[data-curseur-label]"),
       noeuds: new Map(boites.map(b => [b.id, el.querySelector('[data-boite="' + b.id + '"]')])),
     };
   }
 
-  /* Le seul travail refait a chaque cran : deplacer deux noeuds et rejouer deux
-     classes par boite. Sans commune mesure avec le redessin complet. */
-  function placerCurseur(cache, dialCourant) {
-    const p = dialCourant ? GRIND.parseDial(dialCourant) : null;
+  /* The only work redone on every click: moving two nodes and replaying two
+     classes per box. Nothing like the full redraw. */
+  function placeCursor(cache, currentDial) {
+    const p = currentDial ? GRIND.parseDial(currentDial) : null;
     const { trait, etiquette } = cache;
     if (!p) {
       if (trait) trait.setAttribute("display", "none");
@@ -573,7 +573,7 @@ const CHARTS = (() => {
       }
       if (etiquette) {
         etiquette.setAttribute("x", gx);
-        etiquette.textContent = "▲ " + dialCourant;
+        etiquette.textContent = "▲ " + currentDial;
         etiquette.removeAttribute("display");
       }
     }
@@ -586,7 +586,7 @@ const CHARTS = (() => {
     }
   }
 
-  // ---------- Tooltip maison pour les SVG ----------
+  // ---------- Home-made tooltip for the SVGs ----------
 
   let tipEl = null;
   function attacherTooltips(racine) {
@@ -612,7 +612,7 @@ const CHARTS = (() => {
       });
       n.addEventListener("mouseleave", () => tipEl.setAttribute("hidden", ""));
       n.addEventListener("click", e => {
-        // Sur téléphone : un appui montre le détail.
+        // On the phone: a tap shows the detail.
         tipEl.textContent = n.getAttribute("data-tip");
         tipEl.removeAttribute("hidden");
         tipEl.style.left = Math.min(e.clientX + 10, window.innerWidth - 220) + "px";
@@ -622,19 +622,19 @@ const CHARTS = (() => {
     });
   }
 
-  /* LA ROUE DES ARÔMES (v8.45), en SVG maison comme le calendrier.
+  /* THE AROMA WHEEL (v8.45), in home-made SVG like the calendar.
 
-     Les dix familles du vocabulaire (DESCRIPTEURS_GROUPES) au centre, leurs
-     goûts autour. La part de chaque arc : combien de fois il a été coché sur
-     les tasses notées. Sa teinte : la note moyenne de ces tasses, en opacité
-     de l'accent, de ROUE_NOTE_BASSE (pâle) à ROUE_NOTE_HAUTE (plein). Toucher
-     une famille la déplie et liste ses goûts, avec leur note et leur effectif.
+     The ten families of the vocabulary (DESCRIPTEURS_GROUPES) in the centre,
+     their tastes around. The share of each arc: how many times it was ticked
+     on the rated cups. Its tint: the average rating of those cups, as accent
+     opacity, from WHEEL_LOW_SCORE (pale) to WHEEL_HIGH_SCORE (full). Touching
+     a family unfolds it and lists its tastes, with their rating and count.
 
-     Rend le nombre de goûts dessinés : zéro, et l'appelant montre la carte vide.
-     L'état « famille choisie » vit ici, par identifiant de roue, pour survivre
-     aux re-rendus du tableau de bord. */
-  const ROUE_NOTE_BASSE = 5, ROUE_NOTE_HAUTE = 8.5;
-  const roueChoix = new Map();
+     Returns the number of tastes drawn: zero, and the caller shows the empty card.
+     The "chosen family" state lives here, by wheel id, to survive the
+     dashboard re-renders. */
+  const WHEEL_LOW_SCORE = 5, WHEEL_HIGH_SCORE = 8.5;
+  const wheelChoice = new Map();
   function roueAromes(notees, ids) {
     const o = Object.assign({ svg: "roue-aromes", detail: "roue-detail", lecture: "lecture-aromes" }, ids || {});
     const svg = document.getElementById(o.svg);
@@ -657,14 +657,14 @@ const CHARTS = (() => {
       if (lecture) lecture.textContent = "";
       return 0;
     }
-    const plusCochee = familles.slice().sort((a, b) => b.n - a.n)[0];
-    if (!familles.some(f => f.nom === roueChoix.get(o.svg))) roueChoix.set(o.svg, plusCochee.nom);
+    const mostTicked = familles.slice().sort((a, b) => b.n - a.n)[0];
+    if (!familles.some(f => f.nom === wheelChoice.get(o.svg))) wheelChoice.set(o.svg, mostTicked.nom);
 
-    const C = 150, TOUR = Math.PI * 2, JEU = 0.01;
+    const C = 150, TURN = Math.PI * 2, GAP = 0.01;
     const opacite = note => Math.max(0.16, Math.min(1,
-      0.16 + ((note - ROUE_NOTE_BASSE) / (ROUE_NOTE_HAUTE - ROUE_NOTE_BASSE)) * 0.84));
+      0.16 + ((note - WHEEL_LOW_SCORE) / (WHEEL_HIGH_SCORE - WHEEL_LOW_SCORE)) * 0.84));
     const pt = (r, a) => (C + r * Math.sin(a)).toFixed(2) + " " + (C - r * Math.cos(a)).toFixed(2);
-    const secteur = (r0, r1, a0, a1) => {
+    const sector = (r0, r1, a0, a1) => {
       const g = a1 - a0 > Math.PI ? 1 : 0;
       return "M" + pt(r1, a0) + " A" + r1 + " " + r1 + " 0 " + g + " 1 " + pt(r1, a1) +
         " L" + pt(r0, a1) + " A" + r0 + " " + r0 + " 0 " + g + " 0 " + pt(r0, a0) + " Z";
@@ -673,21 +673,21 @@ const CHARTS = (() => {
     const echap = OUTILS.echap;
 
     function peindre() {
-      const choisie = roueChoix.get(o.svg);
+      const choisie = wheelChoice.get(o.svg);
       let a = 0, html = "";
       familles.forEach(f => {
-        // Une famille seule fait le tour complet : on laisse un jeu pour que
-        // l'arc reste un arc et ne se referme pas sur lui même.
-        const af = Math.min((f.n / total) * TOUR, TOUR - 0.001);
+        // A family alone makes the full circle: we leave a gap so that
+        // the arc stays an arc and does not close on itself.
+        const af = Math.min((f.n / total) * TURN, TURN - 0.001);
         const actif = f.nom === choisie;
-        const nomF = I18N.groupe(f.nom);
-        html += '<path d="' + secteur(46, 92, a + JEU, a + af - JEU) + '" class="roue-famille' + (actif ? " choisie" : "") +
+        const familyName = I18N.groupe(f.nom);
+        html += '<path d="' + sector(46, 92, a + GAP, a + af - GAP) + '" class="roue-famille' + (actif ? " choisie" : "") +
           '" data-famille="' + echap(f.nom) + '" tabindex="0" role="button" aria-pressed="' + actif +
-          '" aria-label="' + echap(nomF + ", " + note1(f.note)) + '"><title>' + echap(nomF) + "</title></path>";
+          '" aria-label="' + echap(familyName + ", " + note1(f.note)) + '"><title>' + echap(familyName) + "</title></path>";
         let b = a;
         f.gouts.forEach(g => {
-          const ag = (g.n / total) * TOUR;
-          html += '<path d="' + secteur(96, actif ? 146 : 138, b + JEU, b + ag - JEU) + '" class="roue-gout" style="fill-opacity:' +
+          const ag = (g.n / total) * TURN;
+          html += '<path d="' + sector(96, actif ? 146 : 138, b + GAP, b + ag - GAP) + '" class="roue-gout" style="fill-opacity:' +
             opacite(g.note).toFixed(2) + '" data-famille="' + echap(f.nom) + '"><title>' +
             echap(I18N.tag(g.tag) + " : " + note1(g.note) + ", " + I18N.t("roue_fois", { n: g.n })) + "</title></path>";
           b += ag;
@@ -710,11 +710,11 @@ const CHARTS = (() => {
     peindre();
     if (lecture) {
       const mieux = familles.filter(x => x.n >= 3).sort((x, y) => y.note - x.note)[0];
-      lecture.textContent = I18N.t(mieux && mieux.nom !== plusCochee.nom ? "roue_lecture" : "roue_lecture_seule", {
-        f: I18N.groupe(plusCochee.nom), n: plusCochee.n, m: mieux ? I18N.groupe(mieux.nom) : "", x: mieux ? note1(mieux.note) : "",
+      lecture.textContent = I18N.t(mieux && mieux.nom !== mostTicked.nom ? "roue_lecture" : "roue_lecture_seule", {
+        f: I18N.groupe(mostTicked.nom), n: mostTicked.n, m: mieux ? I18N.groupe(mieux.nom) : "", x: mieux ? note1(mieux.note) : "",
       });
     }
-    // Branché UNE fois par roue : le SVG survit aux re-rendus, seul son contenu change.
+    // Wired ONCE per wheel: the SVG survives re-renders, only its content changes.
     if (!svg.dataset.branche) {
       svg.dataset.branche = "1";
       const choisir = ev => {
@@ -722,7 +722,7 @@ const CHARTS = (() => {
         if (!p) return;
         if (ev.type === "keydown" && ev.key !== "Enter" && ev.key !== " ") return;
         ev.preventDefault();
-        roueChoix.set(o.svg, p.dataset.famille);
+        wheelChoice.set(o.svg, p.dataset.famille);
         svg._peindre();
         if (ev.type === "keydown") {
           const cible = [...svg.querySelectorAll(".roue-famille")].find(x => x.dataset.famille === p.dataset.famille);

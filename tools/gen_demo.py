@@ -1,11 +1,11 @@
-# Générateur du jeu de démonstration. Exécuté une seule fois, sortie figée.
-# Règle absolue : aucun tiret cadratin ni demi-cadratin dans les sorties.
+# Demo dataset generator. Run once only, frozen output.
+# Absolute rule: no em dash or en dash in the outputs.
 import csv, io, random, datetime
 
 random.seed(42)
 
 TODAY = datetime.date(2026, 8, 9)
-START = TODAY - datetime.timedelta(days=41)  # 6 semaines
+START = TODAY - datetime.timedelta(days=41)  # 6 weeks
 
 CAFES = [
     {
@@ -87,13 +87,13 @@ COMMENTS_LATE = [
     "Parfait pour le matin, doux et rond.",
 ]
 
-TASSES = {"Brikka": ["Loveramics Flat White Egg", "Loveramics Espresso Egg"],
-          "Switch": ["Classic Mug"]}
+CUPS = {"Brikka": ["Loveramics Flat White Egg", "Loveramics Espresso Egg"],
+        "Switch": ["Classic Mug"]}
 
-def dial_from_crans(crans):
-    r = crans // 50
-    n = (crans % 50) // 5
-    c = crans % 5
+def dial_from_clicks(clicks):
+    r = clicks // 50
+    n = (clicks % 50) // 5
+    c = clicks % 5
     return f"{r}.{n}.{c}"
 
 def clamp(v, lo, hi):
@@ -120,8 +120,8 @@ active_days = [dd for idx, dd in enumerate(days) if idx not in skip]
 extractions = []
 eid = 0
 
-# Recettes Switch : nom -> (dial cible en crans, total approx, poids de tirage)
-SWITCH_RECETTES = [
+# Switch recipes: name -> (target dial in clicks, approx total, draw weight)
+SWITCH_RECIPES = [
     ("The Coffee Chronicler's Recipe", 80, 180, 50),
     ("The Coffee Chronicler's Recipe (Sweet)", 80, 180, 15),
     ("Le Costaud (Bloom)", 70, 210, 10),
@@ -140,95 +140,95 @@ for day in active_days:
         dt = f"{day.isoformat()}T{h:02d}:{minute:02d}"
 
         if progress < 0.2 and random.random() < 0.25:
-            cafe = "c5"
+            coffee = "c5"
         else:
-            cafe = random.choices(["c1", "c2", "c3", "c4"], weights=[22, 18, 28, 32])[0]
+            coffee = random.choices(["c1", "c2", "c3", "c4"], weights=[22, 18, 28, 32])[0]
 
-        if cafe in ("c1", "c2", "c5"):
-            methode = "Brikka"
+        if coffee in ("c1", "c2", "c5"):
+            method = "Brikka"
         else:
-            methode = random.choices(["Switch", "Brikka"], weights=[70, 30])[0]
+            method = random.choices(["Switch", "Brikka"], weights=[70, 30])[0]
 
         noise = random.choice([-5, 0, 0, 5])
         agitation = ""
-        eau_ajoutee = ""
-        lait = ""
-        prechauffee = ""
-        if methode == "Brikka":
-            recette = "Brikka classique"
-            dose, eau, vol = (12, 85, 78) if cafe == "c2" else (14, 100, 90)
+        added_water = ""
+        milk = ""
+        preheated = ""
+        if method == "Brikka":
+            recipe = "Brikka classique"
+            dose, water, vol = (12, 85, 78) if coffee == "c2" else (14, 100, 90)
             temp = random.choice([80, 85, 90])
             target = 60
-            crans = int(round(target - 12 * (1 - progress) + noise * (1 - progress * 0.6)))
-            crans = clamp(crans, 40, 79)
+            clicks = int(round(target - 12 * (1 - progress) + noise * (1 - progress * 0.6)))
+            clicks = clamp(clicks, 40, 79)
             total = random.randint(230, 320)
-            ecoul = random.randint(22, 45)
-            tasse = random.choice(TASSES["Brikka"])
-            prechauffee = 1 if random.random() < 0.9 else ""
+            drawdown = random.randint(22, 45)
+            cup = random.choice(CUPS["Brikka"])
+            preheated = 1 if random.random() < 0.9 else ""
             if progress > 0.5 and random.random() < 0.2:
-                eau_ajoutee = random.choice([10, 15, 20])
+                added_water = random.choice([10, 15, 20])
         else:
-            noms, poids = zip(*[(x[0], x[3]) for x in SWITCH_RECETTES])
-            recette = random.choices(noms, weights=poids)[0]
-            cible, base_t, _ = next((x[1], x[2], x[3]) for x in SWITCH_RECETTES if x[0] == recette)
-            # Les avancées apparaissent surtout en fin de période.
-            if recette in ("La Sherrycipe", "The Tetsu Devil") and progress < 0.55:
-                recette = "The Coffee Chronicler's Recipe"
-                cible, base_t = 80, 180
-            dose, eau = 15, 225
+            names, weights = zip(*[(x[0], x[3]) for x in SWITCH_RECIPES])
+            recipe = random.choices(names, weights=weights)[0]
+            target, base_t, _ = next((x[1], x[2], x[3]) for x in SWITCH_RECIPES if x[0] == recipe)
+            # Advanced recipes mostly show up at the end of the period.
+            if recipe in ("La Sherrycipe", "The Tetsu Devil") and progress < 0.55:
+                recipe = "The Coffee Chronicler's Recipe"
+                target, base_t = 80, 180
+            dose, water = 15, 225
             temp = {"Le Costaud (Bloom)": random.choice([94, 95, 96]),
-                    "Le Costaud (Immersion)": random.choice([92, 93, 94])}.get(recette, 92)
-            crans = int(round(cible - 12 * (1 - progress) + noise * (1 - progress * 0.6)))
-            crans = clamp(crans, 54, 110)
-            vol = eau - random.randint(28, 38)
-            trop_fin = crans < cible - 6
-            total = base_t + random.randint(-15, 25) + (18 if trop_fin else 0)
-            ecoul = random.randint(38, 70) + (15 if trop_fin else 0)
-            tasse = TASSES["Switch"][0]
-            if recette in ("Le Costaud (Bloom)", "Le Costaud (Immersion)"):
+                    "Le Costaud (Immersion)": random.choice([92, 93, 94])}.get(recipe, 92)
+            clicks = int(round(target - 12 * (1 - progress) + noise * (1 - progress * 0.6)))
+            clicks = clamp(clicks, 54, 110)
+            vol = water - random.randint(28, 38)
+            too_fine = clicks < target - 6
+            total = base_t + random.randint(-15, 25) + (18 if too_fine else 0)
+            drawdown = random.randint(38, 70) + (15 if too_fine else 0)
+            cup = CUPS["Switch"][0]
+            if recipe in ("Le Costaud (Bloom)", "Le Costaud (Immersion)"):
                 agitation = 3
 
-        dial = "" if cafe in ("c1", "c2") else dial_from_crans(crans)
+        dial = "" if coffee in ("c1", "c2") else dial_from_clicks(clicks)
 
-        ideal = 60 if methode == "Brikka" else next(x[1] for x in SWITCH_RECETTES if x[0] == recette)
-        ecart = abs(crans - ideal)
+        ideal = 60 if method == "Brikka" else next(x[1] for x in SWITCH_RECIPES if x[0] == recipe)
+        dial_gap = abs(clicks - ideal)
         base = 5.0 + 3.9 * progress
-        note = base - ecart * 0.08 + random.uniform(-0.6, 0.6)
-        if cafe == "c5":
-            note = random.uniform(2.5, 4.5)
-        note = clamp(round(note * 2) / 2, 2, 9.5)
-        if cafe != "c5":
-            note = max(note, 3.5)
+        score = base - dial_gap * 0.08 + random.uniform(-0.6, 0.6)
+        if coffee == "c5":
+            score = random.uniform(2.5, 4.5)
+        score = clamp(round(score * 2) / 2, 2, 9.5)
+        if coffee != "c5":
+            score = max(score, 3.5)
 
-        trop_fin = crans < ideal - 6
-        trop_gros = crans > ideal + 6
-        if cafe == "c5":
+        too_fine = clicks < ideal - 6
+        too_coarse = clicks > ideal + 6
+        if coffee == "c5":
             diag = "Brûlé (défaut du sachet)"
-        elif trop_fin:
+        elif too_fine:
             diag = random.choices(
                 ["Sur-extrait (amer)", "Astringent", "Acide ET amer (extraction inégale)"],
                 weights=[55, 30, 15])[0]
-        elif trop_gros:
+        elif too_coarse:
             diag = "Sous-extrait (acide)"
-        elif note >= 7:
+        elif score >= 7:
             diag = "Équilibré"
         else:
             diag = random.choices(
                 ["Équilibré", "Sur-extrait (amer)", "Sous-extrait (acide)", "Trop léger (aqueux)"],
                 weights=[40, 25, 20, 15])[0]
 
-        pool = list(DESCR[cafe])
+        pool = list(DESCR[coffee])
         tags = random.sample(pool, k=min(len(pool), random.choice([2, 2, 3])))
         if diag in ("Sur-extrait (amer)", "Astringent", "Brûlé (défaut du sachet)") and "brûlé" not in tags:
             tags.append("brûlé")
-        if diag == "Sous-extrait (acide)" and cafe in ("c3", "c4"):
+        if diag == "Sous-extrait (acide)" and coffee in ("c3", "c4"):
             tags.append("agrume")
-        if note >= 8 and "rond" not in tags and random.random() < 0.4:
+        if score >= 8 and "rond" not in tags and random.random() < 0.4:
             tags.append("rond")
 
         comment = ""
         roll = random.random()
-        if cafe == "c5" and roll < 0.7:
+        if coffee == "c5" and roll < 0.7:
             comment = "Goût de cendre, aucun réglage n'y changera rien, sachet abandonné."
         elif roll < 0.30:
             if progress < 0.35:
@@ -239,12 +239,12 @@ for day in active_days:
                 comment = random.choice(COMMENTS_LATE)
 
         extractions.append({
-            "id": f"e{eid}", "date_heure": dt, "cafe_id": cafe, "methode": methode,
-            "recette": recette, "dose_g": dose, "eau_g": eau, "mouture_dial": dial,
-            "temperature_c": temp, "temps_total_s": total, "temps_ecoulement_s": ecoul,
-            "volume_extrait_ml": vol, "eau_ajoutee_ml": eau_ajoutee, "lait_ml": lait,
-            "agitation_nb": agitation, "tasse": tasse, "eau_prechauffee": prechauffee,
-            "note_sur_10": note, "diagnostic": diag,
+            "id": f"e{eid}", "date_heure": dt, "cafe_id": coffee, "methode": method,
+            "recette": recipe, "dose_g": dose, "eau_g": water, "mouture_dial": dial,
+            "temperature_c": temp, "temps_total_s": total, "temps_ecoulement_s": drawdown,
+            "volume_extrait_ml": vol, "eau_ajoutee_ml": added_water, "lait_ml": milk,
+            "agitation_nb": agitation, "tasse": cup, "eau_prechauffee": preheated,
+            "note_sur_10": score, "diagnostic": diag,
             "descripteurs": "|".join(tags), "commentaire": comment,
         })
 
@@ -264,8 +264,8 @@ def to_csv(rows, cols):
     w = csv.DictWriter(buf, fieldnames=cols, lineterminator="\n")
     w.writeheader()
     for r in rows:
-        # date_ajout reste vide dans la demo : la migration du site la deduit
-        # de la premiere extraction de chaque cafe au chargement.
+        # date_ajout stays empty in the demo: the site migration derives it
+        # from each coffee's first brew on load.
         w.writerow({k: r.get(k, "") for k in cols})
     return buf.getvalue()
 
@@ -282,16 +282,16 @@ with open("/home/claude/tracker/demo/extractions-demo.csv", "w", encoding="utf-8
     f.write(ext_csv)
 
 with open("/home/claude/tracker/js/demo-data.js", "w", encoding="utf-8") as f:
-    f.write("// Jeu de démonstration embarqué. Identique aux fichiers du dossier demo.\n")
-    f.write("// Généré une fois, ne pas éditer à la main : passer par les CSV.\n")
+    f.write("// Embedded demo dataset. Identical to the files in the demo folder.\n")
+    f.write("// Generated once, do not edit by hand: go through the CSVs.\n")
     f.write('"use strict";\n')
     f.write("const DEMO_CAFES_CSV = `" + cafes_csv + "`;\n")
     f.write("const DEMO_EXTRACTIONS_CSV = `" + ext_csv + "`;\n")
 
 from collections import Counter
-notes_s1 = [e["note_sur_10"] for e in extractions if e["date_heure"] < (START + datetime.timedelta(days=10)).isoformat()]
-notes_s6 = [e["note_sur_10"] for e in extractions if e["date_heure"] >= (TODAY - datetime.timedelta(days=10)).isoformat()]
-print("note moyenne debut:", round(sum(notes_s1)/len(notes_s1), 2), "fin:", round(sum(notes_s6)/len(notes_s6), 2))
+scores_s1 = [e["note_sur_10"] for e in extractions if e["date_heure"] < (START + datetime.timedelta(days=10)).isoformat()]
+scores_s6 = [e["note_sur_10"] for e in extractions if e["date_heure"] >= (TODAY - datetime.timedelta(days=10)).isoformat()]
+print("note moyenne debut:", round(sum(scores_s1)/len(scores_s1), 2), "fin:", round(sum(scores_s6)/len(scores_s6), 2))
 print(Counter(e["methode"] for e in extractions))
 print(Counter(e["recette"] for e in extractions))
 bana_switch = [e for e in extractions if e["cafe_id"] in ("c1", "c2") and e["methode"] == "Switch"]

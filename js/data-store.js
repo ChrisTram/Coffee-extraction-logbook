@@ -1,9 +1,9 @@
-/* Stockage : IndexedDB pour la copie de travail, File System Access pour les
- * CSV du disque, et le téléchargement d'un fichier.
+/* Storage: IndexedDB for the working copy, File System Access for the CSVs
+ * on disk, and downloading a file.
  *
- * Primitives seulement : aucune connaissance des tables. La copie de travail
- * est un simple magasin clé-valeur, et les fichiers se lisent et s'écrivent
- * par un handle de dossier que l'appelant possède. */
+ * Primitives only: no knowledge of the tables. The working copy is a plain
+ * key-value store, and files are read and written through a folder handle
+ * that the caller owns. */
 "use strict";
 
 const DATA_STORE = (() => {
@@ -19,32 +19,33 @@ const DATA_STORE = (() => {
     });
   }
 
-  function kvSet(cle, valeur) {
+  function kvSet(key, value) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction("kv", "readwrite");
-      tx.objectStore("kv").put(valeur, cle);
+      tx.objectStore("kv").put(value, key);
       tx.oncomplete = resolve;
       tx.onerror = () => reject(tx.error);
     });
   }
 
-  /* Plusieurs clés en UNE transaction (v8.71) : tout est écrit, ou rien. Huit
-     transactions séparées pouvaient laisser la copie locale à moitié à jour. */
-  function kvSetPlusieurs(paires) {
+  /* Several keys in ONE transaction (v8.71): everything is written, or
+     nothing. Eight separate transactions could leave the local copy half
+     updated. */
+  function kvSetPlusieurs(pairs) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction("kv", "readwrite");
-      const magasin = tx.objectStore("kv");
-      Object.entries(paires).forEach(([cle, valeur]) => magasin.put(valeur, cle));
+      const store = tx.objectStore("kv");
+      Object.entries(pairs).forEach(([key, value]) => store.put(value, key));
       tx.oncomplete = resolve;
       tx.onerror = () => reject(tx.error);
       tx.onabort = () => reject(tx.error);
     });
   }
 
-  function kvGet(cle) {
+  function kvGet(key) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction("kv", "readonly");
-      const req = tx.objectStore("kv").get(cle);
+      const req = tx.objectStore("kv").get(key);
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
     });
@@ -58,16 +59,16 @@ const DATA_STORE = (() => {
     return false;
   }
 
-  async function ecrireFichier(handle, nom, contenu) {
-    const fh = await handle.getFileHandle(nom, { create: true });
+  async function ecrireFichier(handle, name, content) {
+    const fh = await handle.getFileHandle(name, { create: true });
     const w = await fh.createWritable();
-    await w.write(contenu);
+    await w.write(content);
     await w.close();
   }
 
-  async function lireFichier(handle, nom) {
+  async function lireFichier(handle, name) {
     try {
-      const fh = await handle.getFileHandle(nom);
+      const fh = await handle.getFileHandle(name);
       const f = await fh.getFile();
       return await f.text();
     } catch (e) {
@@ -75,12 +76,12 @@ const DATA_STORE = (() => {
     }
   }
 
-  function telecharger(nomFichier, contenu, type) {
-    const blob = new Blob([contenu], { type: type || "text/csv;charset=utf-8" });
+  function telecharger(fileName, content, type) {
+    const blob = new Blob([content], { type: type || "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = nomFichier;
+    a.download = fileName;
     document.body.appendChild(a);
     a.click();
     a.remove();

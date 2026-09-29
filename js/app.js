@@ -1,27 +1,26 @@
-/* Application : liaison des données, câblage des écouteurs, démarrage.
+/* Application: data binding, listener wiring, startup.
  *
- * Ce fichier se charge en DERNIER et ne définit presque rien : il branche des
- * fonctions définies ailleurs sur des éléments du document, puis lance le
- * démarrage. S'il se met à contenir de la logique d'écran, c'est qu'elle est au
- * mauvais endroit. */
+ * This file loads LAST and defines almost nothing: it plugs functions
+ * defined elsewhere into document elements, then starts the app. If it
+ * starts to contain screen logic, that logic is in the wrong place. */
 "use strict";
 
 (() => {
 
-  // Emprunté au noyau, chargé avant nous.
+  // Borrowed from the core, loaded before us.
   const { $, $$, ECRANS, activerAppuiLong, activerEcran, antiRebond, appliquerTheme, basculerEtat,
     chargerReplis, ecrireReplis, nav, normaliserEcran, oublierSignatures, recettesVivantes,
     rendreEcranCourant, replis, reprendreReplisLocaux, siChange,
     supprimerExtractionAvecRetour, toast, trouverRecette } = UI;
 
-  // ---------- Données : liaison, import, export ----------
+  // ---------- Data: binding, import, export ----------
 
   function majBadges() {
     $("#badge-demo").hidden = !DATA.state.demoActive;
-    const lie = !!DATA.state.dirHandle;
-    $("#badge-fichier").hidden = !lie;
-    // « À réautoriser » quand le navigateur a repris la permission (v8.72) ; toucher le badge la redemande.
-    if (lie) $("#badge-fichier-nom").textContent = DATA.state.fichierAReautoriser ? I18N.t("f_reautoriser") : DATA.state.dirHandle.name;
+    const linked = !!DATA.state.dirHandle;
+    $("#badge-fichier").hidden = !linked;
+    // "Re-authorise" when the browser took the permission back (v8.72); tapping the badge asks again.
+    if (linked) $("#badge-fichier-nom").textContent = DATA.state.fichierAReautoriser ? I18N.t("f_reautoriser") : DATA.state.dirHandle.name;
   }
 
   function majStatutDonnees() {
@@ -35,8 +34,8 @@
     majStatutSync();
   }
 
-  // Une ligne d'état pour la synchro entre appareils. Le bouton manuel n'apparaît
-  // que là où la synchro a un sens, donc pas en file:// ni en démo.
+  // A status line for sync between devices. The manual button only appears
+  // where sync makes sense, so not on file:// nor in demo mode.
   const LIBELLES_SYNC = {
     local: "sync_local",
     demo: "sync_demo",
@@ -49,37 +48,37 @@
   };
 
   function majStatutSync() {
-    const etat = DATA.state.syncEtat;
-    let texte;
-    if (etat === "ok") {
-      texte = I18N.t("sync_ok", {
+    const syncState = DATA.state.syncEtat;
+    let text;
+    if (syncState === "ok") {
+      text = I18N.t("sync_ok", {
         h: new Date(DATA.state.syncLe).toLocaleTimeString(I18N.locale(), { hour: "2-digit", minute: "2-digit" }),
       });
     } else {
-      texte = I18N.t(LIBELLES_SYNC[etat] || "sync_jamais");
+      text = I18N.t(LIBELLES_SYNC[syncState] || "sync_jamais");
     }
-    // Le document serveur a un plafond : on prévient à la moitié, assez tôt pour archiver.
-    const { syncTaille: taille, syncPlafond: plafond } = DATA.state;
-    if (plafond > 0 && taille / plafond >= 0.5) {
-      texte += " " + I18N.t("sync_taille", { p: Math.round(100 * taille / plafond) });
+    // The server document has a cap: we warn at half, early enough to archive.
+    const { syncTaille: size, syncPlafond: cap } = DATA.state;
+    if (cap > 0 && size / cap >= 0.5) {
+      text += " " + I18N.t("sync_taille", { p: Math.round(100 * size / cap) });
     }
-    $$(".sync-texte").forEach(e => { e.textContent = texte; });
-    /* Le point du rail prend la couleur de l'etat : c'est le seul endroit ou la
-       synchro est visible sans ouvrir un panneau. */
-    const point = $(".rail-point");
-    if (point) point.dataset.etat = DATA.state.syncEtat || "jamais";
+    $$(".sync-texte").forEach(e => { e.textContent = text; });
+    /* The rail dot takes the colour of the state: it is the only place where
+       sync is visible without opening a panel. */
+    const dot = $(".rail-point");
+    if (dot) dot.dataset.etat = DATA.state.syncEtat || "jamais";
     $("#don-sync").hidden = !DATA.syncPossible();
   }
 
-  async function actionLier(creer) {
+  async function actionLier(create) {
     if (!DATA.state.fsDisponible) {
       toast(I18N.t("t_fs"));
       $("#don-note-fs").hidden = false;
       return;
     }
     try {
-      const nom = await DATA.lierDossier(creer);
-      toast(I18N.t("t_dossier", { n: nom }));
+      const name = await DATA.lierDossier(create);
+      toast(I18N.t("t_dossier", { n: name }));
       $("#modale-donnees").close();
       $("#modale-accueil").close();
     } catch (e) {
@@ -88,89 +87,89 @@
     }
   }
 
-  // ---------- Câblage ----------
+  // ---------- Wiring ----------
 
-  /* La feuille « Plus » du téléphone (le rail, sans effet au-delà de 1024 px).
-     Fermée, elle est inerte au clavier ; ouverte, le focus la suit (v8.76). */
+  /* The phone's "More" sheet (the rail, no effect above 1024 px).
+     Closed, it is inert to the keyboard; open, focus follows it (v8.76). */
   const enFeuille = () => typeof matchMedia === "function" && matchMedia("(max-width: 1023px)").matches;
-  function majInertie() {
+  function updateInertia() {
     const rail = $("#rail");
     if (rail) rail.inert = enFeuille() && !rail.classList.contains("ouverte");
   }
-  function basculerFeuilleNav(ouvrir) {
+  function toggleNavSheet(open) {
     const rail = $("#rail");
     if (!rail) return;
-    rail.classList.toggle("ouverte", !!ouvrir);
-    $("#voile-nav").hidden = !ouvrir;
-    $("#btn-plus").setAttribute("aria-expanded", ouvrir ? "true" : "false");
-    majInertie();
+    rail.classList.toggle("ouverte", !!open);
+    $("#voile-nav").hidden = !open;
+    $("#btn-plus").setAttribute("aria-expanded", open ? "true" : "false");
+    updateInertia();
     if (!enFeuille()) return;
-    if (ouvrir) { const e = [...rail.querySelectorAll("button")].find(b => b.offsetParent !== null); if (e) e.focus(); }
+    if (open) { const e = [...rail.querySelectorAll("button")].find(b => b.offsetParent !== null); if (e) e.focus(); }
     else if (rail.contains(document.activeElement)) $("#btn-plus").focus();
   }
 
   function cabler() {
-    majInertie();
-    if (typeof matchMedia === "function") matchMedia("(max-width: 1023px)").addEventListener("change", majInertie);
+    updateInertia();
+    if (typeof matchMedia === "function") matchMedia("(max-width: 1023px)").addEventListener("change", updateInertia);
     // Navigation
     $$(".nav-btn").forEach(b => b.addEventListener("click", () => {
       activerEcran(b.dataset.ecran);
-      /* Sur telephone le rail EST la feuille « Plus » : choisir un ecran doit la
-         refermer, sinon elle masque celui qu'on vient d'ouvrir. */
-      basculerFeuilleNav(false);
+      /* On a phone the rail IS the "More" sheet: picking a screen must close
+         it, otherwise it hides the screen that was just opened. */
+      toggleNavSheet(false);
     }));
 
-    /* La feuille « Plus » du telephone. Le rail et elle sont le meme element :
-       voir le commentaire de la navigation dans index.html. */
+    /* The phone's "More" sheet. The rail and the sheet are the same element:
+       see the navigation comment in index.html. */
     $("#btn-plus").addEventListener("click", () => {
-      basculerFeuilleNav(!$("#rail").classList.contains("ouverte"));
+      toggleNavSheet(!$("#rail").classList.contains("ouverte"));
     });
-    $("#voile-nav").addEventListener("click", () => basculerFeuilleNav(false));
+    $("#voile-nav").addEventListener("click", () => toggleNavSheet(false));
 
-    // La marque du rail ramene au tableau de bord. On garde le href pour le
-    // clavier et l'ouverture dans un onglet, mais un clic simple bascule d'ecran.
-    const lienMarque = $(".rail-marque");
-    if (lienMarque) {
-      lienMarque.addEventListener("click", ev => {
+    // The rail brand leads back to the dashboard. We keep the href for the
+    // keyboard and opening in a tab, but a plain click switches screens.
+    const brandLink = $(".rail-marque");
+    if (brandLink) {
+      brandLink.addEventListener("click", ev => {
         if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button !== 0) return;
         ev.preventDefault();
         activerEcran("tableau");
       });
     }
     $$("[data-va]").forEach(b => b.addEventListener("click", () => activerEcran(b.dataset.va)));
-    // Le calendrier compte ses semaines sur la largeur de sa carte : il se refait au redimensionnement (anti rebond).
+    // The calendar counts its weeks over its card width: it redraws on resize (debounced).
     window.addEventListener("resize", antiRebond(() => {
       if (nav.ecran === "tableau") UI.rendreTableau();
     }, 200));
 
-    // L'historique change de forme à 1024 px (table ou cartes) : matchMedia, un seul événement au seuil.
+    // History changes shape at 1024 px (table or cards): matchMedia, one single event at the threshold.
     if (typeof matchMedia === "function") {
-      const seuil = matchMedia("(max-width: 1023px)");
-      const suivre = () => { if (nav.ecran === "historique") UI.rendreHistorique(); };
-      if (seuil.addEventListener) seuil.addEventListener("change", suivre);
+      const breakpoint = matchMedia("(max-width: 1023px)");
+      const follow = () => { if (nav.ecran === "historique") UI.rendreHistorique(); };
+      if (breakpoint.addEventListener) breakpoint.addEventListener("change", follow);
     }
 
     window.addEventListener("hashchange", () => {
       const h = location.hash.slice(1);
-      if (h === "refaire") { ouvrirRefaire(); return; }
-      const cible = normaliserEcran(h);
-      if (ECRANS.includes(cible) && cible !== nav.ecran) activerEcran(cible);
+      if (h === "refaire") { openRedo(); return; }
+      const target = normaliserEcran(h);
+      if (ECRANS.includes(target) && target !== nav.ecran) activerEcran(target);
     });
 
-    /* Thème : un seul bouton fait le tour clair, Graphite, Nuit, puis clair. */
+    /* Theme: a single button cycles light, Graphite, Night, then light. */
     $("#btn-theme").addEventListener("click", () => {
-      const racine = document.documentElement;
-      if (racine.getAttribute("data-theme") !== "sombre") appliquerTheme("sombre", "graphite");
-      else if (racine.getAttribute("data-sombre") !== "nuit") appliquerTheme("sombre", "nuit");
+      const root = document.documentElement;
+      if (root.getAttribute("data-theme") !== "sombre") appliquerTheme("sombre", "graphite");
+      else if (root.getAttribute("data-sombre") !== "nuit") appliquerTheme("sombre", "nuit");
       else appliquerTheme("clair");
     });
 
-    // Langue
+    // Language
     $("#btn-lang").addEventListener("click", () => I18N.basculer());
     I18N.abonner(rafraichirLangue);
 
-    /* Chaque écran câble ses propres contrôles ; il ne reste ici que ce qui
-       n'appartient à aucun écran (navigation, thème, langue, modales, réflexes). */
+    /* Each screen wires its own controls; all that remains here is what
+       belongs to no screen (navigation, theme, language, modals, reflexes). */
     UI.cablerTableau();
     UI.cablerSaisie();
     UI.cablerRapide();
@@ -181,65 +180,65 @@
     UI.cablerBrassage();
     UI.cablerDessins();
 
-    // Reprise quand le réseau revient (DATA.synchroniser gère une synchro déjà en cours).
+    // Resume when the network comes back (DATA.synchroniser handles a sync already in progress).
     window.addEventListener("online", () => {
       if (DATA.syncPossible()) DATA.synchroniser(false);
     });
-    // Au retour sur l'appli (v8.71) : un téléphone rouvert se remet à jour tout de suite.
+    // On returning to the app (v8.71): a reopened phone updates right away.
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible" && DATA.syncPossible()) DATA.synchroniser(false);
     });
-    /* Une écriture locale ratée ne passe plus en silence (v8.71). */
-    let stockageSignale = false;
+    /* A failed local write no longer goes unnoticed (v8.71). */
+    let storageWarned = false;
     window.addEventListener("carnet-stockage-ko", () => {
-      if (stockageSignale) return;
-      stockageSignale = true;
+      if (storageWarned) return;
+      storageWarned = true;
       toast(I18N.t("t_stockage_ko"));
     });
-    /* Le serveur connaît une version plus récente : on propose de recharger. */
-    let perimeeSignalee = false;
+    /* The server knows a more recent version: we offer to reload. */
+    let staleWarned = false;
     DATA.abonner(() => {
-      if (DATA.state.syncEtat !== "version-perimee" || perimeeSignalee) return;
-      perimeeSignalee = true;
+      if (DATA.state.syncEtat !== "version-perimee" || staleWarned) return;
+      staleWarned = true;
       UI.toastAction(I18N.t("sync_perimee"), I18N.t("maj_recharger"), () => location.reload());
     });
 
-    // Échap ferme aussi ce qui n'est pas un <dialog> : panneau rapide, formulaires dépliés, bulles.
+    // Escape also closes what is not a <dialog>: quick panel, expanded forms, bubbles.
     document.addEventListener("keydown", ev => {
       if (ev.key !== "Escape") return;
-      if ($("#rail").classList.contains("ouverte")) { basculerFeuilleNav(false); return; }
+      if ($("#rail").classList.contains("ouverte")) { toggleNavSheet(false); return; }
       if (UI.rapideEstOuvert()) { UI.basculerRapide(false); return; }
-      const ouverts = ["#form-cafe", "#form-sachet", "#form-recette"]
+      const openForms = ["#form-cafe", "#form-sachet", "#form-recette"]
         .map(s => $(s)).filter(x => x && !x.hidden);
-      if (ouverts.length) { ouverts.forEach(x => { x.hidden = true; }); return; }
-      // Une bulle d'aide ouverte au doigt se ferme aussi, avant tout le reste.
+      if (openForms.length) { openForms.forEach(x => { x.hidden = true; }); return; }
+      // A help bubble opened by finger closes too, before anything else.
       $$(".info-ouverte").forEach(x => x.classList.remove("info-ouverte"));
     });
 
-    // Modales génériques
-    // Le badge du dossier lié redemande la permission quand elle est partie (v8.72).
+    // Generic modals
+    // The linked folder badge asks for permission again when it is gone (v8.72).
     $("#badge-fichier").addEventListener("click", async () => {
       if (!DATA.state.fichierAReautoriser) return;
       toast(I18N.t(await DATA.reautoriserDossier() ? "f_reautorise" : "f_refuse"));
       majBadges();
     });
-    // Tout bouton Fermer ferme sa fenêtre, même sans data-ferme (v8.72) : celui de la comparaison ne faisait rien.
+    // Every Close button closes its window, even without data-ferme (v8.72): the comparison one did nothing.
     $$(".modale-fermer").forEach(b => b.addEventListener("click", () => (b.dataset.ferme ? $("#" + b.dataset.ferme) : b.closest("dialog")).close()));
 
-    // Accueil
+    // Welcome
     $("#acc-creer").addEventListener("click", () => actionLier(true));
     $("#acc-ouvrir").addEventListener("click", () => actionLier(false));
-    // Trois boutons chargent la démonstration (accueil, panneau Données, tableau de bord vide) : une seule fonction.
-    const chargerLaDemo = async () => {
+    // Three buttons load the demo (welcome, Data panel, empty dashboard): one single function.
+    const loadDemo = async () => {
       await DATA.chargerDemo();
       $("#modale-accueil").close();
       toast(I18N.t("t_demo"));
     };
-    $("#acc-demo").addEventListener("click", chargerLaDemo);
-    $("#btn-demo-vide").addEventListener("click", chargerLaDemo);
+    $("#acc-demo").addEventListener("click", loadDemo);
+    $("#btn-demo-vide").addEventListener("click", loadDemo);
     $("#acc-plus-tard").addEventListener("click", () => $("#modale-accueil").close());
 
-    // Données
+    // Data
     $("#btn-donnees").addEventListener("click", () => {
       majStatutDonnees();
       const fsOk = DATA.state.fsDisponible;
@@ -255,24 +254,24 @@
       const f = ev.target.files[0];
       if (!f) return;
       try {
-        /* Un aperçu AVANT d'importer (v8.71) : la table reconnue, et ce qui
-           arrive, change ou se crée. Rien n'est écrit sans « Importer ». */
-        const texte = await f.text();
-        const a = DATA.analyserImport(texte);
-        const nomTable = I18N.t("tbl_" + a.table);
+        /* A preview BEFORE importing (v8.71): the recognised table, and what
+           arrives, changes or gets created. Nothing is written without "Import". */
+        const text = await f.text();
+        const a = DATA.analyserImport(text);
+        const tableName = I18N.t("tbl_" + a.table);
         const detail = a.table === "tout"
           ? I18N.t("imp_apercu_tout", { n: a.n })
-          : I18N.t("imp_apercu", { n: a.n, t: nomTable, nv: a.nouvelles, md: a.modifiees }) +
+          : I18N.t("imp_apercu", { n: a.n, t: tableName, nv: a.nouvelles, md: a.modifiees }) +
             (a.sansId ? " " + I18N.t("imp_sans_id", { n: a.sansId }) : "") +
             (a.doublons ? " " + I18N.t("imp_doublons", { n: a.doublons }) : "");
         if (!await UI.confirmer(detail, { libelle: I18N.t("imp_ok") })) { ev.target.value = ""; return; }
-        const res = await DATA.importerTexteCSV(texte);
-        toast(I18N.t("t_import", { n: res.n, t: nomTable }));
+        const res = await DATA.importerTexteCSV(text);
+        toast(I18N.t("t_import", { n: res.n, t: tableName }));
         majStatutDonnees();
       } catch (e) { toast(e.message); }
       ev.target.value = "";
     });
-    // Les six tables et le fichier complet réimportable (v8.71), plus trois.
+    // The six tables and the full re-importable file (v8.71), plus three.
     $("#don-exporter").addEventListener("click", () => {
       DATA.exporterTout();
       toast(I18N.t("t_export_tout"));
@@ -283,7 +282,7 @@
       majStatutDonnees();
       toast(I18N.t("t_demo"));
     });
-    // Délier le dossier (v8.77) : la fonction existait sans bouton.
+    // Unlink the folder (v8.77): the function existed without a button.
     $("#don-delier").addEventListener("click", async () => { await DATA.delierDossier(); majStatutDonnees(); majBadges(); toast(I18N.t("t_delie")); });
     $("#don-vider").addEventListener("click", async () => {
       if (!await UI.confirmer(I18N.t("c_vider"), { danger: true })) return;
@@ -292,24 +291,24 @@
       toast(I18N.t("t_reinit"));
     });
     $("#don-sync").addEventListener("click", async () => {
-      const etat = await DATA.synchroniser(true);
-      toast(I18N.t(etat === "ok" ? "t_sync_ok" : "t_sync_ko"));
+      const result = await DATA.synchroniser(true);
+      toast(I18N.t(result === "ok" ? "t_sync_ok" : "t_sync_ko"));
     });
 
-    // Les changements de données rafraîchissent l'interface.
+    // Data changes refresh the interface.
     DATA.abonner(genre => {
-      // Un changement d'état de la synchro seul ne redessine que sa pastille (v8.75).
+      // A sync state change alone only redraws its badge (v8.75).
       if (genre === "sync") { majBadges(); majStatutSync(); return; }
-      // Les réglages peuvent arriver d'un autre appareil : on relit avant de rendre.
+      // Settings may arrive from another device: we reread before rendering.
       chargerReplis();
-      // Toujours : ces deux là sont minuscules et reflètent l'état courant.
+      // Always: these two are tiny and reflect the current state.
       majBadges();
       majStatutSync();
-      // Le reste ne se refait que si sa table a bougé (une tasse ne change ni cafés, ni recettes, ni tasses).
-      const cafes = DATA.state.cafes, recettes = DATA.state.recettes;
+      // The rest is only redone if its table moved (a cup changes neither coffees, nor recipes, nor cups).
+      const cafes = DATA.state.cafes, recipes = DATA.state.recettes;
       siChange("cafes", cafes, () => { UI.remplirSelectCafes(); remplirSelectRecetteReco(); });
       siChange("filtres", DATA.state.extractions, UI.remplirFiltres);
-      siChange("recettes", recettes, () => {
+      siChange("recettes", recipes, () => {
         UI.remplirSelectRecettes();
         UI.rendreRecettes();
       });
@@ -319,9 +318,9 @@
     });
   }
 
-  /* Le raccourci « Refaire ma dernière tasse » de l'icône (manifest.json) ouvre
-     ./#refaire : la saisie préremplie avec les réglages de la dernière tasse. */
-  function ouvrirRefaire() {
+  /* The icon's "Redo my last cup" shortcut (manifest.json) opens
+     ./#refaire: the entry form prefilled with the last cup's settings. */
+  function openRedo() {
     toast(I18N.t(UI.refaireDerniere() ? "t_refaire" : "t_refaire_vide"));
   }
 
@@ -333,9 +332,9 @@
     if (v && trouverRecette(v)) sel.value = v;
   }
 
-  // Bascule de langue : re-rend tout ce qui est généré en JavaScript.
+  // Language switch: re-renders everything generated in JavaScript.
   function rafraichirLangue() {
-    // Les données n'ont pas bougé, tout le TEXTE si : on invalide les mémoires.
+    // The data has not moved, all the TEXT has: we invalidate the caches.
     oublierSignatures();
     $("#btn-lang").textContent = I18N.lang() === "fr" ? "EN" : "FR";
     $("#btn-lang").title = I18N.lang() === "fr" ? "Switch to English" : "Passer en français";
@@ -359,22 +358,22 @@
     UI.majLait();
     UI.majLive();
     UI.majAvertissements();
-    // Le libelle "pas encore notee" est genere : il ne suit pas le TreeWalker.
+    // The "not rated yet" label is generated: the TreeWalker does not follow it.
     UI.majAffichageNote();
     if (UI.rapideEstOuvert()) UI.majPanneauRapide();
     rendreEcranCourant(true);
   }
 
-  // ---------- Démarrage ----------
+  // ---------- Startup ----------
 
-  /* Version du pied de page, lue dans <meta name="app-version"> (posée par
-     tools/bump_version.mjs) : dit quelle version tourne sur un appareil donné. */
+  /* Footer version, read from <meta name="app-version"> (set by
+     tools/bump_version.mjs): tells which version runs on a given device. */
   const VERSION = OUTILS.versionSite() || "dev";
 
   async function demarrer() {
-    /* AVANT tout rendu : si Chris avait laissé le site en anglais, le paquet de
-       traduction doit être là, sinon la page s'afficherait en français puis
-       clignoterait. Ne fait rien du tout en français, le cas normal. */
+    /* BEFORE any rendering: if Chris had left the site in English, the
+       translation pack must be there, otherwise the page would show in French
+       then flicker. Does nothing at all in French, the normal case. */
     await I18N.preparer(I18N.langueSouhaitee());
     I18N.appliquerStatique();
     $("#version-site").textContent = "v" + VERSION;
@@ -385,9 +384,9 @@
     cabler();
     UI.rendreTablePlages();
 
-    // Un stockage qui ne s'ouvre pas ne bloque plus l'écran de chargement (v8.72) : le carnet part en mémoire.
-    let aDesDonnees = false;
-    try { aDesDonnees = await DATA.init(); } catch (e) { console.error(e); toast(I18N.t("t_stockage_ko")); }
+    // Storage that fails to open no longer blocks the loading screen (v8.72): the logbook runs in memory.
+    let hasData = false;
+    try { hasData = await DATA.init(); } catch (e) { console.error(e); toast(I18N.t("t_stockage_ko")); }
     majBadges();
     UI.remplirSelectCafes();
     UI.remplirFiltres();
@@ -395,8 +394,8 @@
     remplirSelectRecetteReco();
     UI.remplirSelectTasses();
     UI.rendreRecettes();
-    try { $("#chrono-bip").checked = localStorage.getItem("bips") !== "0"; } catch (e) { /* tant pis */ }
-    // AVANT tout ce qui lit replis : le convertisseur et la saisie en dependent.
+    try { $("#chrono-bip").checked = localStorage.getItem("bips") !== "0"; } catch (e) { /* never mind */ }
+    // BEFORE anything that reads replis: the converter and the entry form depend on it.
     await reprendreReplisLocaux();
     chargerReplis();
     UI.rendreReperesMouture();
@@ -406,25 +405,25 @@
     if (UI.restaurerBrouillon()) toast(I18N.t("t_brouillon"));
 
     const h = location.hash.slice(1);
-    if (h === "refaire") ouvrirRefaire();
+    if (h === "refaire") openRedo();
     else activerEcran(ECRANS.includes(normaliserEcran(h)) ? normaliserEcran(h) : "tableau");
 
-    // Le premier écran est rendu : le voile de chargement n'a plus de raison d'être.
-    const voile = $("#chargement");
-    if (voile) voile.remove();
+    // The first screen is rendered: the loading overlay has no reason to stay.
+    const overlay = $("#chargement");
+    if (overlay) overlay.remove();
 
-    // Le système relâche le verrou d'écran quand l'onglet part en arrière plan.
-    // Au retour, si le chrono tourne toujours, on le reprend.
+    // The system releases the screen lock when the tab goes to the background.
+    // On return, if the stopwatch is still running, we take it back.
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") UI.syncWakeLock();
     });
 
-    // Service worker, et le message quand une nouvelle version est prête.
+    // Service worker, and the message when a new version is ready.
     UI.surveillerMisesAJour();
 
-    /* Données locales d'abord, synchro ensuite (v8.72) : l'accueil et sa démo
-       n'apparaissent que si, après la synchro, il n'y a toujours rien. */
-    const accueilSiVide = () => {
+    /* Local data first, sync next (v8.72): the welcome screen and its demo
+       only appear if, after the sync, there is still nothing. */
+    const welcomeIfEmpty = () => {
       if (DATA.state.cafes.length || DATA.state.extractions.length) return;
       if (!DATA.state.fsDisponible) {
         $("#acc-note-fs").hidden = false;
@@ -433,13 +432,13 @@
       }
       $("#modale-accueil").showModal();
     };
-    if (DATA.syncPossible()) DATA.synchroniser(false).then(accueilSiVide);
-    else if (!aDesDonnees) accueilSiVide();
+    if (DATA.syncPossible()) DATA.synchroniser(false).then(welcomeIfEmpty);
+    else if (!hasData) welcomeIfEmpty();
   }
 
   document.addEventListener("DOMContentLoaded", demarrer);
 
-  // Mis à disposition des autres écrans.
+  // Made available to the other screens.
   Object.assign(UI, {
     LIBELLES_SYNC, VERSION, actionLier, cabler, demarrer, majBadges, majStatutDonnees,
     majStatutSync, rafraichirLangue, remplirSelectRecetteReco,
