@@ -6,7 +6,7 @@
  * at the dashboard on the desk computer. D1 is strongly consistent.
  *
  * WHY A JSON DOCUMENT AND NOT SQL TABLES: the data schema lives in the
- * client (normaliserCafe, normaliserExtraction, migrerDonnees) and evolves
+ * client (normalizeCoffee, normalizeExtraction, migrateData) and evolves
  * regularly, with idempotent client-side migrations. Duplicating it in SQL
  * would require a D1 migration for every added column. Here the server
  * knows only one thing: each row has an `id` and a `maj_le`.
@@ -50,7 +50,7 @@ const timestamp = value => {
    A phone ten minutes fast won every merge for ten minutes, and a deletion
    dated in the future could no longer be undone. Any timestamp more than
    five minutes ahead of the server is brought back to the server time. */
-export const AVANCE_TOLEREE_MS = 5 * 60 * 1000;
+export const TOLERATED_LEAD_MS = 5 * 60 * 1000;
 
 /* Normalises what comes from the network: we trust neither the shape nor the
    types. A row without a usable `id` is dropped, it could not be merged.
@@ -58,10 +58,10 @@ export const AVANCE_TOLEREE_MS = 5 * 60 * 1000;
 export function sanitisePayload(raw, now) {
   const source = raw && typeof raw === "object" ? raw : {};
   const tables = {};
-  const tombes = {};
+  const tombstones = {};
   const clamp = ts => {
     const t = timestamp(ts);
-    return now && t > now + AVANCE_TOLEREE_MS ? now : t;
+    return now && t > now + TOLERATED_LEAD_MS ? now : t;
   };
 
   for (const name of TABLES) {
@@ -71,10 +71,10 @@ export function sanitisePayload(raw, now) {
       .map(row => ({ ...row, maj_le: clamp(row.maj_le) }));
 
     const marks = source.tombes?.[name];
-    tombes[name] = {};
+    tombstones[name] = {};
     if (marks && typeof marks === "object") {
       for (const [id, ts] of Object.entries(marks)) {
-        if (typeof id === "string" && id !== "") tombes[name][id] = clamp(ts);
+        if (typeof id === "string" && id !== "") tombstones[name][id] = clamp(ts);
       }
     }
   }
@@ -82,11 +82,11 @@ export function sanitisePayload(raw, now) {
      a tab stuck on an old version, which does not know the recent columns,
      is refused instead of erasing them (see handleSync). */
   const schema = Number(source.schema);
-  return { tables, tombes, schema: Number.isFinite(schema) && schema > 0 ? Math.floor(schema) : 0 };
+  return { tables, tombes: tombstones, schema: Number.isFinite(schema) && schema > 0 ? Math.floor(schema) : 0 };
 }
 
 // A table bigger than the cap is REFUSED, no longer silently truncated.
-export function tropDeLignes(payload) {
+export function tooManyRows(payload) {
   return TABLES.some(name => payload.tables[name].length > MAX_ROWS_PER_TABLE);
 }
 
@@ -101,7 +101,7 @@ export function emptyPayload() {
    union of fields is kept; on a field present on both sides with two
    values, the version whose JSON is larger wins, which keeps the merge
    commutative. */
-export function fusionnerLigne(a, b) {
+export function mergeRow(a, b) {
   const ja = JSON.stringify(a), jb = JSON.stringify(b);
   if (ja === jb) return a;
   const [smaller, larger] = ja < jb ? [a, b] : [b, a];
@@ -115,7 +115,7 @@ function mergeRows(left, right) {
     if (!existing) { byId.set(row.id, row); continue; }
     const tr = timestamp(row.maj_le), te = timestamp(existing.maj_le);
     if (tr > te) byId.set(row.id, row);
-    else if (tr === te) byId.set(row.id, fusionnerLigne(existing, row));
+    else if (tr === te) byId.set(row.id, mergeRow(existing, row));
   }
   return [...byId.values()];
 }
@@ -132,7 +132,7 @@ function mergeTombstones(left, right) {
    or in the other direction, gives the same result. */
 export function mergePayloads(left, right, now) {
   const tables = {};
-  const tombes = {};
+  const tombstones = {};
 
   for (const name of TABLES) {
     const marks = mergeTombstones(left.tombes?.[name], right.tombes?.[name]);
@@ -143,11 +143,11 @@ export function mergePayloads(left, right, now) {
     tables[name] = mergeRows(left.tables?.[name], right.tables?.[name])
       .filter(row => timestamp(marks[row.id]) <= timestamp(row.maj_le));
 
-    tombes[name] = Object.fromEntries(
+    tombstones[name] = Object.fromEntries(
       Object.entries(marks).filter(([, ts]) => now - ts < TOMBSTONE_RETENTION_MS)
     );
   }
-  return { tables, tombes, schema: Math.max(Number(left.schema) || 0, Number(right.schema) || 0) };
+  return { tables, tombes: tombstones, schema: Math.max(Number(left.schema) || 0, Number(right.schema) || 0) };
 }
 
 /* ---------- D1 storage ---------- */
@@ -169,7 +169,7 @@ async function ensureSchema(db) {
 /* An UNREADABLE document is no longer replaced by an empty state (v8.71):
    that meant writing over the only server copy. The exchange fails with a
    clear code, the devices' data stays intact, and the daily copy (see
-   sauvegarderDocument) makes it possible to start again. */
+   saveDocument) makes it possible to start again. */
 async function readDocument(db) {
   const row = await db.prepare("SELECT payload FROM documents WHERE name = ?").bind(DOCUMENT_NAME).first();
   if (!row || !row.payload) return emptyPayload();
@@ -197,10 +197,10 @@ async function writeDocument(db, payload, now) {
 /* DAILY BACKUP (v8.71). A faulty device spread its error everywhere in a
    single upload, and the only safety net was D1 Time Travel, which restores
    the whole database. Every day, the scheduled trigger copies the document
-   under the name state@AAAA-MM-JJ and keeps the last JOURS_DE_SAUVEGARDE.
+   under the name state@AAAA-MM-JJ and keeps the last BACKUP_DAYS.
    Restoring a copy: see DOCUMENTATION.md, sync section. */
-export const JOURS_DE_SAUVEGARDE = 30;
-export async function sauvegarderDocument(db, now) {
+export const BACKUP_DAYS = 30;
+export async function saveDocument(db, now) {
   await ensureSchema(db);
   const row = await db.prepare("SELECT payload FROM documents WHERE name = ?").bind(DOCUMENT_NAME).first();
   if (!row || !row.payload) return null;
@@ -213,7 +213,7 @@ export async function sauvegarderDocument(db, now) {
     )
     .bind(name, row.payload, now)
     .run();
-  const cutoff = new Date(now - JOURS_DE_SAUVEGARDE * 86400000).toISOString().slice(0, 10);
+  const cutoff = new Date(now - BACKUP_DAYS * 86400000).toISOString().slice(0, 10);
   await db.prepare("DELETE FROM documents WHERE name LIKE ? AND name < ?")
     .bind(DOCUMENT_NAME + "@%", DOCUMENT_NAME + "@" + cutoff).run();
   return name;
@@ -230,7 +230,7 @@ function counts(payload) {
 }
 
 // A body bigger than this is not a coffee logbook, it is an error.
-export const MAX_CORPS_OCTETS = 4_000_000;
+export const MAX_BODY_BYTES = 4_000_000;
 
 /* GET returns the server state, POST merges the sent state then returns the
    result. A single round trip is therefore enough to converge. Any error
@@ -268,7 +268,7 @@ async function exchangeSync(request, env) {
   if (request.method !== "POST") return json({ erreur: "methode-non-permise" }, 405);
 
   const length = Number(request.headers.get("content-length"));
-  if (length > MAX_CORPS_OCTETS) return json({ erreur: "trop-gros" }, 413);
+  if (length > MAX_BODY_BYTES) return json({ erreur: "trop-gros" }, 413);
   let received;
   try {
     received = await request.json();
@@ -277,7 +277,7 @@ async function exchangeSync(request, env) {
   }
 
   const incoming = sanitisePayload(received, now);
-  if (tropDeLignes(incoming)) return json({ erreur: "trop-gros" }, 413);
+  if (tooManyRows(incoming)) return json({ erreur: "trop-gros" }, 413);
   /* A device older than the document does not know its columns: it is
      refused, and the client offers to reload the page. */
   if (incoming.schema < stored.schema) {

@@ -10,7 +10,7 @@
 (() => {
 
   // Borrowed from the core, plus the entry state, exposed by ui-saisie.js.
-  const { $, $$, basculerEtat, marquerNote, noteVide, saisie } = UI;
+  const { $, $$, setPressed, markRating, isRatingEmpty, entry } = UI;
 
   /* ---------- Entry draft ----------
      On a phone, leaving the tab during an extraction is enough for the
@@ -21,15 +21,15 @@
      Deliberately in localStorage and NOT in the synced data: a draft belongs
      to one device, sending it to the server would make a ghost entry appear
      on the other one. */
-  const CLE_BROUILLON = "brouillon-saisie";
-  const BROUILLON_MAX_MS = 24 * 60 * 60 * 1000;
+  const DRAFT_KEY = "brouillon-saisie";
+  const DRAFT_MAX_MS = 24 * 60 * 60 * 1000;
   /* The draft's DATE has its own, much shorter, validity. The draft exists to
      survive the page being unloaded during an extraction, which is counted in
      minutes; keeping its timestamp for 24 h brought back the previous day's
      date on a fresh entry. Two hours easily cover a session, interruptions
      included. */
-  const DATE_BROUILLON_MAX_MS = 2 * 60 * 60 * 1000;
-  const CHAMPS_BROUILLON = [
+  const DRAFT_DATE_MAX_MS = 2 * 60 * 60 * 1000;
+  const DRAFT_FIELDS = [
     "f-date", "f-cafe", "f-recette", "f-dose", "f-eau", "f-mouture", "f-temp",
     "f-chauffe-min", "f-chauffe-sec",
     "f-volume", "f-eau-ajoutee", "f-lait", "f-agitation", "f-tasse", "f-note",
@@ -37,66 +37,66 @@
     "f-puissance",
   ];
   // "ratée" and agitation were forgotten on restore (v8.72).
-  const CASES_BROUILLON = ["f-prechauffe", "f-ajout-eau-oui", "f-ratee", "f-agitation-oui"];
+  const DRAFT_CHECKBOXES = ["f-prechauffe", "f-ajout-eau-oui", "f-ratee", "f-agitation-oui"];
   let draftTimer = null;
 
-  function ecrireBrouillon() {
+  function saveDraft() {
     // NEVER save while editing an existing extraction: the draft would
     // overwrite the form at the next startup with values that belong to a
     // row already saved.
-    if (saisie.editId) return;
+    if (entry.editId) return;
     const values = {};
-    CHAMPS_BROUILLON.forEach(id => { const el = $("#" + id); if (el) values[id] = el.value; });
-    CASES_BROUILLON.forEach(id => { const el = $("#" + id); if (el) values[id] = el.checked; });
+    DRAFT_FIELDS.forEach(id => { const el = $("#" + id); if (el) values[id] = el.value; });
+    DRAFT_CHECKBOXES.forEach(id => { const el = $("#" + id); if (el) values[id] = el.checked; });
     try {
-      localStorage.setItem(CLE_BROUILLON, JSON.stringify({
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
         le: Date.now(),
-        methode: saisie.methode,
-        diagnostics: [...saisie.diagnostics],
-        descripteurs: [...saisie.descripteurs],
+        methode: entry.methode,
+        diagnostics: [...entry.diagnostics],
+        descripteurs: [...entry.descripteurs],
         /* The rating lives in the slider's value AND in its "not rated yet"
            state (v8.40). Without the state, a rating given before the page
            was unloaded came back unrated. */
-        noteVide: noteVide($("#f-note")),
+        noteVide: isRatingEmpty($("#f-note")),
         valeurs: values,
       }));
     } catch (e) { /* storage full or refused, never mind */ }
   }
 
-  function planifierBrouillon() {
+  function scheduleDraft() {
     clearTimeout(draftTimer);
-    draftTimer = setTimeout(ecrireBrouillon, 400);
+    draftTimer = setTimeout(saveDraft, 400);
   }
 
-  function effacerBrouillon() {
+  function clearDraft() {
     clearTimeout(draftTimer);
-    try { localStorage.removeItem(CLE_BROUILLON); } catch (e) { /* never mind */ }
+    try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* never mind */ }
   }
 
   /* Only restores if the draft says something: without this test, the blank
      form saved at first load would trigger a "draft restored" message at
      every opening, which would be absurd. */
-  function brouillonUtile(b) {
+  function isDraftUseful(b) {
     const v = b.valeurs || {};
     return Boolean(v["f-cafe"] || (v["f-commentaire"] || "").trim() ||
       b.diagnostics.length || b.descripteurs.length || b.noteVide === false ||
       v["f-total-min"] || v["f-total-sec"] || v["f-volume"] || v["f-eau"]);
   }
 
-  function restaurerBrouillon() {
+  function restoreDraft() {
     let b;
-    try { b = JSON.parse(localStorage.getItem(CLE_BROUILLON) || "null"); } catch (e) { return false; }
+    try { b = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch (e) { return false; }
     if (!b || !b.valeurs) return false;
-    if (Date.now() - (b.le || 0) > BROUILLON_MAX_MS) { effacerBrouillon(); return false; }
-    if (!brouillonUtile(b)) return false;
+    if (Date.now() - (b.le || 0) > DRAFT_MAX_MS) { clearDraft(); return false; }
+    if (!isDraftUseful(b)) return false;
 
     /* WITHOUT garderRecette (v8.37): with it, the draft's method applied but
        the recipe list stayed the one of the previous method. A Switch recipe
        set in a menu of Brikka recipes does not exist, and the browser left
        the menu EMPTY. Chris then landed on the entry screen without a recipe,
        every time he had brewed on the Switch the day before. */
-    if (b.methode) UI.choisirMethode(b.methode);
-    const freshDate = Date.now() - (b.le || 0) <= DATE_BROUILLON_MAX_MS;
+    if (b.methode) UI.chooseMethod(b.methode);
+    const freshDate = Date.now() - (b.le || 0) <= DRAFT_DATE_MAX_MS;
     Object.entries(b.valeurs).forEach(([id, value]) => {
       // A stale date does not replace the current time.
       if (id === "f-date" && !freshDate) return;
@@ -105,8 +105,8 @@
     });
     /* A date restored from a fresh draft comes from Chris, not from a default:
        arriving on the screen must therefore not replace it. */
-    if (freshDate && b.valeurs["f-date"]) saisie.dateTouchee = true;
-    CASES_BROUILLON.forEach(id => { const el = $("#" + id); if (el) el.checked = !!b.valeurs[id]; });
+    if (freshDate && b.valeurs["f-date"]) entry.dateTouched = true;
+    DRAFT_CHECKBOXES.forEach(id => { const el = $("#" + id); if (el) el.checked = !!b.valeurs[id]; });
 
     /* NEVER an empty coffee or recipe after a restore: a draft can keep a
        coffee deactivated since, a recipe renamed or deleted, or an empty
@@ -114,16 +114,16 @@
        recipe, as on a fresh form: most of the time it is the one Chris
        keeps, and it is one click less. */
     if (!$("#f-cafe").value) {
-      const first = UI.cafesSelectionnables()[0];
+      const first = UI.selectableCoffees()[0];
       if (first) $("#f-cafe").value = first.id;
     }
-    // Without prefillDepuisRecette: it would overwrite the draft's dose and water.
-    if (!$("#f-recette").value) UI.remplirSelectRecettes();
+    // Without prefillFromRecipe: it would overwrite the draft's dose and water.
+    if (!$("#f-recette").value) UI.fillRecipeSelect();
 
-    saisie.diagnostics = new Set(b.diagnostics || []);
-    saisie.descripteurs = new Set(b.descripteurs || []);
-    $$("#f-diagnostic .pilule").forEach(x => basculerEtat(x, saisie.diagnostics.has(x.dataset.diag)));
-    $$("#f-descripteurs .tag").forEach(x => basculerEtat(x, saisie.descripteurs.has(x.dataset.tag)));
+    entry.diagnostics = new Set(b.diagnostics || []);
+    entry.descripteurs = new Set(b.descripteurs || []);
+    $$("#f-diagnostic .pilule").forEach(x => setPressed(x, entry.diagnostics.has(x.dataset.diag)));
+    $$("#f-descripteurs .tag").forEach(x => setPressed(x, entry.descripteurs.has(x.dataset.tag)));
 
     /* THROUGH THE OFFICIAL FUNCTION, not by hand. This line wrote the field's
         value directly, ignoring "not rated yet": after restoring an unrated
@@ -131,19 +131,19 @@
         file as UNRATED. With the slider also sitting on 5, nothing betrayed
         the gap. It also forgot the "/ 10" and the stepper's inactive state. */
     // A draft from before v8.40 has no state: it stays unrated.
-    marquerNote($("#f-note"), b.noteVide !== false);
-    UI.majAffichageNote();
+    markRating($("#f-note"), b.noteVide !== false);
+    UI.updateRatingDisplay();
     $("#f-eau-ajoutee").hidden = !$("#f-ajout-eau-oui").checked;
-    UI.majCorrectionDiagnostic();
-    UI.majAvertissements();
-    UI.majLive();
-    UI.majAsideSaisie();
+    UI.updateDiagnosticCorrection();
+    UI.updateWarnings();
+    UI.updateLive();
+    UI.updateEntryAside();
     return true;
   }
 
   // Made available to the entry screen (wiring, saving) and to app.js (startup).
   Object.assign(UI, {
-    BROUILLON_MAX_MS, CASES_BROUILLON, CHAMPS_BROUILLON, CLE_BROUILLON, DATE_BROUILLON_MAX_MS,
-    brouillonUtile, ecrireBrouillon, effacerBrouillon, planifierBrouillon, restaurerBrouillon,
+    DRAFT_MAX_MS, DRAFT_CHECKBOXES, DRAFT_FIELDS, DRAFT_KEY, DRAFT_DATE_MAX_MS,
+    isDraftUseful, saveDraft, clearDraft, scheduleDraft, restoreDraft,
   });
 })();

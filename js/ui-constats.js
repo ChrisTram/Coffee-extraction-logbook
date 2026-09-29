@@ -10,7 +10,7 @@
 (() => {
 
   // Borrowed from the core, loaded before us.
-  const { $, $$, attrTitre, fmtDecimal, moyenne, nav, trouverRecette } = UI;
+  const { $, $$, titleAttr, fmtDecimal, average, nav, findRecipe } = UI;
 
   // ---------- Automatic insights ----------
   // Computed sentences, not extra charts. The rules are deliberately
@@ -22,7 +22,7 @@
 
   const MIN_SAMPLE = 3;
   const MIN_GAP = 0.4;
-  const note1 = n => fmtDecimal(n, 1);
+  const fmtRating = n => fmtDecimal(n, 1);
 
   /* THE PROOF UNDER THE SENTENCE (v8.36). A sentence alone asks to be taken
      on trust; below it, the two compared averages, their counts and two
@@ -42,7 +42,7 @@
   /* A complete finding: the sentence, both sides of the comparison, and
      what to judge it by. Every rule returns this shape, or null. */
   function makeFinding(text, high, low) {
-    return { texte: text, haut: high, bas: low, confiance: confidenceLevel(high.note, low.note, high.n, low.n) };
+    return { texte: text, high: high, low: low, confidence: confidenceLevel(high.note, low.note, high.n, low.n) };
   }
 
   // Compares named groups {key: [scores]} and sets the BEST against the REST
@@ -59,15 +59,15 @@
   function bestOfGroups(groups) {
     const classes = Object.entries(groups)
       .filter(([, notes]) => notes.length >= MIN_SAMPLE)
-      .map(([cle, notes]) => ({ cle, notes, moy: moyenne(notes) }))
-      .sort((a, b) => b.moy - a.moy);
+      .map(([key, notes]) => ({ key, notes, mean: average(notes) }))
+      .sort((a, b) => b.mean - a.mean);
     if (classes.length < 2) return null;
 
     const winner = classes[0];
     const rest = classes.slice(1).flatMap(c => c.notes);
-    const restAvg = moyenne(rest);
-    if (winner.moy - restAvg < MIN_GAP) return null;
-    return { gagnant: winner, moyReste: restAvg, nReste: rest.length };
+    const restAvg = average(rest);
+    if (winner.mean - restAvg < MIN_GAP) return null;
+    return { winner: winner, meanRest: restAvg, nRest: rest.length };
   }
 
   /* Age of the BAG, not age of the roast. The previous rule started from
@@ -75,7 +75,7 @@
      so: it could never fire even once. The opening day, on the other hand, he
      always knows, and it is what he describes as moving his cups the most.
      The bands follow degassing, then staling. */
-  function insightAgePaquet(rated) {
+  function insightBagAge(rated) {
     const groups = { ins_paquet_frais: [], ins_paquet_median: [], ins_paquet_vieux: [] };
     rated.forEach(e => {
       const days = e._c.jours_ouvert;
@@ -88,12 +88,12 @@
     if (!res) return null;
     return makeFinding(
       I18N.t("ins_paquet", {
-        quand: I18N.t(res.gagnant.cle),
-        haut: note1(res.gagnant.moy),
-        bas: note1(res.moyReste),
+        quand: I18N.t(res.winner.key),
+        haut: fmtRating(res.winner.mean),
+        bas: fmtRating(res.meanRest),
       }),
-      { libelle: I18N.t(res.gagnant.cle), note: res.gagnant.moy, n: res.gagnant.notes.length },
-      { libelle: I18N.t("ins_reste_temps"), note: res.moyReste, n: res.nReste });
+      { label: I18N.t(res.winner.key), note: res.winner.mean, n: res.winner.notes.length },
+      { label: I18N.t("ins_reste_temps"), note: res.meanRest, n: res.nRest });
   }
 
   /* THE FINDING PER COFFEE AND PER MACHINE, the most useful sentence of the lot.
@@ -106,31 +106,31 @@
      The safeguards are the same as everywhere: three cups on each side and
      0.4 points of gap. On Chris's current data, none passes yet, and that is
      the right behaviour: the best gap per coffee comes out at 0.17. */
-  function insightsParCafe(exts) {
-    return REGLAGES.constatsParCafe(DATA.state.cafes, exts, {
-      minLot: MIN_SAMPLE * 2,
-      minParGroupe: MIN_SAMPLE,
-      minEcart: MIN_GAP,
+  function insightsByCoffee(exts) {
+    return TUNING.findingsByCoffee(DATA.state.cafes, exts, {
+      minBatch: MIN_SAMPLE * 2,
+      minPerGroup: MIN_SAMPLE,
+      minGap: MIN_GAP,
     }).slice(0, 2).map(c => makeFinding(
       I18N.t("ins_cafe_levier", {
-        cafe: c.cafe ? c.cafe.nom : "",
+        cafe: c.coffee ? c.coffee.nom : "",
         machine: I18N.machine(c.methode),
-        levier: I18N.t("lev_" + c.levier),
-        valeur: I18N.tr(String(c.valeur)),
-        haut: note1(c.haut),
-        bas: note1(c.bas),
+        levier: I18N.t("lev_" + c.lever),
+        valeur: I18N.tr(String(c.value)),
+        haut: fmtRating(c.high),
+        bas: fmtRating(c.low),
         n: c.n,
       }),
-      { libelle: I18N.t("lev_" + c.levier) + " " + I18N.tr(String(c.valeur)), note: c.haut, n: c.n },
-      { libelle: I18N.t("ins_reste"), note: c.bas, n: c.nReste }));
+      { label: I18N.t("lev_" + c.lever) + " " + I18N.tr(String(c.value)), note: c.high, n: c.n },
+      { label: I18N.t("ins_reste"), note: c.low, n: c.nRest }));
   }
 
   // Duel between recipes of the same family: that is the comparison that makes
   // sense (same method, same intent), unlike a global ranking.
-  function insightRecettes(rated) {
+  function insightRecipes(rated) {
     const byFamily = {};
     rated.forEach(e => {
-      const r = trouverRecette(e.recette);
+      const r = findRecipe(e.recette);
       if (!r || !r.famille) return;
       const f = (byFamily[r.famille] = byFamily[r.famille] || {});
       (f[r.nom] = f[r.nom] || []).push(e.note_sur_10);
@@ -141,19 +141,19 @@
     for (const family of Object.keys(byFamily)) {
       const classes = Object.entries(byFamily[family])
         .filter(([, notes]) => notes.length >= MIN_SAMPLE)
-        .map(([nom, notes]) => ({ nom, moy: moyenne(notes), n: notes.length }))
-        .sort((a, b) => b.moy - a.moy);
+        .map(([label, notes]) => ({ nom: label, mean: average(notes), n: notes.length }))
+        .sort((a, b) => b.mean - a.mean);
       if (classes.length !== 2) continue;
-      if (classes[0].moy - classes[1].moy < MIN_GAP) continue;
+      if (classes[0].mean - classes[1].mean < MIN_GAP) continue;
       return makeFinding(
         I18N.t("ins_recettes", {
           gagnante: I18N.tr(classes[0].nom),
           perdante: I18N.tr(classes[1].nom),
-          haut: note1(classes[0].moy),
-          bas: note1(classes[1].moy),
+          haut: fmtRating(classes[0].mean),
+          bas: fmtRating(classes[1].mean),
         }),
-        { libelle: I18N.tr(classes[0].nom), note: classes[0].moy, n: classes[0].n },
-        { libelle: I18N.tr(classes[1].nom), note: classes[1].moy, n: classes[1].n });
+        { label: I18N.tr(classes[0].nom), note: classes[0].mean, n: classes[0].n },
+        { label: I18N.tr(classes[1].nom), note: classes[1].mean, n: classes[1].n });
     }
     return null;
   }
@@ -174,18 +174,18 @@
     if (!res) return null;
     return makeFinding(
       I18N.t("ins_moment", {
-        quand: I18N.t(res.gagnant.cle),
-        haut: note1(res.gagnant.moy),
-        bas: note1(res.moyReste),
+        quand: I18N.t(res.winner.key),
+        haut: fmtRating(res.winner.mean),
+        bas: fmtRating(res.meanRest),
       }),
-      { libelle: I18N.t(res.gagnant.cle), note: res.gagnant.moy, n: res.gagnant.notes.length },
-      { libelle: I18N.t("ins_reste_jour"), note: res.moyReste, n: res.nReste });
+      { label: I18N.t(res.winner.key), note: res.winner.mean, n: res.winner.notes.length },
+      { label: I18N.t("ins_reste_jour"), note: res.meanRest, n: res.nRest });
   }
 
   // Heat power, Brikka only. This is exactly the variable Chris is trying
   // to tune: as long as it is 3 everywhere, the rule stays quiet, and it
   // will speak as soon as he has tried something else.
-  function insightPuissance(rated) {
+  function insightPower(rated) {
     const groups = {};
     rated
       .filter(e => e.methode === "Brikka" && e.puissance_feu !== "" && e.puissance_feu !== undefined)
@@ -194,12 +194,12 @@
     if (!res) return null;
     return makeFinding(
       I18N.t("ins_puissance", {
-        feu: res.gagnant.cle,
-        haut: note1(res.gagnant.moy),
-        bas: note1(res.moyReste),
+        feu: res.winner.key,
+        haut: fmtRating(res.winner.mean),
+        bas: fmtRating(res.meanRest),
       }),
-      { libelle: I18N.t("rg_feu", { f: res.gagnant.cle }), note: res.gagnant.moy, n: res.gagnant.notes.length },
-      { libelle: I18N.t("ins_reste_reglages"), note: res.moyReste, n: res.nReste });
+      { label: I18N.t("rg_feu", { f: res.winner.key }), note: res.winner.mean, n: res.winner.notes.length },
+      { label: I18N.t("ins_reste_reglages"), note: res.meanRest, n: res.nRest });
   }
 
   /* THREE MORE FINDINGS (v8.42). Data entered with every cup that no rule
@@ -224,33 +224,33 @@
     const res = bestOfGroups(groups);
     if (!res) return null;
     return makeFinding(
-      I18N.t("ins_temp", { plage: I18N.t(res.gagnant.cle) }),
-      { libelle: I18N.t(res.gagnant.cle), note: res.gagnant.moy, n: res.gagnant.notes.length },
-      { libelle: I18N.t("ins_reste_temp"), note: res.moyReste, n: res.nReste });
+      I18N.t("ins_temp", { plage: I18N.t(res.winner.key) }),
+      { label: I18N.t(res.winner.key), note: res.winner.mean, n: res.winner.notes.length },
+      { label: I18N.t("ins_reste_temp"), note: res.meanRest, n: res.nRest });
   }
 
   /* Only two groups: the rest IS the other group, so we name it. */
   function duelOf(groups, phrase) {
     const res = bestOfGroups(groups);
     if (!res) return null;
-    const other = Object.keys(groups).find(k => k !== res.gagnant.cle);
+    const other = Object.keys(groups).find(k => k !== res.winner.key);
     return makeFinding(
-      phrase(I18N.t(res.gagnant.cle)),
-      { libelle: I18N.t(res.gagnant.cle), note: res.gagnant.moy, n: res.gagnant.notes.length },
-      { libelle: I18N.t(other), note: res.moyReste, n: res.nReste });
+      phrase(I18N.t(res.winner.key)),
+      { label: I18N.t(res.winner.key), note: res.winner.mean, n: res.winner.notes.length },
+      { label: I18N.t(other), note: res.meanRest, n: res.nRest });
   }
-  function insightPrechauffe(rated) {
+  function insightPreheat(rated) {
     const groups = { ins_prech_oui: [], ins_prech_non: [] };
     rated.filter(e => e.methode === "Brikka").forEach(e =>
       groups[Number(e.eau_prechauffee) === 1 ? "ins_prech_oui" : "ins_prech_non"].push(e.note_sur_10));
-    return duelOf(groups, quoi => I18N.t("ins_prechauffe", { quoi }));
+    return duelOf(groups, what => I18N.t("ins_prechauffe", { quoi: what }));
   }
   function insightAgitation(rated) {
     const groups = { ins_agit_oui: [], ins_agit_non: [] };
     rated.filter(e => e.methode === "Switch").forEach(e =>
       groups[e.agitation_nb !== "" && e.agitation_nb !== undefined && Number(e.agitation_nb) > 0
         ? "ins_agit_oui" : "ins_agit_non"].push(e.note_sur_10));
-    return duelOf(groups, quoi => I18N.t("ins_agitation", { quoi }));
+    return duelOf(groups, what => I18N.t("ins_agitation", { quoi: what }));
   }
 
   function computeInsights(exts) {
@@ -258,13 +258,13 @@
     /* Findings PER COFFEE first: they are more precise, hence more
        actionable. The global rules next, and they announce themselves
        that they mix coffees: that is their limit, might as well say it. */
-    const findings = insightsParCafe(exts).concat([
-      insightAgePaquet(rated),
-      insightRecettes(rated),
+    const findings = insightsByCoffee(exts).concat([
+      insightBagAge(rated),
+      insightRecipes(rated),
       insightMoment(rated),
-      insightPuissance(rated),
+      insightPower(rated),
       insightTemperature(rated),
-      insightPrechauffe(rated),
+      insightPreheat(rated),
       insightAgitation(rated),
     ].filter(Boolean).map(c => ({ ...c, texte: I18N.t("ins_global", { p: c.texte }) })));
 
@@ -287,12 +287,12 @@
      rest in neutral, and the line between them. Then "6.8 vs 5.2", and on
      the right the confidence with both counts. Nothing is lost. */
   function scaleBar(c) {
-    const hi = c.haut.note, lo = c.bas.note;
+    const hi = c.high.note, lo = c.low.note;
     const pc = n => Math.max(0, Math.min(100, (Number(n) / 10) * 100)).toFixed(1) + "%";
     const from = Math.min(hi, lo), to = Math.max(hi, lo);
     // The labels of both sides, for a screen reader: the sentence already names them visually.
-    const spoken = c.haut.libelle + " " + note1(hi) + ", " + c.bas.libelle + " " + note1(lo);
-    return '<span class="reglette" role="img" aria-label="' + attrTitre(spoken) + '">' +
+    const spoken = c.high.label + " " + fmtRating(hi) + ", " + c.low.label + " " + fmtRating(lo);
+    return '<span class="reglette" role="img" aria-label="' + titleAttr(spoken) + '">' +
       '<i class="reglette-trait" style="left:' + pc(from) + ";width:calc(" + pc(to) + " - " + pc(from) + ')"></i>' +
       '<i class="reglette-point bas" style="left:' + pc(lo) + '"></i>' +
       '<i class="reglette-point haut" style="left:' + pc(hi) + '"></i></span>';
@@ -315,37 +315,37 @@
     if (pos) pos.textContent = (currentInsight + 1) + " / " + items.length;
   }
 
-  /* The carousel arrows. Called by cablerTableau. */
-  function cablerConstats() {
+  /* The carousel arrows. Called by wireDashboard. */
+  function wireFindings() {
     $("#insights-nav").addEventListener("click", ev => {
       const b = ev.target.closest("[data-insight]");
       if (b) showInsight(currentInsight + Number(b.dataset.insight));
     });
   }
 
-  function rendreInsights(exts) {
+  function renderInsights(exts) {
     const findings = computeInsights(exts);
     const navEl = $("#insights-nav");
     navEl.hidden = findings.length < 2;
     navEl.innerHTML = findings.length < 2 ? "" :
       '<span class="insights-pos"></span>' +
-      '<button type="button" class="btn-carre-petit" data-insight="-1" aria-label="' + attrTitre(I18N.t("ins_precedent")) + '">' + UI.icone("gauche") + "</button>" +
-      '<button type="button" class="btn-carre-petit" data-insight="1" aria-label="' + attrTitre(I18N.t("ins_suivant")) + '">' + UI.icone("chevron") + "</button>";
+      '<button type="button" class="btn-carre-petit" data-insight="-1" aria-label="' + titleAttr(I18N.t("ins_precedent")) + '">' + UI.icon("gauche") + "</button>" +
+      '<button type="button" class="btn-carre-petit" data-insight="1" aria-label="' + titleAttr(I18N.t("ins_suivant")) + '">' + UI.icon("chevron") + "</button>";
     $("#insights").innerHTML = findings.map(c => {
-      if (!c.haut) return '<li class="constat constat-vide"><p>' + c.texte + "</p></li>";
+      if (!c.high) return '<li class="constat constat-vide"><p>' + c.texte + "</p></li>";
       return '<li class="constat"><p>' + c.texte + "</p>" +
         '<div class="preuve">' + scaleBar(c) +
-        '<span class="preuve-chiffres">' + I18N.t("ins_contre", { h: note1(c.haut.note), b: note1(c.bas.note) }) + "</span>" +
-        '<span class="preuve-pied">' + I18N.t("ins_" + c.confiance) + " · " +
-        I18N.t("ins_effectifs", { h: c.haut.n, b: c.bas.n }) + "</span></div></li>";
+        '<span class="preuve-chiffres">' + I18N.t("ins_contre", { h: fmtRating(c.high.note), b: fmtRating(c.low.note) }) + "</span>" +
+        '<span class="preuve-pied">' + I18N.t("ins_" + c.confidence) + " · " +
+        I18N.t("ins_effectifs", { h: c.high.n, b: c.low.n }) + "</span></div></li>";
     }).join("");
     showInsight(currentInsight);
   }
 
   Object.assign(UI, {
-    MIN_GAP, MIN_SAMPLE, note1,
-    bestOfGroups, cablerConstats, computeInsights,
-    insightAgePaquet, insightAgitation, insightMoment, insightPrechauffe, insightPuissance,
-    insightRecettes, insightTemperature, insightsParCafe, rendreInsights,
+    MIN_GAP, MIN_SAMPLE, fmtRating,
+    bestOfGroups, wireFindings, computeInsights,
+    insightBagAge, insightAgitation, insightMoment, insightPreheat, insightPower,
+    insightRecipes, insightTemperature, insightsByCoffee, renderInsights,
   });
 })();

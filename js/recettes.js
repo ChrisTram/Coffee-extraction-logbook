@@ -4,7 +4,7 @@
 // which you can always go back to.
 "use strict";
 
-const RECETTES_DEPART = [
+const STARTER_RECIPES = [
   {
     id: "brikka-classique",
     nom: "Brikka classique",
@@ -337,7 +337,7 @@ const RECETTES_DEPART = [
 
      70 °C WITHOUT A THERMOMETER: a WEIGHED mix of water at 90 °C and water at
      room temperature, in a glass on the scale. Room temperature = 28 °C,
-     EAU_AMBIANTE_C, the same assumption as the kettle curve. 120 g at
+     ROOM_WATER_C, the same assumption as the kettle curve. 120 g at
      70 °C = 81 g at 90 + 39 g at room temperature, since (90 − 70) / (70 − 28) = 20 / 42.
      The grams of the mix follow the total water like the other pours. */
   {
@@ -368,7 +368,7 @@ const RECETTES_DEPART = [
 ];
 
 // Old recipe names: automatic migration of the history.
-const RENOMMAGES_RECETTES = {
+const RECIPE_RENAMES = {
   "Brikka flat white": "Brikka au lait",
   "Brikka cappuccino": "Brikka au lait",
   "Brikka référence": "Brikka classique",
@@ -380,24 +380,24 @@ const RENOMMAGES_RECETTES = {
   "The Tetsu Devil": "Tetsu 4:6",
   "The Sweet Variation": "The Coffee Chronicler's Recipe (Sweet)",
 };
-const ANCIENS_SEED_IDS = ["brikka-ref", "brikka-rangbo", "fruite", "costaud", "adoucisseur", "complet", "tetsu"];
+const OLD_SEED_IDS = ["brikka-ref", "brikka-rangbo", "fruite", "costaud", "adoucisseur", "complet", "tetsu"];
 
 // Tetsu 4:6 variants. Pours are recomputed from the total water.
 // For 225 g: bloom 30, then 60 (40 percent at 90 g), then 3 x 45.
 const TETSU = {
   /* No more fixed schedule (v8.99): pour when the bed reappears, Tetsu's
      rule. The 45 seconds of v8.69 were right for 20 g, not for 15 g. */
-  premier40: [
-    { id: "sucre",     nom: "Plus de sucre",  detail: "30 puis 60 g : plus de sucre, moins d'acidité. Mon profil, le réglage par défaut.", parts: [1, 2], defaut: true },
+  first40: [
+    { id: "sucre",     nom: "Plus de sucre",  detail: "30 puis 60 g : plus de sucre, moins d'acidité. Mon profil, le réglage par défaut.", parts: [1, 2], isDefault: true },
     { id: "equilibre", nom: "Équilibre",      detail: "45 puis 45 g : équilibré.", parts: [1, 1] },
     { id: "vivacite",  nom: "Plus de vivacité", detail: "60 puis 30 g : plus de vivacité.", parts: [2, 1] },
   ],
-  dernier60: [
+  last60: [
     { id: "leger",  nom: "Corps léger",  detail: "Un seul versement.", n: 1 },
     { id: "moyen",  nom: "Corps moyen",  detail: "Deux versements.", n: 2 },
-    { id: "plein",  nom: "Corps plein",  detail: "Trois versements. Mon choix.", n: 3, defaut: true },
+    { id: "plein",  nom: "Corps plein",  detail: "Trois versements. Mon choix.", n: 3, isDefault: true },
   ],
-  versements(totalWater, variant40, variant60) {
+  pours(totalWater, variant40, variant60) {
     const p40 = totalWater * 0.4;
     const p60 = totalWater * 0.6;
     const sum = variant40.parts[0] + variant40.parts[1];
@@ -423,23 +423,23 @@ const TETSU = {
    - One and Done: Hedrick, 90 to 93 for a light or a medium, under 90 beyond.
    The table only applies if the recipe's temperature is still the original
    one: a figure edited by hand in "Gérer les recettes" wins. */
-const TEMP_PAR_TORREFACTION = {
+const TEMP_BY_ROAST = {
   "tetsu-devil":   { "Claire": 93, "Medium": 88, "Foncée": 83 },
   "hoffmann-1cup": { "Claire": 98, "Medium": 95, "Foncée": 91 },
   "one-and-done":  { "Claire": 92, "Medium": 91, "Foncée": 88 },
 };
 
-function temperaturePourCafe(recipe, coffee) {
+function temperatureForCoffee(recipe, coffee) {
   if (!recipe) return "";
-  const table = TEMP_PAR_TORREFACTION[recipe.id];
-  const original = RECETTES_DEPART.find(d => d.id === recipe.id);
+  const table = TEMP_BY_ROAST[recipe.id];
+  const original = STARTER_RECIPES.find(d => d.id === recipe.id);
   if (!table || !original || Number(recipe.temp) !== Number(original.temp)) return recipe.temp;
   return (coffee && table[coffee.torrefaction]) || recipe.temp;
 }
 
 // Conversion of steps to and from the editable text:
 // one step per line, "m:ss text" for a timed step, "- text" otherwise.
-function etapesVersTexte(steps) {
+function stepsToText(steps) {
   return (steps || []).map(e => {
     if (e.t === null || e.t === undefined || e.t === "") return "- " + e.texte;
     const mn = Math.floor(e.t / 60), s = e.t % 60;
@@ -447,7 +447,7 @@ function etapesVersTexte(steps) {
   }).join("\n");
 }
 
-function texteVersEtapes(text) {
+function textToSteps(text) {
   return (text || "").split("\n").map(l => l.trim()).filter(Boolean).map(l => {
     const parsed = l.match(/^(\d+):([0-5]\d)\s+(.+)$/);
     if (parsed) return { t: parseInt(parsed[1], 10) * 60 + parseInt(parsed[2], 10), texte: parsed[3] };
@@ -456,7 +456,7 @@ function texteVersEtapes(text) {
 }
 
 // The starter cups.
-const TASSES_DEPART = [
+const STARTER_CUPS = [
   { id: "t1", nom: "Loveramics Flat White Egg", contenance_ml: 150 },
   { id: "t2", nom: "Loveramics Espresso Egg", contenance_ml: 80 },
   { id: "t3", nom: "Loveramics Nutty Tasting Cup", contenance_ml: 150 },
@@ -464,7 +464,7 @@ const TASSES_DEPART = [
 ];
 
 // The 5 starter coffees, used when creating a blank dataset.
-const CAFES_DEPART = [
+const STARTER_COFFEES = [
   { id: "c1", nom: "Trung Nguyên Sáng Tạo 4", torrefacteur: "Trung Nguyên", origine: "Buôn Ma Thuột, Vietnam", espece: "Blend Arabica, Robusta, Excelsa, Catimor", procede: "Torréfaction traditionnelle avec additifs", torrefaction: "Foncée", deja_moulu: 1, pourcentage_cafe_reel: 82, tag: "café aromatisé", notes_annoncees: "Corps rond, sucré, faible acidité, arôme persistant. Étiquette : café 82 pour cent, soja torréfié, sirop de sucre brun, substitut de beurre, arômes de synthèse, beurre.", format_grammes: 340, prix_vnd: 148800, date_torrefaction: "", machine_recommandee: "Brikka", recette_recommandee: "Brikka classique", actif: 1 },
   { id: "c2", nom: "Bana Cofe G4", torrefacteur: "Bana Cofe", origine: "Vietnam", espece: "Robusta", procede: "Rang bơ", torrefaction: "Foncée", deja_moulu: 1, pourcentage_cafe_reel: 100, tag: "", notes_annoncees: "Beurre, caramel, sucre roux, déjà moulu", format_grammes: 250, prix_vnd: 87000, date_torrefaction: "", machine_recommandee: "Brikka", recette_recommandee: "Brikka classique", actif: 1 },
   { id: "c3", nom: "Cà Phê Mít Liberica", torrefacteur: "Fine Coffee Agency", origine: "Vietnam", espece: "Liberica", procede: "Natural", torrefaction: "Medium", deja_moulu: 0, pourcentage_cafe_reel: 100, tag: "", notes_annoncees: "Jacquier mûr, cacao, amande", format_grammes: 200, prix_vnd: 280000, date_torrefaction: "", machine_recommandee: "Les deux", recette_recommandee: "The Coffee Chronicler's Recipe", actif: 1 },
@@ -473,7 +473,7 @@ const CAFES_DEPART = [
 ];
 
 // Descriptors organised by the families of the SCA flavor wheel.
-const DESCRIPTEURS_GROUPES = [
+const DESCRIPTOR_GROUPS = [
   { nom: "Corps et texture", tags: ["rond", "sirupeux", "crémeux", "beurré", "gras", "velouté", "soyeux", "liquoreux", "sec", "léger", "astringent", "rugueux", "aqueux"] },
   { nom: "Cacao et noix", tags: ["chocolat noir", "chocolat au lait", "cacao", "noisette", "amande", "cacahuète"] },
   { nom: "Sucré", tags: ["caramel", "sucre roux", "sucre de canne", "miel", "vanille", "mélasse", "praliné"] },
@@ -494,7 +494,7 @@ const DESCRIPTEURS_GROUPES = [
      were missing (v8.74). */
   { nom: "Torréfaction et défauts", tags: ["fumé", "brûlé", "cendre", "caoutchouc", "métallique", "salé", "moisi", "papier", "rance", "phénolique"] },
 ];
-const DESCRIPTEURS = DESCRIPTEURS_GROUPES.flatMap(g => g.tags);
+const DESCRIPTORS = DESCRIPTOR_GROUPS.flatMap(g => g.tags);
 
 /* Diagnostics grouped by WHAT NEEDS FIXING, rather than as a flat list.
    Three different levers: the extraction setting (grind, time,
@@ -508,7 +508,7 @@ const DESCRIPTEURS = DESCRIPTEURS_GROUPES.flatMap(g => g.tags);
 
    NO existing value has been removed or renamed: the history already
    recorded stays readable as is. Adding breaks nothing, removing would. */
-const DIAGNOSTICS_GROUPES = [
+const DIAGNOSTIC_GROUPS = [
   { nom: "Rien à changer", diags: ["Équilibré"] },
   {
     nom: "Réglage d'extraction",
@@ -549,14 +549,14 @@ const DIAGNOSTICS_GROUPES = [
    duplicate of the two pills above, and he was right from the interface's
    point of view: the site asked him to conclude in its place. It now
    concludes on its own as soon as both families are checked, see
-   majCorrectionDiagnostic in app.js.
+   updateDiagnosticCorrection in app.js.
 
    The label stays in DIAGNOSTICS, without a pill: it exists in Chris's
    history (extraction of 11 August) and must stay translatable, filterable
    and displayable. Removing it would break his past data. */
-const DIAGNOSTIC_DERIVE = "Acide ET amer (extraction inégale)";
+const DERIVED_DIAGNOSTIC = "Acide ET amer (extraction inégale)";
 
-const DIAGNOSTICS = DIAGNOSTICS_GROUPES.flatMap(g => g.diags).concat([DIAGNOSTIC_DERIVE]);
+const DIAGNOSTICS = DIAGNOSTIC_GROUPS.flatMap(g => g.diags).concat([DERIVED_DIAGNOSTIC]);
 
 /* When to check each diagnostic. The correction alone was not enough: it
    says what to do, not which case you are in. Without this guide you check
@@ -569,10 +569,10 @@ const DIAGNOSTICS = DIAGNOSTICS_GROUPES.flatMap(g => g.diags).concat([DIAGNOSTIC
    préchauffée" checkbox would duplicate the recipe choice: the box is
    hidden and the stored value is derived from the chosen recipe, which keeps
    the `eau_prechauffee` column correct across the whole history. */
-const FAMILLES_PRECHAUFFAGE = ["brikka-classique"];
-const RECETTES_EAU_PRECHAUFFEE = ["brikka-classique-bouillante"];
+const PREHEAT_FAMILIES = ["brikka-classique"];
+const PREHEATED_WATER_RECIPES = ["brikka-classique-bouillante"];
 
-const DIAGNOSTIC_QUAND = {
+const DIAGNOSTIC_WHEN = {
   "Équilibré": "Rien ne dépasse, tu la referais à l'identique.",
   "Un peu acide": "Ça pique légèrement en attaque, sans être franchement citronné.",
   "Sous-extrait (acide)": "Acidité vive, et du creux derrière : la tasse semble inachevée.",
@@ -626,13 +626,13 @@ const DIAGNOSTIC_CORRECTIONS = {
    1 for an "un peu" diagnostic, 2 for a clear-cut one: the step is doubled.
    Diagnostics about the coffee itself and uneven extraction have no
    quantifiable lever: a setting changes nothing there, or not in one direction. */
-const DIAGNOSTIC_LEVIERS = {
-  "Un peu acide": { mouture: -1, chaleur: 1 },
-  "Sous-extrait (acide)": { mouture: -2, chaleur: 2 },
-  "Un peu amer": { mouture: 1, chaleur: -1 },
-  "Sur-extrait (amer)": { mouture: 2, chaleur: -2 },
-  "Un peu astringent": { mouture: 1 },
-  "Astringent": { mouture: 2 },
+const DIAGNOSTIC_LEVERS = {
+  "Un peu acide": { grind: -1, heat: 1 },
+  "Sous-extrait (acide)": { grind: -2, heat: 2 },
+  "Un peu amer": { grind: 1, heat: -1 },
+  "Sur-extrait (amer)": { grind: 2, heat: -2 },
+  "Un peu astringent": { grind: 1 },
+  "Astringent": { grind: 2 },
   "Un peu léger": { ratio: -1 },
   "Trop léger (aqueux)": { ratio: -2 },
   "Un peu concentré": { ratio: 1 },
@@ -642,7 +642,7 @@ const DIAGNOSTIC_LEVIERS = {
 // Caffeine estimate: mass percentage by species, and about
 // 90 percent of the caffeine passes into the cup. For a non-pure coffee,
 // only the share of real coffee counts.
-function cafeinePct(species) {
+function caffeinePct(species) {
   const e = (species || "").toLowerCase();
   const arabica = e.includes("arabica");
   const robusta = e.includes("robusta");
@@ -653,10 +653,10 @@ function cafeinePct(species) {
   return 1.8;
 }
 
-function cafeineMg(dose, species, realCoffeePct) {
+function caffeineMg(dose, species, realCoffeePct) {
   if (!dose) return 0;
   const pureShare = realCoffeePct === undefined || realCoffeePct === "" ? 100 : Number(realCoffeePct);
-  return Math.round(dose * (pureShare / 100) * cafeinePct(species) * 10 * 0.9);
+  return Math.round(dose * (pureShare / 100) * caffeinePct(species) * 10 * 0.9);
 }
 
 // Coffees that never go in the Switch, by exact or partial name.
@@ -683,17 +683,17 @@ function cafeineMg(dose, species, realCoffeePct) {
    marker falls exactly on the line, k is zero and we get the old model back.
    A missing marker, or one not before boiling, falls back to three quarters
    of the boiling time: 1:30 for 2:00, which is what Chris measured. */
-const EAU_AMBIANTE_C = 28;
-const BULLES_C = 88;
-const BULLES_PART_DEFAUT = 0.75;
+const ROOM_WATER_C = 28;
+const BUBBLES_C = 88;
+const DEFAULT_BUBBLES_SHARE = 0.75;
 
 /* The curve constant, "per second", for these two markers. We look for
    the dimensionless a = k·E: the share of the rise done at the marker,
    (1 − e^(−a·r)) / (1 − e^(−a)), grows with a, from r (the line, a = 0) towards 1. */
-function constanteChauffe(boilS, bubblesS) {
+function heatingConstant(boilS, bubblesS) {
   const e = Number(boilS), f = Number(bubblesS);
-  const r = f > 0 && f < e ? f / e : BULLES_PART_DEFAUT;
-  const target = (BULLES_C - EAU_AMBIANTE_C) / (100 - EAU_AMBIANTE_C);
+  const r = f > 0 && f < e ? f / e : DEFAULT_BUBBLES_SHARE;
+  const target = (BUBBLES_C - ROOM_WATER_C) / (100 - ROOM_WATER_C);
   const part = x => (Math.abs(x) < 1e-9 ? r : (1 - Math.exp(-x * r)) / (1 - Math.exp(-x)));
   let low = -40, high = 40;
   for (let i = 0; i < 60; i++) {
@@ -704,26 +704,26 @@ function constanteChauffe(boilS, bubblesS) {
 }
 
 // The share of the rise done at s seconds, from 0 (tap) to 1 (boiling).
-function partChauffe(s, e, k) {
+function heatingShare(s, e, k) {
   return Math.abs(k * e) < 1e-6 ? s / e : (1 - Math.exp(-k * s)) / (1 - Math.exp(-k * e));
 }
 
-function temperatureDepuisChauffe(seconds, boilS, bubblesS) {
+function temperatureFromHeating(seconds, boilS, bubblesS) {
   const s = Number(seconds), e = Number(boilS);
   if (seconds === "" || !Number.isFinite(s) || s < 0 || !(e > 0)) return "";
   if (s >= e) return 100;
-  const k = constanteChauffe(e, bubblesS);
-  return Math.round(EAU_AMBIANTE_C + (100 - EAU_AMBIANTE_C) * partChauffe(s, e, k));
+  const k = heatingConstant(e, bubblesS);
+  return Math.round(ROOM_WATER_C + (100 - ROOM_WATER_C) * heatingShare(s, e, k));
 }
 
 /* The inverse, rounded to 5 seconds: "for 92 °C, leave the kettle 1:40". */
-function chauffePourTemperature(tempC, boilS, bubblesS) {
+function heatTimeForTemperature(tempC, boilS, bubblesS) {
   const t = Number(tempC), e = Number(boilS);
   if (tempC === "" || !Number.isFinite(t) || !(e > 0)) return "";
   if (t >= 100) return Math.round(e);
-  if (t <= EAU_AMBIANTE_C) return 0;
-  const k = constanteChauffe(e, bubblesS);
-  const part = (t - EAU_AMBIANTE_C) / (100 - EAU_AMBIANTE_C);
+  if (t <= ROOM_WATER_C) return 0;
+  const k = heatingConstant(e, bubblesS);
+  const part = (t - ROOM_WATER_C) / (100 - ROOM_WATER_C);
   const s = Math.abs(k * e) < 1e-6 ? part * e : -Math.log(1 - part * (1 - Math.exp(-k * e))) / k;
   return Math.round(s / 5) * 5;
 }
@@ -734,42 +734,42 @@ function chauffePourTemperature(tempC, boilS, bubblesS) {
    starting recipe (by id: its name and settings come from the recipe itself),
    the advised temperature, and another recipe to try. The Guide draws it
    with, in each cell, your own average over the coffees of that profile. */
-const MATRICE_CAFE_RECETTE = {
-  lignes: [
+const COFFEE_RECIPE_MATRIX = {
+  rows: [
     { id: "lave", nom: "Lavé" },
     { id: "honey", nom: "Honey" },
     { id: "natural", nom: "Natural" },
     { id: "anaerobic", nom: "Anaerobic, fermenté" },
     { id: "robusta", nom: "Robusta, rang bơ" },
   ],
-  colonnes: [
+  columns: [
     { id: "clair", nom: "Clair" },
     { id: "medium", nom: "Medium" },
     { id: "fonce", nom: "Foncé" },
   ],
-  cases: {
-    "lave|clair": { recette: "one-and-done", temp: "93 à 96 °C", autre: "costaud-bloom" },
-    "lave|medium": { recette: "chronicler", temp: "92 °C", autre: "hoffmann-1cup" },
-    "lave|fonce": { recette: "costaud-immersion", temp: "88 à 90 °C", autre: "brikka-classique" },
-    "honey|clair": { recette: "sweet", temp: "92 °C", autre: "chronicler" },
-    "honey|medium": { recette: "sweet", temp: "92 °C", autre: "sherrycipe" },
-    "honey|fonce": { recette: "brikka-classique", temp: "", autre: "costaud-immersion" },
-    "natural|clair": { recette: "neo-brew", temp: "95 à 96 °C", autre: "chronicler" },
-    "natural|medium": { recette: "chronicler", temp: "90 à 92 °C", autre: "devil-switch" },
-    "natural|fonce": { recette: "brikka-classique", temp: "", autre: "devil-switch" },
-    "anaerobic|clair": { recette: "neo-brew", temp: "93 °C", autre: "chronicler" },
-    "anaerobic|medium": { recette: "chronicler", temp: "88 à 90 °C", autre: "devil-switch" },
-    "anaerobic|fonce": { recette: "brikka-classique", temp: "", autre: "" },
-    "robusta|clair": { recette: "sherrycipe", temp: "92 °C", autre: "devil-switch" },
-    "robusta|medium": { recette: "brikka-classique", temp: "", autre: "brikka-flatwhite" },
-    "robusta|fonce": { recette: "brikka-classique", temp: "", autre: "brikka-flatwhite" },
+  cells: {
+    "lave|clair": { recette: "one-and-done", temp: "93 à 96 °C", alternative: "costaud-bloom" },
+    "lave|medium": { recette: "chronicler", temp: "92 °C", alternative: "hoffmann-1cup" },
+    "lave|fonce": { recette: "costaud-immersion", temp: "88 à 90 °C", alternative: "brikka-classique" },
+    "honey|clair": { recette: "sweet", temp: "92 °C", alternative: "chronicler" },
+    "honey|medium": { recette: "sweet", temp: "92 °C", alternative: "sherrycipe" },
+    "honey|fonce": { recette: "brikka-classique", temp: "", alternative: "costaud-immersion" },
+    "natural|clair": { recette: "neo-brew", temp: "95 à 96 °C", alternative: "chronicler" },
+    "natural|medium": { recette: "chronicler", temp: "90 à 92 °C", alternative: "devil-switch" },
+    "natural|fonce": { recette: "brikka-classique", temp: "", alternative: "devil-switch" },
+    "anaerobic|clair": { recette: "neo-brew", temp: "93 °C", alternative: "chronicler" },
+    "anaerobic|medium": { recette: "chronicler", temp: "88 à 90 °C", alternative: "devil-switch" },
+    "anaerobic|fonce": { recette: "brikka-classique", temp: "", alternative: "" },
+    "robusta|clair": { recette: "sherrycipe", temp: "92 °C", alternative: "devil-switch" },
+    "robusta|medium": { recette: "brikka-classique", temp: "", alternative: "brikka-flatwhite" },
+    "robusta|fonce": { recette: "brikka-classique", temp: "", alternative: "brikka-flatwhite" },
   },
 };
 
 /* A coffee's profile for this table, read from its sheet: the species and
    the process give the row, the roast level the column. An empty or unknown
    field gives null: the coffee counts in no cell. */
-function profilCafe(coffee) {
+function coffeeProfile(coffee) {
   const p = String((coffee && coffee.procede) || "").toLowerCase();
   const e = String((coffee && coffee.espece) || "").toLowerCase();
   const t = String((coffee && coffee.torrefaction) || "").toLowerCase();
@@ -781,13 +781,13 @@ function profilCafe(coffee) {
   const column = /fonc|dark|đậm/.test(t) ? "fonce"
     : /medium|vừa/.test(t) ? "medium"
     : /clair|light|sáng/.test(t) ? "clair" : null;
-  return { ligne: row, colonne: column };
+  return { row: row, column: column };
 }
 
 /* Coffees rated for the Brikka (body, chocolate), which the Switch's paper
    does not do justice to. These are NOT rang bơ (v8.74): they have their own
    message, w_profil_brikka, instead of the butter one. */
-const JAMAIS_SWITCH_NOMS = [
+const NEVER_SWITCH_NAMES = [
   "Fine Robusta Honey",
   "Midnight Chocolate",
   "Proud of Việt Nam",
@@ -803,7 +803,7 @@ const JAMAIS_SWITCH_NOMS = [
    stale figures.
 
    We ONLY touch numbers followed by " g" and strictly greater than
-   SEUIL_VERSEMENT_G. Below that they are coffee doses or milk quantities,
+   POUR_THRESHOLD_G. Below that they are coffee doses or milk quantities,
    never a water pour: the smallest pour in the original recipes is a 45 g
    bloom, the largest dose is 18 g. Without this safeguard, a recipe that
    mentioned "14 g de café" in its text would get its dose multiplied,
@@ -811,13 +811,13 @@ const JAMAIS_SWITCH_NOMS = [
 
    PURE function with no DOM, like reglages.js, so it can be tested without a
    browser. See tools/data.test.mjs. */
-const SEUIL_VERSEMENT_G = 30;
+const POUR_THRESHOLD_G = 30;
 
-function echelleVersements(text, factor) {
+function scalePours(text, factor) {
   if (!(factor > 0) || factor === 1) return String(text);
   return String(text).replace(/(\d+(?:[.,]\d+)?)(\s*g\b)/g, (whole, num, suffix) => {
     const v = Number(String(num).replace(",", "."));
-    if (!(v > SEUIL_VERSEMENT_G)) return whole;
+    if (!(v > POUR_THRESHOLD_G)) return whole;
     return Math.round(v * factor) + suffix;
   });
 }
@@ -830,7 +830,7 @@ function echelleVersements(text, factor) {
    not for ruling on what he is allowed to try. A combination never tried is
    not a bad combination, and refusing the entry prevented precisely the
    production of the data that would settle it. Do not reintroduce it. */
-function avertissementsCombinaison(coffee, method, recipeName, recipes) {
+function combinationWarnings(coffee, method, recipeName, recipes) {
   const msgs = [];
   if (!coffee) return { msgs };
   const list = recipes || [];
@@ -842,7 +842,7 @@ function avertissementsCombinaison(coffee, method, recipeName, recipes) {
       msgs.push(I18N.t("w_aromatise", { pct }));
     } else if (coffeeProcess.includes("rang bơ") || coffeeProcess.includes("rang bo") || coffeeProcess.includes("tẩm bơ")) {
       msgs.push(I18N.t("w_rangbo"));
-    } else if (JAMAIS_SWITCH_NOMS.some(n => (coffee.nom || "").toLowerCase().includes(n.toLowerCase()))) {
+    } else if (NEVER_SWITCH_NAMES.some(n => (coffee.nom || "").toLowerCase().includes(n.toLowerCase()))) {
       msgs.push(I18N.t("w_profil_brikka"));
     } else if (coffeeProcess.includes("wet hulled") || coffeeProcess.includes("giling basah")) {
       msgs.push(I18N.t("w_wethulled"));

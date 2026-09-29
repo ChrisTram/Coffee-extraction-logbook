@@ -4,7 +4,7 @@
  * the application state: data.js decides when to sync and adopts the
  * result.
  *
- * Under file:// there is no server: disponible() returns false and the whole
+ * Under file:// there is no server: isAvailable() returns false and the whole
  * rest of the site works exactly as before, each device with its own data.
  * That is also the behaviour when the D1 database is not bound.
  *
@@ -22,11 +22,11 @@ const SYNC = (() => {
 
   // No server under file://: no point trying, and the fetch would fail
   // anyway on a null origin.
-  function disponible() {
+  function isAvailable() {
     return typeof location !== "undefined" && String(location.protocol).startsWith("http");
   }
 
-  function tombesVides() {
+  function emptyTombstones() {
     return Object.fromEntries(TABLES.map(name => [name, {}]));
   }
 
@@ -38,13 +38,13 @@ const SYNC = (() => {
      tombstone deletes. A test compares the two merges. No purge here: the
      server is the one that purges. */
   const stamp = v => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : 0; };
-  function fusionnerLigne(a, b) {
+  function mergeRow(a, b) {
     const ja = JSON.stringify(a), jb = JSON.stringify(b);
     if (ja === jb) return a;
     const [smaller, larger] = ja < jb ? [a, b] : [b, a];
     return { ...smaller, ...larger };
   }
-  function fusionner(left, right) {
+  function mergeStates(left, right) {
     const tables = {}, tombs = {};
     for (const name of TABLES) {
       const marks = { ...((left.tombes || {})[name] || {}) };
@@ -58,7 +58,7 @@ const SYNC = (() => {
         if (!ex) { byId.set(row.id, row); continue; }
         const tl = stamp(row.maj_le), te = stamp(ex.maj_le);
         if (tl > te) byId.set(row.id, row);
-        else if (tl === te) byId.set(row.id, fusionnerLigne(ex, row));
+        else if (tl === te) byId.set(row.id, mergeRow(ex, row));
       }
       tables[name] = [...byId.values()].filter(l => stamp(marks[l.id]) <= stamp(l.maj_le));
       tombs[name] = marks;
@@ -69,7 +69,7 @@ const SYNC = (() => {
   /* Exchange in a single round trip: we send the local state, the server
      merges and returns the result, which becomes the truth on both sides.
      Errors are typed so the caller knows what to show. */
-  async function echanger(payload) {
+  async function exchange(payload) {
     const abort = new AbortController();
     const timer = setTimeout(() => abort.abort(), TIMEOUT_MS);
     let response;
@@ -112,5 +112,5 @@ const SYNC = (() => {
     return received;
   }
 
-  return { disponible, echanger, fusionner, tombesVides, TABLES };
+  return { isAvailable, exchange, mergeStates, emptyTombstones, TABLES };
 })();

@@ -11,7 +11,7 @@
  * That is exactly what happened on August 14: `$$("#kpis ...")` had become
  * `$("#kpis ...")` because in a JavaScript replacement string `$$`
  * means "a literal dollar". `$` returns ONE element, which has no
- * `forEach`, so `rendreTableau()` threw a TypeError and the dashboard
+ * `forEach`, so `renderDashboard()` threw a TypeError and the dashboard
  * stayed empty. The file parsed perfectly, all the other tests
  * passed.
  *
@@ -19,7 +19,7 @@
  * useful one: does the application start and render each of its screens without
  * throwing.
  *
- * CRUCIAL DETAIL. `DATA.notifier()` wraps each subscriber in a try/catch
+ * CRUCIAL DETAIL. `DATA.notify()` wraps each subscriber in a try/catch
  * that only does a `console.error`. A render exception is therefore SWALLOWED:
  * the screen stays empty and nothing bubbles up. That is why this test treats
  * any `console.error` as a failure, and not only the exceptions that
@@ -36,7 +36,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 let failures = 0;
 
 /* Last resort net. A render exception can escape through three different
-   paths: the try/catch of notifier(), a rejected promise, or a direct
+   paths: the try/catch of notify(), a rejected promise, or a direct
    throw. We catch them ALL, otherwise the test prints the error without failing, which
    is the worst of both worlds. */
 process.on("unhandledRejection", e => {
@@ -279,7 +279,7 @@ const run = new Function(
   /* UI is returned to the test since the interface was split into seven files:
      it is the surface the screens share, hence the only entry point
      to trigger a screen action without simulating a click. */
-  source + "\nreturn { DATA, I18N, CHARTS, REGLAGES, GRIND, UI };"
+  source + "\nreturn { DATA, I18N, CHARTS, TUNING, GRIND, UI };"
 );
 
 const api = run(document, window, localStorage, location, history, navigator,
@@ -292,13 +292,13 @@ const api = run(document, window, localStorage, location, history, navigator,
    loads the SAME thing as the browser, checked right after. */
 check("all the site scripts load", SCRIPTS.length >= 9, String(SCRIPTS.length));
 check("all the globals are exposed",
-  ["DATA", "I18N", "CHARTS", "REGLAGES", "GRIND"].every(k => api[k]),
-  ["DATA", "I18N", "CHARTS", "REGLAGES", "GRIND"].filter(k => !api[k]).join(", "));
+  ["DATA", "I18N", "CHARTS", "TUNING", "GRIND"].every(k => api[k]),
+  ["DATA", "I18N", "CHARTS", "TUNING", "GRIND"].filter(k => !api[k]).join(", "));
 check("app.js does register DOMContentLoaded", typeof document._handlers.DOMContentLoaded === "function");
 
 await document._handlers.DOMContentLoaded();
 await new Promise(r => setTimeout(r, 300));
-check("demarrer() runs to completion without exception", true);
+check("startApp() runs to completion without exception", true);
 
 // Realistic data, including an extraction with no flow time, a common case.
 api.DATA.state.cafes = [
@@ -329,9 +329,9 @@ api.DATA.state.extractions.push({
   note_sur_10: "", diagnostic: "", descripteurs: "", commentaire: "", puissance_feu: 2,
 });
 
-api.DATA.notifier();
+api.DATA.notify();
 await new Promise(r => setTimeout(r, 200));
-check("notifier() with data does not throw", true);
+check("notify() with data does not throw", true);
 check("an unrated extraction does not skew the averages",
   api.DATA.state.extractions.filter(e => e.note_sur_10 !== "").length === 2,
   String(api.DATA.state.extractions.filter(e => e.note_sur_10 !== "").length));
@@ -361,7 +361,7 @@ check("dashboard with data, direct path", dashboardThrown === null, dashboardThr
 
 // The language toggle replays everything generated: another path where an
 // exception would go unnoticed.
-await api.I18N.basculer();
+await api.I18N.toggleLanguage();
 await new Promise(r => setTimeout(r, 150));
 check("EN toggle without exception", api.I18N.lang() === "en", api.I18N.lang());
 /* The bundle must really have been merged, not just the language changed: a
@@ -404,7 +404,7 @@ check("tooltips get translated",
 check("screen reader labels too",
   ARIAS[0].attrValue === "Main navigation", ARIAS[0].attrValue);
 
-await api.I18N.basculer();
+await api.I18N.toggleLanguage();
 await new Promise(r => setTimeout(r, 150));
 check("back to FR without exception", api.I18N.lang() === "fr", api.I18N.lang());
 check("and the placeholders go back to French",
@@ -419,11 +419,11 @@ check("and the static text too, in its original version",
 
 /* The blank form must carry the RECIPE defaults.
    Broke twice: first because the form ignored the recipe, then
-   because reinitialiserSaisie reset everything WITHOUT reapplying it. The
+   because resetEntry reset everything WITHOUT reapplying it. The
    water field stayed empty while the Brikka asks for 150 g, and the
    Parametres screen was useless in the most common case.
    This test goes through the real startup, with no test hook in app.js:
-   demarrer() ends with reinitialiserSaisie(), which is exactly the broken path. */
+   startApp() ends with resetEntry(), which is exactly the broken path. */
 const brikka = api.DATA.state.recettes.find(r => r.methode === "Brikka");
 check("a Brikka recipe exists after startup", !!brikka);
 if (brikka) {
@@ -461,14 +461,14 @@ check("the temperature field no longer has a misleading placeholder", !tempField
     api.DATA.state.recettes.every(r => r.dial === "1.5.0" || r.id === "neo-brew"),
     [...new Set(api.DATA.state.recettes.map(r => r.dial))].join(", "));
   check("1.5.0 stays valid on both machines",
-    api.GRIND.verifierPlage("Brikka", "1.5.0").ok && api.GRIND.verifierPlage("Switch", "1.5.0").ok);
+    api.GRIND.checkRange("Brikka", "1.5.0").ok && api.GRIND.checkRange("Switch", "1.5.0").ok);
 }
 
 /* THE QUICK PANEL REALLY SAVES.
 
-   enregistrerRapide() read `cafeQ`, a name that existed nowhere. In strict
+   saveQuick() read `cafeQ`, a name that existed nowhere. In strict
    mode that read throws a ReferenceError BEFORE the call to
-   ajouterExtraction: the quick panel button did nothing, and the cup
+   addExtraction: the quick panel button did nothing, and the cup
    went up in smoke. Nobody had seen it because nothing can flag an
    unknown free name as long as 3,400 lines share a single scope.
 
@@ -484,7 +484,7 @@ check("the temperature field no longer has a misleading placeholder", !tempField
     document.querySelector("#q-note").value = "";
     const before = api.DATA.state.extractions.length;
     let raised = null;
-    try { await api.UI.enregistrerRapide(); } catch (e) { raised = e; }
+    try { await api.UI.saveQuick(); } catch (e) { raised = e; }
     check("quick entry does not blow up", !raised, raised && raised.message);
     check("and the cup is actually saved",
       api.DATA.state.extractions.length === before + 1,
@@ -536,13 +536,13 @@ check("the temperature field no longer has a misleading placeholder", !tempField
     querySelectorAll: () => [],
   };
 
-  api.CHARTS.diagramme(probe, "1.5.0", "1.5.0");
+  api.CHARTS.diagram(probe, "1.5.0", "1.5.0");
   check("the ruler is built on the first call", rebuilds === 1, String(rebuilds));
   const x1 = cursorLine.attrs.x1;
   check("and the cursor is placed", x1 !== undefined && cursorLine.attrs.display === undefined,
     JSON.stringify(cursorLine.attrs));
 
-  api.CHARTS.diagramme(probe, "1.6.0", "1.5.0");
+  api.CHARTS.diagram(probe, "1.6.0", "1.5.0");
   check("moving the cursor redraws nothing", rebuilds === 1, String(rebuilds));
   check("but the cursor did move", cursorLine.attrs.x1 !== x1,
     x1 + " then " + cursorLine.attrs.x1);
@@ -550,10 +550,10 @@ check("the temperature field no longer has a misleading placeholder", !tempField
 
   /* The skeleton carries the default setting and the translated labels: if either
      changes, it MUST be rebuilt, otherwise the ruler shows the old one. */
-  api.CHARTS.diagramme(probe, "1.6.0", "2.0.0");
+  api.CHARTS.diagram(probe, "1.6.0", "2.0.0");
   check("changing the default setting redraws it", rebuilds === 2, String(rebuilds));
 
-  api.CHARTS.diagramme(probe, "", "2.0.0");
+  api.CHARTS.diagram(probe, "", "2.0.0");
   check("with no dial, the cursor hides instead of disappearing",
     cursorLine.attrs.display === "none" && rebuilds === 2,
     JSON.stringify(cursorLine.attrs) + " after " + rebuilds + " builds");
@@ -579,29 +579,29 @@ check("the temperature field no longer has a misleading placeholder", !tempField
   const ext = api.DATA.state.extractions[0];
   check("an extraction exists for the edit test", !!ext);
   if (ext) {
-    api.UI.chargerExtractionDansSaisie(ext);
+    api.UI.loadExtractionIntoEntry(ext);
     check("opening an extraction from the history does enter edit mode",
-      api.UI.saisie.editId === ext.id, JSON.stringify(api.UI.saisie.editId));
+      api.UI.entry.editId === ext.id, JSON.stringify(api.UI.entry.editId));
 
     // Chris's gesture: he goes elsewhere, then comes back through the Entry tab.
-    api.UI.activerEcran("historique");
-    api.UI.activerEcran("saisie");
+    api.UI.activateScreen("historique");
+    api.UI.activateScreen("saisie");
     check("coming back through the Entry tab drops the edit",
-      api.UI.saisie.editId === null, JSON.stringify(api.UI.saisie.editId));
+      api.UI.entry.editId === null, JSON.stringify(api.UI.entry.editId));
 
     /* No detour either: reopening the screen you are already on must count. */
-    api.UI.chargerExtractionDansSaisie(ext);
-    api.UI.activerEcran("saisie");
+    api.UI.loadExtractionIntoEntry(ext);
+    api.UI.activateScreen("saisie");
     check("and without even changing screen in between",
-      api.UI.saisie.editId === null, JSON.stringify(api.UI.saisie.editId));
+      api.UI.entry.editId === null, JSON.stringify(api.UI.entry.editId));
 
-    /* The LEGITIMATE opening, for its part, must survive: chargerExtractionDansSaisie
+    /* The LEGITIMATE opening, for its part, must survive: loadExtractionIntoEntry
        switches to the Entry screen, and that particular switch must certainly not
        cancel the edit just requested. */
-    api.UI.chargerExtractionDansSaisie(ext);
+    api.UI.loadExtractionIntoEntry(ext);
     check("but opening an edit does not cancel itself",
-      api.UI.saisie.editId === ext.id, JSON.stringify(api.UI.saisie.editId));
-    api.UI.reinitialiserSaisie();
+      api.UI.entry.editId === ext.id, JSON.stringify(api.UI.entry.editId));
+    api.UI.resetEntry();
   }
 }
 
@@ -616,20 +616,20 @@ check("the temperature field no longer has a misleading placeholder", !tempField
    prefill would switch the machine on every new entry, which
    goes far beyond "fill in this field". */
 {
-  api.UI.choisirMethode("Brikka");
-  api.UI.reinitialiserSaisie();
+  api.UI.chooseMethod("Brikka");
+  api.UI.resetEntry();
   const active = api.DATA.state.cafes.filter(c => c.actif !== 0);
   const coffeeField = document.querySelector("#f-cafe");
   check("the blank form offers a coffee",
     active.length > 0 && coffeeField.value === active[0].id,
     JSON.stringify(coffeeField.value) + " for " + JSON.stringify(active[0] && active[0].id));
   check("and the machine does not switch on its own",
-    api.UI.saisie.methode === "Brikka", api.UI.saisie.methode);
+    api.UI.entry.methode === "Brikka", api.UI.entry.methode);
 
   /* The quick panel REFUSES to save without a coffee: opening it on an empty
      field guaranteed a round trip. */
   document.querySelector("#q-cafe").value = "";
-  api.UI.majPanneauRapide();
+  api.UI.updateQuickPanel();
   check("the quick panel too",
     document.querySelector("#q-cafe").value === active[0].id,
     JSON.stringify(document.querySelector("#q-cafe").value));
@@ -637,28 +637,28 @@ check("the temperature field no longer has a misleading placeholder", !tempField
 
 /* THE DATE OF A NEW ENTRY IS THE CURRENT TIME.
 
-   It was only set by reinitialiserSaisie(), which only runs at startup
+   It was only set by resetEntry(), which only runs at startup
    and after a save. On a phone where the page stays open all
    day, landing on Entry at 4 pm showed the time of the previous cup. */
 {
   const field = document.querySelector("#f-date");
   field.value = "2020-01-01T08:00";
-  api.UI.activerEcran("historique");
-  api.UI.activerEcran("saisie");
+  api.UI.activateScreen("historique");
+  api.UI.activateScreen("saisie");
   check("landing on Entry resets the date to the current time",
     field.value.slice(0, 4) !== "2020", field.value);
 
   /* But a date SET BY HAND belongs to him: Chris sometimes logs a cup
      from last night, and taking it back from him would be worse than the bug being fixed. */
   field.value = "2020-01-01T08:00";
-  api.UI.marquerDateTouchee();
-  api.UI.activerEcran("historique");
-  api.UI.activerEcran("saisie");
+  api.UI.markDateTouched();
+  api.UI.activateScreen("historique");
+  api.UI.activateScreen("saisie");
   check("but a date chosen by hand is respected",
     field.value === "2020-01-01T08:00", field.value);
 
   // Resetting the form hands the date back to the system.
-  api.UI.reinitialiserSaisie();
+  api.UI.resetEntry();
   check("and the reset hands it back to the system",
     field.value.slice(0, 4) !== "2020", field.value);
 }
@@ -682,7 +682,7 @@ check("the temperature field no longer has a misleading placeholder", !tempField
 
   // These checks read the TABLE: the by date view (L3, v8.93, by bag by default).
   localStorage.setItem("historique-vue", "date");
-  api.UI.rendreHistorique();
+  api.UI.renderHistory();
   /* The first body row is a day SUBHEADING since the history
      is grouped: a <td> with colspan, not an extraction. We look for the first
      data row, which is what this check always meant. */
@@ -732,22 +732,22 @@ check("the temperature field no longer has a misleading placeholder", !tempField
   const target = api.DATA.state.extractions[0];
   target.ratee = 1;
 
-  check("a flagged cup is recognised as failed", api.UI.estRatee(target));
-  check("and the others are not", !api.UI.estRatee(api.DATA.state.extractions[1]));
+  check("a flagged cup is recognised as failed", api.UI.isFailed(target));
+  check("and the others are not", !api.UI.isFailed(api.DATA.state.extractions[1]));
 
-  api.UI.basculerRatees(false);
+  api.UI.toggleFailed(false);
   check("the analyses leave it out by default",
-    api.UI.extAnalysables().length === total - 1,
-    api.UI.extAnalysables().length + " of " + total);
+    api.UI.analyzableExts().length === total - 1,
+    api.UI.analyzableExts().length + " of " + total);
   check("but the counts keep it, the coffee was indeed used",
-    api.UI.extAvecCalculs().length === total, String(api.UI.extAvecCalculs().length));
+    api.UI.extsWithCalcs().length === total, String(api.UI.extsWithCalcs().length));
 
   /* "I messed up" and "this setting does not work" cannot always be told apart from
      the outside: Chris must be able to put them back in with one click. */
-  api.UI.basculerRatees(true);
-  check("and he can put them back in", api.UI.extAnalysables().length === total,
-    String(api.UI.extAnalysables().length));
-  api.UI.basculerRatees(false);
+  api.UI.toggleFailed(true);
+  check("and he can put them back in", api.UI.analyzableExts().length === total,
+    String(api.UI.analyzableExts().length));
+  api.UI.toggleFailed(false);
 
   /* A FAILED CUP SHOWS, on both surfaces that display it.
 
@@ -756,7 +756,7 @@ check("the temperature field no longer has a misleading placeholder", !tempField
      A test written on a class name checks the class name. This one
      checks the RULE: the word Chris reads is there, and the row carries a distinct
      state, whatever name either of them is given. */
-  api.UI.rendreTableau();
+  api.UI.renderDashboard();
   const word = api.I18N.t("rt_badge");
   const table = document.querySelector("#dernieres-liste").innerHTML;
   check("a failed cup is named in the last five", table.includes(word), word);
@@ -769,11 +769,11 @@ check("the temperature field no longer has a misleading placeholder", !tempField
     .sort((x, y) => y.date_heure.localeCompare(x.date_heure))[0];
   const before = latest.ratee;
   latest.ratee = 1;
-  api.UI.rendreTableau();
+  api.UI.renderDashboard();
   check("the latest cup card says so too",
     document.querySelector("#carte-derniere").innerHTML.includes(word));
   latest.ratee = before;
-  api.UI.rendreTableau();
+  api.UI.renderDashboard();
   check("and no longer says so when the cup is not failed",
     !document.querySelector("#carte-derniere").innerHTML.includes(word));
 
@@ -782,13 +782,13 @@ check("the temperature field no longer has a misleading placeholder", !tempField
      Chris wants to find it. */
   document.querySelector("#h-ratee").value = "";
   check("the history keeps them by default",
-    api.UI.filtrerHistorique().length === total, String(api.UI.filtrerHistorique().length));
+    api.UI.filterHistory().length === total, String(api.UI.filterHistory().length));
   document.querySelector("#h-ratee").value = "ratee";
   check("the filter isolates the failed ones",
-    api.UI.filtrerHistorique().length === 1, String(api.UI.filtrerHistorique().length));
+    api.UI.filterHistory().length === 1, String(api.UI.filterHistory().length));
   document.querySelector("#h-ratee").value = "ok";
   check("and can also set them aside",
-    api.UI.filtrerHistorique().length === total - 1, String(api.UI.filtrerHistorique().length));
+    api.UI.filterHistory().length === total - 1, String(api.UI.filterHistory().length));
   document.querySelector("#h-ratee").value = "";
 
   /* THE TOGGLE IN THE HISTORY ROW. The first version only offered the
@@ -796,10 +796,10 @@ check("the temperature field no longer has a misleading placeholder", !tempField
      opening it for editing, ticking, saving. Four gestures for a
      binary judgement, and on a past cup that is the usual case, since you
      know you messed up AFTER drinking. */
-  api.UI.rendreHistorique();
+  api.UI.renderHistory();
   {
     const h = document.querySelector("#h-corps").innerHTML;
-    const rowCount = api.UI.filtrerHistorique().length;
+    const rowCount = api.UI.filterHistory().length;
     check("each history row carries the toggle",
       (h.match(/data-action="ratee"/g) || []).length === rowCount,
       (h.match(/data-action="ratee"/g) || []).length + " for " + rowCount + " rows");
@@ -831,7 +831,7 @@ check("the temperature field no longer has a misleading placeholder", !tempField
   const slider = document.querySelector("#f-dose-curseur");
   field.value = "18";
   slider.value = "9";
-  api.UI.majCurseurs();
+  api.UI.updateSliders();
   check("the slider repositions on the field value",
     String(slider.value) === "18", slider.value);
 
@@ -841,16 +841,16 @@ check("the temperature field no longer has a misleading placeholder", !tempField
   const grindSlider = document.querySelector("#f-mouture-curseur");
   grindField.value = "1.5.0";
   grindSlider.value = "0";
-  api.UI.majCurseurs();
+  api.UI.updateSliders();
   check("the grind one converts the dial into clicks",
-    String(grindSlider.value) === String(api.GRIND.parseDial("1.5.0").crans),
-    grindSlider.value + " for " + api.GRIND.parseDial("1.5.0").crans);
+    String(grindSlider.value) === String(api.GRIND.parseDial("1.5.0").clicks),
+    grindSlider.value + " for " + api.GRIND.parseDial("1.5.0").clicks);
 
   /* An empty field leaves the slider where it is. Bringing it back to the minimum
      would show a 5 g dose that nobody chose. */
   field.value = "";
   slider.value = "18";
-  api.UI.majCurseurs();
+  api.UI.updateSliders();
   check("an empty field does not move its slider",
     String(slider.value) === "18", slider.value);
 }
@@ -879,7 +879,7 @@ check("the temperature field no longer has a misleading placeholder", !tempField
 /* MILK, IN NUMBERS, FOR BOTH DRINKS.
 
    The calculation existed (cup capacity minus coffee volume) but never
-   gave a number on a Brikka: volumeEstime() returns 0 there ON PURPOSE,
+   gave a number on a Brikka: estimatedVolume() returns 0 there ON PURPOSE,
    the old formula announced 139 ml where Chris measures 90 to 115. With no
    measured volume, it therefore refused to answer, and the milk recipes are
    precisely Brikka recipes.
@@ -901,7 +901,7 @@ check("the temperature field no longer has a misleading placeholder", !tempField
     document.querySelector("#f-recette").value = milkRecipe.nom;
     document.querySelector("#f-tasse").value = cup.nom;
     document.querySelector("#f-volume").value = "";
-    api.UI.majLait();
+    api.UI.updateMilk();
 
     /* 150 of cup minus 90 of coffee = 60 ml of SPACE to fill. The two
        numbers shown are COLD milk to measure, counted on that same
@@ -927,7 +927,7 @@ check("the temperature field no longer has a misleading placeholder", !tempField
     /* A MEASURED volume always beats the declared yield:
        150 - 110 = 40 of space, so 40/1.1 = 36 of cold milk. */
     document.querySelector("#f-volume").value = "110";
-    api.UI.majLait();
+    api.UI.updateMilk();
     check("a measurement beats the recipe figure",
       String(document.querySelector("#f-lait").value) === "36",
       document.querySelector("#f-lait").value);
@@ -954,10 +954,10 @@ check("the temperature field no longer has a misleading placeholder", !tempField
    promise: same number of buttons, same actions, in the row and the card. */
 {
   const ext = api.DATA.state.extractions[0];
-  const withCalcs = api.UI.extAvecCalculs().find(x => x.id === ext.id) || ext;
+  const withCalcs = api.UI.extsWithCalcs().find(x => x.id === ext.id) || ext;
 
-  const row = api.UI.ligneHistorique(withCalcs);
-  const card = api.UI.carteExtraction(withCalcs);
+  const row = api.UI.historyRow(withCalcs);
+  const card = api.UI.extractionCard(withCalcs);
   const actions = html => [...html.matchAll(/data-action="(\w+)"/g)].map(m => m[1]).sort();
 
   const rowActions = actions(row), cardActions = actions(card);
@@ -978,47 +978,47 @@ check("the temperature field no longer has a misleading placeholder", !tempField
     card.includes('data-id="' + ext.id + '"'));
 
   /* The detail is the SAME content in the hover sheet and in the card. */
-  const detail = api.UI.detailContenu(withCalcs);
+  const detail = api.UI.detailContent(withCalcs);
   check("the detail renders without its wrapper, for both",
     typeof detail === "string" && !detail.includes("<tr"));
   // The sheet does not repeat the comment, written in full under the row.
   check("the hover sheet does not repeat the comment",
-    !api.UI.detailContenu({ ...withCalcs, commentaire: "un mot" }, true).includes("detail-commentaire"));
+    !api.UI.detailContent({ ...withCalcs, commentaire: "un mot" }, true).includes("detail-commentaire"));
 }
 
 /* REDOING A CUP TAKES ITS SETTINGS, NOT ITS RESULT (v8.41).
-   The icon shortcut and the Duplicate button go through refaireTasse:
+   The icon shortcut and the Duplicate button go through redoCup:
    the dose and grinder setting come back, the rating and comment do not. */
 {
   const exts = api.DATA.state.extractions;
   const last = exts.reduce((a, e) => (!a || String(e.date_heure) > String(a.date_heure) ? e : a), null);
   const rated = { ...last, note_sur_10: 8, commentaire: "tres bonne", descripteurs: "caramel" };
-  api.UI.refaireTasse(rated);
+  api.UI.redoCup(rated);
   check("redoing takes the dose", String(document.querySelector("#f-dose").value) === String(last.dose_g),
     document.querySelector("#f-dose").value);
-  check("but not the rating", api.UI.noteVide(document.querySelector("#f-note")));
+  check("but not the rating", api.UI.isRatingEmpty(document.querySelector("#f-note")));
   check("nor the comment", document.querySelector("#f-commentaire").value === "");
-  check("and the shortcut finds the latest cup", api.UI.refaireDerniere() === true);
-  api.UI.reinitialiserSaisie();
+  check("and the shortcut finds the latest cup", api.UI.redoLast() === true);
+  api.UI.resetEntry();
 }
 
 /* THE THREE INSIGHTS OF v8.42 speak when the gap is clear, stay silent
    otherwise, and only look at their own machine. */
 {
-  const cup = (methode, note, fields) => ({ methode, note_sur_10: note, temperature_c: "", agitation_nb: "",
+  const cup = (method, rating, fields) => ({ methode: method, note_sur_10: rating, temperature_c: "", agitation_nb: "",
     eau_prechauffee: "", ...fields });
   const hot = [7, 7.5, 8].map(n => cup("Switch", n, { temperature_c: 95 }));
   const lukewarm = [5, 5.5, 6].map(n => cup("Switch", n, { temperature_c: 89 }));
   const t = api.UI.insightTemperature([...hot, ...lukewarm]);
-  check("the Switch temperature speaks on a clear gap", t && t.haut.note === 7.5 && t.bas.n === 3,
+  check("the Switch temperature speaks on a clear gap", t && t.high.note === 7.5 && t.low.n === 3,
     JSON.stringify(t));
   check("and stays silent on three cups on one side only", api.UI.insightTemperature(hot) === null);
-  const brikkas = [7, 7, 8].map(n => cup("Brikka", n, { eau_prechauffee: 1 }))
+  const brikkaCups = [7, 7, 8].map(n => cup("Brikka", n, { eau_prechauffee: 1 }))
     .concat([6, 6, 5.5].map(n => cup("Brikka", n)));
-  const p = api.UI.insightPrechauffe(brikkas);
-  check("the Brikka preheated water opposes the two groups", p && p.bas.n === 3 && p.haut.n === 3,
+  const p = api.UI.insightPreheat(brikkaCups);
+  check("the Brikka preheated water opposes the two groups", p && p.low.n === 3 && p.high.n === 3,
     JSON.stringify(p));
-  check("and ignores the Switch cups", api.UI.insightPrechauffe(hot.concat(lukewarm)) === null);
+  check("and ignores the Switch cups", api.UI.insightPreheat(hot.concat(lukewarm)) === null);
   const stirred = [8, 7.5, 8].map(n => cup("Switch", n, { agitation_nb: 1 }));
   check("the Switch agitation speaks too", !!api.UI.insightAgitation([...stirred, ...lukewarm]));
 }
@@ -1030,29 +1030,29 @@ check("the temperature field no longer has a misleading placeholder", !tempField
   const t = (day, n) => ({ _c: { jours_ouvert: day }, note_sur_10: n });
   const rated = [t(1, 5), t(2, 5), t(3, 5), t(5, 8), t(6, 8), t(7, 8), t(9, 8), t(10, 8), t(11, 8)];
   const avg = rated.reduce((s, e) => s + e.note_sur_10, 0) / rated.length;
-  const f = api.UI.fenetreFraicheur(rated, avg).fenetre;
-  check("the window starts at the first good slice", f && f.debut === 4, JSON.stringify(f));
-  check("and stops at the last tasted day", f && f.fin === 11, JSON.stringify(f));
-  check("it compares inside and outside", f && f.dedans === 8 && f.dehors === 5, JSON.stringify(f));
+  const f = api.UI.freshnessWindow(rated, avg).sweetSpot;
+  check("the window starts at the first good slice", f && f.start === 4, JSON.stringify(f));
+  check("and stops at the last tasted day", f && f.end === 11, JSON.stringify(f));
+  check("it compares inside and outside", f && f.inside === 8 && f.outside === 5, JSON.stringify(f));
   check("without two documented slices, no window",
-    api.UI.fenetreFraicheur(rated.slice(0, 4), avg).fenetre === null);
+    api.UI.freshnessWindow(rated.slice(0, 4), avg).sweetSpot === null);
 }
 
 /* THE EXTRACTION SPECTRUM places a diagnostic by the grind direction of
-   DIAGNOSTIC_LEVIERS (v8.49): nothing is written twice there. */
+   DIAGNOSTIC_LEVERS (v8.49): nothing is written twice there. */
 {
   const p = api.UI.positionDiagnostic;
   check("balanced at the centre of the spectrum", p("Équilibré") === 0);
   check("slightly bitter leans one step towards over-extracted", p("Un peu amer") === 1);
   check("clearly under-extracted all the way left", p("Sous-extrait (acide)") === -2);
   check("a ratio diagnostic has no place", p("Un peu léger") === null);
-  check("the drawings render without throwing", (() => { try { api.UI.rendreDessins(); return true; } catch (e) { return false; } })());
+  check("the drawings render without throwing", (() => { try { api.UI.renderDrawings(); return true; } catch (e) { return false; } })());
 }
 
 /* THE GUIDE AS A LIBRARY (v8.52) reads a recipe profile from its
    « Pour qui » text, first sentence first. */
 {
-  const p = r => api.UI.profilsRecette(r).sort().join(",");
+  const p = r => api.UI.recipeProfiles(r).sort().join(",");
   check("clean washed ones target washed", p({ pourQui: "Les lavés propres, quand je cherche la clarté. Plus que la natural." }) === "lave");
   check("fermented ones target fermented", p({ pourQui: "Les fermentés, natural, honey et anaerobic en torréfaction medium." }) === "fermente");
   check("with no profile, the recipe fits all", p({ pourQui: "L'usage quotidien de la Brikka." }) === "fermente,lave");
@@ -1061,7 +1061,7 @@ check("the temperature field no longer has a misleading placeholder", !tempField
 /* BREW MODE reads the CUMULATIVE target of a pour from the recipe
    text, without ever rewriting it (v8.47). */
 {
-  const c = api.UI.cibleVersement;
+  const c = api.UI.pourTarget;
   check("« jusqu'a 120 g » targets 120", c("Verser jusqu'à 120 g, vanne OUVERTE") === 120);
   check("« verser 45 g de plus, jusqu'a 90 g » targets the cumulative", c("Second bloom : verser 45 g de plus, jusqu'à 90 g.") === 90);
   check("« Bloom 45 g » targets 45", c("Bloom 45 g, vanne FERMÉE. Remuer 3 fois.") === 45);

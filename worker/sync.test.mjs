@@ -1,6 +1,6 @@
 import {
   mergePayloads, sanitisePayload, emptyPayload, handleSync, documentSize,
-  MAX_DOCUMENT_BYTES, TOMBSTONE_RETENTION_MS, TABLES, AVANCE_TOLEREE_MS, sauvegarderDocument, JOURS_DE_SAUVEGARDE,
+  MAX_DOCUMENT_BYTES, TOMBSTONE_RETENTION_MS, TABLES, TOLERATED_LEAD_MS, saveDocument, BACKUP_DAYS,
 } from "./sync.js";
 
 let failures = 0;
@@ -12,7 +12,7 @@ function check(label, condition, detail) {
 const NOW = 1_700_000_000_000;
 const payload = (extractions, tombstones) =>
   sanitisePayload({ tables: { extractions }, tombes: { extractions: tombstones || {} } });
-const ext = (id, maj_le, note) => ({ id, maj_le, note_sur_10: note });
+const ext = (id, maj_le, rating) => ({ id, maj_le, note_sur_10: rating });
 const ids = p => p.tables.extractions.map(r => r.id).sort();
 const scoreOf = (p, id) => p.tables.extractions.find(r => r.id === id)?.note_sur_10;
 
@@ -92,7 +92,7 @@ check("tombstone kept before the delay", Object.keys(freshTomb.tombes.extraction
 
 // 9. Robustness: invalid shapes coming from the network
 const dirty = sanitisePayload({
-  tables: { extractions: [{ id: "ok", maj_le: "123" }, { id: "" }, null, "texte", { pasDId: 1 }] },
+  tables: { extractions: [{ id: "ok", maj_le: "123" }, { id: "" }, null, "texte", { noId: 1 }] },
   tombes: { extractions: { bon: "50", "": 10 } },
 });
 check("rows without an id dropped", ids(dirty).join() === "ok", ids(dirty).join());
@@ -173,7 +173,7 @@ check("recipes survive", kept.tables.recettes.length === 1);
 
 // 14. v8.71: a timestamp from the future is brought back to server time.
 {
-  const future = sanitisePayload({ tables: { extractions: [ext("e1", NOW + AVANCE_TOLEREE_MS + 60000, 7)] },
+  const future = sanitisePayload({ tables: { extractions: [ext("e1", NOW + TOLERATED_LEAD_MS + 60000, 7)] },
     tombes: { extractions: { e2: NOW + 3600000 } } }, NOW);
   check("a row dated in the future comes back to now", future.tables.extractions[0].maj_le === NOW);
   check("a tombstone too", future.tombes.extractions.e2 === NOW);
@@ -217,10 +217,10 @@ check("recipes survive", kept.tables.recettes.length === 1);
   check("an oversized body is refused with 413", huge.status === 413);
 
   const backup = makeDb(); backup.docs.set("state", '{"tables":{}}'); backup.docs.set("state@2000-01-01", "{}");
-  const name = await sauvegarderDocument(backup, NOW);
+  const name = await saveDocument(backup, NOW);
   check("the daily backup copies the document",
     name === "state@" + new Date(NOW).toISOString().slice(0, 10) && backup.docs.get(name) === backup.docs.get("state"));
-  check("and copies older than " + JOURS_DE_SAUVEGARDE + " days are deleted", !backup.docs.has("state@2000-01-01"));
+  check("and copies older than " + BACKUP_DAYS + " days are deleted", !backup.docs.has("state@2000-01-01"));
 }
 
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);

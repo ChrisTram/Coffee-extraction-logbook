@@ -12,12 +12,12 @@
 (() => {
 
   // Borrowed from the core and the entry screen, both loaded before us.
-  const { $, $f, ecrireDuree, fmtTemps, toast, trouverRecette } = UI;
+  const { $, $f, writeDuration, fmtDuration, toast, findRecipe } = UI;
 
   // Single stopwatch: Start, Pause, Resume, Stop, Reset.
   // Steps come from the selected recipe, with a soft beep at each one.
   // Drawdown is derived: from the "open" step to the moment the stopwatch stops.
-  const chrono = { etat: "arrete", accumule: 0, departTs: null, interval: null, passes: new Set() };
+  const stopwatch = { state: "arrete", accumulated: 0, startTs: null, interval: null, passes: new Set() };
   let audioCtx = null;
 
   // Screen lock while timing: the phone screen must not lock in the middle
@@ -46,26 +46,26 @@
 
   // Single source of truth: the lock follows the stopwatch state.
   function syncWakeLock() {
-    if (chrono.etat === "encours") acquireWakeLock();
+    if (stopwatch.state === "encours") acquireWakeLock();
     else releaseWakeLock();
   }
 
-  function chronoElapsed() {
-    return (chrono.accumule + (chrono.etat === "encours" ? Date.now() - chrono.departTs : 0)) / 1000;
+  function stopwatchElapsed() {
+    return (stopwatch.accumulated + (stopwatch.state === "encours" ? Date.now() - stopwatch.startTs : 0)) / 1000;
   }
 
-  function paliersCourants() {
-    const r = trouverRecette($("#f-recette").value);
+  function currentMilestones() {
+    const r = findRecipe($("#f-recette").value);
     if (!r) return [];
-    return UI.etapesPour(r).filter(e => e.t !== null && e.t !== undefined);
+    return UI.stepsFor(r).filter(e => e.t !== null && e.t !== undefined);
   }
 
   function openingTime() {
-    const step = paliersCourants().find(e => /ouvr|open/i.test(e.texte));
+    const step = currentMilestones().find(e => /ouvr|open/i.test(e.texte));
     return step ? step.t : null;
   }
 
-  function jouerBip() {
+  function playBeep() {
     if (!$("#chrono-bip").checked) return;
     try {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -83,16 +83,16 @@
     } catch (e) { /* audio unavailable */ }
   }
 
-  function majEtapesChrono(withBeeps) {
-    const s = chronoElapsed();
-    const steps = paliersCourants();
+  function updateStopwatchSteps(withBeeps) {
+    const s = stopwatchElapsed();
+    const steps = currentMilestones();
     const area = $("#chrono-etapes");
     if (!steps.length) { area.hidden = true; return; }
     area.hidden = false;
     let current = null, next = null;
     steps.forEach(step => { if (step.t <= s) current = step; else if (!next) next = step; });
     const currentText = current
-      ? fmtTemps(current.t) + " · " + current.texte
+      ? fmtDuration(current.t) + " · " + current.texte
       : I18N.t("ch_pret");
     $("#chrono-courante").textContent = currentText;
     /* The same step in the header, so it reads WITHOUT expanding: on a phone
@@ -100,19 +100,19 @@
        does not say where you are just takes up space. Empty when the
        stopwatch is not running, otherwise it would announce a step not yet begun. */
     const shortLabel = $("#chrono-palier-court");
-    if (shortLabel) shortLabel.textContent = chrono.etat === "arrete" ? "" : currentText;
+    if (shortLabel) shortLabel.textContent = stopwatch.state === "arrete" ? "" : currentText;
     if (next) {
       $("#chrono-suivante").textContent = I18N.t("ch_suivante", {
-        t: fmtTemps(next.t), d: Math.max(0, Math.ceil(next.t - s)), texte: next.texte,
+        t: fmtDuration(next.t), d: Math.max(0, Math.ceil(next.t - s)), texte: next.texte,
       });
     } else {
       $("#chrono-suivante").textContent = current ? I18N.t("ch_derniere") : "";
     }
-    if (withBeeps && chrono.etat === "encours") {
+    if (withBeeps && stopwatch.state === "encours") {
       steps.forEach(step => {
-        if (step.t > 0 && step.t <= s && !chrono.passes.has(step.t)) {
-          chrono.passes.add(step.t);
-          jouerBip();
+        if (step.t > 0 && step.t <= s && !stopwatch.passes.has(step.t)) {
+          stopwatch.passes.add(step.t);
+          playBeep();
           // Brew mode is watched from a distance: a vibration on top of the
           // beep, where the phone allows it (Android; the iPhone lacks the API).
           if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
@@ -123,71 +123,71 @@
     }
   }
 
-  function chronoTic() {
-    $("#chrono-total").textContent = fmtTemps(Math.floor(chronoElapsed()));
-    majEtapesChrono(true);
+  function stopwatchTick() {
+    $("#chrono-total").textContent = fmtDuration(Math.floor(stopwatchElapsed()));
+    updateStopwatchSteps(true);
   }
 
-  function majBoutonsChrono() {
+  function updateStopwatchButtons() {
     const b = $("#btn-chrono");
-    if (chrono.etat === "arrete") b.textContent = I18N.t("ch_demarrer");
-    else if (chrono.etat === "encours") b.textContent = I18N.t("ch_pause");
+    if (stopwatch.state === "arrete") b.textContent = I18N.t("ch_demarrer");
+    else if (stopwatch.state === "encours") b.textContent = I18N.t("ch_pause");
     else b.textContent = I18N.t("ch_reprendre");
-    $("#btn-chrono-stop").hidden = chrono.etat === "arrete";
-    $("#btn-chrono-raz").hidden = chrono.etat === "arrete" && chronoElapsed() === 0;
-    $(".chrono").classList.toggle("en-cours", chrono.etat === "encours");
+    $("#btn-chrono-stop").hidden = stopwatch.state === "arrete";
+    $("#btn-chrono-raz").hidden = stopwatch.state === "arrete" && stopwatchElapsed() === 0;
+    $(".chrono").classList.toggle("en-cours", stopwatch.state === "encours");
     // Called on every stopwatch transition, the right place to align the
     // screen lock with no risk of forgetting it in a branch.
     syncWakeLock();
   }
 
-  function chronoPrincipal() {
+  function stopwatchPrimary() {
     /* Sound is unlocked INSIDE the gesture (v8.72): on iPhone, an audio
        context created later by the timer stays silent. */
     try {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === "suspended") audioCtx.resume();
     } catch (e) { /* audio unavailable */ }
-    if (chrono.etat === "arrete") {
-      chrono.accumule = 0;
-      chrono.passes.clear();
-      chrono.departTs = Date.now();
-      chrono.etat = "encours";
-      chrono.interval = setInterval(chronoTic, 200);
-    } else if (chrono.etat === "encours") {
-      chrono.accumule += Date.now() - chrono.departTs;
-      chrono.etat = "pause";
-      clearInterval(chrono.interval);
+    if (stopwatch.state === "arrete") {
+      stopwatch.accumulated = 0;
+      stopwatch.passes.clear();
+      stopwatch.startTs = Date.now();
+      stopwatch.state = "encours";
+      stopwatch.interval = setInterval(stopwatchTick, 200);
+    } else if (stopwatch.state === "encours") {
+      stopwatch.accumulated += Date.now() - stopwatch.startTs;
+      stopwatch.state = "pause";
+      clearInterval(stopwatch.interval);
     } else {
-      chrono.departTs = Date.now();
-      chrono.etat = "encours";
-      chrono.interval = setInterval(chronoTic, 200);
+      stopwatch.startTs = Date.now();
+      stopwatch.state = "encours";
+      stopwatch.interval = setInterval(stopwatchTick, 200);
     }
-    majBoutonsChrono();
+    updateStopwatchButtons();
   }
 
-  function chronoArreter() {
-    if (chrono.etat === "arrete") return;
-    if (chrono.etat === "encours") chrono.accumule += Date.now() - chrono.departTs;
-    clearInterval(chrono.interval);
-    const total = Math.round(chrono.accumule / 1000);
-    chrono.etat = "arrete";
-    ecrireDuree("f-total", total);
+  function stopStopwatch() {
+    if (stopwatch.state === "arrete") return;
+    if (stopwatch.state === "encours") stopwatch.accumulated += Date.now() - stopwatch.startTs;
+    clearInterval(stopwatch.interval);
+    const total = Math.round(stopwatch.accumulated / 1000);
+    stopwatch.state = "arrete";
+    writeDuration("f-total", total);
     const tOpen = openingTime();
-    if (tOpen !== null && total > tOpen) ecrireDuree("f-ecoulement", total - tOpen);
-    majBoutonsChrono();
+    if (tOpen !== null && total > tOpen) writeDuration("f-ecoulement", total - tOpen);
+    updateStopwatchButtons();
     toast(I18N.t("t_temps"));
   }
 
-  function chronoRaz() {
-    clearInterval(chrono.interval);
-    chrono.etat = "arrete";
-    chrono.accumule = 0;
-    chrono.departTs = null;
-    chrono.passes.clear();
+  function resetStopwatch() {
+    clearInterval(stopwatch.interval);
+    stopwatch.state = "arrete";
+    stopwatch.accumulated = 0;
+    stopwatch.startTs = null;
+    stopwatch.passes.clear();
     $("#chrono-total").textContent = "0:00";
-    majEtapesChrono(false);
-    majBoutonsChrono();
+    updateStopwatchSteps(false);
+    updateStopwatchButtons();
   }
   /* THE COLLAPSIBLE STOPWATCH.
 
@@ -199,24 +199,24 @@
      on start and refuses to collapse while running: closing on a running
      stopwatch means losing the steps and the stop button at the exact moment
      you need them. */
-  function chronoTourne() {
+  function isStopwatchRunning() {
     return !$("#btn-chrono-stop").hidden;
   }
 
-  function basculerChrono(open) {
+  function toggleStopwatch(open) {
     const body = $("#chrono-corps");
     if (!body) return;
     const wants = open === undefined ? body.hidden : open;
     /* A running stopwatch is never closed. */
-    const isOpen = !wants && chronoTourne() ? true : wants;
+    const isOpen = !wants && isStopwatchRunning() ? true : wants;
     body.hidden = !isOpen;
     $("#chrono-widget").classList.toggle("ouvert", isOpen);
     $("#chrono-basculer").setAttribute("aria-expanded", isOpen ? "true" : "false");
   }
 
   Object.assign(UI, {
-    basculerChrono, chrono, chronoArreter, chronoPrincipal, chronoRaz, chronoTic,
-    chronoTourne, jouerBip, majBoutonsChrono, majEtapesChrono, paliersCourants,
+    toggleStopwatch, stopwatch, stopStopwatch, stopwatchPrimary, resetStopwatch, stopwatchTick,
+    isStopwatchRunning, playBeep, updateStopwatchButtons, updateStopwatchSteps, currentMilestones,
     syncWakeLock,
   });
 })();

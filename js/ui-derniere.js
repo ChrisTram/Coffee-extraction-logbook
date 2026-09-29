@@ -5,8 +5,8 @@
 (() => {
 
   // Borrowed from the core and from ui-constats.js, loaded before us.
-  const { $, attrTitre, diagsAffiches, estRatee, extAnalysables, fmtTemps, fmtVND,
-    moyenne, note1, trouverRecette } = UI;
+  const { $, titleAttr, displayedDiags, isFailed, analyzableExts, fmtDuration, fmtVND,
+    average, fmtRating, findRecipe } = UI;
 
   /* THE LATEST CUP, shown large.
 
@@ -17,7 +17,7 @@
 
      It hides when there is nothing: an empty card announcing "no latest
      cup" teaches nothing to someone who already sees an empty logbook. */
-  function rendreDerniereTasse(exts) {
+  function renderLastCup(exts) {
     const card = $("#carte-derniere");
     const e = [...exts].sort((a, b) => b.date_heure.localeCompare(a.date_heure))[0];
     card.hidden = !e;
@@ -44,13 +44,13 @@
           '<span class="derniere-grande-machine">' + e.methode + "</span>" +
           context.map(x => '<span class="sep" aria-hidden="true">|</span><span>' + x + "</span>").join("") +
         "</p>" +
-        goutsDerniere(e) +
-        (e.commentaire ? '<p class="derniere-grande-commentaire">' + attrTitre(e.commentaire) + "</p>" : "") +
+        lastTastes(e) +
+        (e.commentaire ? '<p class="derniere-grande-commentaire">' + titleAttr(e.commentaire) + "</p>" : "") +
         rankAmongSiblings(e) +
         lastCupFooter(e) +
       "</div>" +
       '<div class="derniere-grande-note">' +
-        (estRatee(e) ? '<span class="badge-ratee">' + I18N.t("rt_badge") + "</span>" : "") +
+        (isFailed(e) ? '<span class="badge-ratee">' + I18N.t("rt_badge") + "</span>" : "") +
         /* Without a score, we write "not rated yet" instead of a dash: a dash
            in a big number reads as a minus, and the project rules forbid
            the em dash anyway. */
@@ -58,7 +58,7 @@
           ? '<span class="grande-note">' + e.note_sur_10 + "</span>" +
             '<span class="grande-note-sur">' + I18N.t("tb_sur10") + "</span>"
           : '<span class="grande-note-sans">' + I18N.t("n_pas_notee") + "</span>") +
-        (e.diagnostic ? '<span class="pastille-diag">' + diagsAffiches(e.diagnostic) + "</span>" : "") +
+        (e.diagnostic ? '<span class="pastille-diag">' + displayedDiags(e.diagnostic) + "</span>" : "") +
       "</div>";
   }
 
@@ -71,20 +71,20 @@
      among two says nothing. */
   function rankAmongSiblings(e) {
     if (e.note_sur_10 === "" || e.note_sur_10 === undefined) return "";
-    const siblings = extAnalysables().filter(x => x.cafe_id === e.cafe_id && x.note_sur_10 !== "");
+    const siblings = analyzableExts().filter(x => x.cafe_id === e.cafe_id && x.note_sur_10 !== "");
     if (!siblings.some(x => x.id === e.id)) siblings.push(e);
     if (siblings.length < 3) return "";
-    const note = Number(e.note_sur_10);
+    const rating = Number(e.note_sur_10);
     const notes = siblings.map(x => Number(x.note_sur_10));
-    const avg = moyenne(notes);
-    const ahead = notes.filter(n => n > note).length;
-    const ties = notes.filter(n => n === note).length - 1;
+    const avg = average(notes);
+    const ahead = notes.filter(n => n > rating).length;
+    const ties = notes.filter(n => n === rating).length - 1;
     const rankText = ahead === 0
       ? I18N.t(ties ? "pl_ex_aequo" : "pl_meilleure")
       : I18N.t("pl_rang", { k: ahead + 1, n: notes.length });
-    const gap = note - avg;
+    const gap = rating - avg;
     const position = Math.abs(gap) < 0.2 ? I18N.t("pl_dans_moyenne")
-      : I18N.t(gap > 0 ? "pl_au_dessus" : "pl_au_dessous", { x: note1(Math.abs(gap)) });
+      : I18N.t(gap > 0 ? "pl_au_dessus" : "pl_au_dessous", { x: fmtRating(Math.abs(gap)) });
 
     // The scale: from the whole score below the lowest one up to 10.
     const low = Math.max(0, Math.floor(Math.min(...notes)) - 1);
@@ -97,7 +97,7 @@
     const xm = x(avg);
     svg += '<line x1="' + xm + '" y1="12" x2="' + xm + '" y2="' + (base + 8) + '" stroke="var(--attenue)" stroke-dasharray="3 3"></line>' +
       '<text x="' + (xm > R * 0.7 ? xm - 5 : xm + 5) + '" y="10" text-anchor="' + (xm > R * 0.7 ? "end" : "start") + '">' +
-      I18N.t("pl_moyenne", { m: note1(avg) }) + "</text>";
+      I18N.t("pl_moyenne", { m: fmtRating(avg) }) + "</text>";
     // The other cups, stacked when they share the same score.
     const stacks = {};
     siblings.forEach(s => {
@@ -107,9 +107,9 @@
       svg += '<circle cx="' + x(n) + '" cy="' + (base - Math.min(k, 3) * step) + '" r="2.6" fill="var(--texte)" opacity="0.55"></circle>';
     });
     // This one, on top, ringed with the panel colour so it stands out.
-    svg += '<circle cx="' + x(note) + '" cy="' + (base - 3) + '" r="6.5" fill="var(--accent)" stroke="var(--panneau-2)" stroke-width="2"></circle>';
-    return '<div class="derniere-place" role="img" aria-label="' + attrTitre(I18N.t("pl_aria", {
-      n: notes.length, cafe: I18N.tr(e._c.cafe_nom), note: note1(note), m: note1(avg) })) + '">' +
+    svg += '<circle cx="' + x(rating) + '" cy="' + (base - 3) + '" r="6.5" fill="var(--accent)" stroke="var(--panneau-2)" stroke-width="2"></circle>';
+    return '<div class="derniere-place" role="img" aria-label="' + titleAttr(I18N.t("pl_aria", {
+      n: notes.length, cafe: I18N.tr(e._c.cafe_nom), note: fmtRating(rating), m: fmtRating(avg) })) + '">' +
       '<p class="derniere-place-tete"><span>' + I18N.t("pl_parmi", { n: notes.length, cafe: I18N.tr(e._c.cafe_nom) }) + "</span>" +
       "<span><b>" + rankText + "</b>, " + position + "</span></p>" +
       '<svg viewBox="0 0 600 ' + (base + 22) + '" aria-hidden="true">' + svg + "</svg></div>";
@@ -128,11 +128,11 @@
      target underneath (v8.39). Each cell only appears if the value exists:
      an empty cell is a hole. */
   function lastCupFooter(e) {
-    const r = trouverRecette(e.recette);
-    const same = extAnalysables().filter(x => x.id !== e.id && x.cafe_id === e.cafe_id && x.recette === e.recette);
+    const r = findRecipe(e.recette);
+    const same = analyzableExts().filter(x => x.id !== e.id && x.cafe_id === e.cafe_id && x.recette === e.recette);
     const avgTime = field => {
       const v = same.map(x => Number(x[field])).filter(n => n > 0);
-      return v.length >= 2 ? fmtTemps(Math.round(moyenne(v))) : "";
+      return v.length >= 2 ? fmtDuration(Math.round(average(v))) : "";
     };
     const cells = [];
     const cell = (label, value, target, ok) => cells.push("<div><span>" + label + "</span><b>" + value + "</b>" +
@@ -151,20 +151,20 @@
       }
       cell(I18N.t("d_ratio"), e._c.ratioTexte, target, ok);
     }
-    const total = fmtTemps(e.temps_total_s);
+    const total = fmtDuration(e.temps_total_s);
     if (total) {
       const aimed = recipeTimeTarget(r);
       const avg = avgTime("temps_total_s");
       cell(I18N.t("d_temps"), total,
         aimed ? I18N.t("pl_recette", { v: aimed }) : avg ? I18N.t("pl_ta_moyenne", { v: avg }) : "", false);
     }
-    const drawdown = fmtTemps(e.temps_ecoulement_s);
+    const drawdown = fmtDuration(e.temps_ecoulement_s);
     if (drawdown) {
       const avg = avgTime("temps_ecoulement_s");
       cell(I18N.t("d_ecoulement"), drawdown, avg ? I18N.t("pl_ta_moyenne", { v: avg }) : "", false);
     }
     if (e.mouture_dial) cell(I18N.t("d_mouture"), e.mouture_dial, e._c.microns ? e._c.microns + " µm" : "", false);
-    else if (e._c.moulu) cell(I18N.t("d_mouture"), I18N.t("paquet"), "", false);
+    else if (e._c.ground) cell(I18N.t("d_mouture"), I18N.t("paquet"), "", false);
     if (e._c.cout_tasse_vnd !== "") cell(I18N.t("d_cout"), fmtVND(e._c.cout_tasse_vnd), I18N.t("pl_la_tasse"), false);
     return cells.length ? '<div class="derniere-grande-pied">' + cells.join("") + "</div>" : "";
   }
@@ -184,9 +184,9 @@
      the room and said nothing about what the cup tasted like, even though
      that is the point of the logbook. Stored values are French, display
      goes through I18N.tag. */
-  const DERNIERES_AFFICHEES = 8;
+  const LATEST_SHOWN = 8;
   const MAX_LAST_TASTES = 4;
-  function goutsDerniere(e) {
+  function lastTastes(e) {
     const tags = String(e.descripteurs || "").split("|").filter(Boolean);
     if (!tags.length) return "";
     const shown = tags.slice(0, MAX_LAST_TASTES).map(t => '<span class="derniere-tag">' + I18N.tag(t) + "</span>");
@@ -202,25 +202,25 @@
      character count: the available width depends on the window, a hard
      threshold cuts too early on a big screen and too late on a small one.
      The full text only comes on hover if the line is cut, see above. */
-  function commentaireDerniere(e) {
+  function lastComment(e) {
     const c = String(e.commentaire || "").trim();
     if (!c) return "";
-    return '<tr class="derniere-commentaire" data-ext="' + e.id + '"><td colspan="5">' + attrTitre(c) + "</td></tr>";
+    return '<tr class="derniere-commentaire" data-ext="' + e.id + '"><td colspan="5">' + titleAttr(c) + "</td></tr>";
   }
 
   /* THE CARD MEASUREMENTS, short version: dose, water and time. Dial,
      degrees and heat are in the history, which exists to compare them;
      here they made the row wrap onto three levels. */
-  function mesuresCourtes(e) {
+  function shortMeasures(e) {
     const parts = [];
     if (e.dose_g > 0 && e.eau_g) parts.push(e.dose_g + " → " + e.eau_g + " g");
-    const t = fmtTemps(e.temps_total_s);
+    const t = fmtDuration(e.temps_total_s);
     if (t) parts.push(t);
     if (!parts.length) return "";
     return '<span class="d-chiffres">' + parts.join(" · ") + "</span>";
   }
 
   Object.assign(UI, {
-    DERNIERES_AFFICHEES, commentaireDerniere, goutsDerniere, mesuresCourtes, rendreDerniereTasse,
+    LATEST_SHOWN, lastComment, lastTastes, shortMeasures, renderLastCup,
   });
 })();

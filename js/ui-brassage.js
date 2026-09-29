@@ -5,7 +5,7 @@
  * thirty-four fields; here it takes the whole screen, readable from a metre
  * away.
  *
- * This is NOT a second stopwatch. It drives and reads the same state (UI.chrono),
+ * This is NOT a second stopwatch. It drives and reads the same state (UI.stopwatch),
  * with the same buttons: starting here starts the entry, stopping carries the
  * total time and the drawdown into the form, the beeps and the screen lock are
  * the stopwatch's own. Closing the mode leaves the stopwatch running.
@@ -18,7 +18,7 @@
 
 (() => {
 
-  const { $, brancherNote, fmtTemps, marquerNote, poser, trouverRecette } = UI;
+  const { $, wireRating, fmtDuration, markRating, setHtml, findRecipe } = UI;
 
   const UNIT_KEY = "brassage-unite";
   const CIRC = 2 * Math.PI * 52;
@@ -30,7 +30,7 @@
   let lastStepIdx = -1;
   let lastCurrentKey = "";
   const IMMINENT_S = 10;
-  const echap = OUTILS.echap;
+  const escapeHtml = TOOLS.escapeHtml;
 
   function unit() {
     // Grams by default since v8.74: Chris has a scale. Millilitres stay one tap away.
@@ -40,12 +40,12 @@
   /* A step's target: the CUMULATIVE volume to reach. "jusqu'à 120 g" and
      "compléter à 240 g" state the cumulative; otherwise the first gram figure
      ("Bloom 45 g", "verser 50 g"), which at the first step IS the cumulative. */
-  function targetOf(texte) {
-    const t = String(texte || "");
+  function targetOf(text) {
+    const t = String(text || "");
     // No \b before "à": outside ASCII, JavaScript sees no word boundary there.
-    const cumul = t.match(/(?:^|[\s'’])à\s*(\d+)\s*g\b/i) || t.match(/\bto\s*(\d+)\s*g\b/i);
+    const cumulative = t.match(/(?:^|[\s'’])à\s*(\d+)\s*g\b/i) || t.match(/\bto\s*(\d+)\s*g\b/i);
     const first = t.match(/(\d+)\s*g\b/);
-    const n = cumul ? Number(cumul[1]) : first ? Number(first[1]) : null;
+    const n = cumulative ? Number(cumulative[1]) : first ? Number(first[1]) : null;
     return n && n >= 20 ? n : null;
   }
 
@@ -73,29 +73,29 @@
   }
 
   function elapsed() {
-    const c = UI.chrono;
-    return (c.accumule + (c.etat === "encours" ? Date.now() - c.departTs : 0)) / 1000;
+    const c = UI.stopwatch;
+    return (c.accumulated + (c.state === "encours" ? Date.now() - c.startTs : 0)) / 1000;
   }
 
   function paint() {
-    const r = trouverRecette($("#f-recette").value);
-    const all = r ? UI.etapesPour(r) : [];
+    const r = findRecipe($("#f-recette").value);
+    const all = r ? UI.stepsFor(r) : [];
     const steps = all.filter(e => e.t !== null && e.t !== undefined);
     const s = elapsed();
-    const duree = targetDuration(r, steps);
-    const cafe = DATA.state.cafes.find(c => c.id === $("#f-cafe").value);
+    const duration = targetDuration(r, steps);
+    const coffee = DATA.state.cafes.find(c => c.id === $("#f-cafe").value);
 
-    $("#br-machine").textContent = [I18N.machine(UI.saisie.methode), cafe ? cafe.nom : ""].filter(Boolean).join(" · ");
+    $("#br-machine").textContent = [I18N.machine(UI.entry.methode), coffee ? coffee.nom : ""].filter(Boolean).join(" · ");
     $("#br-titre").textContent = r ? I18N.tr(r.nom) : I18N.t("br_sans_recette");
     $("#br-dose").textContent = [$("#f-dose").value ? $("#f-dose").value + " g" : "",
       $("#f-eau").value ? $("#f-eau").value + " " + unit() : ""].filter(Boolean).join(" · ");
-    $("#br-temps").textContent = fmtTemps(Math.floor(s));
-    $("#br-sur").textContent = I18N.t("br_sur", { t: fmtTemps(duree) });
+    $("#br-temps").textContent = fmtDuration(Math.floor(s));
+    $("#br-sur").textContent = I18N.t("br_sur", { t: fmtDuration(duration) });
 
     let i = -1;
     steps.forEach((p, k) => { if (p.t <= s) i = k; });
     const current = i >= 0 ? steps[i] : null;
-    const suivant = steps[i + 1] || null;
+    const nextStep = steps[i + 1] || null;
     const target = current ? targetOf(current.texte) : null;
     const freeOnly = !steps.length ? all : [];
     if (manualStep >= freeOnly.length) manualStep = Math.max(0, freeOnly.length - 1);
@@ -105,12 +105,12 @@
        ten seconds. With no pour ahead, it counts to the stated total, as
        before. */
     const arcStart = current ? current.t : 0;
-    const finArc = suivant ? suivant.t : duree;
-    const frac = finArc > arcStart ? Math.min(1, Math.max(0, (s - arcStart) / (finArc - arcStart))) : 1;
+    const arcEnd = nextStep ? nextStep.t : duration;
+    const frac = arcEnd > arcStart ? Math.min(1, Math.max(0, (s - arcStart) / (arcEnd - arcStart))) : 1;
     $("#br-trace").setAttribute("stroke-dashoffset", String(CIRC * (1 - frac)));
-    const remaining = suivant ? suivant.t - s : null;
-    $("#br-anneau").classList.toggle("imminent", remaining !== null && remaining <= IMMINENT_S && UI.chrono.etat === "encours");
-    $("#br-anneau").classList.toggle("depasse", !suivant && s > duree);
+    const remaining = nextStep ? nextStep.t - s : null;
+    $("#br-anneau").classList.toggle("imminent", remaining !== null && remaining <= IMMINENT_S && UI.stopwatch.state === "encours");
+    $("#br-anneau").classList.toggle("depasse", !nextStep && s > duration);
 
     /* In the centre, HUGE, what to reach on the scale: the only thing to read
        from a metre away. With no volume to aim for, the time takes its place. */
@@ -118,18 +118,18 @@
     if (target) {
       $("#br-label").textContent = I18N.t("br_verse");
       $("#br-cible").textContent = String(target);
-      $("#br-dans").textContent = u + (suivant ? " · " + I18N.t("br_ensuite_dans", { t: fmtTemps(Math.max(0, Math.ceil(remaining))) }) : "");
+      $("#br-dans").textContent = u + (nextStep ? " · " + I18N.t("br_ensuite_dans", { t: fmtDuration(Math.max(0, Math.ceil(remaining))) }) : "");
     } else if (freeOnly.length) {
       /* An untimed step that aims for a total (the 4:6, v8.99): the total goes
          huge, like a timed step; otherwise the elapsed time. */
       const freeTarget = targetOf(freeOnly[manualStep].texte);
       $("#br-label").textContent = I18N.t("br_etape_n", { n: manualStep + 1, t: freeOnly.length });
-      $("#br-cible").textContent = freeTarget ? String(freeTarget) : fmtTemps(Math.floor(s));
+      $("#br-cible").textContent = freeTarget ? String(freeTarget) : fmtDuration(Math.floor(s));
       $("#br-dans").textContent = (freeTarget ? u + " · " : "") + I18N.t("br_toucher");
     } else {
       $("#br-label").textContent = current ? I18N.t("br_chrono") : I18N.t("br_pret");
-      $("#br-cible").textContent = fmtTemps(Math.floor(s));
-      $("#br-dans").textContent = suivant ? I18N.t("br_ensuite_dans", { t: fmtTemps(Math.max(0, Math.ceil(remaining))) }) : "";
+      $("#br-cible").textContent = fmtDuration(Math.floor(s));
+      $("#br-dans").textContent = nextStep ? I18N.t("br_ensuite_dans", { t: fmtDuration(Math.max(0, Math.ceil(remaining))) }) : "";
     }
     $(".br-temps-ligne").hidden = !target;
 
@@ -142,7 +142,7 @@
 
     // A step crossed while running: the phone vibrates, on top of the stopwatch beep.
     if (i !== lastStepIdx) {
-      if (i > lastStepIdx && lastStepIdx !== -2 && UI.chrono.etat === "encours" && navigator.vibrate) { try { navigator.vibrate(160); } catch (e) { /* no vibrator */ } }
+      if (i > lastStepIdx && lastStepIdx !== -2 && UI.stopwatch.state === "encours" && navigator.vibrate) { try { navigator.vibrate(160); } catch (e) { /* no vibrator */ } }
       lastStepIdx = i;
     }
 
@@ -154,19 +154,19 @@
       : steps.length ? I18N.t("br_attente", { texte: steps[0].texte }) : I18N.t("br_sans_paliers"));
     const valve = i >= 0 ? valveAt(steps, i) : null;
     const badge = $("#br-vanne");
-    badge.hidden = !valve || UI.saisie.methode !== "Switch";
+    badge.hidden = !valve || UI.entry.methode !== "Switch";
     if (valve) badge.textContent = I18N.t(valve === "ouverte" ? "br_vanne_ouverte" : "br_vanne_fermee");
-    $("#br-suivante").textContent = suivant
-      ? I18N.t("br_suivante", { d: Math.max(0, Math.ceil(suivant.t - s)), texte: suivant.texte })
+    $("#br-suivante").textContent = nextStep
+      ? I18N.t("br_suivante", { d: Math.max(0, Math.ceil(nextStep.t - s)), texte: nextStep.texte })
       : current ? I18N.t("ch_derniere") : freeOnly.length ? I18N.t("br_toucher") : "";
 
     // The timeline: every timed step, the current one highlighted; untimed
     // steps (the Brikka) as a plain list, to reread.
     const untimed = all.filter(e => e.t === null || e.t === undefined);
-    poser($("#br-frise"), steps.map((p, k) =>
-      '<li class="' + (k === i ? "courant" : k < i ? "passe" : "") + '"><time>' + fmtTemps(p.t) + "</time><span>" +
-      echap(p.texte) + "</span></li>").join("") +
-      untimed.map((p, k) => '<li class="libre' + (!steps.length ? (k === manualStep ? " courant" : k < manualStep ? " passe" : "") : "") + '" data-pas="' + k + '"><time aria-hidden="true">' + (k + 1) + "</time><span>" + echap(p.texte) + "</span></li>").join(""));
+    setHtml($("#br-frise"), steps.map((p, k) =>
+      '<li class="' + (k === i ? "courant" : k < i ? "passe" : "") + '"><time>' + fmtDuration(p.t) + "</time><span>" +
+      escapeHtml(p.texte) + "</span></li>").join("") +
+      untimed.map((p, k) => '<li class="libre' + (!steps.length ? (k === manualStep ? " courant" : k < manualStep ? " passe" : "") : "") + '" data-pas="' + k + '"><time aria-hidden="true">' + (k + 1) + "</time><span>" + escapeHtml(p.texte) + "</span></li>").join(""));
     /* v9.01: the timeline is what Chris reads, the scale under the Switch. The
        current step scrolls to the middle of the screen when it changes, not on every tick. */
     const currentKey = (steps.length ? "p" + i : "l" + manualStep) + "|" + (r ? r.id : "");
@@ -176,7 +176,7 @@
       if (li && li.scrollIntoView) li.scrollIntoView({ block: "center", behavior: "smooth" });
     }
 
-    const state = UI.chrono.etat;
+    const state = UI.stopwatch.state;
     $("#br-go").textContent = I18N.t(state === "arrete" ? (s > 0 ? "br_recommencer" : "ch_demarrer")
       : state === "encours" ? "ch_pause" : "ch_reprendre");
     $("#br-stop").hidden = state === "arrete";
@@ -187,7 +187,7 @@
     $(".br-unite [data-unite=g]").setAttribute("aria-pressed", String(unit() === "g"));
   }
 
-  function ouvrirBrassage() {
+  function openBrew() {
     const m = $("#modale-brassage");
     endVisible = false;
     manualStep = 0;
@@ -199,40 +199,40 @@
     timer = setInterval(paint, 250);
   }
 
-  function fermerBrassage() {
+  function closeBrew() {
     clearInterval(timer);
     timer = null;
     const m = $("#modale-brassage");
     if (m.open) m.close();
   }
 
-  function cablerBrassage() {
-    $("#btn-brassage").addEventListener("click", ouvrirBrassage);
-    $("#br-fermer").addEventListener("click", fermerBrassage);
+  function wireBrew() {
+    $("#btn-brassage").addEventListener("click", openBrew);
+    $("#br-fermer").addEventListener("click", closeBrew);
     $("#modale-brassage").addEventListener("close", () => { clearInterval(timer); timer = null; });
     $("#br-go").addEventListener("click", () => {
       // "Start again" after a stop: we restart from zero, not from the old time.
-      if (UI.chrono.etat === "arrete" && elapsed() > 0) UI.chronoRaz();
+      if (UI.stopwatch.state === "arrete" && elapsed() > 0) UI.resetStopwatch();
       endVisible = false;
-      UI.chronoPrincipal();
-      UI.basculerChrono(true);
+      UI.stopwatchPrimary();
+      UI.toggleStopwatch(true);
       paint();
     });
     $("#br-stop").addEventListener("click", () => {
-      UI.chronoArreter();
+      UI.stopStopwatch();
       endVisible = true;
       const c = $("#br-note");
       c.value = 5;
-      marquerNote(c, true);
+      markRating(c, true);
       updateBrewNote();
       paint();
     });
-    $("#br-raz").addEventListener("click", () => { UI.chronoRaz(); endVisible = false; manualStep = 0; paint(); });
+    $("#br-raz").addEventListener("click", () => { UI.resetStopwatch(); endVisible = false; manualStep = 0; paint(); });
     /* L7: a recipe without times (the Brikka) advances with a tap anywhere
        on the stage, hands full. Timed recipes follow the clock. */
     const advance = ev => {
-      const r = trouverRecette($("#f-recette").value);
-      const all = r ? UI.etapesPour(r) : [];
+      const r = findRecipe($("#f-recette").value);
+      const all = r ? UI.stepsFor(r) : [];
       if (!all.length || all.some(e => e.t !== null && e.t !== undefined)) return;
       // v9.01: tapping a timeline row goes straight to it; elsewhere, the next step.
       const li = ev.target.closest && ev.target.closest("#br-frise li[data-pas]");
@@ -246,26 +246,26 @@
       paint();
     }));
     // The end score writes into the form's: a single score, the one that goes to the database.
-    brancherNote($("#br-note"), () => {
+    wireRating($("#br-note"), () => {
       const f = $("#f-note");
       f.value = $("#br-note").value;
-      marquerNote(f, false);
-      UI.majAffichageNote();
+      markRating(f, false);
+      UI.updateRatingDisplay();
       updateBrewNote();
     });
     $("#br-enregistrer").addEventListener("click", () => {
-      fermerBrassage();
+      closeBrew();
       $("#form-saisie").requestSubmit();
     });
-    $("#br-completer").addEventListener("click", fermerBrassage);
+    $("#br-completer").addEventListener("click", closeBrew);
   }
 
   function updateBrewNote() {
     const c = $("#br-note");
-    const empty = UI.noteVide(c);
+    const empty = UI.isRatingEmpty(c);
     $("#br-note-dite").textContent = empty ? I18N.t("n_pas_notee") : c.value + " / 10";
-    UI.peindreCurseur(c);
+    UI.paintSlider(c);
   }
 
-  Object.assign(UI, { cablerBrassage, cibleVersement: targetOf, fermerBrassage, ouvrirBrassage });
+  Object.assign(UI, { wireBrew, pourTarget: targetOf, closeBrew, openBrew });
 })();

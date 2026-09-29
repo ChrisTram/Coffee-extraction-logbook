@@ -1,4 +1,4 @@
-import worker, { EMPREINTE_SCRIPT_THEME, POLITIQUE_SECURITE, allegerCss, allegerHtml } from "./index.js";
+import worker, { THEME_SCRIPT_HASH, SECURITY_POLICY, minifyCss, minifyHtml } from "./index.js";
 
 const env = {
   AUTH_USERNAME: "Chris",
@@ -198,16 +198,16 @@ check("expired session rejected", expired.status === 302, `status ${expired.stat
   const start = index.indexOf("<script>") + 8, scriptEnd = index.indexOf("</script>", start);
   const hash = "sha256-" + createHash("sha256").update(index.slice(start, scriptEnd), "utf8").digest("base64");
   check("the theme script hash matches index.html (otherwise it would be blocked)",
-    hash === EMPREINTE_SCRIPT_THEME, hash + " vs " + EMPREINTE_SCRIPT_THEME);
+    hash === THEME_SCRIPT_HASH, hash + " vs " + THEME_SCRIPT_HASH);
   check("a single inline script in index.html", (index.match(/<script>/g) || []).length === 1);
-  check("no inline script is allowed other than that one", !POLITIQUE_SECURITE.includes("'unsafe-inline'; ") || !/script-src[^;]*unsafe-inline/.test(POLITIQUE_SECURITE));
-  check("the video player is allowed", /frame-src https:\/\/www\.youtube-nocookie\.com/.test(POLITIQUE_SECURITE));
-  check("nobody can frame the notebook", POLITIQUE_SECURITE.includes("frame-ancestors 'none'"));
+  check("no inline script is allowed other than that one", !SECURITY_POLICY.includes("'unsafe-inline'; ") || !/script-src[^;]*unsafe-inline/.test(SECURITY_POLICY));
+  check("the video player is allowed", /frame-src https:\/\/www\.youtube-nocookie\.com/.test(SECURITY_POLICY));
+  check("nobody can frame the notebook", SECURITY_POLICY.includes("frame-ancestors 'none'"));
 
   const goodLogin = await post("/login", { username: "Chris", password: "correct-horse", next: "/" });
   const cookie = (goodLogin.headers.get("Set-Cookie") || "").split(";")[0];
   const sitePage = await call("/", { headers: { Cookie: cookie } });
-  check("the site page carries the security policy", (sitePage.headers.get("Content-Security-Policy") || "") === POLITIQUE_SECURITE);
+  check("the site page carries the security policy", (sitePage.headers.get("Content-Security-Policy") || "") === SECURITY_POLICY);
   check("and nosniff", sitePage.headers.get("X-Content-Type-Options") === "nosniff");
 
   let attempts = 0;
@@ -222,20 +222,20 @@ check("expired session rejected", expired.status === 302, `status ${expired.stat
 // v8.75: stylesheet and page served without comments, content intact.
 {
   const css = "/* un commentaire\n sur deux lignes */\n.a { color: red; }\n\n  .b { content: \"x\"; }\n";
-  check("the stylesheet loses its comments and blank lines", allegerCss(css) === '.a { color: red; }\n.b { content: "x"; }');
+  check("the stylesheet loses its comments and blank lines", minifyCss(css) === '.a { color: red; }\n.b { content: "x"; }');
   const html = "<p>a</p><!-- note -->\n<pre>ligne 1\n  ligne 2</pre>";
-  check("the page loses its comments without touching <pre> whitespace", allegerHtml(html) === "<p>a</p>\n<pre>ligne 1\n  ligne 2</pre>");
+  check("the page loses its comments without touching <pre> whitespace", minifyHtml(html) === "<p>a</p>\n<pre>ligne 1\n  ligne 2</pre>");
   const { readFileSync } = await import("node:fs");
   const { dirname, join } = await import("node:path");
   const { fileURLToPath } = await import("node:url");
   const root = join(dirname(fileURLToPath(import.meta.url)), "..");
   const realCss = ["socle", "ecrans", "fenetres", "finitions"].map(f => readFileSync(join(root, "css/" + f + ".css"), "utf8")).join("\n");
-  const slimmed = allegerCss(realCss);
+  const slimmed = minifyCss(realCss);
   check("the real stylesheet keeps all its braces", (slimmed.match(/\{/g) || []).length === (realCss.replace(/\/\*[\s\S]*?\*\//g, "").match(/\{/g) || []).length);
   check("and shrinks by at least a quarter", slimmed.length < realCss.length * 0.75, slimmed.length + " / " + realCss.length);
   const index = readFileSync(join(root, "index.html"), "utf8");
   const start = index.indexOf("<script>"), end = index.indexOf("</script>", start);
-  check("the theme script stays identical (its hash does not change)", allegerHtml(index).includes(index.slice(start, end)));
+  check("the theme script stays identical (its hash does not change)", minifyHtml(index).includes(index.slice(start, end)));
 }
 
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);

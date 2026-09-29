@@ -44,18 +44,18 @@ const DATA_CSV = (() => {
      into a formula when the CSV is opened. It gets an apostrophe in front,
      which reading back removes (csvParse). Numbers are not touched. */
   const FORMULA = /^[=+\-@\t\r]/;
-  function csvChamp(v) {
+  function csvField(v) {
     const raw = v === null || v === undefined ? "" : String(v);
     const s = typeof v === "string" && FORMULA.test(raw) ? "'" + raw : raw;
     if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
     return s;
   }
 
-  function csvSerialiser(rows, cols) {
+  function csvSerialize(rows, cols) {
     const lines = [cols.join(",")];
-    rows.forEach(r => lines.push(cols.map(c => csvChamp(r[c])).join(",")));
+    rows.forEach(r => lines.push(cols.map(c => csvField(r[c])).join(",")));
     return lines.join("\n") + "\n";
   }
 
-  return { csvParse, csvChamp, csvSerialiser };
+  return { csvParse, csvField, csvSerialize };
 })();

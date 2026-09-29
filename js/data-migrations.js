@@ -1,7 +1,7 @@
 /* Migrations: schema version and fixes to existing data.
  *
  * Everything that rewrites already stored data to follow a code change
- * lives here, and nowhere else. `pour(state, helpers)` binds the steps to the
+ * lives here, and nowhere else. `forState(state, helpers)` binds the steps to the
  * state owned by data.js; `helpers` brings what writes into the state outside
  * the tables (tombstones, settings reading). The normalisers and the seeds
  * come from DATA_SCHEMA. */
@@ -9,10 +9,10 @@
 
 const DATA_MIGRATIONS = (() => {
 
-  function pour(state, helpers) {
-    const { marquerSupprime, reglagesCourants } = helpers;
-    const { PUISSANCE_FEU_HISTORIQUE, estampiller, nouvelId, dateLocaleAujourdhui, normaliserReglages,
-      normaliserRecette, normaliserAchat, recettesDefaut, tassesDefaut } = DATA_SCHEMA;
+  function forState(state, helpers) {
+    const { markDeleted, currentSettings } = helpers;
+    const { HISTORICAL_FIRE_POWER, stampRow, newId, localDateToday, normalizeSettings,
+      normalizeRecipe, normalizePurchase, defaultRecipes, defaultCups } = DATA_SCHEMA;
 
     // ---------- Migration: old recipe names and old coffee cards ----------
     // Idempotent: can run on every load without side effects.
@@ -32,12 +32,12 @@ const DATA_MIGRATIONS = (() => {
        caught up by the first device that opens it, whichever it is.
 
        TO ADD A MIGRATION: one more step at the END, with the next number,
-       and `SCHEMA_ACTUEL` incremented. Never renumber, never insert in the
+       and `CURRENT_SCHEMA` incremented. Never renumber, never insert in the
        middle: the number already written at Chris's is a promise.
 
        Each step touches ONLY the previously seeded value. A step that
        overwrote a deliberately chosen setting would be a bug, not a migration. */
-    const SCHEMA_ACTUEL = 20;
+    const CURRENT_SCHEMA = 20;
 
     // Fix of the fire power of Brikka recipes: Chris's scale has moved
     // twice, 3 then 4 then 2.
@@ -46,28 +46,28 @@ const DATA_MIGRATIONS = (() => {
       state.recettes.forEach(rec => {
         if (rec.methode !== "Brikka" || !applies(rec)) return;
         rec.puissance_feu = value;
-        estampiller(rec);
+        stampRow(rec);
         changed = true;
       });
       return changed;
     };
 
-    const PAS_DE_SCHEMA = [
-      { v: 1, nom: "feu 3 devient 4", appliquer: setBrikkaFire(r => Number(r.puissance_feu) === 3, 4) },
-      { v: 2, nom: "feu 4 devient 2", appliquer: setBrikkaFire(r => Number(r.puissance_feu) === 4, 2) },
+    const SCHEMA_STEPS = [
+      { v: 1, nom: "feu 3 devient 4", apply: setBrikkaFire(r => Number(r.puissance_feu) === 3, 4) },
+      { v: 2, nom: "feu 4 devient 2", apply: setBrikkaFire(r => Number(r.puissance_feu) === 4, 2) },
       // Recipes seeded before the field existed carry nothing: the Fire column
       // of Settings stayed empty and only the fallback saved the prefill.
       { v: 3, nom: "feu vide devient 2",
-        appliquer: setBrikkaFire(r => r.puissance_feu === "" || r.puissance_feu === undefined, 2) },
+        apply: setBrikkaFire(r => r.puissance_feu === "" || r.puissance_feu === undefined, 2) },
       // 100 g was an estimate, 150 g is the real capacity of the boiler.
       // And no more target temperature: on the Brikka the flame decides.
-      { v: 4, nom: "chaudière Brikka a 150 g", appliquer: () => {
+      { v: 4, nom: "chaudière Brikka a 150 g", apply: () => {
         let changed = false;
         state.recettes.forEach(rec => {
           if (rec.methode !== "Brikka" || Number(rec.eau) !== 100) return;
           rec.eau = 150;
           rec.temp = "";
-          estampiller(rec);
+          stampRow(rec);
           changed = true;
         });
         return changed;
@@ -78,14 +78,14 @@ const DATA_MIGRATIONS = (() => {
          A recipe seeded AFTER this step with another dial (the Neo Brew,
          v8.63, extra coarse) is not affected: on a new logbook, which plays
          every step, it fell back to 1.5.0. */
-      { v: 5, nom: "molette unique a 1.5.0", appliquer: () => {
+      { v: 5, nom: "molette unique a 1.5.0", apply: () => {
         let changed = false;
         state.recettes.forEach(rec => {
           if (rec.dial === "1.5.0") return;
-          const seed = RECETTES_DEPART.find(d => d.id === rec.id);
+          const seed = STARTER_RECIPES.find(d => d.id === rec.id);
           if (seed && seed.dial !== "1.5.0") return;
           rec.dial = "1.5.0";
-          estampiller(rec);
+          stampRow(rec);
           changed = true;
         });
         return changed;
@@ -93,7 +93,7 @@ const DATA_MIGRATIONS = (() => {
       /* Chronicler and Sweet: 240 g, not 225. The source document says "15 g / 240 g,
          ratio 1:16" with a first pour of 120 g; the original transcription
          had shrunk the recipe by 6 %. */
-      { v: 6, nom: "Chronicler a 240 g", appliquer: () => {
+      { v: 6, nom: "Chronicler a 240 g", apply: () => {
         let changed = false;
         state.recettes.forEach(rec => {
           if (rec.famille !== "chronicler" || Number(rec.eau) !== 225) return;
@@ -104,7 +104,7 @@ const DATA_MIGRATIONS = (() => {
             texte: String(e.texte).split("112 g").join("120 g").split("225 g").join("240 g"),
           }));
           rec.note = String(rec.note || "").split("225 g").join("240 g").split("affiche 225").join("affiche 240");
-          estampiller(rec);
+          stampRow(rec);
           changed = true;
         });
         return changed;
@@ -130,7 +130,7 @@ const DATA_MIGRATIONS = (() => {
 
          Each replacement TARGETS the old text: a recipe Chris had already
          rewritten by hand is not touched. */
-      { v: 7, nom: "eau froide Brikka et sens de la mouture", appliquer: () => {
+      { v: 7, nom: "eau froide Brikka et sens de la mouture", apply: () => {
         let changed = false;
         const replaceIn = (rec, field, before, after) => {
           if (String(rec[field] || "").indexOf(before) < 0) return false;
@@ -155,7 +155,7 @@ const DATA_MIGRATIONS = (() => {
             "seuls la température de départ, la flamme et la mouture changent. À savoir avant de comparer : Bialetti recommande l'eau FROIDE pour la Brikka, l'eau préchauffée étant la méthode de la Moka Express. Cette recette applique donc volontairement l'autre méthode.")) moved = true;
           if (replaceIn(rec, "pourQui", "Plus chaud, plus fin, plus long.",
             "Plus chaud et plus long. Pour le plus fin, descendre d'un cran à la main : les dix recettes portent 1.5.0 depuis que je ne recompte plus les crans à chaque changement de machine.")) moved = true;
-          if (moved) { estampiller(rec); changed = true; }
+          if (moved) { stampRow(rec); changed = true; }
         });
         return changed;
       } },
@@ -167,13 +167,13 @@ const DATA_MIGRATIONS = (() => {
 
          Only if it still carries its original name: renamed, it has become a
          personal recipe and no longer belongs to us. */
-      { v: 8, nom: "fusion des deux Brikka au lait", appliquer: () => {
+      { v: 8, nom: "fusion des deux Brikka au lait", apply: () => {
         let changed = false;
         const before = state.recettes.length;
         state.recettes = state.recettes.filter(rec =>
           !(rec.id === "brikka-cappuccino" && rec.nom === "Brikka cappuccino"));
         if (state.recettes.length !== before) {
-          marquerSupprime("recettes", "brikka-cappuccino");
+          markDeleted("recettes", "brikka-cappuccino");
           changed = true;
         }
         /* The SURVIVOR takes the merged name and the seed's content. Without
@@ -184,12 +184,12 @@ const DATA_MIGRATIONS = (() => {
            The original name still in place serves as proof that the recipe
            has not been edited by hand. Renamed, it belongs to Chris and we
            leave it alone. */
-        const merged = RECETTES_DEPART.find(d => d.id === "brikka-flatwhite");
+        const merged = STARTER_RECIPES.find(d => d.id === "brikka-flatwhite");
         state.recettes.forEach(rec => {
           if (rec.id !== "brikka-flatwhite" || rec.nom !== "Brikka flat white" || !merged) return;
           ["nom", "sousTitre", "etapes", "pourQui", "note", "volumeTypique", "lait", "cafesAssocies"]
             .forEach(field => { rec[field] = merged[field]; });
-          estampiller(rec);
+          stampRow(rec);
           changed = true;
         });
         return changed;
@@ -201,8 +201,8 @@ const DATA_MIGRATIONS = (() => {
        shift, and the Sweet, a variant of the Chronicler shown on the same
        card, takes back its family's label. Targeted on the old label: a
        label rewritten by hand is not touched. The display ORDER, for its
-       part, is restored on every load by migrerDonnees. */
-    { v: 9, nom: "numéros des recettes après Hoffmann et One and Done", appliquer: () => {
+       part, is restored on every load by migrateData. */
+    { v: 9, nom: "numéros des recettes après Hoffmann et One and Done", apply: () => {
       const newNumbers = { "sweet": ["Recette 2", "Recette 1"], "costaud-bloom": ["Recette 3", "Recette 4"],
         "costaud-immersion": ["Recette 4", "Recette 5"], "tetsu-devil": ["Recette 5", "Recette 6"],
         "sherrycipe": ["Recette 6", "Recette 7"] };
@@ -211,7 +211,7 @@ const DATA_MIGRATIONS = (() => {
         const n = newNumbers[rec.id];
         if (!n || rec.numero !== n[0]) return;
         rec.numero = n[1];
-        estampiller(rec);
+        stampRow(rec);
         changed = true;
       });
       return changed;
@@ -219,12 +219,12 @@ const DATA_MIGRATIONS = (() => {
 
     /* The Sweet moves to the end of the list (v7.95) and takes the label « Recette 8 ».
        Targeted on the label set by step v9, otherwise nothing. */
-    { v: 10, nom: "la Sweet en dernier", appliquer: () => {
+    { v: 10, nom: "la Sweet en dernier", apply: () => {
       let changed = false;
       state.recettes.forEach(rec => {
         if (rec.id !== "sweet" || rec.numero !== "Recette 1") return;
         rec.numero = "Recette 8";
-        estampiller(rec);
+        stampRow(rec);
         changed = true;
       });
       return changed;
@@ -237,10 +237,10 @@ const DATA_MIGRATIONS = (() => {
        degrees, and the full boil follows some thirty seconds later, so 2:00.
        Targeted on the invented value only: a duration timed by hand is not
        touched. */
-    { v: 11, nom: "bouilloire recalée de 4:00 a 2:00", appliquer: () => {
-      const r = reglagesCourants();
+    { v: 11, nom: "bouilloire recalée de 4:00 a 2:00", apply: () => {
+      const r = currentSettings();
       if (Number(r.ebullition_s) !== 240) return false;
-      state.reglages = [estampiller(normaliserReglages({ ...r, ebullition_s: 120 }))];
+      state.reglages = [stampRow(normalizeSettings({ ...r, ebullition_s: 120 }))];
       return true;
     } },
 
@@ -248,7 +248,7 @@ const DATA_MIGRATIONS = (() => {
        the whole bed, and the recipe step did not say it clearly enough
        (Chris's request, 14 September 2026). Targeted on the old text: a
        recipe rewritten by hand is not touched. */
-    { v: 12, nom: "Hoffmann, tourbillon pendant le bloom", appliquer: () => {
+    { v: 12, nom: "Hoffmann, tourbillon pendant le bloom", apply: () => {
       const before = "Bloom : verser 50 g lentement, en quinze secondes environ, vanne OUVERTE. Tourbillon doux de la carafe.";
       const after = "Bloom : verser 50 g lentement, en quinze secondes environ, vanne OUVERTE. PENDANT le bloom, tourbillon doux du porte-filtre pour mouiller tout le lit, aucune poche sèche.";
       let changed = false;
@@ -257,7 +257,7 @@ const DATA_MIGRATIONS = (() => {
         const steps = (rec.etapes || []).map(e => (e.texte === before ? { ...e, texte: after } : e));
         if (steps.every((e, i) => e === rec.etapes[i])) return;
         rec.etapes = steps;
-        estampiller(rec);
+        stampRow(rec);
         changed = true;
       });
       return changed;
@@ -268,7 +268,7 @@ const DATA_MIGRATIONS = (() => {
        with a spoon when the dripper cannot be swirled, which is the case of a
        Switch on the scale. Chris spotted it on 14 September 2026.
        Targeted on the old text, the note too. */
-    { v: 13, nom: "Hoffmann, la cuillère est permise", appliquer: () => {
+    { v: 13, nom: "Hoffmann, la cuillère est permise", apply: () => {
       const before = "Tourbillon doux, AUCUNE cuillère. Laisser s'écouler, fin vers 2:45 à 3:15.";
       const after = "Tourbillon doux du porte-filtre, ou un petit coup de cuillère, un aller et un retour, si le Switch est trop lourd à faire tourner sur la balance : même effet, décoller la mouture des parois et aplanir le lit. Laisser s'écouler, fin vers 2:45 à 3:15.";
       const noteBefore = "Il conseille medium-fine, un cran plus fin qu'en 500 ml.";
@@ -289,7 +289,7 @@ const DATA_MIGRATIONS = (() => {
         }
         if (!moved) return;
         rec.etapes = steps;
-        estampiller(rec);
+        stampRow(rec);
         changed = true;
       });
       return changed;
@@ -303,7 +303,7 @@ const DATA_MIGRATIONS = (() => {
        Only touches Brikkas still at 2, the seeded value: a recipe Chris
        set himself to something else keeps its number. */
     { v: 14, nom: "feu 2 redevient 3",
-      appliquer: setBrikkaFire(r => Number(r.puissance_feu) === 2, 3) },
+      apply: setBrikkaFire(r => Number(r.puissance_feu) === 2, 3) },
 
     /* The kettle heats along a curve (v8.59), no longer a straight line: the
        degrees estimated under the old model were too low mid-heating (82
@@ -313,8 +313,8 @@ const DATA_MIGRATIONS = (() => {
        is not touched. Idempotent: after the pass, the cup no longer matches
        the line, except at both ends, where the two models say the same
        thing. */
-    { v: 15, nom: "bouilloire en courbe", appliquer: () => {
-      const r = reglagesCourants();
+    { v: 15, nom: "bouilloire en courbe", apply: () => {
+      const r = currentSettings();
       const e = Number(r.ebullition_s);
       if (!(e > 0)) return false;
       let changed = false;
@@ -324,10 +324,10 @@ const DATA_MIGRATIONS = (() => {
         if (!Number.isFinite(s) || s < 0 || x.temperature_c === "" || x.temperature_c === undefined) return;
         const linear = Math.round(28 + 72 * Math.min(1, s / e));
         if (Number(x.temperature_c) !== linear) return;
-        const curved = temperatureDepuisChauffe(s, e, r.bulles_s);
+        const curved = temperatureFromHeating(s, e, r.bulles_s);
         if (curved === "" || curved === linear) return;
         x.temperature_c = curved;
-        estampiller(x);
+        stampRow(x);
         changed = true;
       });
       return changed;
@@ -336,13 +336,13 @@ const DATA_MIGRATIONS = (() => {
     /* Recipe videos (v8.64): an already stored original recipe receives its
        seed's link. Targeted on an EMPTY field: a link set by hand is not
        replaced. */
-    { v: 16, nom: "videos des recettes", appliquer: () => {
+    { v: 16, nom: "videos des recettes", apply: () => {
       let changed = false;
       state.recettes.forEach(rec => {
-        const seed = RECETTES_DEPART.find(d => d.id === rec.id);
+        const seed = STARTER_RECIPES.find(d => d.id === rec.id);
         if (!seed || !seed.video || rec.video) return;
         rec.video = seed.video;
-        estampiller(rec);
+        stampRow(rec);
         changed = true;
       });
       return changed;
@@ -352,14 +352,14 @@ const DATA_MIGRATIONS = (() => {
        recipe is the 4:6 method, not Tetsu's « Devil », which is made at two
        temperatures. The stored recipe is renamed if it still carries the old
        name (a name edited by hand is not touched). Its cups and coffees
-       follow through RENOMMAGES_RECETTES, in step 1 of migrerDonnees. */
-    { v: 17, nom: "Tetsu Devil devient Tetsu 4:6", appliquer: () => {
+       follow through RECIPE_RENAMES, in step 1 of migrateData. */
+    { v: 17, nom: "Tetsu Devil devient Tetsu 4:6", apply: () => {
       const before = "The Tetsu Devil", after = "Tetsu 4:6";
       let changed = false;
       state.recettes.forEach(rec => {
         if (rec.id !== "tetsu-devil" || rec.nom !== before) return;
         rec.nom = after;
-        estampiller(rec);
+        stampRow(rec);
         changed = true;
       });
       return changed;
@@ -367,12 +367,12 @@ const DATA_MIGRATIONS = (() => {
 
     /* The Brikka au lait carried number 3, shown next to the « Recette 3 »
        (One and Done) of the Guide (v8.74). Targeted on the original value. */
-    { v: 18, nom: "Brikka au lait sans numero", appliquer: () => {
+    { v: 18, nom: "Brikka au lait sans numero", apply: () => {
       let changed = false;
       state.recettes.forEach(rec => {
         if (rec.id !== "brikka-flatwhite" || String(rec.numero) !== "3") return;
         rec.numero = "";
-        estampiller(rec);
+        stampRow(rec);
         changed = true;
       });
       return changed;
@@ -381,14 +381,14 @@ const DATA_MIGRATIONS = (() => {
        up: empty, they keep the previous computation. The step only exists
        to bump the version, so that a tab still on the old one is rejected
        by the sync instead of erasing these columns it does not know. */
-    { v: 19, nom: "compte a la main des sachets", appliquer: () => false },
+    { v: 19, nom: "compte a la main des sachets", apply: () => false },
     /* Tetsu 4:6 (v9.00): the recipe card gives the temperature by roast
        (Philocoffea: 93, 88, 83 °C), is poured by eye and no longer every 45
        seconds, and its note cites the original video. Field by field,
        targeted on the previously seeded text: a field edited by hand is not
        touched. */
-    { v: 20, nom: "Tetsu 4:6, temperature par torrefaction", appliquer: () => {
-      const original = recettesDefaut().find(d => d.id === "tetsu-devil");
+    { v: 20, nom: "Tetsu 4:6, temperature par torrefaction", apply: () => {
+      const original = defaultRecipes().find(d => d.id === "tetsu-devil");
       if (!original) return false;
       const before = {
         tempTexte: "93 °C",
@@ -403,7 +403,7 @@ const DATA_MIGRATIONS = (() => {
         Object.keys(before).forEach(k => {
           if (rec[k] === before[k]) { rec[k] = original[k]; edited = true; }
         });
-        if (edited) { estampiller(rec); changed = true; }
+        if (edited) { stampRow(rec); changed = true; }
       });
       return changed;
     } },
@@ -411,18 +411,18 @@ const DATA_MIGRATIONS = (() => {
 
     /* Applies the missing steps and writes the new version. Returns true if
        something moved, so the caller knows it must persist. */
-    function appliquerSchema() {
-      const version = Number(reglagesCourants().schema_version) || 0;
-      if (version >= SCHEMA_ACTUEL) return false;
-      PAS_DE_SCHEMA.filter(p => p.v > version).forEach(p => p.appliquer());
-      state.reglages = [estampiller(normaliserReglages({
-        ...reglagesCourants(),
-        schema_version: SCHEMA_ACTUEL,
+    function applySchema() {
+      const version = Number(currentSettings().schema_version) || 0;
+      if (version >= CURRENT_SCHEMA) return false;
+      SCHEMA_STEPS.filter(p => p.v > version).forEach(p => p.apply());
+      state.reglages = [stampRow(normalizeSettings({
+        ...currentSettings(),
+        schema_version: CURRENT_SCHEMA,
       }))];
       return true;
     }
 
-    function migrerDonnees() {
+    function migrateData() {
       // 1. Renames old recipes in the history and the coffees.
       /* STAMPED (v8.65): without a new update date, the sync kept the
          server row, with the old name, and each device renamed on its own
@@ -430,22 +430,22 @@ const DATA_MIGRATIONS = (() => {
          longer carries a name from the table, so it is stamped only
          once. */
       state.extractions.forEach(e => {
-        if (RENOMMAGES_RECETTES[e.recette]) { e.recette = RENOMMAGES_RECETTES[e.recette]; estampiller(e); }
+        if (RECIPE_RENAMES[e.recette]) { e.recette = RECIPE_RENAMES[e.recette]; stampRow(e); }
       });
       state.cafes.forEach(c => {
-        if (RENOMMAGES_RECETTES[c.recette_recommandee]) { c.recette_recommandee = RENOMMAGES_RECETTES[c.recette_recommandee]; estampiller(c); }
+        if (RECIPE_RENAMES[c.recette_recommandee]) { c.recette_recommandee = RECIPE_RENAMES[c.recette_recommandee]; stampRow(c); }
       });
       // 2. Removes the original recipes of the old generation, keeps the
       //    personal recipes, and guarantees the new ones are present.
-      const hadOldOnes = state.recettes.some(r => ANCIENS_SEED_IDS.includes(r.id));
+      const hadOldOnes = state.recettes.some(r => OLD_SEED_IDS.includes(r.id));
       if (hadOldOnes) {
-        const personal = state.recettes.filter(r => !ANCIENS_SEED_IDS.includes(r.id) && !RECETTES_DEPART.some(d => d.id === r.id));
-        state.recettes = recettesDefaut().concat(personal);
+        const personal = state.recettes.filter(r => !OLD_SEED_IDS.includes(r.id) && !STARTER_RECIPES.some(d => d.id === r.id));
+        state.recettes = defaultRecipes().concat(personal);
       } else {
-        RECETTES_DEPART.forEach(d => {
+        STARTER_RECIPES.forEach(d => {
           const idx = state.recettes.findIndex(r => r.id === d.id);
           if (idx < 0) {
-            state.recettes.push(normaliserRecette({ ...d, etapes: d.etapes.map(e => ({ ...e })), cafesAssocies: [...d.cafesAssocies] }));
+            state.recettes.push(normalizeRecipe({ ...d, etapes: d.etapes.map(e => ({ ...e })), cafesAssocies: [...d.cafesAssocies] }));
             return;
           }
           // Structural upgrade: families and variants (v7), without touching
@@ -465,11 +465,11 @@ const DATA_MIGRATIONS = (() => {
       // 2 bis. Display ORDER: the original recipes in the seed's order, the
       //    personal ones afterwards in their own order. Idempotent. Without it,
       //    a recipe added to the seed landed at the end of the list for anyone
-      //    who already had data, whatever its position in RECETTES_DEPART.
-      const rank = new Map(RECETTES_DEPART.map((d, i) => [d.id, i]));
+      //    who already had data, whatever its position in STARTER_RECIPES.
+      const rank = new Map(STARTER_RECIPES.map((d, i) => [d.id, i]));
       state.recettes = state.recettes
-        .map((r, i) => ({ r, cle: rank.has(r.id) ? rank.get(r.id) : RECETTES_DEPART.length + i }))
-        .sort((x, y) => x.cle - y.cle)
+        .map((r, i) => ({ r, key: rank.has(r.id) ? rank.get(r.id) : STARTER_RECIPES.length + i }))
+        .sort((x, y) => x.key - y.key)
         .map(x => x.r);
       // 3. Updates the Sáng Tạo 4 and Balanced cards if they have not
       //    received their corrections yet (marked by the tag).
@@ -493,7 +493,7 @@ const DATA_MIGRATIONS = (() => {
         });
       }
       // 4. Default cups if missing.
-      if (!state.tasses.length) state.tasses = tassesDefaut();
+      if (!state.tasses.length) state.tasses = defaultCups();
       // 5. Date the coffees were added: if missing, take the date of the
       //    coffee's first extraction (best approximation for existing data).
       //    Coffees never extracted stay without a date (nothing shown).
@@ -511,14 +511,14 @@ const DATA_MIGRATIONS = (() => {
       //    entered or corrected by hand is never overwritten.
       state.extractions.forEach(e => {
         if (e.methode === "Brikka" && (e.puissance_feu === "" || e.puissance_feu === undefined)) {
-          e.puissance_feu = PUISSANCE_FEU_HISTORIQUE;
-          estampiller(e);
+          e.puissance_feu = HISTORICAL_FIRE_POWER;
+          stampRow(e);
         }
       });
 
-      // The fixes of seeded values live in PAS_DE_SCHEMA, above:
+      // The fixes of seeded values live in SCHEMA_STEPS, above:
       // they depend on a version number stored WITH the data.
-      appliquerSchema();
+      applySchema();
 
       // 6 bis. Extractions made with preheated water leave "Brikka
       //    classique" for the dedicated variant. Preheating is not a serving
@@ -533,7 +533,7 @@ const DATA_MIGRATIONS = (() => {
       state.extractions.forEach(e => {
         if (e.recette === "Brikka classique" && Number(e.eau_prechauffee) === 1) {
           e.recette = PREHEATED_RECIPE;
-          estampiller(e);
+          stampRow(e);
         }
       });
 
@@ -547,9 +547,9 @@ const DATA_MIGRATIONS = (() => {
         const dates = state.extractions
           .filter(e => e.cafe_id === c.id && e.date_heure)
           .map(e => e.date_heure).sort();
-        const date = c.date_ajout || (dates.length ? dates[0].slice(0, 10) : dateLocaleAujourdhui());
-        state.achats.push(normaliserAchat({
-          id: nouvelId("a", state.achats),
+        const date = c.date_ajout || (dates.length ? dates[0].slice(0, 10) : localDateToday());
+        state.achats.push(normalizePurchase({
+          id: newId("a", state.achats),
           cafe_id: c.id,
           date_achat: date,
           format_grammes: c.format_grammes,
@@ -559,8 +559,8 @@ const DATA_MIGRATIONS = (() => {
       });
     }
 
-    return { SCHEMA_ACTUEL, PAS_DE_SCHEMA, appliquerSchema, migrerDonnees };
+    return { CURRENT_SCHEMA, SCHEMA_STEPS, applySchema, migrateData };
   }
 
-  return { pour };
+  return { forState };
 })();

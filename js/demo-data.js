@@ -1,7 +1,7 @@
 // Embedded demo dataset. Identical to the files in the demo folder.
 // Generated once, do not edit by hand: go through the CSVs.
 "use strict";
-const DEMO_CAFES_CSV = `id,nom,torrefacteur,origine,espece,procede,torrefaction,deja_moulu,pourcentage_cafe_reel,tag,notes_annoncees,format_grammes,prix_vnd,date_torrefaction,machine_recommandee,recette_recommandee,date_ajout,actif
+const DEMO_COFFEES_CSV = `id,nom,torrefacteur,origine,espece,procede,torrefaction,deja_moulu,pourcentage_cafe_reel,tag,notes_annoncees,format_grammes,prix_vnd,date_torrefaction,machine_recommandee,recette_recommandee,date_ajout,actif
 c1,Trung Nguyên Sáng Tạo 4,Trung Nguyên,"Buôn Ma Thuột, Vietnam","Blend Arabica, Robusta, Excelsa, Catimor",Torréfaction traditionnelle avec additifs,Foncée,1,82,café aromatisé,"Corps rond, sucré, faible acidité, arôme persistant. Étiquette : café 82 pour cent, soja torréfié, sirop de sucre brun, substitut de beurre, arômes de synthèse, beurre.",340,148800,2026-05-20,Brikka,Brikka classique,,1
 c2,Bana Cofe G4,Bana Cofe,Vietnam,Robusta,Rang bơ,Foncée,1,100,,"Beurre, caramel, sucre roux, déjà moulu",250,87000,2026-06-15,Brikka,Brikka classique,,1
 c3,Cà Phê Mít Liberica,Fine Coffee Agency,Vietnam,Liberica,Natural,Medium,0,100,,"Jacquier mûr, cacao, amande",200,280000,2026-06-20,Les deux,The Coffee Chronicler's Recipe,,1

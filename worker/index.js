@@ -16,7 +16,7 @@
  * this file only exists on Cloudflare.
  */
 
-import { sauvegarderDocument, handleSync } from "./sync.js";
+import { saveDocument, handleSync } from "./sync.js";
 
 const SESSION_COOKIE = "cel_session";
 const SESSION_DAYS = 30;
@@ -34,7 +34,7 @@ export default {
      wrangler.jsonc. Without a bound database, nothing to back up. */
   async scheduled(event, env, ctx) {
     if (!env.DB) return;
-    ctx.waitUntil(sauvegarderDocument(env.DB, Date.now()).catch(e => console.error("sauvegarde", e && e.message)));
+    ctx.waitUntil(saveDocument(env.DB, Date.now()).catch(e => console.error("sauvegarde", e && e.message)));
   },
 
   async fetch(request, env) {
@@ -289,10 +289,10 @@ const FONT_PATH = /\.woff2?$/;
    messages to copy are in <pre>), and the stylesheet keeps its lines.
    Versioned files are immutable: their minified version is cached by URL,
    computed once. */
-export function allegerCss(text) {
+export function minifyCss(text) {
   return text.replace(/\/\*[\s\S]*?\*\//g, "").split("\n").map(l => l.trim()).filter(Boolean).join("\n");
 }
-export function allegerHtml(text) {
+export function minifyHtml(text) {
   return text.replace(/<!--[\s\S]*?-->/g, "");
 }
 async function minifyIfUseful(response, url) {
@@ -306,7 +306,7 @@ async function minifyIfUseful(response, url) {
     if (cached) return cached;
   }
   const text = await response.text();
-  const minified = new Response(css ? allegerCss(text) : allegerHtml(text), response);
+  const minified = new Response(css ? minifyCss(text) : minifyHtml(text), response);
   minified.headers.delete("Content-Length");
   if (cache) await cache.put(url.toString(), minified.clone());
   return minified;
@@ -318,10 +318,10 @@ async function minifyIfUseful(response, url) {
    changing this script without updating it would block it, and the test
    flags it first. The recipe video player comes from youtube-nocookie.
    And nobody can frame the logbook in their page. */
-export const EMPREINTE_SCRIPT_THEME = "sha256-E0DO0KwBV+TWsbuy+0OAxmRouDQMDfBZSyl6f2Ek81E=";
-export const POLITIQUE_SECURITE = [
+export const THEME_SCRIPT_HASH = "sha256-E0DO0KwBV+TWsbuy+0OAxmRouDQMDfBZSyl6f2Ek81E=";
+export const SECURITY_POLICY = [
   "default-src 'self'",
-  "script-src 'self' '" + EMPREINTE_SCRIPT_THEME + "'",
+  "script-src 'self' '" + THEME_SCRIPT_HASH + "'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self'",
@@ -341,7 +341,7 @@ function servePrivately(response, url) {
   copy.headers.set("X-Content-Type-Options", "nosniff");
   copy.headers.set("Referrer-Policy", "same-origin");
   if (String(copy.headers.get("Content-Type") || "").includes("text/html")) {
-    copy.headers.set("Content-Security-Policy", POLITIQUE_SECURITE);
+    copy.headers.set("Content-Security-Policy", SECURITY_POLICY);
   }
   const versioned = url && IMMUTABLE_PATH.test(url.pathname) &&
     (url.searchParams.has("v") || FONT_PATH.test(url.pathname));

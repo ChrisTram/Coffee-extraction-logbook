@@ -9,7 +9,7 @@
 
 const DATA_SCHEMA = (() => {
 
-  const CAFE_COLS = ["id", "nom", "torrefacteur", "origine", "espece", "procede", "torrefaction",
+  const COFFEE_COLS = ["id", "nom", "torrefacteur", "origine", "espece", "procede", "torrefaction",
     "deja_moulu", "pourcentage_cafe_reel", "tag", "notes_annoncees", "format_grammes", "prix_vnd",
     "date_torrefaction", "machine_recommandee", "recette_recommandee", "date_ajout", "actif"];
 
@@ -19,27 +19,27 @@ const DATA_SCHEMA = (() => {
     "note_sur_10", "diagnostic", "descripteurs", "commentaire", "puissance_feu", "ratee", "chauffe_s"];
 
   /* Settings for Chris's equipment. ONE single row, with a fixed id, because
-     there is a single user: see normaliserReglages for why it is a table.
+     there is a single user: see normalizeSettings for why it is a table.
      maj_le is not in the columns, as everywhere else. */
-  const REGLAGE_ID = "moi";
+  const SETTINGS_ID = "moi";
 
-  const REGLAGE_COLS = ["id", "dose_g", "puissance_feu", "mouture_dial", "schema_version", "ebullition_s",
+  const SETTINGS_COLS = ["id", "dose_g", "puissance_feu", "mouture_dial", "schema_version", "ebullition_s",
     "pas_crans", "pas_degres", "pas_feu", "pas_eau_g", "pas_dose_g", "dessins", "bulles_s"];
 
-  const RECETTE_COLS = ["id", "nom", "numero", "methode", "famille", "variante", "sous_titre", "dose_g", "eau_g",
+  const RECIPE_COLS = ["id", "nom", "numero", "methode", "famille", "variante", "sous_titre", "dose_g", "eau_g",
     "temperature_c", "temp_texte", "mouture_dial", "ratio_texte", "total_texte", "lait",
     "etapes", "pour_qui", "cafes_associes", "note", "par_defaut", "avancee", "variantes", "actif",
     "puissance_feu", "volume_typique", "video"];
 
-  const TASSE_COLS = ["id", "nom", "contenance_ml"];
+  const CUP_COLS = ["id", "nom", "contenance_ml"];
 
   /* BACKFILL value for Brikka brews already saved, which did not have this
      field. This is NOT the form default (see DEFAULT_PUISSANCE_FEU in app.js,
      at 4): history keeps what was plausible when it was entered, we do not
      rewrite the past when the current setting changes. */
-  const PUISSANCE_FEU_HISTORIQUE = 3;
+  const HISTORICAL_FIRE_POWER = 3;
 
-  const ACHAT_COLS = ["id", "cafe_id", "date_achat", "format_grammes", "prix_vnd", "date_torrefaction", "date_ouverture",
+  const PURCHASE_COLS = ["id", "cafe_id", "date_achat", "format_grammes", "prix_vnd", "date_torrefaction", "date_ouverture",
     "restant_g", "restant_le"];
 
   /* THE LOGBOOK CLOCK (v8.71): the device clock corrected by its offset from
@@ -47,16 +47,16 @@ const DATA_SCHEMA = (() => {
      merge for ten minutes. An offset under two seconds is network noise:
      ignored. */
   let clockOffset = 0;
-  function maintenant() { return Date.now() + clockOffset; }
-  function reglerDecalage(ms) {
+  function clockNow() { return Date.now() + clockOffset; }
+  function setClockOffset(ms) {
     const n = Number(ms);
     clockOffset = Number.isFinite(n) && Math.abs(n) > 2000 ? n : 0;
   }
 
   /* Stamps a row that was just written, so the merge knows which is the
      most recent. Call it in MUTATIONS only. */
-  function estampiller(row) {
-    row.maj_le = maintenant();
+  function stampRow(row) {
+    row.maj_le = clockNow();
     return row;
   }
 
@@ -83,28 +83,28 @@ const DATA_SCHEMA = (() => {
      If the CONTENT changed compared with what we had in memory, we stamp it
      now: a spreadsheet edit is a deliberate act, it must win the merge. An
      unknown row is new, so it is stamped too. */
-  function reporterHorodatage(readRows, known, cols) {
+  function carryTimestamps(readRows, known, cols) {
     const byId = new Map((known || []).map(r => [r.id, r]));
     const fields = cols.filter(c => c !== "id");
     return readRows.map(row => {
       const prev = byId.get(row.id);
-      if (!prev) return estampiller(row);
+      if (!prev) return stampRow(row);
       const same = fields.every(c => {
         const a = prev[c], b = row[c];
         return String(a === undefined || a === null ? "" : a) === String(b === undefined || b === null ? "" : b);
       });
-      row.maj_le = same ? (Number(prev.maj_le) || 0) : maintenant();
+      row.maj_le = same ? (Number(prev.maj_le) || 0) : clockNow();
       return row;
     });
   }
 
-  function normaliserCafe(r) {
+  function normalizeCoffee(r) {
     return {
       id: safeId(r.id),
       // Sync timestamp. KEPT as is here: normalising runs on load as well
       // as on write, and restamping on load would make every device believe
       // it is the most recent. Mutations do the stamping, explicitly. Never
-      // in CSVs: the exported columns are listed by hand (see csvSerialiser).
+      // in CSVs: the exported columns are listed by hand (see csvSerialize).
       maj_le: Number(r.maj_le) || 0,
       nom: safeText(r.nom), torrefacteur: safeText(r.torrefacteur), origine: safeText(r.origine),
       espece: safeText(r.espece), procede: safeText(r.procede), torrefaction: safeText(r.torrefaction),
@@ -125,17 +125,17 @@ const DATA_SCHEMA = (() => {
 
   // Today's date in LOCAL time (never toISOString, UTC+7 offset). Same
   // definition as everywhere else: outils.js.
-  function dateLocaleAujourdhui() {
-    return OUTILS.cleLocale(new Date());
+  function localDateToday() {
+    return TOOLS.localDateKey(new Date());
   }
 
-  function normaliserExtraction(r) {
+  function normalizeExtraction(r) {
     return {
       id: safeId(r.id),
       // Sync timestamp. KEPT as is here: normalising runs on load as well
       // as on write, and restamping on load would make every device believe
       // it is the most recent. Mutations do the stamping, explicitly. Never
-      // in CSVs: the exported columns are listed by hand (see csvSerialiser).
+      // in CSVs: the exported columns are listed by hand (see csvSerialize).
       maj_le: Number(r.maj_le) || 0,
       date_heure: r.date_heure || "",
       cafe_id: r.cafe_id || "",
@@ -187,13 +187,13 @@ const DATA_SCHEMA = (() => {
      These three values describe Chris's EQUIPMENT, not his device: his
      grinder dial is the same seen from the phone and the computer, whereas
      the theme and the beeps rightly stay in localStorage. */
-  function normaliserReglages(r) {
+  function normalizeSettings(r) {
     const num = (v, min, max, fallback) => {
       const n = Number(v);
       return Number.isFinite(n) && n >= min && n <= max ? n : fallback;
     };
     return {
-      id: REGLAGE_ID,
+      id: SETTINGS_ID,
       maj_le: Number(r && r.maj_le) || 0,
       dose_g: num(r && r.dose_g, 0.1, 100, 15),
       /* 3, like the interface's factory fallback and the recipe seed: three
@@ -202,7 +202,7 @@ const DATA_SCHEMA = (() => {
       puissance_feu: num(r && r.puissance_feu, 1, 10, 3),
       mouture_dial: typeof (r && r.mouture_dial) === "string" && GRIND.parseDial(r.mouture_dial)
         ? r.mouture_dial : "1.5.0",
-      // Schema version of the document, see PAS_DE_SCHEMA. Stored here because
+      // Schema version of the document, see SCHEMA_STEPS. Stored here because
       // this row is the only synced place that is not coffee data: the
       // version must travel with the data it describes.
       schema_version: num(r && r.schema_version, 0, 999, 0),
@@ -217,7 +217,7 @@ const DATA_SCHEMA = (() => {
          when you typed a heating time. Chris has since measured his kettle,
          2 minutes from tap to rolling boil: the value is no longer invented,
          and the original reasoning no longer applies. THIS default is what
-         feeds replis.ebullition, not the interface constant. */
+         feeds fallbacks.boil, not the interface constant. */
       ebullition_s: num(r && r.ebullition_s, 30, 1800, 120),
       /* The kettle's second marker (v8.59): the first bubbles RISING, around
          88 °C. It bends the degree estimate (recettes.js). 1:30 by default,
@@ -242,13 +242,13 @@ const DATA_SCHEMA = (() => {
     };
   }
 
-  function normaliserRecette(r) {
+  function normalizeRecipe(r) {
     return {
       id: safeId(r.id),
       // Sync timestamp. KEPT as is here: normalising runs on load as well
       // as on write, and restamping on load would make every device believe
       // it is the most recent. Mutations do the stamping, explicitly. Never
-      // in CSVs: the exported columns are listed by hand (see csvSerialiser).
+      // in CSVs: the exported columns are listed by hand (see csvSerialize).
       maj_le: Number(r.maj_le) || 0,
       nom: safeText(r.nom),
       numero: safeText(r.numero),
@@ -283,7 +283,7 @@ const DATA_SCHEMA = (() => {
       ratioTexte: safeText(r.ratio_texte !== undefined ? r.ratio_texte : r.ratioTexte),
       totalTexte: safeText(r.total_texte !== undefined ? r.total_texte : r.totalTexte),
       etapes: (Array.isArray(r.etapes) ? r.etapes
-        : texteVersEtapes(String(r.etapes || "").split("||").join("\n"))).map(e => ({ ...e, texte: safeText(e.texte) })),
+        : textToSteps(String(r.etapes || "").split("||").join("\n"))).map(e => ({ ...e, texte: safeText(e.texte) })),
       pourQui: safeText(r.pour_qui !== undefined ? r.pour_qui : r.pourQui),
       cafesAssocies: (Array.isArray(r.cafesAssocies) ? r.cafesAssocies
         : String(r.cafes_associes || "").split(";").map(s => s.trim()).filter(Boolean)).map(safeText),
@@ -299,7 +299,7 @@ const DATA_SCHEMA = (() => {
     };
   }
 
-  function recetteVersLigne(r) {
+  function recipeToRow(r) {
     return {
       id: r.id, nom: r.nom, numero: r.numero, methode: r.methode, famille: r.famille,
       variante: r.variante,
@@ -307,7 +307,7 @@ const DATA_SCHEMA = (() => {
       dose_g: r.dose, eau_g: r.eau, temperature_c: r.temp, temp_texte: r.tempTexte,
       mouture_dial: r.dial, ratio_texte: r.ratioTexte, total_texte: r.totalTexte,
       lait: r.lait ? 1 : 0,
-      etapes: etapesVersTexte(r.etapes).split("\n").filter(Boolean).join(" || "),
+      etapes: stepsToText(r.etapes).split("\n").filter(Boolean).join(" || "),
       pour_qui: r.pourQui,
       cafes_associes: r.cafesAssocies.join(" ; "),
       note: r.note,
@@ -315,8 +315,8 @@ const DATA_SCHEMA = (() => {
       avancee: r.avancee ? 1 : 0,
       variantes: r.variantes ? 1 : 0,
       actif: r.actif,
-      /* puissance_feu was missing here although it has been in RECETTE_COLS
-         since it existed: csvSerialiser reads ligne[colonne], so the column
+      /* puissance_feu was missing here although it has been in RECIPE_COLS
+         since it existed: csvSerialize reads ligne[colonne], so the column
          came out EMPTY. Exporting the recipes then reading them back erased
          the heat target of all ten recipes, silently. The covered-columns
          check, in tools/data.test.mjs, now prevents the omission. */
@@ -326,15 +326,15 @@ const DATA_SCHEMA = (() => {
     };
   }
 
-  function recettesDefaut() {
-    return RECETTES_DEPART.map(r => normaliserRecette({
+  function defaultRecipes() {
+    return STARTER_RECIPES.map(r => normalizeRecipe({
       ...r,
       etapes: r.etapes.map(e => ({ ...e })),
       cafesAssocies: [...r.cafesAssocies],
     }));
   }
 
-  function normaliserAchat(r) {
+  function normalizePurchase(r) {
     return {
       id: safeId(r.id),
       maj_le: Number(r.maj_le) || 0,
@@ -356,21 +356,21 @@ const DATA_SCHEMA = (() => {
     };
   }
 
-  function normaliserTasse(r) {
+  function normalizeCup(r) {
     return {
       id: safeId(r.id),
       // Sync timestamp. KEPT as is here: normalising runs on load as well
       // as on write, and restamping on load would make every device believe
       // it is the most recent. Mutations do the stamping, explicitly. Never
-      // in CSVs: the exported columns are listed by hand (see csvSerialiser).
+      // in CSVs: the exported columns are listed by hand (see csvSerialize).
       maj_le: Number(r.maj_le) || 0,
       nom: safeText(r.nom),
       contenance_ml: Number(r.contenance_ml) || 0,
     };
   }
 
-  function tassesDefaut() {
-    return TASSES_DEPART.map(t => normaliserTasse(t));
+  function defaultCups() {
+    return STARTER_CUPS.map(t => normalizeCup(t));
   }
 
   /* IDS THAT NO LONGER COLLIDE (v8.71). The id used to be "list length + 1":
@@ -378,19 +378,19 @@ const DATA_SCHEMA = (() => {
      two cups silently overwrote the other. Now: the time in base 36 plus
      four random characters. Old ids stay valid, no code reads them as
      numbers. */
-  function nouvelId(prefix, list) {
+  function newId(prefix, list) {
     let id;
     do {
-      id = prefix + maintenant().toString(36) + Math.random().toString(36).slice(2, 6);
+      id = prefix + clockNow().toString(36) + Math.random().toString(36).slice(2, 6);
     } while (list.some(x => x.id === id));
     return id;
   }
 
   return {
-    CAFE_COLS, EXT_COLS, REGLAGE_ID, REGLAGE_COLS, RECETTE_COLS, TASSE_COLS, ACHAT_COLS,
-    PUISSANCE_FEU_HISTORIQUE,
-    estampiller, reporterHorodatage, nouvelId, dateLocaleAujourdhui, maintenant, reglerDecalage,
-    normaliserCafe, normaliserExtraction, normaliserReglages, normaliserRecette, normaliserAchat,
-    normaliserTasse, recetteVersLigne, recettesDefaut, tassesDefaut,
+    COFFEE_COLS, EXT_COLS, SETTINGS_ID, SETTINGS_COLS, RECIPE_COLS, CUP_COLS, PURCHASE_COLS,
+    HISTORICAL_FIRE_POWER,
+    stampRow, carryTimestamps, newId, localDateToday, clockNow, setClockOffset,
+    normalizeCoffee, normalizeExtraction, normalizeSettings, normalizeRecipe, normalizePurchase,
+    normalizeCup, recipeToRow, defaultRecipes, defaultCups,
   };
 })();

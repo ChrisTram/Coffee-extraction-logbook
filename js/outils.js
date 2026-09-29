@@ -3,8 +3,8 @@
  * First script on the page: nothing here depends on the DOM, the data or any
  * other file, and everything runs as is in Node for the tests.
  *
- * Why this file exists: moyenne() lived in reglages.js AND in the interface
- * core, cleLocale() in charts.js AND in the core, and the same local date was
+ * Why this file exists: average() lived in reglages.js AND in the interface
+ * core, localDateKey() in charts.js AND in the core, and the same local date was
  * recomputed a third time in data.js. Three copies of a calculation function
  * drift apart one day, silently, and two screens then show two numbers for
  * the same thing. A single definition, here.
@@ -14,19 +14,19 @@
  * Otherwise it stays at home. */
 "use strict";
 
-const OUTILS = (() => {
+const TOOLS = (() => {
 
   /* Arithmetic mean, or null on an empty list. Null and not NaN: NaN spreads
      silently all the way to the display and ends up as "NaN / 10" on screen,
      null is tested in one word where we decide what to show. */
-  function moyenne(list) {
+  function average(list) {
     if (!list || !list.length) return null;
     return list.reduce((a, b) => a + b, 0) / list.length;
   }
 
   /* Day key in LOCAL time, "2026-09-06". Never toISOString: it works in UTC
      and, at UTC+7, an evening cup would land on the next day. */
-  function cleLocale(d) {
+  function localDateKey(d) {
     const m = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");
     return d.getFullYear() + "-" + m + "-" + day;
@@ -51,7 +51,7 @@ const OUTILS = (() => {
     return v;
   }
 
-  function urlVersionnee(path) {
+  function versionedUrl(path) {
     const v = versionSite();
     return v ? path + "?v=" + encodeURIComponent(v) : path;
   }
@@ -59,11 +59,11 @@ const OUTILS = (() => {
   /* A SINGLE ESCAPE (v8.73). There were six uneven copies of it (the Brew
      mode one did not escape quotes). For any text going into HTML, as
      content or as an attribute. */
-  function echap(s) {
+  function escapeHtml(s) {
     return String(s === undefined || s === null ? "" : s)
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
-  return { moyenne, cleLocale, versionSite, urlVersionnee, echap };
+  return { average, localDateKey, versionSite, versionedUrl, escapeHtml };
 })();

@@ -10,7 +10,7 @@ const DATA_STORE = (() => {
 
   let db = null;
 
-  function ouvrirDB() {
+  function openDB() {
     return new Promise((resolve, reject) => {
       const req = indexedDB.open("cafe-tracker", 1);
       req.onupgradeneeded = () => { req.result.createObjectStore("kv"); };
@@ -31,7 +31,7 @@ const DATA_STORE = (() => {
   /* Several keys in ONE transaction (v8.71): everything is written, or
      nothing. Eight separate transactions could leave the local copy half
      updated. */
-  function kvSetPlusieurs(pairs) {
+  function kvSetMany(pairs) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction("kv", "readwrite");
       const store = tx.objectStore("kv");
@@ -51,7 +51,7 @@ const DATA_STORE = (() => {
     });
   }
 
-  async function verifierPermission(handle) {
+  async function checkPermission(handle) {
     if (!handle) return false;
     const opts = { mode: "readwrite" };
     if (await handle.queryPermission(opts) === "granted") return true;
@@ -59,14 +59,14 @@ const DATA_STORE = (() => {
     return false;
   }
 
-  async function ecrireFichier(handle, name, content) {
+  async function writeFile(handle, name, content) {
     const fh = await handle.getFileHandle(name, { create: true });
     const w = await fh.createWritable();
     await w.write(content);
     await w.close();
   }
 
-  async function lireFichier(handle, name) {
+  async function readFile(handle, name) {
     try {
       const fh = await handle.getFileHandle(name);
       const f = await fh.getFile();
@@ -76,7 +76,7 @@ const DATA_STORE = (() => {
     }
   }
 
-  function telecharger(fileName, content, type) {
+  function download(fileName, content, type) {
     const blob = new Blob([content], { type: type || "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -88,5 +88,5 @@ const DATA_STORE = (() => {
     setTimeout(() => URL.revokeObjectURL(url), 3000);
   }
 
-  return { ouvrirDB, kvGet, kvSet, kvSetPlusieurs, verifierPermission, ecrireFichier, lireFichier, telecharger };
+  return { openDB, kvGet, kvSet, kvSetMany, checkPermission, writeFile, readFile, download };
 })();

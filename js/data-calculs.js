@@ -1,13 +1,13 @@
 /* Computed fields, never stored, and bag lookups.
  *
  * Read-only on the state: these functions derive (ratio, cost, bag age,
- * remaining stock) and write nothing. `pour(state)` binds them to the state
+ * remaining stock) and write nothing. `forState(state)` binds them to the state
  * that data.js owns; the DATA facade exposes them under their old names. */
 "use strict";
 
-const DATA_CALCULS = (() => {
+const DATA_CALCS = (() => {
 
-  function pour(state) {
+  function forState(state) {
 
     /* Current bag of a coffee: the last one bought. Returns null if the coffee
        has no purchase, in which case the caller falls back on the coffee card's
@@ -23,10 +23,10 @@ const DATA_CALCULS = (() => {
        a bag without an opening date, and a bag opened LATER is never the one
        of an earlier cup. With no opened bag at all, we keep the last one
        bought, as before. */
-    function sachetALaDate(cafeId, date) {
+    function bagAtDate(coffeeId, date) {
       const day = String(date || "").slice(0, 10);
       const candidates = state.achats
-        .filter(a => a.cafe_id === cafeId && (!day || String(a.date_achat).slice(0, 10) <= day))
+        .filter(a => a.cafe_id === coffeeId && (!day || String(a.date_achat).slice(0, 10) <= day))
         .filter(a => !(day && a.date_ouverture && String(a.date_ouverture).slice(0, 10) > day));
       const opened = candidates.filter(a => a.date_ouverture)
         .sort((a, b) => String(b.date_ouverture).localeCompare(String(a.date_ouverture)));
@@ -34,8 +34,8 @@ const DATA_CALCULS = (() => {
       return candidates.sort((a, b) => String(b.date_achat).localeCompare(String(a.date_achat)))[0] || null;
     }
 
-    function sachetCourant(cafeId) {
-      return sachetALaDate(cafeId, OUTILS.cleLocale(new Date()));
+    function currentBag(coffeeId) {
+      return bagAtDate(coffeeId, TOOLS.localDateKey(new Date()));
     }
 
     /* Remaining stock of the current bag, in grams.
@@ -44,9 +44,9 @@ const DATA_CALCULS = (() => {
        previous bag's history emptying it. An extraction without a dose counts
        as DEFAULT_DOSE_G, otherwise a forgotten entry would suggest untouched
        stock. */
-    function stockSachet(cafeId, defaultDose) {
-      const bag = sachetCourant(cafeId);
-      const coffee = state.cafes.find(c => c.id === cafeId);
+    function bagStock(coffeeId, defaultDose) {
+      const bag = currentBag(coffeeId);
+      const coffee = state.cafes.find(c => c.id === coffeeId);
       const format = bag ? bag.format_grammes : (coffee ? coffee.format_grammes : "");
       if (format === "" || !(Number(format) > 0)) return null;
 
@@ -61,7 +61,7 @@ const DATA_CALCULS = (() => {
          understand why. */
       const manualCount = bag && bag.restant_g !== "" && bag.restant_le ? bag : null;
       const used = state.extractions
-        .filter(e => e.cafe_id === cafeId)
+        .filter(e => e.cafe_id === coffeeId)
         .filter(e => manualCount
           ? String(e.date_heure) > String(manualCount.restant_le)
           : !since || String(e.date_heure).slice(0, 10) >= since)
@@ -70,22 +70,22 @@ const DATA_CALCULS = (() => {
       const remaining = (manualCount ? Number(manualCount.restant_g) : Number(format)) - used;
       return {
         format: Number(format),
-        consomme: Math.round(used * 10) / 10,
-        restant: Math.round(remaining * 10) / 10,
-        depuis: since,
-        dateTorrefaction: bag ? bag.date_torrefaction : (coffee ? coffee.date_torrefaction : ""),
-        sachets: state.achats.filter(a => a.cafe_id === cafeId).length,
+        consumed: Math.round(used * 10) / 10,
+        remaining: Math.round(remaining * 10) / 10,
+        since: since,
+        roastDate: bag ? bag.date_torrefaction : (coffee ? coffee.date_torrefaction : ""),
+        bags: state.achats.filter(a => a.cafe_id === coffeeId).length,
         // When the manual count was made, empty if the stock comes from the calculation alone.
-        corrige: manualCount ? manualCount.restant_le : "",
+        corrected: manualCount ? manualCount.restant_le : "",
       };
     }
 
-    function cafeDe(ext) {
+    function coffeeOf(ext) {
       return state.cafes.find(c => c.id === ext.cafe_id) || null;
     }
 
-    function calculs(ext) {
-      const coffee = cafeDe(ext);
+    function calcs(ext) {
+      const coffee = coffeeOf(ext);
       const dial = GRIND.parseDial(ext.mouture_dial);
       /* RATIO: two logics, one per machine, because "eau" does not mean the
          same thing on both sides.
@@ -108,7 +108,7 @@ const DATA_CALCULS = (() => {
       }
       /* CUP ratio, secondary and only when measured. It describes what really
          comes out of the Brikka, but it compares to no recipe. */
-      const ratioTasse = ext.dose_g > 0 && ext.volume_extrait_ml !== "" && Number(ext.volume_extrait_ml) > 0
+      const cupRatio = ext.dose_g > 0 && ext.volume_extrait_ml !== "" && Number(ext.volume_extrait_ml) > 0
         ? Number(ext.volume_extrait_ml) / ext.dose_g
         : "";
       /* Days since the bag was OPENED. That is the useful freshness variable:
@@ -116,7 +116,7 @@ const DATA_CALCULS = (() => {
          always knows when he opened a pack. */
       let daysOpen = "";
       if (ext.cafe_id && ext.date_heure) {
-        const bag = sachetALaDate(ext.cafe_id, ext.date_heure);
+        const bag = bagAtDate(ext.cafe_id, ext.date_heure);
         if (bag && bag.date_ouverture) {
           const d1 = new Date(bag.date_ouverture + "T00:00");
           const d2 = new Date(ext.date_heure);
@@ -152,18 +152,18 @@ const DATA_CALCULS = (() => {
         ratio,
         ratioTexte: ratio === "" ? "" : "1:" + ratio.toFixed(1),
         ratioBase,
-        ratioTasse,
-        ratioTasseTexte: ratioTasse === "" ? "" : "1:" + ratioTasse.toFixed(1),
+        cupRatio,
+        cupRatioText: cupRatio === "" ? "" : "1:" + cupRatio.toFixed(1),
         // Drink ratio: includes the lengthening water and the cold milk, the
         // only two liquids added. On a lengthened Brikka, this is the one that
         // describes what you actually drink.
-        ratioBoisson: (() => {
+        drinkRatio: (() => {
           if (!(ext.dose_g > 0) || drink === "" || !(Number(drink) > 0)) return "";
           const added = (Number(ext.eau_ajoutee_ml) || 0) + (Number(ext.lait_ml) || 0);
           if (!added) return "";
           return "1:" + (Number(drink) / ext.dose_g).toFixed(1);
         })(),
-        crans: dial ? dial.crans : "",
+        clicks: dial ? dial.clicks : "",
         microns: dial ? Math.round(dial.microns) : "",
         age_jours: age,
         jours_ouvert: daysOpen,
@@ -172,12 +172,12 @@ const DATA_CALCULS = (() => {
         cout_tasse_vnd: cost,
         cout_reel_vnd: realCost,
         cafe_nom: coffee ? coffee.nom : (ext.cafe_id ? "Café supprimé" : "Sans café"),
-        moulu: coffee ? Number(coffee.deja_moulu) === 1 : false,
+        ground: coffee ? Number(coffee.deja_moulu) === 1 : false,
       };
     }
 
-    return { cafeDe, calculs, sachetALaDate, sachetCourant, stockSachet };
+    return { coffeeOf, calcs, bagAtDate, currentBag, bagStock };
   }
 
-  return { pour };
+  return { forState };
 })();

@@ -3,7 +3,7 @@
  * The whole rest of the interface is built on top of it, so this file loads
  * first and exposes the UI object that the others extend. It knows NO screen
  * in particular: when it must redraw one, it goes through UI, and that is
- * deliberate. A core that called rendreHistorique() directly would no longer
+ * deliberate. A core that called renderHistory() directly would no longer
  * be a core, it would be the whole application with extra steps.
  *
  * A name placed here is a name every screen may use. That is a commitment:
@@ -25,39 +25,39 @@ const UI = (() => {
      half of the vocabulary was unreachable. The short press keeps its toggle
      role, and the bubble is cancelled as soon as the finger moves so it does
      not fire during a scroll. */
-  const APPUI_LONG_MS = 450;
+  const LONG_PRESS_MS = 450;
 
-  function activerAppuiLong(racine) {
-    let minuteur = null, cible = null;
+  function enableLongPress(root) {
+    let pendingTimer = null, target = null;
     // True between a bubble opened by long press and the click that follows it.
     let bubbleJustOpened = false;
-    const fermer = () => {
-      racine.querySelectorAll(".info-ouverte").forEach(x => x.classList.remove("info-ouverte"));
+    const dismiss = () => {
+      root.querySelectorAll(".info-ouverte").forEach(x => x.classList.remove("info-ouverte"));
     };
-    const annuler = () => { clearTimeout(minuteur); minuteur = null; cible = null; };
+    const cancel = () => { clearTimeout(pendingTimer); pendingTimer = null; target = null; };
 
-    racine.addEventListener("pointerdown", ev => {
+    root.addEventListener("pointerdown", ev => {
       const el = ev.target.closest("[data-info]");
       if (!el) return;
-      cible = el;
+      target = el;
       bubbleJustOpened = false;
-      minuteur = setTimeout(() => {
-        fermer();
+      pendingTimer = setTimeout(() => {
+        dismiss();
         el.classList.add("info-ouverte");
         bubbleJustOpened = true;
-        minuteur = null;
-      }, APPUI_LONG_MS);
+        pendingTimer = null;
+      }, LONG_PRESS_MS);
     });
-    racine.addEventListener("pointermove", annuler);
-    racine.addEventListener("pointerup", () => {
+    root.addEventListener("pointermove", cancel);
+    root.addEventListener("pointerup", () => {
       // A long press already opened the bubble: the click that follows must
       // not also toggle the pill. Otherwise the click is let through.
-      if (cible && cible.classList.contains("info-ouverte")) {
-        setTimeout(fermer, 2500);
+      if (target && target.classList.contains("info-ouverte")) {
+        setTimeout(dismiss, 2500);
       }
-      annuler();
+      cancel();
     });
-    racine.addEventListener("pointercancel", () => { annuler(); fermer(); });
+    root.addEventListener("pointercancel", () => { cancel(); dismiss(); });
 
     /* The click that FOLLOWS a long press must do nothing more: the bubble is
        already open, that was all that was asked. Without this, reading the
@@ -67,7 +67,7 @@ const UI = (() => {
        In the CAPTURE phase on the container, so before the target and before
        bubbling: that is what lets stopPropagation() keep the delegated
        handler, set on this same container, from seeing the event. */
-    racine.addEventListener("click", ev => {
+    root.addEventListener("click", ev => {
       if (!bubbleJustOpened) return;
       bubbleJustOpened = false;
       ev.stopPropagation();
@@ -84,10 +84,10 @@ const UI = (() => {
      that are never replaced ("jamais remplacés", a phrase the tests look for):
      a node coming from an innerHTML would be cached detached, and the
      following writes would go into the void. */
-  const cacheChamps = new Map();
+  const fieldCache = new Map();
   function $f(sel) {
-    let el = cacheChamps.get(sel);
-    if (!el) { el = document.querySelector(sel); if (el) cacheChamps.set(sel, el); }
+    let el = fieldCache.get(sel);
+    if (!el) { el = document.querySelector(sel); if (el) fieldCache.set(sel, el); }
     return el;
   }
 
@@ -95,48 +95,48 @@ const UI = (() => {
      even when the content is identical, and the live line is rewritten on
      every character while most keystrokes change none of its parts: typing
      in the dial touches neither the ratio nor the cost. */
-  function poser(el, html) {
+  function setHtml(el, html) {
     if (el && el.innerHTML !== html) el.innerHTML = html;
   }
 
-  function poserTexte(el, texte) {
-    if (el && el.textContent !== texte) el.textContent = texte;
+  function setText(el, text) {
+    if (el && el.textContent !== text) el.textContent = text;
   }
 
-  function signatureTable(tableau) {
+  function signatureTable(table) {
     let max = 0;
-    for (const x of tableau) if (x.maj_le > max) max = x.maj_le;
-    return tableau.length + ":" + max;
+    for (const x of table) if (x.maj_le > max) max = x.maj_le;
+    return table.length + ":" + max;
   }
 
   /* Runs the function only if the signature changed since last time.
      The key separates the memories: two callers must not step on each other. */
   const signatures = new Map();
-  function siChange(cle, tableau, fn) {
-    const s = signatureTable(tableau);
-    if (signatures.get(cle) === s) return false;
-    signatures.set(cle, s);
+  function ifChanged(key, table, fn) {
+    const s = signatureTable(table);
+    if (signatures.get(key) === s) return false;
+    signatures.set(key, s);
     fn();
     return true;
   }
 
   /* Forces the next render, whatever the signature. Used by the language
      toggle: the data did not move, but all the text must be redone. */
-  function oublierSignatures() {
+  function forgetSignatures() {
     signatures.clear();
   }
 
-  function antiRebond(fn, delai) {
+  function debounce(fn, delay) {
     let h = null;
     return (...args) => {
       clearTimeout(h);
-      h = setTimeout(() => fn(...args), delai === undefined ? 120 : delai);
+      h = setTimeout(() => fn(...args), delay === undefined ? 120 : delay);
     };
   }
 
-  function basculerEtat(el, actif) {
-    el.classList.toggle("actif", actif);
-    el.setAttribute("aria-pressed", actif ? "true" : "false");
+  function setPressed(el, isActive) {
+    el.classList.toggle("actif", isActive);
+    el.setAttribute("aria-pressed", isActive ? "true" : "false");
   }
 
   function toast(message) {
@@ -149,17 +149,17 @@ const UI = (() => {
 
   /* Message with an action button, five seconds. Used to undo a deletion,
      which is ALREADY done when this message shows: see
-     supprimerExtractionAvecRetour. The button disappears with the message, so
+     deleteExtractionWithUndo. The button disappears with the message, so
      there is no follow-up to handle. */
   /* ONE AT A TIME (v8.71): two taps on "Save" during the write created two
      cups. The next call is ignored as long as the first one has not
      finished. */
-  function unSeulALaFois(fn) {
-    let enCours = false;
+  function oneAtATime(fn) {
+    let ongoing = false;
     return async (...args) => {
-      if (enCours) return undefined;
-      enCours = true;
-      try { return await fn(...args); } finally { enCours = false; }
+      if (ongoing) return undefined;
+      ongoing = true;
+      try { return await fn(...args); } finally { ongoing = false; }
     };
   }
 
@@ -169,7 +169,7 @@ const UI = (() => {
      worker to check, and when a new one takes over, a message offers to
      reload, only once, and only if there already was a version (not on the
      very first install). */
-  function surveillerMisesAJour() {
+  function watchForUpdates() {
     if (!("serviceWorker" in navigator) || !location.protocol.startsWith("http")) return;
     const hadVersion = !!navigator.serviceWorker.controller;
     let offered = false;
@@ -185,14 +185,14 @@ const UI = (() => {
     }).catch(() => { /* not critical */ });
   }
 
-  function toastAction(message, libelle, action, persistant) {
+  function toastAction(message, label, action, persistent) {
     const t = $("#toast");
     t.innerHTML = "";
     t.appendChild(document.createTextNode(message + " "));
     const b = document.createElement("button");
     b.type = "button";
     b.className = "toast-action";
-    b.textContent = libelle;
+    b.textContent = label;
     b.addEventListener("click", () => {
       t.setAttribute("hidden", "");
       clearTimeout(toast._h);
@@ -201,7 +201,7 @@ const UI = (() => {
     t.appendChild(b);
     t.removeAttribute("hidden");
     clearTimeout(toast._h);
-    if (persistant) return;
+    if (persistent) return;
     toast._h = setTimeout(() => {
       t.setAttribute("hidden", "");
       t.textContent = "";
@@ -217,20 +217,20 @@ const UI = (() => {
      Escape closes the native dialog, so it cancels too.
 
      Returns a promise of a boolean, so the caller reads as before:
-     `if (!await confirmer(texte)) return;`. */
-  function confirmer(message, options) {
+     `if (!await askConfirm(texte)) return;`. */
+  function askConfirm(message, options) {
     const d = $("#modale-confirmer");
     if (!d || typeof d.showModal !== "function") return Promise.resolve(window.confirm(message));
     const danger = !!(options && options.danger);
-    poserTexte($("#confirmer-titre"), I18N.t("c_titre"));
-    poserTexte($("#confirmer-texte"), message);
-    const ok = $("#confirmer-ok"), non = $("#confirmer-annuler");
-    ok.textContent = (options && options.libelle) || I18N.t("c_ok");
-    non.textContent = I18N.t("t_annuler");
+    setText($("#confirmer-titre"), I18N.t("c_titre"));
+    setText($("#confirmer-texte"), message);
+    const ok = $("#confirmer-ok"), noButton = $("#confirmer-annuler");
+    ok.textContent = (options && options.label) || I18N.t("c_ok");
+    noButton.textContent = I18N.t("t_annuler");
     ok.classList.toggle("btn-danger", danger);
     // Reassigned on each opening: a single handler, never stacked.
     ok.onclick = () => d.close("ok");
-    non.onclick = () => d.close("annuler");
+    noButton.onclick = () => d.close("annuler");
     return new Promise(resolve => {
       const onClose = () => {
         d.removeEventListener("close", onClose);
@@ -239,7 +239,7 @@ const UI = (() => {
       d.addEventListener("close", onClose);
       d.returnValue = "";
       d.showModal();
-      non.focus();
+      noButton.focus();
     });
   }
 
@@ -251,19 +251,19 @@ const UI = (() => {
      away, goes to the sync right away, and the undo re-inserts it as a new
      write, which the merge knows how to handle: it is later than the
      tombstone, so it wins. */
-  async function supprimerExtractionAvecRetour(ext) {
-    const copie = { ...ext };
-    delete copie._c;
-    await DATA.supprimerExtraction(ext.id);
-    UI.rendreHistorique();
+  async function deleteExtractionWithUndo(ext) {
+    const copied = { ...ext };
+    delete copied._c;
+    await DATA.deleteExtraction(ext.id);
+    UI.renderHistory();
     toastAction(I18N.t("t_supprimee"), I18N.t("t_annuler"), async () => {
-      await DATA.restaurerExtraction(copie);
-      UI.rendreHistorique();
+      await DATA.restoreExtraction(copied);
+      UI.renderHistory();
       toast(I18N.t("t_restauree"));
     });
   }
 
-  function fmtTemps(s) {
+  function fmtDuration(s) {
     if (s === "" || s === null || s === undefined || isNaN(s)) return "";
     const m = Math.floor(s / 60), sec = Math.round(s % 60);
     return m + ":" + String(sec).padStart(2, "0");
@@ -275,9 +275,9 @@ const UI = (() => {
   }
 
   // A single definition, in outils.js: see that file's header.
-  const { moyenne, cleLocale } = OUTILS;
+  const { average, localDateKey } = TOOLS;
 
-  function maintenantLocal() {
+  function localNow() {
     const d = new Date();
     d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
     return d.toISOString().slice(0, 16);
@@ -288,12 +288,12 @@ const UI = (() => {
      each engine. The CSS does not know the value: we give it --pc, the share
      of travel covered, and the track gradient stops there. Call it on every
      input AND on every write of .value by the code, or the track lies. */
-  function peindreCurseur(curseur) {
-    if (!curseur) return;
-    const min = Number(curseur.min) || 0, max = Number(curseur.max);
-    const v = Number(curseur.value);
+  function paintSlider(slider) {
+    if (!slider) return;
+    const min = Number(slider.min) || 0, max = Number(slider.max);
+    const v = Number(slider.value);
     const pc = isNaN(max) || max === min || isNaN(v) ? 0 : ((v - min) / (max - min)) * 100;
-    curseur.style.setProperty("--pc", Math.max(0, Math.min(100, pc)) + "%");
+    slider.style.setProperty("--pc", Math.max(0, Math.min(100, pc)) + "%");
   }
 
   /* THE RATING WITHOUT A THUMB (v8.40). A slider cannot be empty: the absence
@@ -303,22 +303,22 @@ const UI = (() => {
      finger anywhere on the track rates, in a single gesture. Since v8.68 this
      class has no style: the slider keeps the same look, the label tells the
      state. Same mechanism in the entry form and in the quick entry. */
-  function noteVide(curseur) {
-    return !!curseur && curseur.classList.contains("curseur-inactif");
+  function isRatingEmpty(slider) {
+    return !!slider && slider.classList.contains("curseur-inactif");
   }
-  function marquerNote(curseur, vide) {
-    if (curseur) curseur.classList.toggle("curseur-inactif", vide);
+  function markRating(slider, empty) {
+    if (slider) slider.classList.toggle("curseur-inactif", empty);
   }
   /* The keys that CHANGE the value. Tabbing through the slider must not rate
      the cup: the old unfiltered keydown did. */
   const SLIDER_KEYS = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"];
   /* pointerdown on top of input: putting the finger where the slider already
      is fires no input, and the rating would have stayed empty unknowingly. */
-  function brancherNote(curseur, apres) {
-    const toucher = () => { marquerNote(curseur, false); apres(); };
-    curseur.addEventListener("input", toucher);
-    curseur.addEventListener("pointerdown", toucher);
-    curseur.addEventListener("keydown", ev => { if (SLIDER_KEYS.includes(ev.key)) toucher(); });
+  function wireRating(slider, after) {
+    const onTouch = () => { markRating(slider, false); after(); };
+    slider.addEventListener("input", onTouch);
+    slider.addEventListener("pointerdown", onTouch);
+    slider.addEventListener("keydown", ev => { if (SLIDER_KEYS.includes(ev.key)) onTouch(); });
   }
 
   /* DICTATING THE COMMENT (v8.43). Speaking while the cup cools down, hands
@@ -327,37 +327,37 @@ const UI = (() => {
      online, and it hides as soon as the connection drops. The dictated text
      is ADDED to what is already written and stays editable: nothing goes to
      storage before Save. */
-  function brancherDictee(bouton, champ, libelle) {
+  function wireDictation(button, field, label) {
     const Recognition = typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
-    if (!bouton || !champ || !Recognition) return;
-    const visible = () => { bouton.hidden = typeof navigator !== "undefined" && navigator.onLine === false; };
+    if (!button || !field || !Recognition) return;
+    const visible = () => { button.hidden = typeof navigator !== "undefined" && navigator.onLine === false; };
     visible();
     window.addEventListener("online", visible);
     window.addEventListener("offline", visible);
-    let reco = null;
-    const etat = actif => {
-      bouton.setAttribute("aria-pressed", String(actif));
-      if (libelle) libelle.textContent = I18N.t(actif ? "dictee_ecoute" : "dictee");
+    let recognition = null;
+    const setListening = isActive => {
+      button.setAttribute("aria-pressed", String(isActive));
+      if (label) label.textContent = I18N.t(isActive ? "dictee_ecoute" : "dictee");
     };
-    bouton.addEventListener("click", () => {
-      if (reco) { reco.stop(); return; }
-      reco = new Recognition();
-      reco.lang = I18N.locale();
-      reco.interimResults = false;
-      reco.continuous = false;
-      const avant = champ.value.trim();
-      reco.onresult = ev => {
-        const dit = Array.from(ev.results).map(r => r[0].transcript).join(" ").trim();
-        if (!dit) return;
-        champ.value = (avant ? avant + " " : "") + dit;
-        champ.dispatchEvent(new Event("input", { bubbles: true }));
+    button.addEventListener("click", () => {
+      if (recognition) { recognition.stop(); return; }
+      recognition = new Recognition();
+      recognition.lang = I18N.locale();
+      recognition.interimResults = false;
+      recognition.continuous = false;
+      const before = field.value.trim();
+      recognition.onresult = ev => {
+        const spoken = Array.from(ev.results).map(r => r[0].transcript).join(" ").trim();
+        if (!spoken) return;
+        field.value = (before ? before + " " : "") + spoken;
+        field.dispatchEvent(new Event("input", { bubbles: true }));
       };
-      reco.onerror = ev => {
+      recognition.onerror = ev => {
         if (ev.error === "not-allowed" || ev.error === "service-not-allowed") toast(I18N.t("dictee_refusee"));
         else if (ev.error === "network") toast(I18N.t("dictee_reseau"));
       };
-      reco.onend = () => { reco = null; etat(false); };
-      try { reco.start(); etat(true); } catch (e) { reco = null; etat(false); }
+      recognition.onend = () => { recognition = null; setListening(false); };
+      try { recognition.start(); setListening(true); } catch (e) { recognition = null; setListening(false); }
     });
   }
 
@@ -377,13 +377,13 @@ const UI = (() => {
     plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
     croix: '<path d="M6 6l12 12"/><path d="M18 6L6 18"/>',
   };
-  function icone(nom) {
+  function icon(nameKey) {
     return '<svg class="ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"' +
       ' stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-      (ICONS[nom] || "") + "</svg>";
+      (ICONS[nameKey] || "") + "</svg>";
   }
 
-  function fmtDateHeure(dh) {
+  function fmtDateTime(dh) {
     const d = new Date(dh);
     if (isNaN(d)) return dh;
     return d.toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" }) + " " +
@@ -393,28 +393,28 @@ const UI = (() => {
   /* THE DAY IN WORDS (v8.82), for the subheadings of lists grouped by day:
      "Today", "Yesterday", then "Saturday 26 September". The year is only
      written if it is not the current one. */
-  function libelleJour(dh) {
+  function dayLabelOf(dh) {
     const d = new Date(dh);
     if (isNaN(d)) return String(dh);
-    const auj = new Date(); auj.setHours(0, 0, 0, 0);
-    const jour = new Date(d); jour.setHours(0, 0, 0, 0);
-    const ecart = Math.round((auj - jour) / 86400000);
-    if (ecart === 0) return I18N.t("j_aujourdhui");
-    if (ecart === 1) return I18N.t("j_hier");
+    const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
+    const day = new Date(d); day.setHours(0, 0, 0, 0);
+    const gap = Math.round((todayDate - day) / 86400000);
+    if (gap === 0) return I18N.t("j_aujourdhui");
+    if (gap === 1) return I18N.t("j_hier");
     const s = d.toLocaleDateString(I18N.locale(), { weekday: "long", day: "numeric", month: "long",
-      year: d.getFullYear() === auj.getFullYear() ? undefined : "numeric" });
+      year: d.getFullYear() === todayDate.getFullYear() ? undefined : "numeric" });
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
   // The day key of a date_heure, for grouping: "2026-09-26".
-  const cleJour = dh => String(dh).slice(0, 10);
-  function fmtHeure(dh) {
+  const dayKey = dh => String(dh).slice(0, 10);
+  function fmtHour(dh) {
     const d = new Date(dh);
     return isNaN(d) ? "" : d.toLocaleTimeString(I18N.locale(), { hour: "2-digit", minute: "2-digit" });
   }
 
   // "2026-08-12" to "12 Aug 2026", building the date in LOCAL time
   // (new Date("2026-08-12") would be read as UTC).
-  function fmtDateCourte(s) {
+  function fmtShortDate(s) {
     const [a, m, j] = String(s).split("-").map(Number);
     if (!a || !m || !j) return s;
     return new Date(a, m - 1, j).toLocaleDateString(I18N.locale(), { day: "numeric", month: "short", year: "numeric" });
@@ -424,57 +424,57 @@ const UI = (() => {
     return Number(n.toFixed(dec)).toLocaleString(I18N.locale(), { maximumFractionDigits: dec });
   }
 
-  function animerCompteur(el, cible, decimals, suffixe, prefixe) {
-    const duree = 750, depart = performance.now();
+  function animateCounter(el, target, decimals, suffix, prefix) {
+    const duration = 750, startedAt = performance.now();
     const dec = decimals || 0;
-    function pas(t) {
-      const p = Math.min(1, (t - depart) / duree);
+    function frame(t) {
+      const p = Math.min(1, (t - startedAt) / duration);
       const eased = 1 - Math.pow(1 - p, 3);
-      const v = cible * eased;
-      el.textContent = (prefixe || "") +
-        v.toLocaleString(I18N.locale(), { minimumFractionDigits: dec, maximumFractionDigits: dec }) + (suffixe || "");
-      if (p < 1) requestAnimationFrame(pas);
+      const v = target * eased;
+      el.textContent = (prefix || "") +
+        v.toLocaleString(I18N.locale(), { minimumFractionDigits: dec, maximumFractionDigits: dec }) + (suffix || "");
+      if (p < 1) requestAnimationFrame(frame);
     }
-    requestAnimationFrame(pas);
+    requestAnimationFrame(frame);
   }
 
   // Live recipes (editable, stored with the data).
-  function recettesVivantes() { return DATA.state.recettes.filter(r => r.actif !== 0); }
-  function recettesDeMethode(m) { return recettesVivantes().filter(r => r.methode === m); }
-  function trouverRecette(nom) { return DATA.state.recettes.find(r => r.nom === nom); }
-  function recetteAvecVariantes() { return recettesVivantes().find(r => r.variantes); }
+  function liveRecipes() { return DATA.state.recettes.filter(r => r.actif !== 0); }
+  function recipesForMethod(m) { return liveRecipes().filter(r => r.methode === m); }
+  function findRecipe(nameKey) { return DATA.state.recettes.find(r => r.nom === nameKey); }
+  function recipeWithVariants() { return liveRecipes().find(r => r.variantes); }
 
   // title attribute: the full value of a truncated cell, on hover.
   // Double quotes would break the attribute, so they are neutralised.
-  // The shared escaping (OUTILS.echap), under its old name.
-  function attrTitre(texte) {
-    return OUTILS.echap(texte || "");
+  // The shared escaping (TOOLS.escapeHtml), under its old name.
+  function titleAttr(text) {
+    return TOOLS.escapeHtml(text || "");
   }
 
   // "Sous-extrait (acide)|Astringent" to a translated display "Under-extracted (sour), Astringent".
-  function diagsAffiches(s) {
+  function displayedDiags(s) {
     return (s || "").split("|").filter(Boolean).map(d => I18N.diag(d)).join(", ");
   }
 
-  function detailRatio(base, dose, eau) {
-    if (base === "chaudiere") return I18N.t("rt_chaudiere", { d: dose, e: eau });
-    if (base === "infusion") return I18N.t("rt_infusion", { d: dose, e: eau });
+  function detailRatio(base, dose, water) {
+    if (base === "chaudiere") return I18N.t("rt_chaudiere", { d: dose, e: water });
+    if (base === "infusion") return I18N.t("rt_infusion", { d: dose, e: water });
     return "";
   }
 
   /* True when the cup was marked failed. An empty column means "not said",
      so not failed: that is the case of everything before the flag. */
-  function estRatee(e) { return Number(e.ratee) === 1; }
+  function isFailed(e) { return Number(e.ratee) === 1; }
 
   const INCLUDE_FAILED_KEY = "inclure-ratees";
   /* A READING preference, so local like the theme and the beeps: it changes
      what the figures tell, not the data. Nothing to sync. */
-  function inclureRatees() {
+  function includeFailed() {
     try { return localStorage.getItem(INCLUDE_FAILED_KEY) === "1"; } catch (e) { return false; }
   }
 
-  function basculerRatees(inclure) {
-    try { localStorage.setItem(INCLUDE_FAILED_KEY, inclure ? "1" : "0"); } catch (e) { /* too bad */ }
+  function toggleFailed(include) {
+    try { localStorage.setItem(INCLUDE_FAILED_KEY, include ? "1" : "0"); } catch (e) { /* too bad */ }
   }
 
   /* The extractions we draw ADVICE from: insights, best settings, tastes,
@@ -486,9 +486,9 @@ const UI = (() => {
      not erase the expense. That is the dividing line, and it fits in one
      sentence: what describes WHAT HAPPENED counts everything, what advises
      WHAT TO DO leaves the failed ones out. */
-  function extAnalysables() {
-    const tout = extAvecCalculs();
-    return inclureRatees() ? tout : tout.filter(e => !estRatee(e));
+  function analyzableExts() {
+    const all = extsWithCalcs();
+    return includeFailed() ? all : all.filter(e => !isFailed(e));
   }
 
   /* KEPT IN MEMORY (v8.75). Every render, and every keystroke in the entry
@@ -502,29 +502,29 @@ const UI = (() => {
      the coffees and bags it depends on have not moved (DATA revision, tables
      replaced or grown). The returned array is new on every call. */
   let globalMemo = null, memoVersion = 0;
-  const memoParTasse = new WeakMap();
-  function extAvecCalculs() {
+  const memoPerCup = new WeakMap();
+  function extsWithCalcs() {
     const s = DATA.state;
-    const cle = [DATA.revisionDonnees ? DATA.revisionDonnees() : 0, s.cafes, s.cafes.length, s.achats, s.achats.length];
-    if (!globalMemo || cle.some((v, i) => v !== globalMemo[i])) { globalMemo = cle; memoVersion++; }
+    const key = [DATA.dataRevision ? DATA.dataRevision() : 0, s.cafes, s.cafes.length, s.achats, s.achats.length];
+    if (!globalMemo || key.some((v, i) => v !== globalMemo[i])) { globalMemo = key; memoVersion++; }
     return s.extractions.map(e => {
       const sig = JSON.stringify(e);
-      const m = memoParTasse.get(e);
+      const m = memoPerCup.get(e);
       if (m && m.v === memoVersion && m.sig === sig) return m.obj;
-      const obj = { ...e, _c: DATA.calculs(e) };
-      memoParTasse.set(e, { sig, v: memoVersion, obj });
+      const obj = { ...e, _c: DATA.calcs(e) };
+      memoPerCup.set(e, { sig, v: memoVersion, obj });
       return obj;
     });
   }
 
   // Dose used when nothing prefills it (recipe without a dose, blank form).
   // 15 g is the dose of all the original Switch recipes.
-  const DOSE_REPLI_USINE = 15;
+  const FACTORY_DOSE = 15;
 
   // Default heat level, personal scale from 1 to 10, Brikka only.
   /* 3 since Chris asked for it again. The scale has already been 3, then 4,
      then 2 (schema steps v1 and v2): it comes back to its starting point. */
-  const FEU_REPLI_USINE = 3;
+  const FACTORY_FIRE = 3;
 
   /* The grinder's REAL setting, the one where the dial physically sits. It is
      not the same thing as a recipe's dial, which is a TARGET: the Brikka aims
@@ -534,7 +534,7 @@ const UI = (() => {
      him record a grind he had not used.
      The target stays visible in the side panel, and the range warning keeps
      reporting a real gap. */
-  const MOLETTE_REPLI_USINE = "1.5.0";
+  const FACTORY_DIAL = "1.5.0";
 
   /* Read VIEW on the `reglages` table, which syncs. These three values
      describe Chris's EQUIPMENT: his grinder dial is the same seen from the
@@ -547,7 +547,7 @@ const UI = (() => {
 
      `replis` stays a plain object because it is read everywhere in the
      rendering code; it is just refreshed from DATA on every notification. */
-  const CLE_REPLIS = "replis-saisie";
+  const FALLBACKS_KEY = "replis-saisie";
   /* Kettle boiling time, in seconds, from tap water.
      ZERO as long as Chris has not timed it: without a measure, no estimate,
      the entry help asks to do it once. */
@@ -556,19 +556,19 @@ const UI = (() => {
      boiling time: the temperature estimate from the heating time therefore
      NEVER started unless one went to set it in Settings. A correct factory
      fallback beats a neutral fallback that disables the feature. */
-  const EBULLITION_USINE = 120;
-  const replis = { dose: DOSE_REPLI_USINE, feu: FEU_REPLI_USINE, molette: MOLETTE_REPLI_USINE, ebullition: EBULLITION_USINE, bulles: "" };
+  const FACTORY_BOIL_S = 120;
+  const fallbacks = { dose: FACTORY_DOSE, fire: FACTORY_FIRE, dial: FACTORY_DIAL, boil: FACTORY_BOIL_S, bubbles: "" };
 
-  function chargerReplis() {
-    const r = DATA.reglagesCourants();
-    replis.dose = r.dose_g;
-    replis.feu = r.puissance_feu;
-    replis.molette = r.mouture_dial;
-    replis.ebullition = r.ebullition_s;
-    replis.bulles = r.bulles_s;
+  function loadFallbacks() {
+    const r = DATA.currentSettings();
+    fallbacks.dose = r.dose_g;
+    fallbacks.fire = r.puissance_feu;
+    fallbacks.dial = r.mouture_dial;
+    fallbacks.boil = r.ebullition_s;
+    fallbacks.bubbles = r.bulles_s;
     // The steps of the numeric correction (v8.48), as is: the row's columns.
-    replis.dessins = r.dessins || "";
-    replis.pas = { pas_crans: r.pas_crans, pas_degres: r.pas_degres, pas_feu: r.pas_feu,
+    fallbacks.dessins = r.dessins || "";
+    fallbacks.stepSizes = { pas_crans: r.pas_crans, pas_degres: r.pas_degres, pas_feu: r.pas_feu,
       pas_eau_g: r.pas_eau_g, pas_dose_g: r.pas_dose_g };
   }
 
@@ -576,31 +576,31 @@ const UI = (() => {
      would find the factory values again and have to set everything by hand.
      Marked once, and only if the table is still empty: a takeover that
      overwrote an already synced setting would be worse than none. */
-  async function reprendreReplisLocaux() {
-    let brut = null;
+  async function migrateLocalFallbacks() {
+    let raw = null;
     try {
       if (localStorage.getItem("replis-repris")) return;
-      brut = JSON.parse(localStorage.getItem(CLE_REPLIS) || "null");
+      raw = JSON.parse(localStorage.getItem(FALLBACKS_KEY) || "null");
       localStorage.setItem("replis-repris", "1");
     } catch (e) { return; }
-    if (!brut || DATA.state.reglages.length) return;
-    await DATA.majReglages({
-      dose_g: brut.dose,
-      puissance_feu: brut.feu,
-      mouture_dial: brut.molette,
+    if (!raw || DATA.state.reglages.length) return;
+    await DATA.updateSettings({
+      dose_g: raw.dose,
+      puissance_feu: raw.feu,
+      mouture_dial: raw.molette,
     });
-    chargerReplis();
+    loadFallbacks();
   }
 
-  async function ecrireReplis() {
-    await DATA.majReglages({
-      dose_g: replis.dose,
-      puissance_feu: replis.feu,
-      mouture_dial: replis.molette,
-      ebullition_s: replis.ebullition,
-      bulles_s: replis.bulles,
-      ...(replis.pas || {}),
-      dessins: replis.dessins || "",
+  async function saveFallbacks() {
+    await DATA.updateSettings({
+      dose_g: fallbacks.dose,
+      puissance_feu: fallbacks.fire,
+      mouture_dial: fallbacks.dial,
+      ebullition_s: fallbacks.boil,
+      bulles_s: fallbacks.bubbles,
+      ...(fallbacks.stepSizes || {}),
+      dessins: fallbacks.dessins || "",
     });
   }
 
@@ -609,7 +609,7 @@ const UI = (() => {
   /* The two dark palettes (v8.34): data-theme gives the family, data-sombre
      the palette. The status bar colour follows the palette. */
   const TINTS = { clair: "#f4ede3", graphite: "#111113", nuit: "#0b1017" };
-  function appliquerTheme(theme, palette) {
+  function applyTheme(theme, palette) {
     document.documentElement.setAttribute("data-theme", theme);
     if (palette) document.documentElement.setAttribute("data-sombre", palette);
     try {
@@ -620,14 +620,14 @@ const UI = (() => {
        the <head> only know the system preference, and the browser keeps the
        one whose media matches: so we write the chosen colour into BOTH,
        otherwise the one it keeps would contradict the choice. */
-    const teinte = theme === "sombre"
+    const tint = theme === "sombre"
       ? TINTS[document.documentElement.getAttribute("data-sombre")] || TINTS.graphite
       : TINTS.clair;
     document.querySelectorAll('meta[name="theme-color"]')
-      .forEach(m => m.setAttribute("content", teinte));
+      .forEach(m => m.setAttribute("content", tint));
     if (typeof Chart !== "undefined") {
-      CHARTS.appliquerDefauts();
-      rendreEcranCourant(true);
+      CHARTS.applyDefaults();
+      renderCurrentScreen(true);
     }
   }
 
@@ -637,20 +637,20 @@ const UI = (() => {
 
   // ---------- Navigation ----------
 
-  const ECRANS = ["tableau", "saisie", "historique", "reglages", "guide", "parametres"];
+  const SCREEN_NAMES = ["tableau", "saisie", "historique", "reglages", "guide", "parametres"];
 
   /* Old screen names still present in a bookmark or a PWA shortcut.
      "reference" merged into "guide": the reference and the buying guide
      talked about the same equipment and were read one after the other. */
-  const ECRANS_RENOMMES = { reference: "guide" };
-  function normaliserEcran(nom) {
-    return ECRANS_RENOMMES[nom] || nom;
+  const RENAMED_SCREENS = { reference: "guide" };
+  function normalizeScreen(nameKey) {
+    return RENAMED_SCREENS[nameKey] || nameKey;
   }
   /* Navigation state, in a single object mutated in place rather than in
      separate variables. The shape matters: several files read and write it,
      and a shared object reads up to date everywhere, where a borrowed
      variable would be frozen on its value at load time. */
-  const nav = { ecran: "tableau" };
+  const nav = { screenName: "tableau" };
 
   /* Wraps a screen change in a view transition when the engine can do it.
      Otherwise we call directly: the fallback is the previous behaviour, not
@@ -658,15 +658,15 @@ const UI = (() => {
 
      Reduced motion is also respected here and not only in CSS: starting the
      machinery only to cancel it afterwards would be work for nothing. */
-  function avecTransition(fn) {
-    const bouge = typeof matchMedia === "function" &&
+  function withTransition(fn) {
+    const reducedMotion = typeof matchMedia === "function" &&
       matchMedia("(prefers-reduced-motion: reduce)").matches;
     /* HIDDEN document (background tab, minimised window): the browser has no
        rendering opportunity, so the update callback would wait forever and
        the screen would only switch on return. We switch right away, without
        animation: nobody is watching it. */
     const cache = typeof document.visibilityState === "string" && document.visibilityState === "hidden";
-    if (bouge || cache || !document.startViewTransition) { fn(); return; }
+    if (reducedMotion || cache || !document.startViewTransition) { fn(); return; }
     const transition = document.startViewTransition(fn);
     /* A transition interrupted by the next one, or skipped, rejects its
        promises: that is normal, and without this catch every quick screen
@@ -675,7 +675,7 @@ const UI = (() => {
     if (transition && transition.finished) transition.finished.catch(() => {});
   }
 
-  /* pourEdition: true ONLY when chargerExtractionDansSaisie opens the
+  /* forEditing: true ONLY when loadExtractionIntoEntry opens the
      screen. It used to be a shared flag, set before a forty-line body and
      reset after, without finally: an exception in the middle left it true
      forever and the edit abandonment below never fired again. Chris then
@@ -684,59 +684,59 @@ const UI = (() => {
 
      As a parameter, there is no state left to get stuck: the information
      belongs to the call, it lives as long as the call. */
-  function activerEcran(nom, pourEdition) {
+  function activateScreen(nameKey, forEditing) {
     /* Arriving on Entry through the navigation means "I want to log a cup",
        never "resume the edit from ten minutes ago". So we abandon the edit in
        progress, and we SAY so: without the message, the abandonment would be
        as silent as the bug it fixes. Nothing is lost in storage, the modified
        extraction had not been saved and can still be opened from the history. */
-    if (nom === "saisie" && UI.saisie.editId && !pourEdition) {
-      UI.reinitialiserSaisie();
+    if (nameKey === "saisie" && UI.entry.editId && !forEditing) {
+      UI.resetEntry();
       toast(I18N.t("t_edition_abandonnee"));
     }
     /* Arriving on Entry for a NEW cup must show the current time. Here and
-       not in rendreEcranCourant: that one replays on every data
+       not in renderCurrentScreen: that one replays on every data
        notification, and the date would jump while filling in the form. On
        arrival, once, is what we want. */
-    if (nom === "saisie" && !UI.saisie.editId) UI.rafraichirDateSaisie();
-    nav.ecran = nom;
+    if (nameKey === "saisie" && !UI.entry.editId) UI.refreshEntryDate();
+    nav.screenName = nameKey;
     // Only the VISUAL switch goes into the transition. The edit abandonment
     // above is business logic: it happens in every case.
-    avecTransition(() => {
+    withTransition(() => {
       $$(".ecran").forEach(e => e.classList.remove("actif"));
       /* aria-current="page" and not aria-pressed: these are navigation links
           disguised as buttons, not toggles. */
       $$(".nav-btn").forEach(b => {
-        b.classList.toggle("actif", b.dataset.ecran === nom);
-        if (b.dataset.ecran === nom) b.setAttribute("aria-current", "page");
+        b.classList.toggle("actif", b.dataset.ecran === nameKey);
+        if (b.dataset.ecran === nameKey) b.setAttribute("aria-current", "page");
         else b.removeAttribute("aria-current");
       });
-      const sec = $("#ecran-" + nom);
+      const sec = $("#ecran-" + nameKey);
       if (sec) sec.classList.add("actif");
-      if (location.hash !== "#" + nom) history.replaceState(null, "", "#" + nom);
-      rendreEcranCourant();
+      if (location.hash !== "#" + nameKey) history.replaceState(null, "", "#" + nameKey);
+      renderCurrentScreen();
     });
     window.scrollTo({ top: 0 });
   }
 
-  function rendreEcranCourant(force) {
-    if (nav.ecran === "tableau") { UI.rendreTableau(); UI.rendreDessins(); }
-    else if (nav.ecran === "reglages") UI.rendreReglages();
-    else if (nav.ecran === "historique") UI.rendreHistorique();
-    else if (nav.ecran === "parametres") UI.rendreParametres();
-    else if (nav.ecran === "guide" && force) UI.rendreConvertisseur();
+  function renderCurrentScreen(force) {
+    if (nav.screenName === "tableau") { UI.renderDashboard(); UI.renderDrawings(); }
+    else if (nav.screenName === "reglages") UI.renderTuning();
+    else if (nav.screenName === "historique") UI.renderHistory();
+    else if (nav.screenName === "parametres") UI.renderParameters();
+    else if (nav.screenName === "guide" && force) UI.renderConverter();
   }
 
   return {
-    $, $$, $f, APPUI_LONG_MS, CLE_REPLIS, DOSE_REPLI_USINE, EBULLITION_USINE, ECRANS, ECRANS_RENOMMES,
-    FEU_REPLI_USINE, MOLETTE_REPLI_USINE, activerAppuiLong, activerEcran, animerCompteur,
-    antiRebond, appliquerTheme, attrTitre, avecTransition, basculerEtat, cacheChamps,
-    basculerRatees, chargerReplis, cleLocale, confirmer, detailRatio, diagsAffiches,
-    ecrireReplis, estRatee, extAnalysables, inclureRatees,
-    cleJour, extAvecCalculs, fmtDateCourte, fmtDateHeure, fmtDecimal, fmtHeure, libelleJour, fmtTemps, fmtVND, icone,
-    maintenantLocal, marquerNote, brancherDictee, brancherNote, noteVide, peindreCurseur, moyenne, nav, normaliserEcran, oublierSignatures, poser, poserTexte,
-    recetteAvecVariantes, recettesDeMethode, recettesVivantes, rendreEcranCourant, replis,
-    reprendreReplisLocaux, siChange, signatureTable, signatures,
-    supprimerExtractionAvecRetour, toast, toastAction, trouverRecette, unSeulALaFois, surveillerMisesAJour,
+    $, $$, $f, LONG_PRESS_MS, FALLBACKS_KEY, FACTORY_DOSE, FACTORY_BOIL_S, SCREEN_NAMES, RENAMED_SCREENS,
+    FACTORY_FIRE, FACTORY_DIAL, enableLongPress, activateScreen, animateCounter,
+    debounce, applyTheme, titleAttr, withTransition, setPressed, fieldCache,
+    toggleFailed, loadFallbacks, localDateKey, askConfirm, detailRatio, displayedDiags,
+    saveFallbacks, isFailed, analyzableExts, includeFailed,
+    dayKey, extsWithCalcs, fmtShortDate, fmtDateTime, fmtDecimal, fmtHour, dayLabelOf, fmtDuration, fmtVND, icon,
+    localNow, markRating, wireDictation, wireRating, isRatingEmpty, paintSlider, average, nav, normalizeScreen, forgetSignatures, setHtml, setText,
+    recipeWithVariants, recipesForMethod, liveRecipes, renderCurrentScreen, fallbacks,
+    migrateLocalFallbacks, ifChanged, signatureTable, signatures,
+    deleteExtractionWithUndo, toast, toastAction, findRecipe, oneAtATime, watchForUpdates,
   };
 })();

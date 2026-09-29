@@ -6,20 +6,20 @@
 (() => {
 
   // Borrowed from the core, loaded before us.
-  const { $, $$, animerCompteur, attrTitre, cleLocale, diagsAffiches,
-    cleJour, estRatee, extAnalysables, extAvecCalculs, fmtDecimal, fmtHeure, libelleJour, moyenne, nav, replis, trouverRecette } = UI;
+  const { $, $$, animateCounter, titleAttr, localDateKey, displayedDiags,
+    dayKey, isFailed, analyzableExts, extsWithCalcs, fmtDecimal, fmtHour, dayLabelOf, average, nav, fallbacks, findRecipe } = UI;
   // And from the two pieces moved out of here in v8.78, loaded just before.
-  const { MIN_GAP, MIN_SAMPLE, note1, cablerConstats, rendreInsights,
-    DERNIERES_AFFICHEES, commentaireDerniere, goutsDerniere, mesuresCourtes, rendreDerniereTasse } = UI;
+  const { MIN_GAP, MIN_SAMPLE, fmtRating, wireFindings, renderInsights,
+    LATEST_SHOWN, lastComment, lastTastes, shortMeasures, renderLastCup } = UI;
 
   // ---------- Activity calendar ----------
   // 18 weeks and not 26: at one or two cups a day, six months of grid are
   // mostly six months of empty cells, which makes it look like the calendar
   // does not work.
   /* Ceiling of the calendar window. The number ACTUALLY shown is computed
-     from the container width, see semainesVisibles(): beyond this ceiling
+     from the container width, see visibleWeeks(): beyond this ceiling
      nothing more is learned, below it things get crammed. */
-  const SEMAINES_HEATMAP = 18;
+  const HEATMAP_WEEKS = 18;
   const MIN_WEEKS = 6;
 
   /* HOW MANY WEEKS FIT, really. A cell is 17 px plus 4 of gutter, and the
@@ -33,12 +33,12 @@
   /* Prevents the catch-up from calling itself endlessly. */
   let heatmapRecounted = false;
 
-  function semainesVisibles() {
+  function visibleWeeks() {
     const frame = $("#g-heatmap");
     const available = frame ? frame.clientWidth : 0;
-    if (!available) return SEMAINES_HEATMAP;
+    if (!available) return HEATMAP_WEEKS;
     const fit = Math.floor((available - 34) / 21);
-    return Math.max(MIN_WEEKS, Math.min(SEMAINES_HEATMAP, fit));
+    return Math.max(MIN_WEEKS, Math.min(HEATMAP_WEEKS, fit));
   }
 
   /* Quantifies the displayed period. A grid of cells says nothing measurable
@@ -49,7 +49,7 @@
      morning before the first coffee, it would drop to zero every day and
      would no longer mean anything. */
   function statsHeatmap(perDay, weeks) {
-    const windowWeeks = weeks || SEMAINES_HEATMAP;
+    const windowWeeks = weeks || HEATMAP_WEEKS;
     const end = new Date();
     end.setHours(0, 0, 0, 0);
     const start = new Date(end);
@@ -58,7 +58,7 @@
     const days = [];
     const day = new Date(start);
     while (day <= end) {
-      days.push(perDay[cleLocale(day)] || 0);
+      days.push(perDay[localDateKey(day)] || 0);
       day.setDate(day.getDate() + 1);
     }
 
@@ -88,14 +88,14 @@
     const coveredDays = firstActive === -1 ? 0 : days.length - firstActive;
     const perWeek = coveredDays > 0 ? cups / (coveredDays / 7) : 0;
 
-    return { tasses: cups, joursActifs: activeDays, serieEnCours: currentStreak, meilleureSerie: bestStreak, parSemaine: perWeek };
+    return { tasses: cups, activeDays: activeDays, currentStreak: currentStreak, bestStreak: bestStreak, perWeek: perWeek };
   }
 
   /* THE SCALE LEGEND. The calendar shades follow an ABSOLUTE scale, so a
      colour always means the same thing: that is what makes a legend useful,
      and that is why it must exist. Without it, the calendar is a run of
      browns. */
-  function rendreLegendeHeatmap() {
+  function renderHeatmapLegend() {
     const target = $("#heatmap-legende");
     if (!target) return;
     const cells = [0, 1, 2, 3, 4].map(n =>
@@ -104,8 +104,8 @@
       "<span>" + I18N.t("hm_leg_plus") + "</span>";
   }
 
-  function rendreStatsHeatmap(perDay, weeks) {
-    const windowWeeks = weeks || SEMAINES_HEATMAP;
+  function renderHeatmapStats(perDay, weeks) {
+    const windowWeeks = weeks || HEATMAP_WEEKS;
     const s = statsHeatmap(perDay, windowWeeks);
     if (!s.tasses) {
       $("#heatmap-stats").innerHTML =
@@ -114,10 +114,10 @@
     }
     const cells = [
       { v: s.tasses, l: I18N.t("hm_st_tasses") },
-      { v: s.joursActifs, l: I18N.t("hm_st_jours") },
-      { v: s.serieEnCours, l: I18N.t("hm_st_serie_now") },
-      { v: s.meilleureSerie, l: I18N.t("hm_st_serie_max") },
-      { v: fmtDecimal(s.parSemaine, 1), l: I18N.t("hm_st_semaine") },
+      { v: s.activeDays, l: I18N.t("hm_st_jours") },
+      { v: s.currentStreak, l: I18N.t("hm_st_serie_now") },
+      { v: s.bestStreak, l: I18N.t("hm_st_serie_max") },
+      { v: fmtDecimal(s.perWeek, 1), l: I18N.t("hm_st_semaine") },
     ];
     $("#heatmap-stats").innerHTML = cells
       .map(c => '<div class="mini-stat"><b>' + c.v + "</b><span>" + c.l + "</span></div>")
@@ -128,7 +128,7 @@
      site. These three cards are the only ones that can stay empty for a long
      time with perfectly valid data, so each one states its real cause
      rather than a generic "no data" that helps nobody. */
-  function majCarteVide(id, pointCount, key) {
+  function updateEmptyCard(id, pointCount, key) {
     const empty = pointCount === 0;
     $("#boite-" + id).hidden = empty;
     const msg = $("#vide-" + id);
@@ -136,18 +136,18 @@
     if (empty) msg.textContent = I18N.t(key);
   }
 
-  function causeMoutureVide(rated) {
+  function emptyGrindCause(rated) {
     if (!rated.length) return "vide_rien";
     // Most common case for a drinker of pre-ground coffee: the grind is
     // deliberately not stored, so the scatter cannot show anything.
     const allPreGround = rated.every(e => {
-      const c = DATA.cafeDe(e);
+      const c = DATA.coffeeOf(e);
       return c && Number(c.deja_moulu) === 1;
     });
     return allPreGround ? "vide_mouture_moulu" : "vide_mouture";
   }
 
-  function causeGoutsVide(rated) {
+  function emptyTastesCause(rated) {
     if (!rated.length) return "vide_rien";
     const withTags = rated.filter(e => (e.descripteurs || "").trim() !== "").length;
     // Tell "you never tick descriptors" apart from "not enough times the
@@ -164,11 +164,11 @@
      Here the data is always there, since descriptors are ticked on every
      cup. We keep the 10 best and the 5 worst: out of 59 tags, showing all
      would be unreadable, and the extremes carry the information. */
-  const MIN_TASSES_GOUT = 3;
-  const TOP_GOUTS = 10;
-  const PIRES_GOUTS = 5;
+  const MIN_TASTE_CUPS = 3;
+  const TOP_TASTES = 10;
+  const WORST_TASTES = 5;
 
-  function rendreGouts(rated) {
+  function renderTastes(rated) {
     const byTag = {};
     rated.forEach(e => {
       (e.descripteurs || "").split("|").filter(Boolean).forEach(tag => {
@@ -177,9 +177,9 @@
     });
 
     const ranked = Object.entries(byTag)
-      .filter(([, ratings]) => ratings.length >= MIN_TASSES_GOUT)
-      .map(([tag, ratings]) => ({ tag, moy: moyenne(ratings), n: ratings.length }))
-      .sort((a, b) => b.moy - a.moy);
+      .filter(([, ratings]) => ratings.length >= MIN_TASTE_CUPS)
+      .map(([tag, ratings]) => ({ tag, mean: average(ratings), n: ratings.length }))
+      .sort((a, b) => b.mean - a.mean);
 
     if (!ranked.length) {
       $("#note-gouts").textContent = "";
@@ -187,27 +187,27 @@
     }
 
     // The extremes, without duplicates if the list is short.
-    const kept = ranked.length > TOP_GOUTS + PIRES_GOUTS
-      ? [...ranked.slice(0, TOP_GOUTS), ...ranked.slice(-PIRES_GOUTS)]
+    const kept = ranked.length > TOP_TASTES + WORST_TASTES
+      ? [...ranked.slice(0, TOP_TASTES), ...ranked.slice(-WORST_TASTES)]
       : ranked;
 
-    const overallAvg = moyenne(rated.map(e => e.note_sur_10));
+    const overallAvg = average(rated.map(e => e.note_sur_10));
     const items = kept.map(c => ({
       label: I18N.tag(c.tag),
-      value: +c.moy.toFixed(1),
+      value: +c.mean.toFixed(1),
       extra: I18N.t("b_extractions", { n: c.n }),
     }));
     // Green above your average, red below: without a reference, "7,9" does not
     // say whether it is good for YOU.
     const colors = kept.map(c =>
-      c.moy >= overallAvg
+      c.mean >= overallAvg
         ? getComputedStyle(document.documentElement).getPropertyValue("--ok").trim()
         : getComputedStyle(document.documentElement).getPropertyValue("--danger").trim());
 
-    CHARTS.barresHorizontales("g-gouts", items, colors, I18N.t("axe_note_moy"), 10);
+    CHARTS.horizontalBars("g-gouts", items, colors, I18N.t("axe_note_moy"), 10);
     $("#note-gouts").textContent = I18N.t("gouts_note", {
       m: fmtDecimal(overallAvg, 1),
-      n: MIN_TASSES_GOUT,
+      n: MIN_TASTE_CUPS,
     });
     return items;
   }
@@ -221,16 +221,16 @@
     if (ok.length < 2) return "";
     const high = ok[0], low = ok[ok.length - 1];
     return I18N.t(ok.length > 2 ? keyTwo : keyOne, {
-      a: high.label, ma: note1(high.value), b: low.label, mb: note1(low.value),
+      a: high.label, ma: fmtRating(high.value), b: low.label, mb: fmtRating(low.value),
     });
   }
 
   function readMachines(nB, nS) {
     if (nB.length < MIN_SAMPLE || nS.length < MIN_SAMPLE) return "";
-    const mB = moyenne(nB), mS = moyenne(nS), gap = Math.abs(mB - mS);
-    if (gap < MIN_GAP) return I18N.t("lec_machines_egal", { mb: note1(mB), ms: note1(mS) });
+    const mB = average(nB), mS = average(nS), gap = Math.abs(mB - mS);
+    if (gap < MIN_GAP) return I18N.t("lec_machines_egal", { mb: fmtRating(mB), ms: fmtRating(mS) });
     return I18N.t(mS > mB ? "lec_switch_devant" : "lec_brikka_devant", {
-      x: note1(gap), s: gap >= 2 ? "s" : "",
+      x: fmtRating(gap), s: gap >= 2 ? "s" : "",
       souvent: nB.length === nS.length ? ""
         : I18N.t(nB.length > nS.length ? "lec_souvent_brikka" : "lec_souvent_switch"),
     });
@@ -240,7 +240,7 @@
     const total = Object.values(byDiag).reduce((a, b) => a + b, 0);
     const sorted = Object.entries(byDiag).sort((a, b) => b[1] - a[1]);
     if (!sorted.length) return "";
-    return I18N.t("lec_diag", { d: diagsAffiches(sorted[0][0]), n: sorted[0][1], t: total });
+    return I18N.t("lec_diag", { d: displayedDiags(sorted[0][0]), n: sorted[0][1], t: total });
   }
 
   function readGrind(analyzable) {
@@ -250,12 +250,12 @@
       analyzable.filter(e => e.methode === m && e.note_sur_10 !== "" && e.mouture_dial)
         .forEach(e => (byDial[e.mouture_dial] = byDial[e.mouture_dial] || []).push(e.note_sur_10));
       Object.entries(byDial).filter(([, ns]) => ns.length >= MIN_SAMPLE).forEach(([dial, ns]) => {
-        const avg = moyenne(ns);
-        if (!best || avg > best.moy) best = { m, dial, moy: avg, n: ns.length };
+        const avg = average(ns);
+        if (!best || avg > best.mean) best = { m, dial, mean: avg, n: ns.length };
       });
     });
     return best ? I18N.t(best.m === "Brikka" ? "lec_mouture_brikka" : "lec_mouture_switch", {
-      d: best.dial, x: note1(best.moy), n: best.n,
+      d: best.dial, x: fmtRating(best.mean), n: best.n,
     }) : "";
   }
 
@@ -290,19 +290,19 @@
     try { localStorage.setItem(TAB_KEY, name); } catch (e) { /* without storage, back to Cafés */ }
   }
 
-  function causeDuelVide(rated) {
+  function emptyDuelCause(rated) {
     if (!rated.length) return "vide_rien";
     const machines = new Set(rated.map(e => e.methode).filter(Boolean));
     // A single brewer used: there is nothing to compare, it is not a bug.
     return machines.size < 2 ? "vide_duel_une_machine" : "vide_duel";
   }
 
-  function rendreTableau() {
+  function renderDashboard() {
     /* TWO data sets, and knowing which one to take is the only question that
        matters here. exts counts WHAT HAPPENED, analyzable advises WHAT TO DO.
-       See extAnalysables() in the core for the rule. */
-    const exts = extAvecCalculs();
-    const analyzable = extAnalysables();
+       See analyzableExts() in the core for the rule. */
+    const exts = extsWithCalcs();
+    const analyzable = analyzableExts();
     /* The "include failed cups" toggle lives in the Settings screen since
        v7.91: as a banner here, it took the place of the first figure on every
        opening for a setting changed once a month. */
@@ -310,13 +310,13 @@
     $("#tableau-vide").hidden = !empty;
     $("#tableau-contenu").hidden = empty;
     if (empty) return;
-    rendreStockCoin();
+    renderStockCorner();
 
-    const today = cleLocale(new Date());
+    const today = localDateKey(new Date());
     const now = new Date();
     const monday = new Date(now);
     monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
-    const mondayKey = cleLocale(monday);
+    const mondayKey = localDateKey(monday);
     const currentMonth = today.slice(0, 7);
     const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
 
@@ -325,8 +325,8 @@
 
     // Estimated caffeine per day over the last 7 days.
     const caffeineOf = e => {
-      const coffee = DATA.cafeDe(e);
-      return cafeineMg(e.dose_g || 0, coffee ? coffee.espece : "", coffee ? coffee.pourcentage_cafe_reel : 100);
+      const coffee = DATA.coffeeOf(e);
+      return caffeineMg(e.dose_g || 0, coffee ? coffee.espece : "", coffee ? coffee.pourcentage_cafe_reel : 100);
     };
     const caffeine7d = exts.filter(e => new Date(e.date_heure) >= weekAgo).reduce((a, e) => a + caffeineOf(e), 0);
 
@@ -336,27 +336,27 @@
        rating and caffeine, have not gone: they move to a line under the grid,
        where they can be read when looked for without taking the glance. */
     const kpis = [
-      { valeur: exts.filter(e => e.date_heure.slice(0, 10) === today).length, label: I18N.t("kpi_auj"), dec: 0 },
-      { valeur: exts.filter(e => e.date_heure.slice(0, 10) >= mondayKey).length, label: I18N.t("kpi_semaine"), dec: 0 },
-      { valeur: moyenne(ratings7d) || 0, label: I18N.t("kpi_note7"), dec: 1, sur10: true },
-      { valeur: REGLAGES.ecartACafeEgal(analyzable) || 0, label: I18N.t("kpi_regularite"), dec: 1, plusMoins: true },
+      { value: exts.filter(e => e.date_heure.slice(0, 10) === today).length, label: I18N.t("kpi_auj"), dec: 0 },
+      { value: exts.filter(e => e.date_heure.slice(0, 10) >= mondayKey).length, label: I18N.t("kpi_semaine"), dec: 0 },
+      { value: average(ratings7d) || 0, label: I18N.t("kpi_note7"), dec: 1, outOf10: true },
+      { value: TUNING.gapAtSameCoffee(analyzable) || 0, label: I18N.t("kpi_regularite"), dec: 1, plusMinus: true },
     ];
     $("#kpis").innerHTML = kpis.map(k =>
       '<div class="kpi"><div class="kpi-valeur"><span class="kpi-nombre"></span>' +
-      (k.sur10 ? "<small> / 10</small>" : k.mg ? "<small> mg</small>" : k.plusMoins ? "<small> pt</small>" : "") +
+      (k.outOf10 ? "<small> / 10</small>" : k.mg ? "<small> mg</small>" : k.plusMinus ? "<small> pt</small>" : "") +
       '</div><div class="kpi-label">' + k.label + "</div></div>"
     ).join("");
     /* An average without cups is not zero (v8.38): "0,0 / 10" read like a
        week of failed cups. A dash, with no animation or unit. */
-    kpis[2].vide = !ratings7d.length;
-    kpis[3].vide = ratings.length < 2;
+    kpis[2].empty = !ratings7d.length;
+    kpis[3].empty = ratings.length < 2;
     $$("#kpis .kpi-nombre").forEach((el, i) => {
-      if (kpis[i].vide) {
+      if (kpis[i].empty) {
         el.textContent = "-";
         el.parentElement.querySelector("small")?.remove();
         return;
       }
-      animerCompteur(el, kpis[i].valeur, kpis[i].dec, "", kpis[i].plusMoins ? "± " : "");
+      animateCounter(el, kpis[i].value, kpis[i].dec, "", kpis[i].plusMinus ? "± " : "");
     });
 
     /* The three figures taken out of the tiles. They stay readable, in plain
@@ -365,16 +365,16 @@
       "<li><span>" + caption + "</span><b>" + value + "</b></li>";
     $("#kpis-secondaires").innerHTML =
       row(I18N.t("kpi_total"), exts.length) +
-      row(I18N.t("kpi_note"), fmtDecimal(moyenne(ratings) || 0, 1) + " / 10") +
+      row(I18N.t("kpi_note"), fmtDecimal(average(ratings) || 0, 1) + " / 10") +
       row(I18N.t("kpi_cafeine"), "≈ " + Math.round(caffeine7d / 7) + " mg");
 
     /* The page header subline: today's date, as in the mockup. */
     $("#tableau-surligne").textContent = now.toLocaleDateString(I18N.locale(),
       { weekday: "long", day: "numeric", month: "long" });
 
-    rendreDerniereTasse(exts);
+    renderLastCup(exts);
 
-    rendreInsights(analyzable);
+    renderInsights(analyzable);
 
     // Last 30 days: bars, rating, grams, caffeine in the tooltip
     const labels = [], counts = [], averages = [], details = [], trend = [];
@@ -382,30 +382,30 @@
        a rolling average restarting at the window edge would be empty for the
        first four days shown. It is then projected day by day, keeping the
        last known value, so that it does not break on days without a cup. */
-    const rolling = REGLAGES.moyenneGlissante(analyzable, 5);
+    const rolling = TUNING.rollingAverage(analyzable, 5);
     let iRoll = 0, latest = null, lastDate = null;
     for (let i = 29; i >= 0; i--) {
       const d = new Date(); d.setDate(d.getDate() - i);
-      const key = cleLocale(d);
+      const key = localDateKey(d);
       const dayCups = exts.filter(e => e.date_heure.slice(0, 10) === key);
       labels.push(d.toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" }));
       counts.push(dayCups.length);
       const dayRatings = dayCups.filter(e => e.note_sur_10 !== "").map(e => e.note_sur_10);
-      averages.push(dayRatings.length ? +moyenne(dayRatings).toFixed(1) : null);
+      averages.push(dayRatings.length ? +average(dayRatings).toFixed(1) : null);
       if (!dayCups.length) { details.push(""); continue; }
       const g = dayCups.reduce((a, e) => a + (e.dose_g || 0), 0);
       const mg = dayCups.reduce((a, e) => a + caffeineOf(e), 0);
-      const coffeeNames = [...new Set(dayCups.map(e => (DATA.cafeDe(e) || {}).nom).filter(Boolean))];
+      const coffeeNames = [...new Set(dayCups.map(e => (DATA.coffeeOf(e) || {}).nom).filter(Boolean))];
       details.push(I18N.t("tip_cafe_g", { g: Math.round(g * 10) / 10 }) + "\n" +
         I18N.t("tip_cafeine", { mg }) + "\n" + coffeeNames.join(", "));
     }
     // Second pass: the trend follows the same labels as the bars.
     for (let i = 29; i >= 0; i--) {
       const d = new Date(); d.setDate(d.getDate() - i);
-      const key = cleLocale(d);
+      const key = localDateKey(d);
       while (iRoll < rolling.length && String(rolling[iRoll].date).slice(0, 10) <= key) {
-        if (rolling[iRoll].valeur !== null) {
-          latest = rolling[iRoll].valeur;
+        if (rolling[iRoll].value !== null) {
+          latest = rolling[iRoll].value;
           lastDate = String(rolling[iRoll].date).slice(0, 10);
         }
         iRoll += 1;
@@ -417,7 +417,7 @@
         (new Date(key + "T12:00") - new Date(lastDate + "T12:00")) / 86400000 > 7;
       trend.push(stale ? null : latest);
     }
-    CHARTS.barresEtLigne30j("g-30jours", labels, counts, averages, details, trend, UI.rendreCafes30j(exts));
+    CHARTS.barsAndLine30d("g-30jours", labels, counts, averages, details, trend, UI.renderCoffees30d(exts));
 
     // Heatmap
     const perDay = {}, infoPerDay = {};
@@ -427,17 +427,17 @@
     });
     const ratingsPerDay = {};
     analyzable.forEach(e => { if (e.note_sur_10 !== "") (ratingsPerDay[e.date_heure.slice(0, 10)] = ratingsPerDay[e.date_heure.slice(0, 10)] || []).push(e.note_sur_10); });
-    Object.keys(perDay).forEach(key => { if (ratingsPerDay[key]) infoPerDay[key] = I18N.t("d_note") + " " + moyenne(ratingsPerDay[key]).toFixed(1); });
+    Object.keys(perDay).forEach(key => { if (ratingsPerDay[key]) infoPerDay[key] = I18N.t("d_note") + " " + average(ratingsPerDay[key]).toFixed(1); });
     /* As many weeks as the card can show, without scrolling. The same number
        goes to the five figures below: the grid and its summary describe the
        same window. */
-    const weeks = semainesVisibles();
+    const weeks = visibleWeeks();
     CHARTS.heatmap("g-heatmap", perDay, infoPerDay, weeks);
     $("#heatmap-titre").textContent = I18N.t("hm_titre", { n: weeks });
-    rendreStatsHeatmap(perDay, weeks);
-    rendreLegendeHeatmap();
+    renderHeatmapStats(perDay, weeks);
+    renderHeatmapLegend();
 
-    /* ON FIRST RENDER the card has no width yet: semainesVisibles() falls back
+    /* ON FIRST RENDER the card has no width yet: visibleWeeks() falls back
        to the ceiling and draws 18 weeks squashed to scale. Once layout is
        done, we recount, and only redraw if the count changed. The flag
        prevents the loop: a single catch-up. */
@@ -445,7 +445,7 @@
       heatmapRecounted = true;
       setTimeout(() => {
         heatmapRecounted = false;
-        if (nav.ecran === "tableau" && semainesVisibles() !== weeks) UI.rendreTableau();
+        if (nav.screenName === "tableau" && visibleWeeks() !== weeks) UI.renderDashboard();
       }, 0);
     }
 
@@ -456,17 +456,17 @@
       (byCoffee[e._c.cafe_nom] = byCoffee[e._c.cafe_nom] || []).push(e.note_sur_10);
     });
     const coffeeItems = Object.entries(byCoffee)
-      .map(([name, ns]) => ({ label: I18N.tr(name), value: +moyenne(ns).toFixed(1), extra: I18N.t("b_extractions", { n: ns.length }), nomBrut: name }))
+      .map(([name, ns]) => ({ label: I18N.tr(name), value: +average(ns).toFixed(1), extra: I18N.t("b_extractions", { n: ns.length }), rawName: name }))
       .sort((a, b) => b.value - a.value);
     // The reference coffee (benchmark) stands out in green.
     const coffeeColors = coffeeItems.map(i => {
-      const c = DATA.state.cafes.find(x => x.nom === i.nomBrut);
-      return c && (c.tag || "").includes("référence") ? CHARTS.C_DEUX : undefined;
+      const c = DATA.state.cafes.find(x => x.nom === i.rawName);
+      return c && (c.tag || "").includes("référence") ? CHARTS.C_BOTH : undefined;
     });
     const coffeeAccents = coffeeColors.some(Boolean) ? coffeeColors.map(c => c || getComputedStyle(document.documentElement).getPropertyValue("--accent").trim()) : null;
-    CHARTS.barresHorizontales("g-cafes", coffeeItems, coffeeAccents, I18N.t("axe_note_moy"), 10);
+    CHARTS.horizontalBars("g-cafes", coffeeItems, coffeeAccents, I18N.t("axe_note_moy"), 10);
     $("#lecture-cafes").textContent = readRanking(
-      coffeeItems.map(i => ({ ...i, n: byCoffee[i.nomBrut].length })), "lec_cafes_deux", "lec_cafes");
+      coffeeItems.map(i => ({ ...i, n: byCoffee[i.rawName].length })), "lec_cafes_deux", "lec_cafes");
 
     // Brikka versus Switch duel
     const brikka = analyzable.filter(e => e.methode === "Brikka");
@@ -475,9 +475,9 @@
     const nS = swtch.filter(e => e.note_sur_10 !== "").map(e => e.note_sur_10);
     $("#duel-machines").innerHTML =
       '<div class="duel-col brikka"><b>' + brikka.length + "</b><span>" + I18N.t("d_ext_brikka") + "</span><b>" +
-      (nB.length ? moyenne(nB).toFixed(1) : "...") + "</b><span>" + I18N.t("d_note") + "</span></div>" +
+      (nB.length ? average(nB).toFixed(1) : "...") + "</b><span>" + I18N.t("d_note") + "</span></div>" +
       '<div class="duel-col switch"><b>' + swtch.length + "</b><span>" + I18N.t("d_ext_switch") + "</span><b>" +
-      (nS.length ? moyenne(nS).toFixed(1) : "...") + "</b><span>" + I18N.t("d_note") + "</span></div>";
+      (nS.length ? average(nS).toFixed(1) : "...") + "</b><span>" + I18N.t("d_note") + "</span></div>";
 
     // Coffees brewed in both brewers
     const bothCoffees = DATA.state.cafes.filter(c => {
@@ -485,28 +485,28 @@
       const es = analyzable.some(e => e.cafe_id === c.id && e.methode === "Switch" && e.note_sur_10 !== "");
       return eb && es;
     });
-    CHARTS.comparatifMachines("g-duel",
+    CHARTS.machineComparison("g-duel",
       bothCoffees.map(c => c.nom),
-      bothCoffees.map(c => +moyenne(analyzable.filter(e => e.cafe_id === c.id && e.methode === "Brikka" && e.note_sur_10 !== "").map(e => e.note_sur_10)).toFixed(1)),
-      bothCoffees.map(c => +moyenne(analyzable.filter(e => e.cafe_id === c.id && e.methode === "Switch" && e.note_sur_10 !== "").map(e => e.note_sur_10)).toFixed(1)));
+      bothCoffees.map(c => +average(analyzable.filter(e => e.cafe_id === c.id && e.methode === "Brikka" && e.note_sur_10 !== "").map(e => e.note_sur_10)).toFixed(1)),
+      bothCoffees.map(c => +average(analyzable.filter(e => e.cafe_id === c.id && e.methode === "Switch" && e.note_sur_10 !== "").map(e => e.note_sur_10)).toFixed(1)));
 
     // Scatter plots
     const pts = m => analyzable
       .filter(e => e.methode === m && e.note_sur_10 !== "" && e._c.microns !== "")
       .map(e => ({ x: e._c.microns, y: e.note_sur_10, nom: e._c.cafe_nom + ", " + e.mouture_dial }));
-    CHARTS.nuage("g-mouture", pts("Brikka"), pts("Switch"), I18N.t("axe_mouture"), "µm");
+    CHARTS.scatter("g-mouture", pts("Brikka"), pts("Switch"), I18N.t("axe_mouture"), "µm");
 
     const rated = analyzable.filter(e => e.note_sur_10 !== "");
-    const tastes = rendreGouts(rated);
-    $("#lecture-gouts").textContent = readTastes(tastes, moyenne(rated.map(e => e.note_sur_10)) || 0);
+    const tastes = renderTastes(rated);
+    $("#lecture-gouts").textContent = readTastes(tastes, average(rated.map(e => e.note_sur_10)) || 0);
     $("#lecture-machines").textContent = readMachines(nB, nS);
     $("#lecture-mouture").textContent = readGrind(analyzable);
 
     // The three cards that can stay empty with valid data.
-    majCarteVide("mouture", pts("Brikka").length + pts("Switch").length, causeMoutureVide(rated));
-    majCarteVide("gouts", tastes.length, causeGoutsVide(rated));
-    majCarteVide("aromes", CHARTS.roueAromes(rated), causeGoutsVide(rated));
-    majCarteVide("duel", bothCoffees.length, causeDuelVide(rated));
+    updateEmptyCard("mouture", pts("Brikka").length + pts("Switch").length, emptyGrindCause(rated));
+    updateEmptyCard("gouts", tastes.length, emptyTastesCause(rated));
+    updateEmptyCard("aromes", CHARTS.aromaWheel(rated), emptyTastesCause(rated));
+    updateEmptyCard("duel", bothCoffees.length, emptyDuelCause(rated));
 
     // Diagnostics
     const byDiag = {};
@@ -514,7 +514,7 @@
       byDiag[d] = (byDiag[d] || 0) + 1;
     }));
     const diagLabels = DIAGNOSTICS.filter(d => byDiag[d]);
-    CHARTS.anneauDiagnostics("g-diagnostics", diagLabels, diagLabels.map(d => byDiag[d]));
+    CHARTS.diagnosticsRing("g-diagnostics", diagLabels, diagLabels.map(d => byDiag[d]));
     $("#lecture-diagnostics").textContent = readDiagnostics(byDiag);
 
     // Rating per recipe
@@ -524,13 +524,13 @@
       (byRecipe[e.recette] = byRecipe[e.recette] || []).push(e.note_sur_10);
     });
     const recipeItems = Object.entries(byRecipe)
-      .map(([name, ns]) => ({ label: name, value: +moyenne(ns).toFixed(1), extra: I18N.t("b_extractions", { n: ns.length }) }))
+      .map(([name, ns]) => ({ label: name, value: +average(ns).toFixed(1), extra: I18N.t("b_extractions", { n: ns.length }) }))
       .sort((a, b) => b.value - a.value);
     const recipeColors = recipeItems.map(i => {
-      const r = trouverRecette(i.label);
-      return r ? (r.methode === "Brikka" ? CHARTS.C_BRIKKA : CHARTS.C_SWITCH) : CHARTS.C_DEUX;
+      const r = findRecipe(i.label);
+      return r ? (r.methode === "Brikka" ? CHARTS.C_BRIKKA : CHARTS.C_SWITCH) : CHARTS.C_BOTH;
     });
-    CHARTS.barresHorizontales("g-recettes", recipeItems, recipeColors, I18N.t("axe_note_moy"), 10);
+    CHARTS.horizontalBars("g-recettes", recipeItems, recipeColors, I18N.t("axe_note_moy"), 10);
     $("#lecture-recettes").textContent = readRanking(
       recipeItems.map(i => ({ ...i, label: I18N.tr(i.label), n: byRecipe[i.label].length })), "lec_recettes_deux", "lec_recettes");
 
@@ -538,7 +538,7 @@
     /* EIGHT and not five: the card stretches to the height of its row, and
        five lines left a big blank there. Lines are better than emptiness. */
     const latestCups = [...exts].sort((a, b) => b.date_heure.localeCompare(a.date_heure))
-      .slice(0, DERNIERES_AFFICHEES);
+      .slice(0, LATEST_SHOWN);
     // Each line opens the editing of its extraction. role and tabindex rather
     // than a real button: the content is structured (div, span) and a button is
     // not allowed to contain it.
@@ -554,25 +554,25 @@
        its column: its colour dot moves in front of the coffee name. */
     let currentDay = "";
     $("#dernieres-liste").innerHTML = latestCups.map(e => {
-      const day = cleJour(e.date_heure);
+      const day = dayKey(e.date_heure);
       const header = day !== currentDay
-        ? '<tr class="d-jour"><th colspan="5" scope="colgroup">' + libelleJour(e.date_heure) + "</th></tr>" : "";
+        ? '<tr class="d-jour"><th colspan="5" scope="colgroup">' + dayLabelOf(e.date_heure) + "</th></tr>" : "";
       currentDay = day;
       return header +
-      '<tr class="derniere-cliquable' + (estRatee(e) ? " ligne-ratee" : "") +
-      '" data-ext="' + e.id + '" tabindex="0" role="button" title="' + attrTitre(I18N.t("h_editer")) + '">' +
-      '<td class="d-quand">' + fmtHeure(e.date_heure) + "</td>" +
+      '<tr class="derniere-cliquable' + (isFailed(e) ? " ligne-ratee" : "") +
+      '" data-ext="' + e.id + '" tabindex="0" role="button" title="' + titleAttr(I18N.t("h_editer")) + '">' +
+      '<td class="d-quand">' + fmtHour(e.date_heure) + "</td>" +
       '<td class="d-cafe"><span class="pastille-methode ' + e.methode.toLowerCase() +
-        '" title="' + attrTitre(e.methode) + '"></span><b>' + I18N.tr(e._c.cafe_nom) + "</b>" +
-        (estRatee(e) ? '<span class="mention-ratee">' + I18N.t("rt_badge") + "</span>" : "") + "</td>" +
+        '" title="' + titleAttr(e.methode) + '"></span><b>' + I18N.tr(e._c.cafe_nom) + "</b>" +
+        (isFailed(e) ? '<span class="mention-ratee">' + I18N.t("rt_badge") + "</span>" : "") + "</td>" +
       '<td class="d-mesures">' +
         (e.recette ? '<span class="d-recette">' + I18N.tr(e.recette) + "</span>" : "") +
-        mesuresCourtes(e) +
-        (e.diagnostic ? '<span class="d-diag">' + diagsAffiches(e.diagnostic) + "</span>" : "") +
+        shortMeasures(e) +
+        (e.diagnostic ? '<span class="d-diag">' + displayedDiags(e.diagnostic) + "</span>" : "") +
       "</td>" +
-      '<td class="d-gouts">' + goutsDerniere(e) + "</td>" +
+      '<td class="d-gouts">' + lastTastes(e) + "</td>" +
       '<td class="d-note">' + (e.note_sur_10 !== "" ? fmtDecimal(Number(e.note_sur_10), 1) : "") + "</td></tr>" +
-      commentaireDerniere(e);
+      lastComment(e);
     }).join("");
     /* The full text on hover, but ONLY if the line truncated it: a comment
        readable in full does not need repeating. Measured on hover and not at
@@ -592,21 +592,21 @@
   const STOCK_MAX = 4;
   function stockData() {
     const tenDaysAgo = new Date(); tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
-    const cutoff = cleLocale(tenDaysAgo);
+    const cutoff = localDateKey(tenDaysAgo);
     return DATA.state.cafes.filter(c => c.actif !== 0).map(c => {
-      const stock = DATA.stockSachet(c.id, replis.dose);
+      const stock = DATA.bagStock(c.id, fallbacks.dose);
       if (!stock) return null;
       const ownCups = DATA.state.extractions.filter(e => e.cafe_id === c.id);
       const doses = ownCups.filter(e => Number(e.dose_g) > 0).map(e => Number(e.dose_g));
-      const dose = doses.length ? moyenne(doses) : replis.dose;
-      const left = Math.max(0, stock.restant);
+      const dose = doses.length ? average(doses) : fallbacks.dose;
+      const left = Math.max(0, stock.remaining);
       const latest = ownCups.reduce((m, e) => (String(e.date_heure) > m ? String(e.date_heure) : m), "");
       if (left <= 0 && latest.slice(0, 10) < cutoff) return null;
-      return { cafe: c, reste: left, pc: Math.min(100, (left / stock.format) * 100), tasses: Math.floor(left / dose) };
+      return { coffee: c, leftover: left, pc: Math.min(100, (left / stock.format) * 100), tasses: Math.floor(left / dose) };
       // What is left first, lowest to highest; empty bags after.
-    }).filter(Boolean).sort((a, b) => (a.reste <= 0) - (b.reste <= 0) || a.reste - b.reste);
+    }).filter(Boolean).sort((a, b) => (a.leftover <= 0) - (b.leftover <= 0) || a.leftover - b.leftover);
   }
-  function rendreStockCoin() {
+  function renderStockCorner() {
     const zone = $("#stock-coin");
     if (!zone) return;
     const all = stockData();
@@ -614,17 +614,17 @@
     const shown = all.slice(0, STOCK_MAX);
     zone.innerHTML = shown.map(s => {
       const low = s.tasses < 3;
-      const tooltip = I18N.t(s.reste <= 0 ? "sc_vide_titre" : "sc_titre", { c: I18N.tr(s.cafe.nom), g: Math.round(s.reste), n: s.tasses, s: s.tasses > 1 ? "s" : "" });
-      return '<button type="button" class="sc-sachet' + (low ? " bas" : "") + '" data-fiche="' + s.cafe.id + '" title="' + attrTitre(tooltip) + '" aria-label="' + attrTitre(tooltip) + '">' +
+      const tooltip = I18N.t(s.leftover <= 0 ? "sc_vide_titre" : "sc_titre", { c: I18N.tr(s.coffee.nom), g: Math.round(s.leftover), n: s.tasses, s: s.tasses > 1 ? "s" : "" });
+      return '<button type="button" class="sc-sachet' + (low ? " bas" : "") + '" data-fiche="' + s.coffee.id + '" title="' + titleAttr(tooltip) + '" aria-label="' + titleAttr(tooltip) + '">' +
         '<span class="sc-verre" style="--pc:' + s.pc.toFixed(0) + '%" aria-hidden="true"></span>' +
-        '<b>' + (s.reste <= 0 ? I18N.t("sc_vide") : Math.round(s.reste) + " g") + "</b>" +
-        '<span class="sc-nom">' + attrTitre(I18N.tr(s.cafe.nom)) + "</span></button>";
+        '<b>' + (s.leftover <= 0 ? I18N.t("sc_vide") : Math.round(s.leftover) + " g") + "</b>" +
+        '<span class="sc-nom">' + titleAttr(I18N.tr(s.coffee.nom)) + "</span></button>";
     }).join("") + (all.length > STOCK_MAX ? '<span class="sc-plus">+' + (all.length - STOCK_MAX) + "</span>" : "");
   }
 
   /* Wiring of the dashboard controls. Called once by app.js. */
-  function cablerTableau() {
-    cablerConstats();
+  function wireDashboard() {
+    wireFindings();
     const tabs = $(".onglets-analyses");
     tabs.addEventListener("click", ev => {
       const b = ev.target.closest("[role=tab]");
@@ -650,7 +650,7 @@
       if (!li) return;
       const ext = DATA.state.extractions.find(x => x.id === li.dataset.ext);
       if (!ext) return;
-      UI.chargerExtractionDansSaisie(ext, false);
+      UI.loadExtractionIntoEntry(ext, false);
     };
     /* The table AND the big card open the extraction. Delegating on both
        rather than on document: a global handler would catch clicks from the
@@ -667,10 +667,10 @@
 
   // Made available to the other screens.
   Object.assign(UI, {
-    rendreLegendeHeatmap, rendreStockCoin, semainesVisibles,
-    MIN_TASSES_GOUT, PIRES_GOUTS, SEMAINES_HEATMAP, TOP_GOUTS,
-    cablerTableau, causeDuelVide, causeGoutsVide, causeMoutureVide,
-    majCarteVide, rendreGouts, rendreStatsHeatmap, rendreTableau,
+    renderHeatmapLegend, renderStockCorner, visibleWeeks,
+    MIN_TASTE_CUPS, WORST_TASTES, HEATMAP_WEEKS, TOP_TASTES,
+    wireDashboard, emptyDuelCause, emptyTastesCause, emptyGrindCause,
+    updateEmptyCard, renderTastes, renderHeatmapStats, renderDashboard,
     statsHeatmap,
   });
 })();

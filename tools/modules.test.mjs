@@ -179,8 +179,8 @@ for (const f of FILES) {
 
   /* The REAL parameter lists: those following `function` or `catch`,
      and those whose closing parenthesis is followed by an arrow. Without this
-     precision, `addEventListener("click", majLive)` would look like a
-     declaration of a parameter named majLive. */
+     precision, `addEventListener("click", updateLive)` would look like a
+     declaration of a parameter named updateLive. */
   const inParams = new Set();
   for (let r = 0; r < sig.length; r++) {
     if (tokens[sig[r]].text !== "(") continue;
@@ -197,8 +197,8 @@ for (const f of FILES) {
   }
 
   /* Names bound by a DECLARATION, which do not all follow the keyword:
-       let tasses = 0, joursActifs = 0, serie = 0;      <- after a comma
-       const { joursActifs, serie } = calculer();       <- inside a pattern
+       let cups = 0, activeDays = 0, serie = 0;      <- after a comma
+       const { activeDays, serie } = calculer();       <- inside a pattern
        const { _c, ...reste } = extraction;             <- after a spread
      So we walk the whole declaration up to its semicolon, keeping
      the names that are in BINDING position: right after the keyword,
@@ -278,7 +278,7 @@ const core = info["js/ui-noyau.js"];
 }
 
 /* 2. EVERYTHING READ THROUGH UI IS ACTUALLY SET ON UI.
-   `UI.rendreHistorique()` on a name nobody exposes only breaks on click. */
+   `UI.renderHistory()` on a name nobody exposes only breaks on click. */
 {
   const allExposed = new Set();
   for (const f of FILES) for (const n of info[f].exposed) allExposed.add(n);
@@ -316,7 +316,7 @@ const core = info["js/ui-noyau.js"];
   /* Navigation state, for its part, is a SHARED object and must stay so: that is
      precisely the shape that fixed the mistake above. */
   check("navigation state is a shared object, not variables",
-    core.src.includes('const nav = { ecran: "tableau" }'));
+    core.src.includes('const nav = { screenName: "tableau" }'));
 }
 
 /* 4. THE CORE STAYS A CORE.
@@ -330,11 +330,11 @@ const core = info["js/ui-noyau.js"];
     FILES.slice(1).every(f => !info[f].src.includes("const UI =")));
   /* The core only mentions a screen through UI, never as a direct call. We look at the
      FREE names collected by the lexer, not the raw source: the header of this very
-     file explains the rule by writing rendreHistorique(), and a
+     file explains the rule by writing renderHistory(), and a
      text search would be fooled by its own comment. */
-  const screens = ["rendreTableau", "rendreHistorique", "rendreReglages", "rendreParametres", "rendreConvertisseur"];
-  const directs = screens.filter(n => core.free.some(x => x.name === n));
-  check("the core calls no screen directly", directs.length === 0, directs.join(", "));
+  const screens = ["renderDashboard", "renderHistory", "renderTuning", "renderParameters", "renderConverter"];
+  const direct = screens.filter(n => core.free.some(x => x.name === n));
+  check("the core calls no screen directly", direct.length === 0, direct.join(", "));
 }
 
 /* 5. THE THREE FILE LISTS STAY IN AGREEMENT.
@@ -373,7 +373,7 @@ const core = info["js/ui-noyau.js"];
 }
 
 /* 7. EACH SCREEN WIRES ITS OWN CONTROLS.
-   cabler() in app.js was 401 lines long and set 95 listeners on fields
+   wireApp() in app.js was 401 lines long and set 95 listeners on fields
    it only knew by their id. Each screen now has
    its own cablerX(), and app.js only keeps what belongs to no screen. A
    screen id reappearing in app.js is a regression. */
@@ -386,7 +386,7 @@ const core = info["js/ui-noyau.js"];
   const escapeRe = s => s.replace(/[$()]/g, c => "\\" + c);
   const leaks = prefixes.filter(p => new RegExp("(^|[^$])" + escapeRe(p)).test(app));
   check("app.js no longer wires any screen control", leaks.length === 0, leaks.join(" "));
-  const wirers = ["cablerTableau", "cablerSaisie", "cablerRapide", "cablerHistorique", "cablerGuide", "cablerCatalogue"];
+  const wirers = ["wireDashboard", "wireEntry", "wireQuick", "wireHistory", "wireGuide", "wireCatalog"];
   const absent = wirers.filter(c => !FILES.some(f => f !== "js/app.js" && info[f].exposed.has(c)));
   check("each screen exposes its wirer", absent.length === 0, absent.join(", "));
   const notCalled = wirers.filter(c => !app.includes("UI." + c + "()"));

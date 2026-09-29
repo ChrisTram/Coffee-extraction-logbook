@@ -7,28 +7,28 @@
 
 const GRIND = (() => {
 
-  const MICRONS_PAR_CRAN = 8.32;
-  const CRANS_MAX = 150; // hard stop at 3.0.0
-  const MICRONS_BUTEE = Math.round(CRANS_MAX * MICRONS_PAR_CRAN); // 1248
+  const MICRONS_PER_CLICK = 8.32;
+  const MAX_CLICKS = 150; // hard stop at 3.0.0
+  const MICRONS_AT_STOP = Math.round(MAX_CLICKS * MICRONS_PER_CLICK); // 1248
 
-  function dialDepuisCrans(crans) {
-    const c = Math.max(0, Math.min(CRANS_MAX, Math.round(crans)));
+  function dialFromClicks(clicks) {
+    const c = Math.max(0, Math.min(MAX_CLICKS, Math.round(clicks)));
     const rotation = Math.floor(c / 50);
-    const numero = Math.floor((c % 50) / 5);
-    const cran = c % 5;
-    return rotation + "." + numero + "." + cran;
+    const number = Math.floor((c % 50) / 5);
+    const click = c % 5;
+    return rotation + "." + number + "." + click;
   }
 
   // Ranges per method, official Timemore C5 ESP chart.
   // The dial notation is computed from the clicks, capped at the 3.0.0 stop.
-  function m(id, nom, minU, maxU, minC, maxC) {
+  function m(id, label, minU, maxU, minC, maxC) {
     return {
-      id, nom, minU, maxU, minC, maxC,
-      molette: dialDepuisCrans(Math.min(minC, CRANS_MAX)) + " à " + dialDepuisCrans(Math.min(maxC, CRANS_MAX)),
+      id, nom: label, minU, maxU, minC, maxC,
+      dialText: dialFromClicks(Math.min(minC, MAX_CLICKS)) + " à " + dialFromClicks(Math.min(maxC, MAX_CLICKS)),
     };
   }
 
-  const METHODES = [
+  const METHODS = [
     m("turkish",  "Turkish",                       39,  219,  5,   26),
     m("espresso", "Espresso",                      178, 380,  21,  46),
     m("brikka",   "Moka Pot (Brikka)",             358, 659,  43,  79),
@@ -46,7 +46,7 @@ const GRIND = (() => {
   ];
 
   // Particle size bands, in microns.
-  const BANDES = [
+  const GRIND_BANDS = [
     { nom: "Extra Fine",    min: 0,    max: 200 },
     { nom: "Fine",          min: 200,  max: 400 },
     { nom: "Medium Fine",   min: 400,  max: 600 },
@@ -59,16 +59,16 @@ const GRIND = (() => {
   // Chris's reference settings. Chart colours:
   // Brikka #2a78d6, shared #cc79a7, Switch #eb6834.
   const REFERENCES = [
-    { dial: "1.2.0", crans: 60,  usage: "Brikka", couleur: "#2a78d6" },
-    { dial: "1.5.0", crans: 75,  usage: "Réglage commun aux deux machines", couleur: "#cc79a7" },
-    { dial: "1.6.0", crans: 80,  usage: "Switch, percolation puis immersion", couleur: "#eb6834" },
-    { dial: "2.0.0", crans: 100, usage: "Switch, Tetsu 4:6 et Sherrycipe", couleur: "#eb6834" },
+    { dial: "1.2.0", clicks: 60,  usage: "Brikka", color: "#2a78d6" },
+    { dial: "1.5.0", clicks: 75,  usage: "Réglage commun aux deux machines", color: "#cc79a7" },
+    { dial: "1.6.0", clicks: 80,  usage: "Switch, percolation puis immersion", color: "#eb6834" },
+    { dial: "2.0.0", clicks: 100, usage: "Switch, Tetsu 4:6 et Sherrycipe", color: "#eb6834" },
   ];
 
   // Range used by the tracker to validate an extraction for the chosen method.
   const ENTRY_METHOD_RANGES = {
-    "Brikka": METHODES.find(x => x.id === "brikka"),
-    "Switch": METHODES.find(x => x.id === "switch"),
+    "Brikka": METHODS.find(x => x.id === "brikka"),
+    "Switch": METHODS.find(x => x.id === "switch"),
   };
 
   // Parses an entry in rotation.number.click format, for example 1.5.0
@@ -79,39 +79,39 @@ const GRIND = (() => {
     const res = t.match(/^([0-3])\s*[.,]\s*([0-9])\s*[.,]\s*([0-4])$/);
     if (!res) return null;
     const rotation = parseInt(res[1], 10);
-    const numero = parseInt(res[2], 10);
-    const cran = parseInt(res[3], 10);
-    const crans = rotation * 50 + numero * 5 + cran;
-    if (crans > CRANS_MAX) return null; // beyond the 3.0.0 stop
-    return { rotation, numero, cran, crans, microns: crans * MICRONS_PAR_CRAN };
+    const number = parseInt(res[2], 10);
+    const click = parseInt(res[3], 10);
+    const clicks = rotation * 50 + number * 5 + click;
+    if (clicks > MAX_CLICKS) return null; // beyond the 3.0.0 stop
+    return { rotation, numero: number, click, clicks, microns: clicks * MICRONS_PER_CLICK };
   }
 
-  function bande(microns) {
-    return BANDES.find(b => microns >= b.min && microns < b.max) || BANDES[BANDES.length - 1];
+  function bandOf(microns) {
+    return GRIND_BANDS.find(b => microns >= b.min && microns < b.max) || GRIND_BANDS[GRIND_BANDS.length - 1];
   }
 
-  function methodesCompatibles(microns) {
-    return METHODES.filter(x => microns >= x.minU && microns <= x.maxU);
+  function compatibleMethods(microns) {
+    return METHODS.filter(x => microns >= x.minU && microns <= x.maxU);
   }
 
   // Checks the grind for the entry method (Brikka or Switch).
   // Returns { ok, message } without ever blocking.
-  function verifierPlage(methode, dial) {
+  function checkRange(method, dial) {
     const p = parseDial(dial);
     if (!p) return { ok: false, message: I18N.t("g_format") };
-    const range = ENTRY_METHOD_RANGES[methode];
+    const range = ENTRY_METHOD_RANGES[method];
     if (!range) return { ok: true, message: "" };
-    if (p.crans < range.minC) {
-      return { ok: false, message: I18N.t("g_fine", { m: methode, mol: I18N.mol(range.molette) }) };
+    if (p.clicks < range.minC) {
+      return { ok: false, message: I18N.t("g_fine", { m: method, mol: I18N.dialRange(range.dialText) }) };
     }
-    if (p.crans > range.maxC) {
-      return { ok: false, message: I18N.t("g_grosse", { m: methode, mol: I18N.mol(range.molette) }) };
+    if (p.clicks > range.maxC) {
+      return { ok: false, message: I18N.t("g_grosse", { m: method, mol: I18N.dialRange(range.dialText) }) };
     }
     return { ok: true, message: "" };
   }
 
   return {
-    MICRONS_PAR_CRAN, CRANS_MAX, MICRONS_BUTEE, METHODES, BANDES, REFERENCES,
-    parseDial, dialDepuisCrans, bande, methodesCompatibles, verifierPlage,
+    MICRONS_PER_CLICK, MAX_CLICKS, MICRONS_AT_STOP, METHODS, GRIND_BANDS, REFERENCES,
+    parseDial, dialFromClicks, bandOf, compatibleMethods, checkRange,
   };
 })();

@@ -12,11 +12,11 @@ const I18N = (() => {
   let lang = "fr";
   /* Saved wish, NOT the current language: switching before the bundle is here
      would show a page that declares itself English and renders French as fallback.
-     preparer(), called at startup, decides once the bundle has arrived. */
-  let langueSouhaitee = "fr";
+     prepare(), called at startup, decides once the bundle has arrived. */
+  let wantedLanguage = "fr";
   try {
     const l = localStorage.getItem("langue");
-    if (l === "en") langueSouhaitee = "en";
+    if (l === "en") wantedLanguage = "en";
   } catch (e) { /* unavailable */ }
 
   // ---------- 1. Static content: French to English ----------
@@ -924,7 +924,7 @@ const I18N = (() => {
     scanHadDict = Object.keys(UI).length > 0;
   }
 
-  function appliquerStatique() {
+  function applyStatic() {
     if (!scanDone) scan();
     registry.forEach(r => {
       try { r.node.nodeValue = lang === "en" ? r.en : r.fr; } catch (e) { /* node gone */ }
@@ -945,9 +945,9 @@ const I18N = (() => {
   }
 
   // hasOwnProperty (v8.77): a coffee named « constructor » showed a function in English.
-  function tr(texte) { return lang === "en" && Object.prototype.hasOwnProperty.call(UI, texte) ? UI[texte] : texte; }
+  function tr(text) { return lang === "en" && Object.prototype.hasOwnProperty.call(UI, text) ? UI[text] : text; }
   // Grinder range "0.8.3 à 1.5.4": the "à" becomes "to" in English.
-  function mol(s) { return lang === "en" ? String(s).replace(" à ", " to ") : s; }
+  function dialRange(s) { return lang === "en" ? String(s).replace(" à ", " to ") : s; }
   function diag(d) { return lang === "en" ? (DIAG[d] || d) : d; }
   function tag(d) { return lang === "en" ? (TAGS[d] || d) : d; }
   /* The values are French STRINGS, and the English bundle replaces them
@@ -958,15 +958,15 @@ const I18N = (() => {
     if (!e) return "";
     return typeof e === "string" ? e : (e[lang] || e.fr);
   }
-  function groupe(g) { return lang === "en" ? (GROUPES[g] || g) : g; }
-  function methode(m) { return lang === "en" ? (METH[m] || m) : m; }
+  function group(g) { return lang === "en" ? (GROUPES[g] || g) : g; }
+  function method(m) { return lang === "en" ? (METH[m] || m) : m; }
   function machine(m) { return lang === "en" ? (MACHINES[m] || m) : m; }
   function locale() { return lang === "en" ? "en-GB" : "fr-FR"; }
-  function jours() { return t("jours").split("|"); }
-  function mois() { return t("mois").split("|"); }
+  function days() { return t("jours").split("|"); }
+  function months() { return t("mois").split("|"); }
 
   const subscribers = [];
-  function abonner(fn) { subscribers.push(fn); }
+  function subscribe(fn) { subscribers.push(fn); }
 
   /* LOADING THE ENGLISH BUNDLE.
 
@@ -1003,7 +1003,7 @@ const I18N = (() => {
     if (typeof I18N_EN !== "undefined") { mergeBundle(I18N_EN); enBundle = Promise.resolve(true); return enBundle; }
     enBundle = new Promise(resolve => {
       const s = document.createElement("script");
-      s.src = OUTILS.urlVersionnee("js/i18n.en.js");
+      s.src = TOOLS.versionedUrl("js/i18n.en.js");
       s.onload = () => resolve(mergeBundle(typeof I18N_EN !== "undefined" ? I18N_EN : null));
       // Load failure: stay in French rather than show a half
       // translated site. enBundle goes back to null to allow a retry.
@@ -1016,11 +1016,11 @@ const I18N = (() => {
   function applyLanguage(next) {
     lang = next;
     try { localStorage.setItem("langue", lang); } catch (e) { /* unavailable */ }
-    appliquerStatique();
+    applyStatic();
     subscribers.forEach(fn => { try { fn(); } catch (e) { console.error(e); } });
   }
 
-  async function basculer() {
+  async function toggleLanguage() {
     const target = lang === "fr" ? "en" : "fr";
     if (target === "en" && !await loadEnglish()) return;
     applyLanguage(target);
@@ -1029,15 +1029,15 @@ const I18N = (() => {
   /* Called at startup when the saved language is English: the bundle
      must be here BEFORE the first render, otherwise the page shows in French and then
      flickers. */
-  async function preparer(wantedLang) {
+  async function prepare(wantedLang) {
     if (wantedLang !== "en") return;
     if (await loadEnglish()) lang = "en";
   }
 
   return {
-    t, tr, mol, diag, tag, tagInfo, groupe, methode, machine, locale, jours, mois,
-    abonner, basculer, appliquerStatique, preparer,
-    langueSouhaitee: () => langueSouhaitee,
+    t, tr, dialRange, diag, tag, tagInfo, group, method, machine, locale, days, months,
+    subscribe, toggleLanguage, applyStatic, prepare,
+    wantedLanguage: () => wantedLanguage,
     lang: () => lang,
   };
 })();

@@ -25,7 +25,7 @@
  *    logout stop working.
  */
 
-const VERSION = "9.02";
+const VERSION = "9.03";
 const CACHE_NAME = "carnet-extraction";
 
 const versioned = url => url + "?v=" + VERSION;
@@ -97,7 +97,7 @@ const PRECACHE_URLS = [
 ].map(versioned));
 
 const NEVER_CACHED = ["/login", "/logout"];
-const DELAI_NAVIGATION_MS = 3000;
+const NAVIGATION_TIMEOUT_MS = 3000;
 
 const isCacheable = response => response && response.ok && !response.redirected && response.type !== "opaque";
 
@@ -174,7 +174,7 @@ self.addEventListener("fetch", event => {
         const response = request.mode === "navigate"
           ? await Promise.race([
             fetch(request),
-            new Promise((_, reject) => setTimeout(() => reject(new Error("slow")), DELAI_NAVIGATION_MS)),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("slow")), NAVIGATION_TIMEOUT_MS)),
           ])
           : await fetch(request);
         // A redirect to /login means the session expired: we let it
