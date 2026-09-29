@@ -505,7 +505,7 @@ const I18N = (() => {
     pap_arreter: { fr: "Arrêter" },
     pap_reprendre: { fr: "Reprendre à zéro" },
     pap_verser: { fr: "Verser jusqu'à {c} g, soit {p} g{b}." },
-    pap_premier: { fr: "Verser {c} g{b}, vanne OUVERTE." },
+    pap_premier: { fr: "Verser {c} g{b}, vanne OUVERTE. PENDANT le bloom, tourbillon doux du porte-filtre pour mouiller tout le lit." },
     pap_bloom: { fr: " (bloom)" },
     pap_drain: { fr: "Laisser s'écouler entièrement." },
 

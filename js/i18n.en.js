@@ -424,7 +424,7 @@ const I18N_EN = {
     pap_arreter: "Stop",
     pap_reprendre: "Start over",
     pap_verser: "Pour up to {c} g, that is {p} g{b}.",
-    pap_premier: "Pour {c} g{b}, valve OPEN.",
+    pap_premier: "Pour {c} g{b}, valve OPEN. DURING the bloom, a gentle swirl of the brewer to wet the whole bed.",
     pap_bloom: " (bloom)",
     pap_drain: "Let it drain completely.",
     h_compte: "{n} of {t} brews",
