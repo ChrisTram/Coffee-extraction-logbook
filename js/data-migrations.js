@@ -37,7 +37,7 @@ const DATA_MIGRATIONS = (() => {
 
        Chaque pas ne touche QUE la valeur semée d'avant. Un pas qui écraserait un
        réglage choisi volontairement serait un bug, pas une migration. */
-    const SCHEMA_ACTUEL = 19;
+    const SCHEMA_ACTUEL = 20;
 
     // Rattrapage de la puissance de feu des recettes Brikka : l'échelle de Chris a
     // bougé deux fois, 3 puis 4 puis 2.
@@ -381,6 +381,30 @@ const DATA_MIGRATIONS = (() => {
        pour monter la version, afin qu'un onglet resté sur l'ancienne soit refusé
        par la synchro au lieu d'effacer ces colonnes qu'il ne connaît pas. */
     { v: 19, nom: "compte a la main des sachets", appliquer: () => false },
+    /* Tetsu 4:6 (v9.00) : la fiche donne la température par torréfaction
+       (Philocoffea : 93, 88, 83 °C), se verse à l'œil et non plus toutes les 45
+       secondes, et sa note cite la vidéo d'origine. Champ par champ, ciblé sur
+       le texte semé d'avant : un champ retouché à la main n'est pas touché. */
+    { v: 20, nom: "Tetsu 4:6, temperature par torrefaction", appliquer: () => {
+      const origine = recettesDefaut().find(d => d.id === "tetsu-devil");
+      if (!origine) return false;
+      const avant = {
+        tempTexte: "93 °C",
+        totalTexte: "total environ 3:25",
+        pourQui: "Les cafés complexes et chers que je ne veux pas rater, et ceux dont je veux régler moi même l'équilibre. Vanne OUVERTE du début à la fin. Verser dès que le lit vient de s'assécher en surface, environ toutes les 30 à 45 secondes.",
+        note: "La méthode 4:6 de Tetsu Kasuya, champion du monde 2016 : 40 pour cent de l'eau règle l'acidité et le sucre, 60 pour cent le corps. Ne pas confondre avec sa recette « Devil », à deux températures (90 puis 70 °C), dont elle portait le nom jusqu'à la v8.65. Mouture medium coarse, 2.0.0 : cinq numéros plus ouverts que la zone commune avec la Brikka (25 crans). La vidéo est une démonstration de TALES COFFEE, pas de Tetsu lui même.",
+      };
+      let touche = false;
+      state.recettes.forEach(rec => {
+        if (rec.id !== "tetsu-devil") return;
+        let change = false;
+        Object.keys(avant).forEach(k => {
+          if (rec[k] === avant[k]) { rec[k] = origine[k]; change = true; }
+        });
+        if (change) { estampiller(rec); touche = true; }
+      });
+      return touche;
+    } },
     ];
 
     /* Applique les pas manquants et écrit la nouvelle version. Renvoie vrai si

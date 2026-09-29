@@ -47,10 +47,10 @@ const charger = new Function(
   "location",
   "indexedDB",
   "console",
-  source + "\nreturn { DATA, SYNC, GRIND, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND, DIAGNOSTIC_LEVIERS, REGLAGES, echelleVersements, SEUIL_VERSEMENT_G, temperatureDepuisChauffe, chauffePourTemperature, MATRICE_CAFE_RECETTE, profilCafe, DESCRIPTEURS_GROUPES };"
+  source + "\nreturn { DATA, SYNC, GRIND, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND, DIAGNOSTIC_LEVIERS, REGLAGES, echelleVersements, SEUIL_VERSEMENT_G, temperatureDepuisChauffe, chauffePourTemperature, MATRICE_CAFE_RECETTE, profilCafe, DESCRIPTEURS_GROUPES, temperaturePourCafe };"
 );
 const { DATA, SYNC, GRIND, RECETTES_DEPART, DIAGNOSTICS, DIAGNOSTICS_GROUPES, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_QUAND, DIAGNOSTIC_LEVIERS, REGLAGES,
-  echelleVersements, SEUIL_VERSEMENT_G, temperatureDepuisChauffe, chauffePourTemperature, MATRICE_CAFE_RECETTE, profilCafe, DESCRIPTEURS_GROUPES } =
+  echelleVersements, SEUIL_VERSEMENT_G, temperatureDepuisChauffe, chauffePourTemperature, MATRICE_CAFE_RECETTE, profilCafe, DESCRIPTEURS_GROUPES, temperaturePourCafe } =
   charger(undefined, { protocol: "file:" }, undefined, console);
 
 let failures = 0;
@@ -1085,6 +1085,19 @@ check("les inactifs finissent en dernier", classe[classe.length - 1].cafe.actif 
   check("et a 2 minutes il annonce l'ebullition",
     temperatureDepuisChauffe(repli, repli) === 100,
     String(temperatureDepuisChauffe(repli, repli)));
+}
+/* La temperature suit la torrefaction du cafe (v9.00) : le 4:6 de Tetsu
+   donne 93, 88, 83 selon Philocoffea. Un chiffre retouche a la main gagne,
+   et une recette sans table garde le sien. */
+{
+  const t46 = RECETTES_DEPART.find(r => r.id === "tetsu-devil");
+  check("4:6 clair a 93", temperaturePourCafe(t46, { torrefaction: "Claire" }) === 93);
+  check("4:6 medium a 88", temperaturePourCafe(t46, { torrefaction: "Medium" }) === 88);
+  check("4:6 fonce a 83", temperaturePourCafe(t46, { torrefaction: "Foncée" }) === 83);
+  check("4:6 sans torrefaction garde 93", temperaturePourCafe(t46, { torrefaction: "" }) === 93);
+  check("4:6 retouche a 90 garde 90", temperaturePourCafe({ ...t46, temp: 90 }, { torrefaction: "Medium" }) === 90);
+  const chron = RECETTES_DEPART.find(r => r.id === "chronicler");
+  check("Chronicler sans table garde 92", temperaturePourCafe(chron, { torrefaction: "Medium" }) === 92);
 }
 /* LE FEU PAR DEFAUT SE DIT AU MEME CHIFFRE PARTOUT.
 

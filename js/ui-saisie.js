@@ -258,7 +258,9 @@
        d'avance n'aurait aucun sens. */
     $("#f-dose").value = r.dose || replis.dose;
     $("#f-eau").value = r.eau || "";
-    $("#f-temp").value = r.temp === "" || r.temp === undefined ? "" : r.temp;
+    // Selon la torréfaction du café choisi quand la source en donne une par torréfaction (v9.00).
+    const tempVisee = temperaturePourCafe(r, DATA.state.cafes.find(c => c.id === $("#f-cafe").value));
+    $("#f-temp").value = tempVisee === "" || tempVisee === undefined ? "" : tempVisee;
     // Une nouvelle recette repart sans temps de chauffe : c'est une mesure de la
     // tasse en cours, pas une valeur de la recette. L'aide dit combien viser.
     ecrireDuree("f-chauffe", "");
@@ -288,6 +290,11 @@
     } else if (cafe.machine_recommandee === "Brikka" || cafe.machine_recommandee === "Switch") {
       choisirMethode(cafe.machine_recommandee);
       prefillDepuisRecette($("#f-recette").value);
+    } else {
+      // Même recette, autre café : la température suit sa torréfaction (v9.00).
+      const r = trouverRecette($("#f-recette").value);
+      const t = r && TEMP_PAR_TORREFACTION[r.id] ? temperaturePourCafe(r, cafe) : "";
+      if (t !== "" && t !== undefined) { $("#f-temp").value = t; majTempHint(); }
     }
     majAvertissements();
     majLive();

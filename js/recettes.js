@@ -227,15 +227,15 @@ const RECETTES_DEPART = [
     methode: "Switch",
     famille: "",
     sousTitre: "Percolation pure, cinq versements pilotables",
-    dose: 15, eau: 225, temp: 93, tempTexte: "93 °C",
+    dose: 15, eau: 225, temp: 93, tempTexte: "93 °C pour un clair, 88 pour un medium, 83 pour un foncé",
     dial: "1.5.0",
     ratioTexte: "ratio 1:15, environ 195 ml en tasse",
-    totalTexte: "total environ 3:25",
+    totalTexte: "total environ 2:30 à 3:00, au plus tard 3:30",
     lait: false,
     etapes: [],
-    pourQui: "Les cafés complexes et chers que je ne veux pas rater, et ceux dont je veux régler moi même l'équilibre. Vanne OUVERTE du début à la fin. Verser dès que le lit vient de s'assécher en surface, environ toutes les 30 à 45 secondes.",
+    pourQui: "Les cafés complexes et chers que je ne veux pas rater, et ceux dont je veux régler moi même l'équilibre. Vanne OUVERTE du début à la fin. Verser dès que le lit réapparaît en surface, sans chrono : l'eau presque toute passée, jamais sur une flaque.",
     cafesAssocies: ["Ethiopia Banko Anaerobic (Amigo)", "Mít Liberica Khe Sanh (Father Coffee)", "Serie 2 Datanla (Là Việt)", "Serie 4 D'ran (Là Việt)", "Proud (Bosgaurus)"],
-    note: "La méthode 4:6 de Tetsu Kasuya, champion du monde 2016 : 40 pour cent de l'eau règle l'acidité et le sucre, 60 pour cent le corps. Ne pas confondre avec sa recette « Devil », à deux températures (90 puis 70 °C), dont elle portait le nom jusqu'à la v8.65. Mouture medium coarse, 2.0.0 : cinq numéros plus ouverts que la zone commune avec la Brikka (25 crans). La vidéo est une démonstration de TALES COFFEE, pas de Tetsu lui même.",
+    note: "La méthode 4:6 de Tetsu Kasuya, champion du monde 2016 : 40 pour cent de l'eau règle l'acidité et le sucre, 60 pour cent le corps. Ne pas confondre avec sa recette « Devil », à deux températures (90 puis 70 °C), dont elle portait le nom jusqu'à la v8.65. Température selon Philocoffea, le café de Tetsu : 93 °C pour un clair, 88 pour un medium, 83 pour un foncé ; la saisie la prend dans la torréfaction de la fiche café. Mouture medium coarse, 2.0.0 : cinq numéros plus ouverts que la zone commune avec la Brikka (25 crans). Sa version : 20 g, 300 g, cinq versements de 60 g, retrait vers 3:30 ; ses 45 secondes entre versements tombent juste à 20 g, à 15 g le lit se vide plus vite. La vidéo est une démonstration de TALES COFFEE, pas de Tetsu lui même ; l'originale est sur la chaîne HARIO (youtube.com/watch?v=wmCW8xSWGZY). Le tourbillon du bloom vient de la démonstration : Tetsu ne remue pas.",
     video: "https://www.youtube.com/watch?v=Xm4bDaioAjg",
     parDefaut: false, avancee: false, variantes: true, actif: 1,
   },
@@ -413,6 +413,29 @@ const TETSU = {
     return pours;
   },
 };
+
+/* TEMPÉRATURE SELON LA TORRÉFACTION DU CAFÉ (v9.00). Seulement pour les
+   recettes dont la source donne une valeur par torréfaction ; les autres gardent
+   leur chiffre unique. Clé : la torréfaction de la fiche café (Claire, Medium,
+   Foncée).
+   - Tetsu 4:6 : Philocoffea, le café de Tetsu, donne 93, 88 et 83 °C.
+   - Better 1 Cup : Hoffmann, 95 à 100 selon la torréfaction, 90 à 92 pour un foncé.
+   - One and Done : Hedrick, 90 à 93 pour un clair ou un medium, sous 90 au delà.
+   La table ne joue que si la température de la recette est encore celle
+   d'origine : un chiffre retouché à la main dans « Gérer les recettes » gagne. */
+const TEMP_PAR_TORREFACTION = {
+  "tetsu-devil":   { "Claire": 93, "Medium": 88, "Foncée": 83 },
+  "hoffmann-1cup": { "Claire": 98, "Medium": 95, "Foncée": 91 },
+  "one-and-done":  { "Claire": 92, "Medium": 91, "Foncée": 88 },
+};
+
+function temperaturePourCafe(recette, cafe) {
+  if (!recette) return "";
+  const table = TEMP_PAR_TORREFACTION[recette.id];
+  const origine = RECETTES_DEPART.find(d => d.id === recette.id);
+  if (!table || !origine || Number(recette.temp) !== Number(origine.temp)) return recette.temp;
+  return (cafe && table[cafe.torrefaction]) || recette.temp;
+}
 
 // Conversion des étapes vers et depuis le texte éditable :
 // une étape par ligne, "m:ss texte" pour une étape minutée, "- texte" sinon.

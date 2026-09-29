@@ -944,3 +944,42 @@ button.fc-a-compter { white-space: nowrap; font: inherit; font-size: 0.78rem; fo
    trois chiffres sont sur une même ligne ; les barres restent posées en bas. */
 .tete-recap .rc-corps { align-items: start; }
 .tete-recap .rc-corps .rc-semaine { align-self: end; }
+
+/* ---------- v9.00 : le mode Brassage se lit de loin, vraiment ---------- */
+/* Chris brasse le téléphone ou l'ordinateur posé à distance : tout monte d'un
+   gros cran, la frise des étapes surtout, qu'il ne lisait pas de loin. */
+.br-corps { max-width: 1280px; gap: 28px; }
+.br-titres h2 { font-size: clamp(1.9rem, 5vw, 2.9rem); }
+.br-dose { font-size: clamp(1.05rem, 2.6vw, 1.3rem); }
+.br-unite button { font-size: 1.05rem; min-width: 52px; min-height: 44px; }
+.br-scene { grid-template-columns: minmax(0, 460px) minmax(0, 1fr); }
+.br-anneau { max-width: 460px; }
+.br-centre .br-label { font-size: clamp(1.1rem, 3vw, 1.45rem); }
+#br-fermer { font-size: clamp(1.05rem, 2.6vw, 1.25rem); min-height: 48px; padding-inline: 18px; }
+.br-centre #br-cible { font-size: clamp(6.5rem, 30vw, 11.5rem); }
+.br-centre .br-dans { font-size: clamp(1.2rem, 3.4vw, 1.6rem); }
+.br-temps-ligne b { font-size: clamp(2.8rem, 8vw, 4rem); }
+.br-temps-ligne span { font-size: clamp(1.1rem, 2.8vw, 1.4rem); }
+.br-vanne { font-size: clamp(0.95rem, 2.4vw, 1.15rem); padding: 6px 14px; }
+.br-total { max-width: 560px; }
+.br-total-piste { height: 14px; }
+.br-total span { font-size: clamp(1.05rem, 2.6vw, 1.3rem); }
+.br-consigne { font-size: clamp(1.6rem, 4.4vw, 2.5rem); line-height: 1.3; max-width: 30ch; }
+.br-consigne.seule { font-size: clamp(2.3rem, 6.6vw, 3.9rem); line-height: 1.12; }
+.br-suivante { font-size: clamp(1.2rem, 3.2vw, 1.6rem); color: var(--texte); }
+.br-frise li {
+  grid-template-columns: clamp(64px, 12vw, 104px) minmax(0, 1fr); gap: 16px; padding: 16px 12px;
+  font-size: clamp(1.3rem, 3.6vw, 1.9rem); line-height: 1.3; color: var(--texte); border-radius: 12px;
+}
+.br-frise li time { font-size: clamp(1.5rem, 4.2vw, 2.3rem); }
+.br-frise li.courant { background: var(--accent-fond); color: var(--encre); font-weight: 600; }
+.br-frise li.passe { opacity: 0.45; }
+.br-frise li.libre { grid-template-columns: 24px minmax(0, 1fr); }
+.br-boutons .btn { min-height: 68px; font-size: clamp(1.15rem, 3vw, 1.35rem); }
+@media (max-width: 760px) {
+  .br-scene { grid-template-columns: 1fr; }
+  .br-anneau { max-width: min(380px, 90vw); }
+  .br-consigne { max-width: none; }
+  .br-frise li { grid-template-columns: 56px minmax(0, 1fr); gap: 10px; padding-inline: 8px; }
+  .br-frise li.libre { grid-template-columns: 18px minmax(0, 1fr); }
+}
