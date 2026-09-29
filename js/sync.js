@@ -83,7 +83,7 @@ const SYNC = (() => {
         signal: abort.signal,
       });
     } catch (error) {
-      throw Object.assign(new Error("reseau"), { code: "hors-ligne" });
+      throw Object.assign(new Error("network"), { code: "hors-ligne" });
     } finally {
       clearTimeout(timer);
     }
@@ -95,11 +95,11 @@ const SYNC = (() => {
       throw Object.assign(new Error("session"), { code: "session-expiree" });
     }
     if (response.status === 503) {
-      throw Object.assign(new Error("non configuree"), { code: "non-configuree" });
+      throw Object.assign(new Error("not configured"), { code: "non-configuree" });
     }
     // The server knows a more recent version of the logbook than this tab (v8.71).
     if (response.status === 409) {
-      throw Object.assign(new Error("version perimee"), { code: "version-perimee" });
+      throw Object.assign(new Error("outdated version"), { code: "version-perimee" });
     }
     if (!response.ok) {
       throw Object.assign(new Error("http " + response.status), { code: "erreur" });
@@ -107,7 +107,7 @@ const SYNC = (() => {
 
     const received = await response.json();
     if (!received || typeof received !== "object" || !received.tables) {
-      throw Object.assign(new Error("reponse inattendue"), { code: "erreur" });
+      throw Object.assign(new Error("unexpected response"), { code: "erreur" });
     }
     return received;
   }

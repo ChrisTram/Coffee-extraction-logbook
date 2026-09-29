@@ -53,15 +53,15 @@ const DATA_MIGRATIONS = (() => {
     };
 
     const SCHEMA_STEPS = [
-      { v: 1, nom: "feu 3 devient 4", apply: setBrikkaFire(r => Number(r.puissance_feu) === 3, 4) },
-      { v: 2, nom: "feu 4 devient 2", apply: setBrikkaFire(r => Number(r.puissance_feu) === 4, 2) },
+      { v: 1, name: "heat 3 becomes 4", apply: setBrikkaFire(r => Number(r.puissance_feu) === 3, 4) },
+      { v: 2, name: "heat 4 becomes 2", apply: setBrikkaFire(r => Number(r.puissance_feu) === 4, 2) },
       // Recipes seeded before the field existed carry nothing: the Fire column
       // of Settings stayed empty and only the fallback saved the prefill.
-      { v: 3, nom: "feu vide devient 2",
+      { v: 3, name: "empty heat becomes 2",
         apply: setBrikkaFire(r => r.puissance_feu === "" || r.puissance_feu === undefined, 2) },
       // 100 g was an estimate, 150 g is the real capacity of the boiler.
       // And no more target temperature: on the Brikka the flame decides.
-      { v: 4, nom: "chaudière Brikka a 150 g", apply: () => {
+      { v: 4, name: "Brikka boiler at 150 g", apply: () => {
         let changed = false;
         state.recettes.forEach(rec => {
           if (rec.methode !== "Brikka" || Number(rec.eau) !== 100) return;
@@ -78,7 +78,7 @@ const DATA_MIGRATIONS = (() => {
          A recipe seeded AFTER this step with another dial (the Neo Brew,
          v8.63, extra coarse) is not affected: on a new logbook, which plays
          every step, it fell back to 1.5.0. */
-      { v: 5, nom: "molette unique a 1.5.0", apply: () => {
+      { v: 5, name: "single dial at 1.5.0", apply: () => {
         let changed = false;
         state.recettes.forEach(rec => {
           if (rec.dial === "1.5.0") return;
@@ -93,7 +93,7 @@ const DATA_MIGRATIONS = (() => {
       /* Chronicler and Sweet: 240 g, not 225. The source document says "15 g / 240 g,
          ratio 1:16" with a first pour of 120 g; the original transcription
          had shrunk the recipe by 6 %. */
-      { v: 6, nom: "Chronicler a 240 g", apply: () => {
+      { v: 6, name: "Chronicler at 240 g", apply: () => {
         let changed = false;
         state.recettes.forEach(rec => {
           if (rec.famille !== "chronicler" || Number(rec.eau) !== 225) return;
@@ -130,7 +130,7 @@ const DATA_MIGRATIONS = (() => {
 
          Each replacement TARGETS the old text: a recipe Chris had already
          rewritten by hand is not touched. */
-      { v: 7, nom: "eau froide Brikka et sens de la mouture", apply: () => {
+      { v: 7, name: "cold water in the Brikka and grind direction", apply: () => {
         let changed = false;
         const replaceIn = (rec, field, before, after) => {
           if (String(rec[field] || "").indexOf(before) < 0) return false;
@@ -167,7 +167,7 @@ const DATA_MIGRATIONS = (() => {
 
          Only if it still carries its original name: renamed, it has become a
          personal recipe and no longer belongs to us. */
-      { v: 8, nom: "fusion des deux Brikka au lait", apply: () => {
+      { v: 8, name: "merge of the two Brikka milk recipes", apply: () => {
         let changed = false;
         const before = state.recettes.length;
         state.recettes = state.recettes.filter(rec =>
@@ -202,7 +202,7 @@ const DATA_MIGRATIONS = (() => {
        card, takes back its family's label. Targeted on the old label: a
        label rewritten by hand is not touched. The display ORDER, for its
        part, is restored on every load by migrateData. */
-    { v: 9, nom: "numéros des recettes après Hoffmann et One and Done", apply: () => {
+    { v: 9, name: "recipe numbers after Hoffmann and One and Done", apply: () => {
       const newNumbers = { "sweet": ["Recette 2", "Recette 1"], "costaud-bloom": ["Recette 3", "Recette 4"],
         "costaud-immersion": ["Recette 4", "Recette 5"], "tetsu-devil": ["Recette 5", "Recette 6"],
         "sherrycipe": ["Recette 6", "Recette 7"] };
@@ -219,7 +219,7 @@ const DATA_MIGRATIONS = (() => {
 
     /* The Sweet moves to the end of the list (v7.95) and takes the label « Recette 8 ».
        Targeted on the label set by step v9, otherwise nothing. */
-    { v: 10, nom: "la Sweet en dernier", apply: () => {
+    { v: 10, name: "the Sweet last", apply: () => {
       let changed = false;
       state.recettes.forEach(rec => {
         if (rec.id !== "sweet" || rec.numero !== "Recette 1") return;
@@ -237,7 +237,7 @@ const DATA_MIGRATIONS = (() => {
        degrees, and the full boil follows some thirty seconds later, so 2:00.
        Targeted on the invented value only: a duration timed by hand is not
        touched. */
-    { v: 11, nom: "bouilloire recalée de 4:00 a 2:00", apply: () => {
+    { v: 11, name: "kettle moved from 4:00 to 2:00", apply: () => {
       const r = currentSettings();
       if (Number(r.ebullition_s) !== 240) return false;
       state.reglages = [stampRow(normalizeSettings({ ...r, ebullition_s: 120 }))];
@@ -248,7 +248,7 @@ const DATA_MIGRATIONS = (() => {
        the whole bed, and the recipe step did not say it clearly enough
        (Chris's request, 14 September 2026). Targeted on the old text: a
        recipe rewritten by hand is not touched. */
-    { v: 12, nom: "Hoffmann, tourbillon pendant le bloom", apply: () => {
+    { v: 12, name: "Hoffmann, swirl during the bloom", apply: () => {
       const before = "Bloom : verser 50 g lentement, en quinze secondes environ, vanne OUVERTE. Tourbillon doux de la carafe.";
       const after = "Bloom : verser 50 g lentement, en quinze secondes environ, vanne OUVERTE. PENDANT le bloom, tourbillon doux du porte-filtre pour mouiller tout le lit, aucune poche sèche.";
       let changed = false;
@@ -268,7 +268,7 @@ const DATA_MIGRATIONS = (() => {
        with a spoon when the dripper cannot be swirled, which is the case of a
        Switch on the scale. Chris spotted it on 14 September 2026.
        Targeted on the old text, the note too. */
-    { v: 13, nom: "Hoffmann, la cuillère est permise", apply: () => {
+    { v: 13, name: "Hoffmann, the spoon is allowed", apply: () => {
       const before = "Tourbillon doux, AUCUNE cuillère. Laisser s'écouler, fin vers 2:45 à 3:15.";
       const after = "Tourbillon doux du porte-filtre, ou un petit coup de cuillère, un aller et un retour, si le Switch est trop lourd à faire tourner sur la balance : même effet, décoller la mouture des parois et aplanir le lit. Laisser s'écouler, fin vers 2:45 à 3:15.";
       const noteBefore = "Il conseille medium-fine, un cran plus fin qu'en 500 ml.";
@@ -302,7 +302,7 @@ const DATA_MIGRATIONS = (() => {
 
        Only touches Brikkas still at 2, the seeded value: a recipe Chris
        set himself to something else keeps its number. */
-    { v: 14, nom: "feu 2 redevient 3",
+    { v: 14, name: "heat 2 back to 3",
       apply: setBrikkaFire(r => Number(r.puissance_feu) === 2, 3) },
 
     /* The kettle heats along a curve (v8.59), no longer a straight line: the
@@ -313,7 +313,7 @@ const DATA_MIGRATIONS = (() => {
        is not touched. Idempotent: after the pass, the cup no longer matches
        the line, except at both ends, where the two models say the same
        thing. */
-    { v: 15, nom: "bouilloire en courbe", apply: () => {
+    { v: 15, name: "kettle as a curve", apply: () => {
       const r = currentSettings();
       const e = Number(r.ebullition_s);
       if (!(e > 0)) return false;
@@ -336,7 +336,7 @@ const DATA_MIGRATIONS = (() => {
     /* Recipe videos (v8.64): an already stored original recipe receives its
        seed's link. Targeted on an EMPTY field: a link set by hand is not
        replaced. */
-    { v: 16, nom: "videos des recettes", apply: () => {
+    { v: 16, name: "recipe videos", apply: () => {
       let changed = false;
       state.recettes.forEach(rec => {
         const seed = STARTER_RECIPES.find(d => d.id === rec.id);
@@ -353,7 +353,7 @@ const DATA_MIGRATIONS = (() => {
        temperatures. The stored recipe is renamed if it still carries the old
        name (a name edited by hand is not touched). Its cups and coffees
        follow through RECIPE_RENAMES, in step 1 of migrateData. */
-    { v: 17, nom: "Tetsu Devil devient Tetsu 4:6", apply: () => {
+    { v: 17, name: "Tetsu Devil becomes Tetsu 4:6", apply: () => {
       const before = "The Tetsu Devil", after = "Tetsu 4:6";
       let changed = false;
       state.recettes.forEach(rec => {
@@ -367,7 +367,7 @@ const DATA_MIGRATIONS = (() => {
 
     /* The Brikka au lait carried number 3, shown next to the « Recette 3 »
        (One and Done) of the Guide (v8.74). Targeted on the original value. */
-    { v: 18, nom: "Brikka au lait sans numero", apply: () => {
+    { v: 18, name: "Brikka with milk without a number", apply: () => {
       let changed = false;
       state.recettes.forEach(rec => {
         if (rec.id !== "brikka-flatwhite" || String(rec.numero) !== "3") return;
@@ -381,13 +381,13 @@ const DATA_MIGRATIONS = (() => {
        up: empty, they keep the previous computation. The step only exists
        to bump the version, so that a tab still on the old one is rejected
        by the sync instead of erasing these columns it does not know. */
-    { v: 19, nom: "compte a la main des sachets", apply: () => false },
+    { v: 19, name: "hand count of the bags", apply: () => false },
     /* Tetsu 4:6 (v9.00): the recipe card gives the temperature by roast
        (Philocoffea: 93, 88, 83 °C), is poured by eye and no longer every 45
        seconds, and its note cites the original video. Field by field,
        targeted on the previously seeded text: a field edited by hand is not
        touched. */
-    { v: 20, nom: "Tetsu 4:6, temperature par torrefaction", apply: () => {
+    { v: 20, name: "Tetsu 4:6, temperature by roast", apply: () => {
       const original = defaultRecipes().find(d => d.id === "tetsu-devil");
       if (!original) return false;
       const before = {

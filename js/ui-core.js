@@ -176,7 +176,7 @@ const UI = (() => {
     navigator.serviceWorker.addEventListener("controllerchange", () => {
       if (!hadVersion || offered) return;
       offered = true;
-      toastAction(I18N.t("maj_prete"), I18N.t("maj_recharger"), () => location.reload(), true);
+      toastAction(I18N.t("update_ready"), I18N.t("update_reload"), () => location.reload(), true);
     });
     navigator.serviceWorker.register("sw.js").then(reg => {
       document.addEventListener("visibilitychange", () => {
@@ -222,11 +222,11 @@ const UI = (() => {
     const d = $("#modal-confirm");
     if (!d || typeof d.showModal !== "function") return Promise.resolve(window.confirm(message));
     const danger = !!(options && options.danger);
-    setText($("#confirm-title"), I18N.t("c_titre"));
+    setText($("#confirm-title"), I18N.t("confirm_title"));
     setText($("#confirm-text"), message);
     const ok = $("#confirm-ok"), noButton = $("#confirm-cancel");
-    ok.textContent = (options && options.label) || I18N.t("c_ok");
-    noButton.textContent = I18N.t("t_annuler");
+    ok.textContent = (options && options.label) || I18N.t("confirm_ok");
+    noButton.textContent = I18N.t("toast_undo");
     ok.classList.toggle("btn-danger", danger);
     // Reassigned on each opening: a single handler, never stacked.
     ok.onclick = () => d.close("ok");
@@ -256,10 +256,10 @@ const UI = (() => {
     delete copied._c;
     await DATA.deleteExtraction(ext.id);
     UI.renderHistory();
-    toastAction(I18N.t("t_supprimee"), I18N.t("t_annuler"), async () => {
+    toastAction(I18N.t("toast_deleted"), I18N.t("toast_undo"), async () => {
       await DATA.restoreExtraction(copied);
       UI.renderHistory();
-      toast(I18N.t("t_restauree"));
+      toast(I18N.t("toast_restored"));
     });
   }
 
@@ -337,7 +337,7 @@ const UI = (() => {
     let recognition = null;
     const setListening = isActive => {
       button.setAttribute("aria-pressed", String(isActive));
-      if (label) label.textContent = I18N.t(isActive ? "dictee_ecoute" : "dictee");
+      if (label) label.textContent = I18N.t(isActive ? "dictate_listening" : "dictate");
     };
     button.addEventListener("click", () => {
       if (recognition) { recognition.stop(); return; }
@@ -353,8 +353,8 @@ const UI = (() => {
         field.dispatchEvent(new Event("input", { bubbles: true }));
       };
       recognition.onerror = ev => {
-        if (ev.error === "not-allowed" || ev.error === "service-not-allowed") toast(I18N.t("dictee_refusee"));
-        else if (ev.error === "network") toast(I18N.t("dictee_reseau"));
+        if (ev.error === "not-allowed" || ev.error === "service-not-allowed") toast(I18N.t("dictate_refused"));
+        else if (ev.error === "network") toast(I18N.t("dictate_network"));
       };
       recognition.onend = () => { recognition = null; setListening(false); };
       try { recognition.start(); setListening(true); } catch (e) { recognition = null; setListening(false); }
@@ -399,8 +399,8 @@ const UI = (() => {
     const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
     const day = new Date(d); day.setHours(0, 0, 0, 0);
     const gap = Math.round((todayDate - day) / 86400000);
-    if (gap === 0) return I18N.t("j_aujourdhui");
-    if (gap === 1) return I18N.t("j_hier");
+    if (gap === 0) return I18N.t("date_today");
+    if (gap === 1) return I18N.t("date_yesterday");
     const s = d.toLocaleDateString(I18N.locale(), { weekday: "long", day: "numeric", month: "long",
       year: d.getFullYear() === todayDate.getFullYear() ? undefined : "numeric" });
     return s.charAt(0).toUpperCase() + s.slice(1);
@@ -457,8 +457,8 @@ const UI = (() => {
   }
 
   function detailRatio(base, dose, water) {
-    if (base === "chaudiere") return I18N.t("rt_chaudiere", { d: dose, e: water });
-    if (base === "infusion") return I18N.t("rt_infusion", { d: dose, e: water });
+    if (base === "chaudiere") return I18N.t("ratio_boiler", { d: dose, e: water });
+    if (base === "infusion") return I18N.t("ratio_brew", { d: dose, e: water });
     return "";
   }
 
@@ -692,7 +692,7 @@ const UI = (() => {
        extraction had not been saved and can still be opened from the history. */
     if (nameKey === "saisie" && UI.entry.editId && !forEditing) {
       UI.resetEntry();
-      toast(I18N.t("t_edition_abandonnee"));
+      toast(I18N.t("toast_edit_dropped"));
     }
     /* Arriving on Entry for a NEW cup must show the current time. Here and
        not in renderCurrentScreen: that one replays on every data

@@ -20,17 +20,17 @@
     const linked = !!DATA.state.dirHandle;
     $("#badge-file").hidden = !linked;
     // "Re-authorise" when the browser took the permission back (v8.72); tapping the badge asks again.
-    if (linked) $("#badge-file-name").textContent = DATA.state.fileNeedsReauth ? I18N.t("f_reautoriser") : DATA.state.dirHandle.name;
+    if (linked) $("#badge-file-name").textContent = DATA.state.fileNeedsReauth ? I18N.t("folder_reauthorize") : DATA.state.dirHandle.name;
   }
 
   function updateDataStatus() {
     $("#db-unlink").hidden = !DATA.state.dirHandle;
     let s;
-    if (DATA.state.dirHandle) s = I18N.t("statut_lie", { n: DATA.state.dirHandle.name });
-    else if (DATA.state.demoActive) s = I18N.t("statut_demo");
-    else s = I18N.t("statut_nav");
+    if (DATA.state.dirHandle) s = I18N.t("status_linked", { n: DATA.state.dirHandle.name });
+    else if (DATA.state.demoActive) s = I18N.t("status_demo");
+    else s = I18N.t("status_browser");
     $("#db-status").textContent = s +
-      I18N.t("statut_compte", { c: DATA.state.cafes.length, e: DATA.state.extractions.length });
+      I18N.t("status_counts", { c: DATA.state.cafes.length, e: DATA.state.extractions.length });
     updateSyncStatus();
   }
 
@@ -39,12 +39,12 @@
   const SYNC_LABELS = {
     local: "sync_local",
     demo: "sync_demo",
-    encours: "sync_encours",
-    "hors-ligne": "sync_horsligne",
+    encours: "sync_in_progress",
+    "hors-ligne": "sync_offline",
     "session-expiree": "sync_session",
-    "non-configuree": "sync_nonconf",
-    "version-perimee": "sync_perimee",
-    erreur: "sync_erreur",
+    "non-configuree": "sync_not_configured",
+    "version-perimee": "sync_outdated",
+    erreur: "sync_error",
   };
 
   function updateSyncStatus() {
@@ -55,12 +55,12 @@
         h: new Date(DATA.state.syncedAt).toLocaleTimeString(I18N.locale(), { hour: "2-digit", minute: "2-digit" }),
       });
     } else {
-      text = I18N.t(SYNC_LABELS[syncState] || "sync_jamais");
+      text = I18N.t(SYNC_LABELS[syncState] || "sync_never");
     }
     // The server document has a cap: we warn at half, early enough to archive.
     const { syncSize: size, syncCap: cap } = DATA.state;
     if (cap > 0 && size / cap >= 0.5) {
-      text += " " + I18N.t("sync_taille", { p: Math.round(100 * size / cap) });
+      text += " " + I18N.t("sync_size", { p: Math.round(100 * size / cap) });
     }
     $$(".sync-text").forEach(e => { e.textContent = text; });
     /* The rail dot takes the colour of the state: it is the only place where
@@ -72,18 +72,18 @@
 
   async function linkAction(create) {
     if (!DATA.state.fsAvailable) {
-      toast(I18N.t("t_fs"));
+      toast(I18N.t("toast_fs_unavailable"));
       $("#db-fs-note").hidden = false;
       return;
     }
     try {
       const name = await DATA.linkFolder(create);
-      toast(I18N.t("t_dossier", { n: name }));
+      toast(I18N.t("toast_folder", { n: name }));
       $("#modal-data").close();
       $("#modal-welcome").close();
     } catch (e) {
       if (e && e.name === "AbortError") return;
-      toast(e.message || I18N.t("t_liaison"));
+      toast(e.message || I18N.t("toast_link_failed"));
     }
   }
 
@@ -193,14 +193,14 @@
     window.addEventListener("carnet-stockage-ko", () => {
       if (storageWarned) return;
       storageWarned = true;
-      toast(I18N.t("t_stockage_ko"));
+      toast(I18N.t("toast_storage_failed"));
     });
     /* The server knows a more recent version: we offer to reload. */
     let staleWarned = false;
     DATA.subscribe(() => {
       if (DATA.state.syncState !== "version-perimee" || staleWarned) return;
       staleWarned = true;
-      UI.toastAction(I18N.t("sync_perimee"), I18N.t("maj_recharger"), () => location.reload());
+      UI.toastAction(I18N.t("sync_outdated"), I18N.t("update_reload"), () => location.reload());
     });
 
     // Escape also closes what is not a <dialog>: quick panel, expanded forms, bubbles.
@@ -219,7 +219,7 @@
     // The linked folder badge asks for permission again when it is gone (v8.72).
     $("#badge-file").addEventListener("click", async () => {
       if (!DATA.state.fileNeedsReauth) return;
-      toast(I18N.t(await DATA.reauthorizeFolder() ? "f_reautorise" : "f_refuse"));
+      toast(I18N.t(await DATA.reauthorizeFolder() ? "folder_reauthorized" : "folder_refused"));
       updateBadges();
     });
     // Every Close button closes its window, even without data-closes (v8.72): the comparison one did nothing.
@@ -232,7 +232,7 @@
     const loadDemo = async () => {
       await DATA.loadDemo();
       $("#modal-welcome").close();
-      toast(I18N.t("t_demo"));
+      toast(I18N.t("toast_demo"));
     };
     $("#welcome-demo").addEventListener("click", loadDemo);
     $("#btn-demo-empty").addEventListener("click", loadDemo);
@@ -258,15 +258,15 @@
            arrives, changes or gets created. Nothing is written without "Import". */
         const text = await f.text();
         const a = DATA.analyzeImport(text);
-        const tableName = I18N.t("tbl_" + a.table);
+        const tableName = I18N.t("table_" + a.table);
         const detail = a.table === "tout"
-          ? I18N.t("imp_apercu_tout", { n: a.n })
-          : I18N.t("imp_apercu", { n: a.n, t: tableName, nv: a.added, md: a.modified }) +
-            (a.withoutId ? " " + I18N.t("imp_sans_id", { n: a.withoutId }) : "") +
-            (a.duplicates ? " " + I18N.t("imp_doublons", { n: a.duplicates }) : "");
-        if (!await UI.askConfirm(detail, { label: I18N.t("imp_ok") })) { ev.target.value = ""; return; }
+          ? I18N.t("import_preview_all", { n: a.n })
+          : I18N.t("import_preview", { n: a.n, t: tableName, added: a.added, changed: a.modified }) +
+            (a.withoutId ? " " + I18N.t("import_without_id", { n: a.withoutId }) : "") +
+            (a.duplicates ? " " + I18N.t("import_duplicates", { n: a.duplicates }) : "");
+        if (!await UI.askConfirm(detail, { label: I18N.t("import_ok") })) { ev.target.value = ""; return; }
         const res = await DATA.importCsvText(text);
-        toast(I18N.t("t_import", { n: res.n, t: tableName }));
+        toast(I18N.t("toast_import", { n: res.n, t: tableName }));
         updateDataStatus();
       } catch (e) { toast(e.message); }
       ev.target.value = "";
@@ -274,25 +274,25 @@
     // The six tables and the full re-importable file (v8.71), plus three.
     $("#db-export").addEventListener("click", () => {
       DATA.exportAll();
-      toast(I18N.t("t_export_tout"));
+      toast(I18N.t("toast_export_all"));
     });
     $("#db-demo").addEventListener("click", async () => {
-      if (DATA.state.extractions.length && !await UI.askConfirm(I18N.t("c_demo"))) return;
+      if (DATA.state.extractions.length && !await UI.askConfirm(I18N.t("confirm_demo"))) return;
       await DATA.loadDemo();
       updateDataStatus();
-      toast(I18N.t("t_demo"));
+      toast(I18N.t("toast_demo"));
     });
     // Unlink the folder (v8.77): the function existed without a button.
-    $("#db-unlink").addEventListener("click", async () => { await DATA.unlinkFolder(); updateDataStatus(); updateBadges(); toast(I18N.t("t_delie")); });
+    $("#db-unlink").addEventListener("click", async () => { await DATA.unlinkFolder(); updateDataStatus(); updateBadges(); toast(I18N.t("toast_unlinked")); });
     $("#db-clear").addEventListener("click", async () => {
-      if (!await UI.askConfirm(I18N.t("c_vider"), { danger: true })) return;
+      if (!await UI.askConfirm(I18N.t("confirm_reset"), { danger: true })) return;
       await DATA.clearData();
       updateDataStatus();
-      toast(I18N.t("t_reinit"));
+      toast(I18N.t("toast_reset"));
     });
     $("#db-sync").addEventListener("click", async () => {
       const result = await DATA.synchronize(true);
-      toast(I18N.t(result === "ok" ? "t_sync_ok" : "t_sync_ko"));
+      toast(I18N.t(result === "ok" ? "toast_sync_ok" : "toast_sync_failed"));
     });
 
     // Data changes refresh the interface.
@@ -321,13 +321,13 @@
   /* The icon's "Redo my last cup" shortcut (manifest.json) opens
      ./#refaire: the entry form prefilled with the last cup's settings. */
   function openRedo() {
-    toast(I18N.t(UI.redoLast() ? "t_refaire" : "t_refaire_vide"));
+    toast(I18N.t(UI.redoLast() ? "toast_redo" : "toast_redo_empty"));
   }
 
   function fillRecommendedRecipeSelect() {
     const sel = $("#c-recipe");
     const v = sel.value;
-    sel.innerHTML = '<option value="">' + I18N.t("aucune") + "</option>" +
+    sel.innerHTML = '<option value="">' + I18N.t("none") + "</option>" +
       liveRecipes().map(r => "<option>" + r.nom + "</option>").join("");
     if (v && findRecipe(v)) sel.value = v;
   }
@@ -344,8 +344,8 @@
     UI.updateDiagnosticCorrection();
     UI.updateStopwatchButtons();
     UI.updateStopwatchSteps(false);
-    $("#entry-title").textContent = UI.entry.editId ? I18N.t("s_modifier") : I18N.t("s_nouvelle");
-    $("#btn-save").textContent = UI.entry.editId ? I18N.t("s_enregistrer_modif") : I18N.t("s_enregistrer");
+    $("#entry-title").textContent = UI.entry.editId ? I18N.t("entry_edit") : I18N.t("entry_new");
+    $("#btn-save").textContent = UI.entry.editId ? I18N.t("entry_save_changes") : I18N.t("entry_save");
     UI.fillCoffeeSelect();
     UI.fillFilters();
     UI.fillRecipeSelect();
@@ -386,7 +386,7 @@
 
     // Storage that fails to open no longer blocks the loading screen (v8.72): the logbook runs in memory.
     let hasData = false;
-    try { hasData = await DATA.init(); } catch (e) { console.error(e); toast(I18N.t("t_stockage_ko")); }
+    try { hasData = await DATA.init(); } catch (e) { console.error(e); toast(I18N.t("toast_storage_failed")); }
     updateBadges();
     UI.fillCoffeeSelect();
     UI.fillFilters();
@@ -402,7 +402,7 @@
     UI.renderConverter();
     UI.chooseMethod("Brikka");
     UI.resetEntry();
-    if (UI.restoreDraft()) toast(I18N.t("t_brouillon"));
+    if (UI.restoreDraft()) toast(I18N.t("toast_draft"));
 
     const h = location.hash.slice(1);
     if (h === "refaire") openRedo();

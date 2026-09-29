@@ -98,7 +98,7 @@
   function moreButton(leftover) {
     return leftover > 0
       ? '<button type="button" class="btn btn-small h-plus" id="h-plus">' +
-        I18N.t("h_plus", { n: Math.min(leftover, HISTORY_CHUNK), t: leftover }) + "</button>"
+        I18N.t("history_more", { n: Math.min(leftover, HISTORY_CHUNK), t: leftover }) + "</button>"
       : "";
   }
   function wireMore() {
@@ -115,7 +115,7 @@
       if (va > vb) return sortState.dir;
       return 0;
     });
-    $("#h-count").textContent = I18N.t("h_compte", {
+    $("#h-count").textContent = I18N.t("history_count", {
       n: list.length, s: list.length > 1 ? "s" : "", t: DATA.state.extractions.length,
     });
     $("#h-empty").hidden = list.length > 0;
@@ -126,7 +126,7 @@
     const first = allExts.length
       ? allExts.reduce((a, e) => (a && a.date_heure < e.date_heure ? a : e)).date_heure : "";
     $("#h-highlight").textContent = allExts.length
-      ? I18N.t("h_surligne", { n: allExts.length, s: allExts.length > 1 ? "s" : "",
+      ? I18N.t("history_highlight", { n: allExts.length, s: allExts.length > 1 ? "s" : "",
           d: fmtShortDate(String(first).slice(0, 10)) })
       : "";
 
@@ -184,21 +184,21 @@
   function updateActiveFilters() {
     const activeFilters = [];
     const selectText = id => { const s = $("#" + id); return s.options[s.selectedIndex] ? s.options[s.selectedIndex].textContent : s.value; };
-    [["h-coffee", "h_f_cafe"], ["h-diagnostic", "h_f_diag"], ["h-failed", "h_f_ratees"]].forEach(([id, key]) => {
+    [["h-coffee", "history_filter_coffee"], ["h-diagnostic", "history_filter_diagnosis"], ["h-failed", "history_filter_botched"]].forEach(([id, key]) => {
       if ($("#" + id).value) activeFilters.push([id, I18N.t(key) + " : " + selectText(id)]);
     });
-    if ($("#h-rating-min").value) activeFilters.push(["h-rating-min", I18N.t("h_f_note", { n: $("#h-rating-min").value })]);
+    if ($("#h-rating-min").value) activeFilters.push(["h-rating-min", I18N.t("history_filter_score", { n: $("#h-rating-min").value })]);
     const dateFrom = $("#h-from").value, dateTo = $("#h-to").value;
     // A single day (from the week recap): one pill, not two.
-    if (dateFrom && dateFrom === dateTo) activeFilters.push(["h-from h-to", I18N.t("h_f_le", { d: fmtShortDate(dateFrom) })]);
+    if (dateFrom && dateFrom === dateTo) activeFilters.push(["h-from h-to", I18N.t("history_filter_on", { d: fmtShortDate(dateFrom) })]);
     else {
-      if (dateFrom) activeFilters.push(["h-from", I18N.t("h_f_du", { d: fmtShortDate(dateFrom) })]);
-      if (dateTo) activeFilters.push(["h-to", I18N.t("h_f_au", { d: fmtShortDate(dateTo) })]);
+      if (dateFrom) activeFilters.push(["h-from", I18N.t("history_filter_from", { d: fmtShortDate(dateFrom) })]);
+      if (dateTo) activeFilters.push(["h-to", I18N.t("history_filter_until", { d: fmtShortDate(dateTo) })]);
     }
     $("#h-actives").innerHTML = activeFilters.map(([id, t]) =>
-      '<button type="button" class="h-on" data-clear="' + id + '" aria-label="' + titleAttr(I18N.t("h_f_retirer", { f: t })) + '">' +
+      '<button type="button" class="h-on" data-clear="' + id + '" aria-label="' + titleAttr(I18N.t("history_filter_remove", { f: t })) + '">' +
       titleAttr(t) + '<span aria-hidden="true">×</span></button>').join("");
-    $("#h-filter").textContent = activeFilters.length ? I18N.t("h_filtrer_n", { n: activeFilters.length }) : I18N.t("h_filtrer");
+    $("#h-filter").textContent = activeFilters.length ? I18N.t("history_filter_count", { n: activeFilters.length }) : I18N.t("history_filter");
   }
 
   function renderCards(list) {
@@ -223,14 +223,14 @@
       '<span class="summary-caption">' + label + "</span>" +
       (rating ? '<span class="summary-rating">' + rating + "</span>" : "") + "</div>";
     target.innerHTML =
-      block(list.length, I18N.t("h_res_tasses")) +
-      block(rated.length ? fmtDecimal(average(rated.map(e => e.note_sur_10)), 1) : I18N.t("h_res_aucune"),
-        I18N.t("h_res_moyenne")) +
+      block(list.length, I18N.t("history_summary_cups")) +
+      block(rated.length ? fmtDecimal(average(rated.map(e => e.note_sur_10)), 1) : I18N.t("history_summary_none"),
+        I18N.t("history_summary_average")) +
       (best
-        ? block(best.note_sur_10, I18N.t("h_res_meilleure"),
+        ? block(best.note_sur_10, I18N.t("history_summary_best"),
             I18N.tr(best._c.cafe_nom) + " · " + best.methode)
-        : block(I18N.t("h_res_aucune"), I18N.t("h_res_meilleure"))) +
-      block(failed, I18N.t("h_res_ratees"));
+        : block(I18N.t("history_summary_none"), I18N.t("history_summary_best"))) +
+      block(failed, I18N.t("history_summary_botched"));
   }
 
   /* The COMMENT in the row, truncated. It was only visible when expanding,
@@ -280,20 +280,20 @@
     const item = (key, value) => value === "" || value === undefined || value === null
       ? "" : '<div class="detail-item"><span>' + I18N.t(key) + "</span><b>" + value + "</b></div>";
     const cells = [
-      item("d_temps", e.temps_total_s !== "" ? fmtDuration(e.temps_total_s) : ""),
-      item("d_ecoulement", e.temps_ecoulement_s !== "" ? fmtDuration(e.temps_ecoulement_s) : ""),
-      item("d_temp", e.temperature_c !== "" && e.temperature_c !== undefined ? e.temperature_c + " °C" : ""),
-      item("d_feu", e.methode === "Brikka" && e.puissance_feu !== "" && e.puissance_feu !== undefined
+      item("detail_time", e.temps_total_s !== "" ? fmtDuration(e.temps_total_s) : ""),
+      item("detail_drawdown", e.temps_ecoulement_s !== "" ? fmtDuration(e.temps_ecoulement_s) : ""),
+      item("detail_temp", e.temperature_c !== "" && e.temperature_c !== undefined ? e.temperature_c + " °C" : ""),
+      item("detail_heat", e.methode === "Brikka" && e.puissance_feu !== "" && e.puissance_feu !== undefined
         ? e.puissance_feu : ""),
-      item("d_chauffe", e.chauffe_s !== "" && e.chauffe_s !== undefined ? fmtDuration(e.chauffe_s) : ""),
-      item("d_volume", e.volume_extrait_ml !== "" ? e.volume_extrait_ml + " ml" : ""),
-      item("d_eau_ajoutee", e.eau_ajoutee_ml !== "" ? e.eau_ajoutee_ml + " ml" : ""),
-      item("d_lait", e.lait_ml !== "" ? e.lait_ml + " ml" : ""),
-      item("d_agitation", e.agitation_nb !== "" ? e.agitation_nb : ""),
-      item("d_tasse", e.tasse),
-      item("d_prechauffee", Number(e.eau_prechauffee) === 1 ? I18N.t("oui") : ""),
-      item("d_boisson", e._c.volume_boisson_ml !== "" ? e._c.volume_boisson_ml + " ml" : ""),
-      item("d_cout", e._c.cout_tasse_vnd !== "" ? fmtVND(e._c.cout_tasse_vnd) : ""),
+      item("detail_kettle", e.chauffe_s !== "" && e.chauffe_s !== undefined ? fmtDuration(e.chauffe_s) : ""),
+      item("detail_volume", e.volume_extrait_ml !== "" ? e.volume_extrait_ml + " ml" : ""),
+      item("detail_water_added", e.eau_ajoutee_ml !== "" ? e.eau_ajoutee_ml + " ml" : ""),
+      item("detail_milk", e.lait_ml !== "" ? e.lait_ml + " ml" : ""),
+      item("detail_stirring", e.agitation_nb !== "" ? e.agitation_nb : ""),
+      item("detail_cup", e.tasse),
+      item("detail_preheated", Number(e.eau_prechauffee) === 1 ? I18N.t("yes") : ""),
+      item("detail_drink", e._c.volume_boisson_ml !== "" ? e._c.volume_boisson_ml + " ml" : ""),
+      item("detail_cost", e._c.cout_tasse_vnd !== "" ? fmtVND(e._c.cout_tasse_vnd) : ""),
     ].filter(Boolean).join("");
     const tags = (e.descripteurs || "").split("|").filter(Boolean)
       .map(t => '<span class="detail-tag">' + I18N.tag(t) + "</span>").join("");
@@ -301,7 +301,7 @@
     return (cells ? '<div class="detail-grid">' + cells + "</div>" : "") +
       (tags ? '<div class="detail-tags">' + tags + "</div>" : "") +
       (comment ? '<p class="detail-comment">' + comment + "</p>" : "") +
-      (cells || tags || comment ? "" : '<p class="detail-empty">' + I18N.t("d_rien") + "</p>");
+      (cells || tags || comment ? "" : '<p class="detail-empty">' + I18N.t("detail_nothing") + "</p>");
   }
 
   /* The row's date: the day in ink, the time muted. fmtDateTime returns
@@ -330,13 +330,13 @@
          the value, small: on one line, "1.2.0 (499 µm)" was truncated to
          "1.2.0 (49…" in its column. */
       '<td class="td-num">' + (e.mouture_dial ? e.mouture_dial + '<small class="sub">' + e._c.microns + " µm</small>"
-        : e._c.ground ? "<small>" + I18N.t("paquet") + "</small>" : "") + "</td>" +
+        : e._c.ground ? "<small>" + I18N.t("bag_default") + "</small>" : "") + "</td>" +
       '<td class="td-num" title="' + titleAttr(detailRatio(e._c.ratioBase, e.dose_g, e.eau_g)) + '">' +
       e._c.ratioTexte +
-      (e._c.cupRatioText ? '<small class="sub">' + I18N.t("rt_tasse_court") + " " + e._c.cupRatioText + "</small>" : "") +
-      (e._c.drinkRatio ? '<small class="sub">' + I18N.t("rt_boisson_court") + " " + e._c.drinkRatio + "</small>" : "") + "</td>" +
+      (e._c.cupRatioText ? '<small class="sub">' + I18N.t("ratio_cup_short") + " " + e._c.cupRatioText + "</small>" : "") +
+      (e._c.drinkRatio ? '<small class="sub">' + I18N.t("ratio_drink_short") + " " + e._c.drinkRatio + "</small>" : "") + "</td>" +
       '<td class="rating-cell">' + (isFailed(e)
-        ? '<span class="badge-failed" title="' + titleAttr(I18N.t("rt_badge_titre")) + '">' + I18N.t("rt_badge") + "</span>"
+        ? '<span class="badge-failed" title="' + titleAttr(I18N.t("botched_badge_title")) + '">' + I18N.t("botched_badge") + "</span>"
         : "") + (e.note_sur_10 !== "" ? fmtDecimal(Number(e.note_sur_10), 1) : "") + "</td>" +
       /* TASTES AND DIAGNOSIS in the same cell, not in two columns: one more
          column asks for four coordinated edits (see DECISIONS, "The trap of
@@ -358,11 +358,11 @@
     const compare = comparison.has(e.id);
     return '<div class="actions-row">' +
       '<button class="btn-row' + (compare ? " on" : "") + '" data-action="comparer" title="' +
-      titleAttr(I18N.t("h_comparer")) + '">' + icon("comparer") + "</button>" +
+      titleAttr(I18N.t("history_compare")) + '">' + icon("comparer") + "</button>" +
       /* The failed toggle, FIRST among the write actions: it is the one
          clicked most often after the fact, and its state shows without hover. */
       '<button class="btn-row' + (isFailed(e) ? " on-failed" : "") + '" data-action="ratee" aria-pressed="' +
-      isFailed(e) + '" title="' + titleAttr(I18N.t(isFailed(e) ? "h_derater" : "h_rater")) + '">' + icon("ratee") + "</button>" +
+      isFailed(e) + '" title="' + titleAttr(I18N.t(isFailed(e) ? "history_unmark_botched" : "history_mark_botched")) + '">' + icon("ratee") + "</button>" +
       '<button class="btn-row" data-action="dupliquer" title="Dupliquer pour refaire la même">' + icon("dupliquer") + "</button>" +
       '<button class="btn-row" data-action="modifier" title="Modifier">' + icon("modifier") + "</button>" +
       '<button class="btn-row danger" data-action="supprimer" title="Supprimer">' + icon("supprimer") + "</button>" +
@@ -384,7 +384,7 @@
     if (e.recette) meta.push('<span class="h-card-recipe">' + I18N.tr(e.recette) + "</span>");
     if (e.dose_g !== "" && e.eau_g !== "") meta.push(e.dose_g + " → " + e.eau_g + " g");
     if (e._c.ratioTexte) meta.push(e._c.ratioTexte);
-    if (e.mouture_dial) meta.push(I18N.t("molette") + " " + e.mouture_dial);
+    if (e.mouture_dial) meta.push(I18N.t("dial") + " " + e.mouture_dial);
     return '<article class="h-card' + (expanded ? " expanded" : "") + (menu ? " menu-ouvert" : "") +
       (comparison.has(e.id) ? " compared" : "") + (isFailed(e) ? " failed" : "") +
       '" data-id="' + e.id + '">' +
@@ -393,10 +393,10 @@
         '<span class="chip-method ' + e.methode.toLowerCase() + '">' + e.methode + "</span>" +
         '<span class="h-card-rating">' + (e.note_sur_10 !== "" ? fmtDecimal(Number(e.note_sur_10), 1) : "") + "</span>" +
         '<button type="button" class="btn-menu-card" data-action="menu" aria-expanded="' + menu + '" aria-label="' +
-          titleAttr(I18N.t("h_actions")) + '">⋯</button>' +
+          titleAttr(I18N.t("history_actions")) + '">⋯</button>' +
       "</div>" +
       '<p class="h-card-coffee">' + I18N.tr(e._c.cafe_nom) +
-        (isFailed(e) ? '<span class="mention-failed">' + I18N.t("rt_badge") + "</span>" : "") + "</p>" +
+        (isFailed(e) ? '<span class="mention-failed">' + I18N.t("botched_badge") + "</span>" : "") + "</p>" +
       (meta.length ? '<p class="h-card-meta">' + meta.join(" · ") + "</p>" : "") +
       ((e.diagnostic || e.descripteurs)
         ? '<p class="h-card-tastes">' +
@@ -408,7 +408,7 @@
         /* In words and not as an arrow: the phone has no hover, the detail
            expands there, and the button says what it does. */
         '<button type="button" class="btn-detail-card" data-action="deplier" aria-expanded="' + expanded + '">' +
-        I18N.t(expanded ? "h_detail_masquer" : "h_detail") + "</button>" +
+        I18N.t(expanded ? "history_details_hide" : "history_details") + "</button>" +
         actionsExtraction(e) +
       "</div>") +
       (expanded ? '<div class="h-card-detail">' + detailContent(e) + "</div>" : "") +
@@ -439,32 +439,32 @@
     if (!bar) return;
     bar.hidden = comparison.size === 0;
     $("#comparison-count").textContent = I18N.t(
-      comparison.size === 1 ? "cmp_une" : "cmp_deux", { n: comparison.size });
+      comparison.size === 1 ? "compare_one" : "compare_two", { n: comparison.size });
     $("#comparison-open").disabled = comparison.size !== 2;
   }
 
   // Rows of the comparison table. Each entry knows how to read its displayable value.
   function comparisonFields() {
     return [
-      { key: "d_cafe", read: e => I18N.tr(e._c.cafe_nom) },
-      { key: "d_methode", read: e => e.methode },
-      { key: "d_recette", read: e => e.recette },
-      { key: "d_dose", read: e => e.dose_g !== "" ? e.dose_g + " g" : "" },
-      { key: "d_eau", read: e => e.eau_g !== "" ? e.eau_g + " g" : "" },
-      { key: "d_ratio", read: e => e._c.ratioTexte },
-      { key: "d_ouvert", read: e => e._c.jours_ouvert === "" ? "" : e._c.jours_ouvert },
-      { key: "d_mouture", read: e => e.mouture_dial || (e._c.ground ? I18N.t("paquet") : "") },
-      { key: "d_temp", read: e => e.temperature_c !== "" ? e.temperature_c + " °C" : "" },
-      { key: "d_puissance", read: e => e.puissance_feu !== "" ? e.puissance_feu + " / 10" : "" },
-      { key: "d_prechauffee", read: e => Number(e.eau_prechauffee) === 1 ? I18N.t("oui") : I18N.t("non") },
-      { key: "d_total", read: e => e.temps_total_s !== "" ? fmtDuration(e.temps_total_s) : "" },
-      { key: "d_ecoulement", read: e => e.temps_ecoulement_s !== "" ? fmtDuration(e.temps_ecoulement_s) : "" },
-      { key: "d_volume", read: e => e.volume_extrait_ml !== "" ? e.volume_extrait_ml + " ml" : "" },
-      { key: "d_tasse", read: e => e.tasse },
-      { key: "d_note", read: e => e.note_sur_10 !== "" ? fmtDecimal(Number(e.note_sur_10), 1) + " / 10" : "" },
-      { key: "d_diagnostic", read: e => e.diagnostic ? displayedDiags(e.diagnostic) : "" },
-      { key: "d_descripteurs", read: e => (e.descripteurs || "").split("|").filter(Boolean).map(t => I18N.tag(t)).join(", ") },
-      { key: "d_commentaire", read: e => e.commentaire },
+      { key: "detail_coffee", read: e => I18N.tr(e._c.cafe_nom) },
+      { key: "detail_method", read: e => e.methode },
+      { key: "detail_recipe", read: e => e.recette },
+      { key: "detail_dose", read: e => e.dose_g !== "" ? e.dose_g + " g" : "" },
+      { key: "detail_water", read: e => e.eau_g !== "" ? e.eau_g + " g" : "" },
+      { key: "detail_ratio", read: e => e._c.ratioTexte },
+      { key: "detail_days_open", read: e => e._c.jours_ouvert === "" ? "" : e._c.jours_ouvert },
+      { key: "detail_grind", read: e => e.mouture_dial || (e._c.ground ? I18N.t("bag_default") : "") },
+      { key: "detail_temp", read: e => e.temperature_c !== "" ? e.temperature_c + " °C" : "" },
+      { key: "detail_heat_power", read: e => e.puissance_feu !== "" ? e.puissance_feu + " / 10" : "" },
+      { key: "detail_preheated", read: e => Number(e.eau_prechauffee) === 1 ? I18N.t("yes") : I18N.t("no") },
+      { key: "detail_total", read: e => e.temps_total_s !== "" ? fmtDuration(e.temps_total_s) : "" },
+      { key: "detail_drawdown", read: e => e.temps_ecoulement_s !== "" ? fmtDuration(e.temps_ecoulement_s) : "" },
+      { key: "detail_volume", read: e => e.volume_extrait_ml !== "" ? e.volume_extrait_ml + " ml" : "" },
+      { key: "detail_cup", read: e => e.tasse },
+      { key: "detail_score", read: e => e.note_sur_10 !== "" ? fmtDecimal(Number(e.note_sur_10), 1) + " / 10" : "" },
+      { key: "detail_diagnosis", read: e => e.diagnostic ? displayedDiags(e.diagnostic) : "" },
+      { key: "detail_descriptors", read: e => (e.descripteurs || "").split("|").filter(Boolean).map(t => I18N.tag(t)).join(", ") },
+      { key: "detail_comment", read: e => e.commentaire },
     ];
   }
 
@@ -488,8 +488,8 @@
     }).join("");
 
     const gap = a.note_sur_10 !== "" && b.note_sur_10 !== ""
-      ? I18N.t("cmp_ecart", { x: fmtDecimal(Math.abs(a.note_sur_10 - b.note_sur_10), 1) })
-      : I18N.t("cmp_sans_note");
+      ? I18N.t("compare_gap", { x: fmtDecimal(Math.abs(a.note_sur_10 - b.note_sur_10), 1) })
+      : I18N.t("compare_no_score");
     $("#comparison-summary").textContent = gap;
     $("#modal-comparison").showModal();
   }
@@ -499,28 +499,28 @@
      without a browser. Here, only the display. */
   // Opens the coffee sheet (js/ui-coffee-sheet.js), by delegation on data-sheet.
   const sheetButton = c => '<button type="button" class="btn btn-small btn-subtle" data-sheet="' + c.id + '">' +
-    I18N.t("fi_voir") + "</button>";
+    I18N.t("sheet_view") + "</button>";
 
   function tuningCard(summary) {
     const c = summary.coffee;
     const header = '<div class="setting-header"><b>' + c.nom + "</b>" +
-      (c.actif === 0 ? ' <span class="coffee-meta">' + I18N.t("li_inactif") + "</span>" : "") +
+      (c.actif === 0 ? ' <span class="coffee-meta">' + I18N.t("list_inactive") + "</span>" : "") +
       (summary.average !== null
-        ? '<span class="setting-average">' + I18N.t("rg_moyenne", { m: fmtDecimal(summary.average, 1), n: summary.total }) + "</span>"
+        ? '<span class="setting-average">' + I18N.t("setting_average", { m: fmtDecimal(summary.average, 1), n: summary.total }) + "</span>"
         : "") + "</div>";
 
     if (summary.reason === "sous_moyenne") {
       const t = summary.bestCup;
       return '<article class="card setting' + (c.actif === 0 ? " inactive" : "") + '">' + header +
-        '<p class="card-empty">' + I18N.t("rg_sous_moyenne", {
-          s: TUNING.MIN_CUPS, note: fmtDecimal(t.note, 1), k: t.times, n: summary.missing,
+        '<p class="card-empty">' + I18N.t("setting_below_average", {
+          s: TUNING.MIN_CUPS, score: fmtDecimal(t.note, 1), k: t.times, n: summary.missing,
         }) + "</p>" +
         '<div class="setting-actions"><button type="button" class="btn btn-small" data-redo="' + t.id + '">' +
-        I18N.t("rg_refaire") + "</button>" + sheetButton(c) + "</div></article>";
+        I18N.t("setting_redo") + "</button>" + sheetButton(c) + "</div></article>";
     }
     if (!summary.best) {
-      const key = summary.reason === "aucune" ? "rg_aucune"
-        : summary.reason === "pas_assez" ? "rg_pas_assez" : "rg_eparpille";
+      const key = summary.reason === "aucune" ? "setting_none"
+        : summary.reason === "pas_assez" ? "setting_not_enough" : "setting_scattered";
       return '<article class="card setting' + (c.actif === 0 ? " inactive" : "") + '">' + header +
         '<p class="card-empty">' + I18N.t(key, { n: summary.missing, s: TUNING.MIN_CUPS }) + "</p>" +
         '<div class="setting-actions">' + sheetButton(c) + "</div></article>";
@@ -532,20 +532,20 @@
     const gap = m.average - summary.average;
     const chips = [
       m.recette ? '<span class="setting-chip">' + I18N.tr(m.recette) + "</span>" : "",
-      m.grind ? '<span class="setting-chip">' + I18N.t("molette") + " " + m.grind + "</span>"
-        : '<span class="setting-chip">' + I18N.t("paquet") + "</span>",
-      m.power ? '<span class="setting-chip">' + I18N.t("rg_feu", { f: m.power }) + "</span>" : "",
-      m.preheat ? '<span class="setting-chip">' + I18N.t("d_prechauffee") + "</span>" : "",
+      m.grind ? '<span class="setting-chip">' + I18N.t("dial") + " " + m.grind + "</span>"
+        : '<span class="setting-chip">' + I18N.t("bag_default") + "</span>",
+      m.power ? '<span class="setting-chip">' + I18N.t("setting_heat", { f: m.power }) + "</span>" : "",
+      m.preheat ? '<span class="setting-chip">' + I18N.t("detail_preheated") + "</span>" : "",
     ].filter(Boolean).join("");
 
     return '<article class="card setting' + (c.actif === 0 ? " inactive" : "") + '">' + header +
       '<div class="setting-rating"><b>' + fmtDecimal(m.average, 1) + "</b><small> / 10</small>" +
-      '<span>' + I18N.t("rg_sur", { n: m.n }) +
-      (Math.abs(gap) >= 0.2 ? ", " + I18N.t(gap > 0 ? "rg_mieux" : "rg_moins",
+      '<span>' + I18N.t("setting_over", { n: m.n }) +
+      (Math.abs(gap) >= 0.2 ? ", " + I18N.t(gap > 0 ? "setting_better" : "setting_worse",
         { x: fmtDecimal(Math.abs(gap), 1) }) : "") + "</span></div>" +
       '<div class="setting-chips">' + chips + "</div>" +
       '<div class="setting-actions"><button type="button" class="btn btn-small" data-redo="' + m.referenceId + '">' +
-      I18N.t("rg_refaire") + "</button>" + sheetButton(c) + "</div></article>";
+      I18N.t("setting_redo") + "</button>" + sheetButton(c) + "</div></article>";
   }
 
   function renderTuning() {
@@ -555,24 +555,24 @@
     const summaries = TUNING.forAllCoffees(DATA.state.cafes, exts);
     $("#tuning-list").innerHTML = summaries.length
       ? summaries.map(tuningCard).join("")
-      : '<p class="card-empty">' + I18N.t("rg_sans_cafe") + "</p>";
+      : '<p class="card-empty">' + I18N.t("setting_no_coffee") + "</p>";
     $$("[data-redo]").forEach(b => b.addEventListener("click", () => {
       const ext = DATA.state.extractions.find(e => e.id === b.dataset.redo);
       if (!ext) return;
       UI.redoCup(ext);
-      toast(I18N.t("rg_preremplie"));
+      toast(I18N.t("setting_prefilled"));
     }));
   }
 
   function fillFilters() {
     const selCoffee = $("#h-coffee");
     const v = selCoffee.value;
-    selCoffee.innerHTML = '<option value="">' + I18N.t("tous") + "</option>" +
+    selCoffee.innerHTML = '<option value="">' + I18N.t("all") + "</option>" +
       DATA.state.cafes.map(c => '<option value="' + TOOLS.escapeHtml(c.id) + '">' + TOOLS.escapeHtml(c.nom) + "</option>").join("");
     selCoffee.value = v;
     const selDiag = $("#h-diagnostic");
     const vd = selDiag.value;
-    selDiag.innerHTML = '<option value="">' + I18N.t("tous") + "</option>" +
+    selDiag.innerHTML = '<option value="">' + I18N.t("all") + "</option>" +
       DIAGNOSTICS.map(d => '<option value="' + d + '">' + I18N.diag(d) + "</option>").join("");
     selDiag.value = vd;
   }
@@ -674,7 +674,7 @@
     });
     $("#h-export").addEventListener("click", () => {
       DATA.exportExtractions(filterHistory().map(e => { const { _c, ...leftover } = e; return leftover; }));
-      toast(I18N.t("t_export_filtre"));
+      toast(I18N.t("toast_export_filter"));
     });
     $$("#h-table th[data-sort]").forEach(th => th.addEventListener("click", () => {
       if (sortState.column === th.dataset.sort) sortState.dir = -sortState.dir;
@@ -712,7 +712,7 @@
         UI.loadExtractionIntoEntry(ext, false);
       } else if (btn.dataset.action === "dupliquer") {
         UI.redoCup(ext);
-        toast(I18N.t("t_dupliquee"));
+        toast(I18N.t("toast_duplicated"));
       } else if (btn.dataset.action === "menu") {
         if (openMenus.has(id)) openMenus.delete(id);
         else openMenus.add(id);
@@ -728,7 +728,7 @@
            the same button, and asking to confirm a toggle would be heavier
            than the toggle itself. */
         await DATA.editExtraction(id, { ...ext, ratee: Number(ext.ratee) === 1 ? "" : 1 });
-        toast(I18N.t(Number(ext.ratee) === 1 ? "t_deratee" : "t_ratee"));
+        toast(I18N.t(Number(ext.ratee) === 1 ? "toast_unbotched" : "toast_botched"));
       }
     };
     [$("#h-body"), $("#h-cards"), $("#h-journal")].forEach(z => z.addEventListener("click", onHistoryClick));

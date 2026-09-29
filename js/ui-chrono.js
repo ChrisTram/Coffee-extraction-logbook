@@ -93,7 +93,7 @@
     steps.forEach(step => { if (step.t <= s) current = step; else if (!next) next = step; });
     const currentText = current
       ? fmtDuration(current.t) + " · " + current.texte
-      : I18N.t("ch_pret");
+      : I18N.t("timer_ready");
     $("#chrono-now").textContent = currentText;
     /* The same step in the header, so it reads WITHOUT expanding: on a phone
        the stopwatch is a collapsed strip stuck to the top, and a strip that
@@ -102,11 +102,11 @@
     const shortLabel = $("#chrono-phase-short");
     if (shortLabel) shortLabel.textContent = stopwatch.state === "arrete" ? "" : currentText;
     if (next) {
-      $("#chrono-next").textContent = I18N.t("ch_suivante", {
-        t: fmtDuration(next.t), d: Math.max(0, Math.ceil(next.t - s)), texte: next.texte,
+      $("#chrono-next").textContent = I18N.t("timer_next", {
+        t: fmtDuration(next.t), d: Math.max(0, Math.ceil(next.t - s)), text: next.texte,
       });
     } else {
-      $("#chrono-next").textContent = current ? I18N.t("ch_derniere") : "";
+      $("#chrono-next").textContent = current ? I18N.t("timer_last") : "";
     }
     if (withBeeps && stopwatch.state === "encours") {
       steps.forEach(step => {
@@ -130,9 +130,9 @@
 
   function updateStopwatchButtons() {
     const b = $("#btn-chrono");
-    if (stopwatch.state === "arrete") b.textContent = I18N.t("ch_demarrer");
-    else if (stopwatch.state === "encours") b.textContent = I18N.t("ch_pause");
-    else b.textContent = I18N.t("ch_reprendre");
+    if (stopwatch.state === "arrete") b.textContent = I18N.t("timer_start");
+    else if (stopwatch.state === "encours") b.textContent = I18N.t("timer_pause");
+    else b.textContent = I18N.t("timer_resume");
     $("#btn-chrono-stop").hidden = stopwatch.state === "arrete";
     $("#btn-chrono-reset").hidden = stopwatch.state === "arrete" && stopwatchElapsed() === 0;
     $(".chrono").classList.toggle("in-progress", stopwatch.state === "encours");
@@ -176,7 +176,7 @@
     const tOpen = openingTime();
     if (tOpen !== null && total > tOpen) writeDuration("f-flow", total - tOpen);
     updateStopwatchButtons();
-    toast(I18N.t("t_temps"));
+    toast(I18N.t("toast_times"));
   }
 
   function resetStopwatch() {

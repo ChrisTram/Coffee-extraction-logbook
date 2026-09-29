@@ -248,7 +248,7 @@ for day in active_days:
             "descripteurs": "|".join(tags), "commentaire": comment,
         })
 
-print(f"{len(extractions)} extractions sur {len(active_days)} jours")
+print(f"{len(extractions)} brews over {len(active_days)} days")
 
 CAFE_COLS = ["id", "nom", "torrefacteur", "origine", "espece", "procede", "torrefaction",
              "deja_moulu", "pourcentage_cafe_reel", "tag", "notes_annoncees", "format_grammes",
@@ -291,8 +291,8 @@ with open("/home/claude/tracker/js/demo-data.js", "w", encoding="utf-8") as f:
 from collections import Counter
 scores_s1 = [e["note_sur_10"] for e in extractions if e["date_heure"] < (START + datetime.timedelta(days=10)).isoformat()]
 scores_s6 = [e["note_sur_10"] for e in extractions if e["date_heure"] >= (TODAY - datetime.timedelta(days=10)).isoformat()]
-print("note moyenne debut:", round(sum(scores_s1)/len(scores_s1), 2), "fin:", round(sum(scores_s6)/len(scores_s6), 2))
+print("average score start:", round(sum(scores_s1)/len(scores_s1), 2), "end:", round(sum(scores_s6)/len(scores_s6), 2))
 print(Counter(e["methode"] for e in extractions))
 print(Counter(e["recette"] for e in extractions))
 bana_switch = [e for e in extractions if e["cafe_id"] in ("c1", "c2") and e["methode"] == "Switch"]
-print("c1/c2 en Switch:", len(bana_switch))
+print("c1/c2 in the Switch:", len(bana_switch))

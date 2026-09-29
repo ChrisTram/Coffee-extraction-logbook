@@ -80,12 +80,12 @@
   function chapter(c) {
     const r = resume(c);
     const isOpen = openKeys.has(c.key);
-    const name = c.coffee ? I18N.tr(c.coffee.nom) : I18N.t("jn_sans_cafe");
+    const name = c.coffee ? I18N.tr(c.coffee.nom) : I18N.t("journal_unknown_coffee");
     const when = r.ongoing
-      ? I18N.t("jn_depuis", { d: dayLabel(r.start) })
-      : r.start === r.end ? dayLabel(r.start) : I18N.t("jn_du_au", { a: dayLabel(r.start), b: dayLabel(r.end) });
-    const status = !c.bag ? I18N.t("jn_sans_sachet")
-      : r.ongoing ? I18N.t("jn_en_cours", { g: Math.round(r.stock.remaining) }) : I18N.t("jn_fini");
+      ? I18N.t("journal_since", { d: dayLabel(r.start) })
+      : r.start === r.end ? dayLabel(r.start) : I18N.t("journal_from_to", { a: dayLabel(r.start), b: dayLabel(r.end) });
+    const status = !c.bag ? I18N.t("journal_no_bag")
+      : r.ongoing ? I18N.t("journal_open", { g: Math.round(r.stock.remaining) }) : I18N.t("journal_finished");
     const setting = r.best ? [I18N.tr(r.best.recette || ""), r.best.mouture_dial || ""].filter(Boolean).join(" · ") : "";
     const kpi = (v, l) => '<div class="jn-kpi"><b>' + v + "</b><span>" + l + "</span></div>";
     const cups = expandedKeys.has(c.key) ? c.cups : c.cups.slice(0, VISIBLE_COUNT);
@@ -94,7 +94,7 @@
       '<button type="button" class="jn-head" data-chapter="' + titleAttr(c.key) + '" aria-expanded="' + isOpen + '">' +
         '<span class="jn-title"><b>' + titleAttr(name) + "</b>" +
           '<span class="jn-state' + (r.ongoing ? " vivid" : "") + '">' + status + "</span></span>" +
-        '<span class="jn-sub">' + when + " · " + I18N.t("jn_tasses", { n: c.cups.length, s: c.cups.length > 1 ? "s" : "" }) +
+        '<span class="jn-sub">' + when + " · " + I18N.t("journal_cups", { n: c.cups.length, s: c.cups.length > 1 ? "s" : "" }) +
           (c.bag && c.bag.format_grammes ? " · " + c.bag.format_grammes + " g" : "") + "</span>" +
         '<span class="jn-avg">' + (r.avg !== null ? fmtRating(r.avg) : "·") + "</span>" +
       "</button>" +
@@ -102,15 +102,15 @@
         ? '<div class="jn-body">' +
             '<div class="jn-summary">' +
               '<div class="jn-kpis">' +
-                kpi(r.avg !== null ? fmtRating(r.avg) : "·", I18N.t("jn_moyenne", { n: r.rated.length })) +
-                kpi(r.best ? fmtRating(Number(r.best.note_sur_10)) : "·", I18N.t("jn_meilleure")) +
-                kpi(r.price ? r.price.toLocaleString(I18N.locale()) + " ₫" : "·", I18N.t("jn_la_tasse")) +
+                kpi(r.avg !== null ? fmtRating(r.avg) : "·", I18N.t("journal_average", { n: r.rated.length })) +
+                kpi(r.best ? fmtRating(Number(r.best.note_sur_10)) : "·", I18N.t("journal_best")) +
+                kpi(r.price ? r.price.toLocaleString(I18N.locale()) + " ₫" : "·", I18N.t("journal_per_cup")) +
               "</div>" + curve(r.rated) +
-              (setting ? '<p class="jn-setting">' + I18N.t("jn_reglage", { r: titleAttr(setting), n: fmtRating(Number(r.best.note_sur_10)) }) + "</p>" : "") +
+              (setting ? '<p class="jn-setting">' + I18N.t("journal_best_setting", { r: titleAttr(setting), n: fmtRating(Number(r.best.note_sur_10)) }) + "</p>" : "") +
             "</div>" +
             '<div class="h-cards jn-cups">' + cups.map(e => UI.extractionCard(e)).join("") + "</div>" +
             (hidden > 0 ? '<button type="button" class="btn btn-subtle btn-small jn-all" data-journal-all="' + titleAttr(c.key) + '">' +
-              I18N.t("jn_voir_tout", { n: hidden, s: hidden > 1 ? "s" : "" }) + "</button>" : "") +
+              I18N.t("journal_see_all", { n: hidden, s: hidden > 1 ? "s" : "" }) + "</button>" : "") +
           "</div>"
         : "") +
       "</section>";

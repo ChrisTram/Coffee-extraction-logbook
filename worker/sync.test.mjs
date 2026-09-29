@@ -144,16 +144,16 @@ check("recipes survive", kept.tables.recettes.length === 1);
 
   const res = await handleSync(request({ tables: { extractions: [ext("e1", NOW, 7)] } }), env);
   const body = await res.json();
-  check("the response carries the document size", Number.isInteger(body.taille) && body.taille > 0, String(body.taille));
-  check("and the cap the server accepts", body.plafond === MAX_DOCUMENT_BYTES);
+  check("the response carries the document size", Number.isInteger(body.size) && body.size > 0, String(body.size));
+  check("and the cap the server accepts", body.cap === MAX_DOCUMENT_BYTES);
   check("the size is that of the merged document, in bytes",
-    body.taille === documentSize({ tables: body.tables, tombes: body.tombes, schema: body.schema }));
+    body.size === documentSize({ tables: body.tables, tombes: body.tombes, schema: body.schema }));
   check("the cap is D1's, two million bytes per row", MAX_DOCUMENT_BYTES === 2_000_000);
 
   const read = await handleSync(new Request("https://site.test/api/sync"), env);
   const readBody = await read.json();
-  check("GET also returns the size", Number.isInteger(readBody.taille) && readBody.taille === body.taille,
-    readBody.taille + " vs " + body.taille);
+  check("GET also returns the size", Number.isInteger(readBody.size) && readBody.size === body.size,
+    readBody.size + " vs " + body.size);
 
   // Accents count in bytes, not characters: that is the unit of the cap.
   check("the measure is in UTF-8 bytes", documentSize({ a: "é" }) === JSON.stringify({ a: "é" }).length + 1);
@@ -209,7 +209,7 @@ check("recipes survive", kept.tables.recettes.length === 1);
 
   const broken = makeDb(); broken.docs.set("state", "{pas du json");
   const r = await handleSync(req({ tables: { extractions: [ext("e1", NOW, 7)] } }), { DB: broken });
-  check("an unreadable document returns a clear error", r.status === 500 && (await r.json()).erreur === "document-illisible");
+  check("an unreadable document returns a clear error", r.status === 500 && (await r.json()).error === "unreadable-document");
   check("and is not overwritten", broken.docs.get("state") === "{pas du json");
 
   const huge = await handleSync(new Request("https://site.test/api/sync", { method: "POST", body: "{}",

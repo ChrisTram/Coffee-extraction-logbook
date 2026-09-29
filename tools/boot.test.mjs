@@ -367,7 +367,7 @@ check("EN toggle without exception", api.I18N.lang() === "en", api.I18N.lang());
 /* The bundle must really have been merged, not just the language changed: a
    page declaring itself English while rendering French would be worse than nothing. */
 check("the English bundle is actually merged", api.I18N.tr("Recette") === "Recipe", api.I18N.tr("Recette"));
-check("templates too", api.I18N.t("btn_modifier") !== api.I18N.t("btn_modifier").toLowerCase() || true);
+check("templates too", api.I18N.t("btn_edit") !== api.I18N.t("btn_edit").toLowerCase() || true);
 
 /* THE STATIC TEXT OF THE PAGE, not only the generated zones.
 
@@ -757,7 +757,7 @@ check("the temperature field no longer has a misleading placeholder", !tempField
      checks the RULE: the word Chris reads is there, and the row carries a distinct
      state, whatever name either of them is given. */
   api.UI.renderDashboard();
-  const word = api.I18N.t("rt_badge");
+  const word = api.I18N.t("botched_badge");
   const table = document.querySelector("#latest-list").innerHTML;
   check("a failed cup is named in the last five", table.includes(word), word);
   check("and its row carries a distinct state, not just a word",

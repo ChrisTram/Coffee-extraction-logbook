@@ -163,5 +163,5 @@ mkdirSync(join(ROOT, "icons"), { recursive: true });
 for (const { file, size, cornerRadius, scale } of TARGETS) {
   const png = encodePng(size, render(size, { cornerRadius, scale }));
   writeFileSync(join(ROOT, file), png);
-  console.log(`${file}  ${size}x${size}  ${(png.length / 1024).toFixed(1)} ko`);
+  console.log(`${file}  ${size}x${size}  ${(png.length / 1024).toFixed(1)} KB`);
 }

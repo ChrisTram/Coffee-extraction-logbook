@@ -200,7 +200,7 @@ actif`
 - Liste "Mes cafés" : chaque ligne porte un badge de note moyenne
   (.badge-note, "★ 7,4", moyenne des extractions notées du café, nombre
   d'extractions en title) et la date d'ajout dans la ligne méta
-  ("ajouté le 12 août 2026", clé T li_ajoute, format via fmtDateCourte).
+  ("ajouté le 12 août 2026", clé T list_added, format via fmtDateCourte).
 
 ### extractions.csv
 `id, date_heure, cafe_id, methode, recette, dose_g, eau_g, mouture_dial,
@@ -814,12 +814,12 @@ d'échec les données locales sont laissées intactes et une relance part après
   un conflit, pour rester commutatif) : un onglet sur une ancienne version ne
   peut plus effacer une colonne récente.
 - Version du schéma : la charge utile porte `schema`, le document garde la
-  plus haute ; un onglet plus ancien reçoit un 409 `version-perimee` et
+  plus haute ; un onglet plus ancien reçoit un 409 `outdated-version` et
   l'appli propose de recharger.
 - Horloges : le serveur ramène tout horodatage de plus de 5 min dans le futur à
   son heure, et le client corrige son écart (`reglerDecalage`, `maintenant()`).
-- Erreurs : `handleSync` rend un code JSON (500 `document-illisible` ou
-  `serveur`, 413 `trop-gros`), et un document illisible n'est jamais écrasé.
+- Erreurs : `handleSync` rend un code JSON (500 `unreadable-document` ou
+  `server`, 413 `too-large`), et un document illisible n'est jamais écrasé.
 
 **Sauvegarde quotidienne et restauration.** Le cron de `wrangler.jsonc`
 (20:00 UTC) appelle `sauvegarderDocument` : copie du document sous
@@ -847,9 +847,9 @@ parse pas la page de connexion comme des données. Tests :
 conflit, non résurrection, purge, formes invalides).
 
 **Taille du document.** D1 plafonne une ligne à 2 000 000 octets
-(`MAX_DOCUMENT_BYTES` dans `worker/sync.js`). Le serveur renvoie `taille` et
-`plafond` à chaque échange, `data.js` les garde dans `state.syncTaille` et
-`state.syncPlafond`, et le panneau Données prévient passé 50 pour cent. À ce
+(`MAX_DOCUMENT_BYTES` dans `worker/sync.js`). Le serveur renvoie `size` et
+`cap` à chaque échange, `data.js` les garde dans `state.syncSize` et
+`state.syncCap`, et le panneau Données prévient passé 50 pour cent. À ce
 moment il faudra archiver l'historique ; rien n'est prévu pour ça, c'est le
 signal qui déclenchera la décision.
 

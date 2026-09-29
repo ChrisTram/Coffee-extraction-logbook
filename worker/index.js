@@ -34,7 +34,7 @@ export default {
      wrangler.jsonc. Without a bound database, nothing to back up. */
   async scheduled(event, env, ctx) {
     if (!env.DB) return;
-    ctx.waitUntil(saveDocument(env.DB, Date.now()).catch(e => console.error("sauvegarde", e && e.message)));
+    ctx.waitUntil(saveDocument(env.DB, Date.now()).catch(e => console.error("backup", e && e.message)));
   },
 
   async fetch(request, env) {
@@ -60,7 +60,7 @@ export default {
     // page as if it were data.
     if (url.pathname === SYNC_PATH) {
       if (!signedIn) {
-        return new Response(JSON.stringify({ erreur: "session-expiree" }), {
+        return new Response(JSON.stringify({ error: "session-expired" }), {
           status: 401,
           headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" },
         });
@@ -213,14 +213,14 @@ async function submitLogin(request, config, url, env) {
   if (env && env.LOGIN_LIMITER) {
     try {
       const { success } = await env.LOGIN_LIMITER.limit({ key: request.headers.get("CF-Connecting-IP") || "inconnue" });
-      if (!success) return loginResponse("/", "trop", 429);
+      if (!success) return loginResponse("/", "too-many", 429);
     } catch (error) { /* limit unavailable: carry on with the delay */ }
   }
   let form;
   try {
     form = await request.formData();
   } catch (error) {
-    return loginResponse("/", "invalide", 400);
+    return loginResponse("/", "invalid", 400);
   }
 
   const username = String(form.get("username") || "").trim();
@@ -232,7 +232,7 @@ async function submitLogin(request, config, url, env) {
 
   if (!usernameOk || !passwordOk) {
     await new Promise((resolve) => setTimeout(resolve, FAILED_ATTEMPT_DELAY_MS));
-    return loginResponse(target, "refuse", 401);
+    return loginResponse(target, "refused", 401);
   }
 
   const response = redirectTo(target, url);
@@ -402,15 +402,15 @@ function escapeHtml(value) {
 
 function loginPage(target, error) {
   const messages = {
-    refuse: {
+    refused: {
       fr: "Identifiant ou mot de passe incorrect.",
       en: "Wrong username or password.",
     },
-    invalide: {
+    invalid: {
       fr: "Formulaire illisible, reessaie.",
       en: "Could not read the form, please try again.",
     },
-    trop: {
+    "too-many": {
       fr: "Trop d'essais depuis cette adresse. Attends une minute.",
       en: "Too many attempts from this address. Wait a minute.",
     },

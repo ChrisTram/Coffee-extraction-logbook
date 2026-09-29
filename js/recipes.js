@@ -786,7 +786,7 @@ function coffeeProfile(coffee) {
 
 /* Coffees rated for the Brikka (body, chocolate), which the Switch's paper
    does not do justice to. These are NOT rang bơ (v8.74): they have their own
-   message, w_profil_brikka, instead of the butter one. */
+   message, warn_brikka_profile, instead of the butter one. */
 const NEVER_SWITCH_NAMES = [
   "Fine Robusta Honey",
   "Midnight Chocolate",
@@ -839,22 +839,22 @@ function combinationWarnings(coffee, method, recipeName, recipes) {
     const pct = coffee.pourcentage_cafe_reel === "" || coffee.pourcentage_cafe_reel === undefined ? 100 : Number(coffee.pourcentage_cafe_reel);
     const coffeeProcess = (coffee.procede || "").toLowerCase();
     if (pct < 100 || (coffee.tag || "").toLowerCase().includes("aromatisé")) {
-      msgs.push(I18N.t("w_aromatise", { pct }));
+      msgs.push(I18N.t("warn_flavoured", { pct }));
     } else if (coffeeProcess.includes("rang bơ") || coffeeProcess.includes("rang bo") || coffeeProcess.includes("tẩm bơ")) {
-      msgs.push(I18N.t("w_rangbo"));
+      msgs.push(I18N.t("warn_rang_bo"));
     } else if (NEVER_SWITCH_NAMES.some(n => (coffee.nom || "").toLowerCase().includes(n.toLowerCase()))) {
-      msgs.push(I18N.t("w_profil_brikka"));
+      msgs.push(I18N.t("warn_brikka_profile"));
     } else if (coffeeProcess.includes("wet hulled") || coffeeProcess.includes("giling basah")) {
-      msgs.push(I18N.t("w_wethulled"));
+      msgs.push(I18N.t("warn_wet_hulled"));
     } else if ((coffee.torrefaction || "").toLowerCase().includes("fonc")) {
-      msgs.push(I18N.t("w_foncee"));
+      msgs.push(I18N.t("warn_dark_roast"));
     } else if ((coffee.machine_recommandee || "") === "Brikka") {
-      msgs.push(I18N.t("w_brikka_reco"));
+      msgs.push(I18N.t("warn_brikka_recommended"));
     }
   }
 
   if (method === "Brikka" && (coffee.machine_recommandee || "") === "Switch") {
-    msgs.push(I18N.t("w_switch_reco"));
+    msgs.push(I18N.t("warn_switch_recommended"));
   }
 
   // NO warning when the chosen recipe differs from `recette_recommandee`.

@@ -176,7 +176,7 @@ async function readDocument(db) {
   try {
     return sanitisePayload(JSON.parse(row.payload));
   } catch (error) {
-    throw Object.assign(new Error("document illisible"), { code: "document-illisible" });
+    throw Object.assign(new Error("unreadable document"), { code: "unreadable-document" });
   }
 }
 
@@ -240,7 +240,7 @@ export async function handleSync(request, env) {
     return await exchangeSync(request, env);
   } catch (error) {
     console.error("sync", error && error.code, error && error.message);
-    return json({ erreur: (error && error.code) || "serveur" }, 500);
+    return json({ error: (error && error.code) || "server" }, 500);
   }
 }
 
@@ -249,10 +249,10 @@ async function exchangeSync(request, env) {
   if (!db) {
     return json(
       {
-        erreur: "sync-non-configuree",
+        error: "sync-not-configured",
         message:
-          "Aucune base D1 liee. Creer la base et le binding DB dans Cloudflare, " +
-          "voir DOCUMENTATION.md section 10.",
+          "No D1 database bound. Create the database and the DB binding in Cloudflare, " +
+          "see DOCUMENTATION.md section 10.",
       },
       503
     );
@@ -263,32 +263,32 @@ async function exchangeSync(request, env) {
   const stored = await readDocument(db);
 
   if (request.method === "GET") {
-    return json({ ...stored, serverTime: now, taille: documentSize(stored), plafond: MAX_DOCUMENT_BYTES });
+    return json({ ...stored, serverTime: now, size: documentSize(stored), cap: MAX_DOCUMENT_BYTES });
   }
-  if (request.method !== "POST") return json({ erreur: "methode-non-permise" }, 405);
+  if (request.method !== "POST") return json({ error: "method-not-allowed" }, 405);
 
   const length = Number(request.headers.get("content-length"));
-  if (length > MAX_BODY_BYTES) return json({ erreur: "trop-gros" }, 413);
+  if (length > MAX_BODY_BYTES) return json({ error: "too-large" }, 413);
   let received;
   try {
     received = await request.json();
   } catch (error) {
-    return json({ erreur: "json-illisible" }, 400);
+    return json({ error: "unreadable-json" }, 400);
   }
 
   const incoming = sanitisePayload(received, now);
-  if (tooManyRows(incoming)) return json({ erreur: "trop-gros" }, 413);
+  if (tooManyRows(incoming)) return json({ error: "too-large" }, 413);
   /* A device older than the document does not know its columns: it is
      refused, and the client offers to reload the page. */
   if (incoming.schema < stored.schema) {
-    return json({ erreur: "version-perimee", schema: stored.schema }, 409);
+    return json({ error: "outdated-version", schema: stored.schema }, 409);
   }
 
   const merged = mergePayloads(stored, incoming, now);
   const text = await writeDocument(db, merged, now);
   const size = encoder.encode(text).length;
   // The response reuses the JSON already written, completed with the exchange fields.
-  const extra = JSON.stringify({ serverTime: now, compte: counts(merged), taille: size, plafond: MAX_DOCUMENT_BYTES });
+  const extra = JSON.stringify({ serverTime: now, counts: counts(merged), size: size, cap: MAX_DOCUMENT_BYTES });
   return new Response(text.slice(0, -1) + "," + extra.slice(1), {
     status: 200,
     headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" },

@@ -180,7 +180,7 @@ const DATA = (() => {
           await writeFile(state.dirHandle, "reglages.csv", csvSerialize(state.reglages, SETTINGS_COLS));
           resolve(true);
         } catch (e) {
-          console.error("Écriture fichier impossible", e);
+          console.error("Could not write the file", e);
           resolve(false);
         }
       }, 400);
@@ -289,14 +289,14 @@ const DATA = (() => {
   function prepareImport(text) {
     if (/^\s*\{/.test(text)) {
       let doc;
-      try { doc = JSON.parse(text); } catch (e) { throw new Error(I18N.t("imp_json_illisible")); }
-      if (!doc || !doc.tables) throw new Error(I18N.t("imp_json_illisible"));
+      try { doc = JSON.parse(text); } catch (e) { throw new Error(I18N.t("import_json_unreadable")); }
+      if (!doc || !doc.tables) throw new Error(I18N.t("import_json_unreadable"));
       const n = Object.values(doc.tables).reduce((s, l) => s + (Array.isArray(l) ? l.length : 0), 0);
       return { table: "tout", doc, n, added: 0, modified: 0, withoutId: 0, duplicates: 0 };
     }
     const rows = csvParse(text);
     const table = detectTable(rows);
-    if (!table) throw new Error(I18N.t("imp_inconnue"));
+    if (!table) throw new Error(I18N.t("import_unknown"));
     const def = IMPORT[table];
     const currentRows = table === "reglages" ? state.reglages : state[table];
     const byId = new Map();
@@ -399,7 +399,7 @@ const DATA = (() => {
 
   async function loadDemo() {
     // A failure leaves the data in place rather than half-emptying the state.
-    if (!await loadDemoScript()) throw new Error("Jeu de démonstration indisponible.");
+    if (!await loadDemoScript()) throw new Error("Demo dataset unavailable.");
     state.cafes = csvParse(DEMO_COFFEES_CSV).map(normalizeCoffee);
     state.extractions = csvParse(DEMO_EXTRACTIONS_CSV).map(normalizeExtraction);
     rejuvenateDemo(state.cafes, state.extractions);
@@ -515,8 +515,8 @@ const DATA = (() => {
       /* MERGED with the state as it is on return, no longer substituted:
          whatever was entered during the exchange stays. */
       adoptTables(SYNC.mergeStates(received, localPayload()));
-      state.syncSize = Number(received.taille) || 0;
-      state.syncCap = Number(received.plafond) || 0;
+      state.syncSize = Number(received.size) || 0;
+      state.syncCap = Number(received.cap) || 0;
       migrateData();
       await saveLocal();
       saveFiles();
@@ -559,7 +559,7 @@ const DATA = (() => {
     try {
       await saveLocal();
     } catch (e) {
-      console.error("Stockage local impossible", e);
+      console.error("Local storage unavailable", e);
       if (typeof window !== "undefined" && window.dispatchEvent) window.dispatchEvent(new CustomEvent("carnet-stockage-ko"));
     }
     saveFiles();
@@ -751,7 +751,7 @@ const DATA = (() => {
           if (ta !== null) state.achats = carryTimestamps(csvParse(ta).map(normalizePurchase), state.achats, PURCHASE_COLS);
           if (tg !== null) state.reglages = carryTimestamps(csvParse(tg).map(normalizeSettings), state.reglages, SETTINGS_COLS).slice(0, 1);
         }
-      } catch (e) { console.warn("Relecture du dossier lié impossible", e); }
+      } catch (e) { console.warn("Could not reread the linked folder", e); }
     }
     const tombstones = await kvGet("tombes");
     if (tombstones && typeof tombstones === "object") state.tombes = tombstones;

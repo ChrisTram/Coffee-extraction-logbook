@@ -68,24 +68,24 @@
 
   function drawShelf(id) {
     const jars = shelfData();
-    if (!jars.length) { showEmpty(id, "de_etagere_vide"); return; }
+    if (!jars.length) { showEmpty(id, "drawing_shelf_empty"); return; }
     const L = 320, step = L / Math.max(jars.length, 4), w = Math.min(46, step - 14);
     let s = '<line x1="8" y1="128" x2="' + (L - 8) + '" y2="128" class="dw-plank"></line>';
     jars.forEach((b, i) => {
       const x = step * i + (step - w) / 2, top = 26, low = 126, level = low - ((low - top - 4) * b.pc) / 100;
       s += '<g class="dw-jar dw-' + b.state + '" data-sheet="' + escapeHtml(b.coffee.id) + '" tabindex="0" role="button" aria-label="' +
-        escapeHtml(I18N.t("de_bocal_aria", { c: b.coffee.nom, n: b.tasses })) + '"><title>' + escapeHtml(b.coffee.nom) + "</title>" +
+        escapeHtml(I18N.t("drawing_jar_aria", { c: b.coffee.nom, n: b.tasses })) + '"><title>' + escapeHtml(b.coffee.nom) + "</title>" +
         '<rect x="' + x.toFixed(1) + '" y="' + top + '" width="' + w.toFixed(1) + '" height="' + (low - top) + '" rx="7" class="dw-glass"></rect>' +
         '<rect x="' + (x + 3).toFixed(1) + '" y="' + level.toFixed(1) + '" width="' + (w - 6).toFixed(1) + '" height="' +
         Math.max(0, low - 3 - level).toFixed(1) + '" rx="4" class="dw-grains" style="fill-opacity:' + (b.tasses <= 3 ? 0.45 : 0.85) + '"></rect>' +
         '<rect x="' + (x + 8).toFixed(1) + '" y="' + (top - 7) + '" width="' + (w - 16).toFixed(1) + '" height="7" rx="2" class="dw-lid"></rect>' +
         '<text x="' + (x + w / 2).toFixed(1) + '" y="143" text-anchor="middle" class="dw-strong">' + escapeHtml(brief(b.coffee.nom, 11)) + "</text>" +
-        '<text x="' + (x + w / 2).toFixed(1) + '" y="155" text-anchor="middle">' + escapeHtml(b.tasses === 0 ? I18N.t("de_vide") : I18N.t(b.tasses === 1 ? "de_tasse_reste" : "de_tasses", { n: b.tasses })) + "</text></g>";
+        '<text x="' + (x + w / 2).toFixed(1) + '" y="155" text-anchor="middle">' + escapeHtml(b.tasses === 0 ? I18N.t("drawing_bag_empty") : I18N.t(b.tasses === 1 ? "drawing_one_cup_left" : "drawing_cups_left", { n: b.tasses })) + "</text></g>";
     });
     const low = jars.filter(b => b.tasses <= 3);
     setDrawing(id, s, low.length
-      ? I18N.t("de_etagere_racheter", { c: low.map(b => b.coffee.nom).join(", ") })
-      : I18N.t("de_etagere_ok"));
+      ? I18N.t("drawing_shelf_rebuy", { c: low.map(b => b.coffee.nom).join(", ") })
+      : I18N.t("drawing_shelf_ok"));
   }
 
   // ---------- The clock ----------
@@ -99,7 +99,7 @@
       .map(e => ({ h: Number(String(e.date_heure).slice(11, 13)) + Number(String(e.date_heure).slice(14, 16)) / 60,
         n: Number(e.note_sur_10), m: e.methode, id: e.id }))
       .filter(t => Number.isFinite(t.h));
-    if (cups.length < MIN) { showEmpty(id, "de_horloge_vide", { n: MIN }); return; }
+    if (cups.length < MIN) { showEmpty(id, "drawing_clock_empty", { n: MIN }); return; }
     const C = [104, 100], R0 = 20, R1 = 84;
     const pt = (h, r) => { const a = -Math.PI / 2 + (h / 24) * Math.PI * 2; return [C[0] + Math.cos(a) * r, C[1] + Math.sin(a) * r]; };
     let s = '<circle cx="' + C[0] + '" cy="' + C[1] + '" r="' + R1 + '" class="dw-dial"></circle>' +
@@ -112,19 +112,19 @@
       const [x, y] = pt(t.h, R0 + ((Math.max(3, t.n) - 3) / 7) * (R1 - R0));
       s += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="4" class="dw-point-' + String(t.m || "").toLowerCase() + '"' + ' data-cup="' + escapeHtml(t.id) + '"></circle>';
     });
-    const moments = [["de_matin", t => t.h < 12], ["de_aprem", t => t.h >= 12 && t.h < 18], ["de_soir", t => t.h >= 18]]
+    const moments = [["drawing_morning", t => t.h < 12], ["drawing_afternoon", t => t.h >= 12 && t.h < 18], ["drawing_evening", t => t.h >= 18]]
       .map(([key, f]) => { const ns = cups.filter(f).map(t => t.n); return { key: key, n: ns.length, mean: ns.length ? average(ns) : null }; })
       .filter(m => m.n >= MIN);
     let y = 58;
     moments.forEach(m => {
       s += '<text x="214" y="' + y + '" class="dw-strong">' + escapeHtml(I18N.t(m.key)) + "</text>" +
-        '<text x="214" y="' + (y + 13) + '">' + escapeHtml(I18N.t("de_moyenne", { m: fmtRating(m.mean), n: m.n })) + "</text>";
+        '<text x="214" y="' + (y + 13) + '">' + escapeHtml(I18N.t("drawing_average", { m: fmtRating(m.mean), n: m.n })) + "</text>";
       y += 36;
     });
     const sorted = moments.slice().sort((a, b) => b.mean - a.mean);
     setDrawing(id, s, sorted.length >= 2 && sorted[0].mean - sorted[sorted.length - 1].mean >= 0.4
-      ? I18N.t("de_horloge_lecture", { a: I18N.t(sorted[0].key), b: I18N.t(sorted[sorted.length - 1].key) })
-      : I18N.t("de_horloge_egal"));
+      ? I18N.t("drawing_clock_reading", { a: I18N.t(sorted[0].key), b: I18N.t(sorted[sorted.length - 1].key) })
+      : I18N.t("drawing_clock_level"));
   }
 
   // ---------- The extraction spectrum ----------
@@ -155,7 +155,7 @@
 
   function drawSpectrum(id) {
     const rows = spectrumData();
-    if (!rows.length) { showEmpty(id, "de_spectre_vide", { n: MIN }); return; }
+    if (!rows.length) { showEmpty(id, "drawing_spectrum_empty", { n: MIN }); return; }
     const x = v => 24 + ((v + 2) / 4) * 272, H = 26 + rows.length * 40;
     let s = '<rect x="' + x(-0.4).toFixed(1) + '" y="8" width="' + (x(0.4) - x(-0.4)).toFixed(1) + '" height="' + (H - 18) + '" rx="6" class="dw-zone"></rect>';
     rows.forEach((r, i) => {
@@ -172,15 +172,15 @@
       });
       s += '<path d="M' + x(r.mean).toFixed(1) + " " + (y + 4) + ' l-4 7 l8 0 z" class="dw-average"></path>';
     });
-    s += '<text x="' + x(-2) + '" y="' + (H + 2) + '">' + escapeHtml(I18N.t("de_sous")) + "</text>" +
-      '<text x="' + x(0) + '" y="' + (H + 2) + '" text-anchor="middle" class="dw-strong">' + escapeHtml(I18N.t("de_equilibre")) + "</text>" +
-      '<text x="' + x(2) + '" y="' + (H + 2) + '" text-anchor="end">' + escapeHtml(I18N.t("de_sur")) + "</text>";
+    s += '<text x="' + x(-2) + '" y="' + (H + 2) + '">' + escapeHtml(I18N.t("drawing_under")) + "</text>" +
+      '<text x="' + x(0) + '" y="' + (H + 2) + '" text-anchor="middle" class="dw-strong">' + escapeHtml(I18N.t("drawing_balanced")) + "</text>" +
+      '<text x="' + x(2) + '" y="' + (H + 2) + '" text-anchor="end">' + escapeHtml(I18N.t("drawing_over")) + "</text>";
     const el = document.getElementById(id);
     if (el) el.setAttribute("viewBox", "0 0 320 " + (H + 8));
     const leaning = rows.filter(r => Math.abs(r.mean) >= 0.4).sort((a, b) => Math.abs(b.mean) - Math.abs(a.mean))[0];
     setDrawing(id, s, leaning
-      ? I18N.t(leaning.mean > 0 ? "de_spectre_sur" : "de_spectre_sous", { r: I18N.tr(leaning.recette) })
-      : I18N.t("de_spectre_centre"));
+      ? I18N.t(leaning.mean > 0 ? "drawing_spectrum_over" : "drawing_spectrum_under", { r: I18N.tr(leaning.recette) })
+      : I18N.t("drawing_spectrum_centre"));
   }
 
   // ---------- The grinder map ----------
@@ -207,7 +207,7 @@
 
   function drawGrinder(id, coffeeId) {
     const rows = grinderData(coffeeId);
-    if (!rows.length) { showEmpty(id, "de_moulin_vide"); return; }
+    if (!rows.length) { showEmpty(id, "drawing_grinder_empty"); return; }
     const x = um => 16 + ((um - 300) / 600) * 290;
     let s = "";
     [400, 500, 600, 700, 800].forEach(um => {
@@ -233,10 +233,10 @@
     const el = document.getElementById(id);
     if (el) el.setAttribute("viewBox", "0 0 320 " + (rows.length * 50 + 26));
     const d = rows.filter(r => r.golden).sort((a, b) => b.golden.mean - a.golden.mean)[0];
-    setDrawing(id, s, d ? I18N.t("de_moulin_lecture", {
+    setDrawing(id, s, d ? I18N.t("drawing_grinder_reading", {
       m: I18N.machine(d.m), a: GRIND.dialFromClicks(d.golden.from), b: GRIND.dialFromClicks(d.golden.a),
       x: fmtRating(d.golden.mean), n: d.golden.n,
-    }) : I18N.t("de_moulin_sans_zone", { n: MIN }));
+    }) : I18N.t("drawing_grinder_no_zone", { n: MIN }));
   }
 
   // ---------- A coffee's fingerprint (coffee sheet, v8.50) ----------
@@ -265,9 +265,9 @@
     const all = analyzableExts();
     const hasTags = e => String(e.descripteurs || "").trim() !== "";
     const own = all.filter(e => e.cafe_id === coffeeId && hasTags(e));
-    if (own.length < MIN) { showEmpty(id, "de_empreinte_vide", { n: MIN }); return; }
+    if (own.length < MIN) { showEmpty(id, "drawing_fingerprint_empty", { n: MIN }); return; }
     const others = otherId ? all.filter(e => e.cafe_id === otherId && hasTags(e)) : all.filter(hasTags);
-    if (otherId && others.length < MIN) { showEmpty(id, "de_empreinte_vide_autre", { n: MIN }); return; }
+    if (otherId && others.length < MIN) { showEmpty(id, "drawing_fingerprint_empty_other", { n: MIN }); return; }
     const a = profile(own), b = profile(others);
     const other = otherId ? DATA.state.cafes.find(c => c.id === otherId) : null;
     const N = DESCRIPTOR_GROUPS.length, C = [160, 104], R = 72;
@@ -289,8 +289,8 @@
     const most = gaps[0], least = gaps[gaps.length - 1];
     const v = { p: I18N.group(most.g).toLowerCase(), m: I18N.group(least.g).toLowerCase(), c: other ? other.nom : "" };
     setDrawing(id, s, most.d >= 0.05 && least.d <= -0.05
-      ? I18N.t(other ? "de_empreinte_lecture_autre" : "de_empreinte_lecture", v)
-      : I18N.t(other ? "de_empreinte_proche_autre" : "de_empreinte_proche", v));
+      ? I18N.t(other ? "drawing_fingerprint_reading_other" : "drawing_fingerprint_reading", v)
+      : I18N.t(other ? "drawing_fingerprint_close_other" : "drawing_fingerprint_close", v));
   }
 
   // ---------- Your trajectory (coffee sheet, v8.50) ----------
@@ -311,7 +311,7 @@
       .filter(e => Number.isFinite(heat(e)) && heat(e) > 0)
       .sort((a, b) => String(a.date_heure).localeCompare(String(b.date_heure)))
       .map(e => ({ c: GRIND.parseDial(String(e.mouture_dial)).clicks, y: heat(e), n: Number(e.note_sur_10), dial: e.mouture_dial, id: e.id }));
-    if (cups.length < MIN) { showEmpty(id, "de_trajectoire_vide", { n: MIN }); return; }
+    if (cups.length < MIN) { showEmpty(id, "drawing_trajectory_empty", { n: MIN }); return; }
     const cs = cups.map(t => t.c), ys = cups.map(t => t.y);
     const c0 = Math.min(...cs) - 2, c1 = Math.max(...cs) + 2, y0 = Math.min(...ys) - 1, y1 = Math.max(...ys) + 1;
     const x = c => 36 + ((c - c0) / (c1 - c0)) * 270, y = v => 150 - ((v - y0) / (y1 - y0)) * 130;
@@ -331,8 +331,8 @@
         '" style="fill-opacity:' + opacity(t.n) + '"' + ' data-cup="' + escapeHtml(t.id) + '"></circle>';
     });
     const best = cups.slice().sort((a, b) => b.n - a.n)[0];
-    const unit = v => machine === "Switch" ? I18N.t("de_degres", { v: fmtDecimal(v, 0) }) : I18N.t("j_feu", { f: v });
-    setDrawing(id, s, I18N.t("de_trajectoire_lecture", {
+    const unit = v => machine === "Switch" ? I18N.t("drawing_degrees", { v: fmtDecimal(v, 0) }) : I18N.t("twins_heat", { f: v });
+    setDrawing(id, s, I18N.t("drawing_trajectory_reading", {
       r: I18N.tr(recipe || ""), n: cups.length, d: best.dial, c: unit(best.y), x: fmtRating(best.n),
     }));
   }
@@ -374,20 +374,20 @@
     });
     const facts = [];
     if (avg !== null && avgBefore !== null && rated.length >= MIN && ratedBefore.length >= MIN && Math.abs(avg - avgBefore) >= 0.4) {
-      facts.push(I18N.t(avg > avgBefore ? "rc_mieux" : "rc_moins", { x: fmtRating(Math.abs(avg - avgBefore)), s: Math.abs(avg - avgBefore) >= 2 ? "s" : "" }));
+      facts.push(I18N.t(avg > avgBefore ? "recap_better" : "recap_worse", { x: fmtRating(Math.abs(avg - avgBefore)), s: Math.abs(avg - avgBefore) >= 2 ? "s" : "" }));
     }
     const byCoffee = {};
     cups.forEach(e => { byCoffee[e.cafe_id] = (byCoffee[e.cafe_id] || 0) + 1; });
     const [coffeeId, coffeeCount] = Object.entries(byCoffee).sort((a, b) => b[1] - a[1])[0];
     const coffee = DATA.state.cafes.find(c => c.id === coffeeId);
     if (coffee && coffeeCount * 2 >= cups.length && Object.keys(byCoffee).length > 1) {
-      facts.push(I18N.t("rc_cafe", { c: coffee.nom, n: coffeeCount, t: cups.length }));
+      facts.push(I18N.t("recap_coffee", { c: coffee.nom, n: coffeeCount, t: cups.length }));
     }
     const weekEnd = new Date(start); weekEnd.setDate(weekEnd.getDate() + 7);
     DATA.state.achats.filter(a => a.date_ouverture && new Date(a.date_ouverture + "T12:00") >= start &&
       new Date(a.date_ouverture + "T12:00") < weekEnd).forEach(a => {
       const c = DATA.state.cafes.find(x => x.id === a.cafe_id);
-      if (c) facts.push(I18N.t("rc_ouvert", { c: c.nom, j: new Date(a.date_ouverture + "T12:00").toLocaleDateString(I18N.locale(), { weekday: "long" }) }));
+      if (c) facts.push(I18N.t("recap_opened", { c: c.nom, j: new Date(a.date_ouverture + "T12:00").toLocaleDateString(I18N.locale(), { weekday: "long" }) }));
     });
     const best = rated.slice().sort((a, b) => Number(b.note_sur_10) - Number(a.note_sur_10))[0];
     return { start: start, tasses: cups.length, rated: rated.length, mean: avg, meanBefore: avgBefore, days: days, facts: facts, best: best };
@@ -409,7 +409,7 @@
     const tint = avg => avg === null ? 0.5 : Math.max(0.28, Math.min(1, (avg - 4) / 5));
     const bars = r.days.map(j => {
       const name = j.date.toLocaleDateString(I18N.locale(), { weekday: "long" });
-      const title = j.n ? I18N.t(j.mean !== null ? "rc_jour_note" : "rc_jour", { j: name, n: j.n, s: j.n > 1 ? "s" : "", m: j.mean !== null ? fmtRating(j.mean) : "" }) : name + " : 0";
+      const title = j.n ? I18N.t(j.mean !== null ? "recap_day_rated" : "recap_day", { j: name, n: j.n, s: j.n > 1 ? "s" : "", m: j.mean !== null ? fmtRating(j.mean) : "" }) : name + " : 0";
       const bar = '<i style="--h:' + (j.n ? Math.max(0.12, j.n / max) : 0.06).toFixed(2) + ";--o:" + tint(j.mean).toFixed(2) + '"></i><small>' +
         escapeHtml(j.date.toLocaleDateString(I18N.locale(), { weekday: "narrow" })) + "</small>";
       return j.n
@@ -420,23 +420,23 @@
     const bestCoffee = m ? DATA.state.cafes.find(c => c.id === m.cafe_id) : null;
     card.hidden = false;
     card.innerHTML =
-      '<div class="rc-head"><h3>' + escapeHtml(I18N.t("rc_titre", {
+      '<div class="rc-head"><h3>' + escapeHtml(I18N.t("recap_title", {
         // "du 14 au 20 septembre": the month is written only once if it is the same.
         a: r.start.getMonth() === end.getMonth() ? String(r.start.getDate()) : formatDay(r.start), b: formatDay(end) })) + "</h3>" +
       // The facts on the title line (v8.67): in the page header, one line less.
       (r.facts.length ? '<ul class="rc-facts">' + r.facts.map(f => "<li>" + escapeHtml(f) + "</li>").join("") + "</ul>" : "") +
-      '<button type="button" class="drawing-link" id="recap-close">' + escapeHtml(I18N.t("rc_fermer")) + "</button></div>" +
+      '<button type="button" class="drawing-link" id="recap-close">' + escapeHtml(I18N.t("recap_close")) + "</button></div>" +
       '<div class="rc-body">' +
-      '<div class="rc-figure"><b>' + r.tasses + "</b><span>" + escapeHtml(I18N.t("rc_tasses")) + "</span></div>" +
-      (r.mean !== null ? '<div class="rc-figure"><b>' + fmtRating(r.mean) + "</b><span>" + escapeHtml(I18N.t("rc_moyenne", { n: r.rated })) + "</span></div>" : "") +
+      '<div class="rc-figure"><b>' + r.tasses + "</b><span>" + escapeHtml(I18N.t("recap_cups")) + "</span></div>" +
+      (r.mean !== null ? '<div class="rc-figure"><b>' + fmtRating(r.mean) + "</b><span>" + escapeHtml(I18N.t("recap_average", { n: r.rated })) + "</span></div>" : "") +
       /* The best cup states its coffee AND its recipe (v8.60): "Là Việt Balanced,
          mercredi" alone did not let you remake it, since the same coffee goes
          through several recipes. The whole thing opens the cup in a bubble. */
       (m ? '<div class="rc-figure rc-best" data-cup="' + escapeHtml(m.id) + '"><b>' + fmtRating(Number(m.note_sur_10)) + "</b><span>" +
-        escapeHtml(I18N.t("rc_meilleure", { j: new Date(m.date_heure).toLocaleDateString(I18N.locale(), { weekday: "long" }) })) +
-        "</span><em>" + escapeHtml(bestCoffee ? bestCoffee.nom : I18N.t("rc_sans_cafe")) + "</em><em>" +
-        escapeHtml(m.recette ? I18N.tr(m.recette) : I18N.t("rc_sans_recette")) + "</em></div>" : "") +
-      '<div class="rc-week" aria-label="' + escapeHtml(I18N.t("rc_barres")) + '">' + bars + "</div></div>";
+        escapeHtml(I18N.t("recap_best", { j: new Date(m.date_heure).toLocaleDateString(I18N.locale(), { weekday: "long" }) })) +
+        "</span><em>" + escapeHtml(bestCoffee ? bestCoffee.nom : I18N.t("recap_no_coffee")) + "</em><em>" +
+        escapeHtml(m.recette ? I18N.tr(m.recette) : I18N.t("recap_no_recipe")) + "</em></div>" : "") +
+      '<div class="rc-week" aria-label="' + escapeHtml(I18N.t("recap_bars")) + '">' + bars + "</div></div>";
     card.querySelectorAll("[data-day]").forEach(b => b.addEventListener("click", () =>
       UI.openHistoryOn({ "h-from": b.dataset.day, "h-to": b.dataset.day })));
     $("#recap-close").addEventListener("click", () => {
@@ -461,7 +461,7 @@
 
   function drawPodium(id) {
     const p = podiumData();
-    if (!p.length) { showEmpty(id, "de_podium_vide", { n: MIN }); return; }
+    if (!p.length) { showEmpty(id, "drawing_podium_empty", { n: MIN }); return; }
     // Order of the steps: second, first, third.
     const places = [p[1], p[0], p[2]];
     const heights = [70, 96, 52];
@@ -471,14 +471,14 @@
       const rank = i === 1 ? 1 : i === 0 ? 2 : 3;
       const x = 22 + i * 96, w = 84, h = heights[i], top = 130 - h;
       const link = m.r ? ' data-guide-recipe="' + escapeHtml(m.r.id) + '" tabindex="0" role="button" aria-label="' +
-        escapeHtml(I18N.t("de_podium_aria", { r: I18N.tr(m.nom), m: fmtRating(m.mean) })) + '"' : "";
+        escapeHtml(I18N.t("drawing_podium_aria", { r: I18N.tr(m.nom), m: fmtRating(m.mean) })) + '"' : "";
       s += '<g class="dw-stair dw-rank-' + rank + '"' + link + "><title>" + escapeHtml(I18N.tr(m.nom)) + "</title>" +
         '<rect x="' + x + '" y="' + top + '" width="' + w + '" height="' + h + '" rx="6" class="dw-stair-block"></rect>' +
         '<text x="' + (x + w / 2) + '" y="' + (top + 26) + '" text-anchor="middle" class="dw-stair-rating">' + fmtRating(m.mean) + "</text>" +
         '<text x="' + (x + w / 2) + '" y="' + (top - 7) + '" text-anchor="middle" class="dw-strong">' + escapeHtml(brief(I18N.tr(m.nom), 17)) + "</text>" +
-        '<text x="' + (x + w / 2) + '" y="144" text-anchor="middle">' + escapeHtml(I18N.t("de_podium_n", { n: m.n })) + "</text></g>";
+        '<text x="' + (x + w / 2) + '" y="144" text-anchor="middle">' + escapeHtml(I18N.t("drawing_podium_count", { n: m.n })) + "</text></g>";
     });
-    setDrawing(id, s, I18N.t("de_podium_lecture", { r: I18N.tr(p[0].nom), m: fmtRating(p[0].mean), n: p[0].n }));
+    setDrawing(id, s, I18N.t("drawing_podium_reading", { r: I18N.tr(p[0].nom), m: fmtRating(p[0].mean), n: p[0].n }));
   }
 
   // ---------- Your progress (v8.54) ----------
@@ -490,7 +490,7 @@
   function drawProgress(id) {
     const rated = analyzableExts().filter(e => e.note_sur_10 !== "");
     const series = TUNING.rollingAverage(rated, 5).filter(p => p.value !== null);
-    if (series.length < 2) { showEmpty(id, "de_progression_vide"); return; }
+    if (series.length < 2) { showEmpty(id, "drawing_progress_empty"); return; }
     const t = d => new Date(d).getTime();
     const t0 = t(series[0].date), t1 = Math.max(t(series[series.length - 1].date), t0 + 86400000);
     const vals = series.map(p => p.value);
@@ -510,13 +510,13 @@
     DATA.state.achats.forEach(a => {
       const when = a.date_ouverture || "";
       const c = DATA.state.cafes.find(x => x.id === a.cafe_id);
-      if (when && c) milestones.push({ date: when + "T12:00", lib: I18N.t("de_jalon_sachet", { c: brief(c.nom, 16) }) });
+      if (when && c) milestones.push({ date: when + "T12:00", lib: I18N.t("drawing_milestone_bag", { c: brief(c.nom, 16) }) });
     });
     const seenRecipes = new Set();
     rated.slice().sort((a, b) => String(a.date_heure).localeCompare(String(b.date_heure))).forEach(e => {
       if (!e.recette || seenRecipes.has(e.recette)) return;
       seenRecipes.add(e.recette);
-      milestones.push({ date: e.date_heure, lib: I18N.t("de_jalon_recette", { r: brief(I18N.tr(e.recette), 16) }) });
+      milestones.push({ date: e.date_heure, lib: I18N.t("drawing_milestone_recipe", { r: brief(I18N.tr(e.recette), 16) }) });
     });
     const inRange = milestones.filter(j => t(j.date) > t0 && t(j.date) <= t1).sort((a, b) => t(a.date) - t(b.date));
     const valueAt = d => { let v = series[0].value; series.forEach(p => { if (t(p.date) <= t(d)) v = p.value; }); return v; };
@@ -533,7 +533,7 @@
     if (el) el.setAttribute("viewBox", "0 0 320 " + (132 + named.length * 10));
     const start = series[0], end = series[series.length - 1];
     const formatDay = s2 => new Date(s2).toLocaleDateString(I18N.locale(), { day: "numeric", month: "long" });
-    setDrawing(id, s, I18N.t(end.value >= start.value ? "de_progression_monte" : "de_progression_baisse", {
+    setDrawing(id, s, I18N.t(end.value >= start.value ? "drawing_progress_up" : "drawing_progress_down", {
       a: fmtRating(start.value), b: fmtRating(end.value), d: formatDay(start.date),
     }));
   }
@@ -585,7 +585,7 @@
 
   function drawTimeline(id) {
     const bags = timelineData();
-    if (!bags.length) { showEmpty(id, "de_frise_vide"); return; }
+    if (!bags.length) { showEmpty(id, "drawing_ribbon_empty"); return; }
     const today = new Date();
     const t0 = Math.min(...bags.map(s => s.start.getTime())), t1 = Math.max(today.getTime(), ...bags.map(s => s.end.getTime()));
     const x = d => 10 + ((d.getTime() - t0) / Math.max(1, t1 - t0)) * 300;
@@ -601,7 +601,7 @@
       const y = 10 + i * 18, a = x(b.start), w = Math.max(10, x(b.end) - a);
       const label = brief(b.coffee.nom, 18) + (b.mean !== null ? " · " + fmtRating(b.mean) : "");
       s += '<g class="dw-ribbon' + (b.ongoing ? " in-progress" : "") + '" data-sheet="' + escapeHtml(b.coffee.id) + '" tabindex="0" role="button" aria-label="' +
-        escapeHtml(I18N.t("de_ruban_aria", { c: b.coffee.nom, n: b.n })) + '"><title>' + escapeHtml(b.coffee.nom) + "</title>" +
+        escapeHtml(I18N.t("drawing_ribbon_aria", { c: b.coffee.nom, n: b.n })) + '"><title>' + escapeHtml(b.coffee.nom) + "</title>" +
         '<rect x="' + a.toFixed(1) + '" y="' + y + '" width="' + w.toFixed(1) + '" height="13" rx="6.5" class="dw-ribbon-block" style="fill-opacity:' +
         (b.mean === null ? 0.18 : opacity(b.mean)) + '"></rect>' +
         '<text x="' + Math.min(a + 6, 250).toFixed(1) + '" y="' + (y + 10) + '" class="dw-ribbon-text">' + escapeHtml(label) + "</text></g>";
@@ -610,8 +610,8 @@
     if (el) el.setAttribute("viewBox", "0 0 320 " + (H + 18));
     const notes = bags.filter(b => b.mean !== null && b.n >= MIN).sort((a, b) => b.mean - a.mean);
     setDrawing(id, s, notes.length >= 2
-      ? I18N.t("de_frise_lecture", { a: notes[0].coffee.nom, x: fmtRating(notes[0].mean), b: notes[notes.length - 1].coffee.nom, y: fmtRating(notes[notes.length - 1].mean) })
-      : I18N.t("de_frise_courte"));
+      ? I18N.t("drawing_ribbon_reading", { a: notes[0].coffee.nom, x: fmtRating(notes[0].mean), b: notes[notes.length - 1].coffee.nom, y: fmtRating(notes[notes.length - 1].mean) })
+      : I18N.t("drawing_ribbon_short"));
   }
 
   // ---------- Every point is a cup (v8.55) ----------
@@ -638,20 +638,20 @@
     const when = isNaN(d) ? "" : d.toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" }) + ", " +
       d.toLocaleTimeString(I18N.locale(), { hour: "2-digit", minute: "2-digit" });
     // The bubble is named after its cup (v8.76), no longer a generic "Une tasse".
-    b.setAttribute("aria-label", I18N.t("bulle_aria", { q: when || e.date_heure }) + (coffee ? ", " + coffee.nom : ""));
+    b.setAttribute("aria-label", I18N.t("bubble_aria", { q: when || e.date_heure }) + (coffee ? ", " + coffee.nom : ""));
     const settings = [e.dose_g ? e.dose_g + " g" : "", e.eau_g ? e.eau_g + " g" : "", e.mouture_dial,
       e.methode === "Switch" && e.temperature_c !== "" ? e.temperature_c + " °C" : "",
-      e.methode === "Brikka" && e.puissance_feu !== "" ? I18N.t("j_feu", { f: e.puissance_feu }) : ""].filter(Boolean).join(" · ");
+      e.methode === "Brikka" && e.puissance_feu !== "" ? I18N.t("twins_heat", { f: e.puissance_feu }) : ""].filter(Boolean).join(" · ");
     const tastes = String(e.descripteurs || "").split("|").filter(Boolean).slice(0, 4).map(t => escapeHtml(I18N.tag(t))).join(", ");
     b.innerHTML =
       '<div class="bt-head"><span class="bt-when">' + escapeHtml(when) + "</span>" +
-      '<button type="button" class="bt-close" data-bubble="fermer" aria-label="' + escapeHtml(I18N.t("bt_fermer")) + '">×</button></div>' +
+      '<button type="button" class="bt-close" data-bubble="fermer" aria-label="' + escapeHtml(I18N.t("bubble_close")) + '">×</button></div>' +
       '<div class="bt-body"><div><b class="bt-coffee">' + escapeHtml(coffee ? coffee.nom : "") + "</b>" +
       '<span><i class="dot-method ' + String(e.methode || "").toLowerCase() + '"></i>' + escapeHtml(I18N.tr(e.recette || "")) + "</span>" +
       "<span>" + escapeHtml(settings) + "</span>" + (tastes ? '<span class="bt-tastes">' + tastes + "</span>" : "") + "</div>" +
       '<b class="bt-rating">' + (e.note_sur_10 === "" ? "·" : fmtRating(Number(e.note_sur_10))) + "</b></div>" +
-      '<div class="bt-actions"><button type="button" class="btn btn-small" data-bubble="modifier">' + escapeHtml(I18N.t("btn_modifier")) + "</button>" +
-      '<button type="button" class="btn btn-small btn-primary" data-bubble="refaire">' + escapeHtml(I18N.t("bt_refaire")) + "</button></div>";
+      '<div class="bt-actions"><button type="button" class="btn btn-small" data-bubble="modifier">' + escapeHtml(I18N.t("btn_edit")) + "</button>" +
+      '<button type="button" class="btn btn-small btn-primary" data-bubble="refaire">' + escapeHtml(I18N.t("bubble_redo")) + "</button></div>";
     b.hidden = false;
     bubbleId = id;
     // As close as possible to the tap, without leaving the screen.
@@ -705,10 +705,10 @@
       zone.hidden = !classes.length;
       zone.innerHTML = classes.slice(0, COFFEE_TINTS).map(([id, n], i) => {
         const c = DATA.state.cafes.find(x => x.id === id) || {};
-        return '<button type="button" class="lc-coffee" data-sheet="' + escapeHtml(id) + '" title="' + escapeHtml(I18N.t("lc_fiche")) + '">' +
+        return '<button type="button" class="lc-coffee" data-sheet="' + escapeHtml(id) + '" title="' + escapeHtml(I18N.t("bubble_open_sheet")) + '">' +
           '<i style="background:var(--coffee-' + (i + 1) + ')"></i>' + escapeHtml(c.nom || "") + "<small>" + n + "</small></button>";
       }).join("") + (others > 0
-        ? '<span class="lc-coffee lc-others"><i></i>' + escapeHtml(I18N.t("lc_autres")) + "<small>" + others + "</small></span>" : "");
+        ? '<span class="lc-coffee lc-others"><i></i>' + escapeHtml(I18N.t("bubble_other_coffees")) + "<small>" + others + "</small></span>" : "");
     }
     return days.map(j => j.map(e => { const c = DATA.coffeeOf(e); return c && rank.has(c.id) ? rank.get(c.id) : -1; }));
   }
@@ -758,15 +758,15 @@
   function renderPanel() {
     const order = drawingOrder();
     const name = key => { const t = document.querySelector('[data-drawing="' + key + '"] h4'); return t ? t.textContent : key; };
-    $("#drawings-panel").innerHTML = '<p class="dp-help">' + escapeHtml(I18N.t("dp_aide")) + "</p><ol class=\"dp-list\">" +
+    $("#drawings-panel").innerHTML = '<p class="dp-help">' + escapeHtml(I18N.t("drawings_panel_help")) + "</p><ol class=\"dp-list\">" +
       order.map((o, i) => '<li><label><input type="checkbox" data-dp-show="' + o.key + '"' + (o.visible ? " checked" : "") + "> " +
         escapeHtml(name(o.key)) + '</label><span class="dp-arrows">' +
         '<button type="button" class="btn-row" data-dp-up="' + o.key + '"' + (i === 0 ? " disabled" : "") +
-        ' aria-label="' + escapeHtml(I18N.t("dp_monter", { d: name(o.key) })) + '">↑</button>' +
+        ' aria-label="' + escapeHtml(I18N.t("drawings_panel_up", { d: name(o.key) })) + '">↑</button>' +
         '<button type="button" class="btn-row" data-dp-down="' + o.key + '"' + (i === order.length - 1 ? " disabled" : "") +
-        ' aria-label="' + escapeHtml(I18N.t("dp_descendre", { d: name(o.key) })) + '">↓</button></span></li>').join("") +
-      '</ol><div class="dp-footer"><button type="button" class="btn btn-small" data-dp-origin>' + escapeHtml(I18N.t("dp_origine")) + "</button>" +
-      '<button type="button" class="btn btn-small btn-primary" data-dp-done>' + escapeHtml(I18N.t("dp_fini")) + "</button></div>";
+        ' aria-label="' + escapeHtml(I18N.t("drawings_panel_down", { d: name(o.key) })) + '">↓</button></span></li>').join("") +
+      '</ol><div class="dp-footer"><button type="button" class="btn btn-small" data-dp-origin>' + escapeHtml(I18N.t("drawings_panel_reset")) + "</button>" +
+      '<button type="button" class="btn btn-small btn-primary" data-dp-done>' + escapeHtml(I18N.t("drawings_panel_done")) + "</button></div>";
   }
   async function saveOrder(order) {
     fallbacks.dessins = order.map(o => (o.visible ? "" : "!") + o.key).join(",");

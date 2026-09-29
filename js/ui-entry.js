@@ -70,9 +70,9 @@
     const sel = $("#f-coffee");
     const value = keepId || sel.value;
     const keptInactive = DATA.state.cafes.find(c => c.id === value && c.actif === 0);
-    sel.innerHTML = '<option value="">' + I18N.t("choisir_cafe") + "</option>" +
+    sel.innerHTML = '<option value="">' + I18N.t("pick_coffee") + "</option>" +
       selectableCoffees().map(c => '<option value="' + titleAttr(c.id) + '">' + titleAttr(c.nom) + "</option>").join("") +
-      (keptInactive ? '<option value="' + titleAttr(keptInactive.id) + '">' + titleAttr(keptInactive.nom) + " " + I18N.t("inactif") + "</option>" : "");
+      (keptInactive ? '<option value="' + titleAttr(keptInactive.id) + '">' + titleAttr(keptInactive.nom) + " " + I18N.t("inactive_suffix") + "</option>" : "");
     if (value) sel.value = value;
   }
 
@@ -190,17 +190,17 @@
     const coffeeVol = measured > 0 ? measured : (r.volumeTypique || 0);
     const declared = !(measured > 0) && coffeeVol > 0;
     if (!cup) {
-      $("#milk-hint").textContent = I18N.t("lait_choisir_tasse");
+      $("#milk-hint").textContent = I18N.t("milk_pick_cup");
       return;
     }
     if (!(coffeeVol > 0)) {
-      $("#milk-hint").textContent = I18N.t("lait_sans_volume");
+      $("#milk-hint").textContent = I18N.t("milk_no_volume");
       return;
     }
     /* The SPACE to fill, not yet the milk to pour: see below. */
     const milk = Math.max(0, cup.contenance_ml - coffeeVol);
     if (milk === 0) {
-      $("#milk-hint").textContent = I18N.t("lait_trop_petit");
+      $("#milk-hint").textContent = I18N.t("milk_cup_too_small");
       return;
     }
     /* BOTH DRINKS at once, counted on the SAME basis: cold milk to pour into the
@@ -210,8 +210,8 @@
     const cappu = Math.round(milk / SWELL_CAPPU);
     $("#f-milk").value = flat;
     $("#milk-hint").textContent =
-      I18N.t("lait_deux", { e: milk, l: flat, c: cappu, t: cup.contenance_ml, v: coffeeVol }) +
-      (declared ? " " + I18N.t("lait_declare") : "");
+      I18N.t("milk_two", { e: milk, l: flat, c: cappu, t: cup.contenance_ml, v: coffeeVol }) +
+      (declared ? " " + I18N.t("milk_declared") : "");
   }
 
   // Cups: dropdown list, capacity warning, mini editor.
@@ -234,7 +234,7 @@
   function renderCupEditor() {
     $("#cups-list").innerHTML = DATA.state.tasses.map(t =>
       '<div class="cup-row"><span>' + t.nom + " · " + t.contenance_ml + ' ml</span>' +
-      '<button type="button" class="btn-row danger" data-cup-delete="' + t.id + '" title="' + I18N.t("btn_supprimer") + '">' + icon("croix") + "</button></div>"
+      '<button type="button" class="btn-row danger" data-cup-delete="' + t.id + '" title="' + I18N.t("btn_delete") + '">' + icon("croix") + "</button></div>"
     ).join("");
     $$("[data-cup-delete]").forEach(b => b.addEventListener("click", async () => {
       await DATA.deleteCup(b.dataset.cupDelete);
@@ -329,9 +329,9 @@
        once. */
     if (!(e > 0)) { setText(hint, ""); return; }
     if (s !== "") {
-      setText(hint, I18N.t("temp_estimee", { d: fmtDuration(s), t: temperatureFromHeating(s, e, fallbacks.bubbles) }));
+      setText(hint, I18N.t("temp_estimate", { d: fmtDuration(s), t: temperatureFromHeating(s, e, fallbacks.bubbles) }));
     } else if (t !== "") {
-      setText(hint, I18N.t("temp_conseil", { t, d: fmtDuration(heatTimeForTemperature(t, e, fallbacks.bubbles)) }));
+      setText(hint, I18N.t("temp_advice", { t, d: fmtDuration(heatTimeForTemperature(t, e, fallbacks.bubbles)) }));
     } else {
       setText(hint, "");
     }
@@ -344,7 +344,7 @@
   function updateRatingDisplay() {
     const slider = $("#f-rating");
     const empty = isRatingEmpty(slider);
-    const label = empty ? I18N.t("n_pas_notee") : slider.value + " / 10";
+    const label = empty ? I18N.t("not_rated_yet") : slider.value + " / 10";
     $("#rating-shown").textContent = label;
     slider.setAttribute("aria-valuetext", label);
     $("#f-rating-help").hidden = !empty;
@@ -372,7 +372,7 @@
     });
     if (c.jours_ouvert === "") { zone.hidden = true; zone.textContent = ""; return; }
     zone.hidden = false;
-    zone.textContent = I18N.t("ap_jours", { n: c.jours_ouvert });
+    zone.textContent = I18N.t("bag_open_days", { n: c.jours_ouvert });
   }
 
   function updateWarnings() {
@@ -428,36 +428,36 @@
       base = brikka ? "chaudiere" : "infusion";
     }
     const inCup = dose > 0 && volume > 0 ? "1:" + (volume / dose).toFixed(1) : "";
-    const explanation = base ? detailRatio(base, dose, water) : I18N.t("rt_rien");
-    setHtml($f("#live-ratio"), I18N.t("lv_ratio") +
+    const explanation = base ? detailRatio(base, dose, water) : I18N.t("ratio_nothing");
+    setHtml($f("#live-ratio"), I18N.t("live_ratio") +
       ' <b class="help-ratio" tabindex="0" data-info="' + titleAttr(explanation) + '">' + ratio + "</b>" +
-      (inCup ? ' <small>(' + I18N.t("rt_tasse_court") + " " + inCup + ")</small>" : ""));
+      (inCup ? ' <small>(' + I18N.t("ratio_cup_short") + " " + inCup + ")</small>" : ""));
 
     // Pre-ground coffee: the dial does not apply, the bag's default grind.
     const preground = currentCoffeeGround();
     const grindField = $f("#f-grind");
     grindField.disabled = preground;
     if (preground && grindField.value) grindField.value = "";
-    grindField.placeholder = preground ? I18N.t("paquet") : "1.5.0";
+    grindField.placeholder = preground ? I18N.t("bag_default") : "1.5.0";
 
     const dial = grindField.value.trim();
     const p = GRIND.parseDial(dial);
     const outOfRange = !preground && p && !GRIND.checkRange(entry.methode, dial).ok && !wantedDial(findRecipe($f("#f-recipe").value));
-    setHtml($f("#live-grind"), I18N.t("lv_mouture") + " <b>" +
-      (preground ? I18N.t("paquet")
-        : p ? I18N.t("lv_detail", { c: p.clicks, u: Math.round(p.microns) })
-        : dial ? I18N.t("lv_invalide") : "…") + "</b>");
+    setHtml($f("#live-grind"), I18N.t("live_grind") + " <b>" +
+      (preground ? I18N.t("bag_default")
+        : p ? I18N.t("live_detail", { c: p.clicks, u: Math.round(p.microns) })
+        : dial ? I18N.t("live_invalid") : "…") + "</b>");
     $f("#live-grind").classList.toggle("out-range", !!outOfRange || (!preground && dial !== "" && !p));
     // Detail shown right under the dial field.
     const grindDetail = $f("#grind-detail");
     if (preground) {
-      setText(grindDetail, I18N.t("paquet"));
+      setText(grindDetail, I18N.t("bag_default"));
       grindDetail.classList.remove("hint-alert");
     } else if (p) {
-      setText(grindDetail, I18N.t("lv_detail", { c: p.clicks, u: Math.round(p.microns) }) + " · " + GRIND.bandOf(p.microns).nom);
+      setText(grindDetail, I18N.t("live_detail", { c: p.clicks, u: Math.round(p.microns) }) + " · " + GRIND.bandOf(p.microns).nom);
       grindDetail.classList.toggle("hint-alert", !!outOfRange);
     } else {
-      setText(grindDetail, dial ? I18N.t("lv_invalide") : "");
+      setText(grindDetail, dial ? I18N.t("live_invalid") : "");
       grindDetail.classList.toggle("hint-alert", !!dial);
     }
 
@@ -468,10 +468,10 @@
       // Not pure coffee: second value, the cost relative to the real coffee.
       const pct = coffee.pourcentage_cafe_reel === "" || coffee.pourcentage_cafe_reel === undefined ? 100 : Number(coffee.pourcentage_cafe_reel);
       if (pct < 100 && pct > 0) {
-        cost += " <small>(" + I18N.t("lv_cout_reel", { v: fmtVND(coffee.prix_vnd / (coffee.format_grammes * pct / 100) * dose) }) + ")</small>";
+        cost += " <small>(" + I18N.t("live_real_cost", { v: fmtVND(coffee.prix_vnd / (coffee.format_grammes * pct / 100) * dose) }) + ")</small>";
       }
     }
-    setHtml($f("#live-cost"), I18N.t("lv_cout") + " <b>" + cost + "</b>");
+    setHtml($f("#live-cost"), I18N.t("live_cost") + " <b>" + cost + "</b>");
 
     // Drink volume: extraction plus added water plus milk, live.
     const volBase = parseFloat($f("#f-volume").value) || estimatedVolume(dose, water) || 0;
@@ -481,9 +481,9 @@
     if (volBase > 0 && (addedWater > 0 || milkMl > 0)) {
       const parts = [];
       if (addedWater > 0) parts.push("+" + addedWater + " ml");
-      if (milkMl > 0) parts.push("+" + milkMl + " ml " + I18N.t("lv_lait"));
+      if (milkMl > 0) parts.push("+" + milkMl + " ml " + I18N.t("live_milk"));
       drinkSpan.hidden = false;
-      setHtml(drinkSpan, I18N.t("lv_boisson") + " <b>" + volBase + " ml (" + parts.join(", ") + ") = " + (volBase + addedWater + milkMl) + " ml</b>");
+      setHtml(drinkSpan, I18N.t("live_drink") + " <b>" + volBase + " ml (" + parts.join(", ") + ") = " + (volBase + addedWater + milkMl) + " ml</b>");
     } else {
       drinkSpan.hidden = true;
     }
@@ -492,8 +492,8 @@
     const estimate = estimatedVolume(dose, water);
     if (estimate) {
       btnVol.hidden = false;
-      btnVol.textContent = I18N.t("vol_estime", { v: estimate });
-      btnVol.title = I18N.t("vol_titre", { m: entry.methode });
+      btnVol.textContent = I18N.t("volume_estimate", { v: estimate });
+      btnVol.title = I18N.t("volume_title", { m: entry.methode });
       btnVol.dataset.value = estimate;
     } else {
       btnVol.hidden = true;
@@ -538,17 +538,17 @@
      here only the sentence: the first lever, then the others "if that is not
      enough". Empty when there is nothing to quantify. */
   function leverText(l) {
-    if (l.lever === "mouture") {
-      return I18N.t("cc_mouture", { de: l.from, vers: l.to, e: (l.gap > 0 ? "+" : "") + l.gap,
+    if (l.lever === "grind") {
+      return I18N.t("correction_grind", { from: l.from, to: l.to, e: (l.gap > 0 ? "+" : "") + l.gap,
         a: l.microns[0], b: l.microns[1] });
     }
-    return I18N.t("cc_" + l.lever, { de: fmtDecimal(l.from, 1), vers: fmtDecimal(l.to, 1) });
+    return I18N.t("correction_" + l.lever, { from: fmtDecimal(l.from, 1), to: fmtDecimal(l.to, 1) });
   }
   function correctionText(levers, brief) {
     if (!levers.length) return "";
     const [first, ...others] = levers;
-    return I18N.t("cc_prochaine", { q: leverText(first) }) +
-      (others.length && !brief ? " " + I18N.t("cc_ensuite", { q: others.map(leverText).join(", ") }) : "");
+    return I18N.t("correction_next", { q: leverText(first) }) +
+      (others.length && !brief ? " " + I18N.t("correction_then", { q: others.map(leverText).join(", ") }) : "");
   }
   // The fields the correction reads, as the form holds them.
   function extFromForm() {
@@ -663,8 +663,8 @@
     entry.dateTouched = false;
     entry.diagnostics.clear();
     entry.descripteurs.clear();
-    $("#entry-title").textContent = I18N.t("s_nouvelle");
-    $("#btn-save").textContent = I18N.t("s_enregistrer");
+    $("#entry-title").textContent = I18N.t("entry_new");
+    $("#btn-save").textContent = I18N.t("entry_save");
     $("#btn-cancel-editing").hidden = true;
     $("#f-date").value = localNow();
     $("#f-dose").value = fallbacks.dose;
@@ -756,8 +756,8 @@
     $$("#f-descriptors .tag").forEach(x => x.classList.toggle("on", entry.descripteurs.has(x.dataset.tag)));
     /* A family that has just received a checked taste must reappear. */
     UI.updateVisibleFamilies();
-    $("#entry-title").textContent = isDuplicate ? I18N.t("s_dupliquee") : I18N.t("s_modifier");
-    $("#btn-save").textContent = isDuplicate ? I18N.t("s_enregistrer") : I18N.t("s_enregistrer_modif");
+    $("#entry-title").textContent = isDuplicate ? I18N.t("entry_duplicated") : I18N.t("entry_edit");
+    $("#btn-save").textContent = isDuplicate ? I18N.t("entry_save") : I18N.t("entry_save_changes");
     $("#btn-cancel-editing").hidden = isDuplicate;
     updateWarnings();
     updateLive();
@@ -793,7 +793,7 @@
 
   async function saveEntry(ev) {
     ev.preventDefault();
-    if (!$("#f-dose").value) { toast(I18N.t("t_dose")); return; }
+    if (!$("#f-dose").value) { toast(I18N.t("toast_dose")); return; }
     const ext = {
       date_heure: $("#f-date").value || localNow(),
       cafe_id: $("#f-coffee").value,
@@ -823,7 +823,7 @@
     if (entry.editId) {
       await DATA.editExtraction(entry.editId, ext);
       UI.clearDraft();
-      toast(I18N.t("t_modifiee"));
+      toast(I18N.t("toast_updated"));
       resetEntry();
       activateScreen("historique");
     } else {
@@ -834,13 +834,13 @@
          the message goes away by itself. */
       const levers = TUNING.quantifiedCorrection(ext, fallbacks.stepSizes, currentCoffeeGround());
       if (levers.length) {
-        UI.toastAction(I18N.t("t_enregistree") + ". " + correctionText(levers, true), I18N.t("cc_preparer"), () => {
+        UI.toastAction(I18N.t("toast_saved") + ". " + correctionText(levers, true), I18N.t("correction_prepare"), () => {
           redoCup({ ...ext, [levers[0].field]: levers[0].to });
           UI.scheduleDraft();
-          toast(I18N.t("cc_prete"));
+          toast(I18N.t("correction_ready"));
         });
       } else {
-        toast(I18N.t("t_enregistree"));
+        toast(I18N.t("toast_saved"));
       }
       resetEntry(true);
       activateScreen("tableau");
@@ -942,7 +942,7 @@
     $("#cup-add").addEventListener("click", async () => {
       const name = $("#cup-name").value.trim();
       const ml = parseFloat($("#cup-ml").value);
-      if (!name || !(ml > 0)) { toast(I18N.t("t_tasse_invalide")); return; }
+      if (!name || !(ml > 0)) { toast(I18N.t("toast_cup_invalid")); return; }
       await DATA.addCup(name, ml);
       $("#cup-name").value = "";
       $("#cup-ml").value = "";

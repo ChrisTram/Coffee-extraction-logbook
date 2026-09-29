@@ -98,14 +98,14 @@ const GRIND = (() => {
   // Returns { ok, message } without ever blocking.
   function checkRange(method, dial) {
     const p = parseDial(dial);
-    if (!p) return { ok: false, message: I18N.t("g_format") };
+    if (!p) return { ok: false, message: I18N.t("grind_format") };
     const range = ENTRY_METHOD_RANGES[method];
     if (!range) return { ok: true, message: "" };
     if (p.clicks < range.minC) {
-      return { ok: false, message: I18N.t("g_fine", { m: method, mol: I18N.dialRange(range.dialText) }) };
+      return { ok: false, message: I18N.t("grind_too_fine", { m: method, dial: I18N.dialRange(range.dialText) }) };
     }
     if (p.clicks > range.maxC) {
-      return { ok: false, message: I18N.t("g_grosse", { m: method, mol: I18N.dialRange(range.dialText) }) };
+      return { ok: false, message: I18N.t("grind_too_coarse", { m: method, dial: I18N.dialRange(range.dialText) }) };
     }
     return { ok: true, message: "" };
   }

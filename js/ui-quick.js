@@ -31,7 +31,7 @@
     const coffeeSelect = $("#q-coffee");
     const v = coffeeSelect.value;
     const coffees = UI.selectableCoffees();
-    coffeeSelect.innerHTML = '<option value="">' + I18N.t("choisir_cafe") + "</option>" +
+    coffeeSelect.innerHTML = '<option value="">' + I18N.t("pick_coffee") + "</option>" +
       coffees.map(c => '<option value="' + TOOLS.escapeHtml(c.id) + '">' + TOOLS.escapeHtml(c.nom) + "</option>").join("");
     if (v && coffees.some(c => c.id === v)) coffeeSelect.value = v;
     /* Same default as the full form: the quick panel REFUSES to save without
@@ -44,7 +44,7 @@
     markRating($("#q-rating"), true);
     /* The save time, shown because it cannot be edited here: the sheet saves
        NOW, might as well say so. */
-    $("#q-when").textContent = I18N.t("q_maintenant", {
+    $("#q-when").textContent = I18N.t("quick_now", {
       h: new Date().toLocaleTimeString(I18N.locale(), { hour: "2-digit", minute: "2-digit" }),
     });
     updateQuickRatingDisplay();
@@ -57,7 +57,7 @@
   function updateQuickRatingDisplay() {
     const slider = $("#q-rating");
     const empty = isRatingEmpty(slider);
-    const shown = empty ? I18N.t("n_pas_notee") : slider.value + " / 10";
+    const shown = empty ? I18N.t("not_rated_yet") : slider.value + " / 10";
     $("#q-rating-shown").textContent = shown;
     slider.setAttribute("aria-valuetext", shown);
     $("#q-rating-help").hidden = !empty;
@@ -111,17 +111,17 @@
     const parts = [];
     if (r.dose) parts.push(r.dose + " g");
     if (r.eau) parts.push(r.eau + " g");
-    if (r.dial) parts.push(I18N.t("molette") + " " + r.dial);
+    if (r.dial) parts.push(I18N.t("dial") + " " + r.dial);
     target.innerHTML =
       '<span class="dot-method ' + String(r.methode).toLowerCase() + '"></span>' +
-      "<span>" + (parts.length ? I18N.t("q_repris", { v: parts.join(", ") }) : I18N.tr(r.methode)) + "</span>";
+      "<span>" + (parts.length ? I18N.t("quick_from_recipe", { v: parts.join(", ") }) : I18N.tr(r.methode)) + "</span>";
   }
 
   async function saveQuick() {
     const coffeeId = $("#q-coffee").value;
     const r = findRecipe($("#q-recipe").value);
-    if (!coffeeId) { toast(I18N.t("t_choisis_cafe")); return; }
-    if (!r) { toast(I18N.t("t_choisis_recette")); return; }
+    if (!coffeeId) { toast(I18N.t("toast_pick_coffee")); return; }
+    if (!r) { toast(I18N.t("toast_pick_recipe")); return; }
     // The coffee chosen in the panel. A pre-ground coffee has no grinder
     // setting to save: the recipe's value would be made up.
     const quickCoffee = DATA.state.cafes.find(c => c.id === coffeeId);
@@ -144,7 +144,7 @@
       commentaire: "",
     });
     const rating = quickRating();
-    toast(rating === "" ? I18N.t("t_rapide_sans_note", { r: r.nom }) : I18N.t("t_rapide", { r: r.nom, n: rating }));
+    toast(rating === "" ? I18N.t("toast_quick_unrated", { r: r.nom }) : I18N.t("toast_quick", { r: r.nom, n: rating }));
     toggleQuick(false);
   }
 

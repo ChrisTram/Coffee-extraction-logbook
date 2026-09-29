@@ -26,7 +26,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const version = String(process.argv[2] || "").trim();
 
 if (!/^\d+\.\d+(\.\d+)?$/.test(version)) {
-  console.error("Usage : node tools/bump_version.mjs 7.83");
+  console.error("Usage: node tools/bump_version.mjs 7.83");
   process.exit(1);
 }
 
@@ -34,9 +34,9 @@ function rewrite(file, transform) {
   const path = join(ROOT, file);
   const before = readFileSync(path, "utf8");
   const after = transform(before);
-  if (after === before) { console.log("  " + file + " : inchangé"); return; }
+  if (after === before) { console.log("  " + file + ": unchanged"); return; }
   writeFileSync(path, after);
-  console.log("  " + file + " : mis à jour");
+  console.log("  " + file + ": updated");
 }
 
 console.log("Version " + version);
@@ -49,4 +49,4 @@ rewrite("index.html", html => html
 
 rewrite("sw.js", sw => sw.replace(/const VERSION = "[^"]*";/, `const VERSION = "${version}";`));
 
-console.log("Pense au changelog, puis : node tools/data.test.mjs");
+console.log("Remember the changelog, then: node tools/data.test.mjs");

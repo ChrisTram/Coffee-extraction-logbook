@@ -86,11 +86,11 @@
     const coffee = DATA.state.cafes.find(c => c.id === $("#f-coffee").value);
 
     $("#br-machine").textContent = [I18N.machine(UI.entry.methode), coffee ? coffee.nom : ""].filter(Boolean).join(" · ");
-    $("#br-title").textContent = r ? I18N.tr(r.nom) : I18N.t("br_sans_recette");
+    $("#br-title").textContent = r ? I18N.tr(r.nom) : I18N.t("brew_no_recipe");
     $("#br-dose").textContent = [$("#f-dose").value ? $("#f-dose").value + " g" : "",
       $("#f-water").value ? $("#f-water").value + " " + unit() : ""].filter(Boolean).join(" · ");
     $("#br-time").textContent = fmtDuration(Math.floor(s));
-    $("#br-over").textContent = I18N.t("br_sur", { t: fmtDuration(duration) });
+    $("#br-over").textContent = I18N.t("brew_of", { t: fmtDuration(duration) });
 
     let i = -1;
     steps.forEach((p, k) => { if (p.t <= s) i = k; });
@@ -116,20 +116,20 @@
        from a metre away. With no volume to aim for, the time takes its place. */
     const u = unit();
     if (target) {
-      $("#br-label").textContent = I18N.t("br_verse");
+      $("#br-label").textContent = I18N.t("brew_pour_to");
       $("#br-target").textContent = String(target);
-      $("#br-in").textContent = u + (nextStep ? " · " + I18N.t("br_ensuite_dans", { t: fmtDuration(Math.max(0, Math.ceil(remaining))) }) : "");
+      $("#br-in").textContent = u + (nextStep ? " · " + I18N.t("brew_next_in", { t: fmtDuration(Math.max(0, Math.ceil(remaining))) }) : "");
     } else if (freeOnly.length) {
       /* An untimed step that aims for a total (the 4:6, v8.99): the total goes
          huge, like a timed step; otherwise the elapsed time. */
       const freeTarget = targetOf(freeOnly[manualStep].texte);
-      $("#br-label").textContent = I18N.t("br_etape_n", { n: manualStep + 1, t: freeOnly.length });
+      $("#br-label").textContent = I18N.t("brew_step_n", { n: manualStep + 1, t: freeOnly.length });
       $("#br-target").textContent = freeTarget ? String(freeTarget) : fmtDuration(Math.floor(s));
-      $("#br-in").textContent = (freeTarget ? u + " · " : "") + I18N.t("br_toucher");
+      $("#br-in").textContent = (freeTarget ? u + " · " : "") + I18N.t("brew_tap");
     } else {
-      $("#br-label").textContent = current ? I18N.t("br_chrono") : I18N.t("br_pret");
+      $("#br-label").textContent = current ? I18N.t("brew_timer") : I18N.t("brew_ready");
       $("#br-target").textContent = fmtDuration(Math.floor(s));
-      $("#br-in").textContent = nextStep ? I18N.t("br_ensuite_dans", { t: fmtDuration(Math.max(0, Math.ceil(remaining))) }) : "";
+      $("#br-in").textContent = nextStep ? I18N.t("brew_next_in", { t: fmtDuration(Math.max(0, Math.ceil(remaining))) }) : "";
     }
     $(".br-time-row").hidden = !target;
 
@@ -138,7 +138,7 @@
     const poured = steps.slice(0, i + 1).reduce((m, p) => Math.max(m, targetOf(p.texte) || 0), 0);
     $("#br-total").hidden = !(water > 0 && steps.some(p => targetOf(p.texte)));
     $("#br-total-level").style.width = (water > 0 ? Math.min(100, (poured / water) * 100) : 0).toFixed(1) + "%";
-    $("#br-total-text").textContent = I18N.t("br_total", { v: poured, e: water, u });
+    $("#br-total-text").textContent = I18N.t("brew_total", { v: poured, e: water, u });
 
     // A step crossed while running: the phone vibrates, on top of the stopwatch beep.
     if (i !== lastStepIdx) {
@@ -151,14 +151,14 @@
     const manualCue = freeOnly.length ? freeOnly[manualStep].texte : null;
     $("#br-instruction").classList.toggle("alone", (!!current && !target) || !!manualCue);
     $("#br-instruction").textContent = manualCue || (current ? current.texte
-      : steps.length ? I18N.t("br_attente", { texte: steps[0].texte }) : I18N.t("br_sans_paliers"));
+      : steps.length ? I18N.t("brew_waiting", { text: steps[0].texte }) : I18N.t("brew_no_stages"));
     const valve = i >= 0 ? valveAt(steps, i) : null;
     const badge = $("#br-valve");
     badge.hidden = !valve || UI.entry.methode !== "Switch";
-    if (valve) badge.textContent = I18N.t(valve === "ouverte" ? "br_vanne_ouverte" : "br_vanne_fermee");
+    if (valve) badge.textContent = I18N.t(valve === "ouverte" ? "brew_valve_open" : "brew_valve_closed");
     $("#br-next").textContent = nextStep
-      ? I18N.t("br_suivante", { d: Math.max(0, Math.ceil(nextStep.t - s)), texte: nextStep.texte })
-      : current ? I18N.t("ch_derniere") : freeOnly.length ? I18N.t("br_toucher") : "";
+      ? I18N.t("brew_next", { d: Math.max(0, Math.ceil(nextStep.t - s)), text: nextStep.texte })
+      : current ? I18N.t("timer_last") : freeOnly.length ? I18N.t("brew_tap") : "";
 
     // The timeline: every timed step, the current one highlighted; untimed
     // steps (the Brikka) as a plain list, to reread.
@@ -177,8 +177,8 @@
     }
 
     const state = UI.stopwatch.state;
-    $("#br-go").textContent = I18N.t(state === "arrete" ? (s > 0 ? "br_recommencer" : "ch_demarrer")
-      : state === "encours" ? "ch_pause" : "ch_reprendre");
+    $("#br-go").textContent = I18N.t(state === "arrete" ? (s > 0 ? "brew_start_again" : "timer_start")
+      : state === "encours" ? "timer_pause" : "timer_resume");
     $("#br-stop").hidden = state === "arrete";
     $("#br-reset").hidden = state === "arrete" && s === 0;
     $("#br-end").hidden = !(endVisible && state === "arrete");
@@ -263,7 +263,7 @@
   function updateBrewNote() {
     const c = $("#br-rating");
     const empty = UI.isRatingEmpty(c);
-    $("#br-rating-spoken").textContent = empty ? I18N.t("n_pas_notee") : c.value + " / 10";
+    $("#br-rating-spoken").textContent = empty ? I18N.t("not_rated_yet") : c.value + " / 10";
     UI.paintSlider(c);
   }
 

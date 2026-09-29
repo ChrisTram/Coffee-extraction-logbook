@@ -1109,7 +1109,7 @@ et il rend la main immédiatement en Brikka. Le Switch garde `eau - 2,1 x dose` 
 le papier et le marc retiennent environ 2,1 g d'eau par gramme de café, le reste
 passe, et ce modèle-là tient.
 
-Sans mesure, le champ lait ne se préremplit plus et affiche `lait_sans_volume`.
+Sans mesure, le champ lait ne se préremplit plus et affiche `milk_no_volume`.
 Un champ vide et honnête vaut mieux qu'un nombre inventé.
 
 À NE PAS FAIRE : remettre une formule Brikka sans données mesurées. Quatre tests
@@ -1221,7 +1221,7 @@ Retiré, et à ne pas réintroduire. Trois raisons :
    trancher. Un carnet qui refuse la mesure contredisant sa règle ne peut plus
    apprendre.
 
-Les avertissements restent, ils informent. `w_rangbo` a été réécrit : il disait
+Les avertissements restent, ils informent. `warn_rang_bo` a été réécrit : il disait
 "ne va jamais dans le Switch, passe le à la Brikka", il dit maintenant que le
 papier retient une partie du beurre et que ça vaut le coup d'essayer en baissant
 la température. Même traitement pour le titre du guide.
@@ -1886,7 +1886,7 @@ Les causes distinguées, parce qu'un "pas de données" générique n'aide person
 | duel | une seule méthode utilisée | passer un même café dans les deux machines |
 | duel | autre | aucun café dans les deux machines avec une note |
 
-Toutes ces cartes retombent sur `vide_rien` s'il n'y a aucune extraction notée.
+Toutes ces cartes retombent sur `empty_nothing` s'il n'y a aucune extraction notée.
 
 ### Quels goûts font tes bonnes tasses
 
@@ -2057,7 +2057,7 @@ plus rien (retiré en v7.21). Cette recommandation vient d'une valeur posée à 
 création du café, jamais vérifiée par une extraction : conseiller une recette sur
 un café qu'on n'a pas encore essayé n'est pas une aide, c'est du bruit à chaque
 saisie. Les vraies recommandations viennent des insights, calculés sur les notes
-réelles. Les avertissements de MACHINE (`w_brikka_reco`, `w_switch_reco`) et les
+réelles. Les avertissements de MACHINE (`warn_brikka_recommended`, `warn_switch_recommended`) et les
 blocages (café non pur en Switch) restent, eux : ce sont des faits, pas des goûts.
 
 ## Historique

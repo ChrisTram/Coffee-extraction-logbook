@@ -439,7 +439,7 @@ check("the reason distinguishes this case", scattered.reason === "eparpille", sc
   const stepSizes = { pas_crans: 2, pas_degres: 2, pas_feu: 1, pas_eau_g: 15, pas_dose_g: 1 };
   const sw = (diag, fields) => ({ methode: "Switch", mouture_dial: "1.4.2", temperature_c: 92, eau_g: 240, dose_g: 15, diagnostic: diag, ...fields });
   const c = TUNING.quantifiedCorrection(sw("Un peu amer"), stepSizes, false);
-  check("a bit bitter: the dial first, two clicks coarser", c[0] && c[0].lever === "mouture" && c[0].to === "1.4.4" && c[0].gap === 2,
+  check("a bit bitter: the dial first, two clicks coarser", c[0] && c[0].lever === "grind" && c[0].to === "1.4.4" && c[0].gap === 2,
     JSON.stringify(c));
   check("then the water two degrees cooler", c[1] && c[1].lever === "temperature" && c[1].to === 90, JSON.stringify(c[1]));
   const f = TUNING.quantifiedCorrection(sw("Sur-extrait (amer)"), stepSizes, false);
@@ -455,7 +455,7 @@ check("the reason distinguishes this case", scattered.reason === "eparpille", sc
   const br = TUNING.quantifiedCorrection({ methode: "Brikka", mouture_dial: "", dose_g: 14, puissance_feu: 3, diagnostic: "Un peu léger|Un peu acide" }, stepSizes, true);
   check("on the Brikka, neither more heat nor more coffee", br.length === 0, JSON.stringify(br));
   const brBitter = TUNING.quantifiedCorrection({ methode: "Brikka", mouture_dial: "", dose_g: 14, puissance_feu: 3, diagnostic: "Un peu amer" }, stepSizes, true);
-  check("but one heat step less when it is bitter", brBitter.length === 1 && brBitter[0].lever === "feu" && brBitter[0].to === 2, JSON.stringify(brBitter));
+  check("but one heat step less when it is bitter", brBitter.length === 1 && brBitter[0].lever === "heat" && brBitter[0].to === 2, JSON.stringify(brBitter));
   check("without a diagnostic, nothing", TUNING.quantifiedCorrection(sw(""), stepSizes, false).length === 0);
   // A row from before v8.48 lacks the columns: it takes the defaults, no migration.
   const old = DATA.normalizeSettings({ id: "moi", dose_g: 15 });
@@ -1213,13 +1213,13 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 
   const i18n = readFileSync(join(ROOT, "js/i18n.js"), "utf8");
   check("the refusal key has gone from the dictionary", !i18n.includes("t_bloque"));
-  const rangboLine = (i18n.match(/^ *w_rangbo:.*$/m) || [""])[0];
+  const rangboLine = (i18n.match(/^ *warn_rang_bo:.*$/m) || [""])[0];
   check("the rang bo message no longer forbids, it informs",
     !rangboLine.includes("jamais") && rangboLine.includes("À tenter quand même"), rangboLine.slice(0, 90));
 
   // The warnings themselves stay: they inform without forbidding.
-  check("the rang bo warning still exists", i18n.includes("w_rangbo"));
-  check("the non pure coffee warning still exists", i18n.includes("w_aromatise"));
+  check("the rang bo warning still exists", i18n.includes("warn_rang_bo"));
+  check("the non pure coffee warning still exists", i18n.includes("warn_flavoured"));
 }
 
 /* TEMPERATURE FROM HEATING TIME (v7.93). The heating method select ("petites
@@ -1294,7 +1294,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
     /chauffe_s: entry\.methode === "Switch" \? readDuration\("f-heat"\) : ""/.test(app));
   check("the heating row is hidden on the Brikka", /row-heat"\)\.hidden = m !== "Switch"/.test(app));
   check("the help texts are bilingual",
-    bilingual("temp_estimee") && bilingual("temp_conseil") && bilingual("temp_sans_bouilloire") && bilingual("d_chauffe") && bilingual("t_param_ebullition"));
+    bilingual("temp_estimate") && bilingual("temp_advice") && bilingual("temp_no_kettle") && bilingual("detail_kettle") && bilingual("toast_param_boil"));
 }
 
 /* Scaling the pours. A recipe writes its pour steps in ABSOLUTE grams, so
@@ -1375,7 +1375,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
     (app.match(/2\.1 \* dose/g) || []).length === 1,
     String((app.match(/2\.1 \* dose/g) || []).length));
   check("the milk preset reads the measured volume, not an estimate",
-    app.includes("lait_sans_volume"));
+    app.includes("milk_no_volume"));
 
   // Retention, for its part, stays computed: it is a MEASUREMENT, not an estimate.
   const c = DATA.calcs({ methode: "Brikka", dose_g: 16, eau_g: 150, volume_extrait_ml: 95 });
@@ -1413,7 +1413,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("arriving on Saisie via navigation abandons the edit",
     app.includes('if (nameKey === "saisie" && UI.entry.editId && !forEditing)'));
   check("the abandonment is announced, it is not silent",
-    app.includes('t_edition_abandonnee'));
+    app.includes('toast_edit_dropped'));
   /* The legitimate exception goes through a PARAMETER, no longer a shared flag.
      The flag was set forty lines before and cleared after, without finally: an
      exception in between left it at true forever, and edit abandonment never
@@ -1434,7 +1434,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
     !/loadExtractionIntoEntry\([^)]*\);\s*\n\s*activateScreen\("saisie"\)/.test(app));
 
   const i18n = readFileSync(join(ROOT, "js/i18n.js"), "utf8");
-  check("the abandonment message exists in FR and EN", bilingual("t_edition_abandonnee"));
+  check("the abandonment message exists in FR and EN", bilingual("toast_edit_dropped"));
 }
 
 /* Single dial: Chris does not recount the clicks for each machine. */
@@ -1451,9 +1451,9 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   // Changing the seed is never enough: STORED recipes must follow.
   const data = SOURCE_DATA;
   check("a schema step catches up the dial of stored recipes",
-    data.includes("molette unique a 1.5.0"));
+    data.includes("single dial at 1.5.0"));
   check("it is not limited to the Brikka, the Switch ones are concerned too",
-    /molette unique a 1\.5\.0[\s\S]{0,300}state\.recettes\.forEach/.test(data));
+    /single dial at 1\.5\.0[\s\S]{0,300}state\.recettes\.forEach/.test(data));
 }
 
 /* The frame is set ONCE, on .screen: max width and centering. No #ecran-* must
@@ -1534,9 +1534,9 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 {
   const data = SOURCE_DATA;
   check("a schema step catches up the stored Chronicler recipes",
-    data.includes("Chronicler a 240 g"));
+    data.includes("Chronicler at 240 g"));
   check("it only targets the family concerned and the wrong value",
-    /Chronicler a 240 g[\s\S]{0,300}famille !== "chronicler"[\s\S]{0,80}225/.test(data));
+    /Chronicler at 240 g[\s\S]{0,300}famille !== "chronicler"[\s\S]{0,80}225/.test(data));
 }
 
 /* A selected state must change ONLY colours. Any property that touches the text
@@ -1723,7 +1723,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   ];
   const r = TUNING.findingsByCoffee(coffees, net, { minBatch: 6, minPerGroup: 3, minGap: 0.4 });
   check("a clear gap is reported", r.length === 1, String(r.length));
-  check("the right lever is designated", r[0] && r[0].lever === "feu", r[0] && r[0].lever);
+  check("the right lever is designated", r[0] && r[0].lever === "heat", r[0] && r[0].lever);
   check("the right value wins", r[0] && r[0].value === "3", r[0] && r[0].value);
   check("both averages are correct", r[0] && r[0].high === 8 && r[0].low === 5,
     r[0] && r[0].high + " / " + r[0].low);
@@ -1774,10 +1774,10 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   /* The second figure, for NON PURE coffees: the Sang Tao is 82 % coffee, so much
      more expensive per gram of REAL coffee than it looks. The
      pourcentage_cafe_reel field was only used for the caffeine calculation. */
-  check("the non pure coffee shows its real cost", app.includes("cout_reel"));
+  check("the non pure coffee shows its real cost", app.includes("cost_real"));
   const i18n = readFileSync(join(ROOT, "js/i18n.js"), "utf8");
   check("both labels exist in FR and EN",
-    bilingual("cout_tasse") && bilingual("cout_reel"));
+    bilingual("cost_per_cup") && bilingual("cost_real"));
 
   // The arithmetic, on the real Sang Tao figures: 149,000 d for 340 g.
   const perGram = 149000 / 340;
@@ -1803,7 +1803,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
     String(block.indexOf("deleteExtraction(")) + " versus " + String(block.indexOf("toastAction(")));
   check("no delay wraps the deletion itself", !block.includes("setTimeout"));
 
-  check("the native delete confirm has gone", !app.includes('confirm(I18N.t("c_suppr"))'));
+  check("the native delete confirm has gone", !app.includes('confirm(I18N.t("confirm_delete"))'));
   /* NO native confirm() left in the interface: the four remaining ones (demo,
      clear, restore, delete a recipe) go through UI.askConfirm, a <dialog> of the
      page. Only askConfirm()'s own fallback, `window.confirm`, is allowed to exist,
@@ -1815,7 +1815,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   // Six: an import preview (v8.71) and deleting a bag (v8.77) also ask for confirmation.
   check("the six questions go through the page dialog",
     (code.match(/await (?:UI\.)?askConfirm\(/g) || []).length === 6);
-  check("the dialog labels are bilingual", bilingual("c_titre") && bilingual("c_ok"));
+  check("the dialog labels are bilingual", bilingual("confirm_title") && bilingual("confirm_ok"));
   check("undo restores under the original id", app.includes("DATA.restoreExtraction"));
 
   const data = SOURCE_DATA;
@@ -1829,8 +1829,8 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
     rest.includes("findIndex") && rest.includes("push(e)"));
 
   const i18n = readFileSync(join(ROOT, "js/i18n.js"), "utf8");
-  check("the Annuler button exists in FR and EN", bilingual("t_annuler"));
-  check("so does the restore message", bilingual("t_restauree"));
+  check("the Annuler button exists in FR and EN", bilingual("toast_undo"));
+  check("so does the restore message", bilingual("toast_restored"));
 }
 
 /* TOGGLE ACCESSIBILITY. 70 buttons and zero aria-pressed: the state showed
@@ -1934,7 +1934,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 
   /* The FR key to EN value dictionaries are EMPTY on the French side: that is the
      whole gain. If they filled up again, the split would be pointless. */
-  ["UI", "DIAG", "TAGS", "GROUPES"].forEach(itemName => {
+  ["UI", "DIAG", "TAGS", "GROUPS"].forEach(itemName => {
     check("the " + itemName + " dictionary is empty in French",
       new RegExp("const " + itemName + " = \\{\\};").test(fr));
     check("and filled in the English bundle", new RegExp("^  " + itemName + ": \\{", "m").test(en));
@@ -2136,9 +2136,9 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
      three, on a hidden axis to boot, it cluttered the view without being
      readable. The figure now lives in the tooltip. */
   check("the grams curve no longer overloads the chart",
-    !block30d.includes("l_cafe_g") && !block30d.includes("y3:"));
+    !block30d.includes("chart_coffee_grams") && !block30d.includes("y3:"));
   check("but the figure stays available in the tooltip",
-    SOURCE_UI.includes("tip_cafe_g"));
+    SOURCE_UI.includes("tip_coffee_grams"));
 
   /* The trend SMOOTHS the score line: same measure, same axis. It must carry the
      accent tint, otherwise it reads as one more data series. That is what its
@@ -2678,8 +2678,8 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 
   // The schema version travels with the data.
   check("the app sends its schema version to the server", SOURCE_DATA.includes("schema: CURRENT_SCHEMA"));
-  check("the server rejects an older device", readFileSync(join(ROOT, "worker/sync.js"), "utf8").includes("version-perimee"));
-  check("and the app then offers to reload", bilingual("sync_perimee") && bilingual("maj_recharger"));
+  check("the server rejects an older device", readFileSync(join(ROOT, "worker/sync.js"), "utf8").includes("outdated-version"));
+  check("and the app then offers to reload", bilingual("sync_outdated") && bilingual("update_reload"));
   // The full export covers the six tables and a JSON file.
   check("export all covers the six tables and the full file",
     ["cafes.csv", "extractions.csv", "recettes.csv", "tasses.csv", "achats.csv", "reglages.csv", "carnet-complet.json"]
@@ -2714,7 +2714,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   const coreSrc = readFileSync(join(ROOT, "js/ui-core.js"), "utf8");
   check("every Fermer button closes its window, even without data-closes", appSrc.includes('b.closest("dialog")'));
   check("updates announce themselves instead of asking for two reloads",
-    coreSrc.includes("controllerchange") && coreSrc.includes("reg.update()") && bilingual("maj_prete"));
+    coreSrc.includes("controllerchange") && coreSrc.includes("reg.update()") && bilingual("update_ready"));
   check("the status bar follows the palette from load time", /querySelectorAll\('meta\[name="theme-color"\]'\)/.test(html.slice(0, 4000)));
   check("the first display no longer waits for the sync", !/if \(syncPossible\(\)\) await synchroniser/.test(SOURCE_DATA));
   check("linked files no longer ask for permission outside a gesture",
@@ -2792,7 +2792,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("Brassage mode shows grams by default",
     readFileSync(join(ROOT, "js/ui-brew.js"), "utf8").includes('=== "ml" ? "ml" : "g"'));
   check("corrections talk about two clicks, like the default steps", !rec.includes("un ou deux crans"));
-  check("non rang bơ coffees have their own message", rec.includes('I18N.t("w_profil_brikka")') && bilingual("w_profil_brikka"));
+  check("non rang bơ coffees have their own message", rec.includes('I18N.t("warn_brikka_profile")') && bilingual("warn_brikka_profile"));
   check("the preheated Brikka no longer announces a grind it does not have", !rec.includes("mouture plus grossière\","));
   check("sourness, not acidity, signals under-extraction", html.includes("<h3>Aigreur</h3>"));
   check("freshness accounts for the 30 degrees", html.includes("Par 30 °C et l'humidité"));
@@ -2809,7 +2809,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("a sync-only notification only redraws the badge", app.includes('if (kind === "sync")'));
   check("charts are updated instead of recreated", charts.includes('existing.update("none")'));
   check("drawings are no longer drawn twice", !readFileSync(join(ROOT, "js/ui-drawings.js"), "utf8").includes('DATA.subscribe(() => { if (nav.screenName === "tableau") renderDrawings(); });'));
-  check("the history renders in slices of one hundred", SOURCE_UI.includes("HISTORY_CHUNK = 100") && bilingual("h_plus"));
+  check("the history renders in slices of one hundred", SOURCE_UI.includes("HISTORY_CHUNK = 100") && bilingual("history_more"));
   const worker = readFileSync(join(ROOT, "worker/index.js"), "utf8");
   check("the server strips comments from the stylesheet and the page", worker.includes("function minifyCss") && worker.includes("function minifyHtml"));
   // The revision changes with the data, not with the sync state alone.
@@ -2834,7 +2834,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("and the title it quotes exists", notFound.length === 0, notFound.join(", "));
   check("the closed Plus menu is inert to the keyboard", app.includes("rail.inert = isSheetLayout()"));
   check("decorative icons are hidden from screen readers", !/class="choice-icon">/.test(html));
-  check("the recipe table fields are named", readFileSync(join(ROOT, "js/ui-catalog.js"), "utf8").includes('aria-label="\' + fieldName(r, "pc_dose")'));
+  check("the recipe table fields are named", readFileSync(join(ROOT, "js/ui-catalog.js"), "utf8").includes('aria-label="\' + fieldName(r, "param_col_dose")'));
 
   // Light theme contrasts, computed the way WCAG does.
   const block = css.slice(css.indexOf('html[data-theme="clair"] {'), css.indexOf("}", css.indexOf('html[data-theme="clair"] {')));
@@ -2869,7 +2869,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 /* v8.80: A SCORE IS WRITTEN THE FRENCH WAY EVERYWHERE, and the shelf says what is left. */
 {
   check("no raw score displayed as is", !/note_sur_10 !== "" \? e\.note_sur_10 [:+]/.test(SOURCE_UI));
-  check("an empty jar says «sachet vide», not «0 tasses»", SOURCE_UI.includes('b.tasses === 0 ? I18N.t("de_vide")'));
+  check("an empty jar says «sachet vide», not «0 tasses»", SOURCE_UI.includes('b.tasses === 0 ? I18N.t("drawing_bag_empty")'));
 }
 
 /* A1 (v8.82): THE LATEST EXTRACTIONS ARE READABLE, grouped by day. */
@@ -2980,7 +2980,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
   const g = readFileSync(join(ROOT, "js/ui-guide.js"), "utf8");
   check("the Guide opens on its home, with its search", html.includes('id="gp-accueil" data-panel="accueil"') && html.includes('id="guide-search"') && g.includes('localStorage.getItem("guide-onglet") || "accueil"'));
-  check("search covers recipes, vocabulary and tips", g.includes('type: "g_t_recette"') && g.includes('type: "g_t_mot"') && g.includes('type: "g_t_conseil"'));
+  check("search covers recipes, vocabulary and tips", g.includes('type: "guide_type_recipe"') && g.includes('type: "guide_type_word"') && g.includes('type: "guide_type_tip"'));
   check("every recipe can be brewed in one tap", g.includes('data-brew="') && g.includes("function brewRecipe"));
 }
 

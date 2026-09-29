@@ -109,7 +109,7 @@
     const b = $("#tastes-plus");
     if (!b) return;
     b.hidden = !showAll && hiddenCount === 0;
-    b.textContent = showAll ? I18N.t("gouts_moins") : I18N.t("gouts_plus", { n: hiddenCount });
+    b.textContent = showAll ? I18N.t("tastes_fewer") : I18N.t("tastes_more", { n: hiddenCount });
     b.setAttribute("aria-expanded", showAll ? "true" : "false");
   }
 

@@ -54,8 +54,8 @@
   function atHome(r) {
     const ratings = analyzableExts().filter(e => e.recette === r.nom && e.note_sur_10 !== "").map(e => Number(e.note_sur_10));
     return '<p class="recipe-at-home">' + (ratings.length
-      ? I18N.t("bi_chez_toi", { m: fmtDecimal(average(ratings), 1), n: ratings.length })
-      : I18N.t("bi_pas_essayee")) + "</p>";
+      ? I18N.t("library_at_home", { m: fmtDecimal(average(ratings), 1), n: ratings.length })
+      : I18N.t("library_not_tried")) + "</p>";
   }
   const filter = { value: "tout" };
   try { filter.value = localStorage.getItem("guide-filtre") || "tout"; } catch (e) { /* without storage, all */ }
@@ -115,15 +115,15 @@
     if (!r.video) return "";
     const id = youtubeId(r.video);
     return '<div class="recipe-video">' +
-      (id ? '<button type="button" class="btn btn-small" data-video="' + id + '">' + I18N.t("bi_video") + "</button>" : "") +
+      (id ? '<button type="button" class="btn btn-small" data-video="' + id + '">' + I18N.t("library_video") + "</button>" : "") +
       '<a class="recipe-video-link" href="' + attr(r.video) + '" target="_blank" rel="noopener">' +
-      I18N.t(id ? "bi_youtube" : "bi_source") + "</a></div>";
+      I18N.t(id ? "library_youtube" : "library_source") + "</a></div>";
   }
   function startVideo(button) {
     const frame = document.createElement("iframe");
     frame.className = "recipe-player";
     frame.src = "https://www.youtube-nocookie.com/embed/" + button.dataset.video + "?autoplay=1&rel=0";
-    frame.title = I18N.t("bi_video");
+    frame.title = I18N.t("library_video");
     frame.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
     frame.allowFullscreen = true;
     button.replaceWith(frame);
@@ -182,10 +182,10 @@
         const alt = k.alternative && recipe(k.alternative);
         html += '<td data-col="' + attr(I18N.tr(c.nom)) + '">' + recipeLink(r) +
           (k.temp ? '<span class="m-temp">' + attr(k.temp) + "</span>" : "") +
-          (alt ? '<span class="m-other">' + I18N.t("mx_autre") + " " + recipeLink(alt) + "</span>" : "") +
-          (mine.length ? '<span class="m-at-home">' + I18N.t("mx_chez_toi", { m: fmt1(average(mine)), n: mine.length }) + "</span>" : "") +
+          (alt ? '<span class="m-other">' + I18N.t("matrix_or") + " " + recipeLink(alt) + "</span>" : "") +
+          (mine.length ? '<span class="m-at-home">' + I18N.t("matrix_at_home", { m: fmt1(average(mine)), n: mine.length }) + "</span>" : "") +
           (best && (mine.length < 3 || best.mean > average(mine))
-            ? '<span class="m-best">' + I18N.t("mx_meilleure", { r: attr(I18N.tr(best.nom)), m: fmt1(best.mean) }) + "</span>" : "") +
+            ? '<span class="m-best">' + I18N.t("matrix_best", { r: attr(I18N.tr(best.nom)), m: fmt1(best.mean) }) + "</span>" : "") +
           "</td>";
       });
       html += "</tr>";
@@ -201,13 +201,13 @@
   }
 
   function recipeCard(r, group) {
-    const badges = (r.parDefaut ? '<span class="badge-default">' + I18N.t("badge_defaut") + "</span>" : "") +
-      (r.avancee ? '<span class="badge-advanced">' + I18N.t("badge_avancee") + "</span>" : "");
+    const badges = (r.parDefaut ? '<span class="badge-default">' + I18N.t("badge_default") + "</span>" : "") +
+      (r.avancee ? '<span class="badge-advanced">' + I18N.t("badge_advanced") + "</span>" : "");
     const params =
       '<span class="param-chip">' + r.dose + " g / " + r.eau + " g</span>" +
       '<span class="param-chip">' + attr(I18N.tr(r.ratioTexte)) + "</span>" +
       '<span class="param-chip">' + attr(I18N.tr(r.tempTexte)) + "</span>" +
-      '<span class="param-chip">' + I18N.t("molette") + " " + r.dial + "</span>" +
+      '<span class="param-chip">' + I18N.t("dial") + " " + r.dial + "</span>" +
       '<span class="param-chip">' + attr(I18N.tr(r.totalTexte)) + "</span>";
     let steps = "";
     if (r.etapes.length) {
@@ -235,7 +235,7 @@
       '<h3><button type="button" class="recipe-toggle" data-toggle="' + r.id + '" aria-expanded="' + isOpen + '" aria-controls="body-' + r.id + '">' +
         '<span class="rb-name">' + r.nom + "</span>" +
         '<span class="rb-summary">' + attr(summary) + "</span>" +
-        '<span class="rb-rating">' + (rating ? rating : I18N.t("rb_jamais")) + "</span>" +
+        '<span class="rb-rating">' + (rating ? rating : I18N.t("recipe_never_made")) + "</span>" +
       "</button></h3>" +
       '<div class="recipe-body" id="body-' + r.id + '">' +
       pills +
@@ -244,13 +244,13 @@
       videoBlock(r) +
       atHome(r) +
       steps + tetsuBlock +
-      (r.pourQui ? '<p class="recipe-forwho"><b>' + I18N.t("r_pourqui") + "</b> " + attr(I18N.tr(r.pourQui)) + "</p>" : "") +
-      (r.cafesAssocies.length ? '<p class="recipe-coffees"><b>' + I18N.t("r_cafes") + "</b> " + r.cafesAssocies.join(", ") + "</p>" : "") +
+      (r.pourQui ? '<p class="recipe-forwho"><b>' + I18N.t("recipe_for_which") + "</b> " + attr(I18N.tr(r.pourQui)) + "</p>" : "") +
+      (r.cafesAssocies.length ? '<p class="recipe-coffees"><b>' + I18N.t("recipe_coffees") + "</b> " + r.cafesAssocies.join(", ") + "</p>" : "") +
       (r.note ? '<p class="recipe-note">' + attr(I18N.tr(r.note)) + "</p>" : "") +
       '<div class="recipe-actions">' +
-      '<button class="btn btn-primary btn-small" data-brew="' + r.id + '">' + I18N.t("g_brasser") + "</button>" +
-      '<button class="btn btn-small" data-walkthrough="' + r.id + '">' + I18N.t("a_pap") + "</button>" +
-      '<button class="btn btn-small" data-recipe-edit="' + r.id + '">' + I18N.t("btn_modifier") + "</button>" +
+      '<button class="btn btn-primary btn-small" data-brew="' + r.id + '">' + I18N.t("guide_brew") + "</button>" +
+      '<button class="btn btn-small" data-walkthrough="' + r.id + '">' + I18N.t("aside_step_by_step") + "</button>" +
+      '<button class="btn btn-small" data-recipe-edit="' + r.id + '">' + I18N.t("btn_edit") + "</button>" +
       "</div></div></article>";
   }
 
@@ -271,15 +271,15 @@
      with what you find there. "For your coffee": the coffee of your last cup,
      its cell in the coffee and recipe table, and your rating on the two
      recipes it suggests. */
-  const DOORS = { recettes: "g_p_recettes", moulin: "g_p_moulin", diagnostic: "g_p_diagnostic", regles: "g_p_regles",
-    vocabulaire: "g_p_vocabulaire", boutiques: "g_p_boutiques", materiel: "g_p_materiel", messages: "g_p_messages" };
+  const DOORS = { recettes: "guide_door_recipes", moulin: "guide_door_grinder", diagnostic: "guide_door_diagnosis", regles: "guide_door_rules",
+    vocabulaire: "guide_door_vocabulary", boutiques: "guide_door_shops", materiel: "guide_door_gear", messages: "guide_door_messages" };
   function renderGuideHome() {
     const doors = $("#guide-doors");
     if (!doors) return;
     const counts = { recettes: liveRecipes().length, vocabulaire: $$("#sheets-vocabulary .sheet").length };
     doors.innerHTML = $$(".guide-tabs [data-guide]").filter(a => a.dataset.guide !== "accueil").map(a =>
       '<button type="button" class="ga-door" data-door="' + attr(a.getAttribute("href").slice(1)) + '"><b>' + attr(a.textContent.trim()) + "</b><span>" +
-      attr(I18N.t(DOORS[a.dataset.guide] || "g_p_autre", { n: counts[a.dataset.guide] || 0 })) + "</span></button>").join("");
+      attr(I18N.t(DOORS[a.dataset.guide] || "guide_door_other", { n: counts[a.dataset.guide] || 0 })) + "</span></button>").join("");
     const zone = $("#guide-for-you");
     const lastCup = DATA.state.extractions.slice().sort((a, b) => String(b.date_heure).localeCompare(String(a.date_heure)))[0];
     const coffee = lastCup ? DATA.coffeeOf(lastCup) : null;
@@ -288,14 +288,14 @@
     const suggested = k ? [k.recette, k.alternative].filter(Boolean).map(id => DATA.state.recettes.find(r => r.id === id)).filter(Boolean) : [];
     zone.hidden = !suggested.length;
     if (!suggested.length) { zone.innerHTML = ""; return; }
-    zone.innerHTML = '<h3 id="guide-for-you-title" class="ga-h">' + attr(I18N.t("g_pour_toi", { c: I18N.tr(coffee.nom) })) + "</h3>" +
+    zone.innerHTML = '<h3 id="guide-for-you-title" class="ga-h">' + attr(I18N.t("guide_for_you", { c: I18N.tr(coffee.nom) })) + "</h3>" +
       '<div class="ga-cards">' + suggested.map((r, i) => {
         const rating = homeRating(r);
         return '<button type="button" class="ga-card' + (i === 0 ? " first" : "") + '" data-for-you="' + r.id + '">' +
-          '<span class="ga-label">' + attr(I18N.t(i === 0 ? "g_depart" : "g_essayer")) + "</span>" +
+          '<span class="ga-label">' + attr(I18N.t(i === 0 ? "guide_starting" : "guide_to_try")) + "</span>" +
           "<b>" + attr(I18N.tr(r.nom)) + "</b>" +
           '<span class="ga-params">' + attr([r.methode, i === 0 && k.temp ? k.temp : r.temp ? r.temp + " °C" : ""].filter(Boolean).join(" · ")) + "</span>" +
-          '<span class="ga-rating">' + (rating ? I18N.t("g_chez_toi", { m: rating }) : I18N.t("rb_jamais")) + "</span></button>";
+          '<span class="ga-rating">' + (rating ? I18N.t("guide_at_home", { m: rating }) : I18N.t("recipe_never_made")) + "</span></button>";
       }).join("") + "</div>";
   }
 
@@ -306,16 +306,16 @@
   const stripAccents = s => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   function buildIndex() {
     const idx = [];
-    liveRecipes().forEach(r => idx.push({ type: "g_t_recette", title: I18N.tr(r.nom), detail: [r.methode, I18N.tr(r.sousTitre || "")].filter(Boolean).join(" · "), recette: r.id }));
+    liveRecipes().forEach(r => idx.push({ type: "guide_type_recipe", title: I18N.tr(r.nom), detail: [r.methode, I18N.tr(r.sousTitre || "")].filter(Boolean).join(" · "), recette: r.id }));
     $$("#sheets-vocabulary .sheet").forEach(f => {
       const s = f.querySelector("summary");
-      if (s) idx.push({ type: "g_t_mot", title: s.textContent.trim(), detail: (f.querySelector(".sheet-body") || f).textContent.trim().replace(/\s+/g, " ").slice(0, 90), el: f });
+      if (s) idx.push({ type: "guide_type_word", title: s.textContent.trim(), detail: (f.querySelector(".sheet-body") || f).textContent.trim().replace(/\s+/g, " ").slice(0, 90), el: f });
     });
     $$(".guide-panel").forEach(p => {
       if (p.id === "gp-accueil" || p.id === "gp-recettes" || p.id === "gp-vocabulaire") return;
       p.querySelectorAll("h2, h3, h4").forEach(h => {
         const nextEl = h.nextElementSibling;
-        idx.push({ type: "g_t_conseil", title: h.textContent.trim(), detail: nextEl ? nextEl.textContent.trim().replace(/\s+/g, " ").slice(0, 90) : "", el: h });
+        idx.push({ type: "guide_type_tip", title: h.textContent.trim(), detail: nextEl ? nextEl.textContent.trim().replace(/\s+/g, " ").slice(0, 90) : "", el: h });
       });
     });
     return idx.map(x => ({ ...x, key: stripAccents(x.title + " " + x.detail) }));
@@ -332,7 +332,7 @@
     zone.innerHTML = matches.length
       ? matches.map((x, i) => '<button type="button" class="ga-result" data-result="' + i + '"><span class="ga-type">' + attr(I18N.t(x.type)) + "</span><b>" +
           attr(x.title) + "</b><span>" + attr(x.detail) + "</span></button>").join("")
-      : '<p class="ga-nothing">' + attr(I18N.t("g_rien", { q: $("#guide-search").value.trim() })) + "</p>";
+      : '<p class="ga-nothing">' + attr(I18N.t("guide_no_result", { q: $("#guide-search").value.trim() })) + "</p>";
   }
   function goToResult(i) {
     const x = matches[i];
@@ -412,19 +412,19 @@
       total += p;
       const phase = i < 2 ? "40 %" : "60 %";
       return "<li><span class=\"step-time\">" + (i + 1) + "</span><span>" +
-        I18N.t("te_ligne", { p, c: total }) + " <small>(" + phase + ")</small></span></li>";
+        I18N.t("tetsu_line", { p, c: total }) + " <small>(" + phase + ")</small></span></li>";
     }).join("");
     block.innerHTML =
-      '<div class="tetsu-group"><span class="label">' + I18N.t("te_40") + "</span>" +
+      '<div class="tetsu-group"><span class="label">' + I18N.t("tetsu_40") + "</span>" +
       '<div class="tetsu-options">' + TETSU.first40.map(v =>
         '<button type="button" class="pill' + (v.id === tetsuChoice.p40 ? " on" : "") + '" data-t40="' + v.id + '">' + I18N.tr(v.nom) + "</button>").join("") +
       "</div></div>" +
-      '<div class="tetsu-group"><span class="label">' + I18N.t("te_60") + "</span>" +
+      '<div class="tetsu-group"><span class="label">' + I18N.t("tetsu_60") + "</span>" +
       '<div class="tetsu-options">' + TETSU.last60.map(v =>
         '<button type="button" class="pill' + (v.id === tetsuChoice.p60 ? " on" : "") + '" data-t60="' + v.id + '">' + I18N.tr(v.nom) + "</button>").join("") +
       "</div></div>" +
       '<ul class="tetsu-pours">' + lines + "</ul>" +
-      '<p class="tetsu-detail">' + I18N.tr(v40.detail) + " " + I18N.tr(v60.detail) + " " + I18N.t("te_fin") + "</p>";
+      '<p class="tetsu-detail">' + I18N.tr(v40.detail) + " " + I18N.tr(v60.detail) + " " + I18N.t("tetsu_end") + "</p>";
     $$("[data-t40]").forEach(b => b.addEventListener("click", () => { tetsuChoice.p40 = b.dataset.t40; renderTetsu(); }));
     $$("[data-t60]").forEach(b => b.addEventListener("click", () => { tetsuChoice.p60 = b.dataset.t60; renderTetsu(); }));
   }
@@ -461,9 +461,9 @@
       return rescale(pours.map((p, i) => {
         total += p;
         return { t: null, texte: i === 0
-          ? I18N.t("pap_premier", { c: total, b: I18N.t("pap_bloom") })
-          : I18N.t("pap_verser", { p, c: total, b: I18N.t("pap_lit") }) };
-      }).concat([{ t: null, texte: I18N.t("pap_drain") }]));
+          ? I18N.t("walkthrough_first", { c: total, b: I18N.t("walkthrough_bloom") })
+          : I18N.t("walkthrough_pour", { p, c: total, b: I18N.t("walkthrough_bed") }) };
+      }).concat([{ t: null, texte: I18N.t("walkthrough_drain") }]));
     }
     return rescale(translate(recipe.etapes));
   }
@@ -478,8 +478,8 @@
     walkthrough.startedAt = null;
     $("#wt-title").textContent = r.nom;
     $("#wt-chrono").textContent = "0:00";
-    $("#wt-params").textContent = r.dose + " g / " + r.eau + " g, " + I18N.tr(r.tempTexte) + ", " + I18N.t("molette") + " " + r.dial + ", " + I18N.tr(r.totalTexte);
-    $("#wt-start").textContent = I18N.t("pap_demarrer");
+    $("#wt-params").textContent = r.dose + " g / " + r.eau + " g, " + I18N.tr(r.tempTexte) + ", " + I18N.t("dial") + " " + r.dial + ", " + I18N.tr(r.totalTexte);
+    $("#wt-start").textContent = I18N.t("walkthrough_start");
     $("#wt-next").disabled = true;
     renderWalkthroughSteps();
     $("#modal-walkthrough").showModal();
@@ -507,7 +507,7 @@
     if (walkthrough.startedAt) {
       clearInterval(walkthrough.interval);
       walkthrough.startedAt = null;
-      $("#wt-start").textContent = I18N.t("pap_reprendre");
+      $("#wt-start").textContent = I18N.t("walkthrough_restart");
       $("#wt-next").disabled = true;
       return;
     }
@@ -515,7 +515,7 @@
     walkthrough.index = 0;
     renderWalkthroughSteps();
     walkthrough.interval = setInterval(walkthroughTick, 300);
-    $("#wt-start").textContent = I18N.t("pap_arreter");
+    $("#wt-start").textContent = I18N.t("walkthrough_stop");
     $("#wt-next").disabled = false;
   }
 
@@ -537,23 +537,23 @@
     const switchOk = GRIND.checkRange("Switch", GRIND.dialFromClicks(p.clicks)).ok;
     const lines = [];
 
-    if (brikkaOk && switchOk) lines.push("<b>" + I18N.t("cm_deux") + "</b>");
-    else if (brikkaOk) lines.push("<b>" + I18N.t("cm_brikka") + "</b>");
-    else if (switchOk) lines.push("<b>" + I18N.t("cm_switch") + "</b>");
-    else lines.push('<b class="conv-out">' + I18N.t("cm_aucune") + "</b>");
+    if (brikkaOk && switchOk) lines.push("<b>" + I18N.t("dial_both") + "</b>");
+    else if (brikkaOk) lines.push("<b>" + I18N.t("dial_brikka") + "</b>");
+    else if (switchOk) lines.push("<b>" + I18N.t("dial_switch") + "</b>");
+    else lines.push('<b class="conv-out">' + I18N.t("dial_none") + "</b>");
 
-    lines.push(I18N.t("cm_plus_fin"));
-    lines.push(I18N.t("cm_plus_grossier"));
+    lines.push(I18N.t("dial_finer"));
+    lines.push(I18N.t("dial_coarser"));
 
     // Gap to the saved setting, in clicks, the unit the hand understands.
     const d = GRIND.parseDial(fallbacks.dial);
     if (d) {
       const gap = p.clicks - d.clicks;
       lines.push(gap === 0
-        ? I18N.t("cm_actuel", { m: fallbacks.dial })
-        : I18N.t("cm_ecart", {
+        ? I18N.t("dial_current", { m: fallbacks.dial })
+        : I18N.t("dial_gap", {
           n: Math.abs(gap),
-          sens: I18N.t(gap > 0 ? "cm_ouvrir" : "cm_fermer"),
+          direction: I18N.t(gap > 0 ? "dial_open" : "dial_close"),
           m: fallbacks.dial,
         }));
     }
@@ -567,7 +567,7 @@
     const zone = $("#conv-result");
     const p = GRIND.parseDial(text);
     if (!p) {
-      zone.innerHTML = '<span class="conv-error">' + I18N.t("cv_erreur") + "</span>";
+      zone.innerHTML = '<span class="conv-error">' + I18N.t("conv_error") + "</span>";
       $("#conv-advice").innerHTML = "";
       $("#conv-apply").disabled = true;
       CHARTS.diagram("ruler", null, fallbacks.dial);
@@ -578,14 +578,14 @@
     paintSlider($("#conv-slider"));
     const compatible = GRIND.compatibleMethods(p.microns).map(m => I18N.method(m.nom));
     zone.innerHTML =
-      '<span class="conv-chip"><b>' + p.clicks + "</b> " + I18N.t("cv_crans") + "</span>" +
-      '<span class="conv-chip">' + I18N.t("cv_environ") + " <b>" + Math.round(p.microns) + "</b> " + I18N.t("cv_microns") + "</span>" +
-      '<span class="conv-chip">' + I18N.t("cv_bande") + " <b>" + GRIND.bandOf(p.microns).nom + "</b></span>" +
-      '<span class="conv-chip">' + (compatible.length ? I18N.t("cv_compatible") + " <b>" + compatible.join(", ") + "</b>" : "<b>" + I18N.t("cv_hors") + "</b>") + "</span>";
+      '<span class="conv-chip"><b>' + p.clicks + "</b> " + I18N.t("conv_clicks") + "</span>" +
+      '<span class="conv-chip">' + I18N.t("conv_about") + " <b>" + Math.round(p.microns) + "</b> " + I18N.t("conv_microns") + "</span>" +
+      '<span class="conv-chip">' + I18N.t("conv_band") + " <b>" + GRIND.bandOf(p.microns).nom + "</b></span>" +
+      '<span class="conv-chip">' + (compatible.length ? I18N.t("conv_fits") + " <b>" + compatible.join(", ") + "</b>" : "<b>" + I18N.t("conv_outside") + "</b>") + "</span>";
     $("#conv-advice").innerHTML = grindAdvice(p);
     $("#conv-apply").disabled = text === fallbacks.dial;
     $("#conv-apply").textContent = text === fallbacks.dial
-      ? I18N.t("cv_deja") : I18N.t("cv_appliquer");
+      ? I18N.t("conv_already") : I18N.t("conv_apply");
     CHARTS.diagram("ruler", text, fallbacks.dial);
   }
 
@@ -605,8 +605,8 @@
       const highlight = m.id === "brikka" || m.id === "switch";
       const name = I18N.method(m.nom);
       return "<tr" + (highlight ? ' class="row-own"' : "") + "><td>" + (highlight ? "<b>" + name + "</b>" : name) + "</td>" +
-        "<td>" + (m.minU === 0 ? I18N.t("plage_moins_u", { x: m.maxU }) : I18N.t("plage_a", { a: m.minU, b: m.maxU })) + "</td>" +
-        "<td>" + (m.minC === 0 ? I18N.t("plage_moins_u", { x: m.maxC }) : I18N.t("plage_a", { a: m.minC, b: m.maxC })) + "</td>" +
+        "<td>" + (m.minU === 0 ? I18N.t("range_under", { x: m.maxU }) : I18N.t("range_from_to", { a: m.minU, b: m.maxU })) + "</td>" +
+        "<td>" + (m.minC === 0 ? I18N.t("range_under", { x: m.maxC }) : I18N.t("range_from_to", { a: m.minC, b: m.maxC })) + "</td>" +
         "<td><code>" + I18N.dialRange(m.dialText) + "</code></td></tr>";
     }).join("");
   }
@@ -630,12 +630,12 @@
        the same fallback as the Settings screen, so there is only one source. */
     $("#conv-apply").addEventListener("click", async () => {
       const dial = $("#conv-dial").value.trim().replace(/,/g, ".");
-      if (!GRIND.parseDial(dial)) { toast(I18N.t("t_mouture_invalide")); return; }
+      if (!GRIND.parseDial(dial)) { toast(I18N.t("toast_grind_invalid")); return; }
       fallbacks.dial = dial;
       await saveFallbacks();
       renderConverter();
       if ($("#param-dial")) $("#param-dial").value = dial;
-      toast(I18N.t("t_molette_appliquee", { m: dial }));
+      toast(I18N.t("toast_dial_applied", { m: dial }));
     });
     $("#wt-start").addEventListener("click", startWalkthrough);
     $("#wt-next").addEventListener("click", nextWalkthroughStep);
@@ -676,7 +676,7 @@
       const text = block ? block.textContent.trim() : "";
       try {
         await navigator.clipboard.writeText(text);
-        toast(I18N.t("t_copie"));
+        toast(I18N.t("toast_copied"));
       } catch (e) {
         const ta = document.createElement("textarea");
         ta.value = text;
@@ -684,7 +684,7 @@
         ta.select();
         document.execCommand("copy");
         ta.remove();
-        toast(I18N.t("t_copie"));
+        toast(I18N.t("toast_copied"));
       }
     }));
   }

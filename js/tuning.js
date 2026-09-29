@@ -41,14 +41,14 @@ function rollingAverage(extractions, windowSize) {
    The value function returns null when the lever is not filled in, the cup
    is then ignored FOR THAT LEVER only. */
 const LEVERS = [
-  { key: "feu", value: e => (e.methode !== "Brikka" || e.puissance_feu === "" || e.puissance_feu === undefined
+  { key: "heat", value: e => (e.methode !== "Brikka" || e.puissance_feu === "" || e.puissance_feu === undefined
       ? null : String(e.puissance_feu)) },
-  { key: "prechauffage", value: e => (e.methode !== "Brikka" ? null
+  { key: "preheat", value: e => (e.methode !== "Brikka" ? null
       : Number(e.eau_prechauffee) === 1 ? "oui" : "non") },
-  { key: "recette", value: e => e.recette || null },
+  { key: "recipe", value: e => e.recette || null },
   { key: "dose", value: e => (Number(e.dose_g) > 0 ? String(Math.round(Number(e.dose_g))) : null) },
-  { key: "mouture", value: e => e.mouture_dial || null },
-  { key: "paquet", value: e => {
+  { key: "grind", value: e => e.mouture_dial || null },
+  { key: "bag_age", value: e => {
       const days = e._c && e._c.jours_ouvert;
       if (days === "" || days === undefined || days === null) return null;
       return days <= 7 ? "frais" : days <= 21 ? "median" : "vieux";
@@ -204,7 +204,7 @@ function quantifiedCorrection(ext, steps, ground) {
       if (range) c = clamp(c, range.minC, range.maxC);
       c = clamp(c, 0, GRIND.MAX_CLICKS);
       if (c !== d.clicks) {
-        levers.push({ lever: "mouture", field: "mouture_dial", from: ext.mouture_dial, to: GRIND.dialFromClicks(c),
+        levers.push({ lever: "grind", field: "mouture_dial", from: ext.mouture_dial, to: GRIND.dialFromClicks(c),
           gap: c - d.clicks, microns: [Math.round(d.microns), Math.round(c * GRIND.MICRONS_PER_CLICK)] });
       }
     }
@@ -216,13 +216,13 @@ function quantifiedCorrection(ext, steps, ground) {
     } else if (ext.methode === "Brikka" && num(ext.puissance_feu) !== null && direction.heat < 0) {
       // On the Brikka, never more heat (v8.74): it overheats the aluminium.
       const f = clamp(num(ext.puissance_feu) + direction.heat * p.pas_feu, 1, 10);
-      if (f !== num(ext.puissance_feu)) levers.push({ lever: "feu", field: "puissance_feu", from: num(ext.puissance_feu), to: f });
+      if (f !== num(ext.puissance_feu)) levers.push({ lever: "heat", field: "puissance_feu", from: num(ext.puissance_feu), to: f });
     }
   }
   if (direction.ratio) {
     if (ext.methode === "Switch" && num(ext.eau_g) > 0) {
       const e = Math.max(num(ext.dose_g) > 0 ? num(ext.dose_g) * 8 : 60, num(ext.eau_g) + direction.ratio * p.pas_eau_g);
-      if (e !== num(ext.eau_g)) levers.push({ lever: "eau", field: "eau_g", from: num(ext.eau_g), to: e });
+      if (e !== num(ext.eau_g)) levers.push({ lever: "water", field: "eau_g", from: num(ext.eau_g), to: e });
     }
     // No quantified ratio on the Brikka (v8.74): its basket is full and levelled.
   }

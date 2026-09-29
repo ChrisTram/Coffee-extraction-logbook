@@ -153,7 +153,7 @@ const CHARTS = (() => {
       return r >= 0 && tints[r] ? tints[r] : neutral;
     };
     const tiles = Array.from({ length: maxCups }, (_, k) => ({
-      type: "bar", label: I18N.t("l_tasses_jour"), isTile: k + 1, yAxisID: "y", stack: "tasses",
+      type: "bar", label: I18N.t("chart_cups_per_day"), isTile: k + 1, yAxisID: "y", stack: "tasses",
       data: counts.map(c => (Number(c) > k ? 1 : null)),
       // The hairline between two blocks is the card colour, not a series colour.
       backgroundColor: counts.map((_, i) => tint(i, k)), borderColor: borderTint,
@@ -164,7 +164,7 @@ const CHARTS = (() => {
         labels,
         datasets: [
           {
-            type: "line", label: I18N.t("l_note_jour"), data: averages, yAxisID: "y2",
+            type: "line", label: I18N.t("chart_daily_score"), data: averages, yAxisID: "y2",
             borderColor: cssVar("--accent"), backgroundColor: cssVar("--accent"),
             spanGaps: true, tension: 0.35, pointRadius: 3, pointHoverRadius: 5, borderWidth: 2,
           },
@@ -175,7 +175,7 @@ const CHARTS = (() => {
                measure. The COLOUR serves the same intent: that of the
                rating it smooths, translucent. A foreign tint made it pass
                for a third piece of data, which it is not. */
-            type: "line", label: I18N.t("l_tendance"), data: trend || [], yAxisID: "y2",
+            type: "line", label: I18N.t("chart_trend"), data: trend || [], yAxisID: "y2",
             borderColor: cssVar("--trend"), backgroundColor: cssVar("--trend"),
             spanGaps: true, tension: 0.4, pointRadius: 0, pointHoverRadius: 4, borderWidth: 3,
             fill: false,
@@ -194,7 +194,7 @@ const CHARTS = (() => {
             filter: item => !(item.dataset.isTile > 1) && !(item.dataset.isTile === 1 && !Number(counts[item.dataIndex])),
             callbacks: {
               label: item => (item.dataset.isTile
-                ? I18N.t("l_tasses_jour") + " : " + counts[item.dataIndex]
+                ? I18N.t("chart_cups_per_day") + " : " + counts[item.dataIndex]
                 : item.dataset.label + " : " + (item.formattedValue || "")),
               afterBody: items => {
                 const i = items.length ? items[0].dataIndex : -1;
@@ -219,12 +219,12 @@ const CHARTS = (() => {
             stack: "trente", stackWeight: 1, position: "left", stacked: true, min: 0, max: maxCups,
             ticks: { stepSize: 1 },
             grid: { color: cssVar("--lines-soft"), drawTicks: false },
-            title: { display: true, text: I18N.t("axe_tasses") },
+            title: { display: true, text: I18N.t("axis_cups") },
           },
           y2: {
             stack: "trente", stackWeight: 2, position: "left", min: yFloor, max: 10,
             ticks: { stepSize: 2 },
-            title: { display: true, text: I18N.t("axe_note_court") },
+            title: { display: true, text: I18N.t("axis_score_short") },
           },
         },
       },
@@ -290,7 +290,7 @@ const CHARTS = (() => {
       options: {
         scales: {
           x: { grid: { display: false } },
-          y: { beginAtZero: true, max: 10, title: { display: true, text: I18N.t("axe_note_moy") } },
+          y: { beginAtZero: true, max: 10, title: { display: true, text: I18N.t("axis_average_score") } },
         },
       },
     });
@@ -314,7 +314,7 @@ const CHARTS = (() => {
         },
         scales: {
           x: { title: { display: true, text: xTitle } },
-          y: { min: 0, max: 10, title: { display: true, text: I18N.t("axe_note") } },
+          y: { min: 0, max: 10, title: { display: true, text: I18N.t("axis_score") } },
         },
       },
     });
@@ -380,7 +380,7 @@ const CHARTS = (() => {
     // the legend useful: 1, 2, 3, 4 and more.
     const levelOf = v => (v <= 0 ? 0 : Math.min(4, v));
 
-    let svg = '<svg viewBox="0 0 ' + width + " " + height + '" class="heatmap-svg" role="img" aria-label="' + I18N.t("hm_aria") + '">';
+    let svg = '<svg viewBox="0 0 ' + width + " " + height + '" class="heatmap-svg" role="img" aria-label="' + I18N.t("heatmap_aria") + '">';
     [0, 2, 4, 6].forEach(j => {
       svg += '<text x="0" y="' + (high + j * (cell + gap) + cell - 4) + '" class="hm-label">' + DAY_NAMES[j] + "</text>";
     });
@@ -403,7 +403,7 @@ const CHARTS = (() => {
         }
         const info = infoByDay[key] || "";
         const localDate = d.toLocaleDateString(I18N.locale(), { weekday: "long", day: "numeric", month: "long" });
-        const count = v === 0 ? I18N.t("hm_aucune") : I18N.t(v > 1 ? "hm_ns" : "hm_n", { n: v });
+        const count = v === 0 ? I18N.t("heatmap_none") : I18N.t(v > 1 ? "heatmap_many" : "heatmap_one", { n: v });
         // The current day is circled: without a landmark, finding your way in
         // a grid of more than a hundred cells means counting the columns.
         const isToday = key === todayKey;
@@ -469,7 +469,7 @@ const CHARTS = (() => {
     const x = u => left + Math.max(0, Math.min(maxU, u)) / maxU * zone;
     const umPerStep = GRIND.MICRONS_PER_CLICK;
 
-    let svg = '<svg viewBox="0 0 ' + width + " " + height + '" class="diagram-svg" role="img" aria-label="' + I18N.t("rg_aria") + '">';
+    let svg = '<svg viewBox="0 0 ' + width + " " + height + '" class="diagram-svg" role="img" aria-label="' + I18N.t("range_aria") + '">';
     svg += '<defs><pattern id="hatching" width="9" height="9" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">' +
       '<line x1="0" y1="0" x2="0" y2="9" class="dg-hatch"></line></pattern></defs>';
 
@@ -478,7 +478,7 @@ const CHARTS = (() => {
     svg += '<rect x="' + xStop + '" y="' + axisTop + '" width="' + (x(maxU) - xStop) + '" height="' + (bandsY - axisTop) + '" fill="url(#hatching)" class="dg-zone-out"></rect>';
 
     // Top axis: rotations, a graduation every 0.2.0 (10 clicks), a tick per click.
-    svg += '<text x="' + left + '" y="12" class="dg-title-axis">' + I18N.t("dg_rotations") + "</text>";
+    svg += '<text x="' + left + '" y="12" class="dg-title-axis">' + I18N.t("grind_dial_rotations") + "</text>";
     for (let c = 0; c <= GRIND.MAX_CLICKS; c++) {
       const gx = x(c * umPerStep);
       const major = c % 10 === 0;
@@ -502,7 +502,7 @@ const CHARTS = (() => {
         const isOwn = id === "brikka" || id === "switch";
         boxes.push({ id, minU: m.minU, maxU: m.maxU });
         svg += '<g class="dg-box' + (isOwn ? " dg-box-own" : "") + '" data-box="' + id + '" data-tip="' +
-          I18N.method(m.nom) + " : " + I18N.t("rg_tip_court", { min: m.minU, max: m.maxU, minC: m.minC, maxC: m.maxC, mol: I18N.dialRange(m.dialText) }) + '">' +
+          I18N.method(m.nom) + " : " + I18N.t("range_tip_short", { min: m.minU, max: m.maxU, minC: m.minC, maxC: m.maxC, dial: I18N.dialRange(m.dialText) }) + '">' +
           '<rect x="' + x1 + '" y="' + y + '" width="' + Math.max(4, x2 - x1) + '" height="' + boxH + '" rx="4"' +
           (isOwn ? ' style="stroke:' + (id === "brikka" ? C_BRIKKA : C_SWITCH) + '"' : "") + "></rect>" +
           '<text x="' + ((x1 + x2) / 2) + '" y="' + (y + boxH / 2 + 4) + '" text-anchor="middle" class="dg-name">' + I18N.method(m.nom) + "</text></g>";
@@ -526,7 +526,7 @@ const CHARTS = (() => {
       const gx = x(u);
       svg += '<line x1="' + gx + '" y1="' + axisTop + '" x2="' + gx + '" y2="' + (bandsY + bandsH) + '" class="dg-ref" style="stroke:' + r.color + '"></line>' +
         '<circle cx="' + gx + '" cy="' + (axisTop + 5) + '" r="4.5" style="fill:' + r.color + '" class="dg-ref-point" data-tip="' +
-        r.dial + " : " + I18N.tr(r.usage) + ", " + r.clicks + " " + I18N.t("cv_crans") + ", " + I18N.t("cv_environ") + " " + Math.round(u) + ' µm"></circle>';
+        r.dial + " : " + I18N.tr(r.usage) + ", " + r.clicks + " " + I18N.t("conv_clicks") + ", " + I18N.t("conv_about") + " " + Math.round(u) + ' µm"></circle>';
     });
 
     /* Chris's default setting, thick green stroke. Distinct from the black
@@ -689,7 +689,7 @@ const CHARTS = (() => {
           const ag = (g.n / total) * TURN;
           html += '<path d="' + sector(96, isActive ? 146 : 138, b + GAP, b + ag - GAP) + '" class="wheel-taste" style="fill-opacity:' +
             opacity(g.note).toFixed(2) + '" data-family="' + escapeHtml(f.nom) + '"><title>' +
-            escapeHtml(I18N.tag(g.tag) + " : " + fmtRating(g.note) + ", " + I18N.t("roue_fois", { n: g.n })) + "</title></path>";
+            escapeHtml(I18N.tag(g.tag) + " : " + fmtRating(g.note) + ", " + I18N.t("wheel_times", { n: g.n })) + "</title></path>";
           b += ag;
         });
         a += af;
@@ -704,13 +704,13 @@ const CHARTS = (() => {
         detail.innerHTML = '<h4 class="wheel-title">' + escapeHtml(I18N.group(f.nom)) + "</h4>" +
           f.tastes.slice().sort((x, y) => y.note - x.note).map(g =>
             '<div class="wheel-row"><span>' + escapeHtml(I18N.tag(g.tag)) + "</span><span>" +
-            I18N.t("roue_fois", { n: g.n }) + "</span><b>" + fmtRating(g.note) + "</b></div>").join("");
+            I18N.t("wheel_times", { n: g.n }) + "</span><b>" + fmtRating(g.note) + "</b></div>").join("");
       }
     }
     paint();
     if (reading) {
       const better = families.filter(x => x.n >= 3).sort((x, y) => y.note - x.note)[0];
-      reading.textContent = I18N.t(better && better.nom !== mostTicked.nom ? "roue_lecture" : "roue_lecture_seule", {
+      reading.textContent = I18N.t(better && better.nom !== mostTicked.nom ? "wheel_reading" : "wheel_reading_alone", {
         f: I18N.group(mostTicked.nom), n: mostTicked.n, m: better ? I18N.group(better.nom) : "", x: better ? fmtRating(better.note) : "",
       });
     }

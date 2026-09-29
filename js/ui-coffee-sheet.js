@@ -117,15 +117,15 @@
     const current = stock && stock.remaining > 0 ? Math.round(stock.remaining) : "";
     const hint = stock ? stock.format : 250;
     return '<form class="sh-stock-editing" id="sh-stock-editing" hidden>' +
-      '<label for="sh-stock-g">' + I18N.t("fi_stock_label") + "</label>" +
+      '<label for="sh-stock-g">' + I18N.t("sheet_stock_label") + "</label>" +
       '<div class="sh-stock-row">' +
         '<input type="number" id="sh-stock-g" min="0" max="5000" step="1" inputmode="decimal" value="' + current +
           '" placeholder="' + hint + '">' +
         "<span>g</span>" +
-        '<button type="submit" class="btn btn-small btn-primary">' + I18N.t("fi_stock_enregistrer") + "</button>" +
-        '<button type="button" class="btn btn-small btn-subtle" data-stock-cancel>' + I18N.t("fi_stock_annuler") + "</button>" +
+        '<button type="submit" class="btn btn-small btn-primary">' + I18N.t("sheet_stock_save") + "</button>" +
+        '<button type="button" class="btn btn-small btn-subtle" data-stock-cancel>' + I18N.t("sheet_stock_cancel") + "</button>" +
       "</div>" +
-      '<p class="sh-quiet">' + I18N.t("fi_stock_aide") + "</p></form>";
+      '<p class="sh-quiet">' + I18N.t("sheet_stock_help") + "</p></form>";
   }
 
   function bagBlock(coffee, exts, rated, coffeeAvg) {
@@ -134,31 +134,31 @@
     const stock = DATA.bagStock(coffee.id, fallbacks.dose);
     const jc = currentBagDay(coffee.id);
     const f = learnWindow(rated, coffeeAvg);
-    let html = '<section class="sh-block sh-bag"><h3 class="sh-h">' + I18N.t("fi_sachet") + "</h3>";
+    let html = '<section class="sh-block sh-bag"><h3 class="sh-h">' + I18N.t("sheet_bag") + "</h3>";
     if (stock) {
       const left = Math.max(0, stock.remaining);
       const cups = Math.floor(left / dose);
       const pc = Math.max(0, Math.min(100, (left / stock.format) * 100));
-      html += '<div class="sh-gauge" role="img" aria-label="' + escapeHtml(I18N.t("fi_jauge", { r: fmtDecimal(left, 0), f: stock.format })) +
+      html += '<div class="sh-gauge" role="img" aria-label="' + escapeHtml(I18N.t("sheet_gauge", { r: fmtDecimal(left, 0), f: stock.format })) +
         '"><i style="width:' + pc.toFixed(1) + '%"></i></div>' +
-        '<div class="sh-row"><span><b>' + fmtDecimal(left, 0) + " g</b> " + I18N.t("fi_sur", { f: stock.format }) +
-          ' <button type="button" class="sh-correct" data-stock-edit>' + I18N.t("fi_stock_corriger") + "</button></span>" +
-        "<span>" + (stock.remaining <= 0 ? I18N.t("stock_vide") : I18N.t("fi_tasses", { n: cups })) + "</span></div>" +
-        (stock.corrected ? '<p class="sh-quiet">' + I18N.t("fi_stock_compte", {
+        '<div class="sh-row"><span><b>' + fmtDecimal(left, 0) + " g</b> " + I18N.t("sheet_out_of", { f: stock.format }) +
+          ' <button type="button" class="sh-correct" data-stock-edit>' + I18N.t("sheet_stock_correct") + "</button></span>" +
+        "<span>" + (stock.remaining <= 0 ? I18N.t("stock_empty") : I18N.t("sheet_cups", { n: cups })) + "</span></div>" +
+        (stock.corrected ? '<p class="sh-quiet">' + I18N.t("sheet_stock_counted", {
           d: new Date(stock.corrected).toLocaleDateString(I18N.locale(), { day: "numeric", month: "long" }) }) + "</p>" : "");
       if (cups <= REORDER_CUPS) {
         const link = shopLink(coffee);
-        html += '<p class="sh-rebuy">' + I18N.t("fi_reachat") +
+        html += '<p class="sh-rebuy">' + I18N.t("sheet_rebuy") +
           (link ? ' <a href="' + escapeHtml(link) + '" target="_blank" rel="noopener">' +
-            I18N.t("fi_boutique", { t: escapeHtml(coffee.torrefacteur) }) + "</a>" : "") + "</p>";
+            I18N.t("sheet_shop", { t: escapeHtml(coffee.torrefacteur) }) + "</a>" : "") + "</p>";
       }
     } else {
-      html += '<p class="sh-quiet">' + I18N.t("fi_sans_stock") +
-        ' <button type="button" class="sh-correct" data-stock-edit>' + I18N.t("fi_stock_saisir") + "</button></p>";
+      html += '<p class="sh-quiet">' + I18N.t("sheet_no_stock") +
+        ' <button type="button" class="sh-correct" data-stock-edit>' + I18N.t("sheet_stock_enter") + "</button></p>";
     }
     // Delete the current bag, entered by mistake (v8.77): the function existed without a button.
     const bag = DATA.currentBag(coffee.id);
-    if (bag) html += '<button type="button" class="btn btn-small btn-subtle sh-delete-bag" data-delete-bag="' + escapeHtml(bag.id) + '">' + I18N.t("fi_suppr_sachet") + "</button>";
+    if (bag) html += '<button type="button" class="btn btn-small btn-subtle sh-delete-bag" data-delete-bag="' + escapeHtml(bag.id) + '">' + I18N.t("sheet_delete_bag") + "</button>";
 
     // The freshness ruler: day 1 on the left, the window in accent, today as a line.
     const max = Math.max(28, ...rated.map(e => e._c.jours_ouvert === "" ? 0 : e._c.jours_ouvert), jc ? jc.day : 0);
@@ -168,23 +168,23 @@
         (f.sweetSpot ? '<span class="sh-window" style="left:' + x(f.sweetSpot.start).toFixed(1) + "%;width:" +
           (x(Math.min(f.sweetSpot.end, max)) - x(f.sweetSpot.start)).toFixed(1) + '%"></span>' : "") +
         (jc ? '<span class="sh-today" style="left:' + x(jc.day).toFixed(1) + '%"></span>' : "") + "</div>" +
-        '<div class="sh-leg"><span>' + I18N.t("fi_jour", { n: 1 }) + "</span>" +
-        (f.sweetSpot ? "<span>" + I18N.t("fi_fenetre_leg", { a: f.sweetSpot.start + 1, b: Math.min(f.sweetSpot.end, max) + 1 }) + "</span>" : "") +
-        "<span>" + I18N.t("fi_jour", { n: max + 1 }) + "</span></div>";
+        '<div class="sh-leg"><span>' + I18N.t("sheet_day", { n: 1 }) + "</span>" +
+        (f.sweetSpot ? "<span>" + I18N.t("sheet_window_legend", { a: f.sweetSpot.start + 1, b: Math.min(f.sweetSpot.end, max) + 1 }) + "</span>" : "") +
+        "<span>" + I18N.t("sheet_day", { n: max + 1 }) + "</span></div>";
     }
     const sentences = [];
-    if (jc) sentences.push(I18N.t("fi_ouvert", { n: jc.day + 1, d: shortDay(jc.openedOn) }));
+    if (jc) sentences.push(I18N.t("sheet_opened", { n: jc.day + 1, d: shortDay(jc.openedOn) }));
     if (f.sweetSpot) {
-      sentences.push(I18N.t("fi_fenetre", {
+      sentences.push(I18N.t("sheet_window", {
         a: f.sweetSpot.start + 1, b: Math.min(f.sweetSpot.end, max) + 1, x: fmtRating(f.sweetSpot.inside), y: fmtRating(f.sweetSpot.outside),
       }));
       if (jc) {
-        const key = jc.day < f.sweetSpot.start ? "fi_avant" : jc.day > f.sweetSpot.end ? "fi_apres"
-          : jc.day === f.sweetSpot.end ? "fi_dedans_bord" : "fi_dedans";
+        const key = jc.day < f.sweetSpot.start ? "sheet_before" : jc.day > f.sweetSpot.end ? "sheet_after"
+          : jc.day === f.sweetSpot.end ? "sheet_inside_edge" : "sheet_inside";
         sentences.push(I18N.t(key, { n: Math.abs((jc.day < f.sweetSpot.start ? f.sweetSpot.start : f.sweetSpot.end) - jc.day) }));
       }
     } else if (rated.some(e => e._c.jours_ouvert !== "")) {
-      sentences.push(I18N.t("fi_pas_de_fenetre", { n: MIN_PER_BAND }));
+      sentences.push(I18N.t("sheet_no_window", { n: MIN_PER_BAND }));
     }
     if (sentences.length) html += '<p class="sh-text">' + sentences.join(" ") + "</p>";
     return { html: html + "</section>", sweetSpot: f, max, jc };
@@ -194,8 +194,8 @@
      as background. Same rating scale as everywhere, from 0 to 10. */
   function curveBlock(rated, f, max, jc) {
     const points = rated.filter(e => e._c.jours_ouvert !== "");
-    let html = '<section class="sh-block sh-curve"><h3 class="sh-h">' + I18N.t("fi_courbe") + "</h3>";
-    if (points.length < 2) return html + '<p class="sh-quiet">' + I18N.t("fi_courbe_vide") + "</p></section>";
+    let html = '<section class="sh-block sh-curve"><h3 class="sh-h">' + I18N.t("sheet_curve") + "</h3>";
+    if (points.length < 2) return html + '<p class="sh-quiet">' + I18N.t("sheet_curve_empty") + "</p></section>";
     const G = 30, D = 312, H = 12, B = 132, L = 320;
     const x = j => G + (Math.min(j, max) / max) * (D - G);
     const y = n => B - (n / 10) * (B - H);
@@ -220,15 +220,15 @@
     if (jc && jc.day <= max) {
       svg += '<line x1="' + x(jc.day) + '" y1="' + H + '" x2="' + x(jc.day) + '" y2="' + B + '" class="sh-c-today"></line>';
     }
-    svg += '<text x="' + G + '" y="' + (B + 16) + '">' + I18N.t("fi_jour", { n: 1 }) + "</text>" +
-      '<text x="' + D + '" y="' + (B + 16) + '" text-anchor="end">' + I18N.t("fi_jour", { n: max + 1 }) + "</text>";
+    svg += '<text x="' + G + '" y="' + (B + 16) + '">' + I18N.t("sheet_day", { n: 1 }) + "</text>" +
+      '<text x="' + D + '" y="' + (B + 16) + '" text-anchor="end">' + I18N.t("sheet_day", { n: max + 1 }) + "</text>";
     return html + '<svg class="sh-svg" viewBox="0 0 ' + L + ' 152" role="img" aria-label="' +
-      escapeHtml(I18N.t("fi_courbe_aria", { n: points.length })) + '">' + svg + "</svg></section>";
+      escapeHtml(I18N.t("sheet_curve_aria", { n: points.length })) + '">' + svg + "</svg></section>";
   }
 
   function latestBlock(exts) {
     const latest = exts.slice().sort((a, b) => String(b.date_heure).localeCompare(String(a.date_heure))).slice(0, 5);
-    return '<section class="sh-block sh-latest"><h3 class="sh-h">' + I18N.t("fi_dernieres") + "</h3>" +
+    return '<section class="sh-block sh-latest"><h3 class="sh-h">' + I18N.t("sheet_latest") + "</h3>" +
       '<ol class="sh-list">' + latest.map(e =>
         '<li><span class="sh-date">' + shortDay(e.date_heure) + '</span><span class="sh-what">' +
         '<span class="dot-method ' + String(e.methode || "").toLowerCase() + '"></span>' + escapeHtml(I18N.tr(e.recette || "")) +
@@ -252,9 +252,9 @@
     const chips = [
       coffee.torrefacteur, coffee.origine, [coffee.espece, coffee.procede].filter(Boolean).join(" · "), coffee.torrefaction,
     ].filter(Boolean).map(t => '<span class="sh-chip">' + escapeHtml(t) + "</span>").join("") +
-      (pct > 0 && pct < 100 ? '<span class="sh-chip sh-chip-alert">' + pct + " % " + I18N.t("pct_cafe") + "</span>" : "") +
+      (pct > 0 && pct < 100 ? '<span class="sh-chip sh-chip-alert">' + pct + " % " + I18N.t("percent_coffee") + "</span>" : "") +
       (machine ? '<span class="sh-chip"><span class="dot-method ' + machine[0].toLowerCase() + '"></span>' +
-        I18N.t("fi_surtout", { m: I18N.machine(machine[0]) }) + "</span>" : "");
+        I18N.t("sheet_mostly", { m: I18N.machine(machine[0]) }) + "</span>" : "");
 
     const bag = bagBlock(coffee, exts, rated, coffeeAvg);
     const report = TUNING.forCoffee(coffee.id, analyzableExts());
@@ -270,25 +270,25 @@
     const doses = exts.filter(e => Number(e.dose_g) > 0).map(e => Number(e.dose_g));
     const cost = UI.costPerCup(coffee, doses.length ? average(doses) : fallbacks.dose);
     const kpi = (v, l) => '<div class="sh-kpi"><b>' + v + "</b><span>" + l + "</span></div>";
-    const TABS = [["reglage", "fi_o_reglage"], ["gouts", "fi_o_gouts"], ["sachets", "fi_o_sachets"], ["tasses", "fi_o_tasses"]];
+    const TABS = [["reglage", "sheet_tab_setting"], ["gouts", "sheet_tab_tastes"], ["sachets", "sheet_tab_bags"], ["tasses", "sheet_tab_cups"]];
     if (!TABS.some(([k]) => k === sheetTab)) sheetTab = "reglage";
     const panel = (key, html) => '<div class="sh-panel" role="tabpanel" id="sh-p-' + key + '" aria-labelledby="sh-o-' + key + '"' +
       (key === sheetTab ? "" : " hidden") + '><div class="sh-grid">' + html + "</div></div>";
-    const tastesBlock = '<section class="sh-block sh-tastes"><h3 class="sh-h">' + I18N.t("fi_gouts") + "</h3>" +
+    const tastesBlock = '<section class="sh-block sh-tastes"><h3 class="sh-h">' + I18N.t("sheet_tastes") + "</h3>" +
       '<div class="sh-wheel"><svg id="sheet-wheel" class="wheel" viewBox="0 0 300 300" role="img" aria-label="' +
-      escapeHtml(I18N.t("fi_roue_aria")) + '"></svg><div class="wheel-detail" id="sheet-wheel-detail" aria-live="polite"></div></div>' +
-      '<p class="sh-quiet" id="sheet-wheel-empty" hidden>' + I18N.t("fi_gouts_vide") + "</p></section>";
-    const settingBlock = '<section class="sh-block sh-setting"><h3 class="sh-h">' + I18N.t("fi_reglage") + "</h3>" +
+      escapeHtml(I18N.t("sheet_wheel_aria")) + '"></svg><div class="wheel-detail" id="sheet-wheel-detail" aria-live="polite"></div></div>' +
+      '<p class="sh-quiet" id="sheet-wheel-empty" hidden>' + I18N.t("sheet_tastes_empty") + "</p></section>";
+    const settingBlock = '<section class="sh-block sh-setting"><h3 class="sh-h">' + I18N.t("sheet_setting") + "</h3>" +
       UI.tuningCard({ coffee: coffee, ...report }) + "</section>";
     /* The drawings of this coffee (v8.50), rendered by js/ui-drawings.js. */
-    const fingerprintBlock = '<section class="sh-block"><h3 class="sh-h">' + I18N.t("fi_empreinte") + "</h3>" +
-      '<svg id="sheet-footprint" class="sh-drawing" viewBox="0 0 320 210" role="img" aria-label="' + escapeHtml(I18N.t("fi_empreinte")) + '"></svg>' +
+    const fingerprintBlock = '<section class="sh-block"><h3 class="sh-h">' + I18N.t("sheet_fingerprint") + "</h3>" +
+      '<svg id="sheet-footprint" class="sh-drawing" viewBox="0 0 320 210" role="img" aria-label="' + escapeHtml(I18N.t("sheet_fingerprint")) + '"></svg>' +
       '<p class="sh-text" id="sheet-footprint-reading"></p></section>';
-    const trajectoryBlock = '<section class="sh-block"><h3 class="sh-h">' + I18N.t("fi_trajectoire") + "</h3>" +
-      '<svg id="sheet-trajectory" class="sh-drawing" viewBox="0 0 320 172" role="img" aria-label="' + escapeHtml(I18N.t("fi_trajectoire")) + '"></svg>' +
+    const trajectoryBlock = '<section class="sh-block"><h3 class="sh-h">' + I18N.t("sheet_trajectory") + "</h3>" +
+      '<svg id="sheet-trajectory" class="sh-drawing" viewBox="0 0 320 172" role="img" aria-label="' + escapeHtml(I18N.t("sheet_trajectory")) + '"></svg>' +
       '<p class="sh-text" id="sheet-trajectory-reading"></p></section>';
-    const grinderBlock = '<section class="sh-block"><h3 class="sh-h">' + I18N.t("fi_moulin") + "</h3>" +
-      '<svg id="sheet-grinder" class="sh-drawing" viewBox="0 0 320 126" role="img" aria-label="' + escapeHtml(I18N.t("fi_moulin")) + '"></svg>' +
+    const grinderBlock = '<section class="sh-block"><h3 class="sh-h">' + I18N.t("sheet_grinder") + "</h3>" +
+      '<svg id="sheet-grinder" class="sh-drawing" viewBox="0 0 320 126" role="img" aria-label="' + escapeHtml(I18N.t("sheet_grinder")) + '"></svg>' +
       '<p class="sh-text" id="sheet-grinder-reading"></p></section>';
     zone.innerHTML =
       '<header class="sh-head sh-passport">' +
@@ -297,27 +297,27 @@
            image, and the click opens the manual count just below. */
         '<div class="sh-jar-block">' +
           '<button type="button" class="sh-jar" data-stock-edit aria-label="' +
-            escapeHtml(I18N.t("fi_stock_aria", { g: stock ? fmtDecimal(Math.max(0, stock.remaining), 0) : "?" })) +
+            escapeHtml(I18N.t("sheet_stock_aria", { g: stock ? fmtDecimal(Math.max(0, stock.remaining), 0) : "?" })) +
             '" style="--level:' + level.toFixed(0) + "%;--tint:" + tint + '"><i></i>' + BEAN_SVG + "</button>" +
           /* Below zero, the computation is necessarily wrong (cups from another bag,
              bag not entered): « à compter » invites a correction, where « 0 g »
              suggested an empty bag. */
           (stock && stock.remaining < 0
-            ? '<button type="button" class="sh-jar-g sh-to-count" data-stock-edit>' + I18N.t("fi_stock_a_compter") + "</button>"
+            ? '<button type="button" class="sh-jar-g sh-to-count" data-stock-edit>' + I18N.t("sheet_stock_to_count") + "</button>"
             : '<span class="sh-jar-g">' + (stock ? fmtDecimal(stock.remaining, 0) + " g" : "") + "</span>") +
         "</div>" +
-        '<div class="sh-identity"><p class="highlight">' + I18N.t("fi_surligne") + "</p>" +
+        '<div class="sh-identity"><p class="highlight">' + I18N.t("sheet_highlight") + "</p>" +
         '<h2 id="sheet-name">' + escapeHtml(coffee.nom) + "</h2>" + '<div class="sh-chips">' + chips + "</div></div>" +
       "</header>" +
       stockEditor(stock) +
       '<div class="sh-kpis">' +
-        kpi(exts.length, I18N.t("fi_k_tasses")) +
-        kpi(rated.length ? fmtRating(coffeeAvg) : "·", I18N.t("fi_k_moyenne")) +
-        kpi(best !== null ? fmtRating(best) : "·", I18N.t("fi_k_meilleure")) +
+        kpi(exts.length, I18N.t("sheet_kpi_cups")) +
+        kpi(rated.length ? fmtRating(coffeeAvg) : "·", I18N.t("sheet_kpi_average")) +
+        kpi(best !== null ? fmtRating(best) : "·", I18N.t("sheet_kpi_best")) +
         // Price only: « 7 348 ₫ la tasse de 14,7 g » would repeat the label below.
-        kpi(cost ? escapeHtml(String(cost).replace(/^([^₫]*₫).*$/, "$1")) : "·", I18N.t("fi_k_cout")) +
+        kpi(cost ? escapeHtml(String(cost).replace(/^([^₫]*₫).*$/, "$1")) : "·", I18N.t("sheet_kpi_cost")) +
       "</div>" +
-      '<div class="sh-tabs" role="tablist" aria-label="' + escapeHtml(I18N.t("fi_onglets")) + '">' +
+      '<div class="sh-tabs" role="tablist" aria-label="' + escapeHtml(I18N.t("sheet_tabs")) + '">' +
         TABS.map(([k, key]) => '<button type="button" role="tab" id="sh-o-' + k + '" data-tab="' + k + '" aria-controls="sh-p-' + k +
           '" aria-selected="' + (k === sheetTab) + '" tabindex="' + (k === sheetTab ? 0 : -1) + '">' + I18N.t(key) + "</button>").join("") +
       "</div>" +
@@ -342,8 +342,8 @@
   function compareBlock(coffee) {
     const others = DATA.state.cafes.filter(c => c.id !== coffee.id && DATA.state.extractions.some(e => e.cafe_id === c.id));
     if (!others.length) return "";
-    return '<section class="sh-block sh-compare"><div class="sh-compare-head"><h3 class="sh-h">' + I18N.t("fi_comparer") + "</h3>" +
-      '<select id="sheet-compare" aria-label="' + escapeHtml(I18N.t("fi_comparer")) + '"><option value="">' + escapeHtml(I18N.t("fi_comparer_choisir")) + "</option>" +
+    return '<section class="sh-block sh-compare"><div class="sh-compare-head"><h3 class="sh-h">' + I18N.t("sheet_compare") + "</h3>" +
+      '<select id="sheet-compare" aria-label="' + escapeHtml(I18N.t("sheet_compare")) + '"><option value="">' + escapeHtml(I18N.t("sheet_compare_pick")) + "</option>" +
       others.map(c => '<option value="' + escapeHtml(c.id) + '"' + (c.id === compareId ? " selected" : "") + ">" + escapeHtml(c.nom) + "</option>").join("") +
       '</select></div><div id="sheet-comparison"></div></section>';
   }
@@ -362,10 +362,10 @@
     rated.forEach(e => String(e.descripteurs || "").split("|").filter(Boolean).forEach(t => { tags[t] = (tags[t] || 0) + 1; }));
     const topTaste = Object.keys(tags).sort((a, b) => tags[b] - tags[a])[0];
     return [
-      avg === null ? I18N.t("fi_pas_notee") : I18N.t("fi_cmp_moyenne", { m: fmtRating(avg), n: rated.length }),
+      avg === null ? I18N.t("sheet_not_rated") : I18N.t("sheet_cmp_average", { m: fmtRating(avg), n: rated.length }),
       machine ? I18N.machine(machine) : "·",
-      m ? [I18N.tr(m.recette || ""), m.grind || ""].filter(Boolean).join(" · ") + ", " + fmtRating(m.average) : I18N.t("fi_cmp_pas_de_reglage"),
-      f ? I18N.t("fi_cmp_jours", { a: f.start + 1, b: f.end + 1 }) : I18N.t("fi_cmp_pas_de_fenetre"),
+      m ? [I18N.tr(m.recette || ""), m.grind || ""].filter(Boolean).join(" · ") + ", " + fmtRating(m.average) : I18N.t("sheet_cmp_no_setting"),
+      f ? I18N.t("sheet_cmp_days", { a: f.start + 1, b: f.end + 1 }) : I18N.t("sheet_cmp_no_window"),
       UI.costPerCup(c, doses.length ? average(doses) : fallbacks.dose) || "·",
       topTaste ? I18N.tag(topTaste) : "·",
     ];
@@ -376,9 +376,9 @@
     const a = DATA.state.cafes.find(c => c.id === openId), b = DATA.state.cafes.find(c => c.id === compareId);
     if (!a || !b) { zone.innerHTML = ""; return; }
     const ra = coffeeSummary(a), rb = coffeeSummary(b);
-    const rows = ["fi_cmp_note", "fi_cmp_machine", "fi_cmp_reglage", "fi_cmp_fenetre", "fi_cmp_cout", "fi_cmp_gout"];
+    const rows = ["sheet_cmp_score", "sheet_cmp_machine", "sheet_cmp_setting", "sheet_cmp_window", "sheet_cmp_cost", "sheet_cmp_taste"];
     zone.innerHTML = '<div class="sh-compare-body"><div>' +
-      '<svg id="sheet-duo" class="sh-drawing" viewBox="0 0 320 210" role="img" aria-label="' + escapeHtml(I18N.t("fi_duo_aria", { a: a.nom, b: b.nom })) + '"></svg>' +
+      '<svg id="sheet-duo" class="sh-drawing" viewBox="0 0 320 210" role="img" aria-label="' + escapeHtml(I18N.t("sheet_duo_aria", { a: a.nom, b: b.nom })) + '"></svg>' +
       '<div class="sh-duo-leg"><span><i class="sh-duo-a"></i>' + escapeHtml(a.nom) + '</span><span><i class="sh-duo-b"></i>' + escapeHtml(b.nom) + "</span></div>" +
       '<p class="sh-text" id="sheet-duo-reading"></p></div>' +
       '<table class="sh-duo-table"><thead><tr><th></th><th>' + escapeHtml(a.nom) + "</th><th>" + escapeHtml(b.nom) + "</th></tr></thead><tbody>" +
@@ -476,15 +476,15 @@
       const g = Number(String($("#sh-stock-g").value).replace(",", "."));
       if (!Number.isFinite(g) || g < 0) { $("#sh-stock-g").focus(); return; }
       await DATA.correctStock(openId, g);
-      toast(I18N.t("t_stock_corrige", { g: fmtDecimal(g, 0) }));
+      toast(I18N.t("toast_stock_corrected", { g: fmtDecimal(g, 0) }));
     });
     $("#sheet-content").addEventListener("click", async ev => {
       const b = ev.target.closest("[data-delete-bag]");
       if (!b) return;
       const a = DATA.state.achats.find(x => x.id === b.dataset.deleteBag);
-      if (!a || !await UI.askConfirm(I18N.t("c_suppr_sachet", { d: a.date_achat || "?" }), { danger: true })) return;
+      if (!a || !await UI.askConfirm(I18N.t("confirm_delete_bag", { d: a.date_achat || "?" }), { danger: true })) return;
       await DATA.deletePurchase(a.id);
-      UI.toast(I18N.t("t_sachet_supprime"));
+      UI.toast(I18N.t("toast_bag_deleted"));
     });
     $("#sheet-brew").addEventListener("click", () => {
       const id = openId;
@@ -494,7 +494,7 @@
       const sel = $("#f-coffee");
       sel.value = id;
       if (sel.value === id) UI.onCoffeeChoice();
-      else toast(I18N.t("fi_inactif"));
+      else toast(I18N.t("sheet_inactive"));
       // No edit in progress (resetEntry just closed it): nothing to abandon.
       UI.activateScreen("saisie");
     });
@@ -518,7 +518,7 @@
       if (!ext) return;
       $("#modal-sheet").close();
       UI.redoCup(ext);
-      toast(I18N.t("rg_preremplie"));
+      toast(I18N.t("setting_prefilled"));
     });
     // Delegated on the document: the « Fiche » buttons are born with their lists.
     document.addEventListener("click", ev => {

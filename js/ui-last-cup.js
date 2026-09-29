@@ -29,7 +29,7 @@
     // Total time sits in the FOOTER (v8.39), next to the recipe target.
     if (e.temperature_c !== "" && e.temperature_c !== undefined) context.push(e.temperature_c + " °C");
     if (e.methode === "Brikka" && e.puissance_feu !== "" && e.puissance_feu !== undefined) {
-      context.push(I18N.t("rg_feu", { f: e.puissance_feu }));
+      context.push(I18N.t("setting_heat", { f: e.puissance_feu }));
     }
 
     card.dataset.ext = e.id;
@@ -37,7 +37,7 @@
     card.setAttribute("tabindex", "0");
     card.innerHTML =
       '<div class="last-big-body">' +
-        '<p class="highlight">' + I18N.t("tb_derniere", { q: timeSince(e.date_heure) }) + "</p>" +
+        '<p class="highlight">' + I18N.t("dash_last_cup", { q: timeSince(e.date_heure) }) + "</p>" +
         '<p class="last-big-coffee">' + I18N.tr(e._c.cafe_nom) + "</p>" +
         '<p class="last-big-context">' +
           '<span class="dot-method ' + e.methode.toLowerCase() + '"></span>' +
@@ -50,14 +50,14 @@
         lastCupFooter(e) +
       "</div>" +
       '<div class="last-big-rating">' +
-        (isFailed(e) ? '<span class="badge-failed">' + I18N.t("rt_badge") + "</span>" : "") +
+        (isFailed(e) ? '<span class="badge-failed">' + I18N.t("botched_badge") + "</span>" : "") +
         /* Without a score, we write "not rated yet" instead of a dash: a dash
            in a big number reads as a minus, and the project rules forbid
            the em dash anyway. */
         (e.note_sur_10 !== ""
           ? '<span class="big-rating">' + e.note_sur_10 + "</span>" +
-            '<span class="big-rating-scale">' + I18N.t("tb_sur10") + "</span>"
-          : '<span class="big-rating-none">' + I18N.t("n_pas_notee") + "</span>") +
+            '<span class="big-rating-scale">' + I18N.t("dash_out_of_10") + "</span>"
+          : '<span class="big-rating-none">' + I18N.t("not_rated_yet") + "</span>") +
         (e.diagnostic ? '<span class="dot-diag">' + displayedDiags(e.diagnostic) + "</span>" : "") +
       "</div>";
   }
@@ -80,11 +80,11 @@
     const ahead = notes.filter(n => n > rating).length;
     const ties = notes.filter(n => n === rating).length - 1;
     const rankText = ahead === 0
-      ? I18N.t(ties ? "pl_ex_aequo" : "pl_meilleure")
-      : I18N.t("pl_rang", { k: ahead + 1, n: notes.length });
+      ? I18N.t(ties ? "rank_joint_best" : "rank_best")
+      : I18N.t("rank_position", { k: ahead + 1, n: notes.length });
     const gap = rating - avg;
-    const position = Math.abs(gap) < 0.2 ? I18N.t("pl_dans_moyenne")
-      : I18N.t(gap > 0 ? "pl_au_dessus" : "pl_au_dessous", { x: fmtRating(Math.abs(gap)) });
+    const position = Math.abs(gap) < 0.2 ? I18N.t("rank_on_average")
+      : I18N.t(gap > 0 ? "rank_above" : "rank_below", { x: fmtRating(Math.abs(gap)) });
 
     // The scale: from the whole score below the lowest one up to 10.
     const low = Math.max(0, Math.floor(Math.min(...notes)) - 1);
@@ -97,7 +97,7 @@
     const xm = x(avg);
     svg += '<line x1="' + xm + '" y1="12" x2="' + xm + '" y2="' + (base + 8) + '" stroke="var(--muted)" stroke-dasharray="3 3"></line>' +
       '<text x="' + (xm > R * 0.7 ? xm - 5 : xm + 5) + '" y="10" text-anchor="' + (xm > R * 0.7 ? "end" : "start") + '">' +
-      I18N.t("pl_moyenne", { m: fmtRating(avg) }) + "</text>";
+      I18N.t("rank_average", { m: fmtRating(avg) }) + "</text>";
     // The other cups, stacked when they share the same score.
     const stacks = {};
     siblings.forEach(s => {
@@ -108,9 +108,9 @@
     });
     // This one, on top, ringed with the panel colour so it stands out.
     svg += '<circle cx="' + x(rating) + '" cy="' + (base - 3) + '" r="6.5" fill="var(--accent)" stroke="var(--panel-2)" stroke-width="2"></circle>';
-    return '<div class="last-spot" role="img" aria-label="' + titleAttr(I18N.t("pl_aria", {
-      n: notes.length, cafe: I18N.tr(e._c.cafe_nom), note: fmtRating(rating), m: fmtRating(avg) })) + '">' +
-      '<p class="last-spot-head"><span>' + I18N.t("pl_parmi", { n: notes.length, cafe: I18N.tr(e._c.cafe_nom) }) + "</span>" +
+    return '<div class="last-spot" role="img" aria-label="' + titleAttr(I18N.t("rank_aria", {
+      n: notes.length, coffee: I18N.tr(e._c.cafe_nom), score: fmtRating(rating), m: fmtRating(avg) })) + '">' +
+      '<p class="last-spot-head"><span>' + I18N.t("rank_among", { n: notes.length, coffee: I18N.tr(e._c.cafe_nom) }) + "</span>" +
       "<span><b>" + rankText + "</b>, " + position + "</span></p>" +
       '<svg viewBox="0 0 600 ' + (base + 22) + '" aria-hidden="true">' + svg + "</svg></div>";
   }
@@ -146,26 +146,26 @@
          announce a gap that does not exist. */
       if (e.methode === "Switch" && r && r.dose > 0 && r.eau > 0) {
         const aimed = r.eau / r.dose;
-        target = I18N.t("pl_recette", { v: "1:" + aimed.toFixed(1) });
+        target = I18N.t("rank_recipe", { v: "1:" + aimed.toFixed(1) });
         ok = Math.abs(Number(e.eau_g) / Number(e.dose_g) - aimed) <= 0.3;
       }
-      cell(I18N.t("d_ratio"), e._c.ratioTexte, target, ok);
+      cell(I18N.t("detail_ratio"), e._c.ratioTexte, target, ok);
     }
     const total = fmtDuration(e.temps_total_s);
     if (total) {
       const aimed = recipeTimeTarget(r);
       const avg = avgTime("temps_total_s");
-      cell(I18N.t("d_temps"), total,
-        aimed ? I18N.t("pl_recette", { v: aimed }) : avg ? I18N.t("pl_ta_moyenne", { v: avg }) : "", false);
+      cell(I18N.t("detail_time"), total,
+        aimed ? I18N.t("rank_recipe", { v: aimed }) : avg ? I18N.t("rank_your_average", { v: avg }) : "", false);
     }
     const drawdown = fmtDuration(e.temps_ecoulement_s);
     if (drawdown) {
       const avg = avgTime("temps_ecoulement_s");
-      cell(I18N.t("d_ecoulement"), drawdown, avg ? I18N.t("pl_ta_moyenne", { v: avg }) : "", false);
+      cell(I18N.t("detail_drawdown"), drawdown, avg ? I18N.t("rank_your_average", { v: avg }) : "", false);
     }
-    if (e.mouture_dial) cell(I18N.t("d_mouture"), e.mouture_dial, e._c.microns ? e._c.microns + " µm" : "", false);
-    else if (e._c.ground) cell(I18N.t("d_mouture"), I18N.t("paquet"), "", false);
-    if (e._c.cout_tasse_vnd !== "") cell(I18N.t("d_cout"), fmtVND(e._c.cout_tasse_vnd), I18N.t("pl_la_tasse"), false);
+    if (e.mouture_dial) cell(I18N.t("detail_grind"), e.mouture_dial, e._c.microns ? e._c.microns + " µm" : "", false);
+    else if (e._c.ground) cell(I18N.t("detail_grind"), I18N.t("bag_default"), "", false);
+    if (e._c.cout_tasse_vnd !== "") cell(I18N.t("detail_cost"), fmtVND(e._c.cout_tasse_vnd), I18N.t("rank_per_cup"), false);
     return cells.length ? '<div class="last-big-footer">' + cells.join("") + "</div>" : "";
   }
 
@@ -174,10 +174,10 @@
      exact time, which is already in the table just below. */
   function timeSince(dt) {
     const min = Math.max(0, Math.round((Date.now() - new Date(dt)) / 60000));
-    if (min < 60) return I18N.t("tb_min", { n: min });
+    if (min < 60) return I18N.t("dash_minutes_ago", { n: min });
     const h = Math.round(min / 60);
-    if (h < 24) return I18N.t("tb_heures", { n: h });
-    return I18N.t("tb_jours", { n: Math.round(h / 24) });
+    if (h < 24) return I18N.t("dash_hours_ago", { n: h });
+    return I18N.t("dash_days_ago", { n: Math.round(h / 24) });
   }
 
   /* The ticked TASTES, as small pills, four at most then "+n". The card had

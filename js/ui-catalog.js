@@ -34,11 +34,11 @@
   function costPerCup(coffee, dose) {
     if (!coffee.prix_vnd || !coffee.format_grammes || !(dose > 0)) return "";
     const perGram = coffee.prix_vnd / coffee.format_grammes;
-    const base = I18N.t("cout_tasse", { v: fmtVND(perGram * dose), d: fmtDecimal(dose, 1) });
+    const base = I18N.t("cost_per_cup", { v: fmtVND(perGram * dose), d: fmtDecimal(dose, 1) });
     const pct = coffee.pourcentage_cafe_reel === "" || coffee.pourcentage_cafe_reel === undefined
       ? 100 : Number(coffee.pourcentage_cafe_reel);
     if (!(pct > 0) || pct >= 100) return base;
-    return base + " " + I18N.t("cout_reel", { v: fmtVND(perGram / (pct / 100) * dose) });
+    return base + " " + I18N.t("cost_real", { v: fmtVND(perGram / (pct / 100) * dose) });
   }
 
   function renderCoffeeList() {
@@ -51,7 +51,7 @@
         .filter(e => e.cafe_id === c.id && e.note_sur_10 !== "")
         .map(e => Number(e.note_sur_10));
       const scoreBadge = notes.length
-        ? ' <span class="badge-rating" title="' + I18N.t("b_extractions", { n: notes.length }) + '">★ ' +
+        ? ' <span class="badge-rating" title="' + I18N.t("count_brews", { n: notes.length }) + '">★ ' +
           fmtDecimal(average(notes), 1) + "</span>"
         : "";
       // Stock of the current bag. A missing dose counts as the default dose,
@@ -73,37 +73,37 @@
         const cupsLeft = Math.max(0, Math.floor(stock.remaining / typicalDose));
         const level = stock.remaining <= 0 ? "empty" : cupsLeft <= 3 ? "low" : "ok";
         const label = stock.remaining <= 0
-          ? I18N.t("stock_vide")
-          : I18N.t("stock_reste", { g: fmtDecimal(stock.remaining, 0), n: cupsLeft });
+          ? I18N.t("stock_empty")
+          : I18N.t("stock_left", { g: fmtDecimal(stock.remaining, 0), n: cupsLeft });
         stockBadge = ' <span class="badge-stock badge-stock-' + level + '" title="' +
-          I18N.t("stock_titre", {
+          I18N.t("stock_title", {
             f: stock.format,
             c: fmtDecimal(stock.consumed, 0),
             r: fmtDecimal(Math.max(0, stock.remaining), 0),
             d: fmtDecimal(typicalDose, 1),
-            src: I18N.t(doses.length ? "stock_dose_moy" : "stock_dose_defaut"),
+            src: I18N.t(doses.length ? "stock_dose_average" : "stock_dose_fallback"),
           }) + '">' + label + "</span>";
       }
       return '<div class="coffee-row' + (c.actif === 0 ? " inactive" : "") +
       (stock && stock.remaining <= 0 ? " depleted" : "") + '">' +
       "<div><b>" + c.nom + "</b>" + scoreBadge + stockBadge +
-      (Number(c.pourcentage_cafe_reel) < 100 ? ' <span class="badge-nonpure">' + c.pourcentage_cafe_reel + " % " + I18N.t("pct_cafe") + "</span>" : "") +
-      ((c.tag || "").includes("référence") ? ' <span class="badge-reference">' + I18N.t("badge_etalon") + "</span>" : "") +
+      (Number(c.pourcentage_cafe_reel) < 100 ? ' <span class="badge-nonpure">' + c.pourcentage_cafe_reel + " % " + I18N.t("percent_coffee") + "</span>" : "") +
+      ((c.tag || "").includes("référence") ? ' <span class="badge-reference">' + I18N.t("badge_benchmark") + "</span>" : "") +
       "<div class=\"coffee-meta\">" +
       [c.torrefacteur, c.espece, c.procede,
-        c.machine_recommandee ? I18N.t("li_machine", { m: I18N.machine(c.machine_recommandee) }) : "",
+        c.machine_recommandee ? I18N.t("list_machine", { m: I18N.machine(c.machine_recommandee) }) : "",
         c.prix_vnd ? fmtVND(c.prix_vnd) + " / " + c.format_grammes + " g" : "",
         /* Cost of ONE cup, at this coffee's average dose. It is the only price
            figure that compares from one bag to another: the bag price depends
            on the size, the price per gram says nothing until you know how
            much you use. */
         costPerCup(c, cupCost),
-        c.date_ajout ? I18N.t("li_ajoute", { d: fmtShortDate(c.date_ajout) }) : ""].filter(Boolean).join(" · ") +
+        c.date_ajout ? I18N.t("list_added", { d: fmtShortDate(c.date_ajout) }) : ""].filter(Boolean).join(" · ") +
       "</div></div>" +
-      '<span class="coffee-meta">' + (c.actif === 0 ? I18N.t("li_inactif") : "") + "</span>" +
-      '<button class="btn btn-small" data-sheet="' + c.id + '">' + I18N.t("fi_voir") + "</button>" +
-      '<button class="btn btn-small" data-coffee-bag="' + c.id + '">' + I18N.t("btn_sachet") + "</button>" +
-      '<button class="btn btn-small" data-coffee-edit="' + c.id + '">' + I18N.t("btn_modifier") + "</button></div>";
+      '<span class="coffee-meta">' + (c.actif === 0 ? I18N.t("list_inactive") : "") + "</span>" +
+      '<button class="btn btn-small" data-sheet="' + c.id + '">' + I18N.t("sheet_view") + "</button>" +
+      '<button class="btn btn-small" data-coffee-bag="' + c.id + '">' + I18N.t("btn_new_bag") + "</button>" +
+      '<button class="btn btn-small" data-coffee-edit="' + c.id + '">' + I18N.t("btn_edit") + "</button></div>";
     }).join("");
     $$("[data-coffee-edit]").forEach(b => b.addEventListener("click", () => openCoffeeForm(b.dataset.coffeeEdit)));
     $$("[data-coffee-bag]").forEach(b => b.addEventListener("click", () => openBagForm(b.dataset.coffeeBag)));
@@ -120,7 +120,7 @@
     const c = DATA.state.cafes.find(x => x.id === coffeeId);
     if (!c) return;
     bagCoffeeId = coffeeId;
-    $("#form-bag-title").textContent = I18N.t("sachet_titre", { n: c.nom });
+    $("#form-bag-title").textContent = I18N.t("bag_title", { n: c.nom });
     $("#s-date").value = localNow().slice(0, 10);
     $("#s-format").value = c.format_grammes || "";
     $("#s-price").value = c.prix_vnd || "";
@@ -153,13 +153,13 @@
     $("#form-bag").hidden = true;
     bagCoffeeId = null;
     renderCoffeeList();
-    toast(I18N.t("t_sachet"));
+    toast(I18N.t("toast_bag"));
   }
 
   function openCoffeeForm(id) {
     editingCoffeeId = id || null;
     const c = id ? DATA.state.cafes.find(x => x.id === id) : null;
-    $("#form-coffee-title").textContent = c ? I18N.t("f_modif", { n: c.nom }) : I18N.t("fc_nouveau");
+    $("#form-coffee-title").textContent = c ? I18N.t("form_edit", { n: c.nom }) : I18N.t("form_new_coffee");
     $("#c-name").value = c ? c.nom : "";
     $("#c-roaster").value = c ? c.torrefacteur : "";
     $("#c-origin").value = c ? c.origine : "";
@@ -206,7 +206,7 @@
     renderCoffeeList();
     UI.fillCoffeeSelect();
     UI.fillFilters();
-    toast(I18N.t("t_cafe"));
+    toast(I18N.t("toast_coffee"));
   }
 
   // ---------- Recipe management ----------
@@ -225,11 +225,11 @@
       '<div class="coffee-row' + (r.actif === 0 ? " inactive" : "") + '">' +
       '<span class="chip-method ' + r.methode.toLowerCase() + '">' + r.methode + "</span>" +
       "<div><b>" + r.nom + "</b><div class=\"coffee-meta\">" +
-      [r.numero, r.dose + " g / " + r.eau + " g", I18N.t("molette") + " " + r.dial,
-        DATA.isOriginalRecipe(r.id) ? "" : I18N.t("li_perso"),
-        r.actif === 0 ? I18N.t("li_masquee") : ""].filter(Boolean).join(" · ") +
+      [r.numero, r.dose + " g / " + r.eau + " g", I18N.t("dial") + " " + r.dial,
+        DATA.isOriginalRecipe(r.id) ? "" : I18N.t("list_custom"),
+        r.actif === 0 ? I18N.t("list_hidden") : ""].filter(Boolean).join(" · ") +
       "</div></div>" +
-      '<button class="btn btn-small" data-recipe-form="' + r.id + '">' + I18N.t("btn_modifier") + "</button></div>"
+      '<button class="btn btn-small" data-recipe-form="' + r.id + '">' + I18N.t("btn_edit") + "</button></div>"
     ).join("");
     $$("[data-recipe-form]").forEach(b => b.addEventListener("click", () => openRecipeForm(b.dataset.recipeForm)));
   }
@@ -237,7 +237,7 @@
   function openRecipeForm(id) {
     editingRecipeId = id || null;
     const r = id ? DATA.state.recettes.find(x => x.id === id) : null;
-    $("#form-recipe-title").textContent = r ? I18N.t("f_modif", { n: r.nom }) : I18N.t("fr_nouvelle");
+    $("#form-recipe-title").textContent = r ? I18N.t("form_edit", { n: r.nom }) : I18N.t("form_new_recipe");
     $("#r-name").value = r ? r.nom : "";
     $("#r-method").value = r ? r.methode : "Switch";
     $("#r-num").value = r ? r.numero : "";
@@ -297,33 +297,33 @@
      the modal to publish its internal state. */
   async function restoreCurrentRecipe() {
     if (!editingRecipeId) return;
-    if (!await askConfirm(I18N.t("c_retablir"))) return;
+    if (!await askConfirm(I18N.t("confirm_restore"))) return;
     await DATA.resetRecipe(editingRecipeId);
     $("#form-recipe").hidden = true;
     renderRecipeList();
-    toast(I18N.t("t_retablie"));
+    toast(I18N.t("toast_recipe_restored"));
   }
 
   async function deleteCurrentRecipe() {
     if (!editingRecipeId) return;
-    if (!await askConfirm(I18N.t("c_suppr_recette"), { danger: true })) return;
+    if (!await askConfirm(I18N.t("confirm_delete_recipe"), { danger: true })) return;
     await DATA.deleteRecipe(editingRecipeId);
     $("#form-recipe").hidden = true;
     renderRecipeList();
-    toast(I18N.t("t_recette_supprimee"));
+    toast(I18N.t("toast_recipe_deleted"));
   }
 
   async function saveRecipe(ev) {
     ev.preventDefault();
     const recipe = readRecipeForm();
-    if (!recipe.nom) { toast(I18N.t("t_nom_recette")); return; }
+    if (!recipe.nom) { toast(I18N.t("toast_recipe_name")); return; }
     const dial = GRIND.parseDial(recipe.dial);
-    if (recipe.dial && !dial) { toast(I18N.t("t_mouture_invalide")); return; }
+    if (recipe.dial && !dial) { toast(I18N.t("toast_grind_invalid")); return; }
     if (editingRecipeId) await DATA.editRecipe(editingRecipeId, recipe);
     else await DATA.addRecipe(recipe);
     $("#form-recipe").hidden = true;
     renderRecipeList();
-    toast(I18N.t("t_recette"));
+    toast(I18N.t("toast_recipe"));
   }
 
   // ---------- Settings screen ----------
@@ -343,14 +343,14 @@
         list.map(r =>
           '<tr data-param-recipe="' + r.id + '">' +
           "<td>" + I18N.tr(r.nom) + "</td>" +
-          '<td data-l="' + I18N.t("pc_dose") + '"><input type="number" step="0.5" min="1" data-field="dose" aria-label="' + fieldName(r, "pc_dose") + '" value="' + (r.dose || "") + '"></td>' +
-          '<td data-l="' + I18N.t("pc_eau") + '"><input type="number" step="1" min="10" data-field="eau" aria-label="' + fieldName(r, "pc_eau") + '" value="' + (r.eau || "") + '"></td>' +
-          '<td data-l="' + I18N.t("pc_temp") + '"><input type="number" step="1" min="60" max="100" data-field="temp" aria-label="' + fieldName(r, "pc_temp") + '" value="' + (r.temp === "" ? "" : r.temp) +
-            '" placeholder="' + I18N.t("param_vide") + '"></td>' +
-          '<td data-l="' + I18N.t("pc_feu") + '">' + (r.methode === "Brikka"
-            ? '<input type="number" step="1" min="1" max="10" data-field="puissance_feu" aria-label="' + fieldName(r, "pc_feu") + '" value="' + (r.puissance_feu || "") + '">'
+          '<td data-l="' + I18N.t("param_col_dose") + '"><input type="number" step="0.5" min="1" data-field="dose" aria-label="' + fieldName(r, "param_col_dose") + '" value="' + (r.dose || "") + '"></td>' +
+          '<td data-l="' + I18N.t("param_col_water") + '"><input type="number" step="1" min="10" data-field="eau" aria-label="' + fieldName(r, "param_col_water") + '" value="' + (r.eau || "") + '"></td>' +
+          '<td data-l="' + I18N.t("param_col_temp") + '"><input type="number" step="1" min="60" max="100" data-field="temp" aria-label="' + fieldName(r, "param_col_temp") + '" value="' + (r.temp === "" ? "" : r.temp) +
+            '" placeholder="' + I18N.t("param_empty") + '"></td>' +
+          '<td data-l="' + I18N.t("param_col_heat") + '">' + (r.methode === "Brikka"
+            ? '<input type="number" step="1" min="1" max="10" data-field="puissance_feu" aria-label="' + fieldName(r, "param_col_heat") + '" value="' + (r.puissance_feu || "") + '">'
             : '<span class="param-none">&middot;</span>') + "</td>" +
-          '<td data-l="' + I18N.t("pc_dial") + '"><input type="text" data-field="dial" aria-label="' + fieldName(r, "pc_dial") + '" value="' + titleAttr(r.dial || "") + '"></td>' +
+          '<td data-l="' + I18N.t("param_col_dial") + '"><input type="text" data-field="dial" aria-label="' + fieldName(r, "param_col_dial") + '" value="' + titleAttr(r.dial || "") + '"></td>' +
           "</tr>").join("");
     }).join("");
     $("#param-recipes").innerHTML = rows;
@@ -374,12 +374,12 @@
     const n = UI.liveRecipes ? UI.liveRecipes().length : DATA.state.recettes.length;
     const p = GRIND.parseDial(String(fallbacks.dial || ""));
     const values = {
-      recipes: I18N.t("piv_recettes", { n }),
-      fallback: fallbacks.dose + " g · " + I18N.t("piv_feu", { f: fallbacks.fire }),
+      recipes: I18N.t("pivot_recipes", { n }),
+      fallback: fallbacks.dose + " g · " + I18N.t("pivot_heat", { f: fallbacks.fire }),
       dial: fallbacks.dial + (p ? " · ≈ " + Math.round(p.microns) + " µm" : ""),
-      kettle: fallbacks.bubbles ? I18N.t("piv_bulles", { t: UI.fmtDuration(fallbacks.bubbles) }) : I18N.t("piv_a_mesurer"),
-      incr: steps.pas_crans ? I18N.t("piv_crans", { n: steps.pas_crans }) : "",
-      device: I18N.t($("#chrono-beep").checked ? "piv_bips_oui" : "piv_bips_non"),
+      kettle: fallbacks.bubbles ? I18N.t("pivot_bubbles", { t: UI.fmtDuration(fallbacks.bubbles) }) : I18N.t("pivot_to_measure"),
+      incr: steps.pas_crans ? I18N.t("pivot_clicks", { n: steps.pas_crans }) : "",
+      device: I18N.t($("#chrono-beep").checked ? "pivot_beeps_on" : "pivot_beeps_off"),
       data: ($("#sync-status") || { textContent: "" }).textContent.trim().slice(0, 40),
     };
     Object.entries(values).forEach(([k, v]) => { const el = $("#piv-" + k); if (el) el.textContent = v; });
@@ -402,14 +402,14 @@
   function updateFailed() {
     const excluded = extsWithCalcs().length - analyzableExts().length;
     $("#param-failed").checked = includeFailed();
-    $("#count-failed").textContent = I18N.t("rt_exclues", { n: excluded });
+    $("#count-failed").textContent = I18N.t("botched_excluded", { n: excluded });
   }
 
   // Clicks and microns under the field, to check the right setting was typed.
   function updateDialDetail() {
     const p = GRIND.parseDial($("#param-dial").value.trim().replace(/,/g, "."));
     $("#param-dial-detail").textContent = p
-      ? I18N.t("param_molette_detail", { c: p.clicks, m: Math.round(p.microns) })
+      ? I18N.t("param_dial_detail", { c: p.clicks, m: Math.round(p.microns) })
       : "";
   }
 
@@ -421,14 +421,14 @@
     const dose = Number($("#param-dose-default").value);
     const heat = Number($("#param-fire-default").value);
     const dial = $("#param-dial").value.trim().replace(/,/g, ".");
-    if (!(dose > 0)) { toast(I18N.t("t_param_dose")); return; }
-    if (!(heat >= 1 && heat <= 10)) { toast(I18N.t("t_param_feu")); return; }
-    if (!GRIND.parseDial(dial)) { toast(I18N.t("t_mouture_invalide")); return; }
+    if (!(dose > 0)) { toast(I18N.t("toast_param_dose")); return; }
+    if (!(heat >= 1 && heat <= 10)) { toast(I18N.t("toast_param_heat")); return; }
+    if (!GRIND.parseDial(dial)) { toast(I18N.t("toast_grind_invalid")); return; }
     const boilTime = UI.readDuration("param-boil");
-    if (boilTime === "" || !(boilTime >= 30 && boilTime <= 1800)) { toast(I18N.t("t_param_ebullition")); return; }
+    if (boilTime === "" || !(boilTime >= 30 && boilTime <= 1800)) { toast(I18N.t("toast_param_boil")); return; }
     // The first bubbles come BEFORE the rolling boil, otherwise the curve makes no sense.
     const bubblesTime = UI.readDuration("param-bubbles");
-    if (bubblesTime === "" || !(bubblesTime >= 10 && bubblesTime < boilTime)) { toast(I18N.t("t_param_bulles")); return; }
+    if (bubblesTime === "" || !(bubblesTime >= 10 && bubblesTime < boilTime)) { toast(I18N.t("toast_param_bubbles")); return; }
     fallbacks.dose = dose;
     fallbacks.fire = Math.round(heat);
     fallbacks.dial = dial;
@@ -455,7 +455,7 @@
         String(r.dial || "") !== vals.dial ||
         (r.methode === "Brikka" && String(r.puissance_feu || "") !== vals.puissance_feu);
       if (!changed) continue;
-      if (vals.dial && !GRIND.parseDial(vals.dial.replace(/,/g, "."))) { toast(I18N.t("t_mouture_invalide")); return; }
+      if (vals.dial && !GRIND.parseDial(vals.dial.replace(/,/g, "."))) { toast(I18N.t("toast_grind_invalid")); return; }
       // The table only shows these fields: we start from the whole recipe so
       // nothing is lost along the way (steps, text, associated coffees…).
       await DATA.editRecipe(r.id, {
@@ -466,13 +466,13 @@
         dial: vals.dial.replace(/,/g, "."),
         puissance_feu: r.methode === "Brikka" ? vals.puissance_feu : "",
         // The displayed text followed the old target, it becomes wrong without this.
-        tempTexte: vals.temp ? vals.temp + " °C" : (r.methode === "Brikka" ? I18N.t("param_temp_feu") : ""),
+        tempTexte: vals.temp ? vals.temp + " °C" : (r.methode === "Brikka" ? I18N.t("param_temp_heat") : ""),
       });
       touched++;
     }
     renderParameters();
     UI.fillRecipeSelect();
-    toast(touched ? I18N.t("t_param_ok", { n: touched }) : I18N.t("t_param_replis"));
+    toast(touched ? I18N.t("toast_param_ok", { n: touched }) : I18N.t("toast_param_fallbacks"));
   }
 
   // Made available to the other screens.

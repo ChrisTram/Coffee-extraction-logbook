@@ -36,7 +36,7 @@
   const SOLID_GAP = 0.8;
   const SOLID_N = 5;
   function confidenceLevel(hi, lo, nHi, nLo) {
-    return hi - lo >= SOLID_GAP && Math.min(nHi, nLo) >= SOLID_N ? "solide" : "probable";
+    return hi - lo >= SOLID_GAP && Math.min(nHi, nLo) >= SOLID_N ? "solid" : "likely";
   }
 
   /* A complete finding: the sentence, both sides of the comparison, and
@@ -76,24 +76,24 @@
      always knows, and it is what he describes as moving his cups the most.
      The bands follow degassing, then staling. */
   function insightBagAge(rated) {
-    const groups = { ins_paquet_frais: [], ins_paquet_median: [], ins_paquet_vieux: [] };
+    const groups = { finding_bag_fresh: [], finding_bag_middle: [], finding_bag_old: [] };
     rated.forEach(e => {
       const days = e._c.jours_ouvert;
       if (days === "" || days < 0) return;
-      if (days <= 7) groups.ins_paquet_frais.push(e.note_sur_10);
-      else if (days <= 21) groups.ins_paquet_median.push(e.note_sur_10);
-      else groups.ins_paquet_vieux.push(e.note_sur_10);
+      if (days <= 7) groups.finding_bag_fresh.push(e.note_sur_10);
+      else if (days <= 21) groups.finding_bag_middle.push(e.note_sur_10);
+      else groups.finding_bag_old.push(e.note_sur_10);
     });
     const res = bestOfGroups(groups);
     if (!res) return null;
     return makeFinding(
-      I18N.t("ins_paquet", {
-        quand: I18N.t(res.winner.key),
-        haut: fmtRating(res.winner.mean),
-        bas: fmtRating(res.meanRest),
+      I18N.t("finding_bag", {
+        when: I18N.t(res.winner.key),
+        high: fmtRating(res.winner.mean),
+        low: fmtRating(res.meanRest),
       }),
       { label: I18N.t(res.winner.key), note: res.winner.mean, n: res.winner.notes.length },
-      { label: I18N.t("ins_reste_temps"), note: res.meanRest, n: res.nRest });
+      { label: I18N.t("finding_rest_time"), note: res.meanRest, n: res.nRest });
   }
 
   /* THE FINDING PER COFFEE AND PER MACHINE, the most useful sentence of the lot.
@@ -112,17 +112,17 @@
       minPerGroup: MIN_SAMPLE,
       minGap: MIN_GAP,
     }).slice(0, 2).map(c => makeFinding(
-      I18N.t("ins_cafe_levier", {
-        cafe: c.coffee ? c.coffee.nom : "",
+      I18N.t("finding_coffee_lever", {
+        coffee: c.coffee ? c.coffee.nom : "",
         machine: I18N.machine(c.methode),
-        levier: I18N.t("lev_" + c.lever),
-        valeur: I18N.tr(String(c.value)),
-        haut: fmtRating(c.high),
-        bas: fmtRating(c.low),
+        lever: I18N.t("lever_" + c.lever),
+        value: I18N.tr(String(c.value)),
+        high: fmtRating(c.high),
+        low: fmtRating(c.low),
         n: c.n,
       }),
-      { label: I18N.t("lev_" + c.lever) + " " + I18N.tr(String(c.value)), note: c.high, n: c.n },
-      { label: I18N.t("ins_reste"), note: c.low, n: c.nRest }));
+      { label: I18N.t("lever_" + c.lever) + " " + I18N.tr(String(c.value)), note: c.high, n: c.n },
+      { label: I18N.t("finding_rest"), note: c.low, n: c.nRest }));
   }
 
   // Duel between recipes of the same family: that is the comparison that makes
@@ -146,11 +146,11 @@
       if (classes.length !== 2) continue;
       if (classes[0].mean - classes[1].mean < MIN_GAP) continue;
       return makeFinding(
-        I18N.t("ins_recettes", {
-          gagnante: I18N.tr(classes[0].nom),
-          perdante: I18N.tr(classes[1].nom),
-          haut: fmtRating(classes[0].mean),
-          bas: fmtRating(classes[1].mean),
+        I18N.t("finding_recipes", {
+          winner: I18N.tr(classes[0].nom),
+          loser: I18N.tr(classes[1].nom),
+          high: fmtRating(classes[0].mean),
+          low: fmtRating(classes[1].mean),
         }),
         { label: I18N.tr(classes[0].nom), note: classes[0].mean, n: classes[0].n },
         { label: I18N.tr(classes[1].nom), note: classes[1].mean, n: classes[1].n });
@@ -162,24 +162,24 @@
   // extra input. Answers "is my first cup really better, or just drunk with
   // more enthusiasm".
   function insightMoment(rated) {
-    const groups = { ins_moment_matin: [], ins_moment_aprem: [], ins_moment_soir: [] };
+    const groups = { finding_time_morning: [], finding_time_afternoon: [], finding_time_evening: [] };
     rated.forEach(e => {
       const hour = Number(String(e.date_heure).slice(11, 13));
       if (!Number.isFinite(hour)) return;
-      if (hour < 12) groups.ins_moment_matin.push(e.note_sur_10);
-      else if (hour < 18) groups.ins_moment_aprem.push(e.note_sur_10);
-      else groups.ins_moment_soir.push(e.note_sur_10);
+      if (hour < 12) groups.finding_time_morning.push(e.note_sur_10);
+      else if (hour < 18) groups.finding_time_afternoon.push(e.note_sur_10);
+      else groups.finding_time_evening.push(e.note_sur_10);
     });
     const res = bestOfGroups(groups);
     if (!res) return null;
     return makeFinding(
-      I18N.t("ins_moment", {
-        quand: I18N.t(res.winner.key),
-        haut: fmtRating(res.winner.mean),
-        bas: fmtRating(res.meanRest),
+      I18N.t("finding_time", {
+        when: I18N.t(res.winner.key),
+        high: fmtRating(res.winner.mean),
+        low: fmtRating(res.meanRest),
       }),
       { label: I18N.t(res.winner.key), note: res.winner.mean, n: res.winner.notes.length },
-      { label: I18N.t("ins_reste_jour"), note: res.meanRest, n: res.nRest });
+      { label: I18N.t("finding_rest_day"), note: res.meanRest, n: res.nRest });
   }
 
   // Heat power, Brikka only. This is exactly the variable Chris is trying
@@ -193,13 +193,13 @@
     const res = bestOfGroups(groups);
     if (!res) return null;
     return makeFinding(
-      I18N.t("ins_puissance", {
-        feu: res.winner.key,
-        haut: fmtRating(res.winner.mean),
-        bas: fmtRating(res.meanRest),
+      I18N.t("finding_heat", {
+        heat: res.winner.key,
+        high: fmtRating(res.winner.mean),
+        low: fmtRating(res.meanRest),
       }),
-      { label: I18N.t("rg_feu", { f: res.winner.key }), note: res.winner.mean, n: res.winner.notes.length },
-      { label: I18N.t("ins_reste_reglages"), note: res.meanRest, n: res.nRest });
+      { label: I18N.t("setting_heat", { f: res.winner.key }), note: res.winner.mean, n: res.winner.notes.length },
+      { label: I18N.t("finding_rest_settings"), note: res.meanRest, n: res.nRest });
   }
 
   /* THREE MORE FINDINGS (v8.42). Data entered with every cup that no rule
@@ -212,10 +212,10 @@
   // target: under 91, the water has had time to cool; 94 and above, just
   // off the heat.
   function tempBand(t) {
-    return t <= 90 ? "ins_temp_basse" : t <= 93 ? "ins_temp_moyenne" : "ins_temp_haute";
+    return t <= 90 ? "finding_temp_low" : t <= 93 ? "finding_temp_middle" : "finding_temp_high";
   }
   function insightTemperature(rated) {
-    const groups = { ins_temp_basse: [], ins_temp_moyenne: [], ins_temp_haute: [] };
+    const groups = { finding_temp_low: [], finding_temp_middle: [], finding_temp_high: [] };
     rated.forEach(e => {
       const t = Number(e.temperature_c);
       if (e.methode !== "Switch" || e.temperature_c === "" || !Number.isFinite(t)) return;
@@ -224,9 +224,9 @@
     const res = bestOfGroups(groups);
     if (!res) return null;
     return makeFinding(
-      I18N.t("ins_temp", { plage: I18N.t(res.winner.key) }),
+      I18N.t("finding_temp", { range: I18N.t(res.winner.key) }),
       { label: I18N.t(res.winner.key), note: res.winner.mean, n: res.winner.notes.length },
-      { label: I18N.t("ins_reste_temp"), note: res.meanRest, n: res.nRest });
+      { label: I18N.t("finding_rest_temp"), note: res.meanRest, n: res.nRest });
   }
 
   /* Only two groups: the rest IS the other group, so we name it. */
@@ -240,17 +240,17 @@
       { label: I18N.t(other), note: res.meanRest, n: res.nRest });
   }
   function insightPreheat(rated) {
-    const groups = { ins_prech_oui: [], ins_prech_non: [] };
+    const groups = { finding_preheat_yes: [], finding_preheat_no: [] };
     rated.filter(e => e.methode === "Brikka").forEach(e =>
-      groups[Number(e.eau_prechauffee) === 1 ? "ins_prech_oui" : "ins_prech_non"].push(e.note_sur_10));
-    return duelOf(groups, what => I18N.t("ins_prechauffe", { quoi: what }));
+      groups[Number(e.eau_prechauffee) === 1 ? "finding_preheat_yes" : "finding_preheat_no"].push(e.note_sur_10));
+    return duelOf(groups, what => I18N.t("finding_preheat", { what: what }));
   }
   function insightAgitation(rated) {
-    const groups = { ins_agit_oui: [], ins_agit_non: [] };
+    const groups = { finding_stir_yes: [], finding_stir_no: [] };
     rated.filter(e => e.methode === "Switch").forEach(e =>
       groups[e.agitation_nb !== "" && e.agitation_nb !== undefined && Number(e.agitation_nb) > 0
-        ? "ins_agit_oui" : "ins_agit_non"].push(e.note_sur_10));
-    return duelOf(groups, what => I18N.t("ins_agitation", { quoi: what }));
+        ? "finding_stir_yes" : "finding_stir_no"].push(e.note_sur_10));
+    return duelOf(groups, what => I18N.t("finding_stir", { what: what }));
   }
 
   function computeInsights(exts) {
@@ -266,7 +266,7 @@
       insightTemperature(rated),
       insightPreheat(rated),
       insightAgitation(rated),
-    ].filter(Boolean).map(c => ({ ...c, texte: I18N.t("ins_global", { p: c.texte }) })));
+    ].filter(Boolean).map(c => ({ ...c, texte: I18N.t("finding_global", { p: c.texte }) })));
 
     if (findings.length) return findings;
 
@@ -274,7 +274,7 @@
     // That is the difference between "not enough data" and "the site is broken".
     // We do NOT ask for roast dates here: Vietnamese bags almost never
     // carry them, the reminder would be a permanent reproach.
-    return [{ texte: I18N.t("ins_vide", { n: MIN_SAMPLE }) }];
+    return [{ texte: I18N.t("finding_empty", { n: MIN_SAMPLE }) }];
   }
 
   /* THE PROOF, ON ONE LINE (v8.37). v8.36 laid it out as two rows of bars
@@ -329,15 +329,15 @@
     navEl.hidden = findings.length < 2;
     navEl.innerHTML = findings.length < 2 ? "" :
       '<span class="insights-pos"></span>' +
-      '<button type="button" class="btn-square-small" data-insight="-1" aria-label="' + titleAttr(I18N.t("ins_precedent")) + '">' + UI.icon("gauche") + "</button>" +
-      '<button type="button" class="btn-square-small" data-insight="1" aria-label="' + titleAttr(I18N.t("ins_suivant")) + '">' + UI.icon("chevron") + "</button>";
+      '<button type="button" class="btn-square-small" data-insight="-1" aria-label="' + titleAttr(I18N.t("finding_previous")) + '">' + UI.icon("gauche") + "</button>" +
+      '<button type="button" class="btn-square-small" data-insight="1" aria-label="' + titleAttr(I18N.t("finding_next")) + '">' + UI.icon("chevron") + "</button>";
     $("#insights").innerHTML = findings.map(c => {
       if (!c.high) return '<li class="finding finding-empty"><p>' + c.texte + "</p></li>";
       return '<li class="finding"><p>' + c.texte + "</p>" +
         '<div class="proof">' + scaleBar(c) +
-        '<span class="proof-figures">' + I18N.t("ins_contre", { h: fmtRating(c.high.note), b: fmtRating(c.low.note) }) + "</span>" +
-        '<span class="proof-footer">' + I18N.t("ins_" + c.confidence) + " · " +
-        I18N.t("ins_effectifs", { h: c.high.n, b: c.low.n }) + "</span></div></li>";
+        '<span class="proof-figures">' + I18N.t("finding_versus", { h: fmtRating(c.high.note), b: fmtRating(c.low.note) }) + "</span>" +
+        '<span class="proof-footer">' + I18N.t("finding_" + c.confidence) + " · " +
+        I18N.t("finding_counts", { h: c.high.n, b: c.low.n }) + "</span></div></li>";
     }).join("");
     showInsight(currentInsight);
   }
