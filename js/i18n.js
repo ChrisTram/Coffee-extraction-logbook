@@ -499,7 +499,8 @@ const I18N = (() => {
     te_40: { fr: "Les 40 premiers pourcents : sucre contre acidité" },
     te_60: { fr: "Les 60 derniers pourcents : le corps" },
     te_ligne: { fr: "jusqu'à <b>{c} g</b>, soit {p} g" },
-    te_fin: { fr: "Un versement toutes les {s} secondes, vanne ouverte ; attendre un peu si le lit n'est pas encore sec en surface." },
+    te_fin: { fr: "Pas de chrono : verser dès que le lit réapparaît en surface, vanne ouverte. Ni flaque, ni lit sec qui attend." },
+    pap_lit: { fr: ", dès que le lit réapparaît" },
 
     pap_demarrer: { fr: "Démarrer" },
     pap_arreter: { fr: "Arrêter" },

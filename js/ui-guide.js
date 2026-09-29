@@ -410,7 +410,7 @@
     const lignes = pours.map((p, i) => {
       cumul += p;
       const phase = i < 2 ? "40 %" : "60 %";
-      return "<li><span class=\"etape-temps\">" + fmtTemps(i * TETSU.intervalle) + "</span><span>" +
+      return "<li><span class=\"etape-temps\">" + (i + 1) + "</span><span>" +
         I18N.t("te_ligne", { p, c: cumul }) + " <small>(" + phase + ")</small></span></li>";
     }).join("");
     bloc.innerHTML =
@@ -423,7 +423,7 @@
         '<button type="button" class="pilule' + (v.id === tetsuChoix.p60 ? " actif" : "") + '" data-t60="' + v.id + '">' + I18N.tr(v.nom) + "</button>").join("") +
       "</div></div>" +
       '<ul class="tetsu-versements">' + lignes + "</ul>" +
-      '<p class="tetsu-detail">' + I18N.tr(v40.detail) + " " + I18N.tr(v60.detail) + " " + I18N.t("te_fin", { s: TETSU.intervalle }) + "</p>";
+      '<p class="tetsu-detail">' + I18N.tr(v40.detail) + " " + I18N.tr(v60.detail) + " " + I18N.t("te_fin") + "</p>";
     $$("[data-t40]").forEach(b => b.addEventListener("click", () => { tetsuChoix.p40 = b.dataset.t40; rendreTetsu(); }));
     $$("[data-t60]").forEach(b => b.addEventListener("click", () => { tetsuChoix.p60 = b.dataset.t60; rendreTetsu(); }));
   }
@@ -453,13 +453,16 @@
       /* Le TOTAL d'abord, comme toutes les autres recettes (« jusqu'à 90 g ») :
          le versement seul (30, 60, puis 45) ne se lisait pas sur la balance, et
          le mode Brassage, qui cherche « à X g », affichait 60 au lieu de 90. */
+      /* À L'ŒIL, sans horaire (v8.99) : Tetsu verse quand l'eau est presque toute
+         passée, et ses 45 secondes valent pour 20 g et des versements de 60 g.
+         À 15 g le lit est plus mince, il se vide avant et le chrono faisait
+         attendre sur un lit sec. Le mode Brassage avance d'un toucher. */
       return mettreAEchelle(pours.map((p, i) => {
         cumul += p;
-        return { t: i * TETSU.intervalle, texte: i === 0
+        return { t: null, texte: i === 0
           ? I18N.t("pap_premier", { c: cumul, b: I18N.t("pap_bloom") })
-          : I18N.t("pap_verser", { p, c: cumul, b: "" }) };
-      // L'écoulement, 30 secondes après le dernier versement.
-      }).concat([{ t: (pours.length - 1) * TETSU.intervalle + 30, texte: I18N.t("pap_drain") }]));
+          : I18N.t("pap_verser", { p, c: cumul, b: I18N.t("pap_lit") }) };
+      }).concat([{ t: null, texte: I18N.t("pap_drain") }]));
     }
     return mettreAEchelle(traduire(recette.etapes));
   }

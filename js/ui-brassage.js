@@ -119,9 +119,12 @@
       $("#br-cible").textContent = String(cible);
       $("#br-dans").textContent = u + (suivant ? " · " + I18N.t("br_ensuite_dans", { t: fmtTemps(Math.max(0, Math.ceil(reste))) }) : "");
     } else if (libresSeules.length) {
+      /* Une étape à l'œil qui vise un total (le 4:6, v8.99) : le total passe en
+         énorme, comme une étape minutée ; sinon le temps écoulé. */
+      const cibleLibre = cibleDe(libresSeules[pasManuel].texte);
       $("#br-label").textContent = I18N.t("br_etape_n", { n: pasManuel + 1, t: libresSeules.length });
-      $("#br-cible").textContent = fmtTemps(Math.floor(s));
-      $("#br-dans").textContent = I18N.t("br_toucher");
+      $("#br-cible").textContent = cibleLibre ? String(cibleLibre) : fmtTemps(Math.floor(s));
+      $("#br-dans").textContent = (cibleLibre ? u + " · " : "") + I18N.t("br_toucher");
     } else {
       $("#br-label").textContent = courant ? I18N.t("br_chrono") : I18N.t("br_pret");
       $("#br-cible").textContent = fmtTemps(Math.floor(s));
