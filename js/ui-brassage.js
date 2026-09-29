@@ -28,6 +28,7 @@
   // L7 : les recettes sans heures (la Brikka) avancent d'un toucher ; on retient où l'on en est.
   let pasManuel = 0;
   let dernierPalier = -1;
+  let dernierCourant = "";
   const IMMINENT_S = 10;
   const echap = OUTILS.echap;
 
@@ -157,7 +158,7 @@
     if (vanne) badge.textContent = I18N.t(vanne === "ouverte" ? "br_vanne_ouverte" : "br_vanne_fermee");
     $("#br-suivante").textContent = suivant
       ? I18N.t("br_suivante", { d: Math.max(0, Math.ceil(suivant.t - s)), texte: suivant.texte })
-      : courant ? I18N.t("ch_derniere") : "";
+      : courant ? I18N.t("ch_derniere") : libresSeules.length ? I18N.t("br_toucher") : "";
 
     // La frise : tous les paliers minutés, le courant en évidence ; les étapes
     // sans heure (la Brikka) en liste simple, à relire.
@@ -165,7 +166,15 @@
     poser($("#br-frise"), paliers.map((p, k) =>
       '<li class="' + (k === i ? "courant" : k < i ? "passe" : "") + '"><time>' + fmtTemps(p.t) + "</time><span>" +
       echap(p.texte) + "</span></li>").join("") +
-      libres.map((p, k) => '<li class="libre' + (!paliers.length ? (k === pasManuel ? " courant" : k < pasManuel ? " passe" : "") : "") + '"><time aria-hidden="true">·</time><span>' + echap(p.texte) + "</span></li>").join(""));
+      libres.map((p, k) => '<li class="libre' + (!paliers.length ? (k === pasManuel ? " courant" : k < pasManuel ? " passe" : "") : "") + '" data-pas="' + k + '"><time aria-hidden="true">' + (k + 1) + "</time><span>" + echap(p.texte) + "</span></li>").join(""));
+    /* v9.01 : la frise est ce que Chris lit, la balance sous le Switch. L'étape
+       en cours vient au milieu de l'écran quand elle change, pas à chaque tic. */
+    const cleCourant = (paliers.length ? "p" + i : "l" + pasManuel) + "|" + (r ? r.id : "");
+    if (cleCourant !== dernierCourant) {
+      dernierCourant = cleCourant;
+      const li = $("#br-frise li.courant");
+      if (li && li.scrollIntoView) li.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
 
     const etat = UI.chrono.etat;
     $("#br-go").textContent = I18N.t(etat === "arrete" ? (s > 0 ? "br_recommencer" : "ch_demarrer")
@@ -183,6 +192,7 @@
     finVisible = false;
     pasManuel = 0;
     dernierPalier = -2;
+    dernierCourant = "";
     peindre();
     if (!m.open) m.showModal();
     clearInterval(minuteur);
@@ -220,13 +230,17 @@
     $("#br-raz").addEventListener("click", () => { UI.chronoRaz(); finVisible = false; pasManuel = 0; peindre(); });
     /* L7 : une recette sans heures (la Brikka) avance d'un toucher n'importe où
        sur la scène, les mains prises. Les recettes minutées suivent le temps. */
-    $(".br-scene").addEventListener("click", () => {
+    const avancer = ev => {
       const r = trouverRecette($("#f-recette").value);
       const tout = r ? UI.etapesPour(r) : [];
       if (!tout.length || tout.some(e => e.t !== null && e.t !== undefined)) return;
-      pasManuel = (pasManuel + 1) % tout.length;
+      // v9.01 : toucher une ligne de la frise y va directement ; ailleurs, l'étape suivante.
+      const li = ev.target.closest && ev.target.closest("#br-frise li[data-pas]");
+      pasManuel = li ? Number(li.dataset.pas) : (pasManuel + 1) % tout.length;
       peindre();
-    });
+    };
+    $(".br-scene").addEventListener("click", avancer);
+    $("#br-frise").addEventListener("click", avancer);
     document.querySelectorAll(".br-unite [data-unite]").forEach(b => b.addEventListener("click", () => {
       try { localStorage.setItem(CLE_UNITE, b.dataset.unite); } catch (e) { /* sans stockage, ml */ }
       peindre();
