@@ -437,12 +437,13 @@
     /* Correction steps: an out-of-range value is not refused, normalisation
        brings it back to the default, as for a recipe's heat. */
     fallbacks.stepSizes = Object.fromEntries(STEP_FIELDS.map(([id, key]) => [key, Number($("#" + id).value)]));
-    await saveFallbacks();
-    UI.loadFallbacks();
 
-    /* Only recipes actually touched are rewritten: each write stamps updated_at
-       and would win the merge against another device. */
-    let touched = 0;
+    /* The recipe table is read BEFORE saving the fallbacks (v9.07): saving
+       notifies, the settings screen re-renders and the typed values were gone
+       by the time the rows were read. Only recipes actually touched are
+       rewritten: each write stamps updated_at and would win the merge against
+       another device. */
+    const edits = [];
     for (const tr of $$("[data-param-recipe]")) {
       const r = DATA.state.recipes.find(x => x.id === tr.dataset.paramRecipe);
       if (!r) continue;
@@ -456,6 +457,14 @@
         (r.method === "Brikka" && String(r.heat_level || "") !== vals.heat_level);
       if (!changed) continue;
       if (vals.dial && !GRIND.parseDial(vals.dial.replace(/,/g, "."))) { toast(I18N.t("toast_grind_invalid")); return; }
+      edits.push({ r, vals });
+    }
+
+    await saveFallbacks();
+    UI.loadFallbacks();
+
+    let touched = 0;
+    for (const { r, vals } of edits) {
       // The table only shows these fields: we start from the whole recipe so
       // nothing is lost along the way (steps, text, associated coffees…).
       await DATA.editRecipe(r.id, {
