@@ -19,17 +19,17 @@
      cup" teaches nothing to someone who already sees an empty logbook. */
   function renderLastCup(exts) {
     const card = $("#card-last");
-    const e = [...exts].sort((a, b) => b.date_heure.localeCompare(a.date_heure))[0];
+    const e = [...exts].sort((a, b) => b.date_time.localeCompare(a.date_time))[0];
     card.hidden = !e;
     if (!e) return;
 
     const context = [];
-    if (e.recette) context.push(I18N.tr(e.recette));
-    if (e.dose_g > 0 && e.eau_g) context.push(e.dose_g + " → " + e.eau_g + " g");
+    if (e.recipe) context.push(I18N.tr(e.recipe));
+    if (e.dose_g > 0 && e.water_g) context.push(e.dose_g + " → " + e.water_g + " g");
     // Total time sits in the FOOTER (v8.39), next to the recipe target.
     if (e.temperature_c !== "" && e.temperature_c !== undefined) context.push(e.temperature_c + " °C");
-    if (e.methode === "Brikka" && e.puissance_feu !== "" && e.puissance_feu !== undefined) {
-      context.push(I18N.t("setting_heat", { f: e.puissance_feu }));
+    if (e.method === "Brikka" && e.heat_level !== "" && e.heat_level !== undefined) {
+      context.push(I18N.t("setting_heat", { f: e.heat_level }));
     }
 
     card.dataset.ext = e.id;
@@ -37,15 +37,15 @@
     card.setAttribute("tabindex", "0");
     card.innerHTML =
       '<div class="last-big-body">' +
-        '<p class="highlight">' + I18N.t("dash_last_cup", { q: timeSince(e.date_heure) }) + "</p>" +
-        '<p class="last-big-coffee">' + I18N.tr(e._c.cafe_nom) + "</p>" +
+        '<p class="highlight">' + I18N.t("dash_last_cup", { q: timeSince(e.date_time) }) + "</p>" +
+        '<p class="last-big-coffee">' + I18N.tr(e._c.coffee_name) + "</p>" +
         '<p class="last-big-context">' +
-          '<span class="dot-method ' + e.methode.toLowerCase() + '"></span>' +
-          '<span class="last-big-machine">' + e.methode + "</span>" +
+          '<span class="dot-method ' + e.method.toLowerCase() + '"></span>' +
+          '<span class="last-big-machine">' + e.method + "</span>" +
           context.map(x => '<span class="sep" aria-hidden="true">|</span><span>' + x + "</span>").join("") +
         "</p>" +
         lastTastes(e) +
-        (e.commentaire ? '<p class="last-big-comment">' + titleAttr(e.commentaire) + "</p>" : "") +
+        (e.comment ? '<p class="last-big-comment">' + titleAttr(e.comment) + "</p>" : "") +
         rankAmongSiblings(e) +
         lastCupFooter(e) +
       "</div>" +
@@ -54,8 +54,8 @@
         /* Without a score, we write "not rated yet" instead of a dash: a dash
            in a big number reads as a minus, and the project rules forbid
            the em dash anyway. */
-        (e.note_sur_10 !== ""
-          ? '<span class="big-rating">' + e.note_sur_10 + "</span>" +
+        (e.score_10 !== ""
+          ? '<span class="big-rating">' + e.score_10 + "</span>" +
             '<span class="big-rating-scale">' + I18N.t("dash_out_of_10") + "</span>"
           : '<span class="big-rating-none">' + I18N.t("not_rated_yet") + "</span>") +
         (e.diagnostic ? '<span class="dot-diag">' + displayedDiags(e.diagnostic) + "</span>" : "") +
@@ -70,12 +70,12 @@
      the coffee average as a line. Under three rated cups, nothing: a rank
      among two says nothing. */
   function rankAmongSiblings(e) {
-    if (e.note_sur_10 === "" || e.note_sur_10 === undefined) return "";
-    const siblings = analyzableExts().filter(x => x.cafe_id === e.cafe_id && x.note_sur_10 !== "");
+    if (e.score_10 === "" || e.score_10 === undefined) return "";
+    const siblings = analyzableExts().filter(x => x.coffee_id === e.coffee_id && x.score_10 !== "");
     if (!siblings.some(x => x.id === e.id)) siblings.push(e);
     if (siblings.length < 3) return "";
-    const rating = Number(e.note_sur_10);
-    const notes = siblings.map(x => Number(x.note_sur_10));
+    const rating = Number(e.score_10);
+    const notes = siblings.map(x => Number(x.score_10));
     const avg = average(notes);
     const ahead = notes.filter(n => n > rating).length;
     const ties = notes.filter(n => n === rating).length - 1;
@@ -102,15 +102,15 @@
     const stacks = {};
     siblings.forEach(s => {
       if (s.id === e.id) return;
-      const n = Number(s.note_sur_10);
+      const n = Number(s.score_10);
       const k = (stacks[n] = (stacks[n] || 0) + 1) - 1;
       svg += '<circle cx="' + x(n) + '" cy="' + (base - Math.min(k, 3) * step) + '" r="2.6" fill="var(--text)" opacity="0.55"></circle>';
     });
     // This one, on top, ringed with the panel colour so it stands out.
     svg += '<circle cx="' + x(rating) + '" cy="' + (base - 3) + '" r="6.5" fill="var(--accent)" stroke="var(--panel-2)" stroke-width="2"></circle>';
     return '<div class="last-spot" role="img" aria-label="' + titleAttr(I18N.t("rank_aria", {
-      n: notes.length, coffee: I18N.tr(e._c.cafe_nom), score: fmtRating(rating), m: fmtRating(avg) })) + '">' +
-      '<p class="last-spot-head"><span>' + I18N.t("rank_among", { n: notes.length, coffee: I18N.tr(e._c.cafe_nom) }) + "</span>" +
+      n: notes.length, coffee: I18N.tr(e._c.coffee_name), score: fmtRating(rating), m: fmtRating(avg) })) + '">' +
+      '<p class="last-spot-head"><span>' + I18N.t("rank_among", { n: notes.length, coffee: I18N.tr(e._c.coffee_name) }) + "</span>" +
       "<span><b>" + rankText + "</b>, " + position + "</span></p>" +
       '<svg viewBox="0 0 600 ' + (base + 22) + '" aria-hidden="true">' + svg + "</svg></div>";
   }
@@ -119,7 +119,7 @@
      average on this coffee and this recipe. A value with no reference does
      not say whether it is good. */
   function recipeTimeTarget(r) {
-    const m = /^total\s+(.+)$/.exec(String((r && r.totalTexte) || "").trim());
+    const m = /^total\s+(.+)$/.exec(String((r && r.totalText) || "").trim());
     if (!m) return "";
     return m[1].replace(/^environ\s+/, "≈ ").replace(/,.*$/, "");
   }
@@ -128,8 +128,8 @@
      target underneath (v8.39). Each cell only appears if the value exists:
      an empty cell is a hole. */
   function lastCupFooter(e) {
-    const r = findRecipe(e.recette);
-    const same = analyzableExts().filter(x => x.id !== e.id && x.cafe_id === e.cafe_id && x.recette === e.recette);
+    const r = findRecipe(e.recipe);
+    const same = analyzableExts().filter(x => x.id !== e.id && x.coffee_id === e.coffee_id && x.recipe === e.recipe);
     const avgTime = field => {
       const v = same.map(x => Number(x[field])).filter(n => n > 0);
       return v.length >= 2 ? fmtDuration(Math.round(average(v))) : "";
@@ -138,34 +138,34 @@
     const cell = (label, value, target, ok) => cells.push("<div><span>" + label + "</span><b>" + value + "</b>" +
       (target ? '<small class="' + (ok ? "target-held" : "") + '">' + target + "</small>" : "") + "</div>");
 
-    if (e._c.ratioTexte) {
+    if (e._c.ratioText) {
       let target = "", ok = false;
       /* On the SWITCH only: the recipe water is the poured water, the same
          quantity as the cup's. On the Brikka, it is the boiler water
          (150 g) for a ratio of about 1:7 in the cup: comparing them would
          announce a gap that does not exist. */
-      if (e.methode === "Switch" && r && r.dose > 0 && r.eau > 0) {
-        const aimed = r.eau / r.dose;
+      if (e.method === "Switch" && r && r.dose > 0 && r.water > 0) {
+        const aimed = r.water / r.dose;
         target = I18N.t("rank_recipe", { v: "1:" + aimed.toFixed(1) });
-        ok = Math.abs(Number(e.eau_g) / Number(e.dose_g) - aimed) <= 0.3;
+        ok = Math.abs(Number(e.water_g) / Number(e.dose_g) - aimed) <= 0.3;
       }
-      cell(I18N.t("detail_ratio"), e._c.ratioTexte, target, ok);
+      cell(I18N.t("detail_ratio"), e._c.ratioText, target, ok);
     }
-    const total = fmtDuration(e.temps_total_s);
+    const total = fmtDuration(e.total_time_s);
     if (total) {
       const aimed = recipeTimeTarget(r);
-      const avg = avgTime("temps_total_s");
+      const avg = avgTime("total_time_s");
       cell(I18N.t("detail_time"), total,
         aimed ? I18N.t("rank_recipe", { v: aimed }) : avg ? I18N.t("rank_your_average", { v: avg }) : "", false);
     }
-    const drawdown = fmtDuration(e.temps_ecoulement_s);
+    const drawdown = fmtDuration(e.flow_time_s);
     if (drawdown) {
-      const avg = avgTime("temps_ecoulement_s");
+      const avg = avgTime("flow_time_s");
       cell(I18N.t("detail_drawdown"), drawdown, avg ? I18N.t("rank_your_average", { v: avg }) : "", false);
     }
-    if (e.mouture_dial) cell(I18N.t("detail_grind"), e.mouture_dial, e._c.microns ? e._c.microns + " µm" : "", false);
+    if (e.grind_dial) cell(I18N.t("detail_grind"), e.grind_dial, e._c.microns ? e._c.microns + " µm" : "", false);
     else if (e._c.ground) cell(I18N.t("detail_grind"), I18N.t("bag_default"), "", false);
-    if (e._c.cout_tasse_vnd !== "") cell(I18N.t("detail_cost"), fmtVND(e._c.cout_tasse_vnd), I18N.t("rank_per_cup"), false);
+    if (e._c.cup_cost_vnd !== "") cell(I18N.t("detail_cost"), fmtVND(e._c.cup_cost_vnd), I18N.t("rank_per_cup"), false);
     return cells.length ? '<div class="last-big-footer">' + cells.join("") + "</div>" : "";
   }
 
@@ -187,7 +187,7 @@
   const LATEST_SHOWN = 8;
   const MAX_LAST_TASTES = 4;
   function lastTastes(e) {
-    const tags = String(e.descripteurs || "").split("|").filter(Boolean);
+    const tags = String(e.descriptors || "").split("|").filter(Boolean);
     if (!tags.length) return "";
     const shown = tags.slice(0, MAX_LAST_TASTES).map(t => '<span class="last-tag">' + I18N.tag(t) + "</span>");
     const rest = tags.length - shown.length;
@@ -203,7 +203,7 @@
      threshold cuts too early on a big screen and too late on a small one.
      The full text only comes on hover if the line is cut, see above. */
   function lastComment(e) {
-    const c = String(e.commentaire || "").trim();
+    const c = String(e.comment || "").trim();
     if (!c) return "";
     return '<tr class="last-comment" data-ext="' + e.id + '"><td colspan="5">' + titleAttr(c) + "</td></tr>";
   }
@@ -213,8 +213,8 @@
      here they made the row wrap onto three levels. */
   function shortMeasures(e) {
     const parts = [];
-    if (e.dose_g > 0 && e.eau_g) parts.push(e.dose_g + " → " + e.eau_g + " g");
-    const t = fmtDuration(e.temps_total_s);
+    if (e.dose_g > 0 && e.water_g) parts.push(e.dose_g + " → " + e.water_g + " g");
+    const t = fmtDuration(e.total_time_s);
     if (t) parts.push(t);
     if (!parts.length) return "";
     return '<span class="d-figures">' + parts.join(" · ") + "</span>";

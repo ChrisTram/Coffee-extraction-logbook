@@ -25,13 +25,13 @@ const DATA_CALCS = (() => {
        bought, as before. */
     function bagAtDate(coffeeId, date) {
       const day = String(date || "").slice(0, 10);
-      const candidates = state.achats
-        .filter(a => a.cafe_id === coffeeId && (!day || String(a.date_achat).slice(0, 10) <= day))
-        .filter(a => !(day && a.date_ouverture && String(a.date_ouverture).slice(0, 10) > day));
-      const opened = candidates.filter(a => a.date_ouverture)
-        .sort((a, b) => String(b.date_ouverture).localeCompare(String(a.date_ouverture)));
+      const candidates = state.purchases
+        .filter(a => a.coffee_id === coffeeId && (!day || String(a.purchase_date).slice(0, 10) <= day))
+        .filter(a => !(day && a.opened_date && String(a.opened_date).slice(0, 10) > day));
+      const opened = candidates.filter(a => a.opened_date)
+        .sort((a, b) => String(b.opened_date).localeCompare(String(a.opened_date)));
       if (opened.length) return opened[0];
-      return candidates.sort((a, b) => String(b.date_achat).localeCompare(String(a.date_achat)))[0] || null;
+      return candidates.sort((a, b) => String(b.purchase_date).localeCompare(String(a.purchase_date)))[0] || null;
     }
 
     function currentBag(coffeeId) {
@@ -46,47 +46,47 @@ const DATA_CALCS = (() => {
        stock. */
     function bagStock(coffeeId, defaultDose) {
       const bag = currentBag(coffeeId);
-      const coffee = state.cafes.find(c => c.id === coffeeId);
-      const format = bag ? bag.format_grammes : (coffee ? coffee.format_grammes : "");
+      const coffee = state.coffees.find(c => c.id === coffeeId);
+      const format = bag ? bag.bag_size_g : (coffee ? coffee.bag_size_g : "");
       if (format === "" || !(Number(format) > 0)) return null;
 
       /* Since the OPENING when it is known (v8.96), and no longer since the
          purchase: a bag bought ahead counted the cups drunk meanwhile from the
          OLD one, and emptied before it had been used. */
-      const since = bag ? (bag.date_ouverture || bag.date_achat) : (coffee ? coffee.date_ajout : "");
+      const since = bag ? (bag.opened_date || bag.purchase_date) : (coffee ? coffee.added_date : "");
       /* THE MANUAL COUNT comes first (v8.96): Chris weighed or estimated the
          bag, the stock restarts from there, and only the cups AFTER it are
          subtracted. It is the fallback when the calculation is wrong (bag not
          entered, cups from another bag, forgotten dose), without having to
          understand why. */
-      const manualCount = bag && bag.restant_g !== "" && bag.restant_le ? bag : null;
+      const manualCount = bag && bag.remaining_g !== "" && bag.remaining_at ? bag : null;
       const used = state.extractions
-        .filter(e => e.cafe_id === coffeeId)
+        .filter(e => e.coffee_id === coffeeId)
         .filter(e => manualCount
-          ? String(e.date_heure) > String(manualCount.restant_le)
-          : !since || String(e.date_heure).slice(0, 10) >= since)
+          ? String(e.date_time) > String(manualCount.remaining_at)
+          : !since || String(e.date_time).slice(0, 10) >= since)
         .reduce((total, e) => total + (Number(e.dose_g) || defaultDose || 0), 0);
 
-      const remaining = (manualCount ? Number(manualCount.restant_g) : Number(format)) - used;
+      const remaining = (manualCount ? Number(manualCount.remaining_g) : Number(format)) - used;
       return {
         format: Number(format),
         consumed: Math.round(used * 10) / 10,
         remaining: Math.round(remaining * 10) / 10,
         since: since,
-        roastDate: bag ? bag.date_torrefaction : (coffee ? coffee.date_torrefaction : ""),
-        bags: state.achats.filter(a => a.cafe_id === coffeeId).length,
+        roastDate: bag ? bag.roast_date : (coffee ? coffee.roast_date : ""),
+        bags: state.purchases.filter(a => a.coffee_id === coffeeId).length,
         // When the manual count was made, empty if the stock comes from the calculation alone.
-        corrected: manualCount ? manualCount.restant_le : "",
+        corrected: manualCount ? manualCount.remaining_at : "",
       };
     }
 
     function coffeeOf(ext) {
-      return state.cafes.find(c => c.id === ext.cafe_id) || null;
+      return state.coffees.find(c => c.id === ext.coffee_id) || null;
     }
 
     function calcs(ext) {
       const coffee = coffeeOf(ext);
-      const dial = GRIND.parseDial(ext.mouture_dial);
+      const dial = GRIND.parseDial(ext.grind_dial);
       /* RATIO: two logics, one per machine, because "eau" does not mean the
          same thing on both sides.
 
@@ -101,56 +101,56 @@ const DATA_CALCS = (() => {
          Without an extracted volume we fall back on the boiler, but the tooltip
          says so clearly instead of passing one number off as the other. */
       let ratio = "", ratioBase = "";
-      const isBrikka = ext.methode === "Brikka";
-      if (ext.dose_g > 0 && ext.eau_g) {
-        ratio = ext.eau_g / ext.dose_g;
-        ratioBase = isBrikka ? "chaudiere" : "infusion";
+      const isBrikka = ext.method === "Brikka";
+      if (ext.dose_g > 0 && ext.water_g) {
+        ratio = ext.water_g / ext.dose_g;
+        ratioBase = isBrikka ? "boiler" : "infusion";
       }
       /* CUP ratio, secondary and only when measured. It describes what really
          comes out of the Brikka, but it compares to no recipe. */
-      const cupRatio = ext.dose_g > 0 && ext.volume_extrait_ml !== "" && Number(ext.volume_extrait_ml) > 0
-        ? Number(ext.volume_extrait_ml) / ext.dose_g
+      const cupRatio = ext.dose_g > 0 && ext.yield_ml !== "" && Number(ext.yield_ml) > 0
+        ? Number(ext.yield_ml) / ext.dose_g
         : "";
       /* Days since the bag was OPENED. That is the useful freshness variable:
          Chris has a roast date on no coffee and will not have one, but he
          always knows when he opened a pack. */
       let daysOpen = "";
-      if (ext.cafe_id && ext.date_heure) {
-        const bag = bagAtDate(ext.cafe_id, ext.date_heure);
-        if (bag && bag.date_ouverture) {
-          const d1 = new Date(bag.date_ouverture + "T00:00");
-          const d2 = new Date(ext.date_heure);
+      if (ext.coffee_id && ext.date_time) {
+        const bag = bagAtDate(ext.coffee_id, ext.date_time);
+        if (bag && bag.opened_date) {
+          const d1 = new Date(bag.opened_date + "T00:00");
+          const d2 = new Date(ext.date_time);
           if (!isNaN(d1) && !isNaN(d2)) daysOpen = Math.max(0, Math.floor((d2 - d1) / 86400000));
         }
       }
       let age = "";
-      if (coffee && coffee.date_torrefaction && ext.date_heure) {
-        const d1 = new Date(coffee.date_torrefaction + "T00:00");
-        const d2 = new Date(ext.date_heure);
+      if (coffee && coffee.roast_date && ext.date_time) {
+        const d1 = new Date(coffee.roast_date + "T00:00");
+        const d2 = new Date(ext.date_time);
         if (!isNaN(d1) && !isNaN(d2)) age = Math.floor((d2 - d1) / 86400000);
       }
       let retention = "";
-      if (ext.eau_g !== "" && ext.volume_extrait_ml !== "") retention = ext.eau_g - ext.volume_extrait_ml;
+      if (ext.water_g !== "" && ext.yield_ml !== "") retention = ext.water_g - ext.yield_ml;
       /* LIQUID volume: extraction plus added water plus cold milk. On a
          cappuccino the cup will look fuller than this number, and that is
          normal: foam is air. It takes up volume without adding anything to
          drink, and above all without diluting anything, so it goes neither
          here nor into the drink ratio. */
       let drink = "";
-      if (ext.volume_extrait_ml !== "") {
-        drink = ext.volume_extrait_ml + (ext.eau_ajoutee_ml || 0) + (ext.lait_ml || 0);
+      if (ext.yield_ml !== "") {
+        drink = ext.yield_ml + (ext.added_water_ml || 0) + (ext.milk_ml || 0);
       }
       let cost = "", realCost = "";
-      if (coffee && coffee.prix_vnd && coffee.format_grammes && ext.dose_g) {
-        cost = Math.round(coffee.prix_vnd / coffee.format_grammes * ext.dose_g);
-        const pct = coffee.pourcentage_cafe_reel === "" || coffee.pourcentage_cafe_reel === undefined ? 100 : Number(coffee.pourcentage_cafe_reel);
+      if (coffee && coffee.price_vnd && coffee.bag_size_g && ext.dose_g) {
+        cost = Math.round(coffee.price_vnd / coffee.bag_size_g * ext.dose_g);
+        const pct = coffee.real_coffee_pct === "" || coffee.real_coffee_pct === undefined ? 100 : Number(coffee.real_coffee_pct);
         if (pct < 100 && pct > 0) {
-          realCost = Math.round(coffee.prix_vnd / (coffee.format_grammes * pct / 100) * ext.dose_g);
+          realCost = Math.round(coffee.price_vnd / (coffee.bag_size_g * pct / 100) * ext.dose_g);
         }
       }
       return {
         ratio,
-        ratioTexte: ratio === "" ? "" : "1:" + ratio.toFixed(1),
+        ratioText: ratio === "" ? "" : "1:" + ratio.toFixed(1),
         ratioBase,
         cupRatio,
         cupRatioText: cupRatio === "" ? "" : "1:" + cupRatio.toFixed(1),
@@ -159,20 +159,20 @@ const DATA_CALCS = (() => {
         // describes what you actually drink.
         drinkRatio: (() => {
           if (!(ext.dose_g > 0) || drink === "" || !(Number(drink) > 0)) return "";
-          const added = (Number(ext.eau_ajoutee_ml) || 0) + (Number(ext.lait_ml) || 0);
+          const added = (Number(ext.added_water_ml) || 0) + (Number(ext.milk_ml) || 0);
           if (!added) return "";
           return "1:" + (Number(drink) / ext.dose_g).toFixed(1);
         })(),
         clicks: dial ? dial.clicks : "",
         microns: dial ? Math.round(dial.microns) : "",
-        age_jours: age,
-        jours_ouvert: daysOpen,
+        age_days: age,
+        days_open: daysOpen,
         retention_ml: retention,
-        volume_boisson_ml: drink,
-        cout_tasse_vnd: cost,
-        cout_reel_vnd: realCost,
-        cafe_nom: coffee ? coffee.nom : (ext.cafe_id ? "Café supprimé" : "Sans café"),
-        ground: coffee ? Number(coffee.deja_moulu) === 1 : false,
+        drink_ml: drink,
+        cup_cost_vnd: cost,
+        real_cost_vnd: realCost,
+        coffee_name: coffee ? coffee.name : (ext.coffee_id ? "Café supprimé" : "Sans café"),
+        ground: coffee ? Number(coffee.pre_ground) === 1 : false,
       };
     }
 

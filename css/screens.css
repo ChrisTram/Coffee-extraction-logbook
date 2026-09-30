@@ -28,7 +28,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
      paragraphs, not on the frame. */
   .screen { max-width: var(--frame); margin-inline: auto; }
   /* The guide's long texts keep a readable line length. */
-  #screen-guide p, #screen-guide li, #screen-parametres p { max-width: 78ch; }
+  #screen-guide p, #screen-guide li, #screen-settings p { max-width: 78ch; }
   .footer-site { margin-inline-start: var(--rail-large); }
   /* The floating quick-entry button DISAPPEARS: the rail's "Nouvelle tasse"
      opens the full entry form, which is what you want on a keyboard. */
@@ -68,9 +68,9 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
      with the same weight, put "Nouvelle tasse" back as a duplicate in the menu. */
   .rail-brand,
   .rail .rail-new,
-  .rail-entry[data-screen="tableau"],
-  .rail-entry[data-screen="saisie"],
-  .rail-entry[data-screen="historique"] { display: none; }
+  .rail-entry[data-screen="dashboard"],
+  .rail-entry[data-screen="entry"],
+  .rail-entry[data-screen="history"] { display: none; }
   .rail-footer { border-top: none; padding-top: 4px; }
   main { padding-bottom: calc(var(--bottom-bar) + 34px); }
   .footer-site { margin-bottom: calc(var(--bottom-bar) + 16px); }
@@ -140,7 +140,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
 }
 /* In the dark theme there is nothing to invert: the card becomes a secondary
    card bordered with an accent hairline, and so keeps the theme's tokens. */
-html[data-theme="sombre"] .card-dark {
+html[data-theme="dark"] .card-dark {
   /* inherit: we CANCEL the inversion set by .card-dark for the light theme,
      and the card takes back the tokens of the active dark palette, whichever
      it is. Only its sub-surfaces and its muted colour have their own values. */
@@ -830,7 +830,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* THE entry form layout, and the only one. The form on the left, the fixed
-   360 px column on the right. It lives HERE and not on #screen-saisie, which
+   360 px column on the right. It lives HERE and not on #screen-entry, which
    has only one child and so has nothing to lay out. */
 .entry-layout {
   display: grid;

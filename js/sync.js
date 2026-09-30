@@ -9,7 +9,7 @@
  * That is also the behaviour when the D1 database is not bound.
  *
  * The merge model is described in worker/sync.js. In short: each row carries
- * a `maj_le`, the most recent wins, and deletions leave a tombstone so they
+ * an `updated_at`, the most recent wins, and deletions leave a tombstone so they
  * do not come back to life at the next exchange.
  */
 
@@ -17,7 +17,7 @@ const SYNC = (() => {
   const ENDPOINT = "api/sync";
   // Any new table MUST be added here AND in worker/sync.js, otherwise it
   // does not sync, silently and without an error.
-  const TABLES = ["cafes", "extractions", "recettes", "tasses", "achats", "reglages"];
+  const TABLES = ["coffees", "extractions", "recipes", "cups", "purchases", "settings"];
   const TIMEOUT_MS = 15000;
 
   // No server under file://: no point trying, and the fetch would fail
@@ -47,8 +47,8 @@ const SYNC = (() => {
   function mergeStates(left, right) {
     const tables = {}, tombs = {};
     for (const name of TABLES) {
-      const marks = { ...((left.tombes || {})[name] || {}) };
-      for (const [id, ts] of Object.entries((right.tombes || {})[name] || {})) {
+      const marks = { ...((left.tombstones || {})[name] || {}) };
+      for (const [id, ts] of Object.entries((right.tombstones || {})[name] || {})) {
         if (stamp(ts) > stamp(marks[id])) marks[id] = stamp(ts);
       }
       const byId = new Map();
@@ -56,14 +56,14 @@ const SYNC = (() => {
         if (!row || !row.id) continue;
         const ex = byId.get(row.id);
         if (!ex) { byId.set(row.id, row); continue; }
-        const tl = stamp(row.maj_le), te = stamp(ex.maj_le);
+        const tl = stamp(row.updated_at), te = stamp(ex.updated_at);
         if (tl > te) byId.set(row.id, row);
         else if (tl === te) byId.set(row.id, mergeRow(ex, row));
       }
-      tables[name] = [...byId.values()].filter(l => stamp(marks[l.id]) <= stamp(l.maj_le));
+      tables[name] = [...byId.values()].filter(l => stamp(marks[l.id]) <= stamp(l.updated_at));
       tombs[name] = marks;
     }
-    return { tables, tombes: tombs };
+    return { tables, tombstones: tombs };
   }
 
   /* Exchange in a single round trip: we send the local state, the server
@@ -83,7 +83,7 @@ const SYNC = (() => {
         signal: abort.signal,
       });
     } catch (error) {
-      throw Object.assign(new Error("network"), { code: "hors-ligne" });
+      throw Object.assign(new Error("network"), { code: "offline" });
     } finally {
       clearTimeout(timer);
     }
@@ -92,24 +92,25 @@ const SYNC = (() => {
     // redirected, we certainly do not want to parse the login page as
     // data.
     if (response.status === 401 || response.redirected) {
-      throw Object.assign(new Error("session"), { code: "session-expiree" });
+      throw Object.assign(new Error("session"), { code: "session-expired" });
     }
     if (response.status === 503) {
-      throw Object.assign(new Error("not configured"), { code: "non-configuree" });
+      throw Object.assign(new Error("not configured"), { code: "not-configured" });
     }
     // The server knows a more recent version of the logbook than this tab (v8.71).
     if (response.status === 409) {
-      throw Object.assign(new Error("outdated version"), { code: "version-perimee" });
+      throw Object.assign(new Error("outdated version"), { code: "outdated-version" });
     }
     if (!response.ok) {
-      throw Object.assign(new Error("http " + response.status), { code: "erreur" });
+      throw Object.assign(new Error("http " + response.status), { code: "error" });
     }
 
     const received = await response.json();
     if (!received || typeof received !== "object" || !received.tables) {
-      throw Object.assign(new Error("unexpected response"), { code: "erreur" });
+      throw Object.assign(new Error("unexpected response"), { code: "error" });
     }
-    return received;
+    // A server still on the French names (before v9.06) is read through them.
+    return LEGACY.renameDocument(received);
   }
 
   return { isAvailable, exchange, mergeStates, emptyTombstones, TABLES };

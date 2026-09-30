@@ -37,9 +37,9 @@
       const b = ev.target.closest(".tag");
       if (!b || !b.dataset.tag) return;
       const t = b.dataset.tag;
-      if (entry.descripteurs.has(t)) entry.descripteurs.delete(t);
-      else entry.descripteurs.add(t);
-      setPressed(b, entry.descripteurs.has(t));
+      if (entry.descriptors.has(t)) entry.descriptors.delete(t);
+      else entry.descriptors.add(t);
+      setPressed(b, entry.descriptors.has(t));
     });
   }
 
@@ -50,7 +50,7 @@
     // Grouped by what needs correcting: setting, ratio, or the coffee itself.
     // A flat list of sixteen entries reads badly and pushes you to tick at random.
     $("#f-diagnostic").innerHTML = DIAGNOSTIC_GROUPS.map(g =>
-      '<div class="tags-group"><span class="tags-group-name">' + I18N.group(g.nom) + "</span>" +
+      '<div class="tags-group"><span class="tags-group-name">' + I18N.group(g.name) + "</span>" +
       '<div class="tags">' + g.diags.map(d =>
         '<button type="button" class="pill" aria-pressed="false" data-diag="' + d + '" data-info="' +
         infoDiagnostic(d) + '">' + I18N.diag(d) + "</button>").join("") +
@@ -60,8 +60,8 @@
     // Descriptors grouped by family of the flavour wheel. Each tag carries
     // its definition as a tooltip (data-info, CSS bubble on hover).
     $("#f-descriptors").innerHTML = DESCRIPTOR_GROUPS.map(g =>
-      '<div class="tags-group" data-group="' + g.nom + '"><span class="tags-group-name">' +
-      I18N.group(g.nom) + "</span>" +
+      '<div class="tags-group" data-group="' + g.name + '"><span class="tags-group-name">' +
+      I18N.group(g.name) + "</span>" +
       '<div class="tags">' + g.tags.map(d =>
         '<button type="button" class="tag" aria-pressed="false" data-tag="' + d + '" data-info="' +
         I18N.tagInfo(d) + '">' + I18N.tag(d) + "</button>").join("") +
@@ -73,7 +73,7 @@
      brief: enough to understand there are others, few enough for the block
      to fit on the screen. */
   const VISIBLE_FAMILIES = 2;
-  const FAMILIES_KEY = "gouts-toutes-familles";
+  const FAMILIES_KEY = "tastes-all-families";
 
   /* OPEN BY DEFAULT. Folding stays, but it is a choice: Chris does not want
      to have to click to see his own list. Only an explicitly saved "0"

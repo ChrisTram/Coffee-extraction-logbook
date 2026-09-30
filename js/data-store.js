@@ -42,6 +42,18 @@ const DATA_STORE = (() => {
     });
   }
 
+  // Removes keys in ONE transaction: the French keys once their English copy is written (v9.06).
+  function kvDeleteMany(keys) {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction("kv", "readwrite");
+      const store = tx.objectStore("kv");
+      keys.forEach(key => store.delete(key));
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+  }
+
   function kvGet(key) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction("kv", "readonly");
@@ -88,5 +100,5 @@ const DATA_STORE = (() => {
     setTimeout(() => URL.revokeObjectURL(url), 3000);
   }
 
-  return { openDB, kvGet, kvSet, kvSetMany, checkPermission, writeFile, readFile, download };
+  return { openDB, kvGet, kvSet, kvSetMany, kvDeleteMany, checkPermission, writeFile, readFile, download };
 })();

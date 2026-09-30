@@ -42,7 +42,7 @@
   /* A complete finding: the sentence, both sides of the comparison, and
      what to judge it by. Every rule returns this shape, or null. */
   function makeFinding(text, high, low) {
-    return { texte: text, high: high, low: low, confidence: confidenceLevel(high.note, low.note, high.n, low.n) };
+    return { text: text, high: high, low: low, confidence: confidenceLevel(high.note, low.note, high.n, low.n) };
   }
 
   // Compares named groups {key: [scores]} and sets the BEST against the REST
@@ -71,18 +71,18 @@
   }
 
   /* Age of the BAG, not age of the roast. The previous rule started from
-     `date_torrefaction`, missing from Chris's five coffees and likely to stay
+     `roast_date`, missing from Chris's five coffees and likely to stay
      so: it could never fire even once. The opening day, on the other hand, he
      always knows, and it is what he describes as moving his cups the most.
      The bands follow degassing, then staling. */
   function insightBagAge(rated) {
     const groups = { finding_bag_fresh: [], finding_bag_middle: [], finding_bag_old: [] };
     rated.forEach(e => {
-      const days = e._c.jours_ouvert;
+      const days = e._c.days_open;
       if (days === "" || days < 0) return;
-      if (days <= 7) groups.finding_bag_fresh.push(e.note_sur_10);
-      else if (days <= 21) groups.finding_bag_middle.push(e.note_sur_10);
-      else groups.finding_bag_old.push(e.note_sur_10);
+      if (days <= 7) groups.finding_bag_fresh.push(e.score_10);
+      else if (days <= 21) groups.finding_bag_middle.push(e.score_10);
+      else groups.finding_bag_old.push(e.score_10);
     });
     const res = bestOfGroups(groups);
     if (!res) return null;
@@ -107,14 +107,14 @@
      0.4 points of gap. On Chris's current data, none passes yet, and that is
      the right behaviour: the best gap per coffee comes out at 0.17. */
   function insightsByCoffee(exts) {
-    return TUNING.findingsByCoffee(DATA.state.cafes, exts, {
+    return TUNING.findingsByCoffee(DATA.state.coffees, exts, {
       minBatch: MIN_SAMPLE * 2,
       minPerGroup: MIN_SAMPLE,
       minGap: MIN_GAP,
     }).slice(0, 2).map(c => makeFinding(
       I18N.t("finding_coffee_lever", {
-        coffee: c.coffee ? c.coffee.nom : "",
-        machine: I18N.machine(c.methode),
+        coffee: c.coffee ? c.coffee.name : "",
+        machine: I18N.machine(c.method),
         lever: I18N.t("lever_" + c.lever),
         value: I18N.tr(String(c.value)),
         high: fmtRating(c.high),
@@ -130,10 +130,10 @@
   function insightRecipes(rated) {
     const byFamily = {};
     rated.forEach(e => {
-      const r = findRecipe(e.recette);
-      if (!r || !r.famille) return;
-      const f = (byFamily[r.famille] = byFamily[r.famille] || {});
-      (f[r.nom] = f[r.nom] || []).push(e.note_sur_10);
+      const r = findRecipe(e.recipe);
+      if (!r || !r.family) return;
+      const f = (byFamily[r.family] = byFamily[r.family] || {});
+      (f[r.name] = f[r.name] || []).push(e.score_10);
     });
     // A true duel, so we ONLY talk about families where exactly two recipes
     // have enough rated brews. With three recipes or more, naming a loser
@@ -141,34 +141,34 @@
     for (const family of Object.keys(byFamily)) {
       const classes = Object.entries(byFamily[family])
         .filter(([, notes]) => notes.length >= MIN_SAMPLE)
-        .map(([label, notes]) => ({ nom: label, mean: average(notes), n: notes.length }))
+        .map(([label, notes]) => ({ name: label, mean: average(notes), n: notes.length }))
         .sort((a, b) => b.mean - a.mean);
       if (classes.length !== 2) continue;
       if (classes[0].mean - classes[1].mean < MIN_GAP) continue;
       return makeFinding(
         I18N.t("finding_recipes", {
-          winner: I18N.tr(classes[0].nom),
-          loser: I18N.tr(classes[1].nom),
+          winner: I18N.tr(classes[0].name),
+          loser: I18N.tr(classes[1].name),
           high: fmtRating(classes[0].mean),
           low: fmtRating(classes[1].mean),
         }),
-        { label: I18N.tr(classes[0].nom), note: classes[0].mean, n: classes[0].n },
-        { label: I18N.tr(classes[1].nom), note: classes[1].mean, n: classes[1].n });
+        { label: I18N.tr(classes[0].name), note: classes[0].mean, n: classes[0].n },
+        { label: I18N.tr(classes[1].name), note: classes[1].mean, n: classes[1].n });
     }
     return null;
   }
 
-  // Time of day: the hour is already in date_heure, so this rule costs no
+  // Time of day: the hour is already in date_time, so this rule costs no
   // extra input. Answers "is my first cup really better, or just drunk with
   // more enthusiasm".
   function insightMoment(rated) {
     const groups = { finding_time_morning: [], finding_time_afternoon: [], finding_time_evening: [] };
     rated.forEach(e => {
-      const hour = Number(String(e.date_heure).slice(11, 13));
+      const hour = Number(String(e.date_time).slice(11, 13));
       if (!Number.isFinite(hour)) return;
-      if (hour < 12) groups.finding_time_morning.push(e.note_sur_10);
-      else if (hour < 18) groups.finding_time_afternoon.push(e.note_sur_10);
-      else groups.finding_time_evening.push(e.note_sur_10);
+      if (hour < 12) groups.finding_time_morning.push(e.score_10);
+      else if (hour < 18) groups.finding_time_afternoon.push(e.score_10);
+      else groups.finding_time_evening.push(e.score_10);
     });
     const res = bestOfGroups(groups);
     if (!res) return null;
@@ -188,8 +188,8 @@
   function insightPower(rated) {
     const groups = {};
     rated
-      .filter(e => e.methode === "Brikka" && e.puissance_feu !== "" && e.puissance_feu !== undefined)
-      .forEach(e => (groups[e.puissance_feu] = groups[e.puissance_feu] || []).push(e.note_sur_10));
+      .filter(e => e.method === "Brikka" && e.heat_level !== "" && e.heat_level !== undefined)
+      .forEach(e => (groups[e.heat_level] = groups[e.heat_level] || []).push(e.score_10));
     const res = bestOfGroups(groups);
     if (!res) return null;
     return makeFinding(
@@ -218,8 +218,8 @@
     const groups = { finding_temp_low: [], finding_temp_middle: [], finding_temp_high: [] };
     rated.forEach(e => {
       const t = Number(e.temperature_c);
-      if (e.methode !== "Switch" || e.temperature_c === "" || !Number.isFinite(t)) return;
-      groups[tempBand(t)].push(e.note_sur_10);
+      if (e.method !== "Switch" || e.temperature_c === "" || !Number.isFinite(t)) return;
+      groups[tempBand(t)].push(e.score_10);
     });
     const res = bestOfGroups(groups);
     if (!res) return null;
@@ -241,20 +241,20 @@
   }
   function insightPreheat(rated) {
     const groups = { finding_preheat_yes: [], finding_preheat_no: [] };
-    rated.filter(e => e.methode === "Brikka").forEach(e =>
-      groups[Number(e.eau_prechauffee) === 1 ? "finding_preheat_yes" : "finding_preheat_no"].push(e.note_sur_10));
+    rated.filter(e => e.method === "Brikka").forEach(e =>
+      groups[Number(e.preheated_water) === 1 ? "finding_preheat_yes" : "finding_preheat_no"].push(e.score_10));
     return duelOf(groups, what => I18N.t("finding_preheat", { what: what }));
   }
   function insightAgitation(rated) {
     const groups = { finding_stir_yes: [], finding_stir_no: [] };
-    rated.filter(e => e.methode === "Switch").forEach(e =>
-      groups[e.agitation_nb !== "" && e.agitation_nb !== undefined && Number(e.agitation_nb) > 0
-        ? "finding_stir_yes" : "finding_stir_no"].push(e.note_sur_10));
+    rated.filter(e => e.method === "Switch").forEach(e =>
+      groups[e.stir_count !== "" && e.stir_count !== undefined && Number(e.stir_count) > 0
+        ? "finding_stir_yes" : "finding_stir_no"].push(e.score_10));
     return duelOf(groups, what => I18N.t("finding_stir", { what: what }));
   }
 
   function computeInsights(exts) {
-    const rated = exts.filter(e => e.note_sur_10 !== "");
+    const rated = exts.filter(e => e.score_10 !== "");
     /* Findings PER COFFEE first: they are more precise, hence more
        actionable. The global rules next, and they announce themselves
        that they mix coffees: that is their limit, might as well say it. */
@@ -266,7 +266,7 @@
       insightTemperature(rated),
       insightPreheat(rated),
       insightAgitation(rated),
-    ].filter(Boolean).map(c => ({ ...c, texte: I18N.t("finding_global", { p: c.texte }) })));
+    ].filter(Boolean).map(c => ({ ...c, text: I18N.t("finding_global", { p: c.text }) })));
 
     if (findings.length) return findings;
 
@@ -274,7 +274,7 @@
     // That is the difference between "not enough data" and "the site is broken".
     // We do NOT ask for roast dates here: Vietnamese bags almost never
     // carry them, the reminder would be a permanent reproach.
-    return [{ texte: I18N.t("finding_empty", { n: MIN_SAMPLE }) }];
+    return [{ text: I18N.t("finding_empty", { n: MIN_SAMPLE }) }];
   }
 
   /* THE PROOF, ON ONE LINE (v8.37). v8.36 laid it out as two rows of bars
@@ -332,8 +332,8 @@
       '<button type="button" class="btn-square-small" data-insight="-1" aria-label="' + titleAttr(I18N.t("finding_previous")) + '">' + UI.icon("gauche") + "</button>" +
       '<button type="button" class="btn-square-small" data-insight="1" aria-label="' + titleAttr(I18N.t("finding_next")) + '">' + UI.icon("chevron") + "</button>";
     $("#insights").innerHTML = findings.map(c => {
-      if (!c.high) return '<li class="finding finding-empty"><p>' + c.texte + "</p></li>";
-      return '<li class="finding"><p>' + c.texte + "</p>" +
+      if (!c.high) return '<li class="finding finding-empty"><p>' + c.text + "</p></li>";
+      return '<li class="finding"><p>' + c.text + "</p>" +
         '<div class="proof">' + scaleBar(c) +
         '<span class="proof-figures">' + I18N.t("finding_versus", { h: fmtRating(c.high.note), b: fmtRating(c.low.note) }) + "</span>" +
         '<span class="proof-footer">' + I18N.t("finding_" + c.confidence) + " · " +

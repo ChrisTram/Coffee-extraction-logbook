@@ -9,15 +9,30 @@
  * client (normalizeCoffee, normalizeExtraction, migrateData) and evolves
  * regularly, with idempotent client-side migrations. Duplicating it in SQL
  * would require a D1 migration for every added column. Here the server
- * knows only one thing: each row has an `id` and a `maj_le`.
+ * knows only one thing: each row has an `id` and an `updated_at`.
  *
- * MERGE MODEL: row by row, the most recent `maj_le` wins. Deletions leave a
- * tombstone (`tombes`), otherwise a row deleted on one device would come
+ * MERGE MODEL: row by row, the most recent `updated_at` wins. Deletions leave a
+ * tombstone (`tombstones`), otherwise a row deleted on one device would come
  * back to life on the other's first sync. Tombstones are purged after
  * TOMBSTONE_RETENTION_MS, otherwise they would grow forever.
+ *
+ * FRENCH NAMES (v9.06). Until v9.05 the document carried French names
+ * (cafes, nom, maj_le, tombes...). The stored document, its daily backups and
+ * the payload of a tab still open on an old version may still carry them:
+ * sanitisePayload renames everything through legacy-names.js BEFORE
+ * anything else, so the merge only ever sees English names and writes
+ * English names only.
  */
 
-export const TABLES = ["cafes", "extractions", "recettes", "tasses", "achats", "reglages"];
+import { renameDocument } from "./legacy-names.js";
+
+export const TABLES = ["coffees", "extractions", "recipes", "cups", "purchases", "settings"];
+
+/* The oldest client schema accepted, whatever the document says (v9.06). A
+   tab from before the English names reads "cafes" and "maj_le": given the
+   English document it would see an empty logbook and rows without dates. It
+   is refused with the same 409 as any outdated tab, and offered a reload. */
+export const MIN_CLIENT_SCHEMA = 21;
 
 // Three months: far more than the realistic delay between two syncs of the
 // same device, which is the only thing tombstones need to cover.
@@ -46,7 +61,7 @@ const timestamp = value => {
   return Number.isFinite(n) && n > 0 ? n : 0;
 };
 
-/* BOUNDED CLOCKS (v8.71). maj_le and tombstones come from the device clock.
+/* BOUNDED CLOCKS (v8.71). updated_at and tombstones come from the device clock.
    A phone ten minutes fast won every merge for ten minutes, and a deletion
    dated in the future could no longer be undone. Any timestamp more than
    five minutes ahead of the server is brought back to the server time. */
@@ -56,7 +71,7 @@ export const TOLERATED_LEAD_MS = 5 * 60 * 1000;
    types. A row without a usable `id` is dropped, it could not be merged.
    `now` is optional: without it, no clamping (rereading the document). */
 export function sanitisePayload(raw, now) {
-  const source = raw && typeof raw === "object" ? raw : {};
+  const source = raw && typeof raw === "object" ? renameDocument(raw) : {};
   const tables = {};
   const tombstones = {};
   const clamp = ts => {
@@ -68,9 +83,9 @@ export function sanitisePayload(raw, now) {
     const rows = Array.isArray(source.tables?.[name]) ? source.tables[name] : [];
     tables[name] = rows
       .filter(row => row && typeof row === "object" && typeof row.id === "string" && row.id !== "")
-      .map(row => ({ ...row, maj_le: clamp(row.maj_le) }));
+      .map(row => ({ ...row, updated_at: clamp(row.updated_at) }));
 
-    const marks = source.tombes?.[name];
+    const marks = source.tombstones?.[name];
     tombstones[name] = {};
     if (marks && typeof marks === "object") {
       for (const [id, ts] of Object.entries(marks)) {
@@ -82,7 +97,7 @@ export function sanitisePayload(raw, now) {
      a tab stuck on an old version, which does not know the recent columns,
      is refused instead of erasing them (see handleSync). */
   const schema = Number(source.schema);
-  return { tables, tombes: tombstones, schema: Number.isFinite(schema) && schema > 0 ? Math.floor(schema) : 0 };
+  return { tables, tombstones, schema: Number.isFinite(schema) && schema > 0 ? Math.floor(schema) : 0 };
 }
 
 // A table bigger than the cap is REFUSED, no longer silently truncated.
@@ -94,7 +109,7 @@ export function emptyPayload() {
   return sanitisePayload({});
 }
 
-/* ON EQUAL maj_le, FIELD BY FIELD MERGE (v8.71). The two versions were
+/* ON EQUAL updated_at, FIELD BY FIELD MERGE (v8.71). The two versions were
    supposed to be identical, and the last one seen won. That is not true when
    a tab on an old version sends back a row WITHOUT the columns it does not
    know, at the same date: the truncated version won and spread. Now the
@@ -113,7 +128,7 @@ function mergeRows(left, right) {
   for (const row of [...(left || []), ...(right || [])]) {
     const existing = byId.get(row.id);
     if (!existing) { byId.set(row.id, row); continue; }
-    const tr = timestamp(row.maj_le), te = timestamp(existing.maj_le);
+    const tr = timestamp(row.updated_at), te = timestamp(existing.updated_at);
     if (tr > te) byId.set(row.id, row);
     else if (tr === te) byId.set(row.id, mergeRow(existing, row));
   }
@@ -131,23 +146,26 @@ function mergeTombstones(left, right) {
 /* Merges two payloads. Commutative and idempotent: syncing twice in a row,
    or in the other direction, gives the same result. */
 export function mergePayloads(left, right, now) {
+  // Already renamed when they come through sanitisePayload; free otherwise.
+  left = renameDocument(left || {});
+  right = renameDocument(right || {});
   const tables = {};
   const tombstones = {};
 
   for (const name of TABLES) {
-    const marks = mergeTombstones(left.tombes?.[name], right.tombes?.[name]);
+    const marks = mergeTombstones(left.tombstones?.[name], right.tombstones?.[name]);
 
     // A row only survives if no tombstone is LATER than it.
     // Rewriting a row after deleting it therefore brings it back, which is
     // the expected behaviour.
     tables[name] = mergeRows(left.tables?.[name], right.tables?.[name])
-      .filter(row => timestamp(marks[row.id]) <= timestamp(row.maj_le));
+      .filter(row => timestamp(marks[row.id]) <= timestamp(row.updated_at));
 
     tombstones[name] = Object.fromEntries(
       Object.entries(marks).filter(([, ts]) => now - ts < TOMBSTONE_RETENTION_MS)
     );
   }
-  return { tables, tombes: tombstones, schema: Math.max(Number(left.schema) || 0, Number(right.schema) || 0) };
+  return { tables, tombstones, schema: Math.max(Number(left.schema) || 0, Number(right.schema) || 0) };
 }
 
 /* ---------- D1 storage ---------- */
@@ -280,8 +298,8 @@ async function exchangeSync(request, env) {
   if (tooManyRows(incoming)) return json({ error: "too-large" }, 413);
   /* A device older than the document does not know its columns: it is
      refused, and the client offers to reload the page. */
-  if (incoming.schema < stored.schema) {
-    return json({ error: "outdated-version", schema: stored.schema }, 409);
+  if (incoming.schema < Math.max(stored.schema, MIN_CLIENT_SCHEMA)) {
+    return json({ error: "outdated-version", schema: Math.max(stored.schema, MIN_CLIENT_SCHEMA) }, 409);
   }
 
   const merged = mergePayloads(stored, incoming, now);

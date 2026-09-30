@@ -1,5 +1,5 @@
 // Starter recipes, starter coffees, cups and consistency rules.
-// Recipes then live in the data (recettes.csv plus IndexedDB) and are
+// Recipes then live in the data (recipes.csv plus IndexedDB) and are
 // edited in the interface. This file provides the original versions,
 // which you can always go back to.
 "use strict";
@@ -7,31 +7,31 @@
 const STARTER_RECIPES = [
   {
     id: "brikka-classique",
-    nom: "Brikka classique",
-    numero: "",
-    methode: "Brikka",
+    name: "Brikka classique",
+    number: "",
+    method: "Brikka",
     // Family added in v7.17 to share a card with the boiling-water variant.
     // The NAME does not change, only the display grouping.
-    famille: "brikka-classique",
-    variante: "Standard",
-    sousTitre: "La base quotidienne de la Brikka",
-    dose: 14, eau: 150, temp: "", tempTexte: "dépend de la puissance du feu",
-    puissance_feu: 3,
+    family: "brikka-classique",
+    variant: "Standard",
+    subtitle: "La base quotidienne de la Brikka",
+    dose: 14, water: 150, temp: "", tempText: "dépend de la puissance du feu",
+    heat_level: 3,
     dial: "1.5.0",
-    ratioTexte: "environ 1:7, environ 90 ml en tasse",
-    volumeTypique: 90,
-    totalTexte: "retrait du feu aux premiers gargouillis",
-    lait: false,
-    etapes: [
-      { t: null, texte: "Remplir la chaudière à l'eau FROIDE : c'est la consigne Bialetti pour la Brikka, dont la soupape lestée est calibrée sur cette montée en pression. L'eau préchauffée est la méthode de la Moka Express, pas celle-ci." },
-      { t: null, texte: "Ne jamais dépasser la soupape." },
-      { t: null, texte: "Égaliser la mouture, ne jamais tasser." },
-      { t: null, texte: "Retirer du feu dès les premiers gargouillis." },
+    ratioText: "environ 1:7, environ 90 ml en tasse",
+    typicalVolume: 90,
+    totalText: "retrait du feu aux premiers gargouillis",
+    milk: false,
+    steps: [
+      { t: null, text: "Remplir la chaudière à l'eau FROIDE : c'est la consigne Bialetti pour la Brikka, dont la soupape lestée est calibrée sur cette montée en pression. L'eau préchauffée est la méthode de la Moka Express, pas celle-ci." },
+      { t: null, text: "Ne jamais dépasser la soupape." },
+      { t: null, text: "Égaliser la mouture, ne jamais tasser." },
+      { t: null, text: "Retirer du feu dès les premiers gargouillis." },
     ],
-    pourQui: "L'usage quotidien de la Brikka, 14 g pour environ 90 ml en tasse.",
-    cafesAssocies: ["Trung Nguyên Sáng Tạo 4", "Bana Cofe G4", "Là Việt Balanced"],
+    bestFor: "L'usage quotidien de la Brikka, 14 g pour environ 90 ml en tasse.",
+    pairedCoffees: ["Trung Nguyên Sáng Tạo 4", "Bana Cofe G4", "Là Việt Balanced"],
     note: "Après un Bana G4 ou un Sáng Tạo 4 : rinçage immédiat à l'eau chaude après usage, le sel et les graisses attaquent l'aluminium.",
-    parDefaut: false, avancee: false, variantes: false, actif: 1,
+    isDefault: false, advanced: false, has_variants: false, active: 1,
   },
   {
     // A distinct protocol, not a simple checkbox: boiling water changes the
@@ -40,31 +40,31 @@ const STARTER_RECIPES = [
     // Grind coarser than the Standard so that the valve gives way
     // earlier and flows longer instead of bursting.
     id: "brikka-classique-bouillante",
-    nom: "Brikka classique (eau préchauffée)",
-    numero: "",
-    methode: "Brikka",
-    famille: "brikka-classique",
-    variante: "Eau préchauffée",
-    sousTitre: "Eau bouillante, flamme forte au départ",
-    dose: 14, eau: 150, temp: "", tempTexte: "eau bouillante au départ, la suite dépend du feu",
-    puissance_feu: 3,
+    name: "Brikka classique (eau préchauffée)",
+    number: "",
+    method: "Brikka",
+    family: "brikka-classique",
+    variant: "Eau préchauffée",
+    subtitle: "Eau bouillante, flamme forte au départ",
+    dose: 14, water: 150, temp: "", tempText: "eau bouillante au départ, la suite dépend du feu",
+    heat_level: 3,
     dial: "1.5.0",
-    ratioTexte: "environ 1:7, environ 90 ml en tasse",
-    volumeTypique: 90,
-    totalTexte: "montée en pression sous 2 minutes, écoulement de 20 à 45 secondes",
-    lait: false,
-    etapes: [
-      { t: null, texte: "Faire bouillir l'eau et la verser tout de suite : tiède, on cumule les inconvénients des deux méthodes." },
-      { t: null, texte: "Ne jamais dépasser la soupape." },
-      { t: null, texte: "Égaliser la mouture, ne jamais tasser : un panier tassé fait percer un canal." },
-      { t: null, texte: "Flamme forte jusqu'aux premières gouttes : c'est avant l'écoulement que la mouture cuit." },
-      { t: null, texte: "Baisser la flamme dès que ça coule, pour allonger l'écoulement." },
-      { t: null, texte: "Retirer du feu dès les premiers gargouillis." },
+    ratioText: "environ 1:7, environ 90 ml en tasse",
+    typicalVolume: 90,
+    totalText: "montée en pression sous 2 minutes, écoulement de 20 à 45 secondes",
+    milk: false,
+    steps: [
+      { t: null, text: "Faire bouillir l'eau et la verser tout de suite : tiède, on cumule les inconvénients des deux méthodes." },
+      { t: null, text: "Ne jamais dépasser la soupape." },
+      { t: null, text: "Égaliser la mouture, ne jamais tasser : un panier tassé fait percer un canal." },
+      { t: null, text: "Flamme forte jusqu'aux premières gouttes : c'est avant l'écoulement que la mouture cuit." },
+      { t: null, text: "Baisser la flamme dès que ça coule, pour allonger l'écoulement." },
+      { t: null, text: "Retirer du feu dès les premiers gargouillis." },
     ],
-    pourQui: "L'alternative à tester contre la Standard : même dose, même eau, même mouture, seules la température de départ et la flamme changent. À savoir avant de comparer : Bialetti indique l'eau FROIDE pour toutes ses cafetières, Brikka comme Moka Express ; l'eau préchauffée est une astuce de barista, qui raccourcit le temps où la mouture chauffe sur le feu. Cette recette applique donc volontairement l'autre méthode.",
-    cafesAssocies: ["Trung Nguyên Sáng Tạo 4", "Bana Cofe G4", "Là Việt Balanced"],
+    bestFor: "L'alternative à tester contre la Standard : même dose, même eau, même mouture, seules la température de départ et la flamme changent. À savoir avant de comparer : Bialetti indique l'eau FROIDE pour toutes ses cafetières, Brikka comme Moka Express ; l'eau préchauffée est une astuce de barista, qui raccourcit le temps où la mouture chauffe sur le feu. Cette recette applique donc volontairement l'autre méthode.",
+    pairedCoffees: ["Trung Nguyên Sáng Tạo 4", "Bana Cofe G4", "Là Việt Balanced"],
     note: "Si l'écoulement dure moins de 10 secondes, la mouture est trop fine et la soupape lâche d'un coup : passer à 1.5.4, le plus gros de la plage Brikka. Noter le temps total ET le temps d'écoulement, c'est leur écart qui dit combien de temps la mouture a cuit.",
-    parDefaut: false, avancee: false, variantes: false, actif: 1,
+    isDefault: false, advanced: false, has_variants: false, active: 1,
   },
   /* ONE single milk recipe. The flat white and the cappuccino shared the same
      extraction to the gram: only the milk texture changes. The cappuccino
@@ -74,194 +74,194 @@ const STARTER_RECIPES = [
      anything. */
   {
     id: "brikka-flatwhite",
-    numero: "",
-    nom: "Brikka au lait",
-    methode: "Brikka",
-    sousTitre: "Flat white ou cappuccino, même extraction",
-    dose: 14, eau: 150, temp: "", tempTexte: "dépend de la puissance du feu",
-    puissance_feu: 3,
+    number: "",
+    name: "Brikka au lait",
+    method: "Brikka",
+    subtitle: "Flat white ou cappuccino, même extraction",
+    dose: 14, water: 150, temp: "", tempText: "dépend de la puissance du feu",
+    heat_level: 3,
     dial: "1.5.0",
-    ratioTexte: "environ 1:7, environ 90 ml en tasse",
+    ratioText: "environ 1:7, environ 90 ml en tasse",
     /* The recipe's DECLARED yield, not a computed estimate. The Brikka
        deliberately has no estimation formula, it gave a wrong figure;
        this one is measured and written in the recipe. It serves as a fallback
        to compute the milk when the volume has not been measured. */
-    volumeTypique: 90,
-    totalTexte: "extraction identique à la classique",
-    lait: true,
-    etapes: [
-      { t: null, texte: "Extraire exactement comme la Brikka classique : 14 g, environ 90 ml." },
-      { t: null, texte: "FLAT WHITE : chauffer le lait pendant l'extraction, texture lisse, à peine mousseuse. Mesurer le PLUS GRAND des deux chiffres donnés par la saisie." },
-      { t: null, texte: "CAPPUCCINO : faire mousser le lait autour de 60 à 65 degrés, viser un tiers de mousse. Mesurer le PLUS PETIT des deux : le lait moussé gonfle et remplit la tasse tout seul." },
-      { t: null, texte: "Verser le lait, puis coiffer avec la mousse s'il y en a." },
+    typicalVolume: 90,
+    totalText: "extraction identique à la classique",
+    milk: true,
+    steps: [
+      { t: null, text: "Extraire exactement comme la Brikka classique : 14 g, environ 90 ml." },
+      { t: null, text: "FLAT WHITE : chauffer le lait pendant l'extraction, texture lisse, à peine mousseuse. Mesurer le PLUS GRAND des deux chiffres donnés par la saisie." },
+      { t: null, text: "CAPPUCCINO : faire mousser le lait autour de 60 à 65 degrés, viser un tiers de mousse. Mesurer le PLUS PETIT des deux : le lait moussé gonfle et remplit la tasse tout seul." },
+      { t: null, text: "Verser le lait, puis coiffer avec la mousse s'il y en a." },
     ],
-    pourQui: "Flat white ou cappuccino maison. Le site calcule le lait tout seul dès qu'une tasse est choisie : contenance de la tasse moins le volume de café donne le vide à remplir, et le lait FROID à mesurer est un peu moins que ce vide, puisqu'il gonfle en moussant. Un flat white gonfle à peine, un cappuccino d'environ la moitié : c'est pourquoi un cappuccino part de moins de lait pour une tasse plus garnie.",
-    cafesAssocies: ["Trung Nguyên Sáng Tạo 4", "Bana Cofe G4"],
+    bestFor: "Flat white ou cappuccino maison. Le site calcule le lait tout seul dès qu'une tasse est choisie : contenance de la tasse moins le volume de café donne le vide à remplir, et le lait FROID à mesurer est un peu moins que ce vide, puisqu'il gonfle en moussant. Un flat white gonfle à peine, un cappuccino d'environ la moitié : c'est pourquoi un cappuccino part de moins de lait pour une tasse plus garnie.",
+    pairedCoffees: ["Trung Nguyên Sáng Tạo 4", "Bana Cofe G4"],
     note: "Une Brikka n'est pas un espresso : 90 ml à 1:7 sont bien plus dilués qu'un espresso de 30 ml. Le résultat sera très orienté café, ce qui est voulu.",
-    parDefaut: false, avancee: false, variantes: false, actif: 1,
+    isDefault: false, advanced: false, has_variants: false, active: 1,
   },
   {
     id: "chronicler",
-    nom: "The Coffee Chronicler's Recipe",
-    numero: "Recette 1",
-    methode: "Switch",
-    famille: "chronicler",
-    variante: "Classique",
-    sousTitre: "Percolation puis immersion, la recette par défaut",
-    dose: 15, eau: 240, temp: 92, tempTexte: "92 °C",
+    name: "The Coffee Chronicler's Recipe",
+    number: "Recette 1",
+    method: "Switch",
+    family: "chronicler",
+    variant: "Classique",
+    subtitle: "Percolation puis immersion, la recette par défaut",
+    dose: 15, water: 240, temp: 92, tempText: "92 °C",
     dial: "1.5.0",
-    ratioTexte: "ratio 1:16, environ 210 ml en tasse",
-    totalTexte: "total 2:45 à 3:15",
-    lait: false,
-    etapes: [
-      { t: 0,   texte: "Verser jusqu'à 120 g, vanne OUVERTE, en spirale de l'extérieur vers l'intérieur." },
-      { t: 45,  texte: "Compléter à 240 g, vanne FERMÉE." },
-      { t: 120, texte: "Ouvrir, laisser s'écouler." },
+    ratioText: "ratio 1:16, environ 210 ml en tasse",
+    totalText: "total 2:45 à 3:15",
+    milk: false,
+    steps: [
+      { t: 0,   text: "Verser jusqu'à 120 g, vanne OUVERTE, en spirale de l'extérieur vers l'intérieur." },
+      { t: 45,  text: "Compléter à 240 g, vanne FERMÉE." },
+      { t: 120, text: "Ouvrir, laisser s'écouler." },
     ],
-    pourQui: "Les fermentés, natural, honey et anaerobic en torréfaction medium. Grains poreux et solubles, la percolation d'attaque capte les esters volatils, l'immersion va chercher la sucrosité.",
-    cafesAssocies: ["Ethiopia Banko Anaerobic (Amigo)", "Fine Robusta Whisky (Home Roast)", "Fine Robusta Anaerobic (Ritachi)", "Anaerobic Fine Robusta (Soul)", "Serie 4 D'ran (Là Việt)", "Cà Phê Mít Liberica (Fine Coffee Agency)", "Fine Robusta Cư M'Gar (Every Half)", "Là Việt Balanced"],
+    bestFor: "Les fermentés, natural, honey et anaerobic en torréfaction medium. Grains poreux et solubles, la percolation d'attaque capte les esters volatils, l'immersion va chercher la sucrosité.",
+    pairedCoffees: ["Ethiopia Banko Anaerobic (Amigo)", "Fine Robusta Whisky (Home Roast)", "Fine Robusta Anaerobic (Ritachi)", "Anaerobic Fine Robusta (Soul)", "Serie 4 D'ran (Là Việt)", "Cà Phê Mít Liberica (Fine Coffee Agency)", "Fine Robusta Cư M'Gar (Every Half)", "Là Việt Balanced"],
     note: "La source recommande 600 à 700 microns, soit 1.4.2 à 1.6.4 sur mon moulin. Les volumes sont cumulés : compléter à 240 g veut dire que la balance affiche 240.",
     video: "https://www.youtube.com/watch?v=68ZOXrXbVHc",
-    parDefaut: true, avancee: false, variantes: false, actif: 1,
+    isDefault: true, advanced: false, has_variants: false, active: 1,
   },
   {
     id: "hoffmann-1cup",
-    nom: "Better 1 Cup (Hoffmann)",
-    numero: "Recette 2",
-    methode: "Switch",
-    famille: "",
-    variante: "",
-    sousTitre: "Percolation pure, cinq versements de 50 g au rythme dix secondes de verse, dix de pause",
-    dose: 15, eau: 250, temp: 95, tempTexte: "95 à 100 °C selon la torréfaction, 90 à 92 pour un foncé",
+    name: "Better 1 Cup (Hoffmann)",
+    number: "Recette 2",
+    method: "Switch",
+    family: "",
+    variant: "",
+    subtitle: "Percolation pure, cinq versements de 50 g au rythme dix secondes de verse, dix de pause",
+    dose: 15, water: 250, temp: 95, tempText: "95 à 100 °C selon la torréfaction, 90 à 92 pour un foncé",
     dial: "1.5.0",
-    ratioTexte: "ratio 1:16,7, environ 220 ml en tasse",
-    totalTexte: "total 2:45 à 3:15",
-    lait: false,
-    etapes: [
-      { t: 0,   texte: "Bloom : verser 50 g lentement, en quinze secondes environ, vanne OUVERTE. PENDANT le bloom, tourbillon doux du porte-filtre pour mouiller tout le lit, aucune poche sèche." },
-      { t: 45,  texte: "Verser jusqu'à 100 g, en dix secondes." },
-      { t: 70,  texte: "Verser jusqu'à 150 g." },
-      { t: 90,  texte: "Verser jusqu'à 200 g." },
-      { t: 110, texte: "Verser jusqu'à 250 g." },
-      { t: 120, texte: "Tourbillon doux du porte-filtre, ou un petit coup de cuillère, un aller et un retour, si le Switch est trop lourd à faire tourner sur la balance : même effet, décoller la mouture des parois et aplanir le lit. Laisser s'écouler, fin vers 2:45 à 3:15." },
+    ratioText: "ratio 1:16,7, environ 220 ml en tasse",
+    totalText: "total 2:45 à 3:15",
+    milk: false,
+    steps: [
+      { t: 0,   text: "Bloom : verser 50 g lentement, en quinze secondes environ, vanne OUVERTE. PENDANT le bloom, tourbillon doux du porte-filtre pour mouiller tout le lit, aucune poche sèche." },
+      { t: 45,  text: "Verser jusqu'à 100 g, en dix secondes." },
+      { t: 70,  text: "Verser jusqu'à 150 g." },
+      { t: 90,  text: "Verser jusqu'à 200 g." },
+      { t: 110, text: "Verser jusqu'à 250 g." },
+      { t: 120, text: "Tourbillon doux du porte-filtre, ou un petit coup de cuillère, un aller et un retour, si le Switch est trop lourd à faire tourner sur la balance : même effet, décoller la mouture des parois et aplanir le lit. Laisser s'écouler, fin vers 2:45 à 3:15." },
     ],
-    pourQui: "Les lavés propres, quand je cherche la clarté. Plus de clarté et d'acidité que la Chronicler, qui garde plus de sucre et de corps avec moins de risque : sur un lavé et un C5 bien réglé, celle-ci ; sur un natural ou un grain que je découvre, la Chronicler. Les cinq verses courtes gardent le lit sous une lame d'eau fine et constante, donc ni gros volume qui creuse le lit ni canalisation, et les pauses rallongent le contact sans avoir à resserrer la molette. Percolation pure, donc plus sensible à la mouture. C'est presque le Five Pour de Matt Winton, Hoffmann le reconnaît : rien de magique, juste bien calibré.",
-    cafesAssocies: ["Là Việt Balanced", "Cầu Đất lavé (The Married Beans)", "Guji Uraga lavé (Greenfields)", "Serie 1 The 1893 (Là Việt)", "Specialty Arabica Cầu Đất (Ritachi)"],
+    bestFor: "Les lavés propres, quand je cherche la clarté. Plus de clarté et d'acidité que la Chronicler, qui garde plus de sucre et de corps avec moins de risque : sur un lavé et un C5 bien réglé, celle-ci ; sur un natural ou un grain que je découvre, la Chronicler. Les cinq verses courtes gardent le lit sous une lame d'eau fine et constante, donc ni gros volume qui creuse le lit ni canalisation, et les pauses rallongent le contact sans avoir à resserrer la molette. Percolation pure, donc plus sensible à la mouture. C'est presque le Five Pour de Matt Winton, Hoffmann le reconnaît : rien de magique, juste bien calibré.",
+    pairedCoffees: ["Là Việt Balanced", "Cầu Đất lavé (The Married Beans)", "Guji Uraga lavé (Greenfields)", "Serie 1 The 1893 (Là Việt)", "Specialty Arabica Cầu Đất (Ritachi)"],
     note: "Better 1 Cup V60 Technique de James Hoffmann, novembre 2022, qui remplace son Ultimate 500 ml de 2020 pour une tasse (youtube.com/watch?v=1oB1oDrDkHM ; la partie 2 corrige des points, il dit coarse à 10:13 en voulant dire finer). Il conseille medium-fine, un cran plus fin qu'en 500 ml. Dans la Part 2 il accepte la cuillère à la place du tourbillon final, en douceur. Écoulement fini après 3:30 ou tasse amère : un numéro plus gros, 1.6.0, sans toucher au rythme. Fini avant 2:30 ou tasse aigre : un numéro plus fin, 1.4.0. Pour deux tasses, 30 g et 500 g, garder plutôt l'ancienne Ultimate, faite pour ça.",
     video: "https://www.youtube.com/watch?v=1oB1oDrDkHM",
-    parDefaut: false, avancee: false, variantes: false, actif: 1,
+    isDefault: false, advanced: false, has_variants: false, active: 1,
   },
   {
     id: "one-and-done",
-    nom: "One and Done (Lance Hedrick)",
-    numero: "Recette 3",
-    methode: "Switch",
-    famille: "",
-    variante: "",
-    sousTitre: "Deux blooms puis un seul versement, la percolation la plus tolérante",
-    dose: 15, eau: 225, temp: 92, tempTexte: "90 à 93 °C pour un clair ou un medium, 93 à 96 pour un ultra clair, sous 90 pour le reste",
+    name: "One and Done (Lance Hedrick)",
+    number: "Recette 3",
+    method: "Switch",
+    family: "",
+    variant: "",
+    subtitle: "Deux blooms puis un seul versement, la percolation la plus tolérante",
+    dose: 15, water: 225, temp: 92, tempText: "90 à 93 °C pour un clair ou un medium, 93 à 96 pour un ultra clair, sous 90 pour le reste",
     dial: "1.5.0",
-    ratioTexte: "ratio 1:15, environ 195 ml en tasse",
-    totalTexte: "total 2:00 à 2:30",
-    lait: false,
-    etapes: [
-      { t: 0,  texte: "Premier bloom : verser 45 g, trois fois la dose, vanne OUVERTE. PAS de tourbillon." },
-      { t: 30, texte: "Second bloom : verser 45 g de plus, jusqu'à 90 g. PAS de tourbillon." },
-      { t: 60, texte: "Verser les 135 g restants d'un coup, jusqu'à 225 g, débit assez rapide. Laisser s'écouler, fin visée entre 2:00 et 2:30." },
+    ratioText: "ratio 1:15, environ 195 ml en tasse",
+    totalText: "total 2:00 à 2:30",
+    milk: false,
+    steps: [
+      { t: 0,  text: "Premier bloom : verser 45 g, trois fois la dose, vanne OUVERTE. PAS de tourbillon." },
+      { t: 30, text: "Second bloom : verser 45 g de plus, jusqu'à 90 g. PAS de tourbillon." },
+      { t: 60, text: "Verser les 135 g restants d'un coup, jusqu'à 225 g, débit assez rapide. Laisser s'écouler, fin visée entre 2:00 et 2:30." },
     ],
-    pourQui: "Les lavés clairs, où elle est excellente. La plus simple à mémoriser et la plus tolérante des percolations pures : le second bloom chasse le CO2 que le premier n'a pas sorti, donc la grosse verse traverse un lit déjà dégazé, sans bulles qui creusent des canaux. Extraction plus basse que la Hoffmann, TDS autour de 1,3 : plus de clarté et de fruit, moins de corps. Sur un café qui a besoin de sucre et de rondeur elle paraît fine, là je passe à la Chronicler.",
-    cafesAssocies: ["Là Việt Balanced", "Cầu Đất lavé (The Married Beans)", "Guji Uraga lavé (Greenfields)", "Serie 1 The 1893 (Là Việt)"],
+    bestFor: "Les lavés clairs, où elle est excellente. La plus simple à mémoriser et la plus tolérante des percolations pures : le second bloom chasse le CO2 que le premier n'a pas sorti, donc la grosse verse traverse un lit déjà dégazé, sans bulles qui creusent des canaux. Extraction plus basse que la Hoffmann, TDS autour de 1,3 : plus de clarté et de fruit, moins de corps. Sur un café qui a besoin de sucre et de rondeur elle paraît fine, là je passe à la Chronicler.",
+    pairedCoffees: ["Là Việt Balanced", "Cầu Đất lavé (The Married Beans)", "Guji Uraga lavé (Greenfields)", "Serie 1 The 1893 (Là Việt)"],
     note: "Chercher « Lance Hedrick One and Done V60 » sur YouTube. Zéro tourbillon sur les blooms : les fines restent en place et le filtre ne se bouche pas. La mouture se règle sur le temps TOTAL, 2:00 à 2:30, pas sur des crans : trop lent, un numéro plus gros ; trop rapide, un numéro plus fin. Un peu trop rapide mais bon en bouche : un mini tourbillon après la grosse verse ajoute dix à quinze secondes au lieu de toucher la mouture. Tasse trop légère : monter à 1:14, soit 16 g, avant de rallonger le temps.",
     video: "https://www.youtube.com/watch?v=PNFVCmxBjQQ",
-    parDefaut: false, avancee: false, variantes: false, actif: 1,
+    isDefault: false, advanced: false, has_variants: false, active: 1,
   },
   {
     id: "costaud-bloom",
-    nom: "Le Costaud (Bloom)",
-    numero: "Recette 4",
-    methode: "Switch",
-    famille: "costaud",
-    variante: "Bloom",
-    sousTitre: "Immersion avec bloom saturant, pour forcer l'extraction",
-    dose: 15, eau: 225, temp: 95, tempTexte: "94 à 96 °C",
+    name: "Le Costaud (Bloom)",
+    number: "Recette 4",
+    method: "Switch",
+    family: "costaud",
+    variant: "Bloom",
+    subtitle: "Immersion avec bloom saturant, pour forcer l'extraction",
+    dose: 15, water: 225, temp: 95, tempText: "94 à 96 °C",
     dial: "1.5.0",
-    ratioTexte: "ratio 1:15, environ 195 ml en tasse",
-    totalTexte: "total environ 3:30",
-    lait: false,
-    etapes: [
-      { t: 0,   texte: "Bloom 45 g, vanne FERMÉE. Remuer 3 fois. Attendre 45 secondes." },
-      { t: 45,  texte: "Compléter à 225 g, vanne FERMÉE." },
-      { t: 150, texte: "Ouvrir, laisser s'écouler." },
+    ratioText: "ratio 1:15, environ 195 ml en tasse",
+    totalText: "total environ 3:30",
+    milk: false,
+    steps: [
+      { t: 0,   text: "Bloom 45 g, vanne FERMÉE. Remuer 3 fois. Attendre 45 secondes." },
+      { t: 45,  text: "Compléter à 225 g, vanne FERMÉE." },
+      { t: 150, text: "Ouvrir, laisser s'écouler." },
     ],
-    pourQui: "Les lavés d'altitude et les torréfactions claires, grains fermés qui résistent et sortent ACIDES ET CREUX avec les autres recettes. Plus chaud et plus long. Pour le plus fin, descendre d'un cran à la main : les recettes portent 1.5.0, sauf la Neo Brew, depuis que je ne recompte plus les crans à chaque changement de machine. Le bloom sert à saturer un grain dense, pas à dégazer.",
-    cafesAssocies: ["Mít Liberica Khe Sanh (Father Coffee)", "Guji Uraga lavé (Greenfields)", "Serie 1 The 1893 (Là Việt)", "Cầu Đất lavé (The Married Beans)", "Specialty Arabica Cầu Đất (Ritachi)", "Arabica Sơn La (Every Half)", "Hung's Farm (Bosgaurus)"],
+    bestFor: "Les lavés d'altitude et les torréfactions claires, grains fermés qui résistent et sortent ACIDES ET CREUX avec les autres recettes. Plus chaud et plus long. Pour le plus fin, descendre d'un cran à la main : les recettes portent 1.5.0, sauf la Neo Brew, depuis que je ne recompte plus les crans à chaque changement de machine. Le bloom sert à saturer un grain dense, pas à dégazer.",
+    pairedCoffees: ["Mít Liberica Khe Sanh (Father Coffee)", "Guji Uraga lavé (Greenfields)", "Serie 1 The 1893 (Là Việt)", "Cầu Đất lavé (The Married Beans)", "Specialty Arabica Cầu Đất (Ritachi)", "Arabica Sơn La (Every Half)", "Hung's Farm (Bosgaurus)"],
     note: "",
-    parDefaut: false, avancee: false, variantes: false, actif: 1,
+    isDefault: false, advanced: false, has_variants: false, active: 1,
   },
   {
     id: "costaud-immersion",
-    nom: "Le Costaud (Immersion)",
-    numero: "Recette 5",
-    methode: "Switch",
-    famille: "costaud",
-    variante: "Immersion",
-    sousTitre: "Immersion pure, un seul versement, la plus simple",
-    dose: 15, eau: 225, temp: 93, tempTexte: "92 à 94 °C",
+    name: "Le Costaud (Immersion)",
+    number: "Recette 5",
+    method: "Switch",
+    family: "costaud",
+    variant: "Immersion",
+    subtitle: "Immersion pure, un seul versement, la plus simple",
+    dose: 15, water: 225, temp: 93, tempText: "92 à 94 °C",
     dial: "1.5.0",
-    ratioTexte: "ratio 1:15, environ 195 ml en tasse",
-    totalTexte: "total environ 2:45",
-    lait: false,
-    etapes: [
-      { t: 0,   texte: "Verser les 225 g d'un coup, vanne FERMÉE. Remuer 3 fois." },
-      { t: 120, texte: "Petit tourbillon pour aplanir le lit, puis ouvrir." },
+    ratioText: "ratio 1:15, environ 195 ml en tasse",
+    totalText: "total environ 2:45",
+    milk: false,
+    steps: [
+      { t: 0,   text: "Verser les 225 g d'un coup, vanne FERMÉE. Remuer 3 fois." },
+      { t: 120, text: "Petit tourbillon pour aplanir le lit, puis ouvrir." },
     ],
-    pourQui: "Ceux qui sortent ACIDES MAIS COMPLETS, avec du sucré et du corps derrière, et dont c'est le style qui ne me va pas. Un versement, une vanne. Pas de percolation, donc pas de canalisation, donc pas de pointes acides. Sert aussi de recette de secours quand je n'ai pas envie de réfléchir.",
-    cafesAssocies: ["Guji Uraga lavé (Greenfields)", "Serie 3 Prenn (Là Việt)", "Arabica Yellow Bourbon (Ritachi)", "Hung's Farm (Bosgaurus)", "et tout café qui m'a déçu par son acidité"],
+    bestFor: "Ceux qui sortent ACIDES MAIS COMPLETS, avec du sucré et du corps derrière, et dont c'est le style qui ne me va pas. Un versement, une vanne. Pas de percolation, donc pas de canalisation, donc pas de pointes acides. Sert aussi de recette de secours quand je n'ai pas envie de réfléchir.",
+    pairedCoffees: ["Guji Uraga lavé (Greenfields)", "Serie 3 Prenn (Là Việt)", "Arabica Yellow Bourbon (Ritachi)", "Hung's Farm (Bosgaurus)", "et tout café qui m'a déçu par son acidité"],
     note: "",
-    parDefaut: false, avancee: false, variantes: false, actif: 1,
+    isDefault: false, advanced: false, has_variants: false, active: 1,
   },
   {
     id: "tetsu-devil",
-    nom: "Tetsu 4:6",
-    numero: "Recette 6",
-    methode: "Switch",
-    famille: "",
-    sousTitre: "Percolation pure, cinq versements pilotables",
-    dose: 15, eau: 225, temp: 93, tempTexte: "93 °C pour un clair, 88 pour un medium, 83 pour un foncé",
+    name: "Tetsu 4:6",
+    number: "Recette 6",
+    method: "Switch",
+    family: "",
+    subtitle: "Percolation pure, cinq versements pilotables",
+    dose: 15, water: 225, temp: 93, tempText: "93 °C pour un clair, 88 pour un medium, 83 pour un foncé",
     dial: "1.5.0",
-    ratioTexte: "ratio 1:15, environ 195 ml en tasse",
-    totalTexte: "total environ 2:30 à 3:00, au plus tard 3:30",
-    lait: false,
-    etapes: [],
-    pourQui: "Les cafés complexes et chers que je ne veux pas rater, et ceux dont je veux régler moi même l'équilibre. Vanne OUVERTE du début à la fin. Verser dès que le lit réapparaît en surface, sans chrono : l'eau presque toute passée, jamais sur une flaque.",
-    cafesAssocies: ["Ethiopia Banko Anaerobic (Amigo)", "Mít Liberica Khe Sanh (Father Coffee)", "Serie 2 Datanla (Là Việt)", "Serie 4 D'ran (Là Việt)", "Proud (Bosgaurus)"],
+    ratioText: "ratio 1:15, environ 195 ml en tasse",
+    totalText: "total environ 2:30 à 3:00, au plus tard 3:30",
+    milk: false,
+    steps: [],
+    bestFor: "Les cafés complexes et chers que je ne veux pas rater, et ceux dont je veux régler moi même l'équilibre. Vanne OUVERTE du début à la fin. Verser dès que le lit réapparaît en surface, sans chrono : l'eau presque toute passée, jamais sur une flaque.",
+    pairedCoffees: ["Ethiopia Banko Anaerobic (Amigo)", "Mít Liberica Khe Sanh (Father Coffee)", "Serie 2 Datanla (Là Việt)", "Serie 4 D'ran (Là Việt)", "Proud (Bosgaurus)"],
     note: "La méthode 4:6 de Tetsu Kasuya, champion du monde 2016 : 40 pour cent de l'eau règle l'acidité et le sucre, 60 pour cent le corps. Ne pas confondre avec sa recette « Devil », à deux températures (90 puis 70 °C), dont elle portait le nom jusqu'à la v8.65. Température selon Philocoffea, le café de Tetsu : 93 °C pour un clair, 88 pour un medium, 83 pour un foncé ; la saisie la prend dans la torréfaction de la fiche café. Mouture medium coarse, 2.0.0 : cinq numéros plus ouverts que la zone commune avec la Brikka (25 crans). Sa version : 20 g, 300 g, cinq versements de 60 g, retrait vers 3:30 ; ses 45 secondes entre versements tombent juste à 20 g, à 15 g le lit se vide plus vite. La vidéo est une démonstration de TALES COFFEE, pas de Tetsu lui même ; l'originale est sur la chaîne HARIO (youtube.com/watch?v=wmCW8xSWGZY). Le tourbillon du bloom vient de la démonstration : Tetsu ne remue pas.",
     video: "https://www.youtube.com/watch?v=Xm4bDaioAjg",
-    parDefaut: false, avancee: false, variantes: true, actif: 1,
+    isDefault: false, advanced: false, has_variants: true, active: 1,
   },
   {
     id: "sherrycipe",
-    nom: "La Sherrycipe",
-    numero: "Recette 7",
-    methode: "Switch",
-    famille: "",
-    sousTitre: "La recette \"paresseuse\" d'une championne du monde, Shih Yuan Hsu (Instagram shihyuanhsu, marque sherryselection)",
-    dose: 15, eau: 225, temp: 92, tempTexte: "92 °C",
+    name: "La Sherrycipe",
+    number: "Recette 7",
+    method: "Switch",
+    family: "",
+    subtitle: "La recette \"paresseuse\" d'une championne du monde, Shih Yuan Hsu (Instagram shihyuanhsu, marque sherryselection)",
+    dose: 15, water: 225, temp: 92, tempText: "92 °C",
     dial: "1.5.0",
-    ratioTexte: "ratio 1:15, environ 195 ml en tasse",
-    totalTexte: "total 1:45 à 2:00, la seule sous deux minutes",
-    lait: false,
-    etapes: [
-      { t: 0,  texte: "Bloom jusqu'à 45 g, versement CIRCULAIRE, vanne OUVERTE." },
-      { t: 30, texte: "Verser jusqu'à 140 g, versement CIRCULAIRE, vanne OUVERTE." },
-      { t: 60, texte: "Compléter à 225 g, versement AU CENTRE, vanne FERMÉE." },
-      { t: 90, texte: "Ouvrir, laisser s'écouler." },
+    ratioText: "ratio 1:15, environ 195 ml en tasse",
+    totalText: "total 1:45 à 2:00, la seule sous deux minutes",
+    milk: false,
+    steps: [
+      { t: 0,  text: "Bloom jusqu'à 45 g, versement CIRCULAIRE, vanne OUVERTE." },
+      { t: 30, text: "Verser jusqu'à 140 g, versement CIRCULAIRE, vanne OUVERTE." },
+      { t: 60, text: "Compléter à 225 g, versement AU CENTRE, vanne FERMÉE." },
+      { t: 90, text: "Ouvrir, laisser s'écouler." },
     ],
-    pourQui: "Les mediums et les fermentés solubles, et le matin en semaine quand je veux quelque chose de bon en deux minutes.",
-    cafesAssocies: ["Là Việt Balanced", "Fine Robusta Whisky (Home Roast)", "Cà Phê Mít Liberica (Fine Coffee Agency)", "Fine Robusta Cư M'Gar (Every Half)", "Serie 2 Datanla (Là Việt)", "Serie 4 D'ran (Là Việt)"],
+    bestFor: "Les mediums et les fermentés solubles, et le matin en semaine quand je veux quelque chose de bon en deux minutes.",
+    pairedCoffees: ["Là Việt Balanced", "Fine Robusta Whisky (Home Roast)", "Cà Phê Mít Liberica (Fine Coffee Agency)", "Fine Robusta Cư M'Gar (Every Half)", "Serie 2 Datanla (Là Việt)", "Serie 4 D'ran (Là Việt)"],
     note: "Les deux premiers versements sont CIRCULAIRES, le troisième est AU CENTRE. La source ne donne pas de température, 92 degrés est mon choix. La source indique 7.0 sur un moulin 1zpresso K-Ultra : ne pas convertir ce chiffre, les échelles entre moulins ne sont pas transposables. On retient uniquement son descriptif medium-coarse, 800 à 1000 microns, soit 2.0.0 sur mon Timemore C5 ESP.",
     video: "https://www.youtube.com/watch?v=wCNxPYyGWoo",
-    parDefaut: false, avancee: false, variantes: false, actif: 1,
+    isDefault: false, advanced: false, has_variants: false, active: 1,
   },
   /* Variant of the Chronicler: it shares its CARD in the Guide (family
      chronicler), but it is placed LAST in the list, at Chris's request:
@@ -269,28 +269,28 @@ const STARTER_RECIPES = [
      uses. */
   {
     id: "sweet",
-    nom: "The Coffee Chronicler's Recipe (Sweet)",
-    numero: "Recette 8",
-    methode: "Switch",
-    famille: "chronicler",
-    variante: "Sweet",
-    sousTitre: "La même, vanne fermée 20 secondes plus tôt, plus de sucrosité",
-    dose: 15, eau: 240, temp: 92, tempTexte: "92 °C",
+    name: "The Coffee Chronicler's Recipe (Sweet)",
+    number: "Recette 8",
+    method: "Switch",
+    family: "chronicler",
+    variant: "Sweet",
+    subtitle: "La même, vanne fermée 20 secondes plus tôt, plus de sucrosité",
+    dose: 15, water: 240, temp: 92, tempText: "92 °C",
     dial: "1.5.0",
-    ratioTexte: "ratio 1:16, environ 210 ml en tasse",
-    totalTexte: "total 2:45 à 3:15",
-    lait: false,
-    etapes: [
-      { t: 0,   texte: "Verser jusqu'à 120 g, vanne OUVERTE, en spirale." },
-      { t: 25,  texte: "FERMER la vanne." },
-      { t: 45,  texte: "Compléter à 240 g, vanne déjà fermée." },
-      { t: 120, texte: "Ouvrir, laisser s'écouler." },
+    ratioText: "ratio 1:16, environ 210 ml en tasse",
+    totalText: "total 2:45 à 3:15",
+    milk: false,
+    steps: [
+      { t: 0,   text: "Verser jusqu'à 120 g, vanne OUVERTE, en spirale." },
+      { t: 25,  text: "FERMER la vanne." },
+      { t: 45,  text: "Compléter à 240 g, vanne déjà fermée." },
+      { t: 120, text: "Ouvrir, laisser s'écouler." },
     ],
-    pourQui: "Les mêmes cafés que la recette 1. C'est la version à prendre quand la 1 sort trop vive. Particulièrement adaptée aux honey. Moins d'eau s'échappe en percolation, donc plus de volume reste en immersion.",
-    cafesAssocies: ["Serie 2 Datanla (Là Việt)", "Honey Red (The Married Beans)", "plus toute la liste de la recette 1"],
+    bestFor: "Les mêmes cafés que la recette 1. C'est la version à prendre quand la 1 sort trop vive. Particulièrement adaptée aux honey. Moins d'eau s'échappe en percolation, donc plus de volume reste en immersion.",
+    pairedCoffees: ["Serie 2 Datanla (Là Việt)", "Honey Red (The Married Beans)", "plus toute la liste de la recette 1"],
     note: "",
     video: "https://www.youtube.com/watch?v=68ZOXrXbVHc",
-    parDefaut: false, avancee: false, variantes: false, actif: 1,
+    isDefault: false, advanced: false, has_variants: false, active: 1,
   },
   /* THE TETSU NEO BREW (v8.63). Tetsu Kasuya's "The Neo Brew" recipe, May
      2026 (youtube.com/watch?v=k0nsShguOsU): 20 g for 300 g at 95 or 96 °C,
@@ -301,33 +301,33 @@ const STARTER_RECIPES = [
      IS the recipe, the entry form keeps it (see ui-saisie). */
   {
     id: "neo-brew",
-    nom: "Tetsu Neo Brew",
-    numero: "Recette 9",
-    methode: "Switch",
-    famille: "",
-    variante: "",
-    sousTitre: "Huit fois le même versement, toutes les 15 secondes : la plus simple à suivre",
-    dose: 16, eau: 240, temp: 96, tempTexte: "95 à 96 °C, bouilloire prise au gros bouillon",
+    name: "Tetsu Neo Brew",
+    number: "Recette 9",
+    method: "Switch",
+    family: "",
+    variant: "",
+    subtitle: "Huit fois le même versement, toutes les 15 secondes : la plus simple à suivre",
+    dose: 16, water: 240, temp: 96, tempText: "95 à 96 °C, bouilloire prise au gros bouillon",
     dial: "2.8.0",
-    ratioTexte: "ratio 1:15, environ 205 ml en tasse",
-    totalTexte: "total environ 2:30",
-    lait: false,
-    etapes: [
-      { t: 0  , texte: "Verser 30 g, vanne OUVERTE, en spirale rapide." },
-      { t: 15 , texte: "Verser jusqu'à 60 g." },
-      { t: 30 , texte: "Verser jusqu'à 90 g." },
-      { t: 45 , texte: "Verser jusqu'à 120 g." },
-      { t: 60 , texte: "Verser jusqu'à 150 g." },
-      { t: 75 , texte: "Verser jusqu'à 180 g." },
-      { t: 90 , texte: "Verser jusqu'à 210 g." },
-      { t: 105, texte: "Dernier versement, jusqu'à 240 g." },
-      { t: 120, texte: "Laisser s'écouler entièrement, fin vers 2:30." },
+    ratioText: "ratio 1:15, environ 205 ml en tasse",
+    totalText: "total environ 2:30",
+    milk: false,
+    steps: [
+      { t: 0  , text: "Verser 30 g, vanne OUVERTE, en spirale rapide." },
+      { t: 15 , text: "Verser jusqu'à 60 g." },
+      { t: 30 , text: "Verser jusqu'à 90 g." },
+      { t: 45 , text: "Verser jusqu'à 120 g." },
+      { t: 60 , text: "Verser jusqu'à 150 g." },
+      { t: 75 , text: "Verser jusqu'à 180 g." },
+      { t: 90 , text: "Verser jusqu'à 210 g." },
+      { t: 105, text: "Dernier versement, jusqu'à 240 g." },
+      { t: 120, text: "Laisser s'écouler entièrement, fin vers 2:30." },
     ],
-    pourQui: "Les torréfactions claires, les lavés comme les naturels et les anaérobies : Tetsu la conçoit pour aller chercher tout le sucré et une texture épaisse, pas seulement pour éviter les défauts. Rien à décider, rien à surveiller : le même versement de 30 g toutes les 15 secondes, vanne ouverte du début à la fin, l'eau ne doit jamais stagner dans le lit. Le mode Brassage bipe à chaque versement. Sur un medium, 96 degrés peuvent tirer vers l'amer, la mouture très grosse compense en partie.",
-    cafesAssocies: ["Ethiopia Banko Anaerobic (Amigo)", "Serie 2 Datanla (Là Việt)", "Serie 4 D'ran (Là Việt)", "Guji Uraga lavé (Greenfields)"],
+    bestFor: "Les torréfactions claires, les lavés comme les naturels et les anaérobies : Tetsu la conçoit pour aller chercher tout le sucré et une texture épaisse, pas seulement pour éviter les défauts. Rien à décider, rien à surveiller : le même versement de 30 g toutes les 15 secondes, vanne ouverte du début à la fin, l'eau ne doit jamais stagner dans le lit. Le mode Brassage bipe à chaque versement. Sur un medium, 96 degrés peuvent tirer vers l'amer, la mouture très grosse compense en partie.",
+    pairedCoffees: ["Ethiopia Banko Anaerobic (Amigo)", "Serie 2 Datanla (Là Việt)", "Serie 4 D'ran (Là Việt)", "Guji Uraga lavé (Greenfields)"],
     note: "Source : Tetsu Kasuya, « The Neo Brew », mai 2026 (youtube.com/watch?v=k0nsShguOsU). Sa version : 20 g, 300 g, dix versements de 30 g toutes les 15 secondes, 40 à 45 clics sur un Comandante, extra gros. Ne pas convertir ces clics : on retient l'extra gros, 1200 microns et plus, soit la butée de mon Timemore C5 (3.0.0, 1248 microns). Départ à 2.8.0 (1165 microns) parce que 16 g font un lit moins épais que ses 20 g, où l'eau passe plus vite. Amer ou râpeux : monter vers 3.0.0. Il conseille un Hario NEO, accepte le V60 ; le Switch vanne ouverte est un V60. Il ne donne pas de temps final, 2:30 est mon estimation. À 96 °C la bouilloire se prend au gros bouillon : deux minutes de versement la refroidissent en route.",
     video: "https://www.youtube.com/watch?v=k0nsShguOsU",
-    parDefaut: false, avancee: false, variantes: false, actif: 1,
+    isDefault: false, advanced: false, has_variants: false, active: 1,
   },
   /* THE TETSU DEVIL (v8.70). Tetsu Kasuya's Switch recipe, February 2023
      (youtube.com/watch?v=gC8K40kZ_6E, "is this recipe divine or
@@ -342,28 +342,28 @@ const STARTER_RECIPES = [
      The grams of the mix follow the total water like the other pours. */
   {
     id: "devil-switch",
-    nom: "Tetsu Devil",
-    numero: "Recette 10",
-    methode: "Switch",
-    famille: "",
-    variante: "",
-    sousTitre: "Percolation à 90 °C, puis immersion à 70 °C : le 70 se fait par un mélange pesé",
-    dose: 15, eau: 210, temp: 90, tempTexte: "90 °C, puis 70 °C par mélange",
+    name: "Tetsu Devil",
+    number: "Recette 10",
+    method: "Switch",
+    family: "",
+    variant: "",
+    subtitle: "Percolation à 90 °C, puis immersion à 70 °C : le 70 se fait par un mélange pesé",
+    dose: 15, water: 210, temp: 90, tempText: "90 °C, puis 70 °C par mélange",
     dial: "1.5.0",
-    ratioTexte: "ratio 1:14, environ 180 ml en tasse",
-    totalTexte: "total environ 3:00",
-    lait: false,
-    etapes: [
-      { t: 0,   texte: "Verser 45 g d'eau à 90 °C, vanne OUVERTE." },
-      { t: 30,  texte: "Verser jusqu'à 90 g, toujours à 90 °C. Puis préparer l'eau à 70 °C : dans un verre sur la balance, 81 g d'eau à 90 °C et 39 g d'eau à température ambiante." },
-      { t: 75,  texte: "FERMER la vanne, compléter jusqu'à 210 g avec l'eau à 70 °C." },
-      { t: 105, texte: "Ouvrir, laisser s'écouler, fin vers 3:00." },
+    ratioText: "ratio 1:14, environ 180 ml en tasse",
+    totalText: "total environ 3:00",
+    milk: false,
+    steps: [
+      { t: 0,   text: "Verser 45 g d'eau à 90 °C, vanne OUVERTE." },
+      { t: 30,  text: "Verser jusqu'à 90 g, toujours à 90 °C. Puis préparer l'eau à 70 °C : dans un verre sur la balance, 81 g d'eau à 90 °C et 39 g d'eau à température ambiante." },
+      { t: 75,  text: "FERMER la vanne, compléter jusqu'à 210 g avec l'eau à 70 °C." },
+      { t: 105, text: "Ouvrir, laisser s'écouler, fin vers 3:00." },
     ],
-    pourQui: "Tous les cafés : Tetsu la présente comme la recette qui rend n'importe quel grain bon, facilement. La percolation chaude du début va chercher le sucré et les arômes, l'immersion plus froide de la fin arrondit sans tirer l'amertume. Le café sort moins chaud que d'habitude : bien préchauffer la tasse, c'est son conseil.",
-    cafesAssocies: ["Là Việt Balanced", "Cà Phê Mít Liberica (Fine Coffee Agency)", "Serie 2 Datanla (Là Việt)", "et tout café qui me déçoit ailleurs"],
+    bestFor: "Tous les cafés : Tetsu la présente comme la recette qui rend n'importe quel grain bon, facilement. La percolation chaude du début va chercher le sucré et les arômes, l'immersion plus froide de la fin arrondit sans tirer l'amertume. Le café sort moins chaud que d'habitude : bien préchauffer la tasse, c'est son conseil.",
+    pairedCoffees: ["Là Việt Balanced", "Cà Phê Mít Liberica (Fine Coffee Agency)", "Serie 2 Datanla (Là Việt)", "et tout café qui me déçoit ailleurs"],
     note: "Source : Tetsu Kasuya, février 2023 (youtube.com/watch?v=gC8K40kZ_6E). Sa version : 20 g, 60 g puis 120 g à 90 °C vanne ouverte, fermer à 1:15 et compléter à 280 g à 70 °C, ouvrir à 1:45. Chiffres des résumés, pas relus dans la vidéo. Il moud gros : molette laissée à 1.5.0, passer vers 1.8.0 si l'écoulement traîne. Le 70 °C : le mélange pesé de l'étape 2, avec l'eau que je bois (bouteille ou filtrée), pas celle du robinet. Sans eau ambiante sous la main, un glaçon d'eau potable marche aussi : 106 g d'eau à 90 °C et 14 g de glace font 120 g vers 70 °C, la glace qui fond absorbe beaucoup plus qu'elle ne pèse.",
     video: "https://www.youtube.com/watch?v=gC8K40kZ_6E",
-    parDefaut: false, avancee: false, variantes: false, actif: 1,
+    isDefault: false, advanced: false, has_variants: false, active: 1,
   },
 ];
 
@@ -388,14 +388,14 @@ const TETSU = {
   /* No more fixed schedule (v8.99): pour when the bed reappears, Tetsu's
      rule. The 45 seconds of v8.69 were right for 20 g, not for 15 g. */
   first40: [
-    { id: "sucre",     nom: "Plus de sucre",  detail: "30 puis 60 g : plus de sucre, moins d'acidité. Mon profil, le réglage par défaut.", parts: [1, 2], isDefault: true },
-    { id: "equilibre", nom: "Équilibre",      detail: "45 puis 45 g : équilibré.", parts: [1, 1] },
-    { id: "vivacite",  nom: "Plus de vivacité", detail: "60 puis 30 g : plus de vivacité.", parts: [2, 1] },
+    { id: "sucre",     name: "Plus de sucre",  detail: "30 puis 60 g : plus de sucre, moins d'acidité. Mon profil, le réglage par défaut.", parts: [1, 2], isDefault: true },
+    { id: "equilibre", name: "Équilibre",      detail: "45 puis 45 g : équilibré.", parts: [1, 1] },
+    { id: "vivacite",  name: "Plus de vivacité", detail: "60 puis 30 g : plus de vivacité.", parts: [2, 1] },
   ],
   last60: [
-    { id: "leger",  nom: "Corps léger",  detail: "Un seul versement.", n: 1 },
-    { id: "moyen",  nom: "Corps moyen",  detail: "Deux versements.", n: 2 },
-    { id: "plein",  nom: "Corps plein",  detail: "Trois versements. Mon choix.", n: 3, isDefault: true },
+    { id: "leger",  name: "Corps léger",  detail: "Un seul versement.", n: 1 },
+    { id: "moyen",  name: "Corps moyen",  detail: "Deux versements.", n: 2 },
+    { id: "plein",  name: "Corps plein",  detail: "Trois versements. Mon choix.", n: 3, isDefault: true },
   ],
   pours(totalWater, variant40, variant60) {
     const p40 = totalWater * 0.4;
@@ -434,65 +434,65 @@ function temperatureForCoffee(recipe, coffee) {
   const table = TEMP_BY_ROAST[recipe.id];
   const original = STARTER_RECIPES.find(d => d.id === recipe.id);
   if (!table || !original || Number(recipe.temp) !== Number(original.temp)) return recipe.temp;
-  return (coffee && table[coffee.torrefaction]) || recipe.temp;
+  return (coffee && table[coffee.roast]) || recipe.temp;
 }
 
 // Conversion of steps to and from the editable text:
 // one step per line, "m:ss text" for a timed step, "- text" otherwise.
 function stepsToText(steps) {
   return (steps || []).map(e => {
-    if (e.t === null || e.t === undefined || e.t === "") return "- " + e.texte;
+    if (e.t === null || e.t === undefined || e.t === "") return "- " + e.text;
     const mn = Math.floor(e.t / 60), s = e.t % 60;
-    return mn + ":" + String(s).padStart(2, "0") + " " + e.texte;
+    return mn + ":" + String(s).padStart(2, "0") + " " + e.text;
   }).join("\n");
 }
 
 function textToSteps(text) {
   return (text || "").split("\n").map(l => l.trim()).filter(Boolean).map(l => {
     const parsed = l.match(/^(\d+):([0-5]\d)\s+(.+)$/);
-    if (parsed) return { t: parseInt(parsed[1], 10) * 60 + parseInt(parsed[2], 10), texte: parsed[3] };
-    return { t: null, texte: l.replace(/^[-·]\s*/, "") };
+    if (parsed) return { t: parseInt(parsed[1], 10) * 60 + parseInt(parsed[2], 10), text: parsed[3] };
+    return { t: null, text: l.replace(/^[-·]\s*/, "") };
   });
 }
 
 // The starter cups.
 const STARTER_CUPS = [
-  { id: "t1", nom: "Loveramics Flat White Egg", contenance_ml: 150 },
-  { id: "t2", nom: "Loveramics Espresso Egg", contenance_ml: 80 },
-  { id: "t3", nom: "Loveramics Nutty Tasting Cup", contenance_ml: 150 },
-  { id: "t4", nom: "Classic Mug", contenance_ml: 330 },
+  { id: "t1", name: "Loveramics Flat White Egg", capacity_ml: 150 },
+  { id: "t2", name: "Loveramics Espresso Egg", capacity_ml: 80 },
+  { id: "t3", name: "Loveramics Nutty Tasting Cup", capacity_ml: 150 },
+  { id: "t4", name: "Classic Mug", capacity_ml: 330 },
 ];
 
 // The 5 starter coffees, used when creating a blank dataset.
 const STARTER_COFFEES = [
-  { id: "c1", nom: "Trung Nguyên Sáng Tạo 4", torrefacteur: "Trung Nguyên", origine: "Buôn Ma Thuột, Vietnam", espece: "Blend Arabica, Robusta, Excelsa, Catimor", procede: "Torréfaction traditionnelle avec additifs", torrefaction: "Foncée", deja_moulu: 1, pourcentage_cafe_reel: 82, tag: "café aromatisé", notes_annoncees: "Corps rond, sucré, faible acidité, arôme persistant. Étiquette : café 82 pour cent, soja torréfié, sirop de sucre brun, substitut de beurre, arômes de synthèse, beurre.", format_grammes: 340, prix_vnd: 148800, date_torrefaction: "", machine_recommandee: "Brikka", recette_recommandee: "Brikka classique", actif: 1 },
-  { id: "c2", nom: "Bana Cofe G4", torrefacteur: "Bana Cofe", origine: "Vietnam", espece: "Robusta", procede: "Rang bơ", torrefaction: "Foncée", deja_moulu: 1, pourcentage_cafe_reel: 100, tag: "", notes_annoncees: "Beurre, caramel, sucre roux, déjà moulu", format_grammes: 250, prix_vnd: 87000, date_torrefaction: "", machine_recommandee: "Brikka", recette_recommandee: "Brikka classique", actif: 1 },
-  { id: "c3", nom: "Cà Phê Mít Liberica", torrefacteur: "Fine Coffee Agency", origine: "Vietnam", espece: "Liberica", procede: "Natural", torrefaction: "Medium", deja_moulu: 0, pourcentage_cafe_reel: 100, tag: "", notes_annoncees: "Jacquier mûr, cacao, amande", format_grammes: 200, prix_vnd: 280000, date_torrefaction: "", machine_recommandee: "Les deux", recette_recommandee: "The Coffee Chronicler's Recipe", actif: 1 },
-  { id: "c4", nom: "Là Việt Balanced", torrefacteur: "Là Việt", origine: "Đà Lạt, Vietnam", espece: "Arabica", procede: "Lavé", torrefaction: "Medium", deja_moulu: 0, pourcentage_cafe_reel: 100, tag: "café de référence", notes_annoncees: "100 pour cent arabica, medium, Đà Lạt, rien d'ajouté", format_grammes: 250, prix_vnd: 125000, date_torrefaction: "", machine_recommandee: "Les deux", recette_recommandee: "The Coffee Chronicler's Recipe", actif: 1 },
-  { id: "c5", nom: "Là Việt Strong", torrefacteur: "Là Việt", origine: "Đà Lạt, Vietnam", espece: "Blend arabica et robusta", procede: "Classique", torrefaction: "Foncée", deja_moulu: 0, pourcentage_cafe_reel: 100, tag: "", notes_annoncees: "Corps fort, amertume marquée. Rejeté, trop amer.", format_grammes: 250, prix_vnd: 125000, date_torrefaction: "", machine_recommandee: "Brikka", recette_recommandee: "Brikka classique", actif: 0 },
+  { id: "c1", name: "Trung Nguyên Sáng Tạo 4", roaster: "Trung Nguyên", origin: "Buôn Ma Thuột, Vietnam", species: "Blend Arabica, Robusta, Excelsa, Catimor", process: "Torréfaction traditionnelle avec additifs", roast: "Foncée", pre_ground: 1, real_coffee_pct: 82, tag: "café aromatisé", roaster_notes: "Corps rond, sucré, faible acidité, arôme persistant. Étiquette : café 82 pour cent, soja torréfié, sirop de sucre brun, substitut de beurre, arômes de synthèse, beurre.", bag_size_g: 340, price_vnd: 148800, roast_date: "", recommended_method: "Brikka", recommended_recipe: "Brikka classique", active: 1 },
+  { id: "c2", name: "Bana Cofe G4", roaster: "Bana Cofe", origin: "Vietnam", species: "Robusta", process: "Rang bơ", roast: "Foncée", pre_ground: 1, real_coffee_pct: 100, tag: "", roaster_notes: "Beurre, caramel, sucre roux, déjà moulu", bag_size_g: 250, price_vnd: 87000, roast_date: "", recommended_method: "Brikka", recommended_recipe: "Brikka classique", active: 1 },
+  { id: "c3", name: "Cà Phê Mít Liberica", roaster: "Fine Coffee Agency", origin: "Vietnam", species: "Liberica", process: "Natural", roast: "Medium", pre_ground: 0, real_coffee_pct: 100, tag: "", roaster_notes: "Jacquier mûr, cacao, amande", bag_size_g: 200, price_vnd: 280000, roast_date: "", recommended_method: "Les deux", recommended_recipe: "The Coffee Chronicler's Recipe", active: 1 },
+  { id: "c4", name: "Là Việt Balanced", roaster: "Là Việt", origin: "Đà Lạt, Vietnam", species: "Arabica", process: "Lavé", roast: "Medium", pre_ground: 0, real_coffee_pct: 100, tag: "café de référence", roaster_notes: "100 pour cent arabica, medium, Đà Lạt, rien d'ajouté", bag_size_g: 250, price_vnd: 125000, roast_date: "", recommended_method: "Les deux", recommended_recipe: "The Coffee Chronicler's Recipe", active: 1 },
+  { id: "c5", name: "Là Việt Strong", roaster: "Là Việt", origin: "Đà Lạt, Vietnam", species: "Blend arabica et robusta", process: "Classique", roast: "Foncée", pre_ground: 0, real_coffee_pct: 100, tag: "", roaster_notes: "Corps fort, amertume marquée. Rejeté, trop amer.", bag_size_g: 250, price_vnd: 125000, roast_date: "", recommended_method: "Brikka", recommended_recipe: "Brikka classique", active: 0 },
 ];
 
 // Descriptors organised by the families of the SCA flavor wheel.
 const DESCRIPTOR_GROUPS = [
-  { nom: "Corps et texture", tags: ["rond", "sirupeux", "crémeux", "beurré", "gras", "velouté", "soyeux", "liquoreux", "sec", "léger", "astringent", "rugueux", "aqueux"] },
-  { nom: "Cacao et noix", tags: ["chocolat noir", "chocolat au lait", "cacao", "noisette", "amande", "cacahuète"] },
-  { nom: "Sucré", tags: ["caramel", "sucre roux", "sucre de canne", "miel", "vanille", "mélasse", "praliné"] },
-  { nom: "Fruité", tags: ["banane", "jacquier", "fruits tropicaux", "fruit de la passion", "fruits mûrs", "fruits rouges", "cassis", "cerise", "prune", "fruits secs", "raisin", "pomme", "agrume", "orange", "pêche"] },
+  { name: "Corps et texture", tags: ["rond", "sirupeux", "crémeux", "beurré", "gras", "velouté", "soyeux", "liquoreux", "sec", "léger", "astringent", "rugueux", "aqueux"] },
+  { name: "Cacao et noix", tags: ["chocolat noir", "chocolat au lait", "cacao", "noisette", "amande", "cacahuète"] },
+  { name: "Sucré", tags: ["caramel", "sucre roux", "sucre de canne", "miel", "vanille", "mélasse", "praliné"] },
+  { name: "Fruité", tags: ["banane", "jacquier", "fruits tropicaux", "fruit de la passion", "fruits mûrs", "fruits rouges", "cassis", "cerise", "prune", "fruits secs", "raisin", "pomme", "agrume", "orange", "pêche"] },
   // Acidity was entirely missing as an AXIS: only "agrume" existed, and that
   // is an aroma, not a structure. Yet acidic and sour are the same acids for
   // two opposite verdicts, and it is the costliest confusion in tasting.
-  { nom: "Acidité", tags: ["acidité vive", "acidulé", "aigre", "citronné", "vinaigré"] },
-  { nom: "Floral et thé", tags: ["floral", "jasmin", "rose", "thé noir", "thé vert"] },
-  { nom: "Épices", tags: ["épices", "cannelle", "clou de girofle", "réglisse", "poivre"] },
-  { nom: "Céréales et malt", tags: ["malt", "pain grillé", "biscuit"] },
-  { nom: "Fermentation", tags: ["vineux", "fermenté", "rhum"] },
+  { name: "Acidité", tags: ["acidité vive", "acidulé", "aigre", "citronné", "vinaigré"] },
+  { name: "Floral et thé", tags: ["floral", "jasmin", "rose", "thé noir", "thé vert"] },
+  { name: "Épices", tags: ["épices", "cannelle", "clou de girofle", "réglisse", "poivre"] },
+  { name: "Céréales et malt", tags: ["malt", "pain grillé", "biscuit"] },
+  { name: "Fermentation", tags: ["vineux", "fermenté", "rhum"] },
   /* Earth and wood (v8.74): terreux, boisé and tabac were filed under
      defects, whereas they are traits of robusta and liberica. */
-  { nom: "Terre et bois", tags: ["terreux", "boisé", "tabac", "cuir"] },
+  { name: "Terre et bois", tags: ["terreux", "boisé", "tabac", "cuir"] },
   /* "salé" (the signature of under-extraction, which the Guide has you taste
      with a pinch of salt) and "métallique" (the typical moka pot defect)
      were missing (v8.74). */
-  { nom: "Torréfaction et défauts", tags: ["fumé", "brûlé", "cendre", "caoutchouc", "métallique", "salé", "moisi", "papier", "rance", "phénolique"] },
+  { name: "Torréfaction et défauts", tags: ["fumé", "brûlé", "cendre", "caoutchouc", "métallique", "salé", "moisi", "papier", "rance", "phénolique"] },
 ];
 const DESCRIPTORS = DESCRIPTOR_GROUPS.flatMap(g => g.tags);
 
@@ -509,9 +509,9 @@ const DESCRIPTORS = DESCRIPTOR_GROUPS.flatMap(g => g.tags);
    NO existing value has been removed or renamed: the history already
    recorded stays readable as is. Adding breaks nothing, removing would. */
 const DIAGNOSTIC_GROUPS = [
-  { nom: "Rien à changer", diags: ["Équilibré"] },
+  { name: "Rien à changer", diags: ["Équilibré"] },
   {
-    nom: "Réglage d'extraction",
+    name: "Réglage d'extraction",
     diags: [
       "Un peu acide",
       "Sous-extrait (acide)",
@@ -522,7 +522,7 @@ const DIAGNOSTIC_GROUPS = [
     ],
   },
   {
-    nom: "Ratio café et eau",
+    name: "Ratio café et eau",
     diags: [
       "Un peu léger",
       "Trop léger (aqueux)",
@@ -531,7 +531,7 @@ const DIAGNOSTIC_GROUPS = [
     ],
   },
   {
-    nom: "Le café lui même",
+    name: "Le café lui même",
     diags: [
       "Un peu éventé",
       "Creux, plat (café éventé)",
@@ -568,7 +568,7 @@ const DIAGNOSTICS = DIAGNOSTIC_GROUPS.flatMap(g => g.diags).concat([DERIVED_DIAG
 /* Families where one variant IS the preheating. For those, the "eau
    préchauffée" checkbox would duplicate the recipe choice: the box is
    hidden and the stored value is derived from the chosen recipe, which keeps
-   the `eau_prechauffee` column correct across the whole history. */
+   the `preheated_water` column correct across the whole history. */
 const PREHEAT_FAMILIES = ["brikka-classique"];
 const PREHEATED_WATER_RECIPES = ["brikka-classique-bouillante"];
 
@@ -736,33 +736,33 @@ function heatTimeForTemperature(tempC, boilS, bubblesS) {
    with, in each cell, your own average over the coffees of that profile. */
 const COFFEE_RECIPE_MATRIX = {
   rows: [
-    { id: "lave", nom: "Lavé" },
-    { id: "honey", nom: "Honey" },
-    { id: "natural", nom: "Natural" },
-    { id: "anaerobic", nom: "Anaerobic, fermenté" },
-    { id: "robusta", nom: "Robusta, rang bơ" },
+    { id: "lave", name: "Lavé" },
+    { id: "honey", name: "Honey" },
+    { id: "natural", name: "Natural" },
+    { id: "anaerobic", name: "Anaerobic, fermenté" },
+    { id: "robusta", name: "Robusta, rang bơ" },
   ],
   columns: [
-    { id: "clair", nom: "Clair" },
-    { id: "medium", nom: "Medium" },
-    { id: "fonce", nom: "Foncé" },
+    { id: "clair", name: "Clair" },
+    { id: "medium", name: "Medium" },
+    { id: "fonce", name: "Foncé" },
   ],
   cells: {
-    "lave|clair": { recette: "one-and-done", temp: "93 à 96 °C", alternative: "costaud-bloom" },
-    "lave|medium": { recette: "chronicler", temp: "92 °C", alternative: "hoffmann-1cup" },
-    "lave|fonce": { recette: "costaud-immersion", temp: "88 à 90 °C", alternative: "brikka-classique" },
-    "honey|clair": { recette: "sweet", temp: "92 °C", alternative: "chronicler" },
-    "honey|medium": { recette: "sweet", temp: "92 °C", alternative: "sherrycipe" },
-    "honey|fonce": { recette: "brikka-classique", temp: "", alternative: "costaud-immersion" },
-    "natural|clair": { recette: "neo-brew", temp: "95 à 96 °C", alternative: "chronicler" },
-    "natural|medium": { recette: "chronicler", temp: "90 à 92 °C", alternative: "devil-switch" },
-    "natural|fonce": { recette: "brikka-classique", temp: "", alternative: "devil-switch" },
-    "anaerobic|clair": { recette: "neo-brew", temp: "93 °C", alternative: "chronicler" },
-    "anaerobic|medium": { recette: "chronicler", temp: "88 à 90 °C", alternative: "devil-switch" },
-    "anaerobic|fonce": { recette: "brikka-classique", temp: "", alternative: "" },
-    "robusta|clair": { recette: "sherrycipe", temp: "92 °C", alternative: "devil-switch" },
-    "robusta|medium": { recette: "brikka-classique", temp: "", alternative: "brikka-flatwhite" },
-    "robusta|fonce": { recette: "brikka-classique", temp: "", alternative: "brikka-flatwhite" },
+    "lave|clair": { recipe: "one-and-done", temp: "93 à 96 °C", alternative: "costaud-bloom" },
+    "lave|medium": { recipe: "chronicler", temp: "92 °C", alternative: "hoffmann-1cup" },
+    "lave|fonce": { recipe: "costaud-immersion", temp: "88 à 90 °C", alternative: "brikka-classique" },
+    "honey|clair": { recipe: "sweet", temp: "92 °C", alternative: "chronicler" },
+    "honey|medium": { recipe: "sweet", temp: "92 °C", alternative: "sherrycipe" },
+    "honey|fonce": { recipe: "brikka-classique", temp: "", alternative: "costaud-immersion" },
+    "natural|clair": { recipe: "neo-brew", temp: "95 à 96 °C", alternative: "chronicler" },
+    "natural|medium": { recipe: "chronicler", temp: "90 à 92 °C", alternative: "devil-switch" },
+    "natural|fonce": { recipe: "brikka-classique", temp: "", alternative: "devil-switch" },
+    "anaerobic|clair": { recipe: "neo-brew", temp: "93 °C", alternative: "chronicler" },
+    "anaerobic|medium": { recipe: "chronicler", temp: "88 à 90 °C", alternative: "devil-switch" },
+    "anaerobic|fonce": { recipe: "brikka-classique", temp: "", alternative: "" },
+    "robusta|clair": { recipe: "sherrycipe", temp: "92 °C", alternative: "devil-switch" },
+    "robusta|medium": { recipe: "brikka-classique", temp: "", alternative: "brikka-flatwhite" },
+    "robusta|fonce": { recipe: "brikka-classique", temp: "", alternative: "brikka-flatwhite" },
   },
 };
 
@@ -770,9 +770,9 @@ const COFFEE_RECIPE_MATRIX = {
    the process give the row, the roast level the column. An empty or unknown
    field gives null: the coffee counts in no cell. */
 function coffeeProfile(coffee) {
-  const p = String((coffee && coffee.procede) || "").toLowerCase();
-  const e = String((coffee && coffee.espece) || "").toLowerCase();
-  const t = String((coffee && coffee.torrefaction) || "").toLowerCase();
+  const p = String((coffee && coffee.process) || "").toLowerCase();
+  const e = String((coffee && coffee.species) || "").toLowerCase();
+  const t = String((coffee && coffee.roast) || "").toLowerCase();
   const row = /robusta|rang b|tẩm b/.test(e + " " + p) ? "robusta"
     : /anaer|ferment|yếm khí|lên men/.test(p) ? "anaerobic"
     : /natur|tự nhiên/.test(p) ? "natural"
@@ -836,28 +836,28 @@ function combinationWarnings(coffee, method, recipeName, recipes) {
   const list = recipes || [];
 
   if (method === "Switch") {
-    const pct = coffee.pourcentage_cafe_reel === "" || coffee.pourcentage_cafe_reel === undefined ? 100 : Number(coffee.pourcentage_cafe_reel);
-    const coffeeProcess = (coffee.procede || "").toLowerCase();
+    const pct = coffee.real_coffee_pct === "" || coffee.real_coffee_pct === undefined ? 100 : Number(coffee.real_coffee_pct);
+    const coffeeProcess = (coffee.process || "").toLowerCase();
     if (pct < 100 || (coffee.tag || "").toLowerCase().includes("aromatisé")) {
       msgs.push(I18N.t("warn_flavoured", { pct }));
     } else if (coffeeProcess.includes("rang bơ") || coffeeProcess.includes("rang bo") || coffeeProcess.includes("tẩm bơ")) {
       msgs.push(I18N.t("warn_rang_bo"));
-    } else if (NEVER_SWITCH_NAMES.some(n => (coffee.nom || "").toLowerCase().includes(n.toLowerCase()))) {
+    } else if (NEVER_SWITCH_NAMES.some(n => (coffee.name || "").toLowerCase().includes(n.toLowerCase()))) {
       msgs.push(I18N.t("warn_brikka_profile"));
     } else if (coffeeProcess.includes("wet hulled") || coffeeProcess.includes("giling basah")) {
       msgs.push(I18N.t("warn_wet_hulled"));
-    } else if ((coffee.torrefaction || "").toLowerCase().includes("fonc")) {
+    } else if ((coffee.roast || "").toLowerCase().includes("fonc")) {
       msgs.push(I18N.t("warn_dark_roast"));
-    } else if ((coffee.machine_recommandee || "") === "Brikka") {
+    } else if ((coffee.recommended_method || "") === "Brikka") {
       msgs.push(I18N.t("warn_brikka_recommended"));
     }
   }
 
-  if (method === "Brikka" && (coffee.machine_recommandee || "") === "Switch") {
+  if (method === "Brikka" && (coffee.recommended_method || "") === "Switch") {
     msgs.push(I18N.t("warn_switch_recommended"));
   }
 
-  // NO warning when the chosen recipe differs from `recette_recommandee`.
+  // NO warning when the chosen recipe differs from `recommended_recipe`.
   // That recommendation comes from a value set when the coffee was created, never
   // checked by an extraction: claiming to recommend a recipe for a coffee
   // not yet tried is not help, it is noise. The real recommendations

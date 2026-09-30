@@ -30,7 +30,7 @@
      - "At home": the average of your rated cups on THIS recipe. */
   const WASHED = /lav|wash/i, FERMENTED = /natur|honey|ana[eé]ro|ferment/i;
   function recipeProfiles(r) {
-    const text = String(r.pourQui || "");
+    const text = String(r.bestFor || "");
     const readProfiles = t => [WASHED.test(t) ? "lave" : "", FERMENTED.test(t) ? "fermente" : ""].filter(Boolean);
     const firstSentence = readProfiles(text.split(/[.:]/)[0]);
     const p = firstSentence.length ? firstSentence : readProfiles(text);
@@ -40,7 +40,7 @@
      Guide, every recipe expanded while you are looking for one. Collapsed, a
      recipe fits on one line: brewer, dose and water, temperature, your rating
      at home. The ones you open stay open from one visit to the next. */
-  const OPEN_KEY = "guide-recettes-ouvertes";
+  const OPEN_KEY = "guide-open-recipes";
   const openRecipes = new Set();
   try { JSON.parse(localStorage.getItem(OPEN_KEY) || "[]").forEach(id => openRecipes.add(id)); } catch (e) { /* without storage, everything collapsed */ }
   function toggleRecipe(id, expand) {
@@ -48,21 +48,21 @@
     try { localStorage.setItem(OPEN_KEY, JSON.stringify([...openRecipes])); } catch (e) { /* same */ }
   }
   function homeRating(r) {
-    const ratings = analyzableExts().filter(e => e.recette === r.nom && e.note_sur_10 !== "").map(e => Number(e.note_sur_10));
+    const ratings = analyzableExts().filter(e => e.recipe === r.name && e.score_10 !== "").map(e => Number(e.score_10));
     return ratings.length ? fmtDecimal(average(ratings), 1) : "";
   }
   function atHome(r) {
-    const ratings = analyzableExts().filter(e => e.recette === r.nom && e.note_sur_10 !== "").map(e => Number(e.note_sur_10));
+    const ratings = analyzableExts().filter(e => e.recipe === r.name && e.score_10 !== "").map(e => Number(e.score_10));
     return '<p class="recipe-at-home">' + (ratings.length
       ? I18N.t("library_at_home", { m: fmtDecimal(average(ratings), 1), n: ratings.length })
       : I18N.t("library_not_tried")) + "</p>";
   }
-  const filter = { value: "tout" };
-  try { filter.value = localStorage.getItem("guide-filtre") || "tout"; } catch (e) { /* without storage, all */ }
+  const filter = { value: "all" };
+  try { filter.value = localStorage.getItem("guide-filter") || "all"; } catch (e) { /* without storage, all */ }
   function applyFilter() {
     $$("#grid-recipes .recipe-card").forEach(c => {
       const v = filter.value;
-      c.hidden = !(v === "tout" || c.classList.contains(v.toLowerCase()) || (c.dataset.profiles || "").split(" ").includes(v));
+      c.hidden = !(v === "all" || c.classList.contains(v.toLowerCase()) || (c.dataset.profiles || "").split(" ").includes(v));
     });
     $$("#library-filters [data-filter]").forEach(b => setPressed(b, b.dataset.filter === filter.value));
     const empty = $("#library-empty");
@@ -75,7 +75,7 @@
      Recipes first, and the chosen tab is remembered. */
   function showGuide(target) {
     const el = target ? document.getElementById(target) : null;
-    const panel = el ? el.closest(".guide-panel") : $("#gp-" + (target || "recettes"));
+    const panel = el ? el.closest(".guide-panel") : $("#gp-" + (target || "recipes"));
     if (!panel) return;
     $$(".guide-panel").forEach(p => { p.hidden = p !== panel; });
     $$(".guide-tabs [data-guide]").forEach(a => {
@@ -83,7 +83,7 @@
       a.classList.toggle("current", active);
       if (active) a.setAttribute("aria-current", "true"); else a.removeAttribute("aria-current");
     });
-    try { localStorage.setItem("guide-onglet", panel.dataset.panel); } catch (e) { /* never mind */ }
+    try { localStorage.setItem("guide-tab", panel.dataset.panel); } catch (e) { /* never mind */ }
     if (el && el !== panel.querySelector("h2, .ref-title-row h2")) el.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -91,11 +91,11 @@
      variant if it belongs to a family, the filter reset to "All" so it is not
      hidden, then the card centred, briefly highlighted. */
   function showRecipe(id) {
-    const r = DATA.state.recettes.find(x => x.id === id);
+    const r = DATA.state.recipes.find(x => x.id === id);
     if (!r) { showGuide("ref-recipes"); return; }
-    if (r.famille) familySelection[r.famille] = r.id;
+    if (r.family) familySelection[r.family] = r.id;
     toggleRecipe(id, true);
-    filter.value = "tout";
+    filter.value = "all";
     renderRecipes();
     showGuide("ref-recipes");
     const card = $('#grid-recipes [data-recipe="' + id + '"]');
@@ -154,38 +154,38 @@
     const table = $("#matrix-recipes");
     if (!table || typeof COFFEE_RECIPE_MATRIX === "undefined") return;
     const M = COFFEE_RECIPE_MATRIX;
-    const recipe = id => DATA.state.recettes.find(r => r.id === id);
-    const profiles = new Map(DATA.state.cafes.map(c => [c.id, coffeeProfile(c)]));
-    const cups = analyzableExts().filter(e => e.note_sur_10 !== "");
+    const recipe = id => DATA.state.recipes.find(r => r.id === id);
+    const profiles = new Map(DATA.state.coffees.map(c => [c.id, coffeeProfile(c)]));
+    const cups = analyzableExts().filter(e => e.score_10 !== "");
     const cellStats = (l, c) => {
       const byRecipe = {};
       cups.forEach(e => {
-        const p = profiles.get(e.cafe_id);
+        const p = profiles.get(e.coffee_id);
         if (!p || p.row !== l || p.column !== c) return;
-        (byRecipe[e.recette] = byRecipe[e.recette] || []).push(Number(e.note_sur_10));
+        (byRecipe[e.recipe] = byRecipe[e.recipe] || []).push(Number(e.score_10));
       });
       return byRecipe;
     };
-    const recipeLink = r => '<button type="button" class="link-recipe" data-matrix="' + attr(r.id) + '">' + attr(I18N.tr(r.nom)) + "</button>";
+    const recipeLink = r => '<button type="button" class="link-recipe" data-matrix="' + attr(r.id) + '">' + attr(I18N.tr(r.name)) + "</button>";
     const fmt1 = n => fmtDecimal(n, 1);
-    let html = "<thead><tr><th></th>" + M.columns.map(c => "<th>" + attr(I18N.tr(c.nom)) + "</th>").join("") + "</tr></thead><tbody>";
+    let html = "<thead><tr><th></th>" + M.columns.map(c => "<th>" + attr(I18N.tr(c.name)) + "</th>").join("") + "</tr></thead><tbody>";
     M.rows.forEach(l => {
-      html += '<tr><th scope="row">' + attr(I18N.tr(l.nom)) + "</th>";
+      html += '<tr><th scope="row">' + attr(I18N.tr(l.name)) + "</th>";
       M.columns.forEach(c => {
         const k = M.cells[l.id + "|" + c.id];
-        const r = k && recipe(k.recette);
+        const r = k && recipe(k.recipe);
         if (!r) { html += '<td class="m-empty"></td>'; return; }
         const stats = cellStats(l.id, c.id);
-        const mine = stats[r.nom] || [];
-        const best = Object.entries(stats).filter(([name, n]) => name !== r.nom && n.length >= 3)
-          .map(([name, n]) => ({ nom: name, mean: average(n), n: n.length })).sort((a, b) => b.mean - a.mean)[0];
+        const mine = stats[r.name] || [];
+        const best = Object.entries(stats).filter(([name, n]) => name !== r.name && n.length >= 3)
+          .map(([name, n]) => ({ name: name, mean: average(n), n: n.length })).sort((a, b) => b.mean - a.mean)[0];
         const alt = k.alternative && recipe(k.alternative);
-        html += '<td data-col="' + attr(I18N.tr(c.nom)) + '">' + recipeLink(r) +
+        html += '<td data-col="' + attr(I18N.tr(c.name)) + '">' + recipeLink(r) +
           (k.temp ? '<span class="m-temp">' + attr(k.temp) + "</span>" : "") +
           (alt ? '<span class="m-other">' + I18N.t("matrix_or") + " " + recipeLink(alt) + "</span>" : "") +
           (mine.length ? '<span class="m-at-home">' + I18N.t("matrix_at_home", { m: fmt1(average(mine)), n: mine.length }) + "</span>" : "") +
           (best && (mine.length < 3 || best.mean > average(mine))
-            ? '<span class="m-best">' + I18N.t("matrix_best", { r: attr(I18N.tr(best.nom)), m: fmt1(best.mean) }) + "</span>" : "") +
+            ? '<span class="m-best">' + I18N.t("matrix_best", { r: attr(I18N.tr(best.name)), m: fmt1(best.mean) }) + "</span>" : "") +
           "</td>";
       });
       html += "</tr>";
@@ -201,51 +201,51 @@
   }
 
   function recipeCard(r, group) {
-    const badges = (r.parDefaut ? '<span class="badge-default">' + I18N.t("badge_default") + "</span>" : "") +
-      (r.avancee ? '<span class="badge-advanced">' + I18N.t("badge_advanced") + "</span>" : "");
+    const badges = (r.isDefault ? '<span class="badge-default">' + I18N.t("badge_default") + "</span>" : "") +
+      (r.advanced ? '<span class="badge-advanced">' + I18N.t("badge_advanced") + "</span>" : "");
     const params =
-      '<span class="param-chip">' + r.dose + " g / " + r.eau + " g</span>" +
-      '<span class="param-chip">' + attr(I18N.tr(r.ratioTexte)) + "</span>" +
-      '<span class="param-chip">' + attr(I18N.tr(r.tempTexte)) + "</span>" +
+      '<span class="param-chip">' + r.dose + " g / " + r.water + " g</span>" +
+      '<span class="param-chip">' + attr(I18N.tr(r.ratioText)) + "</span>" +
+      '<span class="param-chip">' + attr(I18N.tr(r.tempText)) + "</span>" +
       '<span class="param-chip">' + I18N.t("dial") + " " + r.dial + "</span>" +
-      '<span class="param-chip">' + attr(I18N.tr(r.totalTexte)) + "</span>";
+      '<span class="param-chip">' + attr(I18N.tr(r.totalText)) + "</span>";
     let steps = "";
-    if (r.etapes.length) {
-      steps = '<ol class="recipe-steps">' + r.etapes.map(e =>
-        "<li><span class=\"step-time\">" + (e.t === null ? "·" : fmtDuration(e.t)) + "</span><span>" + attr(I18N.tr(e.texte)) + "</span></li>"
+    if (r.steps.length) {
+      steps = '<ol class="recipe-steps">' + r.steps.map(e =>
+        "<li><span class=\"step-time\">" + (e.t === null ? "·" : fmtDuration(e.t)) + "</span><span>" + attr(I18N.tr(e.text)) + "</span></li>"
       ).join("") + "</ol>";
     }
-    const tetsuBlock = r.variantes ? '<div class="tetsu-variants" id="tetsu-block"></div>' : "";
+    const tetsuBlock = r.has_variants ? '<div class="tetsu-variants" id="tetsu-block"></div>' : "";
     // Variant toggle when the recipe belongs to a family.
     let pills = "";
     if (group && group.length > 1) {
       pills = '<div class="variants-recipe">' + group.map(x =>
         '<button type="button" class="pill' + (x.id === r.id ? " on" : "") +
-        '" data-var-fam="' + r.famille + '" data-var-id="' + x.id + '">' +
-        I18N.tr(x.variante || x.nom) + "</button>").join("") + "</div>";
+        '" data-var-fam="' + r.family + '" data-var-id="' + x.id + '">' +
+        I18N.tr(x.variant || x.name) + "</button>").join("") + "</div>";
     }
     const isOpen = openRecipes.has(r.id);
     const rating = homeRating(r);
-    const summary = [r.methode, r.dose + " g / " + r.eau + " g", r.temp ? r.temp + " °C" : ""].filter(Boolean).join(" · ");
-    return '<article class="card recipe-card ' + r.methode.toLowerCase() + (isOpen ? "" : " collapsed") + '" data-recipe="' + r.id + '" data-profiles="' +
+    const summary = [r.method, r.dose + " g / " + r.water + " g", r.temp ? r.temp + " °C" : ""].filter(Boolean).join(" · ");
+    return '<article class="card recipe-card ' + r.method.toLowerCase() + (isOpen ? "" : " collapsed") + '" data-recipe="' + r.id + '" data-profiles="' +
       recipeProfiles(r).join(" ") + '">' +
       '<div class="recipe-header">' +
-      (r.numero ? '<span class="recipe-num">' + r.numero + "</span>" : '<span class="recipe-num">' + r.methode + "</span>") +
+      (r.number ? '<span class="recipe-num">' + r.number + "</span>" : '<span class="recipe-num">' + r.method + "</span>") +
       badges + "</div>" +
       '<h3><button type="button" class="recipe-toggle" data-toggle="' + r.id + '" aria-expanded="' + isOpen + '" aria-controls="body-' + r.id + '">' +
-        '<span class="rb-name">' + r.nom + "</span>" +
+        '<span class="rb-name">' + r.name + "</span>" +
         '<span class="rb-summary">' + attr(summary) + "</span>" +
         '<span class="rb-rating">' + (rating ? rating : I18N.t("recipe_never_made")) + "</span>" +
       "</button></h3>" +
       '<div class="recipe-body" id="body-' + r.id + '">' +
       pills +
-      '<p class="recipe-sub">' + attr(I18N.tr(r.sousTitre)) + "</p>" +
+      '<p class="recipe-sub">' + attr(I18N.tr(r.subtitle)) + "</p>" +
       '<div class="recipe-params">' + params + "</div>" +
       videoBlock(r) +
       atHome(r) +
       steps + tetsuBlock +
-      (r.pourQui ? '<p class="recipe-forwho"><b>' + I18N.t("recipe_for_which") + "</b> " + attr(I18N.tr(r.pourQui)) + "</p>" : "") +
-      (r.cafesAssocies.length ? '<p class="recipe-coffees"><b>' + I18N.t("recipe_coffees") + "</b> " + r.cafesAssocies.join(", ") + "</p>" : "") +
+      (r.bestFor ? '<p class="recipe-forwho"><b>' + I18N.t("recipe_for_which") + "</b> " + attr(I18N.tr(r.bestFor)) + "</p>" : "") +
+      (r.pairedCoffees.length ? '<p class="recipe-coffees"><b>' + I18N.t("recipe_coffees") + "</b> " + r.pairedCoffees.join(", ") + "</p>" : "") +
       (r.note ? '<p class="recipe-note">' + attr(I18N.tr(r.note)) + "</p>" : "") +
       '<div class="recipe-actions">' +
       '<button class="btn btn-primary btn-small" data-brew="' + r.id + '">' + I18N.t("guide_brew") + "</button>" +
@@ -257,44 +257,44 @@
   /* L5 (v8.94): BREW A RECIPE from the Guide. The entry form opens with the
      chosen brewer and recipe, and its values already filled in. */
   function brewRecipe(id) {
-    const r = DATA.state.recettes.find(x => x.id === id);
+    const r = DATA.state.recipes.find(x => x.id === id);
     if (!r) return;
     UI.resetEntry(true);
-    UI.chooseMethod(r.methode);
+    UI.chooseMethod(r.method);
     const sel = $("#f-recipe");
-    sel.value = r.nom;
+    sel.value = r.name;
     sel.dispatchEvent(new Event("change", { bubbles: true }));
-    UI.activateScreen("saisie");
+    UI.activateScreen("entry");
   }
 
   /* THE GUIDE HOME (L5). The doors: one per section of the table of contents,
      with what you find there. "For your coffee": the coffee of your last cup,
      its cell in the coffee and recipe table, and your rating on the two
      recipes it suggests. */
-  const DOORS = { recettes: "guide_door_recipes", moulin: "guide_door_grinder", diagnostic: "guide_door_diagnosis", regles: "guide_door_rules",
-    vocabulaire: "guide_door_vocabulary", boutiques: "guide_door_shops", materiel: "guide_door_gear", messages: "guide_door_messages" };
+  const DOORS = { recipes: "guide_door_recipes", grinder: "guide_door_grinder", diagnostic: "guide_door_diagnosis", rules: "guide_door_rules",
+    vocabulary: "guide_door_vocabulary", shops: "guide_door_shops", gear: "guide_door_gear", messages: "guide_door_messages" };
   function renderGuideHome() {
     const doors = $("#guide-doors");
     if (!doors) return;
-    const counts = { recettes: liveRecipes().length, vocabulaire: $$("#sheets-vocabulary .sheet").length };
-    doors.innerHTML = $$(".guide-tabs [data-guide]").filter(a => a.dataset.guide !== "accueil").map(a =>
+    const counts = { recipes: liveRecipes().length, vocabulary: $$("#sheets-vocabulary .sheet").length };
+    doors.innerHTML = $$(".guide-tabs [data-guide]").filter(a => a.dataset.guide !== "home").map(a =>
       '<button type="button" class="ga-door" data-door="' + attr(a.getAttribute("href").slice(1)) + '"><b>' + attr(a.textContent.trim()) + "</b><span>" +
       attr(I18N.t(DOORS[a.dataset.guide] || "guide_door_other", { n: counts[a.dataset.guide] || 0 })) + "</span></button>").join("");
     const zone = $("#guide-for-you");
-    const lastCup = DATA.state.extractions.slice().sort((a, b) => String(b.date_heure).localeCompare(String(a.date_heure)))[0];
+    const lastCup = DATA.state.extractions.slice().sort((a, b) => String(b.date_time).localeCompare(String(a.date_time)))[0];
     const coffee = lastCup ? DATA.coffeeOf(lastCup) : null;
     const p = coffee && typeof coffeeProfile === "function" ? coffeeProfile(coffee) : null;
     const k = p && p.row && p.column ? COFFEE_RECIPE_MATRIX.cells[p.row + "|" + p.column] : null;
-    const suggested = k ? [k.recette, k.alternative].filter(Boolean).map(id => DATA.state.recettes.find(r => r.id === id)).filter(Boolean) : [];
+    const suggested = k ? [k.recipe, k.alternative].filter(Boolean).map(id => DATA.state.recipes.find(r => r.id === id)).filter(Boolean) : [];
     zone.hidden = !suggested.length;
     if (!suggested.length) { zone.innerHTML = ""; return; }
-    zone.innerHTML = '<h3 id="guide-for-you-title" class="ga-h">' + attr(I18N.t("guide_for_you", { c: I18N.tr(coffee.nom) })) + "</h3>" +
+    zone.innerHTML = '<h3 id="guide-for-you-title" class="ga-h">' + attr(I18N.t("guide_for_you", { c: I18N.tr(coffee.name) })) + "</h3>" +
       '<div class="ga-cards">' + suggested.map((r, i) => {
         const rating = homeRating(r);
         return '<button type="button" class="ga-card' + (i === 0 ? " first" : "") + '" data-for-you="' + r.id + '">' +
           '<span class="ga-label">' + attr(I18N.t(i === 0 ? "guide_starting" : "guide_to_try")) + "</span>" +
-          "<b>" + attr(I18N.tr(r.nom)) + "</b>" +
-          '<span class="ga-params">' + attr([r.methode, i === 0 && k.temp ? k.temp : r.temp ? r.temp + " °C" : ""].filter(Boolean).join(" · ")) + "</span>" +
+          "<b>" + attr(I18N.tr(r.name)) + "</b>" +
+          '<span class="ga-params">' + attr([r.method, i === 0 && k.temp ? k.temp : r.temp ? r.temp + " °C" : ""].filter(Boolean).join(" · ")) + "</span>" +
           '<span class="ga-rating">' + (rating ? I18N.t("guide_at_home", { m: rating }) : I18N.t("recipe_never_made")) + "</span></button>";
       }).join("") + "</div>";
   }
@@ -306,13 +306,13 @@
   const stripAccents = s => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   function buildIndex() {
     const idx = [];
-    liveRecipes().forEach(r => idx.push({ type: "guide_type_recipe", title: I18N.tr(r.nom), detail: [r.methode, I18N.tr(r.sousTitre || "")].filter(Boolean).join(" · "), recette: r.id }));
+    liveRecipes().forEach(r => idx.push({ type: "guide_type_recipe", title: I18N.tr(r.name), detail: [r.method, I18N.tr(r.subtitle || "")].filter(Boolean).join(" · "), recipe: r.id }));
     $$("#sheets-vocabulary .sheet").forEach(f => {
       const s = f.querySelector("summary");
       if (s) idx.push({ type: "guide_type_word", title: s.textContent.trim(), detail: (f.querySelector(".sheet-body") || f).textContent.trim().replace(/\s+/g, " ").slice(0, 90), el: f });
     });
     $$(".guide-panel").forEach(p => {
-      if (p.id === "gp-accueil" || p.id === "gp-recettes" || p.id === "gp-vocabulaire") return;
+      if (p.id === "gp-home" || p.id === "gp-recipes" || p.id === "gp-vocabulary") return;
       p.querySelectorAll("h2, h3, h4").forEach(h => {
         const nextEl = h.nextElementSibling;
         idx.push({ type: "guide_type_tip", title: h.textContent.trim(), detail: nextEl ? nextEl.textContent.trim().replace(/\s+/g, " ").slice(0, 90) : "", el: h });
@@ -337,7 +337,7 @@
   function goToResult(i) {
     const x = matches[i];
     if (!x) return;
-    if (x.recette) { showRecipe(x.recette); return; }
+    if (x.recipe) { showRecipe(x.recipe); return; }
     const panel = x.el.closest(".guide-panel");
     if (!panel) return;
     const heading = panel.querySelector("h2");
@@ -357,11 +357,11 @@
     const cards = [];
     list.forEach(r => {
       if (rendered.has(r.id)) return;
-      if (r.famille) {
-        const group = list.filter(x => x.famille === r.famille);
+      if (r.family) {
+        const group = list.filter(x => x.family === r.family);
         if (group.length > 1) {
           group.forEach(x => rendered.add(x.id));
-          const memo = familySelection[r.famille];
+          const memo = familySelection[r.family];
           const sel = group.find(x => x.id === memo) || group[0];
           cards.push(recipeCard(sel, group));
           return;
@@ -399,14 +399,14 @@
     const v40 = TETSU.first40.find(v => v.id === tetsuChoice.p40);
     const v60 = TETSU.last60.find(v => v.id === tetsuChoice.p60);
     const r = recipeWithVariants();
-    const water = r ? r.eau : 300;
-    return { pours: TETSU.pours(water, v40, v60), v40, v60, eau: water };
+    const water = r ? r.water : 300;
+    return { pours: TETSU.pours(water, v40, v60), v40, v60, water: water };
   }
 
   function renderTetsu() {
     const block = $("#tetsu-block");
     if (!block) return;
-    const { pours, v40, v60, eau: water } = tetsuPours();
+    const { pours, v40, v60, water: water } = tetsuPours();
     let total = 0;
     const lines = pours.map((p, i) => {
       total += p;
@@ -417,11 +417,11 @@
     block.innerHTML =
       '<div class="tetsu-group"><span class="label">' + I18N.t("tetsu_40") + "</span>" +
       '<div class="tetsu-options">' + TETSU.first40.map(v =>
-        '<button type="button" class="pill' + (v.id === tetsuChoice.p40 ? " on" : "") + '" data-t40="' + v.id + '">' + I18N.tr(v.nom) + "</button>").join("") +
+        '<button type="button" class="pill' + (v.id === tetsuChoice.p40 ? " on" : "") + '" data-t40="' + v.id + '">' + I18N.tr(v.name) + "</button>").join("") +
       "</div></div>" +
       '<div class="tetsu-group"><span class="label">' + I18N.t("tetsu_60") + "</span>" +
       '<div class="tetsu-options">' + TETSU.last60.map(v =>
-        '<button type="button" class="pill' + (v.id === tetsuChoice.p60 ? " on" : "") + '" data-t60="' + v.id + '">' + I18N.tr(v.nom) + "</button>").join("") +
+        '<button type="button" class="pill' + (v.id === tetsuChoice.p60 ? " on" : "") + '" data-t60="' + v.id + '">' + I18N.tr(v.name) + "</button>").join("") +
       "</div></div>" +
       '<ul class="tetsu-pours">' + lines + "</ul>" +
       '<p class="tetsu-detail">' + I18N.tr(v40.detail) + " " + I18N.tr(v60.detail) + " " + I18N.t("tetsu_end") + "</p>";
@@ -438,17 +438,17 @@
      scale", and the texts then stay intact down to the character. */
   function waterFactor(recipe) {
     const targetWater = parseFloat($("#f-water").value);
-    if (!recipe || !(recipe.eau > 0) || !(targetWater > 0)) return 1;
-    return targetWater / recipe.eau;
+    if (!recipe || !(recipe.water > 0) || !(targetWater > 0)) return 1;
+    return targetWater / recipe.water;
   }
 
   function stepsFor(recipe) {
     const f = waterFactor(recipe);
     const rescale = list => f === 1 ? list
-      : list.map(e => ({ ...e, texte: scalePours(e.texte, f) }));
+      : list.map(e => ({ ...e, text: scalePours(e.text, f) }));
     // Translated BEFORE scaling (v8.77): the original sentence is the key.
-    const translate = list => list.map(e => ({ ...e, texte: I18N.tr(e.texte) }));
-    if (recipe.variantes) {
+    const translate = list => list.map(e => ({ ...e, text: I18N.tr(e.text) }));
+    if (recipe.has_variants) {
       const { pours } = tetsuPours();
       let total = 0;
       /* The TOTAL first, like every other recipe (« jusqu'à 90 g »): the pour
@@ -460,25 +460,25 @@
          over a dry bed. The Brew mode advances with a tap. */
       return rescale(pours.map((p, i) => {
         total += p;
-        return { t: null, texte: i === 0
+        return { t: null, text: i === 0
           ? I18N.t("walkthrough_first", { c: total, b: I18N.t("walkthrough_bloom") })
           : I18N.t("walkthrough_pour", { p, c: total, b: I18N.t("walkthrough_bed") }) };
-      }).concat([{ t: null, texte: I18N.t("walkthrough_drain") }]));
+      }).concat([{ t: null, text: I18N.t("walkthrough_drain") }]));
     }
-    return rescale(translate(recipe.etapes));
+    return rescale(translate(recipe.steps));
   }
 
   function openWalkthrough(recipeId) {
-    const r = DATA.state.recettes.find(x => x.id === recipeId);
+    const r = DATA.state.recipes.find(x => x.id === recipeId);
     if (!r) return;
     walkthrough.recipe = r;
     walkthrough.steps = stepsFor(r);
     walkthrough.index = -1;
     clearInterval(walkthrough.interval);
     walkthrough.startedAt = null;
-    $("#wt-title").textContent = r.nom;
+    $("#wt-title").textContent = r.name;
     $("#wt-chrono").textContent = "0:00";
-    $("#wt-params").textContent = r.dose + " g / " + r.eau + " g, " + I18N.tr(r.tempTexte) + ", " + I18N.t("dial") + " " + r.dial + ", " + I18N.tr(r.totalTexte);
+    $("#wt-params").textContent = r.dose + " g / " + r.water + " g, " + I18N.tr(r.tempText) + ", " + I18N.t("dial") + " " + r.dial + ", " + I18N.tr(r.totalText);
     $("#wt-start").textContent = I18N.t("walkthrough_start");
     $("#wt-next").disabled = true;
     renderWalkthroughSteps();
@@ -488,7 +488,7 @@
   function renderWalkthroughSteps() {
     $("#wt-steps").innerHTML = walkthrough.steps.map((e, i) =>
       '<li class="' + (i < walkthrough.index ? "done" : i === walkthrough.index ? "now" : "") + '">' +
-      '<span class="step-time">' + (e.t === null ? "·" : fmtDuration(e.t)) + "</span><span>" + e.texte + "</span></li>"
+      '<span class="step-time">' + (e.t === null ? "·" : fmtDuration(e.t)) + "</span><span>" + e.text + "</span></li>"
     ).join("");
   }
 
@@ -576,11 +576,11 @@
     // The slider always follows the value, including when it comes from the text.
     if (Number($("#conv-slider").value) !== p.clicks) $("#conv-slider").value = p.clicks;
     paintSlider($("#conv-slider"));
-    const compatible = GRIND.compatibleMethods(p.microns).map(m => I18N.method(m.nom));
+    const compatible = GRIND.compatibleMethods(p.microns).map(m => I18N.method(m.name));
     zone.innerHTML =
       '<span class="conv-chip"><b>' + p.clicks + "</b> " + I18N.t("conv_clicks") + "</span>" +
       '<span class="conv-chip">' + I18N.t("conv_about") + " <b>" + Math.round(p.microns) + "</b> " + I18N.t("conv_microns") + "</span>" +
-      '<span class="conv-chip">' + I18N.t("conv_band") + " <b>" + GRIND.bandOf(p.microns).nom + "</b></span>" +
+      '<span class="conv-chip">' + I18N.t("conv_band") + " <b>" + GRIND.bandOf(p.microns).name + "</b></span>" +
       '<span class="conv-chip">' + (compatible.length ? I18N.t("conv_fits") + " <b>" + compatible.join(", ") + "</b>" : "<b>" + I18N.t("conv_outside") + "</b>") + "</span>";
     $("#conv-advice").innerHTML = grindAdvice(p);
     $("#conv-apply").disabled = text === fallbacks.dial;
@@ -603,7 +603,7 @@
   function renderRangeTable() {
     $("#table-ranges").innerHTML = GRIND.METHODS.map(m => {
       const highlight = m.id === "brikka" || m.id === "switch";
-      const name = I18N.method(m.nom);
+      const name = I18N.method(m.name);
       return "<tr" + (highlight ? ' class="row-own"' : "") + "><td>" + (highlight ? "<b>" + name + "</b>" : name) + "</td>" +
         "<td>" + (m.minU === 0 ? I18N.t("range_under", { x: m.maxU }) : I18N.t("range_from_to", { a: m.minU, b: m.maxU })) + "</td>" +
         "<td>" + (m.minC === 0 ? I18N.t("range_under", { x: m.maxC }) : I18N.t("range_from_to", { a: m.minC, b: m.maxC })) + "</td>" +
@@ -643,7 +643,7 @@
     $("#btn-manage-recipes").addEventListener("click", () => UI.openRecipesModal());
     $$("#library-filters [data-filter]").forEach(b => b.addEventListener("click", () => {
       filter.value = b.dataset.filter;
-      try { localStorage.setItem("guide-filtre", filter.value); } catch (e) { /* never mind */ }
+      try { localStorage.setItem("guide-filter", filter.value); } catch (e) { /* never mind */ }
       applyFilter();
     }));
     $$(".guide-tabs [data-guide]").forEach(a => a.addEventListener("click", ev => {
@@ -651,9 +651,9 @@
       showGuide(a.getAttribute("href").slice(1));
     }));
     // At startup: the remembered tab, otherwise the Guide home (L5).
-    let tab = "accueil";
-    try { tab = localStorage.getItem("guide-onglet") || "accueil"; } catch (e) { /* home */ }
-    const panel = $("#gp-" + tab) || $("#gp-accueil");
+    let tab = "home";
+    try { tab = localStorage.getItem("guide-tab") || "home"; } catch (e) { /* home */ }
+    const panel = $("#gp-" + tab) || $("#gp-home");
     $("#guide-search").addEventListener("input", searchGuide);
     $("#guide-results").addEventListener("click", ev => {
       const b = ev.target.closest("[data-result]");

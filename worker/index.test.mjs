@@ -238,5 +238,13 @@ check("expired session rejected", expired.status === 302, `status ${expired.stat
   check("the theme script stays identical (its hash does not change)", minifyHtml(index).includes(index.slice(start, end)));
 }
 
+// v9.06: the login page reads the language under its English key, and still under the French one.
+{
+  const res = await worker.fetch(new Request("https://site.test/login"), env);
+  const html = await res.text();
+  check("the login page reads the language key lang, and langue from before v9.06",
+    html.includes('localStorage.getItem("lang") || localStorage.getItem("langue")') && html.includes('localStorage.setItem("lang", lang)'));
+}
+
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);
 process.exit(failures === 0 ? 0 : 1);

@@ -318,7 +318,7 @@ async function minifyIfUseful(response, url) {
    changing this script without updating it would block it, and the test
    flags it first. The recipe video player comes from youtube-nocookie.
    And nobody can frame the logbook in their page. */
-export const THEME_SCRIPT_HASH = "sha256-N/v3DYpxCv3tWyPK7DiUrmJz+I9zCau7/b6/JWDnLjs=";
+export const THEME_SCRIPT_HASH = "sha256-RP93Dt39N/qMENY6l5S/aEgBPxOTDaX+K3Zo3fw0tOE=";
 export const SECURITY_POLICY = [
   "default-src 'self'",
   "script-src 'self' '" + THEME_SCRIPT_HASH + "'",
@@ -397,8 +397,8 @@ function escapeHtml(value) {
 /* ---------- Login page ----------
    Self-contained, in the colours of the site's dark theme. Bilingual like
    the rest of the interface: the texts carry data-fr and data-en, the
-   language follows the same localStorage setting as the app (key
-   "langue"). */
+   language follows the same localStorage setting as the app (key "lang",
+   "langue" until v9.06: still read, the app moves it at its next load). */
 
 function loginPage(target, error) {
   const messages = {
@@ -418,7 +418,7 @@ function loginPage(target, error) {
   const message = messages[error];
 
   return `<!doctype html>
-<html lang="fr" data-theme="sombre">
+<html lang="fr" data-theme="dark">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
@@ -560,7 +560,7 @@ function loginPage(target, error) {
 <script>
   (function () {
     var lang = "fr";
-    try { if (localStorage.getItem("langue") === "en") lang = "en"; } catch (e) { /* unavailable */ }
+    try { if ((localStorage.getItem("lang") || localStorage.getItem("langue")) === "en") lang = "en"; } catch (e) { /* unavailable */ }
 
     var button = document.getElementById("lang-toggle");
 
@@ -575,7 +575,7 @@ function loginPage(target, error) {
 
     button.addEventListener("click", function () {
       lang = lang === "fr" ? "en" : "fr";
-      try { localStorage.setItem("langue", lang); } catch (e) { /* unavailable */ }
+      try { localStorage.setItem("lang", lang); localStorage.removeItem("langue"); } catch (e) { /* unavailable */ }
       apply();
     });
 

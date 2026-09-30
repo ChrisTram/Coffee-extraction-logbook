@@ -26,13 +26,13 @@
 function rollingAverage(extractions, windowSize) {
   const n = windowSize || 5;
   const sorted = extractions
-    .filter(e => e.note_sur_10 !== "" && e.note_sur_10 !== undefined && e.date_heure)
+    .filter(e => e.score_10 !== "" && e.score_10 !== undefined && e.date_time)
     .slice()
-    .sort((a, b) => String(a.date_heure).localeCompare(String(b.date_heure)));
+    .sort((a, b) => String(a.date_time).localeCompare(String(b.date_time)));
   return sorted.map((e, i) => {
-    if (i < n - 1) return { date: e.date_heure, value: null };
-    const f = sorted.slice(i - n + 1, i + 1).map(x => Number(x.note_sur_10));
-    return { date: e.date_heure, value: Math.round(f.reduce((s, x) => s + x, 0) / n * 100) / 100 };
+    if (i < n - 1) return { date: e.date_time, value: null };
+    const f = sorted.slice(i - n + 1, i + 1).map(x => Number(x.score_10));
+    return { date: e.date_time, value: Math.round(f.reduce((s, x) => s + x, 0) / n * 100) / 100 };
   });
 }
 
@@ -41,15 +41,15 @@ function rollingAverage(extractions, windowSize) {
    The value function returns null when the lever is not filled in, the cup
    is then ignored FOR THAT LEVER only. */
 const LEVERS = [
-  { key: "heat", value: e => (e.methode !== "Brikka" || e.puissance_feu === "" || e.puissance_feu === undefined
-      ? null : String(e.puissance_feu)) },
-  { key: "preheat", value: e => (e.methode !== "Brikka" ? null
-      : Number(e.eau_prechauffee) === 1 ? "oui" : "non") },
-  { key: "recipe", value: e => e.recette || null },
+  { key: "heat", value: e => (e.method !== "Brikka" || e.heat_level === "" || e.heat_level === undefined
+      ? null : String(e.heat_level)) },
+  { key: "preheat", value: e => (e.method !== "Brikka" ? null
+      : Number(e.preheated_water) === 1 ? "oui" : "non") },
+  { key: "recipe", value: e => e.recipe || null },
   { key: "dose", value: e => (Number(e.dose_g) > 0 ? String(Math.round(Number(e.dose_g))) : null) },
-  { key: "grind", value: e => e.mouture_dial || null },
+  { key: "grind", value: e => e.grind_dial || null },
   { key: "bag_age", value: e => {
-      const days = e._c && e._c.jours_ouvert;
+      const days = e._c && e._c.days_open;
       if (days === "" || days === undefined || days === null) return null;
       return days <= 7 ? "frais" : days <= 21 ? "median" : "vieux";
     } },
@@ -73,7 +73,7 @@ function bestLever(cups, minPerGroup, minGap) {
       const v = lever.value(e);
       if (v === null) return;
       if (!groups.has(v)) groups.set(v, []);
-      groups.get(v).push(Number(e.note_sur_10));
+      groups.get(v).push(Number(e.score_10));
     });
     const eligible = [...groups.entries()].filter(([, n]) => n.length >= minN);
     // At least TWO groups are needed: a lever that never varied cannot
@@ -107,10 +107,10 @@ function bestLever(cups, minPerGroup, minGap) {
 function findingsByCoffee(coffees, extractions, options) {
   const o = options || {};
   const minBatch = o.minBatch || 6;
-  const rated = extractions.filter(e => e.note_sur_10 !== "" && e.note_sur_10 !== undefined);
+  const rated = extractions.filter(e => e.score_10 !== "" && e.score_10 !== undefined);
   const batches = new Map();
   rated.forEach(e => {
-    const k = e.cafe_id + "|" + e.methode;
+    const k = e.coffee_id + "|" + e.method;
     if (!batches.has(k)) batches.set(k, []);
     batches.get(k).push(e);
   });
@@ -123,7 +123,7 @@ function findingsByCoffee(coffees, extractions, options) {
       const found = bestLever(cups, o.minPerGroup, o.minGap);
       if (!found) return null;
       const coffee = coffees.find(c => c.id === coffeeId);
-      return { coffee: coffee || null, coffeeId, methode: method, total: cups.length, ...found };
+      return { coffee: coffee || null, coffeeId, method: method, total: cups.length, ...found };
     })
     .filter(Boolean);
 }
@@ -143,16 +143,16 @@ function findingsByCoffee(coffees, extractions, options) {
    caller drops the failed ones as everywhere else in what gives advice. */
 const TWIN_CLICKS = 3;
 function twins(extractions, target, count) {
-  if (!target || !target.recette) return [];
+  if (!target || !target.recipe) return [];
   const ground = !!target.ground;
-  const pc = ground ? null : GRIND.parseDial(String(target.mouture_dial || ""));
+  const pc = ground ? null : GRIND.parseDial(String(target.grind_dial || ""));
   const found = [];
   extractions.forEach(e => {
-    if (e.note_sur_10 === "" || e.note_sur_10 === undefined || e.recette !== target.recette) return;
-    const sameCoffee = e.cafe_id === target.cafe_id;
+    if (e.score_10 === "" || e.score_10 === undefined || e.recipe !== target.recipe) return;
+    const sameCoffee = e.coffee_id === target.coffee_id;
     let clickGap = 0;
     if (pc) {
-      const pe = GRIND.parseDial(String(e.mouture_dial || ""));
+      const pe = GRIND.parseDial(String(e.grind_dial || ""));
       if (!pe) return;
       clickGap = pe.clicks - pc.clicks;
       if (Math.abs(clickGap) > TWIN_CLICKS) return;
@@ -163,7 +163,7 @@ function twins(extractions, target, count) {
   });
   found.sort((a, b) =>
     (b.sameCoffee - a.sameCoffee) || (Math.abs(a.gap) - Math.abs(b.gap)) ||
-    String(b.ext.date_heure).localeCompare(String(a.ext.date_heure)));
+    String(b.ext.date_time).localeCompare(String(a.ext.date_time)));
   return found.slice(0, count || 3);
 }
 
@@ -183,7 +183,7 @@ function twins(extractions, target, count) {
    if there is nothing to quantify. The first is the proposal, the others
    "if that is not enough". */
 function quantifiedCorrection(ext, steps, ground) {
-  const p = Object.assign({ pas_crans: 2, pas_degres: 2, pas_feu: 1, pas_eau_g: 15, pas_dose_g: 1 }, steps || {});
+  const p = Object.assign({ step_clicks: 2, step_degrees: 2, step_heat: 1, step_water_g: 15, step_dose_g: 1 }, steps || {});
   const direction = {};
   String(ext && ext.diagnostic || "").split("|").filter(Boolean).forEach(d => {
     const l = (typeof DIAGNOSTIC_LEVERS !== "undefined" && DIAGNOSTIC_LEVERS[d]) || {};
@@ -197,32 +197,32 @@ function quantifiedCorrection(ext, steps, ground) {
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const levers = [];
   if (direction.grind && !ground) {
-    const d = GRIND.parseDial(String(ext.mouture_dial || ""));
-    const range = GRIND.METHODS.find(m => m.id === String(ext.methode || "").toLowerCase());
+    const d = GRIND.parseDial(String(ext.grind_dial || ""));
+    const range = GRIND.METHODS.find(m => m.id === String(ext.method || "").toLowerCase());
     if (d) {
-      let c = d.clicks + direction.grind * p.pas_crans;
+      let c = d.clicks + direction.grind * p.step_clicks;
       if (range) c = clamp(c, range.minC, range.maxC);
       c = clamp(c, 0, GRIND.MAX_CLICKS);
       if (c !== d.clicks) {
-        levers.push({ lever: "grind", field: "mouture_dial", from: ext.mouture_dial, to: GRIND.dialFromClicks(c),
+        levers.push({ lever: "grind", field: "grind_dial", from: ext.grind_dial, to: GRIND.dialFromClicks(c),
           gap: c - d.clicks, microns: [Math.round(d.microns), Math.round(c * GRIND.MICRONS_PER_CLICK)] });
       }
     }
   }
   if (direction.heat) {
-    if (ext.methode === "Switch" && num(ext.temperature_c) !== null) {
-      const t = clamp(num(ext.temperature_c) + direction.heat * p.pas_degres, 80, 100);
+    if (ext.method === "Switch" && num(ext.temperature_c) !== null) {
+      const t = clamp(num(ext.temperature_c) + direction.heat * p.step_degrees, 80, 100);
       if (t !== num(ext.temperature_c)) levers.push({ lever: "temperature", field: "temperature_c", from: num(ext.temperature_c), to: t });
-    } else if (ext.methode === "Brikka" && num(ext.puissance_feu) !== null && direction.heat < 0) {
+    } else if (ext.method === "Brikka" && num(ext.heat_level) !== null && direction.heat < 0) {
       // On the Brikka, never more heat (v8.74): it overheats the aluminium.
-      const f = clamp(num(ext.puissance_feu) + direction.heat * p.pas_feu, 1, 10);
-      if (f !== num(ext.puissance_feu)) levers.push({ lever: "heat", field: "puissance_feu", from: num(ext.puissance_feu), to: f });
+      const f = clamp(num(ext.heat_level) + direction.heat * p.step_heat, 1, 10);
+      if (f !== num(ext.heat_level)) levers.push({ lever: "heat", field: "heat_level", from: num(ext.heat_level), to: f });
     }
   }
   if (direction.ratio) {
-    if (ext.methode === "Switch" && num(ext.eau_g) > 0) {
-      const e = Math.max(num(ext.dose_g) > 0 ? num(ext.dose_g) * 8 : 60, num(ext.eau_g) + direction.ratio * p.pas_eau_g);
-      if (e !== num(ext.eau_g)) levers.push({ lever: "water", field: "eau_g", from: num(ext.eau_g), to: e });
+    if (ext.method === "Switch" && num(ext.water_g) > 0) {
+      const e = Math.max(num(ext.dose_g) > 0 ? num(ext.dose_g) * 8 : 60, num(ext.water_g) + direction.ratio * p.step_water_g);
+      if (e !== num(ext.water_g)) levers.push({ lever: "water", field: "water_g", from: num(ext.water_g), to: e });
     }
     // No quantified ratio on the Brikka (v8.74): its basket is full and levelled.
   }
@@ -239,9 +239,9 @@ function quantifiedCorrection(ext, steps, ground) {
 function gapAtSameCoffee(cups) {
   const groups = {};
   cups.forEach(e => {
-    if (e.note_sur_10 === "" || e.note_sur_10 === undefined) return;
-    const k = e.cafe_id + "|" + e.recette;
-    (groups[k] = groups[k] || []).push(Number(e.note_sur_10));
+    if (e.score_10 === "" || e.score_10 === undefined) return;
+    const k = e.coffee_id + "|" + e.recipe;
+    (groups[k] = groups[k] || []).push(Number(e.score_10));
   });
   let sum = 0, n = 0;
   Object.values(groups).filter(g => g.length >= 2).forEach(g => {
@@ -261,10 +261,10 @@ const TUNING = (() => {
      information about a pre-ground coffee, not missing data. */
   function signature(e) {
     return [
-      str(e.recette),
-      str(e.mouture_dial),
-      str(e.puissance_feu),
-      Number(e.eau_prechauffee) === 1 ? "1" : "",
+      str(e.recipe),
+      str(e.grind_dial),
+      str(e.heat_level),
+      Number(e.preheated_water) === 1 ? "1" : "",
     ].join("|");
   }
 
@@ -281,7 +281,7 @@ const TUNING = (() => {
      many settings. */
   function forCoffee(coffeeId, extractions, minCups) {
     const threshold = minCups || MIN_CUPS;
-    const rated = extractions.filter(e => e.cafe_id === coffeeId && e.note_sur_10 !== "");
+    const rated = extractions.filter(e => e.coffee_id === coffeeId && e.score_10 !== "");
     if (!rated.length) return { total: 0, average: null, best: null, reason: "aucune" };
 
     const groups = new Map();
@@ -294,16 +294,16 @@ const TUNING = (() => {
     const eligible = [...groups.entries()]
       .filter(([, list]) => list.length >= threshold)
       .map(([s, list]) => {
-        const notes = list.map(e => Number(e.note_sur_10));
+        const notes = list.map(e => Number(e.score_10));
         const avg = average(notes);
         // The reference cup: the best rated of the combination, the most
         // recent on a tie. It is the one we duplicate to remake it.
         const ref = [...list].sort((a, b) =>
-          Number(b.note_sur_10) - Number(a.note_sur_10) ||
-          String(b.date_heure).localeCompare(String(a.date_heure)))[0];
+          Number(b.score_10) - Number(a.score_10) ||
+          String(b.date_time).localeCompare(String(a.date_time)))[0];
         const [recipe, grind, power, preheat] = s.split("|");
         return {
-          signature: s, recette: recipe, grind, power,
+          signature: s, recipe: recipe, grind, power,
           preheat: preheat === "1",
           average: avg, n: list.length, referenceId: ref.id,
         };
@@ -312,7 +312,7 @@ const TUNING = (() => {
 
     const summary = {
       total: rated.length,
-      average: average(rated.map(e => Number(e.note_sur_10))),
+      average: average(rated.map(e => Number(e.score_10))),
       best: eligible[0] || null,
       combinations: groups.size,
       reason: "",
@@ -325,17 +325,17 @@ const TUNING = (() => {
        know whether it holds. */
     if (summary.best && summary.best.average < summary.average - 0.2) {
       const top = [...rated].sort((a, b) =>
-        Number(b.note_sur_10) - Number(a.note_sur_10) ||
-        String(b.date_heure).localeCompare(String(a.date_heure)))[0];
+        Number(b.score_10) - Number(a.score_10) ||
+        String(b.date_time).localeCompare(String(a.date_time)))[0];
       const k = groups.get(signature(top)).length;
       summary.best = null;
-      summary.reason = "sous_moyenne";
-      summary.bestCup = { id: top.id, note: Number(top.note_sur_10), times: k };
+      summary.reason = "below_average";
+      summary.bestCup = { id: top.id, note: Number(top.score_10), times: k };
       summary.missing = Math.max(1, threshold - k);
       return summary;
     }
     if (!summary.best) {
-      summary.reason = rated.length < threshold ? "pas_assez" : "eparpille";
+      summary.reason = rated.length < threshold ? "not_enough" : "scattered";
       // How many cups the most played combination is missing: that is the
       // concrete action, remake the same one rather than trying one more.
       const mostPlayed = [...groups.values()].sort((a, b) => b.length - a.length)[0];
@@ -351,7 +351,7 @@ const TUNING = (() => {
     return coffees
       .map(c => ({ coffee: c, ...forCoffee(c.id, extractions, minCups) }))
       .sort((a, b) => {
-        const byActive = (a.coffee.actif === 0 ? 1 : 0) - (b.coffee.actif === 0 ? 1 : 0);
+        const byActive = (a.coffee.active === 0 ? 1 : 0) - (b.coffee.active === 0 ? 1 : 0);
         if (byActive) return byActive;
         const byFound = (b.best ? 1 : 0) - (a.best ? 1 : 0);
         if (byFound) return byFound;

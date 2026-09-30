@@ -20,7 +20,7 @@
 
   const { $, wireRating, fmtDuration, markRating, setHtml, findRecipe } = UI;
 
-  const UNIT_KEY = "brassage-unite";
+  const UNIT_KEY = "brew-unit";
   const CIRC = 2 * Math.PI * 52;
   let timer = null;
   // True between a stop from this mode and closing: the cup is done, we rate it.
@@ -53,9 +53,9 @@
   function valveAt(steps, i) {
     let state = null;
     for (let k = 0; k <= i; k++) {
-      const t = steps[k].texte;
-      if (/ferm|closed/i.test(t)) state = "fermee";
-      if (/ouvr|open/i.test(t)) state = "ouverte";
+      const t = steps[k].text;
+      if (/ferm|closed/i.test(t)) state = "closed";
+      if (/ouvr|open/i.test(t)) state = "open";
     }
     return state;
   }
@@ -64,17 +64,17 @@
      of a range "2:45 à 3:15"), otherwise the last step plus one minute,
      otherwise the average total time of this recipe. */
   function targetDuration(r, steps) {
-    const m = String(r && r.totalTexte || "").match(/(\d+):(\d{2})/);
+    const m = String(r && r.totalText || "").match(/(\d+):(\d{2})/);
     if (m) return Number(m[1]) * 60 + Number(m[2]);
     if (steps.length) return steps[steps.length - 1].t + 60;
-    const timed = DATA.state.extractions.filter(e => r && e.recette === r.nom && Number(e.temps_total_s) > 0)
-      .map(e => Number(e.temps_total_s));
+    const timed = DATA.state.extractions.filter(e => r && e.recipe === r.name && Number(e.total_time_s) > 0)
+      .map(e => Number(e.total_time_s));
     return timed.length ? Math.round(timed.reduce((a, b) => a + b, 0) / timed.length) : 300;
   }
 
   function elapsed() {
     const c = UI.stopwatch;
-    return (c.accumulated + (c.state === "encours" ? Date.now() - c.startTs : 0)) / 1000;
+    return (c.accumulated + (c.state === "running" ? Date.now() - c.startTs : 0)) / 1000;
   }
 
   function paint() {
@@ -83,10 +83,10 @@
     const steps = all.filter(e => e.t !== null && e.t !== undefined);
     const s = elapsed();
     const duration = targetDuration(r, steps);
-    const coffee = DATA.state.cafes.find(c => c.id === $("#f-coffee").value);
+    const coffee = DATA.state.coffees.find(c => c.id === $("#f-coffee").value);
 
-    $("#br-machine").textContent = [I18N.machine(UI.entry.methode), coffee ? coffee.nom : ""].filter(Boolean).join(" · ");
-    $("#br-title").textContent = r ? I18N.tr(r.nom) : I18N.t("brew_no_recipe");
+    $("#br-machine").textContent = [I18N.machine(UI.entry.method), coffee ? coffee.name : ""].filter(Boolean).join(" · ");
+    $("#br-title").textContent = r ? I18N.tr(r.name) : I18N.t("brew_no_recipe");
     $("#br-dose").textContent = [$("#f-dose").value ? $("#f-dose").value + " g" : "",
       $("#f-water").value ? $("#f-water").value + " " + unit() : ""].filter(Boolean).join(" · ");
     $("#br-time").textContent = fmtDuration(Math.floor(s));
@@ -96,7 +96,7 @@
     steps.forEach((p, k) => { if (p.t <= s) i = k; });
     const current = i >= 0 ? steps[i] : null;
     const nextStep = steps[i + 1] || null;
-    const target = current ? targetOf(current.texte) : null;
+    const target = current ? targetOf(current.text) : null;
     const freeOnly = !steps.length ? all : [];
     if (manualStep >= freeOnly.length) manualStep = Math.max(0, freeOnly.length - 1);
 
@@ -109,7 +109,7 @@
     const frac = arcEnd > arcStart ? Math.min(1, Math.max(0, (s - arcStart) / (arcEnd - arcStart))) : 1;
     $("#br-trace").setAttribute("stroke-dashoffset", String(CIRC * (1 - frac)));
     const remaining = nextStep ? nextStep.t - s : null;
-    $("#br-ring").classList.toggle("imminent", remaining !== null && remaining <= IMMINENT_S && UI.stopwatch.state === "encours");
+    $("#br-ring").classList.toggle("imminent", remaining !== null && remaining <= IMMINENT_S && UI.stopwatch.state === "running");
     $("#br-ring").classList.toggle("exceeded", !nextStep && s > duration);
 
     /* In the centre, HUGE, what to reach on the scale: the only thing to read
@@ -122,7 +122,7 @@
     } else if (freeOnly.length) {
       /* An untimed step that aims for a total (the 4:6, v8.99): the total goes
          huge, like a timed step; otherwise the elapsed time. */
-      const freeTarget = targetOf(freeOnly[manualStep].texte);
+      const freeTarget = targetOf(freeOnly[manualStep].text);
       $("#br-label").textContent = I18N.t("brew_step_n", { n: manualStep + 1, t: freeOnly.length });
       $("#br-target").textContent = freeTarget ? String(freeTarget) : fmtDuration(Math.floor(s));
       $("#br-in").textContent = (freeTarget ? u + " · " : "") + I18N.t("brew_tap");
@@ -135,29 +135,29 @@
 
     // Total poured, out of the cup's water: the carafe, as one bar.
     const water = Number($("#f-water").value) || 0;
-    const poured = steps.slice(0, i + 1).reduce((m, p) => Math.max(m, targetOf(p.texte) || 0), 0);
-    $("#br-total").hidden = !(water > 0 && steps.some(p => targetOf(p.texte)));
+    const poured = steps.slice(0, i + 1).reduce((m, p) => Math.max(m, targetOf(p.text) || 0), 0);
+    $("#br-total").hidden = !(water > 0 && steps.some(p => targetOf(p.text)));
     $("#br-total-level").style.width = (water > 0 ? Math.min(100, (poured / water) * 100) : 0).toFixed(1) + "%";
     $("#br-total-text").textContent = I18N.t("brew_total", { v: poured, e: water, u });
 
     // A step crossed while running: the phone vibrates, on top of the stopwatch beep.
     if (i !== lastStepIdx) {
-      if (i > lastStepIdx && lastStepIdx !== -2 && UI.stopwatch.state === "encours" && navigator.vibrate) { try { navigator.vibrate(160); } catch (e) { /* no vibrator */ } }
+      if (i > lastStepIdx && lastStepIdx !== -2 && UI.stopwatch.state === "running" && navigator.vibrate) { try { navigator.vibrate(160); } catch (e) { /* no vibrator */ } }
       lastStepIdx = i;
     }
 
     /* A step with no volume ("Ouvrir, laisser s'écouler") has no figure to
        aim for: the instruction then goes large. */
-    const manualCue = freeOnly.length ? freeOnly[manualStep].texte : null;
+    const manualCue = freeOnly.length ? freeOnly[manualStep].text : null;
     $("#br-instruction").classList.toggle("alone", (!!current && !target) || !!manualCue);
-    $("#br-instruction").textContent = manualCue || (current ? current.texte
-      : steps.length ? I18N.t("brew_waiting", { text: steps[0].texte }) : I18N.t("brew_no_stages"));
+    $("#br-instruction").textContent = manualCue || (current ? current.text
+      : steps.length ? I18N.t("brew_waiting", { text: steps[0].text }) : I18N.t("brew_no_stages"));
     const valve = i >= 0 ? valveAt(steps, i) : null;
     const badge = $("#br-valve");
-    badge.hidden = !valve || UI.entry.methode !== "Switch";
-    if (valve) badge.textContent = I18N.t(valve === "ouverte" ? "brew_valve_open" : "brew_valve_closed");
+    badge.hidden = !valve || UI.entry.method !== "Switch";
+    if (valve) badge.textContent = I18N.t(valve === "open" ? "brew_valve_open" : "brew_valve_closed");
     $("#br-next").textContent = nextStep
-      ? I18N.t("brew_next", { d: Math.max(0, Math.ceil(nextStep.t - s)), text: nextStep.texte })
+      ? I18N.t("brew_next", { d: Math.max(0, Math.ceil(nextStep.t - s)), text: nextStep.text })
       : current ? I18N.t("timer_last") : freeOnly.length ? I18N.t("brew_tap") : "";
 
     // The timeline: every timed step, the current one highlighted; untimed
@@ -165,8 +165,8 @@
     const untimed = all.filter(e => e.t === null || e.t === undefined);
     setHtml($("#br-timeline"), steps.map((p, k) =>
       '<li class="' + (k === i ? "current" : k < i ? "past" : "") + '"><time>' + fmtDuration(p.t) + "</time><span>" +
-      escapeHtml(p.texte) + "</span></li>").join("") +
-      untimed.map((p, k) => '<li class="free' + (!steps.length ? (k === manualStep ? " current" : k < manualStep ? " past" : "") : "") + '" data-incr="' + k + '"><time aria-hidden="true">' + (k + 1) + "</time><span>" + escapeHtml(p.texte) + "</span></li>").join(""));
+      escapeHtml(p.text) + "</span></li>").join("") +
+      untimed.map((p, k) => '<li class="free' + (!steps.length ? (k === manualStep ? " current" : k < manualStep ? " past" : "") : "") + '" data-incr="' + k + '"><time aria-hidden="true">' + (k + 1) + "</time><span>" + escapeHtml(p.text) + "</span></li>").join(""));
     /* v9.01: the timeline is what Chris reads, the scale under the Switch. The
        current step scrolls to the middle of the screen when it changes, not on every tick. */
     const currentKey = (steps.length ? "p" + i : "l" + manualStep) + "|" + (r ? r.id : "");
@@ -177,12 +177,12 @@
     }
 
     const state = UI.stopwatch.state;
-    $("#br-go").textContent = I18N.t(state === "arrete" ? (s > 0 ? "brew_start_again" : "timer_start")
-      : state === "encours" ? "timer_pause" : "timer_resume");
-    $("#br-stop").hidden = state === "arrete";
-    $("#br-reset").hidden = state === "arrete" && s === 0;
-    $("#br-end").hidden = !(endVisible && state === "arrete");
-    $(".br-buttons").hidden = endVisible && state === "arrete";
+    $("#br-go").textContent = I18N.t(state === "stopped" ? (s > 0 ? "brew_start_again" : "timer_start")
+      : state === "running" ? "timer_pause" : "timer_resume");
+    $("#br-stop").hidden = state === "stopped";
+    $("#br-reset").hidden = state === "stopped" && s === 0;
+    $("#br-end").hidden = !(endVisible && state === "stopped");
+    $(".br-buttons").hidden = endVisible && state === "stopped";
     $(".br-unit [data-unit=ml]").setAttribute("aria-pressed", String(unit() === "ml"));
     $(".br-unit [data-unit=g]").setAttribute("aria-pressed", String(unit() === "g"));
   }
@@ -212,7 +212,7 @@
     $("#modal-brew").addEventListener("close", () => { clearInterval(timer); timer = null; });
     $("#br-go").addEventListener("click", () => {
       // "Start again" after a stop: we restart from zero, not from the old time.
-      if (UI.stopwatch.state === "arrete" && elapsed() > 0) UI.resetStopwatch();
+      if (UI.stopwatch.state === "stopped" && elapsed() > 0) UI.resetStopwatch();
       endVisible = false;
       UI.stopwatchPrimary();
       UI.toggleStopwatch(true);

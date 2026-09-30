@@ -117,7 +117,7 @@ h1, h2, h3, h4, .ref-title, .card h3 {
    scrolling. That is where the timer, the recipe sheet and the coffee sheet live,
    because we READ them while filling in the form, we do not fill them in. */
 /* The page head precedes the grid, so it spans the full width. */
-#screen-saisie .entry-header { max-width: 1400px; margin-inline: auto; }
+#screen-entry .entry-header { max-width: 1400px; margin-inline: auto; }
 /* THE DATE AT THE FORM'S EDGE (v8.62), not above the timer. At the end of the
    page head, it ended up at the top of the right column, far from what
    we fill in, and Chris did not see it. The head keeps the full width (the
@@ -125,13 +125,13 @@ h1, h2, h3, h4, .ref-title, .card h3 {
    the date aligns with the right edge of the form cards. On a single column,
    the head takes the form's width, for the same reason. */
 @media (min-width: 1400px) {
-  #screen-saisie .entry-header { padding-right: calc(380px + var(--gap-cards)); }
+  #screen-entry .entry-header { padding-right: calc(380px + var(--gap-cards)); }
 }
 @media (min-width: 1024px) and (max-width: 1399px) {
-  #screen-saisie .entry-header { max-width: 860px; }
+  #screen-entry .entry-header { max-width: 860px; }
 }
 @media (max-width: 980px) {
-  #screen-saisie .entry-header { max-width: 720px; }
+  #screen-entry .entry-header { max-width: 720px; }
 }
 
 /* The block number: an ink dot. It gives the ORDER, which a title alone does
@@ -248,11 +248,11 @@ h1, h2, h3, h4, .ref-title, .card h3 {
    ================================================================== */
 
 /* The search lives in the page head, right of the title. */
-#screen-historique .field-search { width: 280px; max-width: 100%; margin: 0; }
-#screen-historique .field-search label { display: none; }
+#screen-history .field-search { width: 280px; max-width: 100%; margin: 0; }
+#screen-history .field-search label { display: none; }
 /* The field placeholder was cut off: "Chercher dans les commentair". Shorter,
    it fits, and the screen is already called Historique. */
-#screen-historique .field-search input { text-overflow: ellipsis; }
+#screen-history .field-search input { text-overflow: ellipsis; }
 .history-filters .field label {
   margin: 0;
   font-size: 0.76rem;
@@ -360,7 +360,7 @@ h1, h2, h3, h4, .ref-title, .card h3 {
 /* Section titles of the guide and preferences switch to serif: they are
    content headings, not block subheadings. */
 #screen-guide h3,
-#screen-parametres h3 {
+#screen-settings h3 {
   font-family: var(--serif);
   font-weight: 400;
   font-size: 1.3rem;
@@ -436,8 +436,8 @@ h1, h2, h3, h4, .ref-title, .card h3 {
      hid on phones those of the Guide and the two-cup comparison. */
   /* The TABLE is hidden, not its frame (v8.79): the cards and the "aucune
      extraction" message live in the same frame, and hiding it emptied the history. */
-  #screen-historique .table-container > .table-history { display: none; }
-  #screen-historique .table-container { background: none; border: 0; box-shadow: none; overflow: visible; }
+  #screen-history .table-container > .table-history { display: none; }
+  #screen-history .table-container { background: none; border: 0; box-shadow: none; overflow: visible; }
   .h-cards { display: flex; flex-direction: column; gap: 10px; }
 }
 
@@ -614,9 +614,9 @@ h1, h2, h3, h4, .ref-title, .card h3 {
     border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent-strong);
   }
   .h-on span { font-size: 1rem; line-height: 1; }
-  #screen-historique:not(.filters-open) .history-filters > .field,
-  #screen-historique:not(.filters-open) .history-filters-actions,
-  #screen-historique:not(.filters-open) #h-export { display: none; }
+  #screen-history:not(.filters-open) .history-filters > .field,
+  #screen-history:not(.filters-open) .history-filters-actions,
+  #screen-history:not(.filters-open) #h-export { display: none; }
   /* The summary on one line: four figures are enough, not four blocks. */
   .history-summary { padding: 10px 14px; gap: 4px 16px; }
   .summary-item { flex-direction: row; align-items: baseline; gap: 5px; padding: 0; border-left: none; }
@@ -899,8 +899,8 @@ button.sh-to-count { white-space: nowrap; font: inherit; font-size: 0.78rem; fon
 .jn-all { justify-self: start; }
 
 /* ---------- L5 (v8.94): the Guide, a library ---------- */
-#gp-accueil { display: grid; gap: 18px; }
-#gp-accueil[hidden] { display: none; }
+#gp-home { display: grid; gap: 18px; }
+#gp-home[hidden] { display: none; }
 .ga-search { display: grid; gap: 8px; }
 #guide-search { font: inherit; font-size: 1rem; padding: 13px 16px; border-radius: 14px; border: 1px solid var(--lines-field, var(--lines)); background: var(--panel); color: var(--ink); width: 100%; }
 #guide-search:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

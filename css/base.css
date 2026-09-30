@@ -145,7 +145,7 @@
 
 /* THE TWO DARK THEMES (v8.34), picked by Chris from a mockup on 19
    September 2026, replacing the brown "Espresso" he did not like at all.
-   data-theme="sombre" stays the FAMILY switch: every rule written for
+   data-theme="dark" stays the FAMILY switch: every rule written for
    dark keeps applying to both. data-palette picks the palette, Graphite
    by default. The theme button cycles light, Graphite, Nuit.
 
@@ -158,7 +158,7 @@
 
    GRAPHITE: near black, a barely warm neutral, a single accent, the crema
    of an espresso. The "modern app" direction. */
-html[data-theme="sombre"] {
+html[data-theme="dark"] {
   --bg: #111113;
   --rail: #141416;
   --bg-gradient: radial-gradient(1100px 520px at 85% -8%, rgba(232, 187, 133, 0.07) 0%, #111113 60%);
@@ -220,7 +220,7 @@ html[data-theme="sombre"] {
    moka pot. Cold below, warm above: the sharpest contrast. The Brikka
    blue goes up one more notch so it does not melt into the background.
    Only redefines what changes, the rest comes from the Graphite block. */
-html[data-theme="sombre"][data-palette="nuit"] {
+html[data-theme="dark"][data-palette="night"] {
   --bg: #0b1017;
   --rail: #0e141d;
   --bg-gradient: radial-gradient(1100px 520px at 88% -10%, rgba(91, 156, 240, 0.10) 0%, #0b1017 60%);
@@ -267,7 +267,7 @@ html[data-theme="sombre"][data-palette="nuit"] {
 /* Light "Comptoir" theme. Warm paper, espresso ink, terracotta accent.
    Values followed by a ratio were darkened relative to the mockup to
    hold 4.5:1 on the darkest surface they sit on. */
-html[data-theme="clair"] {
+html[data-theme="light"] {
   --bg: #f4ede3;
   --bg-gradient: radial-gradient(1200px 600px at 80% -10%, #faf4ea 0%, #f4ede3 55%);
   --panel: #fcf8f2;
@@ -497,9 +497,9 @@ button { font-family: inherit; }
   background: var(--bar-neutral);
 }
 .rail-point[data-state="ok"] { background: var(--accent); }
-.rail-point[data-state="encours"] { background: var(--accent); opacity: 0.55; }
-.rail-point[data-state="erreur"],
-.rail-point[data-state="session-expiree"] { background: var(--danger); }
+.rail-point[data-state="syncing"] { background: var(--accent); opacity: 0.55; }
+.rail-point[data-state="error"],
+.rail-point[data-state="session-expired"] { background: var(--danger); }
 
 .rail-badges { display: flex; flex-wrap: wrap; gap: 6px; }
 .rail-badges:empty { display: none; }
@@ -577,7 +577,7 @@ button { font-family: inherit; }
    while its neighbours were 993, and the jump showed on every tab
    change. Only the LINE LENGTH of text is capped, by .screen-intro and
    paragraphs, not the frame. */
-#screen-parametres .card { margin-bottom: 18px; }
+#screen-settings .card { margin-bottom: 18px; }
 .param-help { color: var(--muted); font-size: 0.85rem; margin: 0 0 12px; max-width: 72ch; }
 .param-table-zone { overflow-x: auto; margin-bottom: 14px; }
 .param-table { min-width: 560px; }

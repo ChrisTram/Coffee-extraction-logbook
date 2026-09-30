@@ -23,7 +23,7 @@ const GRIND = (() => {
   // The dial notation is computed from the clicks, capped at the 3.0.0 stop.
   function m(id, label, minU, maxU, minC, maxC) {
     return {
-      id, nom: label, minU, maxU, minC, maxC,
+      id, name: label, minU, maxU, minC, maxC,
       dialText: dialFromClicks(Math.min(minC, MAX_CLICKS)) + " à " + dialFromClicks(Math.min(maxC, MAX_CLICKS)),
     };
   }
@@ -47,13 +47,13 @@ const GRIND = (() => {
 
   // Particle size bands, in microns.
   const GRIND_BANDS = [
-    { nom: "Extra Fine",    min: 0,    max: 200 },
-    { nom: "Fine",          min: 200,  max: 400 },
-    { nom: "Medium Fine",   min: 400,  max: 600 },
-    { nom: "Medium",        min: 600,  max: 800 },
-    { nom: "Medium Coarse", min: 800,  max: 1000 },
-    { nom: "Coarse",        min: 1000, max: 1200 },
-    { nom: "Extra Coarse",  min: 1200, max: Infinity },
+    { name: "Extra Fine",    min: 0,    max: 200 },
+    { name: "Fine",          min: 200,  max: 400 },
+    { name: "Medium Fine",   min: 400,  max: 600 },
+    { name: "Medium",        min: 600,  max: 800 },
+    { name: "Medium Coarse", min: 800,  max: 1000 },
+    { name: "Coarse",        min: 1000, max: 1200 },
+    { name: "Extra Coarse",  min: 1200, max: Infinity },
   ];
 
   // Chris's reference settings. Chart colours:
@@ -83,7 +83,7 @@ const GRIND = (() => {
     const click = parseInt(res[3], 10);
     const clicks = rotation * 50 + number * 5 + click;
     if (clicks > MAX_CLICKS) return null; // beyond the 3.0.0 stop
-    return { rotation, numero: number, click, clicks, microns: clicks * MICRONS_PER_CLICK };
+    return { rotation, number: number, click, clicks, microns: clicks * MICRONS_PER_CLICK };
   }
 
   function bandOf(microns) {

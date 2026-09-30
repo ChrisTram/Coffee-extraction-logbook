@@ -153,7 +153,7 @@ const CHARTS = (() => {
       return r >= 0 && tints[r] ? tints[r] : neutral;
     };
     const tiles = Array.from({ length: maxCups }, (_, k) => ({
-      type: "bar", label: I18N.t("chart_cups_per_day"), isTile: k + 1, yAxisID: "y", stack: "tasses",
+      type: "bar", label: I18N.t("chart_cups_per_day"), isTile: k + 1, yAxisID: "y", stack: "cups",
       data: counts.map(c => (Number(c) > k ? 1 : null)),
       // The hairline between two blocks is the card colour, not a series colour.
       backgroundColor: counts.map((_, i) => tint(i, k)), borderColor: borderTint,
@@ -309,7 +309,7 @@ const CHARTS = (() => {
         plugins: {
           tooltip: { callbacks: { label: ctx => {
             const p = ctx.raw;
-            return " " + (p.nom || "") + " : " + p.x + " " + unit + ", note " + p.y;
+            return " " + (p.name || "") + " : " + p.x + " " + unit + ", note " + p.y;
           } } },
         },
         scales: {
@@ -502,10 +502,10 @@ const CHARTS = (() => {
         const isOwn = id === "brikka" || id === "switch";
         boxes.push({ id, minU: m.minU, maxU: m.maxU });
         svg += '<g class="dg-box' + (isOwn ? " dg-box-own" : "") + '" data-box="' + id + '" data-tip="' +
-          I18N.method(m.nom) + " : " + I18N.t("range_tip_short", { min: m.minU, max: m.maxU, minC: m.minC, maxC: m.maxC, dial: I18N.dialRange(m.dialText) }) + '">' +
+          I18N.method(m.name) + " : " + I18N.t("range_tip_short", { min: m.minU, max: m.maxU, minC: m.minC, maxC: m.maxC, dial: I18N.dialRange(m.dialText) }) + '">' +
           '<rect x="' + x1 + '" y="' + y + '" width="' + Math.max(4, x2 - x1) + '" height="' + boxH + '" rx="4"' +
           (isOwn ? ' style="stroke:' + (id === "brikka" ? C_BRIKKA : C_SWITCH) + '"' : "") + "></rect>" +
-          '<text x="' + ((x1 + x2) / 2) + '" y="' + (y + boxH / 2 + 4) + '" text-anchor="middle" class="dg-name">' + I18N.method(m.nom) + "</text></g>";
+          '<text x="' + ((x1 + x2) / 2) + '" y="' + (y + boxH / 2 + 4) + '" text-anchor="middle" class="dg-name">' + I18N.method(m.name) + "</text></g>";
       });
     });
 
@@ -514,7 +514,7 @@ const CHARTS = (() => {
       const bandEnd = b.max === Infinity ? maxU : b.max;
       const x1 = x(b.min), x2 = x(bandEnd);
       svg += '<rect x="' + x1 + '" y="' + bandsY + '" width="' + (x2 - x1) + '" height="' + bandsH + '" class="dg-band"></rect>' +
-        '<text x="' + ((x1 + x2) / 2) + '" y="' + (bandsY + bandsH / 2 + 4) + '" text-anchor="middle" class="dg-band-name">' + b.nom + "</text>";
+        '<text x="' + ((x1 + x2) / 2) + '" y="' + (bandsY + bandsH / 2 + 4) + '" text-anchor="middle" class="dg-band-name">' + b.name + "</text>";
     });
     for (let u = 0; u <= maxU; u += 200) {
       svg += '<text x="' + x(u) + '" y="' + (bandsY + bandsH + 18) + '" text-anchor="middle" class="dg-axis">' + u + (u === maxU ? " µm" : "") + "</text>";
@@ -640,14 +640,14 @@ const CHARTS = (() => {
     const svg = document.getElementById(o.svg);
     if (!svg) return 0;
     const byTag = {};
-    rated.forEach(e => String(e.descripteurs || "").split("|").filter(Boolean).forEach(t => {
-      (byTag[t] = byTag[t] || []).push(Number(e.note_sur_10));
+    rated.forEach(e => String(e.descriptors || "").split("|").filter(Boolean).forEach(t => {
+      (byTag[t] = byTag[t] || []).push(Number(e.score_10));
     }));
     const mean = a => a.reduce((s, x) => s + x, 0) / a.length;
     const families = DESCRIPTOR_GROUPS.map(g => {
       const tastes = g.tags.filter(t => byTag[t]).map(t => ({ tag: t, n: byTag[t].length, note: mean(byTag[t]) }));
       const n = tastes.reduce((s, x) => s + x.n, 0);
-      return { nom: g.nom, tastes, n, note: n ? tastes.reduce((s, x) => s + x.n * x.note, 0) / n : 0 };
+      return { name: g.name, tastes, n, note: n ? tastes.reduce((s, x) => s + x.n * x.note, 0) / n : 0 };
     }).filter(f => f.n > 0);
     const total = families.reduce((s, f) => s + f.n, 0);
     const detail = document.getElementById(o.detail), reading = document.getElementById(o.reading);
@@ -658,7 +658,7 @@ const CHARTS = (() => {
       return 0;
     }
     const mostTicked = families.slice().sort((a, b) => b.n - a.n)[0];
-    if (!families.some(f => f.nom === wheelChoice.get(o.svg))) wheelChoice.set(o.svg, mostTicked.nom);
+    if (!families.some(f => f.name === wheelChoice.get(o.svg))) wheelChoice.set(o.svg, mostTicked.name);
 
     const C = 150, TURN = Math.PI * 2, GAP = 0.01;
     const opacity = rating => Math.max(0.16, Math.min(1,
@@ -679,29 +679,29 @@ const CHARTS = (() => {
         // A family alone makes the full circle: we leave a gap so that
         // the arc stays an arc and does not close on itself.
         const af = Math.min((f.n / total) * TURN, TURN - 0.001);
-        const isActive = f.nom === chosen;
-        const familyName = I18N.group(f.nom);
+        const isActive = f.name === chosen;
+        const familyName = I18N.group(f.name);
         html += '<path d="' + sector(46, 92, a + GAP, a + af - GAP) + '" class="wheel-family' + (isActive ? " chosen" : "") +
-          '" data-family="' + escapeHtml(f.nom) + '" tabindex="0" role="button" aria-pressed="' + isActive +
+          '" data-family="' + escapeHtml(f.name) + '" tabindex="0" role="button" aria-pressed="' + isActive +
           '" aria-label="' + escapeHtml(familyName + ", " + fmtRating(f.note)) + '"><title>' + escapeHtml(familyName) + "</title></path>";
         let b = a;
         f.tastes.forEach(g => {
           const ag = (g.n / total) * TURN;
           html += '<path d="' + sector(96, isActive ? 146 : 138, b + GAP, b + ag - GAP) + '" class="wheel-taste" style="fill-opacity:' +
-            opacity(g.note).toFixed(2) + '" data-family="' + escapeHtml(f.nom) + '"><title>' +
+            opacity(g.note).toFixed(2) + '" data-family="' + escapeHtml(f.name) + '"><title>' +
             escapeHtml(I18N.tag(g.tag) + " : " + fmtRating(g.note) + ", " + I18N.t("wheel_times", { n: g.n })) + "</title></path>";
           b += ag;
         });
         a += af;
       });
-      const f = families.find(x => x.nom === chosen);
-      const brief = I18N.group(f.nom);
+      const f = families.find(x => x.name === chosen);
+      const brief = I18N.group(f.name);
       html += '<text x="150" y="146" text-anchor="middle" class="wheel-center-name">' +
         escapeHtml(brief.length > 14 ? brief.split(" ")[0] : brief) + "</text>" +
         '<text x="150" y="170" text-anchor="middle" class="wheel-center-rating">' + fmtRating(f.note) + "</text>";
       svg.innerHTML = html;
       if (detail) {
-        detail.innerHTML = '<h4 class="wheel-title">' + escapeHtml(I18N.group(f.nom)) + "</h4>" +
+        detail.innerHTML = '<h4 class="wheel-title">' + escapeHtml(I18N.group(f.name)) + "</h4>" +
           f.tastes.slice().sort((x, y) => y.note - x.note).map(g =>
             '<div class="wheel-row"><span>' + escapeHtml(I18N.tag(g.tag)) + "</span><span>" +
             I18N.t("wheel_times", { n: g.n }) + "</span><b>" + fmtRating(g.note) + "</b></div>").join("");
@@ -710,8 +710,8 @@ const CHARTS = (() => {
     paint();
     if (reading) {
       const better = families.filter(x => x.n >= 3).sort((x, y) => y.note - x.note)[0];
-      reading.textContent = I18N.t(better && better.nom !== mostTicked.nom ? "wheel_reading" : "wheel_reading_alone", {
-        f: I18N.group(mostTicked.nom), n: mostTicked.n, m: better ? I18N.group(better.nom) : "", x: better ? fmtRating(better.note) : "",
+      reading.textContent = I18N.t(better && better.name !== mostTicked.name ? "wheel_reading" : "wheel_reading_alone", {
+        f: I18N.group(mostTicked.name), n: mostTicked.n, m: better ? I18N.group(better.name) : "", x: better ? fmtRating(better.note) : "",
       });
     }
     // Wired ONCE per wheel: the SVG survives re-renders, only its content changes.

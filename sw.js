@@ -25,7 +25,7 @@
  *    logout stop working.
  */
 
-const VERSION = "9.05";
+const VERSION = "9.06";
 const CACHE_NAME = "carnet-extraction";
 
 const versioned = url => url + "?v=" + VERSION;
@@ -57,6 +57,8 @@ const PRECACHE_URLS = [
   // No longer loaded by a script tag since v7.54, but still precached:
   // on-demand loading must work offline.
   "./js/vendor/chart.umd.js",
+  // First script of the page: it translates the names stored before v9.06.
+  "./js/legacy-names.js",
   "./js/tools.js",
   "./js/i18n.js",
   // Loaded on demand since v7.55, but precached so the language

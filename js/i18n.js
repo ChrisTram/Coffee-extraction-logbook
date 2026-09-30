@@ -15,7 +15,7 @@ const I18N = (() => {
      prepare(), called at startup, decides once the bundle has arrived. */
   let wantedLanguage = "fr";
   try {
-    const l = localStorage.getItem("langue");
+    const l = localStorage.getItem("lang");
     if (l === "en") wantedLanguage = "en";
   } catch (e) { /* unavailable */ }
 
@@ -691,7 +691,7 @@ const I18N = (() => {
     toast_demo: { fr: "Démonstration chargée" },
     toast_reset: { fr: "Données réinitialisées" },
     toast_folder: { fr: "Dossier \"{n}\" lié" },
-    toast_export_all: { fr: "Les six tables en CSV et le fichier complet carnet-complet.json téléchargés" },
+    toast_export_all: { fr: "Les six tables en CSV et le fichier complet logbook-full.json téléchargés" },
     toast_export_filter: { fr: "CSV du filtre courant téléchargé" },
     toast_import: { fr: "{n} lignes importées dans la table {t}" },
     toast_copied: { fr: "Message copié" },
@@ -731,13 +731,13 @@ const I18N = (() => {
     toast_quick: { fr: "Extraction enregistrée : {r}, note {n}" },
     toast_quick_unrated: { fr: "Extraction enregistrée : {r}, pas encore notée" },
     toast_link_failed: { fr: "Liaison impossible" },
-    table_cafes: { fr: "cafés" },
+    table_coffees: { fr: "cafés" },
     table_extractions: { fr: "extractions" },
-    table_recettes: { fr: "recettes" },
-    table_tasses: { fr: "tasses" },
-    table_achats: { fr: "sachets" },
-    table_reglages: { fr: "réglages" },
-    table_tout: { fr: "toutes les tables" },
+    table_recipes: { fr: "recettes" },
+    table_cups: { fr: "tasses" },
+    table_purchases: { fr: "sachets" },
+    table_settings: { fr: "réglages" },
+    table_all: { fr: "toutes les tables" },
 
     confirm_delete: { fr: "Supprimer cette extraction ?" },
     confirm_demo: { fr: "Remplacer les données actuelles par la démonstration ? (Exporte les d'abord si tu veux les garder.)" },
@@ -1015,7 +1015,7 @@ const I18N = (() => {
 
   function applyLanguage(next) {
     lang = next;
-    try { localStorage.setItem("langue", lang); } catch (e) { /* unavailable */ }
+    try { localStorage.setItem("lang", lang); } catch (e) { /* unavailable */ }
     applyStatic();
     subscribers.forEach(fn => { try { fn(); } catch (e) { console.error(e); } });
   }

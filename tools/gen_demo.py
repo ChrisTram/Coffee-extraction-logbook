@@ -7,51 +7,51 @@ random.seed(42)
 TODAY = datetime.date(2026, 8, 9)
 START = TODAY - datetime.timedelta(days=41)  # 6 weeks
 
-CAFES = [
+COFFEES = [
     {
-        "id": "c1", "nom": "Trung Nguyên Sáng Tạo 4", "torrefacteur": "Trung Nguyên",
-        "origine": "Buôn Ma Thuột, Vietnam", "espece": "Blend Arabica, Robusta, Excelsa, Catimor",
-        "procede": "Torréfaction traditionnelle avec additifs", "torrefaction": "Foncée",
-        "deja_moulu": 1, "pourcentage_cafe_reel": 82, "tag": "café aromatisé",
-        "notes_annoncees": "Corps rond, sucré, faible acidité, arôme persistant. Étiquette : café 82 pour cent, soja torréfié, sirop de sucre brun, substitut de beurre, arômes de synthèse, beurre.",
-        "format_grammes": 340, "prix_vnd": 148800, "date_torrefaction": "2026-05-20",
-        "machine_recommandee": "Brikka", "recette_recommandee": "Brikka classique", "actif": 1,
+        "id": "c1", "name": "Trung Nguyên Sáng Tạo 4", "roaster": "Trung Nguyên",
+        "origin": "Buôn Ma Thuột, Vietnam", "species": "Blend Arabica, Robusta, Excelsa, Catimor",
+        "process": "Torréfaction traditionnelle avec additifs", "roast": "Foncée",
+        "pre_ground": 1, "real_coffee_pct": 82, "tag": "café aromatisé",
+        "roaster_notes": "Corps rond, sucré, faible acidité, arôme persistant. Étiquette : café 82 pour cent, soja torréfié, sirop de sucre brun, substitut de beurre, arômes de synthèse, beurre.",
+        "bag_size_g": 340, "price_vnd": 148800, "roast_date": "2026-05-20",
+        "recommended_method": "Brikka", "recommended_recipe": "Brikka classique", "active": 1,
     },
     {
-        "id": "c2", "nom": "Bana Cofe G4", "torrefacteur": "Bana Cofe",
-        "origine": "Vietnam", "espece": "Robusta",
-        "procede": "Rang bơ", "torrefaction": "Foncée",
-        "deja_moulu": 1, "pourcentage_cafe_reel": 100, "tag": "",
-        "notes_annoncees": "Beurre, caramel, sucre roux, déjà moulu",
-        "format_grammes": 250, "prix_vnd": 87000, "date_torrefaction": "2026-06-15",
-        "machine_recommandee": "Brikka", "recette_recommandee": "Brikka classique", "actif": 1,
+        "id": "c2", "name": "Bana Cofe G4", "roaster": "Bana Cofe",
+        "origin": "Vietnam", "species": "Robusta",
+        "process": "Rang bơ", "roast": "Foncée",
+        "pre_ground": 1, "real_coffee_pct": 100, "tag": "",
+        "roaster_notes": "Beurre, caramel, sucre roux, déjà moulu",
+        "bag_size_g": 250, "price_vnd": 87000, "roast_date": "2026-06-15",
+        "recommended_method": "Brikka", "recommended_recipe": "Brikka classique", "active": 1,
     },
     {
-        "id": "c3", "nom": "Cà Phê Mít Liberica", "torrefacteur": "Fine Coffee Agency",
-        "origine": "Vietnam", "espece": "Liberica",
-        "procede": "Natural", "torrefaction": "Medium",
-        "deja_moulu": 0, "pourcentage_cafe_reel": 100, "tag": "",
-        "notes_annoncees": "Jacquier mûr, cacao, amande",
-        "format_grammes": 200, "prix_vnd": 280000, "date_torrefaction": "2026-06-20",
-        "machine_recommandee": "Les deux", "recette_recommandee": "The Coffee Chronicler's Recipe", "actif": 1,
+        "id": "c3", "name": "Cà Phê Mít Liberica", "roaster": "Fine Coffee Agency",
+        "origin": "Vietnam", "species": "Liberica",
+        "process": "Natural", "roast": "Medium",
+        "pre_ground": 0, "real_coffee_pct": 100, "tag": "",
+        "roaster_notes": "Jacquier mûr, cacao, amande",
+        "bag_size_g": 200, "price_vnd": 280000, "roast_date": "2026-06-20",
+        "recommended_method": "Les deux", "recommended_recipe": "The Coffee Chronicler's Recipe", "active": 1,
     },
     {
-        "id": "c4", "nom": "Là Việt Balanced", "torrefacteur": "Là Việt",
-        "origine": "Đà Lạt, Vietnam", "espece": "Arabica",
-        "procede": "Lavé", "torrefaction": "Medium",
-        "deja_moulu": 0, "pourcentage_cafe_reel": 100, "tag": "café de référence",
-        "notes_annoncees": "100 pour cent arabica, medium, Đà Lạt, rien d'ajouté",
-        "format_grammes": 250, "prix_vnd": 125000, "date_torrefaction": "2026-06-22",
-        "machine_recommandee": "Les deux", "recette_recommandee": "The Coffee Chronicler's Recipe", "actif": 1,
+        "id": "c4", "name": "Là Việt Balanced", "roaster": "Là Việt",
+        "origin": "Đà Lạt, Vietnam", "species": "Arabica",
+        "process": "Lavé", "roast": "Medium",
+        "pre_ground": 0, "real_coffee_pct": 100, "tag": "café de référence",
+        "roaster_notes": "100 pour cent arabica, medium, Đà Lạt, rien d'ajouté",
+        "bag_size_g": 250, "price_vnd": 125000, "roast_date": "2026-06-22",
+        "recommended_method": "Les deux", "recommended_recipe": "The Coffee Chronicler's Recipe", "active": 1,
     },
     {
-        "id": "c5", "nom": "Là Việt Strong", "torrefacteur": "Là Việt",
-        "origine": "Đà Lạt, Vietnam", "espece": "Blend arabica et robusta",
-        "procede": "Classique", "torrefaction": "Foncée",
-        "deja_moulu": 0, "pourcentage_cafe_reel": 100, "tag": "",
-        "notes_annoncees": "Corps fort, amertume marquée",
-        "format_grammes": 250, "prix_vnd": 125000, "date_torrefaction": "2026-06-10",
-        "machine_recommandee": "Brikka", "recette_recommandee": "Brikka classique", "actif": 0,
+        "id": "c5", "name": "Là Việt Strong", "roaster": "Là Việt",
+        "origin": "Đà Lạt, Vietnam", "species": "Blend arabica et robusta",
+        "process": "Classique", "roast": "Foncée",
+        "pre_ground": 0, "real_coffee_pct": 100, "tag": "",
+        "roaster_notes": "Corps fort, amertume marquée",
+        "bag_size_g": 250, "price_vnd": 125000, "roast_date": "2026-06-10",
+        "recommended_method": "Brikka", "recommended_recipe": "Brikka classique", "active": 0,
     },
 ]
 
@@ -239,45 +239,45 @@ for day in active_days:
                 comment = random.choice(COMMENTS_LATE)
 
         extractions.append({
-            "id": f"e{eid}", "date_heure": dt, "cafe_id": coffee, "methode": method,
-            "recette": recipe, "dose_g": dose, "eau_g": water, "mouture_dial": dial,
-            "temperature_c": temp, "temps_total_s": total, "temps_ecoulement_s": drawdown,
-            "volume_extrait_ml": vol, "eau_ajoutee_ml": added_water, "lait_ml": milk,
-            "agitation_nb": agitation, "tasse": cup, "eau_prechauffee": preheated,
-            "note_sur_10": score, "diagnostic": diag,
-            "descripteurs": "|".join(tags), "commentaire": comment,
+            "id": f"e{eid}", "date_time": dt, "coffee_id": coffee, "method": method,
+            "recipe": recipe, "dose_g": dose, "water_g": water, "grind_dial": dial,
+            "temperature_c": temp, "total_time_s": total, "flow_time_s": drawdown,
+            "yield_ml": vol, "added_water_ml": added_water, "milk_ml": milk,
+            "stir_count": agitation, "cup": cup, "preheated_water": preheated,
+            "score_10": score, "diagnostic": diag,
+            "descriptors": "|".join(tags), "comment": comment,
         })
 
 print(f"{len(extractions)} brews over {len(active_days)} days")
 
-CAFE_COLS = ["id", "nom", "torrefacteur", "origine", "espece", "procede", "torrefaction",
-             "deja_moulu", "pourcentage_cafe_reel", "tag", "notes_annoncees", "format_grammes",
-             "prix_vnd", "date_torrefaction", "machine_recommandee", "recette_recommandee",
-             "date_ajout", "actif"]
-EXT_COLS = ["id", "date_heure", "cafe_id", "methode", "recette", "dose_g", "eau_g",
-            "mouture_dial", "temperature_c", "temps_total_s", "temps_ecoulement_s",
-            "volume_extrait_ml", "eau_ajoutee_ml", "lait_ml", "agitation_nb", "tasse", "eau_prechauffee",
-            "note_sur_10", "diagnostic", "descripteurs", "commentaire"]
+COFFEE_COLS = ["id", "name", "roaster", "origin", "species", "process", "roast",
+             "pre_ground", "real_coffee_pct", "tag", "roaster_notes", "bag_size_g",
+             "price_vnd", "roast_date", "recommended_method", "recommended_recipe",
+             "added_date", "active"]
+EXT_COLS = ["id", "date_time", "coffee_id", "method", "recipe", "dose_g", "water_g",
+            "grind_dial", "temperature_c", "total_time_s", "flow_time_s",
+            "yield_ml", "added_water_ml", "milk_ml", "stir_count", "cup", "preheated_water",
+            "score_10", "diagnostic", "descriptors", "comment"]
 
 def to_csv(rows, cols):
     buf = io.StringIO()
     w = csv.DictWriter(buf, fieldnames=cols, lineterminator="\n")
     w.writeheader()
     for r in rows:
-        # date_ajout stays empty in the demo: the site migration derives it
+        # added_date stays empty in the demo: the site migration derives it
         # from each coffee's first brew on load.
         w.writerow({k: r.get(k, "") for k in cols})
     return buf.getvalue()
 
-cafes_csv = to_csv(CAFES, CAFE_COLS)
+coffees_csv = to_csv(COFFEES, COFFEE_COLS)
 ext_csv = to_csv(extractions, EXT_COLS)
 
-for txt, name in [(cafes_csv, "cafes"), (ext_csv, "extractions")]:
+for txt, name in [(coffees_csv, "coffees"), (ext_csv, "extractions")]:
     assert "\u2013" not in txt and "\u2014" not in txt, name
     assert "`" not in txt, name
 
-with open("/home/claude/tracker/demo/cafes-demo.csv", "w", encoding="utf-8") as f:
-    f.write(cafes_csv)
+with open("/home/claude/tracker/demo/coffees-demo.csv", "w", encoding="utf-8") as f:
+    f.write(coffees_csv)
 with open("/home/claude/tracker/demo/extractions-demo.csv", "w", encoding="utf-8") as f:
     f.write(ext_csv)
 
@@ -285,14 +285,14 @@ with open("/home/claude/tracker/js/demo-data.js", "w", encoding="utf-8") as f:
     f.write("// Embedded demo dataset. Identical to the files in the demo folder.\n")
     f.write("// Generated once, do not edit by hand: go through the CSVs.\n")
     f.write('"use strict";\n')
-    f.write("const DEMO_CAFES_CSV = `" + cafes_csv + "`;\n")
+    f.write("const DEMO_COFFEES_CSV = `" + coffees_csv + "`;\n")
     f.write("const DEMO_EXTRACTIONS_CSV = `" + ext_csv + "`;\n")
 
 from collections import Counter
-scores_s1 = [e["note_sur_10"] for e in extractions if e["date_heure"] < (START + datetime.timedelta(days=10)).isoformat()]
-scores_s6 = [e["note_sur_10"] for e in extractions if e["date_heure"] >= (TODAY - datetime.timedelta(days=10)).isoformat()]
+scores_s1 = [e["score_10"] for e in extractions if e["date_time"] < (START + datetime.timedelta(days=10)).isoformat()]
+scores_s6 = [e["score_10"] for e in extractions if e["date_time"] >= (TODAY - datetime.timedelta(days=10)).isoformat()]
 print("average score start:", round(sum(scores_s1)/len(scores_s1), 2), "end:", round(sum(scores_s6)/len(scores_s6), 2))
-print(Counter(e["methode"] for e in extractions))
-print(Counter(e["recette"] for e in extractions))
-bana_switch = [e for e in extractions if e["cafe_id"] in ("c1", "c2") and e["methode"] == "Switch"]
+print(Counter(e["method"] for e in extractions))
+print(Counter(e["recipe"] for e in extractions))
+bana_switch = [e for e in extractions if e["coffee_id"] in ("c1", "c2") and e["method"] == "Switch"]
 print("c1/c2 in the Switch:", len(bana_switch))

@@ -22,28 +22,28 @@ const DATA = (() => {
     stampRow, carryTimestamps, newId, localDateToday, clockNow, setClockOffset,
     normalizeCoffee, normalizeExtraction, normalizeSettings, normalizeRecipe, normalizePurchase,
     normalizeCup, recipeToRow, defaultRecipes, defaultCups } = DATA_SCHEMA;
-  const { openDB, kvGet, kvSet, kvSetMany, checkPermission, writeFile, readFile, download } = DATA_STORE;
+  const { openDB, kvGet, kvSet, kvSetMany, kvDeleteMany, checkPermission, writeFile, readFile, download } = DATA_STORE;
 
   const state = {
-    cafes: [],
+    coffees: [],
     extractions: [],
-    recettes: [],
-    tasses: [],
+    recipes: [],
+    cups: [],
     // One purchase = one bag. Without this table, a re-bought coffee kept ONE
     // single roast date, so freshness lied from the second bag on, and the
     // remaining stock could not be computed.
-    achats: [],
-    reglages: [],
+    purchases: [],
+    settings: [],
     dirHandle: null,
     fsAvailable: typeof window !== "undefined" && "showDirectoryPicker" in window,
     demoActive: false,
 
-    // Sync between devices. `tombes` remembers deletions
+    // Sync between devices. `tombstones` remembers deletions
     // ({table: {id: timestamp}}): without them, a row deleted on the phone
     // would come back at the next exchange with the desktop, which still has it.
     // Outside the CSV files: this is sync machinery, not coffee data.
-    tombes: typeof SYNC === "undefined" ? {} : SYNC.emptyTombstones(),
-    syncState: "inconnu",
+    tombstones: typeof SYNC === "undefined" ? {} : SYNC.emptyTombstones(),
+    syncState: "unknown",
     syncedAt: null,
     // Size of the document on the server and the cap it accepts, in bytes.
     // Returned on every exchange; the Data panel warns past the halfway mark.
@@ -60,8 +60,8 @@ const DATA = (() => {
   /* Lays a tombstone. The date is used to decide against a possible rewrite
      of the same row on the other device. */
   function markDeleted(table, id) {
-    if (!state.tombes[table]) state.tombes[table] = {};
-    state.tombes[table][id] = clockNow();
+    if (!state.tombstones[table]) state.tombstones[table] = {};
+    state.tombstones[table][id] = clockNow();
   }
 
   /* THE REVISION (v8.75): it changes with every notification that touches the
@@ -79,7 +79,7 @@ const DATA = (() => {
   function dataRevision() { return revision; }
 
   function currentSettings() {
-    return state.reglages[0] || normalizeSettings({});
+    return state.settings[0] || normalizeSettings({});
   }
 
   /* Writes the settings and makes them travel. Like every mutation, it stamps:
@@ -87,26 +87,26 @@ const DATA = (() => {
      for a preference. */
   async function updateSettings(partial) {
     const merged = stampRow(normalizeSettings({ ...currentSettings(), ...partial }));
-    state.reglages = [merged];
+    state.settings = [merged];
     await persist();
     return merged;
   }
 
   function csvRecipes() {
-    return csvSerialize(state.recettes.map(recipeToRow), RECIPE_COLS);
+    return csvSerialize(state.recipes.map(recipeToRow), RECIPE_COLS);
   }
 
   async function addPurchase(purchase) {
     const a = stampRow(normalizePurchase(purchase));
-    a.id = newId("a", state.achats);
-    state.achats.push(a);
+    a.id = newId("a", state.purchases);
+    state.purchases.push(a);
     // The coffee record follows the latest bag: format, price and roast date
     // shown elsewhere must stay consistent with it.
-    const coffee = state.cafes.find(c => c.id === a.cafe_id);
+    const coffee = state.coffees.find(c => c.id === a.coffee_id);
     if (coffee) {
-      if (a.format_grammes !== "") coffee.format_grammes = a.format_grammes;
-      if (a.prix_vnd !== "") coffee.prix_vnd = a.prix_vnd;
-      coffee.date_torrefaction = a.date_torrefaction;
+      if (a.bag_size_g !== "") coffee.bag_size_g = a.bag_size_g;
+      if (a.price_vnd !== "") coffee.price_vnd = a.price_vnd;
+      coffee.roast_date = a.roast_date;
       stampRow(coffee);
     }
     await persist();
@@ -124,37 +124,83 @@ const DATA = (() => {
     const when = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
     const bag = currentBag(coffeeId);
     if (!bag) {
-      const coffee = state.cafes.find(c => c.id === coffeeId);
+      const coffee = state.coffees.find(c => c.id === coffeeId);
       if (!coffee) return null;
       return addPurchase({
-        cafe_id: coffeeId, date_achat: when.slice(0, 10),
-        format_grammes: Number(coffee.format_grammes) > 0 ? coffee.format_grammes : Math.max(g, 1),
-        prix_vnd: coffee.prix_vnd, date_torrefaction: coffee.date_torrefaction,
-        restant_g: g, restant_le: when,
+        coffee_id: coffeeId, purchase_date: when.slice(0, 10),
+        bag_size_g: Number(coffee.bag_size_g) > 0 ? coffee.bag_size_g : Math.max(g, 1),
+        price_vnd: coffee.price_vnd, roast_date: coffee.roast_date,
+        remaining_g: g, remaining_at: when,
       });
     }
-    bag.restant_g = g;
-    bag.restant_le = when;
+    bag.remaining_g = g;
+    bag.remaining_at = when;
     stampRow(bag);
     await persist();
     return bag;
   }
 
   async function deletePurchase(id) {
-    markDeleted("achats", id);
-    state.achats = state.achats.filter(x => x.id !== id);
+    markDeleted("purchases", id);
+    state.purchases = state.purchases.filter(x => x.id !== id);
     await persist();
   }
 
   async function saveLocal() {
     await kvSetMany({
-      cafes: state.cafes, extractions: state.extractions, recettes: state.recettes,
-      tasses: state.tasses, demoActive: state.demoActive, achats: state.achats,
-      reglages: state.reglages, tombes: state.tombes,
+      coffees: state.coffees, extractions: state.extractions, recipes: state.recipes,
+      cups: state.cups, demoActive: state.demoActive, purchases: state.purchases,
+      settings: state.settings, tombstones: state.tombstones,
     });
   }
 
   // ---------- File System Access ----------
+
+  /* THE CSV FILES of the linked folder, one per table, in writing order.
+     English names since v9.06 (coffees.csv, recipes.csv...). A folder still
+     holding the French files (cafes.csv, recettes.csv...) is read through
+     them when the English one is missing, and the English files are written
+     at the first save. The French files are left in place: they are Chris's,
+     the site never deletes a file. */
+  const CSV_TEXT = {
+    coffees: () => csvSerialize(state.coffees, COFFEE_COLS),
+    extractions: list => csvSerialize(list || state.extractions, EXT_COLS),
+    recipes: () => csvRecipes(),
+    cups: () => csvSerialize(state.cups, CUP_COLS),
+    purchases: () => csvSerialize(state.purchases, PURCHASE_COLS),
+    settings: () => csvSerialize(state.settings, SETTINGS_COLS),
+  };
+  const TABLE_NAMES = Object.keys(CSV_TEXT);
+  const csvFileName = table => table + ".csv";
+  const legacyCsvFileName = table =>
+    (Object.keys(LEGACY.TABLES).find(k => LEGACY.TABLES[k] === table) || table) + ".csv";
+
+  async function writeCsvFiles() {
+    for (const table of TABLE_NAMES) await writeFile(state.dirHandle, csvFileName(table), CSV_TEXT[table]());
+  }
+
+  // { table: text or null }, the English file first, the French one otherwise.
+  async function readCsvFiles() {
+    const texts = {};
+    for (const table of TABLE_NAMES) {
+      let text = await readFile(state.dirHandle, csvFileName(table));
+      if (text === null && legacyCsvFileName(table) !== csvFileName(table)) {
+        text = await readFile(state.dirHandle, legacyCsvFileName(table));
+      }
+      texts[table] = text;
+    }
+    return texts;
+  }
+
+  // The tables read from the folder, stamps carried over (carryTimestamps).
+  function adoptCsvFiles(texts) {
+    for (const table of TABLE_NAMES) {
+      if (texts[table] === null) continue;
+      const def = IMPORT[table];
+      state[table] = carryTimestamps(csvParse(texts[table]).map(def.norm), state[table], def.cols());
+    }
+    state.settings = state.settings.slice(0, 1);
+  }
 
   let pendingWrite = null;
   async function saveFiles() {
@@ -172,12 +218,7 @@ const DATA = (() => {
           const ok = await state.dirHandle.queryPermission({ mode: "readwrite" }) === "granted";
           if (state.fileNeedsReauth !== !ok) { state.fileNeedsReauth = !ok; notify(); }
           if (!ok) { resolve(false); return; }
-          await writeFile(state.dirHandle, "cafes.csv", csvSerialize(state.cafes, COFFEE_COLS));
-          await writeFile(state.dirHandle, "extractions.csv", csvSerialize(state.extractions, EXT_COLS));
-          await writeFile(state.dirHandle, "recettes.csv", csvRecipes());
-          await writeFile(state.dirHandle, "tasses.csv", csvSerialize(state.tasses, CUP_COLS));
-          await writeFile(state.dirHandle, "achats.csv", csvSerialize(state.achats, PURCHASE_COLS));
-          await writeFile(state.dirHandle, "reglages.csv", csvSerialize(state.reglages, SETTINGS_COLS));
+          await writeCsvFiles();
           resolve(true);
         } catch (e) {
           console.error("Could not write the file", e);
@@ -194,40 +235,25 @@ const DATA = (() => {
     /* Linking a folder while leaving the demo (v8.71): the 62 demo cups
        would have become real data, then gone to the server. */
     if (state.demoActive) {
-      state.extractions = []; state.achats = [];
-      state.cafes = STARTER_COFFEES.map(normalizeCoffee);
-      state.recettes = defaultRecipes(); state.tasses = defaultCups();
+      state.extractions = []; state.purchases = [];
+      state.coffees = STARTER_COFFEES.map(normalizeCoffee);
+      state.recipes = defaultRecipes(); state.cups = defaultCups();
     }
     if (create) {
-      if (!state.cafes.length) state.cafes = STARTER_COFFEES.map(normalizeCoffee);
-      if (!state.recettes.length) state.recettes = defaultRecipes();
-      if (!state.tasses.length) state.tasses = defaultCups();
+      if (!state.coffees.length) state.coffees = STARTER_COFFEES.map(normalizeCoffee);
+      if (!state.recipes.length) state.recipes = defaultRecipes();
+      if (!state.cups.length) state.cups = defaultCups();
       state.demoActive = false;
-      await writeFile(state.dirHandle, "cafes.csv", csvSerialize(state.cafes, COFFEE_COLS));
-      await writeFile(state.dirHandle, "extractions.csv", csvSerialize(state.extractions, EXT_COLS));
-      await writeFile(state.dirHandle, "recettes.csv", csvRecipes());
-      await writeFile(state.dirHandle, "tasses.csv", csvSerialize(state.tasses, CUP_COLS));
-      await writeFile(state.dirHandle, "achats.csv", csvSerialize(state.achats, PURCHASE_COLS));
-      await writeFile(state.dirHandle, "reglages.csv", csvSerialize(state.reglages, SETTINGS_COLS));
+      await writeCsvFiles();
     } else {
-      const tc = await readFile(state.dirHandle, "cafes.csv");
-      const te = await readFile(state.dirHandle, "extractions.csv");
-      const tr = await readFile(state.dirHandle, "recettes.csv");
-      const tt = await readFile(state.dirHandle, "tasses.csv");
-      const ta = await readFile(state.dirHandle, "achats.csv");
-      const tg = await readFile(state.dirHandle, "reglages.csv");
-      if (tc === null && te === null) {
-        throw new Error("Ce dossier ne contient ni cafes.csv ni extractions.csv.");
+      const texts = await readCsvFiles();
+      if (texts.coffees === null && texts.extractions === null) {
+        throw new Error("Ce dossier ne contient ni coffees.csv (ou cafes.csv) ni extractions.csv.");
       }
-      if (tc !== null) state.cafes = carryTimestamps(csvParse(tc).map(normalizeCoffee), state.cafes, COFFEE_COLS);
-      if (te !== null) state.extractions = carryTimestamps(csvParse(te).map(normalizeExtraction), state.extractions, EXT_COLS);
-      if (tr !== null) state.recettes = carryTimestamps(csvParse(tr).map(normalizeRecipe), state.recettes, RECIPE_COLS);
-      else if (!state.recettes.length) state.recettes = defaultRecipes();
-      if (tt !== null) state.tasses = carryTimestamps(csvParse(tt).map(normalizeCup), state.tasses, CUP_COLS);
-      if (ta !== null) state.achats = carryTimestamps(csvParse(ta).map(normalizePurchase), state.achats, PURCHASE_COLS);
-      if (tg !== null) state.reglages = carryTimestamps(csvParse(tg).map(normalizeSettings), state.reglages, SETTINGS_COLS).slice(0, 1);
+      adoptCsvFiles(texts);
+      if (texts.recipes === null && !state.recipes.length) state.recipes = defaultRecipes();
       migrateData();
-      await writeFile(state.dirHandle, "recettes.csv", csvRecipes());
+      await writeCsvFiles();
       state.demoActive = false;
     }
     await kvSet("dirHandle", handle);
@@ -256,12 +282,14 @@ const DATA = (() => {
 
   function detectTable(rows) {
     if (!rows.length) return null;
-    const keys = Object.keys(rows[0]);
-    if (keys.includes("date_achat")) return "achats";
-    if (keys.includes("contenance_ml")) return "tasses";
-    if (keys.includes("pour_qui") || keys.includes("sous_titre")) return "recettes";
-    if (keys.includes("cafe_id") || keys.includes("diagnostic")) return "extractions";
-    if (keys.includes("torrefacteur") || keys.includes("machine_recommandee")) return "cafes";
+    // A French header (cafe_id, pour_qui...) counts under its English name.
+    const keys = Object.keys(rows[0]).flatMap(k =>
+      [k, ...Object.values(LEGACY.FIELDS).map(f => f[k]).filter(Boolean)]);
+    if (keys.includes("purchase_date")) return "purchases";
+    if (keys.includes("capacity_ml")) return "cups";
+    if (keys.includes("best_for") || keys.includes("subtitle")) return "recipes";
+    if (keys.includes("coffee_id") || keys.includes("diagnostic")) return "extractions";
+    if (keys.includes("roaster") || keys.includes("recommended_method")) return "coffees";
     return null;
   }
 
@@ -278,12 +306,12 @@ const DATA = (() => {
      The full exported file (JSON) can be re-imported too, through the same
      merge as the sync. */
   const IMPORT = {
-    cafes: { cols: () => COFFEE_COLS, norm: r => normalizeCoffee(r), pref: "c" },
+    coffees: { cols: () => COFFEE_COLS, norm: r => normalizeCoffee(r), pref: "c" },
     extractions: { cols: () => EXT_COLS, norm: r => normalizeExtraction(r), pref: "e" },
-    recettes: { cols: () => RECIPE_COLS, norm: r => normalizeRecipe(r), pref: "r" },
-    tasses: { cols: () => CUP_COLS, norm: r => normalizeCup(r), pref: "t" },
-    achats: { cols: () => PURCHASE_COLS, norm: r => normalizePurchase(r), pref: "a" },
-    reglages: { cols: () => SETTINGS_COLS, norm: r => normalizeSettings(r), pref: "g" },
+    recipes: { cols: () => RECIPE_COLS, norm: r => normalizeRecipe(r), pref: "r" },
+    cups: { cols: () => CUP_COLS, norm: r => normalizeCup(r), pref: "t" },
+    purchases: { cols: () => PURCHASE_COLS, norm: r => normalizePurchase(r), pref: "a" },
+    settings: { cols: () => SETTINGS_COLS, norm: r => normalizeSettings(r), pref: "g" },
   };
 
   function prepareImport(text) {
@@ -291,14 +319,16 @@ const DATA = (() => {
       let doc;
       try { doc = JSON.parse(text); } catch (e) { throw new Error(I18N.t("import_json_unreadable")); }
       if (!doc || !doc.tables) throw new Error(I18N.t("import_json_unreadable"));
+      // A file exported before v9.06 carries the French names: translated here.
+      doc = LEGACY.renameDocument(doc);
       const n = Object.values(doc.tables).reduce((s, l) => s + (Array.isArray(l) ? l.length : 0), 0);
-      return { table: "tout", doc, n, added: 0, modified: 0, withoutId: 0, duplicates: 0 };
+      return { table: "all", doc, n, added: 0, modified: 0, withoutId: 0, duplicates: 0 };
     }
     const rows = csvParse(text);
     const table = detectTable(rows);
     if (!table) throw new Error(I18N.t("import_unknown"));
     const def = IMPORT[table];
-    const currentRows = table === "reglages" ? state.reglages : state[table];
+    const currentRows = state[table];
     const byId = new Map();
     let withoutId = 0, duplicates = 0;
     rows.map(def.norm).forEach(l => {
@@ -309,7 +339,7 @@ const DATA = (() => {
     const stamped = carryTimestamps([...byId.values()], currentRows, def.cols());
     const known = new Map(currentRows.map(l => [l.id, l]));
     const added = stamped.filter(l => !known.has(l.id)).length;
-    const modified = stamped.filter(l => known.has(l.id) && l.maj_le !== known.get(l.id).maj_le).length;
+    const modified = stamped.filter(l => known.has(l.id) && l.updated_at !== known.get(l.id).updated_at).length;
     return { table, rows: stamped, n: stamped.length, added, modified, withoutId, duplicates };
   }
 
@@ -320,14 +350,14 @@ const DATA = (() => {
 
   async function importCsvText(text) {
     const p = prepareImport(text);
-    if (p.table === "tout") {
+    if (p.table === "all") {
       const merged = SYNC.mergeStates(localPayload(), p.doc);
       adoptTables(merged);
     } else {
       const byId = new Map(state[p.table].map(l => [l.id, l]));
       p.rows.forEach(l => byId.set(l.id, l));
       state[p.table] = [...byId.values()];
-      if (p.table === "reglages") state.reglages = state.reglages.slice(-1);
+      if (p.table === "settings") state.settings = state.settings.slice(-1);
     }
     migrateData();
     state.demoActive = false;
@@ -337,21 +367,14 @@ const DATA = (() => {
 
   // The tables as they are, and the tombstones. The full file.
   function exportAll() {
-    download("cafes.csv", csvSerialize(state.cafes, COFFEE_COLS));
-    download("extractions.csv", csvSerialize(state.extractions, EXT_COLS));
-    download("recettes.csv", csvRecipes());
-    download("tasses.csv", csvSerialize(state.tasses, CUP_COLS));
-    download("achats.csv", csvSerialize(state.achats, PURCHASE_COLS));
-    download("reglages.csv", csvSerialize(state.reglages, SETTINGS_COLS));
-    download("carnet-complet.json", JSON.stringify({ ...localPayload(), exporte_le: new Date().toISOString() }),
+    TABLE_NAMES.forEach(table => download(csvFileName(table), CSV_TEXT[table]()));
+    download("logbook-full.json", JSON.stringify({ ...localPayload(), exported_at: new Date().toISOString() }),
       "application/json;charset=utf-8");
   }
 
-  function exportCoffees() { download("cafes.csv", csvSerialize(state.cafes, COFFEE_COLS)); }
-  function exportExtractions(list) {
-    download("extractions.csv", csvSerialize(list || state.extractions, EXT_COLS));
-  }
-  function exportRecipes() { download("recettes.csv", csvRecipes()); }
+  function exportCoffees() { download(csvFileName("coffees"), CSV_TEXT.coffees()); }
+  function exportExtractions(list) { download(csvFileName("extractions"), CSV_TEXT.extractions(list)); }
+  function exportRecipes() { download(csvFileName("recipes"), CSV_TEXT.recipes()); }
 
   // ---------- Demo ----------
 
@@ -377,7 +400,7 @@ const DATA = (() => {
      cup lands yesterday: the gaps between dates, hence the age of the bags and
      the streaks, stay exactly those of the original set. */
   function rejuvenateDemo(coffees, extractions) {
-    const dates = extractions.map(e => String(e.date_heure).slice(0, 10)).filter(Boolean).sort();
+    const dates = extractions.map(e => String(e.date_time).slice(0, 10)).filter(Boolean).sort();
     if (!dates.length) return;
     const lastDay = new Date(dates[dates.length - 1] + "T12:00");
     const yesterday = new Date(); yesterday.setHours(12, 0, 0, 0); yesterday.setDate(yesterday.getDate() - 1);
@@ -390,30 +413,30 @@ const DATA = (() => {
       const iso = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
       return iso + String(v).slice(10);
     };
-    extractions.forEach(e => { e.date_heure = shift(e.date_heure); });
+    extractions.forEach(e => { e.date_time = shift(e.date_time); });
     coffees.forEach(c => {
-      c.date_torrefaction = shift(c.date_torrefaction);
-      c.date_ajout = shift(c.date_ajout);
+      c.roast_date = shift(c.roast_date);
+      c.added_date = shift(c.added_date);
     });
   }
 
   async function loadDemo() {
     // A failure leaves the data in place rather than half-emptying the state.
     if (!await loadDemoScript()) throw new Error("Demo dataset unavailable.");
-    state.cafes = csvParse(DEMO_COFFEES_CSV).map(normalizeCoffee);
+    state.coffees = csvParse(DEMO_COFFEES_CSV).map(normalizeCoffee);
     state.extractions = csvParse(DEMO_EXTRACTIONS_CSV).map(normalizeExtraction);
-    rejuvenateDemo(state.cafes, state.extractions);
-    state.recettes = defaultRecipes();
-    state.tasses = defaultCups();
+    rejuvenateDemo(state.coffees, state.extractions);
+    state.recipes = defaultRecipes();
+    state.cups = defaultCups();
     // The demo has no purchases file: the migration builds one implicit bag
     // per coffee, which is enough to bring the stock to life in the demo.
-    state.achats = [];
+    state.purchases = [];
     migrateData();
     /* These implicit bags have no opening date, and without it no cup has a
        bag day: the coffee record showed an empty curve and the "bag age" rule
        never spoke in the demo (v8.46). So the demo opens each bag on the day
        it buys it. */
-    state.achats.forEach(a => { if (!a.date_ouverture) a.date_ouverture = a.date_achat; });
+    state.purchases.forEach(a => { if (!a.opened_date) a.opened_date = a.purchase_date; });
     state.demoActive = true;
     await saveLocal();
     notify();
@@ -425,15 +448,15 @@ const DATA = (() => {
     const keepSeeded = (table, seeded) => state[table]
       .filter(l => !seeded.some(s => s.id === l.id)).forEach(l => markDeleted(table, l.id));
     state.extractions.forEach(l => markDeleted("extractions", l.id));
-    state.achats.forEach(l => markDeleted("achats", l.id));
-    keepSeeded("cafes", STARTER_COFFEES);
-    keepSeeded("recettes", STARTER_RECIPES);
-    keepSeeded("tasses", STARTER_CUPS);
+    state.purchases.forEach(l => markDeleted("purchases", l.id));
+    keepSeeded("coffees", STARTER_COFFEES);
+    keepSeeded("recipes", STARTER_RECIPES);
+    keepSeeded("cups", STARTER_CUPS);
     state.extractions = [];
-    state.cafes = STARTER_COFFEES.map(normalizeCoffee);
-    state.recettes = defaultRecipes();
-    state.tasses = defaultCups();
-    state.achats = [];
+    state.coffees = STARTER_COFFEES.map(normalizeCoffee);
+    state.recipes = defaultRecipes();
+    state.cups = defaultCups();
+    state.purchases = [];
     state.demoActive = false;
     await persist();
   }
@@ -457,14 +480,14 @@ const DATA = (() => {
   function localPayload() {
     return {
       tables: {
-        cafes: state.cafes,
+        coffees: state.coffees,
         extractions: state.extractions,
-        recettes: state.recettes,
-        tasses: state.tasses,
-        achats: state.achats,
-        reglages: state.reglages,
+        recipes: state.recipes,
+        cups: state.cups,
+        purchases: state.purchases,
+        settings: state.settings,
       },
-      tombes: state.tombes,
+      tombstones: state.tombstones,
       // The tab states its version: the server refuses a tab older than the
       // document, which would erase the columns it does not know (v8.71).
       schema: CURRENT_SCHEMA,
@@ -473,15 +496,15 @@ const DATA = (() => {
 
   // Adopts merged, normalised tables, with the starter recipes and cups as a fallback.
   function adoptTables(merged) {
-    state.cafes = (merged.tables.cafes || []).map(normalizeCoffee);
+    state.coffees = (merged.tables.coffees || []).map(normalizeCoffee);
     state.extractions = (merged.tables.extractions || []).map(normalizeExtraction);
-    state.recettes = (merged.tables.recettes || []).map(normalizeRecipe);
-    state.tasses = (merged.tables.tasses || []).map(normalizeCup);
-    state.achats = (merged.tables.achats || []).map(normalizePurchase);
-    state.reglages = (merged.tables.reglages || []).map(normalizeSettings).slice(0, 1);
-    state.tombes = merged.tombes || SYNC.emptyTombstones();
-    if (!state.recettes.length) state.recettes = defaultRecipes();
-    if (!state.tasses.length) state.tasses = defaultCups();
+    state.recipes = (merged.tables.recipes || []).map(normalizeRecipe);
+    state.cups = (merged.tables.cups || []).map(normalizeCup);
+    state.purchases = (merged.tables.purchases || []).map(normalizePurchase);
+    state.settings = (merged.tables.settings || []).map(normalizeSettings).slice(0, 1);
+    state.tombstones = merged.tombstones || SYNC.emptyTombstones();
+    if (!state.recipes.length) state.recipes = defaultRecipes();
+    if (!state.cups.length) state.cups = defaultCups();
   }
 
   function syncPossible() {
@@ -503,7 +526,7 @@ const DATA = (() => {
     if (syncInFlight) { syncRequeued = true; return state.syncState; }
     syncInFlight = true;
     syncRequeued = false;
-    state.syncState = "encours";
+    state.syncState = "syncing";
     notify("sync");
     let tablesBefore = null;
 
@@ -528,8 +551,8 @@ const DATA = (() => {
       // The local data is kept as is: a failed sync must never lose an
       // entry. Retry with a growing delay (v8.71), unless the server says
       // this tab is too old: it has to reload.
-      state.syncState = error && error.code ? error.code : "erreur";
-      if (state.syncState !== "version-perimee" && state.syncState !== "session-expiree") {
+      state.syncState = error && error.code ? error.code : "error";
+      if (state.syncState !== "outdated-version" && state.syncState !== "session-expired") {
         const delay = RETRY_DELAYS_MS[Math.min(syncFailures, RETRY_DELAYS_MS.length - 1)];
         syncFailures++;
         clearTimeout(retryTimer);
@@ -560,7 +583,7 @@ const DATA = (() => {
       await saveLocal();
     } catch (e) {
       console.error("Local storage unavailable", e);
-      if (typeof window !== "undefined" && window.dispatchEvent) window.dispatchEvent(new CustomEvent("carnet-stockage-ko"));
+      if (typeof window !== "undefined" && window.dispatchEvent) window.dispatchEvent(new CustomEvent("carnet-storage-failed"));
     }
     saveFiles();
     notify();
@@ -607,21 +630,21 @@ const DATA = (() => {
 
   async function addCoffee(coffee) {
     const c = stampRow(normalizeCoffee(coffee));
-    c.id = newId("c", state.cafes);
-    if (!c.date_ajout) c.date_ajout = localDateToday();
-    state.cafes.push(c);
+    c.id = newId("c", state.coffees);
+    if (!c.added_date) c.added_date = localDateToday();
+    state.coffees.push(c);
     await persist();
     return c;
   }
 
   async function editCoffee(id, coffee) {
-    const idx = state.cafes.findIndex(x => x.id === id);
+    const idx = state.coffees.findIndex(x => x.id === id);
     if (idx < 0) return null;
     const c = stampRow(normalizeCoffee(coffee));
     c.id = id;
     // The date added is not editable: keep the one in place.
-    if (!c.date_ajout) c.date_ajout = state.cafes[idx].date_ajout || "";
-    state.cafes[idx] = c;
+    if (!c.added_date) c.added_date = state.coffees[idx].added_date || "";
+    state.coffees[idx] = c;
     await persist();
     return c;
   }
@@ -636,29 +659,29 @@ const DATA = (() => {
     const r = stampRow(normalizeRecipe(recipe));
     let n = 1;
     let id = "r" + n;
-    while (state.recettes.some(x => x.id === id)) { n++; id = "r" + n; }
+    while (state.recipes.some(x => x.id === id)) { n++; id = "r" + n; }
     r.id = id;
-    state.recettes.push(r);
+    state.recipes.push(r);
     await persist();
     return r;
   }
 
   async function editRecipe(id, recipe) {
-    const idx = state.recettes.findIndex(x => x.id === id);
+    const idx = state.recipes.findIndex(x => x.id === id);
     if (idx < 0) return null;
-    const oldName = state.recettes[idx].nom;
+    const oldName = state.recipes[idx].name;
     const r = stampRow(normalizeRecipe(recipe));
     r.id = id;
     // An original recipe keeps its structural markers (4:6 variants).
     if (isOriginalRecipe(id)) {
       const originalRecipe = STARTER_RECIPES.find(x => x.id === id);
-      r.variantes = originalRecipe.variantes;
+      r.has_variants = originalRecipe.has_variants;
     }
-    state.recettes[idx] = r;
+    state.recipes[idx] = r;
     // If the name changes, follow it in the extractions and the coffees.
-    if (oldName && r.nom !== oldName) {
-      state.extractions.forEach(e => { if (e.recette === oldName) e.recette = r.nom; });
-      state.cafes.forEach(c => { if (c.recette_recommandee === oldName) c.recette_recommandee = r.nom; });
+    if (oldName && r.name !== oldName) {
+      state.extractions.forEach(e => { if (e.recipe === oldName) e.recipe = r.name; });
+      state.coffees.forEach(c => { if (c.recommended_recipe === oldName) c.recommended_recipe = r.name; });
     }
     await persist();
     return r;
@@ -667,20 +690,20 @@ const DATA = (() => {
   async function resetRecipe(id) {
     const originalRecipe = STARTER_RECIPES.find(x => x.id === id);
     if (!originalRecipe) return null;
-    const idx = state.recettes.findIndex(x => x.id === id);
+    const idx = state.recipes.findIndex(x => x.id === id);
     const r = normalizeRecipe({
       ...originalRecipe,
-      etapes: originalRecipe.etapes.map(e => ({ ...e })),
-      cafesAssocies: [...originalRecipe.cafesAssocies],
+      steps: originalRecipe.steps.map(e => ({ ...e })),
+      pairedCoffees: [...originalRecipe.pairedCoffees],
     });
     stampRow(r);
-    if (idx < 0) state.recettes.push(r);
+    if (idx < 0) state.recipes.push(r);
     else {
-      const oldName = state.recettes[idx].nom;
-      state.recettes[idx] = r;
-      if (oldName && oldName !== r.nom) {
-        state.extractions.forEach(e => { if (e.recette === oldName) e.recette = r.nom; });
-        state.cafes.forEach(c => { if (c.recette_recommandee === oldName) c.recette_recommandee = r.nom; });
+      const oldName = state.recipes[idx].name;
+      state.recipes[idx] = r;
+      if (oldName && oldName !== r.name) {
+        state.extractions.forEach(e => { if (e.recipe === oldName) e.recipe = r.name; });
+        state.coffees.forEach(c => { if (c.recommended_recipe === oldName) c.recommended_recipe = r.name; });
       }
     }
     await persist();
@@ -689,8 +712,8 @@ const DATA = (() => {
 
   async function deleteRecipe(id) {
     if (isOriginalRecipe(id)) return false;
-    markDeleted("recettes", id);
-    state.recettes = state.recettes.filter(x => x.id !== id);
+    markDeleted("recipes", id);
+    state.recipes = state.recipes.filter(x => x.id !== id);
     await persist();
     return true;
   }
@@ -699,37 +722,58 @@ const DATA = (() => {
 
   async function addCup(label, capacity) {
     let n = 1, id = "tp" + n;
-    while (state.tasses.some(x => x.id === id)) { n++; id = "tp" + n; }
-    state.tasses.push(stampRow(normalizeCup({ id, nom: label, contenance_ml: capacity })));
+    while (state.cups.some(x => x.id === id)) { n++; id = "tp" + n; }
+    state.cups.push(stampRow(normalizeCup({ id, name: label, capacity_ml: capacity })));
     await persist();
   }
 
   async function deleteCup(id) {
-    markDeleted("tasses", id);
-    state.tasses = state.tasses.filter(x => x.id !== id);
-    if (!state.tasses.length) state.tasses = defaultCups();
+    markDeleted("cups", id);
+    state.cups = state.cups.filter(x => x.id !== id);
+    if (!state.cups.length) state.cups = defaultCups();
     await persist();
   }
 
   // ---------- Initialisation ----------
 
+  /* THE LOCAL COPY UNDER ITS OLD KEYS (v9.06). IndexedDB kept the tables
+     under their French names until v9.05 (cafes, recettes, tasses, achats,
+     reglages, tombes; "extractions" is the same word in both). Both key sets
+     are read: a device that has only the French ones is converted, and one
+     that has both (an old tab kept writing next to a new one) gets them merged
+     by id, the most recent row winning. The French keys are removed once the
+     English ones are written, never before. */
+  async function readStoredDocument() {
+    const raw = { tables: {} };
+    const legacyKeys = [];
+    for (const key of [...TABLE_NAMES, ...Object.keys(LEGACY.TABLES)]) {
+      const value = await kvGet(key);
+      if (value === undefined || value === null) continue;
+      raw.tables[key] = value;
+      if (LEGACY.tableName(key) !== key) legacyKeys.push(key);
+    }
+    for (const key of ["tombstones", "tombes"]) {
+      const value = await kvGet(key);
+      if (value === undefined || value === null) continue;
+      raw[key] = value;
+      if (key !== "tombstones") legacyKeys.push(key);
+    }
+    return { doc: LEGACY.renameDocument(raw), legacyKeys };
+  }
+
   async function init() {
     await openDB();
-    const coffees = await kvGet("cafes");
-    const extractions = await kvGet("extractions");
-    const recipes = await kvGet("recettes");
-    const cups = await kvGet("tasses");
-    const purchases = await kvGet("achats");
-    const settingsRows = await kvGet("reglages");
+    const { doc, legacyKeys } = await readStoredDocument();
+    const { coffees, extractions, recipes, cups, purchases, settings: settingsRows } = doc.tables;
     const demoActive = await kvGet("demoActive");
-    if (Array.isArray(coffees)) state.cafes = coffees.map(normalizeCoffee);
+    if (Array.isArray(coffees)) state.coffees = coffees.map(normalizeCoffee);
     if (Array.isArray(extractions)) state.extractions = extractions.map(normalizeExtraction);
-    if (Array.isArray(recipes) && recipes.length) state.recettes = recipes;
-    else state.recettes = defaultRecipes();
-    if (Array.isArray(cups) && cups.length) state.tasses = cups;
-    else state.tasses = defaultCups();
-    if (Array.isArray(purchases)) state.achats = purchases.map(normalizePurchase);
-    if (Array.isArray(settingsRows)) state.reglages = settingsRows.map(normalizeSettings).slice(0, 1);
+    if (Array.isArray(recipes) && recipes.length) state.recipes = recipes.map(normalizeRecipe);
+    else state.recipes = defaultRecipes();
+    if (Array.isArray(cups) && cups.length) state.cups = cups.map(normalizeCup);
+    else state.cups = defaultCups();
+    if (Array.isArray(purchases)) state.purchases = purchases.map(normalizePurchase);
+    if (Array.isArray(settingsRows)) state.settings = settingsRows.map(normalizeSettings).slice(0, 1);
     state.demoActive = !!demoActive;
     const handle = await kvGet("dirHandle");
     if (handle) {
@@ -737,39 +781,26 @@ const DATA = (() => {
       // The permission will be requested on the first user gesture; we try a
       // silent re-read if it is already granted.
       try {
-        if (await handle.queryPermission({ mode: "readwrite" }) === "granted") {
-          const tc = await readFile(state.dirHandle, "cafes.csv");
-          const te = await readFile(state.dirHandle, "extractions.csv");
-          const tr = await readFile(state.dirHandle, "recettes.csv");
-          const tt = await readFile(state.dirHandle, "tasses.csv");
-          const ta = await readFile(state.dirHandle, "achats.csv");
-          const tg = await readFile(state.dirHandle, "reglages.csv");
-          if (tc !== null) state.cafes = carryTimestamps(csvParse(tc).map(normalizeCoffee), state.cafes, COFFEE_COLS);
-          if (te !== null) state.extractions = carryTimestamps(csvParse(te).map(normalizeExtraction), state.extractions, EXT_COLS);
-          if (tr !== null) state.recettes = carryTimestamps(csvParse(tr).map(normalizeRecipe), state.recettes, RECIPE_COLS);
-          if (tt !== null) state.tasses = carryTimestamps(csvParse(tt).map(normalizeCup), state.tasses, CUP_COLS);
-          if (ta !== null) state.achats = carryTimestamps(csvParse(ta).map(normalizePurchase), state.achats, PURCHASE_COLS);
-          if (tg !== null) state.reglages = carryTimestamps(csvParse(tg).map(normalizeSettings), state.reglages, SETTINGS_COLS).slice(0, 1);
-        }
+        if (await handle.queryPermission({ mode: "readwrite" }) === "granted") adoptCsvFiles(await readCsvFiles());
       } catch (e) { console.warn("Could not reread the linked folder", e); }
     }
-    const tombstones = await kvGet("tombes");
-    if (tombstones && typeof tombstones === "object") state.tombes = tombstones;
+    if (doc.tombstones && typeof doc.tombstones === "object") state.tombstones = doc.tombstones;
 
     migrateData();
     await saveLocal();
+    if (legacyKeys.length) await kvDeleteMany(legacyKeys);
 
     /* No more sync here (v8.72): it blocked the first display. It is app.js
        that starts it right after the first render, and that only opens the
        welcome dialog if the server returned nothing either. */
-    return state.cafes.length > 0 || state.extractions.length > 0;
+    return state.coffees.length > 0 || state.extractions.length > 0;
   }
 
   return {
     state, subscribe, notify, init, dataRevision,
     synchronize, syncPossible, carryTimestamps,
     /* csvRecipes is exposed so the CSV round trip is testable on the REAL
-       export path: that is the one that lost puissance_feu. */
+       export path: that is the one that lost heat_level. */
     csvParse, csvSerialize, csvRecipes, COFFEE_COLS, EXT_COLS, RECIPE_COLS, PURCHASE_COLS,
     currentBag, bagStock, addPurchase, deletePurchase, correctStock,
     calcs, coffeeOf,

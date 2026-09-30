@@ -44,8 +44,8 @@
   }
 
   const entry = {
-    methode: "Brikka",
-    descripteurs: new Set(),
+    method: "Brikka",
+    descriptors: new Set(),
     diagnostics: new Set(),
     editId: null,
     /* True as soon as the date comes from Chris rather than from a default.
@@ -55,12 +55,12 @@
   };
 
   function selectableCoffees() {
-    return DATA.state.cafes.filter(c => c.actif !== 0);
+    return DATA.state.coffees.filter(c => c.active !== 0);
   }
 
   function currentCoffeeGround() {
-    const c = DATA.state.cafes.find(x => x.id === $("#f-coffee").value);
-    return !!(c && Number(c.deja_moulu) === 1);
+    const c = DATA.state.coffees.find(x => x.id === $("#f-coffee").value);
+    return !!(c && Number(c.pre_ground) === 1);
   }
 
   function fillCoffeeSelect(keepId) {
@@ -69,32 +69,32 @@
     // (the option is injected back so the value stays displayable).
     const sel = $("#f-coffee");
     const value = keepId || sel.value;
-    const keptInactive = DATA.state.cafes.find(c => c.id === value && c.actif === 0);
+    const keptInactive = DATA.state.coffees.find(c => c.id === value && c.active === 0);
     sel.innerHTML = '<option value="">' + I18N.t("pick_coffee") + "</option>" +
-      selectableCoffees().map(c => '<option value="' + titleAttr(c.id) + '">' + titleAttr(c.nom) + "</option>").join("") +
-      (keptInactive ? '<option value="' + titleAttr(keptInactive.id) + '">' + titleAttr(keptInactive.nom) + " " + I18N.t("inactive_suffix") + "</option>" : "");
+      selectableCoffees().map(c => '<option value="' + titleAttr(c.id) + '">' + titleAttr(c.name) + "</option>").join("") +
+      (keptInactive ? '<option value="' + titleAttr(keptInactive.id) + '">' + titleAttr(keptInactive.name) + " " + I18N.t("inactive_suffix") + "</option>" : "");
     if (value) sel.value = value;
   }
 
   function fillRecipeSelect() {
     const sel = $("#f-recipe");
     const value = sel.value;
-    const list = recipesForMethod(entry.methode);
-    sel.innerHTML = list.map(r => "<option>" + r.nom + "</option>").join("");
-    if (list.some(r => r.nom === value)) sel.value = value;
+    const list = recipesForMethod(entry.method);
+    sel.innerHTML = list.map(r => "<option>" + r.name + "</option>").join("");
+    if (list.some(r => r.name === value)) sel.value = value;
     else {
       /* Fall back to the FIRST recipe when none is marked as default, which is
          the case for every Brikka one. The browser already selects the first
          option on its own, but the code did not know: from its point of view
          sel.value stayed empty, so prefillFromRecipe returned without doing
          anything and the 150 g of water never arrived. */
-      const fallback = list.find(r => r.parDefaut) || list[0];
-      if (fallback) sel.value = fallback.nom;
+      const fallback = list.find(r => r.isDefault) || list[0];
+      if (fallback) sel.value = fallback.name;
     }
   }
 
   function chooseMethod(m, keepRecipe) {
-    entry.methode = m;
+    entry.method = m;
     $$(".btn-method").forEach(b => setPressed(b, b.dataset.method === m));
     // Fields specific to each method.
     $("#field-add-water").hidden = m !== "Brikka";
@@ -110,7 +110,7 @@
     const defaultCups = { "Brikka": "Loveramics Flat White Egg", "Switch": "Classic Mug" };
     const currentCup = $("#f-cup").value;
     if ((currentCup === "" || Object.values(defaultCups).includes(currentCup)) &&
-        DATA.state.tasses.some(t => t.nom === defaultCups[m])) {
+        DATA.state.cups.some(t => t.name === defaultCups[m])) {
       $("#f-cup").value = defaultCups[m];
     }
     if (!keepRecipe) fillRecipeSelect();
@@ -126,13 +126,13 @@
      So the box is hidden and the value is derived from the recipe. */
   function updatePreheatField() {
     const r = findRecipe($("#f-recipe").value);
-    const familyDecides = !!r && PREHEAT_FAMILIES.includes(r.famille || "");
+    const familyDecides = !!r && PREHEAT_FAMILIES.includes(r.family || "");
     /* ALWAYS visible on the Brikka (v7.95, at Chris's request): it is the only
        question the Brikka asks about the water. In the brikka-classique family
        the box and the recipe variant say the same thing, so they stay in
        agreement both ways: the recipe checks the box, and checking the box
        changes the recipe (onPreheat). */
-    $("#field-preheat").hidden = entry.methode !== "Brikka";
+    $("#field-preheat").hidden = entry.method !== "Brikka";
     if (familyDecides) $("#f-preheat").checked = PREHEATED_WATER_RECIPES.includes(r.id);
   }
 
@@ -142,21 +142,21 @@
      recipes, the box is a plain data point about the cup. */
   function onPreheat() {
     const r = findRecipe($("#f-recipe").value);
-    if (!r || !PREHEAT_FAMILIES.includes(r.famille || "")) return;
+    if (!r || !PREHEAT_FAMILIES.includes(r.family || "")) return;
     const wanted = $("#f-preheat").checked;
     const target = recipesForMethod("Brikka").find(x =>
-      x.famille === r.famille && PREHEATED_WATER_RECIPES.includes(x.id) === wanted);
-    if (!target || target.nom === r.nom) return;
-    $("#f-recipe").value = target.nom;
-    prefillFromRecipe(target.nom);
+      x.family === r.family && PREHEATED_WATER_RECIPES.includes(x.id) === wanted);
+    if (!target || target.name === r.name) return;
+    $("#f-recipe").value = target.name;
+    prefillFromRecipe(target.name);
     updateWarnings();
   }
 
   // Does the recipe ask for stirring? Checks agitation by default.
   function updateAgitationFromRecipe() {
     const r = findRecipe($("#f-recipe").value);
-    if (!r || r.methode !== "Switch") return;
-    const stirs = UI.stepsFor(r).some(e => /remuer/i.test(e.texte));
+    if (!r || r.method !== "Switch") return;
+    const stirs = UI.stepsFor(r).some(e => /remuer/i.test(e.text));
     $("#f-agitation-yes").checked = stirs;
     $("#row-agitation").hidden = !stirs;
     if (stirs && !$("#f-agitation").value) $("#f-agitation").value = 1;
@@ -173,10 +173,10 @@
   // Milk field: visible when the recipe calls for it, prefilled from the cup.
   function updateMilk() {
     const r = findRecipe($("#f-recipe").value);
-    const visible = !!(r && r.lait);
+    const visible = !!(r && r.milk);
     $("#field-milk").hidden = !visible;
     if (!visible) return;
-    const cup = DATA.state.tasses.find(t => t.nom === $("#f-cup").value);
+    const cup = DATA.state.cups.find(t => t.name === $("#f-cup").value);
     /* The MEASURED coffee volume, never estimated on a Brikka: same reason as in
        estimatedVolume, and milk computed from a wrong volume is wrong milk.
        Without a measurement nothing is prefilled and we say so. */
@@ -187,7 +187,7 @@
        estimatedVolume() returns 0 on purpose, the old formula announced 139 ml
        where Chris measures 90 to 115. Without this fallback, the milk was never
        computed for Brikka recipes, which are precisely the milk ones. */
-    const coffeeVol = measured > 0 ? measured : (r.volumeTypique || 0);
+    const coffeeVol = measured > 0 ? measured : (r.typicalVolume || 0);
     const declared = !(measured > 0) && coffeeVol > 0;
     if (!cup) {
       $("#milk-hint").textContent = I18N.t("milk_pick_cup");
@@ -198,7 +198,7 @@
       return;
     }
     /* The SPACE to fill, not yet the milk to pour: see below. */
-    const milk = Math.max(0, cup.contenance_ml - coffeeVol);
+    const milk = Math.max(0, cup.capacity_ml - coffeeVol);
     if (milk === 0) {
       $("#milk-hint").textContent = I18N.t("milk_cup_too_small");
       return;
@@ -210,7 +210,7 @@
     const cappu = Math.round(milk / SWELL_CAPPU);
     $("#f-milk").value = flat;
     $("#milk-hint").textContent =
-      I18N.t("milk_two", { e: milk, l: flat, c: cappu, t: cup.contenance_ml, v: coffeeVol }) +
+      I18N.t("milk_two", { e: milk, l: flat, c: cappu, t: cup.capacity_ml, v: coffeeVol }) +
       (declared ? " " + I18N.t("milk_declared") : "");
   }
 
@@ -218,9 +218,9 @@
   function fillCupSelect() {
     const sel = $("#f-cup");
     const v = sel.value;
-    sel.innerHTML = '<option value=""></option>' + DATA.state.tasses.map(t =>
-      '<option value="' + titleAttr(t.nom) + '">' + titleAttr(t.nom) + " · " + t.contenance_ml + " ml</option>").join("");
-    if (v && DATA.state.tasses.some(t => t.nom === v)) sel.value = v;
+    sel.innerHTML = '<option value=""></option>' + DATA.state.cups.map(t =>
+      '<option value="' + titleAttr(t.name) + '">' + titleAttr(t.name) + " · " + t.capacity_ml + " ml</option>").join("");
+    if (v && DATA.state.cups.some(t => t.name === v)) sel.value = v;
   }
 
   /* The cup overflow warning was REMOVED. It compared the expected volume to the
@@ -232,8 +232,8 @@
 
 
   function renderCupEditor() {
-    $("#cups-list").innerHTML = DATA.state.tasses.map(t =>
-      '<div class="cup-row"><span>' + t.nom + " · " + t.contenance_ml + ' ml</span>' +
+    $("#cups-list").innerHTML = DATA.state.cups.map(t =>
+      '<div class="cup-row"><span>' + t.name + " · " + t.capacity_ml + ' ml</span>' +
       '<button type="button" class="btn-row danger" data-cup-delete="' + t.id + '" title="' + I18N.t("btn_delete") + '">' + icon("croix") + "</button></div>"
     ).join("");
     $$("[data-cup-delete]").forEach(b => b.addEventListener("click", async () => {
@@ -245,7 +245,7 @@
 
   /* A recipe whose grind is ON PURPOSE outside its machine's range (the Neo
      Brew, extra coarse) carries its setting: entry keeps it and does not warn. */
-  const wantedDial = r => !!r && !!GRIND.parseDial(r.dial) && !GRIND.checkRange(r.methode, r.dial).ok;
+  const wantedDial = r => !!r && !!GRIND.parseDial(r.dial) && !GRIND.checkRange(r.method, r.dial).ok;
   function prefillFromRecipe(recipeName) {
     const r = findRecipe(recipeName);
     if (!r) return;
@@ -257,9 +257,9 @@
        the case for the Brikka ones: the temperature depends on the heat
        setting there, fixing it in advance would make no sense. */
     $("#f-dose").value = r.dose || fallbacks.dose;
-    $("#f-water").value = r.eau || "";
+    $("#f-water").value = r.water || "";
     // From the chosen coffee's roast when the source gives one per roast level (v9.00).
-    const targetTemp = temperatureForCoffee(r, DATA.state.cafes.find(c => c.id === $("#f-coffee").value));
+    const targetTemp = temperatureForCoffee(r, DATA.state.coffees.find(c => c.id === $("#f-coffee").value));
     $("#f-temp").value = targetTemp === "" || targetTemp === undefined ? "" : targetTemp;
     // A new recipe starts with no heating time: it is a measurement of the
     // current cup, not a recipe value. The hint says how long to aim for.
@@ -267,7 +267,7 @@
     updateTempHint();
     // The grinder SETTING, not the recipe's target: see FACTORY_DIAL.
     $("#f-grind").value = currentCoffeeGround() ? "" : wantedDial(r) ? r.dial : fallbacks.dial;
-    if (r.methode === "Brikka") $("#f-power").value = r.puissance_feu || fallbacks.fire;
+    if (r.method === "Brikka") $("#f-power").value = r.heat_level || fallbacks.fire;
     updateAgitationFromRecipe();
     updatePreheatField();
     updateMilk();
@@ -278,17 +278,17 @@
   }
 
   function onCoffeeChoice() {
-    const coffee = DATA.state.cafes.find(c => c.id === $("#f-coffee").value);
+    const coffee = DATA.state.coffees.find(c => c.id === $("#f-coffee").value);
     if (!coffee) { updateWarnings(); return; }
     // Preselects the recommended machine and recipe, everything stays editable.
-    const recommended = findRecipe(coffee.recette_recommandee);
+    const recommended = findRecipe(coffee.recommended_recipe);
     if (recommended) {
-      chooseMethod(recommended.methode, true);
+      chooseMethod(recommended.method, true);
       fillRecipeSelect();
-      $("#f-recipe").value = recommended.nom;
-      prefillFromRecipe(recommended.nom);
-    } else if (coffee.machine_recommandee === "Brikka" || coffee.machine_recommandee === "Switch") {
-      chooseMethod(coffee.machine_recommandee);
+      $("#f-recipe").value = recommended.name;
+      prefillFromRecipe(recommended.name);
+    } else if (coffee.recommended_method === "Brikka" || coffee.recommended_method === "Switch") {
+      chooseMethod(coffee.recommended_method);
       prefillFromRecipe($("#f-recipe").value);
     } else {
       // Same recipe, other coffee: the temperature follows its roast (v9.00).
@@ -319,7 +319,7 @@
   function updateTempHint() {
     const hint = $("#temp-hint");
     if (!hint) return;
-    if (entry.methode !== "Switch") { setText(hint, ""); return; }
+    if (entry.method !== "Switch") { setText(hint, ""); return; }
     const e = fallbacks.boil;
     const s = readDuration("f-heat");
     const t = $("#f-temp").value;
@@ -340,7 +340,7 @@
   /* The rating is optional. As long as the slider has not been touched, it
      has no thumb (isRatingEmpty, in the core): we save "" and the extraction
      counts as unrated everywhere (averages, insights, best settings, which
-     already filter on note_sur_10 !== ""). The Clear button returns to that state. */
+     already filter on score_10 !== ""). The Clear button returns to that state. */
   function updateRatingDisplay() {
     const slider = $("#f-rating");
     const empty = isRatingEmpty(slider);
@@ -354,7 +354,7 @@
 
   /* What goes to the database: an empty string when the cup is not rated, so
      that averages, insights and best settings all exclude it the same way.
-     They already filter on note_sur_10 !== "". */
+     They already filter on score_10 !== "". */
   function entryRating() {
     return isRatingEmpty($("#f-rating")) ? "" : $("#f-rating").value;
   }
@@ -367,22 +367,22 @@
     const zone = $("#age-pack");
     if (!zone) return;
     const c = DATA.calcs({
-      cafe_id: $("#f-coffee").value,
-      date_heure: $("#f-date").value || localNow(),
+      coffee_id: $("#f-coffee").value,
+      date_time: $("#f-date").value || localNow(),
     });
-    if (c.jours_ouvert === "") { zone.hidden = true; zone.textContent = ""; return; }
+    if (c.days_open === "") { zone.hidden = true; zone.textContent = ""; return; }
     zone.hidden = false;
-    zone.textContent = I18N.t("bag_open_days", { n: c.jours_ouvert });
+    zone.textContent = I18N.t("bag_open_days", { n: c.days_open });
   }
 
   function updateWarnings() {
     const zone = $("#warnings");
-    const coffee = DATA.state.cafes.find(c => c.id === $("#f-coffee").value);
-    const warnings = combinationWarnings(coffee, entry.methode, $("#f-recipe").value, DATA.state.recettes);
+    const coffee = DATA.state.coffees.find(c => c.id === $("#f-coffee").value);
+    const warnings = combinationWarnings(coffee, entry.method, $("#f-recipe").value, DATA.state.recipes);
     const msgs = warnings.msgs.slice();
     const dial = $("#f-grind").value.trim();
     if (dial && !currentCoffeeGround() && !wantedDial(findRecipe($("#f-recipe").value))) {
-      const v = GRIND.checkRange(entry.methode, dial);
+      const v = GRIND.checkRange(entry.method, dial);
       if (!v.ok) msgs.push(v.message);
     }
     zone.innerHTML = msgs.map(m => '<div class="warning">' + m + "</div>").join("");
@@ -408,7 +408,7 @@
      the "reprendre" button.
      Do not put a Brikka formula back without measured data. */
   function estimatedVolume(dose, water) {
-    if (entry.methode === "Brikka") return 0;
+    if (entry.method === "Brikka") return 0;
     if (!(dose > 0) || !(water > 0)) return 0;
     return Math.max(0, Math.round((water - 2.1 * dose) / 5) * 5);
   }
@@ -421,11 +421,11 @@
        machines, it is the universal convention and the only one comparable to
        a recipe. The in-cup ratio follows second, and only if it is measured. */
     const volume = parseFloat($f("#f-volume").value);
-    const brikka = entry.methode === "Brikka";
+    const brikka = entry.method === "Brikka";
     let ratio = "…", base = "";
     if (dose > 0 && water > 0) {
       ratio = "1:" + (water / dose).toFixed(1);
-      base = brikka ? "chaudiere" : "infusion";
+      base = brikka ? "boiler" : "infusion";
     }
     const inCup = dose > 0 && volume > 0 ? "1:" + (volume / dose).toFixed(1) : "";
     const explanation = base ? detailRatio(base, dose, water) : I18N.t("ratio_nothing");
@@ -442,7 +442,7 @@
 
     const dial = grindField.value.trim();
     const p = GRIND.parseDial(dial);
-    const outOfRange = !preground && p && !GRIND.checkRange(entry.methode, dial).ok && !wantedDial(findRecipe($f("#f-recipe").value));
+    const outOfRange = !preground && p && !GRIND.checkRange(entry.method, dial).ok && !wantedDial(findRecipe($f("#f-recipe").value));
     setHtml($f("#live-grind"), I18N.t("live_grind") + " <b>" +
       (preground ? I18N.t("bag_default")
         : p ? I18N.t("live_detail", { c: p.clicks, u: Math.round(p.microns) })
@@ -454,21 +454,21 @@
       setText(grindDetail, I18N.t("bag_default"));
       grindDetail.classList.remove("hint-alert");
     } else if (p) {
-      setText(grindDetail, I18N.t("live_detail", { c: p.clicks, u: Math.round(p.microns) }) + " · " + GRIND.bandOf(p.microns).nom);
+      setText(grindDetail, I18N.t("live_detail", { c: p.clicks, u: Math.round(p.microns) }) + " · " + GRIND.bandOf(p.microns).name);
       grindDetail.classList.toggle("hint-alert", !!outOfRange);
     } else {
       setText(grindDetail, dial ? I18N.t("live_invalid") : "");
       grindDetail.classList.toggle("hint-alert", !!dial);
     }
 
-    const coffee = DATA.state.cafes.find(c => c.id === $f("#f-coffee").value);
+    const coffee = DATA.state.coffees.find(c => c.id === $f("#f-coffee").value);
     let cost = "…";
-    if (coffee && coffee.prix_vnd && coffee.format_grammes && dose > 0) {
-      cost = fmtVND(coffee.prix_vnd / coffee.format_grammes * dose);
+    if (coffee && coffee.price_vnd && coffee.bag_size_g && dose > 0) {
+      cost = fmtVND(coffee.price_vnd / coffee.bag_size_g * dose);
       // Not pure coffee: second value, the cost relative to the real coffee.
-      const pct = coffee.pourcentage_cafe_reel === "" || coffee.pourcentage_cafe_reel === undefined ? 100 : Number(coffee.pourcentage_cafe_reel);
+      const pct = coffee.real_coffee_pct === "" || coffee.real_coffee_pct === undefined ? 100 : Number(coffee.real_coffee_pct);
       if (pct < 100 && pct > 0) {
-        cost += " <small>(" + I18N.t("live_real_cost", { v: fmtVND(coffee.prix_vnd / (coffee.format_grammes * pct / 100) * dose) }) + ")</small>";
+        cost += " <small>(" + I18N.t("live_real_cost", { v: fmtVND(coffee.price_vnd / (coffee.bag_size_g * pct / 100) * dose) }) + ")</small>";
       }
     }
     setHtml($f("#live-cost"), I18N.t("live_cost") + " <b>" + cost + "</b>");
@@ -493,7 +493,7 @@
     if (estimate) {
       btnVol.hidden = false;
       btnVol.textContent = I18N.t("volume_estimate", { v: estimate });
-      btnVol.title = I18N.t("volume_title", { m: entry.methode });
+      btnVol.title = I18N.t("volume_title", { m: entry.method });
       btnVol.dataset.value = estimate;
     } else {
       btnVol.hidden = true;
@@ -553,9 +553,9 @@
   // The fields the correction reads, as the form holds them.
   function extFromForm() {
     return {
-      methode: entry.methode, mouture_dial: $("#f-grind").value.trim().replace(/,/g, "."),
-      temperature_c: $("#f-temp").value, puissance_feu: $("#f-power").value,
-      eau_g: $("#f-water").value, dose_g: $("#f-dose").value,
+      method: entry.method, grind_dial: $("#f-grind").value.trim().replace(/,/g, "."),
+      temperature_c: $("#f-temp").value, heat_level: $("#f-power").value,
+      water_g: $("#f-water").value, dose_g: $("#f-dose").value,
       diagnostic: DIAGNOSTICS.filter(d => entry.diagnostics.has(d)).join("|"),
     };
   }
@@ -662,7 +662,7 @@
     entry.editId = null;
     entry.dateTouched = false;
     entry.diagnostics.clear();
-    entry.descripteurs.clear();
+    entry.descriptors.clear();
     $("#entry-title").textContent = I18N.t("entry_new");
     $("#btn-save").textContent = I18N.t("entry_save");
     $("#btn-cancel-editing").hidden = true;
@@ -714,46 +714,46 @@
   }
 
   function loadExtractionIntoEntry(ext, isDuplicate) {
-    fillCoffeeSelect(ext.cafe_id);
+    fillCoffeeSelect(ext.coffee_id);
     entry.editId = isDuplicate ? null : ext.id;
-    $("#f-date").value = isDuplicate ? localNow() : ext.date_heure;
+    $("#f-date").value = isDuplicate ? localNow() : ext.date_time;
     // It comes from the opened extraction, not from a default: leave it alone.
     entry.dateTouched = !isDuplicate;
-    $("#f-coffee").value = ext.cafe_id;
-    chooseMethod(ext.methode || "Brikka", true);
+    $("#f-coffee").value = ext.coffee_id;
+    chooseMethod(ext.method || "Brikka", true);
     fillRecipeSelect();
-    if (ext.recette) $("#f-recipe").value = ext.recette;
+    if (ext.recipe) $("#f-recipe").value = ext.recipe;
     $("#f-dose").value = ext.dose_g;
-    $("#f-water").value = ext.eau_g;
+    $("#f-water").value = ext.water_g;
     $("#f-temp").value = ext.temperature_c;
-    writeDuration("f-heat", ext.chauffe_s === undefined ? "" : ext.chauffe_s);
+    writeDuration("f-heat", ext.heating_s === undefined ? "" : ext.heating_s);
     updateTempHint();
-    $("#f-grind").value = ext.mouture_dial;
-    $("#f-volume").value = ext.volume_extrait_ml;
-    $("#f-add-water-yes").checked = ext.eau_ajoutee_ml !== "" && ext.eau_ajoutee_ml !== undefined;
+    $("#f-grind").value = ext.grind_dial;
+    $("#f-volume").value = ext.yield_ml;
+    $("#f-add-water-yes").checked = ext.added_water_ml !== "" && ext.added_water_ml !== undefined;
     $("#f-water-added").hidden = !$("#f-add-water-yes").checked;
-    $("#f-water-added").value = ext.eau_ajoutee_ml !== undefined ? ext.eau_ajoutee_ml : "";
-    $("#f-preheat").checked = Number(ext.eau_prechauffee) === 1;
-    $("#f-failed").checked = Number(ext.ratee) === 1;
+    $("#f-water-added").value = ext.added_water_ml !== undefined ? ext.added_water_ml : "";
+    $("#f-preheat").checked = Number(ext.preheated_water) === 1;
+    $("#f-failed").checked = Number(ext.failed) === 1;
     updatePreheatField();
-    $("#f-power").value = ext.puissance_feu || "";
-    $("#f-agitation-yes").checked = ext.agitation_nb !== "" && ext.agitation_nb !== undefined;
+    $("#f-power").value = ext.heat_level || "";
+    $("#f-agitation-yes").checked = ext.stir_count !== "" && ext.stir_count !== undefined;
     $("#row-agitation").hidden = !$("#f-agitation-yes").checked;
-    $("#f-agitation").value = ext.agitation_nb !== undefined && ext.agitation_nb !== "" ? ext.agitation_nb : 1;
-    $("#f-cup").value = ext.tasse || "";
-    $("#f-milk").value = ext.lait_ml !== undefined ? ext.lait_ml : "";
-    $("#field-milk").hidden = !(findRecipe(ext.recette) || {}).lait;
-    writeDuration("f-total", ext.temps_total_s);
-    writeDuration("f-flow", ext.temps_ecoulement_s);
-    $("#f-rating").value = ext.note_sur_10 === "" ? 5 : ext.note_sur_10;
-    markRating($("#f-rating"), ext.note_sur_10 === "");
+    $("#f-agitation").value = ext.stir_count !== undefined && ext.stir_count !== "" ? ext.stir_count : 1;
+    $("#f-cup").value = ext.cup || "";
+    $("#f-milk").value = ext.milk_ml !== undefined ? ext.milk_ml : "";
+    $("#field-milk").hidden = !(findRecipe(ext.recipe) || {}).milk;
+    writeDuration("f-total", ext.total_time_s);
+    writeDuration("f-flow", ext.flow_time_s);
+    $("#f-rating").value = ext.score_10 === "" ? 5 : ext.score_10;
+    markRating($("#f-rating"), ext.score_10 === "");
     updateRatingDisplay();
-    $("#f-comment").value = ext.commentaire;
+    $("#f-comment").value = ext.comment;
     entry.diagnostics = new Set((ext.diagnostic || "").split("|").filter(Boolean));
     $$("#f-diagnostic .pill").forEach(x => x.classList.toggle("on", entry.diagnostics.has(x.dataset.diag)));
     updateDiagnosticCorrection();
-    entry.descripteurs = new Set((ext.descripteurs || "").split("|").filter(Boolean));
-    $$("#f-descriptors .tag").forEach(x => x.classList.toggle("on", entry.descripteurs.has(x.dataset.tag)));
+    entry.descriptors = new Set((ext.descriptors || "").split("|").filter(Boolean));
+    $$("#f-descriptors .tag").forEach(x => x.classList.toggle("on", entry.descriptors.has(x.dataset.tag)));
     /* A family that has just received a checked taste must reappear. */
     UI.updateVisibleFamilies();
     $("#entry-title").textContent = isDuplicate ? I18N.t("entry_duplicated") : I18N.t("entry_edit");
@@ -763,7 +763,7 @@
     updateLive();
     // The second argument tells the Entry screen that this switch IS the opening
     // of an edit, so it must not abandon it on arrival.
-    activateScreen("saisie", true);
+    activateScreen("entry", true);
   }
 
   /* REMAKING A CUP means taking its SETTINGS, not its result (v8.41).
@@ -774,8 +774,8 @@
      icon's "Refaire ma dernière tasse" shortcut. */
   function settingsOnly(ext) {
     return {
-      ...ext, note_sur_10: "", commentaire: "", diagnostic: "", descripteurs: "", ratee: "",
-      temps_total_s: "", temps_ecoulement_s: "", volume_extrait_ml: "",
+      ...ext, score_10: "", comment: "", diagnostic: "", descriptors: "", failed: "",
+      total_time_s: "", flow_time_s: "", yield_ml: "",
     };
   }
   function redoCup(ext) {
@@ -785,8 +785,8 @@
      fact with a past date lands at the end of the list. */
   function redoLast() {
     const latest = DATA.state.extractions.reduce(
-      (a, e) => (!a || String(e.date_heure) > String(a.date_heure) ? e : a), null);
-    if (!latest) { activateScreen("saisie"); return false; }
+      (a, e) => (!a || String(e.date_time) > String(a.date_time) ? e : a), null);
+    if (!latest) { activateScreen("entry"); return false; }
     redoCup(latest);
     return true;
   }
@@ -795,37 +795,37 @@
     ev.preventDefault();
     if (!$("#f-dose").value) { toast(I18N.t("toast_dose")); return; }
     const ext = {
-      date_heure: $("#f-date").value || localNow(),
-      cafe_id: $("#f-coffee").value,
-      methode: entry.methode,
-      recette: $("#f-recipe").value,
+      date_time: $("#f-date").value || localNow(),
+      coffee_id: $("#f-coffee").value,
+      method: entry.method,
+      recipe: $("#f-recipe").value,
       dose_g: $("#f-dose").value,
-      eau_g: $("#f-water").value,
-      mouture_dial: $("#f-grind").value.trim().replace(/,/g, "."),
+      water_g: $("#f-water").value,
+      grind_dial: $("#f-grind").value.trim().replace(/,/g, "."),
       // Brikka: neither temperature nor heating time, the water heats in the boiler.
-      temperature_c: entry.methode === "Switch" ? $("#f-temp").value : "",
-      chauffe_s: entry.methode === "Switch" ? readDuration("f-heat") : "",
-      temps_total_s: readDuration("f-total"),
-      temps_ecoulement_s: readDuration("f-flow"),
-      volume_extrait_ml: $("#f-volume").value,
-      eau_ajoutee_ml: entry.methode === "Brikka" && $("#f-add-water-yes").checked ? $("#f-water-added").value : "",
-      lait_ml: !$("#field-milk").hidden ? $("#f-milk").value : "",
-      agitation_nb: entry.methode === "Switch" && $("#f-agitation-yes").checked ? ($("#f-agitation").value || 1) : "",
-      tasse: $("#f-cup").value,
-      eau_prechauffee: entry.methode === "Brikka" && $("#f-preheat").checked ? 1 : "",
-      ratee: $("#f-failed").checked ? 1 : "",
-      puissance_feu: entry.methode === "Brikka" ? $("#f-power").value : "",
-      note_sur_10: entryRating(),
+      temperature_c: entry.method === "Switch" ? $("#f-temp").value : "",
+      heating_s: entry.method === "Switch" ? readDuration("f-heat") : "",
+      total_time_s: readDuration("f-total"),
+      flow_time_s: readDuration("f-flow"),
+      yield_ml: $("#f-volume").value,
+      added_water_ml: entry.method === "Brikka" && $("#f-add-water-yes").checked ? $("#f-water-added").value : "",
+      milk_ml: !$("#field-milk").hidden ? $("#f-milk").value : "",
+      stir_count: entry.method === "Switch" && $("#f-agitation-yes").checked ? ($("#f-agitation").value || 1) : "",
+      cup: $("#f-cup").value,
+      preheated_water: entry.method === "Brikka" && $("#f-preheat").checked ? 1 : "",
+      failed: $("#f-failed").checked ? 1 : "",
+      heat_level: entry.method === "Brikka" ? $("#f-power").value : "",
+      score_10: entryRating(),
       diagnostic: DIAGNOSTICS.filter(d => entry.diagnostics.has(d)).join("|"),
-      descripteurs: Array.from(entry.descripteurs).join("|"),
-      commentaire: $("#f-comment").value.trim(),
+      descriptors: Array.from(entry.descriptors).join("|"),
+      comment: $("#f-comment").value.trim(),
     };
     if (entry.editId) {
       await DATA.editExtraction(entry.editId, ext);
       UI.clearDraft();
       toast(I18N.t("toast_updated"));
       resetEntry();
-      activateScreen("historique");
+      activateScreen("history");
     } else {
       await DATA.addExtraction(ext);
       UI.clearDraft();
@@ -843,7 +843,7 @@
         toast(I18N.t("toast_saved"));
       }
       resetEntry(true);
-      activateScreen("tableau");
+      activateScreen("dashboard");
     }
   }
 
@@ -905,7 +905,7 @@
     enableLongPress($("#f-descriptors"));
     $("#tastes-plus").addEventListener("click", () => UI.toggleFamilies());
     $("#chrono-beep").addEventListener("change", () => {
-      try { localStorage.setItem("bips", $("#chrono-beep").checked ? "1" : "0"); } catch (e) { /* never mind */ }
+      try { localStorage.setItem("beeps", $("#chrono-beep").checked ? "1" : "0"); } catch (e) { /* never mind */ }
     });
     $("#form-entry").addEventListener("submit", oneAtATime(saveEntry));
     $("#form-entry").addEventListener("input", UI.scheduleDraft);
@@ -915,7 +915,7 @@
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") UI.saveDraft();
     });
-    $("#btn-cancel-editing").addEventListener("click", () => { resetEntry(); activateScreen("historique"); });
+    $("#btn-cancel-editing").addEventListener("click", () => { resetEntry(); activateScreen("history"); });
     $("#btn-manage-coffees").addEventListener("click", () => UI.openCoffeesModal());
     $("#volume-estimate").addEventListener("click", () => {
       const v = $("#volume-estimate").dataset.value;

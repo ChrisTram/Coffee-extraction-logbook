@@ -14,7 +14,7 @@
  *      borrowing file stays frozen on the value at load time, forever,
  *      with nothing to flag it. It happened during the split itself,
  *      on the current screen, and only a review caught it. Shared state
- *      must be an object mutated in place, like `saisie`, `chrono` or `nav`.
+ *      must be an object mutated in place, like `entry`, `chrono` or `nav`.
  *
  *   2. Calling a function of another screen without going through UI. The file
  *      loads without a hitch and the failure comes on click, in the browser.
@@ -145,7 +145,7 @@ const KEYWORDS = new Set(["if","else","for","while","do","return","function","co
    listing them here: recipes.js alone publishes some thirty constants, and a
    handwritten list would have drifted at the first addition, turning this test
    into a source of false alarms. Which amounts to disabling it. */
-const OTHER_LAYERS = ["js/tools.js", "js/i18n.js", "js/grind.js", "js/recipes.js", "js/sync.js",
+const OTHER_LAYERS = ["js/legacy-names.js", "js/tools.js", "js/i18n.js", "js/grind.js", "js/recipes.js", "js/sync.js",
   "js/data-csv.js", "js/data-schema.js", "js/data-store.js", "js/data-calcs.js", "js/data-migrations.js",
   "js/data.js", "js/tuning.js", "js/charts.js", "js/demo-data.js"];
 const GLOBALS = new Set(["Chart",
@@ -316,7 +316,7 @@ const core = info["js/ui-core.js"];
   /* Navigation state, for its part, is a SHARED object and must stay so: that is
      precisely the shape that fixed the mistake above. */
   check("navigation state is a shared object, not variables",
-    core.src.includes('const nav = { screenName: "tableau" }'));
+    core.src.includes('const nav = { screenName: "dashboard" }'));
 }
 
 /* 4. THE CORE STAYS A CORE.

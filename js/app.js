@@ -30,7 +30,7 @@
     else if (DATA.state.demoActive) s = I18N.t("status_demo");
     else s = I18N.t("status_browser");
     $("#db-status").textContent = s +
-      I18N.t("status_counts", { c: DATA.state.cafes.length, e: DATA.state.extractions.length });
+      I18N.t("status_counts", { c: DATA.state.coffees.length, e: DATA.state.extractions.length });
     updateSyncStatus();
   }
 
@@ -39,12 +39,12 @@
   const SYNC_LABELS = {
     local: "sync_local",
     demo: "sync_demo",
-    encours: "sync_in_progress",
-    "hors-ligne": "sync_offline",
-    "session-expiree": "sync_session",
-    "non-configuree": "sync_not_configured",
-    "version-perimee": "sync_outdated",
-    erreur: "sync_error",
+    syncing: "sync_in_progress",
+    offline: "sync_offline",
+    "session-expired": "sync_session",
+    "not-configured": "sync_not_configured",
+    "outdated-version": "sync_outdated",
+    error: "sync_error",
   };
 
   function updateSyncStatus() {
@@ -66,7 +66,7 @@
     /* The rail dot takes the colour of the state: it is the only place where
        sync is visible without opening a panel. */
     const dot = $(".rail-point");
-    if (dot) dot.dataset.state = DATA.state.syncState || "jamais";
+    if (dot) dot.dataset.state = DATA.state.syncState || "never";
     $("#db-sync").hidden = !DATA.syncPossible();
   }
 
@@ -133,35 +133,36 @@
       brandLink.addEventListener("click", ev => {
         if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button !== 0) return;
         ev.preventDefault();
-        activateScreen("tableau");
+        activateScreen("dashboard");
       });
     }
     $$("[data-go]").forEach(b => b.addEventListener("click", () => activateScreen(b.dataset.go)));
     // The calendar counts its weeks over its card width: it redraws on resize (debounced).
     window.addEventListener("resize", debounce(() => {
-      if (nav.screenName === "tableau") UI.renderDashboard();
+      if (nav.screenName === "dashboard") UI.renderDashboard();
     }, 200));
 
     // History changes shape at 1024 px (table or cards): matchMedia, one single event at the threshold.
     if (typeof matchMedia === "function") {
       const breakpoint = matchMedia("(max-width: 1023px)");
-      const follow = () => { if (nav.screenName === "historique") UI.renderHistory(); };
+      const follow = () => { if (nav.screenName === "history") UI.renderHistory(); };
       if (breakpoint.addEventListener) breakpoint.addEventListener("change", follow);
     }
 
     window.addEventListener("hashchange", () => {
-      const h = location.hash.slice(1);
-      if (h === "refaire") { openRedo(); return; }
-      const target = normalizeScreen(h);
+      const target = normalizeScreen(location.hash.slice(1));
+      if (target === "redo") { openRedo(); return; }
       if (SCREEN_NAMES.includes(target) && target !== nav.screenName) activateScreen(target);
+      // An old hash (#historique) on the screen already open is rewritten too.
+      else if (target === nav.screenName && location.hash !== "#" + target) history.replaceState(null, "", "#" + target);
     });
 
     /* Theme: a single button cycles light, Graphite, Night, then light. */
     $("#btn-theme").addEventListener("click", () => {
       const root = document.documentElement;
-      if (root.getAttribute("data-theme") !== "sombre") applyTheme("sombre", "graphite");
-      else if (root.getAttribute("data-palette") !== "nuit") applyTheme("sombre", "nuit");
-      else applyTheme("clair");
+      if (root.getAttribute("data-theme") !== "dark") applyTheme("dark", "graphite");
+      else if (root.getAttribute("data-palette") !== "night") applyTheme("dark", "night");
+      else applyTheme("light");
     });
 
     // Language
@@ -190,7 +191,7 @@
     });
     /* A failed local write no longer goes unnoticed (v8.71). */
     let storageWarned = false;
-    window.addEventListener("carnet-stockage-ko", () => {
+    window.addEventListener("carnet-storage-failed", () => {
       if (storageWarned) return;
       storageWarned = true;
       toast(I18N.t("toast_storage_failed"));
@@ -198,7 +199,7 @@
     /* The server knows a more recent version: we offer to reload. */
     let staleWarned = false;
     DATA.subscribe(() => {
-      if (DATA.state.syncState !== "version-perimee" || staleWarned) return;
+      if (DATA.state.syncState !== "outdated-version" || staleWarned) return;
       staleWarned = true;
       UI.toastAction(I18N.t("sync_outdated"), I18N.t("update_reload"), () => location.reload());
     });
@@ -259,7 +260,7 @@
         const text = await f.text();
         const a = DATA.analyzeImport(text);
         const tableName = I18N.t("table_" + a.table);
-        const detail = a.table === "tout"
+        const detail = a.table === "all"
           ? I18N.t("import_preview_all", { n: a.n })
           : I18N.t("import_preview", { n: a.n, t: tableName, added: a.added, changed: a.modified }) +
             (a.withoutId ? " " + I18N.t("import_without_id", { n: a.withoutId }) : "") +
@@ -305,21 +306,21 @@
       updateBadges();
       updateSyncStatus();
       // The rest is only redone if its table moved (a cup changes neither coffees, nor recipes, nor cups).
-      const coffees = DATA.state.cafes, recipes = DATA.state.recettes;
-      ifChanged("cafes", coffees, () => { UI.fillCoffeeSelect(); fillRecommendedRecipeSelect(); });
+      const coffees = DATA.state.coffees, recipes = DATA.state.recipes;
+      ifChanged("coffees", coffees, () => { UI.fillCoffeeSelect(); fillRecommendedRecipeSelect(); });
       ifChanged("filtres", DATA.state.extractions, UI.fillFilters);
-      ifChanged("recettes", recipes, () => {
+      ifChanged("recipes", recipes, () => {
         UI.fillRecipeSelect();
         UI.renderRecipes();
       });
-      ifChanged("tasses", DATA.state.tasses, UI.fillCupSelect);
+      ifChanged("cups", DATA.state.cups, UI.fillCupSelect);
       if (UI.isQuickOpen()) UI.updateQuickPanel();
       renderCurrentScreen();
     });
   }
 
   /* The icon's "Redo my last cup" shortcut (manifest.json) opens
-     ./#refaire: the entry form prefilled with the last cup's settings. */
+     ./#redo: the entry form prefilled with the last cup's settings. */
   function openRedo() {
     toast(I18N.t(UI.redoLast() ? "toast_redo" : "toast_redo_empty"));
   }
@@ -328,7 +329,7 @@
     const sel = $("#c-recipe");
     const v = sel.value;
     sel.innerHTML = '<option value="">' + I18N.t("none") + "</option>" +
-      liveRecipes().map(r => "<option>" + r.nom + "</option>").join("");
+      liveRecipes().map(r => "<option>" + r.name + "</option>").join("");
     if (v && findRecipe(v)) sel.value = v;
   }
 
@@ -340,7 +341,7 @@
     $("#btn-lang").title = I18N.lang() === "fr" ? "Switch to English" : "Passer en français";
     UI.buildPills();
     $$("#f-diagnostic .pill").forEach(x => setPressed(x, UI.entry.diagnostics.has(x.dataset.diag)));
-    $$("#f-descriptors .tag").forEach(x => setPressed(x, UI.entry.descripteurs.has(x.dataset.tag)));
+    $$("#f-descriptors .tag").forEach(x => setPressed(x, UI.entry.descriptors.has(x.dataset.tag)));
     UI.updateDiagnosticCorrection();
     UI.updateStopwatchButtons();
     UI.updateStopwatchSteps(false);
@@ -394,7 +395,7 @@
     fillRecommendedRecipeSelect();
     UI.fillCupSelect();
     UI.renderRecipes();
-    try { $("#chrono-beep").checked = localStorage.getItem("bips") !== "0"; } catch (e) { /* never mind */ }
+    try { $("#chrono-beep").checked = localStorage.getItem("beeps") !== "0"; } catch (e) { /* never mind */ }
     // BEFORE anything that reads replis: the converter and the entry form depend on it.
     await migrateLocalFallbacks();
     loadFallbacks();
@@ -404,9 +405,11 @@
     UI.resetEntry();
     if (UI.restoreDraft()) toast(I18N.t("toast_draft"));
 
-    const h = location.hash.slice(1);
-    if (h === "refaire") openRedo();
-    else activateScreen(SCREEN_NAMES.includes(normalizeScreen(h)) ? normalizeScreen(h) : "tableau");
+    /* An old hash (#tableau, #saisie, a bookmark or a PWA shortcut from before
+       v9.06) lands on its new screen, and activateScreen rewrites the hash. */
+    const h = normalizeScreen(location.hash.slice(1));
+    if (h === "redo") openRedo();
+    else activateScreen(SCREEN_NAMES.includes(h) ? h : "dashboard");
 
     // The first screen is rendered: the loading overlay has no reason to stay.
     const overlay = $("#loading");
@@ -424,7 +427,7 @@
     /* Local data first, sync next (v8.72): the welcome screen and its demo
        only appear if, after the sync, there is still nothing. */
     const welcomeIfEmpty = () => {
-      if (DATA.state.cafes.length || DATA.state.extractions.length) return;
+      if (DATA.state.coffees.length || DATA.state.extractions.length) return;
       if (!DATA.state.fsAvailable) {
         $("#welcome-fs-note").hidden = false;
         $("#welcome-create").disabled = true;

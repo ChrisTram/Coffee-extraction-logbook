@@ -8,7 +8,7 @@
  *
  * Freshness starts from the bag's OPENING DATE, not the roast date: Chris's
  * bags almost never carry one. Each cup therefore has its day of the bag
- * (DATA.calcs, jours_ouvert), and the WINDOW is learned from its ratings:
+ * (DATA.calcs, days_open), and the WINDOW is learned from its ratings:
  * the day bands where the cups of THIS coffee beat its average, from
  * MIN_PER_BAND cups per band. As long as there are not enough, the card
  * shows the curve without a window, and says so.
@@ -28,7 +28,7 @@
   const REORDER_CUPS = 3;
   let openId = null;
   // L4: the open tab, and whether opening pushed an entry into the browser history.
-  let sheetTab = "reglage";
+  let sheetTab = "setting";
   let historyEntry = false;
   // True when the card closes to open another screen: the history entry then becomes that screen's.
   let closingToNavigate = false;
@@ -51,11 +51,11 @@
      day. Null without an open bag. */
   function currentBagDay(coffeeId) {
     const s = DATA.currentBag(coffeeId);
-    if (!s || !s.date_ouverture) return null;
-    const d = localDate(s.date_ouverture);
+    if (!s || !s.opened_date) return null;
+    const d = localDate(s.opened_date);
     if (!d) return null;
     const today = new Date(); today.setHours(0, 0, 0, 0);
-    return { day: Math.max(0, Math.round((today - d) / 86400000)), openedOn: s.date_ouverture };
+    return { day: Math.max(0, Math.round((today - d) / 86400000)), openedOn: s.opened_date };
   }
 
   /* THE LEARNED WINDOW. The bands with enough cups; among them, those above
@@ -65,8 +65,8 @@
      nothing to compare. */
   function learnWindow(rated, coffeeAvg) {
     const bands = BANDS.map(([a, b]) => {
-      const ratings = rated.filter(e => e._c.jours_ouvert !== "" && e._c.jours_ouvert >= a && e._c.jours_ouvert <= b)
-        .map(e => Number(e.note_sur_10));
+      const ratings = rated.filter(e => e._c.days_open !== "" && e._c.days_open >= a && e._c.days_open <= b)
+        .map(e => Number(e.score_10));
       return { a, b, n: ratings.length, mean: ratings.length ? average(ratings) : null };
     });
     const documented = bands.filter(t => t.n >= MIN_PER_BAND);
@@ -76,17 +76,17 @@
     /* The end stops at the last day a cup documents: the last band runs to
        day 60, and announcing « encore 19 jours » on days nobody tasted would
        be making it up. */
-    const days = rated.filter(e => e._c.jours_ouvert !== "").map(e => e._c.jours_ouvert);
+    const days = rated.filter(e => e._c.days_open !== "").map(e => e._c.days_open);
     const start = good[0].a, end = Math.min(good[good.length - 1].b, Math.max(...days));
-    const inside = rated.filter(e => e._c.jours_ouvert !== "" && e._c.jours_ouvert >= start && e._c.jours_ouvert <= end);
-    const outside = rated.filter(e => e._c.jours_ouvert !== "" && (e._c.jours_ouvert < start || e._c.jours_ouvert > end));
+    const inside = rated.filter(e => e._c.days_open !== "" && e._c.days_open >= start && e._c.days_open <= end);
+    const outside = rated.filter(e => e._c.days_open !== "" && (e._c.days_open < start || e._c.days_open > end));
     if (!inside.length || !outside.length) return { bands: bands, sweetSpot: null };
     return {
       bands: bands,
       sweetSpot: {
         start: start, end: end,
-        inside: average(inside.map(e => Number(e.note_sur_10))),
-        outside: average(outside.map(e => Number(e.note_sur_10))),
+        inside: average(inside.map(e => Number(e.score_10))),
+        outside: average(outside.map(e => Number(e.score_10))),
       },
     };
   }
@@ -94,7 +94,7 @@
   /* The Guide shop, found by roaster: the links live in the Guide screen,
      sorted by house. Nothing if the roaster is not there. */
   function shopLink(coffee) {
-    const t = String(coffee.torrefacteur || "").trim().toLowerCase();
+    const t = String(coffee.roaster || "").trim().toLowerCase();
     if (!t) return null;
     const headings = Array.from(document.querySelectorAll(".shop h3"));
     const h = headings.find(x => {
@@ -150,7 +150,7 @@
         const link = shopLink(coffee);
         html += '<p class="sh-rebuy">' + I18N.t("sheet_rebuy") +
           (link ? ' <a href="' + escapeHtml(link) + '" target="_blank" rel="noopener">' +
-            I18N.t("sheet_shop", { t: escapeHtml(coffee.torrefacteur) }) + "</a>" : "") + "</p>";
+            I18N.t("sheet_shop", { t: escapeHtml(coffee.roaster) }) + "</a>" : "") + "</p>";
       }
     } else {
       html += '<p class="sh-quiet">' + I18N.t("sheet_no_stock") +
@@ -161,7 +161,7 @@
     if (bag) html += '<button type="button" class="btn btn-small btn-subtle sh-delete-bag" data-delete-bag="' + escapeHtml(bag.id) + '">' + I18N.t("sheet_delete_bag") + "</button>";
 
     // The freshness ruler: day 1 on the left, the window in accent, today as a line.
-    const max = Math.max(28, ...rated.map(e => e._c.jours_ouvert === "" ? 0 : e._c.jours_ouvert), jc ? jc.day : 0);
+    const max = Math.max(28, ...rated.map(e => e._c.days_open === "" ? 0 : e._c.days_open), jc ? jc.day : 0);
     const x = j => Math.max(0, Math.min(100, (j / max) * 100));
     if (f.sweetSpot || jc) {
       html += '<div class="sh-freshness" aria-hidden="true">' +
@@ -183,7 +183,7 @@
           : jc.day === f.sweetSpot.end ? "sheet_inside_edge" : "sheet_inside";
         sentences.push(I18N.t(key, { n: Math.abs((jc.day < f.sweetSpot.start ? f.sweetSpot.start : f.sweetSpot.end) - jc.day) }));
       }
-    } else if (rated.some(e => e._c.jours_ouvert !== "")) {
+    } else if (rated.some(e => e._c.days_open !== "")) {
       sentences.push(I18N.t("sheet_no_window", { n: MIN_PER_BAND }));
     }
     if (sentences.length) html += '<p class="sh-text">' + sentences.join(" ") + "</p>";
@@ -193,7 +193,7 @@
   /* The curve: each cup as a dot, each band's average as a line, the window
      as background. Same rating scale as everywhere, from 0 to 10. */
   function curveBlock(rated, f, max, jc) {
-    const points = rated.filter(e => e._c.jours_ouvert !== "");
+    const points = rated.filter(e => e._c.days_open !== "");
     let html = '<section class="sh-block sh-curve"><h3 class="sh-h">' + I18N.t("sheet_curve") + "</h3>";
     if (points.length < 2) return html + '<p class="sh-quiet">' + I18N.t("sheet_curve_empty") + "</p></section>";
     const G = 30, D = 312, H = 12, B = 132, L = 320;
@@ -209,8 +209,8 @@
         '<text x="' + (G - 6) + '" y="' + (y(n) + 3) + '" text-anchor="end">' + n + "</text>";
     });
     points.forEach(e => {
-      svg += '<circle cx="' + x(e._c.jours_ouvert).toFixed(1) + '" cy="' + y(Number(e.note_sur_10)).toFixed(1) +
-        '" r="3" class="sh-c-point" data-cup="' + escapeHtml(e.id) + '"><title>' + escapeHtml(shortDay(e.date_heure) + " : " + fmtRating(Number(e.note_sur_10))) + "</title></circle>";
+      svg += '<circle cx="' + x(e._c.days_open).toFixed(1) + '" cy="' + y(Number(e.score_10)).toFixed(1) +
+        '" r="3" class="sh-c-point" data-cup="' + escapeHtml(e.id) + '"><title>' + escapeHtml(shortDay(e.date_time) + " : " + fmtRating(Number(e.score_10))) + "</title></circle>";
     });
     const bandAverages = f.bands.filter(t => t.n > 0 && t.a <= max)
       .map(t => [x((t.a + Math.min(t.b, max)) / 2), y(t.mean)]);
@@ -227,30 +227,30 @@
   }
 
   function latestBlock(exts) {
-    const latest = exts.slice().sort((a, b) => String(b.date_heure).localeCompare(String(a.date_heure))).slice(0, 5);
+    const latest = exts.slice().sort((a, b) => String(b.date_time).localeCompare(String(a.date_time))).slice(0, 5);
     return '<section class="sh-block sh-latest"><h3 class="sh-h">' + I18N.t("sheet_latest") + "</h3>" +
       '<ol class="sh-list">' + latest.map(e =>
-        '<li><span class="sh-date">' + shortDay(e.date_heure) + '</span><span class="sh-what">' +
-        '<span class="dot-method ' + String(e.methode || "").toLowerCase() + '"></span>' + escapeHtml(I18N.tr(e.recette || "")) +
-        (e.mouture_dial ? " · " + escapeHtml(e.mouture_dial) : "") + "</span><b>" +
-        (e.note_sur_10 === "" ? "·" : fmtRating(Number(e.note_sur_10))) + "</b></li>").join("") + "</ol></section>";
+        '<li><span class="sh-date">' + shortDay(e.date_time) + '</span><span class="sh-what">' +
+        '<span class="dot-method ' + String(e.method || "").toLowerCase() + '"></span>' + escapeHtml(I18N.tr(e.recipe || "")) +
+        (e.grind_dial ? " · " + escapeHtml(e.grind_dial) : "") + "</span><b>" +
+        (e.score_10 === "" ? "·" : fmtRating(Number(e.score_10))) + "</b></li>").join("") + "</ol></section>";
   }
 
   function renderSheet() {
-    const coffee = DATA.state.cafes.find(c => c.id === openId);
+    const coffee = DATA.state.coffees.find(c => c.id === openId);
     const zone = $("#sheet-content");
     if (!coffee || !zone) return;
     // What happened (latest cups, stock) versus what advises
     // (averages, window, setting): the same rule as the dashboard.
-    const exts = extsWithCalcs().filter(e => e.cafe_id === coffee.id);
-    const rated = analyzableExts().filter(e => e.cafe_id === coffee.id && e.note_sur_10 !== "");
-    const coffeeAvg = rated.length ? average(rated.map(e => Number(e.note_sur_10))) : 0;
+    const exts = extsWithCalcs().filter(e => e.coffee_id === coffee.id);
+    const rated = analyzableExts().filter(e => e.coffee_id === coffee.id && e.score_10 !== "");
+    const coffeeAvg = rated.length ? average(rated.map(e => Number(e.score_10))) : 0;
     const machines = {};
-    exts.forEach(e => { if (e.methode) machines[e.methode] = (machines[e.methode] || 0) + 1; });
+    exts.forEach(e => { if (e.method) machines[e.method] = (machines[e.method] || 0) + 1; });
     const machine = Object.entries(machines).sort((a, b) => b[1] - a[1])[0];
-    const pct = Number(coffee.pourcentage_cafe_reel);
+    const pct = Number(coffee.real_coffee_pct);
     const chips = [
-      coffee.torrefacteur, coffee.origine, [coffee.espece, coffee.procede].filter(Boolean).join(" · "), coffee.torrefaction,
+      coffee.roaster, coffee.origin, [coffee.species, coffee.process].filter(Boolean).join(" · "), coffee.roast,
     ].filter(Boolean).map(t => '<span class="sh-chip">' + escapeHtml(t) + "</span>").join("") +
       (pct > 0 && pct < 100 ? '<span class="sh-chip sh-chip-alert">' + pct + " % " + I18N.t("percent_coffee") + "</span>" : "") +
       (machine ? '<span class="sh-chip"><span class="dot-method ' + machine[0].toLowerCase() + '"></span>' +
@@ -264,14 +264,14 @@
        tabs: how you nail it, what it gives you, its bags, its cups. */
     const stock = DATA.bagStock(coffee.id, fallbacks.dose);
     const level = stock ? Math.max(0, Math.min(100, (stock.remaining / stock.format) * 100)) : 60;
-    const roast = String(coffee.torrefaction || "").toLowerCase();
+    const roast = String(coffee.roast || "").toLowerCase();
     const tint = /clair|light|blond/.test(roast) ? "#c48a4d" : /fonc|dark|brun/.test(roast) ? "#5a3219" : "#8f5a33";
-    const best = rated.length ? Math.max(...rated.map(e => Number(e.note_sur_10))) : null;
+    const best = rated.length ? Math.max(...rated.map(e => Number(e.score_10))) : null;
     const doses = exts.filter(e => Number(e.dose_g) > 0).map(e => Number(e.dose_g));
     const cost = UI.costPerCup(coffee, doses.length ? average(doses) : fallbacks.dose);
     const kpi = (v, l) => '<div class="sh-kpi"><b>' + v + "</b><span>" + l + "</span></div>";
-    const TABS = [["reglage", "sheet_tab_setting"], ["gouts", "sheet_tab_tastes"], ["sachets", "sheet_tab_bags"], ["tasses", "sheet_tab_cups"]];
-    if (!TABS.some(([k]) => k === sheetTab)) sheetTab = "reglage";
+    const TABS = [["setting", "sheet_tab_setting"], ["tastes", "sheet_tab_tastes"], ["bags", "sheet_tab_bags"], ["cups", "sheet_tab_cups"]];
+    if (!TABS.some(([k]) => k === sheetTab)) sheetTab = "setting";
     const panel = (key, html) => '<div class="sh-panel" role="tabpanel" id="sh-p-' + key + '" aria-labelledby="sh-o-' + key + '"' +
       (key === sheetTab ? "" : " hidden") + '><div class="sh-grid">' + html + "</div></div>";
     const tastesBlock = '<section class="sh-block sh-tastes"><h3 class="sh-h">' + I18N.t("sheet_tastes") + "</h3>" +
@@ -307,7 +307,7 @@
             : '<span class="sh-jar-g">' + (stock ? fmtDecimal(stock.remaining, 0) + " g" : "") + "</span>") +
         "</div>" +
         '<div class="sh-identity"><p class="highlight">' + I18N.t("sheet_highlight") + "</p>" +
-        '<h2 id="sheet-name">' + escapeHtml(coffee.nom) + "</h2>" + '<div class="sh-chips">' + chips + "</div></div>" +
+        '<h2 id="sheet-name">' + escapeHtml(coffee.name) + "</h2>" + '<div class="sh-chips">' + chips + "</div></div>" +
       "</header>" +
       stockEditor(stock) +
       '<div class="sh-kpis">' +
@@ -321,10 +321,10 @@
         TABS.map(([k, key]) => '<button type="button" role="tab" id="sh-o-' + k + '" data-tab="' + k + '" aria-controls="sh-p-' + k +
           '" aria-selected="' + (k === sheetTab) + '" tabindex="' + (k === sheetTab ? 0 : -1) + '">' + I18N.t(key) + "</button>").join("") +
       "</div>" +
-      panel("reglage", settingBlock + grinderBlock + trajectoryBlock) +
-      panel("gouts", tastesBlock + fingerprintBlock) +
-      panel("sachets", bag.html + curveBlock(rated, bag.sweetSpot, bag.max, bag.jc)) +
-      panel("tasses", latestBlock(exts) + compareBlock(coffee));
+      panel("setting", settingBlock + grinderBlock + trajectoryBlock) +
+      panel("tastes", tastesBlock + fingerprintBlock) +
+      panel("bags", bag.html + curveBlock(rated, bag.sweetSpot, bag.max, bag.jc)) +
+      panel("cups", latestBlock(exts) + compareBlock(coffee));
     UI.drawFingerprint("sheet-footprint", coffee.id);
     UI.drawTrajectory("sheet-trajectory", coffee.id);
     UI.drawGrinder("sheet-grinder", coffee.id);
@@ -340,31 +340,31 @@
      freshness window, their cost per cup and the recurring taste. Everything
      comes from the same computations as the rest of the card. */
   function compareBlock(coffee) {
-    const others = DATA.state.cafes.filter(c => c.id !== coffee.id && DATA.state.extractions.some(e => e.cafe_id === c.id));
+    const others = DATA.state.coffees.filter(c => c.id !== coffee.id && DATA.state.extractions.some(e => e.coffee_id === c.id));
     if (!others.length) return "";
     return '<section class="sh-block sh-compare"><div class="sh-compare-head"><h3 class="sh-h">' + I18N.t("sheet_compare") + "</h3>" +
       '<select id="sheet-compare" aria-label="' + escapeHtml(I18N.t("sheet_compare")) + '"><option value="">' + escapeHtml(I18N.t("sheet_compare_pick")) + "</option>" +
-      others.map(c => '<option value="' + escapeHtml(c.id) + '"' + (c.id === compareId ? " selected" : "") + ">" + escapeHtml(c.nom) + "</option>").join("") +
+      others.map(c => '<option value="' + escapeHtml(c.id) + '"' + (c.id === compareId ? " selected" : "") + ">" + escapeHtml(c.name) + "</option>").join("") +
       '</select></div><div id="sheet-comparison"></div></section>';
   }
   function coffeeSummary(c) {
-    const rated = analyzableExts().filter(e => e.cafe_id === c.id && e.note_sur_10 !== "");
-    const exts = extsWithCalcs().filter(e => e.cafe_id === c.id);
-    const avg = rated.length ? average(rated.map(e => Number(e.note_sur_10))) : null;
+    const rated = analyzableExts().filter(e => e.coffee_id === c.id && e.score_10 !== "");
+    const exts = extsWithCalcs().filter(e => e.coffee_id === c.id);
+    const avg = rated.length ? average(rated.map(e => Number(e.score_10))) : null;
     const machines = {};
-    exts.forEach(e => { if (e.methode) machines[e.methode] = (machines[e.methode] || 0) + 1; });
+    exts.forEach(e => { if (e.method) machines[e.method] = (machines[e.method] || 0) + 1; });
     const machine = Object.keys(machines).sort((a, b) => machines[b] - machines[a])[0];
     const report = TUNING.forCoffee(c.id, analyzableExts());
     const m = report.best;
     const f = learnWindow(rated, avg || 0).sweetSpot;
     const doses = exts.filter(e => Number(e.dose_g) > 0).map(e => Number(e.dose_g));
     const tags = {};
-    rated.forEach(e => String(e.descripteurs || "").split("|").filter(Boolean).forEach(t => { tags[t] = (tags[t] || 0) + 1; }));
+    rated.forEach(e => String(e.descriptors || "").split("|").filter(Boolean).forEach(t => { tags[t] = (tags[t] || 0) + 1; }));
     const topTaste = Object.keys(tags).sort((a, b) => tags[b] - tags[a])[0];
     return [
       avg === null ? I18N.t("sheet_not_rated") : I18N.t("sheet_cmp_average", { m: fmtRating(avg), n: rated.length }),
       machine ? I18N.machine(machine) : "·",
-      m ? [I18N.tr(m.recette || ""), m.grind || ""].filter(Boolean).join(" · ") + ", " + fmtRating(m.average) : I18N.t("sheet_cmp_no_setting"),
+      m ? [I18N.tr(m.recipe || ""), m.grind || ""].filter(Boolean).join(" · ") + ", " + fmtRating(m.average) : I18N.t("sheet_cmp_no_setting"),
       f ? I18N.t("sheet_cmp_days", { a: f.start + 1, b: f.end + 1 }) : I18N.t("sheet_cmp_no_window"),
       UI.costPerCup(c, doses.length ? average(doses) : fallbacks.dose) || "·",
       topTaste ? I18N.tag(topTaste) : "·",
@@ -373,23 +373,23 @@
   function renderComparison() {
     const zone = $("#sheet-comparison");
     if (!zone) return;
-    const a = DATA.state.cafes.find(c => c.id === openId), b = DATA.state.cafes.find(c => c.id === compareId);
+    const a = DATA.state.coffees.find(c => c.id === openId), b = DATA.state.coffees.find(c => c.id === compareId);
     if (!a || !b) { zone.innerHTML = ""; return; }
     const ra = coffeeSummary(a), rb = coffeeSummary(b);
     const rows = ["sheet_cmp_score", "sheet_cmp_machine", "sheet_cmp_setting", "sheet_cmp_window", "sheet_cmp_cost", "sheet_cmp_taste"];
     zone.innerHTML = '<div class="sh-compare-body"><div>' +
-      '<svg id="sheet-duo" class="sh-drawing" viewBox="0 0 320 210" role="img" aria-label="' + escapeHtml(I18N.t("sheet_duo_aria", { a: a.nom, b: b.nom })) + '"></svg>' +
-      '<div class="sh-duo-leg"><span><i class="sh-duo-a"></i>' + escapeHtml(a.nom) + '</span><span><i class="sh-duo-b"></i>' + escapeHtml(b.nom) + "</span></div>" +
+      '<svg id="sheet-duo" class="sh-drawing" viewBox="0 0 320 210" role="img" aria-label="' + escapeHtml(I18N.t("sheet_duo_aria", { a: a.name, b: b.name })) + '"></svg>' +
+      '<div class="sh-duo-leg"><span><i class="sh-duo-a"></i>' + escapeHtml(a.name) + '</span><span><i class="sh-duo-b"></i>' + escapeHtml(b.name) + "</span></div>" +
       '<p class="sh-text" id="sheet-duo-reading"></p></div>' +
-      '<table class="sh-duo-table"><thead><tr><th></th><th>' + escapeHtml(a.nom) + "</th><th>" + escapeHtml(b.nom) + "</th></tr></thead><tbody>" +
+      '<table class="sh-duo-table"><thead><tr><th></th><th>' + escapeHtml(a.name) + "</th><th>" + escapeHtml(b.name) + "</th></tr></thead><tbody>" +
       rows.map((key, i) => "<tr><th>" + escapeHtml(I18N.t(key)) + "</th><td>" + escapeHtml(ra[i]) + "</td><td>" + escapeHtml(rb[i]) + "</td></tr>").join("") +
       "</tbody></table></div>";
     UI.drawFingerprint("sheet-duo", a.id, b.id);
   }
 
   function openSheet(coffeeId) {
-    if (!DATA.state.cafes.some(c => c.id === coffeeId)) return;
-    if (coffeeId !== openId) { compareId = ""; sheetTab = "reglage"; }
+    if (!DATA.state.coffees.some(c => c.id === coffeeId)) return;
+    if (coffeeId !== openId) { compareId = ""; sheetTab = "setting"; }
     openId = coffeeId;
     renderSheet();
     const m = $("#modal-sheet");
@@ -481,8 +481,8 @@
     $("#sheet-content").addEventListener("click", async ev => {
       const b = ev.target.closest("[data-delete-bag]");
       if (!b) return;
-      const a = DATA.state.achats.find(x => x.id === b.dataset.deleteBag);
-      if (!a || !await UI.askConfirm(I18N.t("confirm_delete_bag", { d: a.date_achat || "?" }), { danger: true })) return;
+      const a = DATA.state.purchases.find(x => x.id === b.dataset.deleteBag);
+      if (!a || !await UI.askConfirm(I18N.t("confirm_delete_bag", { d: a.purchase_date || "?" }), { danger: true })) return;
       await DATA.deletePurchase(a.id);
       UI.toast(I18N.t("toast_bag_deleted"));
     });
@@ -496,7 +496,7 @@
       if (sel.value === id) UI.onCoffeeChoice();
       else toast(I18N.t("sheet_inactive"));
       // No edit in progress (resetEntry just closed it): nothing to abandon.
-      UI.activateScreen("saisie");
+      UI.activateScreen("entry");
     });
     $("#sheet-edit").addEventListener("click", () => {
       const id = openId;

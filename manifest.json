@@ -20,21 +20,21 @@
       "name": "Nouvelle extraction",
       "short_name": "Saisie",
       "description": "Ouvrir directement la saisie d'une tasse",
-      "url": "./#saisie",
+      "url": "./#entry",
       "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Refaire ma dernière tasse",
       "short_name": "Refaire",
       "description": "Ouvrir la saisie avec les réglages de la dernière tasse",
-      "url": "./#refaire",
+      "url": "./#redo",
       "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Historique",
       "short_name": "Historique",
       "description": "Retrouver les dernières extractions",
-      "url": "./#historique",
+      "url": "./#history",
       "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]

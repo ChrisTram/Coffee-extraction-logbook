@@ -22,9 +22,10 @@ ES, ils ne marchent pas en `file://`), tous en `defer`, dans l'ordre de
 (`RECETTES_DEPART`, etc.).
 
 SIX écrans dans une page unique, bascule par nav et hash. La liste fait foi dans
-`ECRANS` (`js/ui-core.js`) : tableau, saisie, historique, reglages, guide,
-parametres. Les anciens liens `#reference` restent valides grâce à
-`ECRANS_RENOMMES`.
+`SCREEN_NAMES` (`js/ui-core.js`) : dashboard, entry, history, tuning, guide,
+settings (tableau, saisie, historique, reglages, guide, parametres jusqu'à la
+v9.05). Les anciens liens (`#tableau`, `#saisie`..., et `#reference`) restent
+valides grâce à `LEGACY.ROUTES` (js/legacy-names.js).
 
 NAVIGATION (refonte Comptoir, v8.1). **Un seul élément `.rail` dans le DOM, deux
 mises en page.** À partir de 1024 px c'est un rail fixe à gauche de 232 px qui
@@ -54,7 +55,7 @@ d'identifiant bat la classe, et c'est ainsi que l'historique s'est retrouvé cal
 LES INSIGHTS (« Ce que tes données disent »). Dix règles dans `ui-findings.js`
 (dont, depuis la v8.42, la température de l'eau du Switch par tranches, l'eau
 préchauffée de la Brikka et l'agitation du Switch, chacune limitée à sa machine),
-chacune rendant `{ texte, haut, bas, confiance }` ou `null` via `constat()`,
+chacune rendant `{ text, haut, bas, confiance }` ou `null` via `constat()`,
 où `haut` et `bas` sont `{ libelle, note, n }`. `rendreInsights()` en fait une
 phrase et une ligne de preuve : réglette de 0 à 10, les deux moyennes, la confiance et les effectifs. Les seuils
 d’affichage (0,4 point, 3 tasses par groupe) sont dans `MIN_GAP` et
@@ -167,31 +168,34 @@ frontières le refuse.
 
 ## 3. Modèle de données
 
-Cinq tables, cinq CSV, éditables au tableur. La vérité vit dans un dossier
+Six tables, six CSV, éditables au tableur (la sixième, `settings`, n'a qu'une ligne).
+Depuis la v9.06, tous les noms stockés sont en anglais : tables, colonnes, clés
+du document de synchro, fichiers CSV et leurs en-têtes, clés locales ; la
+correspondance avec les anciens noms français est à la fin de cette section. La vérité vit dans un dossier
 lié via l'API File System Access (Chrome, Edge), avec copie miroir permanente
 dans IndexedDB (base `cafe-tracker`, store `kv`). Sans dossier lié, IndexedDB
 seul + import/export manuels.
 
-### cafes.csv
-`id, nom, torrefacteur, origine, espece, procede, torrefaction, deja_moulu,
-pourcentage_cafe_reel, tag, notes_annoncees, format_grammes, prix_vnd,
-date_torrefaction, machine_recommandee, recette_recommandee, date_ajout,
-actif`
+### coffees.csv (cafes.csv avant la v9.06)
+`id, name, roaster, origin, species, process, roast, pre_ground,
+real_coffee_pct, tag, roaster_notes, bag_size_g, price_vnd,
+roast_date, recommended_method, recommended_recipe, added_date,
+active`
 
-- `deja_moulu` 0/1 : si 1, le champ mouture est désactivé en saisie, affiché
+- `pre_ground` 0/1 : si 1, le champ mouture est désactivé en saisie, affiché
   "défaut paquet", rien n'est stocké, exclu du nuage note contre mouture.
-- `pourcentage_cafe_reel` (défaut 100) : sous 100, pastille rouge "X % café",
+- `real_coffee_pct` (défaut 100) : sous 100, pastille rouge "X % café",
   avertissement non bloquant en Switch (le blocage a été retiré en v7.34),
   coût par gramme de café réel affiché en plus, caféine pondérée.
 - `tag` : "café aromatisé" (auto si pct < 100), "café de référence" (étalon,
   barre verte dans le graphe par café). Champ libre.
-- `machine_recommandee` : Brikka | Switch | Les deux (valeurs françaises
+- `recommended_method` : Brikka | Switch | Les deux (valeurs françaises
   fixes, les option des selects portent des attributs value explicites).
-- `date_ajout` (AAAA-MM-JJ, local, jamais toISOString) : posée à la création
+- `added_date` (AAAA-MM-JJ, local, jamais toISOString) : posée à la création
   d'un café (DATA.ajouterCafe), conservée à la modification (non éditable
   dans le formulaire). Pour l'existant, la migration (étape 5) la déduit de
   la première extraction du café; un café jamais extrait reste sans date.
-- `actif` 0/1 : un café désactivé n'apparaît PLUS DU TOUT dans le select de
+- `active` 0/1 : un café désactivé n'apparaît PLUS DU TOUT dans le select de
   saisie ni dans la saisie rapide. Exception : à l'édition d'une ancienne
   extraction, remplirSelectCafes(garderId) réinjecte l'option "(inactif)"
   pour que la valeur reste affichable. Dans la liste "Mes cafés", les
@@ -203,23 +207,23 @@ actif`
   ("ajouté le 12 août 2026", clé T list_added, format via fmtDateCourte).
 
 ### extractions.csv
-`id, date_heure, cafe_id, methode, recette, dose_g, eau_g, mouture_dial,
-temperature_c, temps_total_s, temps_ecoulement_s, volume_extrait_ml,
-eau_ajoutee_ml, lait_ml, agitation_nb, tasse, eau_prechauffee, note_sur_10,
-diagnostic, descripteurs, commentaire, puissance_feu, ratee, chauffe_s`
+`id, date_time, coffee_id, method, recipe, dose_g, water_g, grind_dial,
+temperature_c, total_time_s, flow_time_s, yield_ml,
+added_water_ml, milk_ml, stir_count, cup, preheated_water, score_10,
+diagnostic, descriptors, comment, heat_level, failed, heating_s`
 
 - Seule la dose est obligatoire en saisie (étoile rouge). Date auto si vide.
-- `volume_extrait_ml` : ancien nom `volume_tasse_ml`, accepté en lecture
-  (normaliserExtraction fait le fallback).
-- `eau_ajoutee_ml` : Brikka seulement, eau d'allongement APRÈS extraction,
-  n'entre jamais dans le ratio. `lait_ml` : recettes au lait. Le calculé
-  `volume_boisson_ml` = extrait + eau ajoutée + lait.
-- `agitation_nb` : Switch, vide si pas d'agitation, défaut 1 quand coché.
-- `eau_prechauffee` : Brikka, 1 ou vide. Décoché par défaut.
-- `chauffe_s` : Switch seulement, secondes passées par la bouilloire sur le feu.
+- `yield_ml` : `volume_extrait_ml` jusqu'à la v9.05 et `volume_tasse_ml` avant
+  la v8, les deux acceptés en lecture (js/legacy-names.js).
+- `added_water_ml` : Brikka seulement, eau d'allongement APRÈS extraction,
+  n'entre jamais dans le ratio. `milk_ml` : recettes au lait. Le calculé
+  `drink_ml` = extrait + eau ajoutée + lait.
+- `stir_count` : Switch, vide si pas d'agitation, défaut 1 quand coché.
+- `preheated_water` : Brikka, 1 ou vide. Décoché par défaut.
+- `heating_s` : Switch seulement, secondes passées par la bouilloire sur le feu.
   La température stockée en est l'estimation (section 8), corrigeable. Vide pour
   la Brikka et pour tout l'historique antérieur à la v7.93, sans migration.
-- `ratee` : 1 ou vide, vide veut dire « pas dit ». Voir section 8.
+- `failed` : 1 ou vide, vide veut dire « pas dit ». Voir section 8.
 - VOCABULAIRE DE DÉGUSTATION : le groupe "Acidité" (v7.26) existe parce que
   l'acidité manquait comme AXE, seul "agrume" était présent et c'est un arôme.
   Distinction à ne pas perdre, c'est la confusion la plus coûteuse en dégustation :
@@ -229,7 +233,7 @@ diagnostic, descripteurs, commentaire, puissance_feu, ratee, chauffe_s`
   dans un groupe de saveurs. Le diagnostic historique "Sous-extrait (acide)" dirait
   mieux "aigre", mais le renommer casserait l'historique déjà enregistré : le
   vocabulaire a été ajouté côté descripteurs à la place.
-- `puissance_feu` : Brikka SEULEMENT, entier de 1 à 10, échelle personnelle de
+- `heat_level` : Brikka SEULEMENT, entier de 1 à 10, échelle personnelle de
   Chris sur sa plaque. Vide pour le Switch, qui n'a pas de flamme. Borné et
   arrondi à la normalisation : une valeur hors plage éditée au tableur est ramenée
   dedans plutôt que jetée. Les recettes Brikka portent la même colonne, comme
@@ -237,7 +241,7 @@ diagnostic, descripteurs, commentaire, puissance_feu, ratee, chauffe_s`
   Pourquoi ce champ : après une extraction à 4 minutes de cuisson suivie d'un
   écoulement de 5 secondes, la conduite de la flamme est devenue LA variable à
   régler, et elle n'était mesurée nulle part.
-- `descripteurs` : tags séparés par `|`, valeurs françaises (la traduction EN
+- `descriptors` : tags séparés par `|`, valeurs françaises (la traduction EN
   est purement d'affichage). La liste vit dans DESCRIPTEURS_GROUPES
   (recipes.js), 69 tags en 10 familles. Chaque tag a une définition
   courte dans TAGS_INFO (i18n.js, fr et en), affichée dans une bulle CSS au
@@ -279,23 +283,30 @@ diagnostic, descripteurs, commentaire, puissance_feu, ratee, chauffe_s`
   Ajouter une valeur ne casse rien; en retirer une casserait l'historique
   (les anciennes valeurs stockées resteraient affichées telles quelles,
   prévoir une migration).
-- Champs calculés (DATA.calculs, jamais stockés) : ratio (1:X.X), crans,
-  microns, age_jours, retention_ml (eau moins volume extrait),
-  volume_boisson_ml, cout_tasse_vnd, cout_reel_vnd, cafe_nom, moulu.
+- Champs calculés (DATA.calcs, jamais stockés) : ratio (1:X.X), clicks,
+  microns, age_days, retention_ml (eau moins volume extrait),
+  drink_ml, cup_cost_vnd, real_cost_vnd, coffee_name, ground.
 
-### recettes.csv
-`id, nom, numero, methode, famille, variante, sous_titre, dose_g, eau_g,
-temperature_c, temp_texte, mouture_dial, ratio_texte, total_texte, lait,
-etapes, pour_qui, cafes_associes, note, par_defaut, avancee, variantes, actif`
+### recipes.csv (recettes.csv avant la v9.06)
+`id, name, number, method, family, variant, subtitle, dose_g, water_g,
+temperature_c, temp_text, grind_dial, ratio_text, total_text, milk,
+steps, best_for, paired_coffees, note, is_default, advanced, has_variants, active,
+heat_level, typical_volume, video`
 
-- `etapes` : segments "m:ss texte" ou "- texte" séparés par " || ".
-- `famille` + `variante` : les recettes d'une même famille partagent UNE
+Dans IndexedDB et la synchro, une recette garde sa forme objet (camelCase) :
+`name, number, method, family, variant, subtitle, dose, water, temp, heat_level,
+typicalVolume, tempText, dial, ratioText, totalText, steps` (chaque étape
+`{ t, text }`), `bestFor, pairedCoffees, note, video, isDefault, advanced,
+has_variants, active`. Seul le CSV aplatit en snake_case.
+
+- `steps` : segments "m:ss texte" ou "- texte" séparés par " || ".
+- `family` + `variant` : les recettes d'une même famille partagent UNE
   carte sur la page Référence avec des pilules de bascule (familles :
   chronicler, costaud, brikka-lait, brikka-classique). Elles restent des recettes DISTINCTES
   en base et dans l'historique.
-- `lait` 0/1 : affiche le champ lait en saisie, prérempli contenance de la
+- `milk` 0/1 : affiche le champ lait en saisie, prérempli contenance de la
   tasse moins volume de café estimé.
-- `variantes` 0/1 : active le bloc Tetsu (versements pilotables) : réservé au
+- `has_variants` 0/1 : active le bloc Tetsu (versements pilotables) : réservé au
   Tetsu 4:6, préservé à l'édition.
 - Les 11 recettes d'origine (RECETTES_DEPART dans recipes.js) sont
   restaurables une par une via "Rétablir la version d'origine".
@@ -311,8 +322,8 @@ la mouture que leur source recommandait est dans leur `note`. L'ordre
 d'affichage suit `RECETTES_DEPART` pour les recettes d'origine, les personnelles
 viennent après : `migrerDonnees` le rétablit à chaque chargement.
 
-### tasses.csv
-`id, nom, contenance_ml`. Quatre par défaut (TASSES_DEPART) : Flat White Egg
+### cups.csv (tasses.csv avant la v9.06)
+`id, name, capacity_ml`. Quatre par défaut (TASSES_DEPART) : Flat White Egg
 150, Espresso Egg 80, Nutty Tasting Cup 150, Classic Mug 330. Éditeur inline
 dans la saisie (bouton ✚). Défauts par méthode : Flat White Egg en Brikka,
 Classic Mug en Switch (non écrasés si l'utilisateur a choisi autre chose).
@@ -321,9 +332,10 @@ de débordement (retiré en v7.28) : celui-ci supposait un service en une seule
 fois, alors qu on peut verser en deux, ce qui le rendait faux dans un usage
 normal. Un avertissement qui se trompe apprend à ignorer les avertissements.
 
-### achats.csv
+### purchases.csv (achats.csv avant la v9.06)
 
-`id, cafe_id, date_achat, format_grammes, prix_vnd, date_torrefaction`
+`id, coffee_id, purchase_date, bag_size_g, price_vnd, roast_date, opened_date,
+remaining_g, remaining_at`
 
 Un achat = UN SACHET. Cette table existe pour deux raisons, la seconde étant la
 plus importante :
@@ -334,11 +346,11 @@ plus importante :
    tout premier paquet. La fraîcheur affichée était donc fausse pour toujours dès
    le deuxième sachet. Chaque sachet porte maintenant la sienne.
 
-- `DATA.sachetCourant(cafeId)` : le dernier acheté, par `date_achat`.
+- `DATA.sachetCourant(cafeId)` : le dernier acheté, par `purchase_date`.
 - `DATA.stockSachet(cafeId, doseDefaut)` : `{format, consomme, restant, depuis,
   dateTorrefaction, sachets}`, ou `null` si aucun format n'est connu (on
   préfère ne rien afficher qu'un badge faux). Ne comptent QUE les extractions
-  postérieures à `date_achat` : c'est tout l'intérêt de la table. Une extraction
+  postérieures à `purchase_date` : c'est tout l'intérêt de la table. Une extraction
   sans dose compte pour la dose par défaut, sinon un oubli de saisie ferait croire
   à un sachet intact. Un dépassement s'affiche en NÉGATIF, on ne le masque pas.
 - `DATA.ajouterAchat()` recopie format, prix et date de torréfaction sur la fiche
@@ -346,8 +358,308 @@ plus importante :
   cours.
 - Badge dans la liste "Mes cafés" : vert, orange sous 3 tasses restantes, rouge
   et nom barré quand le sachet est fini.
-- Détection à l'import : `date_achat` est testé AVANT `cafe_id`, que les deux
+- Détection à l'import : `purchase_date` est testé AVANT `coffee_id`, que les deux
   tables possèdent.
+
+### settings.csv (reglages.csv avant la v9.06)
+
+`id, dose_g, heat_level, grind_dial, schema_version, boil_s, step_clicks,
+step_degrees, step_heat, step_water_g, step_dose_g, drawings, bubbles_s`
+
+Une seule ligne, d'id `moi` (valeur stockée, gardée telle quelle). `drawings`
+liste les dessins du tableau de bord dans l'ordre choisi, `!` devant les
+masqués : `shelf,!clock,podium`.
+
+### Les anciens noms (v9.06), et où ils sont encore lus
+
+Jusqu'à la v9.05 tous ces noms étaient français. Les données de Chris existent
+encore sous cette forme à des endroits que le code ne maîtrise pas : la copie
+IndexedDB de chaque appareil, le dossier lié, les CSV exportés, le document D1
+et ses trente sauvegardes quotidiennes, le localStorage de chaque navigateur,
+les favoris. Les anciens noms sont donc acceptés en lecture, POUR TOUJOURS, par
+une seule table de correspondance par couche, dans `js/legacy-names.js`
+(`LEGACY`). Le serveur en a une copie, `worker/legacy-names.js` ;
+`worker/sync.test.mjs` vérifie que les deux sont identiques. Toute
+modification va dans les deux.
+
+- **Lignes** : chaque ligne qui entre (IndexedDB, CSV, réponse de synchro,
+  démo, import JSON) passe par `LEGACY.renameRow` au début de chaque
+  `normalize*` de `js/data-schema.js`. Si une ligne porte les deux noms, le
+  nouveau gagne et l'ancien disparaît. Les valeurs ne changent pas (noms de
+  café, textes de recette, « Foncée », descripteurs, diagnostics), sauf les
+  noms des dessins de `settings.drawings`, qui étaient des noms eux aussi.
+- **État** : le pas de schéma 21 (« English names ») et le début de
+  `migrateData` convertissent ce qui serait entré sans passer par là. Rien
+  n'est restampé : un renommage n'est pas une modification, et restamper
+  ferait gagner cet appareil contre une vraie modification faite ailleurs.
+- **IndexedDB** : les nouvelles clés (`coffees`, `recipes`, `cups`,
+  `purchases`, `settings`, `tombstones`) sont lues, les anciennes aussi ;
+  présentes des deux côtés, elles sont fusionnées par id (le plus récent
+  gagne). Les anciennes clés sont supprimées une fois les nouvelles écrites.
+- **Dossier lié** : chaque table est lue dans son fichier anglais, sinon dans
+  son ancien fichier (`cafes.csv`...), puis écrite sous le nom anglais. Les
+  anciens fichiers restent en place, le site ne supprime jamais un fichier ;
+  `extractions.csv` garde son nom et est réécrit avec les nouveaux en-têtes.
+- **Import** : un CSV aux anciens en-têtes est reconnu et lu comme un neuf ; le
+  `carnet-complet.json` d'avant se réimporte comme le `logbook-full.json`.
+- **Serveur** : `sanitisePayload` renomme le document stocké ET chaque envoi
+  avant la fusion ; le document réécrit ne porte plus que les noms anglais. Un
+  onglet resté en v9.05 (schéma 20) est refusé en 409 même si le document est
+  encore au schéma 20 (`MIN_CLIENT_SCHEMA`) : il lirait `cafes` dans un
+  document qui dit `coffees`. Il propose de recharger la page, ses saisies
+  restent dans son IndexedDB et partent au premier chargement de la v9.06.
+- **localStorage** : `LEGACY.migratePrefs`, au chargement de
+  `legacy-names.js` (premier script de la page), déplace chaque ancienne clé
+  vers la nouvelle en traduisant sa valeur, puis la supprime. Le script de
+  thème du `<head>`, qui tourne avant, lit aussi les anciennes.
+- **Brouillon de saisie** : `LEGACY.renameDraft` accepte les anciennes clés
+  du JSON et les anciens ids de champs.
+- **Écrans** : `#tableau`, `#saisie`... ouvrent leur écran
+  (`LEGACY.route`), et l'adresse est réécrite avec le nom anglais. Le
+  manifest utilise les nouveaux.
+
+Tables, clés IndexedDB et du document
+
+| Avant (jusqu'à v9.05) | Depuis v9.06 |
+|---|---|
+| `cafes` | `coffees` |
+| `recettes` | `recipes` |
+| `tasses` | `cups` |
+| `achats` | `purchases` |
+| `reglages` | `settings` |
+| `tombes` | `tombstones` |
+| `exporte_le` | `exported_at` |
+
+
+Fichiers CSV
+
+| Avant (jusqu'à v9.05) | Depuis v9.06 |
+|---|---|
+| `cafes.csv` | `coffees.csv` |
+| `recettes.csv` | `recipes.csv` |
+| `tasses.csv` | `cups.csv` |
+| `achats.csv` | `purchases.csv` |
+| `reglages.csv` | `settings.csv` |
+| `carnet-complet.json` | `logbook-full.json` |
+| `demo/cafes-demo.csv` | `demo/coffees-demo.csv` |
+
+
+Colonnes de `coffees`
+
+| Avant (jusqu'à v9.05) | Depuis v9.06 |
+|---|---|
+| `maj_le` | `updated_at` |
+| `nom` | `name` |
+| `torrefacteur` | `roaster` |
+| `origine` | `origin` |
+| `espece` | `species` |
+| `procede` | `process` |
+| `torrefaction` | `roast` |
+| `deja_moulu` | `pre_ground` |
+| `pourcentage_cafe_reel` | `real_coffee_pct` |
+| `notes_annoncees` | `roaster_notes` |
+| `format_grammes` | `bag_size_g` |
+| `prix_vnd` | `price_vnd` |
+| `date_torrefaction` | `roast_date` |
+| `machine_recommandee` | `recommended_method` |
+| `recette_recommandee` | `recommended_recipe` |
+| `date_ajout` | `added_date` |
+| `actif` | `active` |
+
+Colonnes de `extractions`
+
+| Avant (jusqu'à v9.05) | Depuis v9.06 |
+|---|---|
+| `maj_le` | `updated_at` |
+| `date_heure` | `date_time` |
+| `cafe_id` | `coffee_id` |
+| `methode` | `method` |
+| `recette` | `recipe` |
+| `eau_g` | `water_g` |
+| `mouture_dial` | `grind_dial` |
+| `temps_total_s` | `total_time_s` |
+| `temps_ecoulement_s` | `flow_time_s` |
+| `volume_extrait_ml` | `yield_ml` |
+| `volume_tasse_ml` | `yield_ml` |
+| `eau_ajoutee_ml` | `added_water_ml` |
+| `lait_ml` | `milk_ml` |
+| `agitation_nb` | `stir_count` |
+| `tasse` | `cup` |
+| `eau_prechauffee` | `preheated_water` |
+| `note_sur_10` | `score_10` |
+| `descripteurs` | `descriptors` |
+| `commentaire` | `comment` |
+| `puissance_feu` | `heat_level` |
+| `ratee` | `failed` |
+| `chauffe_s` | `heating_s` |
+
+Colonnes de `recipes`
+
+| Avant (jusqu'à v9.05) | Depuis v9.06 |
+|---|---|
+| `maj_le` | `updated_at` |
+| `nom` | `name` |
+| `numero` | `number` |
+| `methode` | `method` |
+| `famille` | `family` |
+| `variante` | `variant` |
+| `sous_titre` | `subtitle` |
+| `sousTitre` | `subtitle` |
+| `eau_g` | `water_g` |
+| `eau` | `water` |
+| `temp_texte` | `temp_text` |
+| `tempTexte` | `tempText` |
+| `mouture_dial` | `grind_dial` |
+| `ratio_texte` | `ratio_text` |
+| `ratioTexte` | `ratioText` |
+| `total_texte` | `total_text` |
+| `totalTexte` | `totalText` |
+| `lait` | `milk` |
+| `etapes` | `steps` |
+| `pour_qui` | `best_for` |
+| `pourQui` | `bestFor` |
+| `cafes_associes` | `paired_coffees` |
+| `cafesAssocies` | `pairedCoffees` |
+| `par_defaut` | `is_default` |
+| `parDefaut` | `isDefault` |
+| `avancee` | `advanced` |
+| `variantes` | `has_variants` |
+| `actif` | `active` |
+| `puissance_feu` | `heat_level` |
+| `volume_typique` | `typical_volume` |
+| `volumeTypique` | `typicalVolume` |
+
+Colonnes de `cups`
+
+| Avant (jusqu'à v9.05) | Depuis v9.06 |
+|---|---|
+| `maj_le` | `updated_at` |
+| `nom` | `name` |
+| `contenance_ml` | `capacity_ml` |
+
+Colonnes de `purchases`
+
+| Avant (jusqu'à v9.05) | Depuis v9.06 |
+|---|---|
+| `maj_le` | `updated_at` |
+| `cafe_id` | `coffee_id` |
+| `date_achat` | `purchase_date` |
+| `format_grammes` | `bag_size_g` |
+| `prix_vnd` | `price_vnd` |
+| `date_torrefaction` | `roast_date` |
+| `date_ouverture` | `opened_date` |
+| `restant_g` | `remaining_g` |
+| `restant_le` | `remaining_at` |
+
+Colonnes de `settings`
+
+| Avant (jusqu'à v9.05) | Depuis v9.06 |
+|---|---|
+| `maj_le` | `updated_at` |
+| `puissance_feu` | `heat_level` |
+| `mouture_dial` | `grind_dial` |
+| `ebullition_s` | `boil_s` |
+| `pas_crans` | `step_clicks` |
+| `pas_degres` | `step_degrees` |
+| `pas_feu` | `step_heat` |
+| `pas_eau_g` | `step_water_g` |
+| `pas_dose_g` | `step_dose_g` |
+| `dessins` | `drawings` |
+| `bulles_s` | `bubbles_s` |
+
+
+Clés d'une étape de recette
+
+| Avant (jusqu'à v9.05) | Depuis v9.06 |
+|---|---|
+| `texte` | `text` |
+
+
+Noms des dessins (valeurs de `settings.drawings`)
+
+| Avant (jusqu'à v9.05) | Depuis v9.06 |
+|---|---|
+| `etagere` | `shelf` |
+| `frise` | `ribbon` |
+| `horloge` | `clock` |
+| `moulin` | `grinder` |
+| `progression` | `progress` |
+| `spectre` | `spectrum` |
+
+
+Clés localStorage
+
+| Avant (jusqu'à v9.05) | Depuis v9.06 |
+|---|---|
+| `langue` | `lang` |
+| `sombre` | `palette` |
+| `bips` | `beeps` |
+| `historique-vue` | `history-view` |
+| `guide-onglet` | `guide-tab` |
+| `guide-filtre` | `guide-filter` |
+| `guide-recettes-ouvertes` | `guide-open-recipes` |
+| `analyse-onglet` | `analysis-tab` |
+| `brouillon-saisie` | `entry-draft` |
+| `recap-ferme` | `recap-closed` |
+| `replis-saisie` | `entry-fallbacks` |
+| `replis-repris` | `fallbacks-migrated` |
+| `inclure-ratees` | `include-failed` |
+| `brassage-unite` | `brew-unit` |
+| `gouts-toutes-familles` | `tastes-all-families` |
+
+
+Valeurs localStorage traduites
+
+| Avant (jusqu'à v9.05) | Depuis v9.06 |
+|---|---|
+| `theme = sombre` | `theme = dark` |
+| `theme = clair` | `theme = light` |
+| `palette = nuit` | `palette = night` |
+| `history-view = sachet` | `history-view = bag` |
+| `guide-tab = accueil` | `guide-tab = home` |
+| `guide-tab = recettes` | `guide-tab = recipes` |
+| `guide-tab = moulin` | `guide-tab = grinder` |
+| `guide-tab = regles` | `guide-tab = rules` |
+| `guide-tab = vocabulaire` | `guide-tab = vocabulary` |
+| `guide-tab = boutiques` | `guide-tab = shops` |
+| `guide-tab = materiel` | `guide-tab = gear` |
+| `guide-filter = tout` | `guide-filter = all` |
+| `analysis-tab = cafes` | `analysis-tab = coffees` |
+| `analysis-tab = recettes` | `analysis-tab = recipes` |
+| `analysis-tab = gouts` | `analysis-tab = tastes` |
+| `analysis-tab = aromes` | `analysis-tab = aromas` |
+| `analysis-tab = mouture` | `analysis-tab = grind` |
+
+
+Clés du brouillon de saisie (entry-draft)
+
+| Avant (jusqu'à v9.05) | Depuis v9.06 |
+|---|---|
+| `le` | `savedAt` |
+| `methode` | `method` |
+| `descripteurs` | `descriptors` |
+| `noteVide` | `ratingEmpty` |
+| `valeurs` | `values` |
+
+
+Adresses des écrans
+
+| Avant (jusqu'à v9.05) | Depuis v9.06 |
+|---|---|
+| `#tableau` | `#dashboard` |
+| `#saisie` | `#entry` |
+| `#historique` | `#history` |
+| `#reglages` | `#tuning` |
+| `#parametres` | `#settings` |
+| `#refaire` | `#redo` |
+| `#reference` | `#guide` |
+
+Gardés tels quels, parce que ce sont des valeurs et non des noms : l'id `moi` de
+la ligne `settings`, les ids des recettes (`tetsu-devil`...), les valeurs
+affichées (`Brikka`, `Switch`, `Les deux`, `Claire`, `Medium`,
+`Foncée`), les descripteurs, les diagnostics et leurs groupes, les codes de
+profil du filtre du Guide (`lave`, `fermente`), et le nom de la base
+IndexedDB, `cafe-tracker`.
 
 ## 4. Migrations : une version de schéma
 
@@ -361,7 +673,7 @@ fait deux choses de nature différente :
   ne fait rien. Ils tournent à chaque démarrage.
 - **Les rattrapages À USAGE UNIQUE**, dans `PAS_DE_SCHEMA`. Ils changent une
   valeur SEMÉE vers une autre, donc les rejouer écraserait un réglage choisi
-  entre temps. Leur mémoire est `schema_version`, rangée dans la ligne `reglages`,
+  entre temps. Leur mémoire est `schema_version`, rangée dans la ligne `settings`,
   donc synchronisée avec les données. `appliquerSchema()` exécute les pas dont le
   numéro dépasse la version du document, puis écrit `SCHEMA_ACTUEL`.
 
@@ -374,6 +686,10 @@ défaut passe par un pas de schéma. Les tests font tourner le moteur sur quatre
 scénarios (sans version, déjà migré, en retard, rejeu après réglage manuel).
 
 Pourquoi une version et pas des drapeaux : `DECISIONS.md`, « Migrations ».
+
+Schéma actuel : 21. Le pas 21 (v9.06, « English names ») ne change aucune valeur :
+il fait passer le document aux noms anglais et monte la version, pour que le
+serveur refuse un onglet resté sur les noms français (section 3, « Les anciens noms »).
 
 ## 5. i18n
 
@@ -458,11 +774,11 @@ les autres sur quatre (`.col-2` vaut `span 8`, le défaut `span 4`).
   redemande un rendu au redimensionnement.
 - **Arranger** (v8.57, `#dessins-arranger`, `#dessins-panneau`) : quels dessins voir et
   dans quel ordre. Chaque dessin porte `data-dessin` ; le choix vit dans la colonne
-  `dessins` de la ligne de réglages (« etagere,!horloge,… », « ! » = masqué), donc se
+  `drawings` de la ligne de réglages (« etagere,!horloge,… », « ! » = masqué), donc se
   synchronise. `UI.ordreDessins()` y ajoute en fin de liste, visible, tout dessin
   inconnu du choix enregistré ; un dessin masqué n'est pas calculé.
 - **Chaque point est une tasse** (v8.55) : tout point de dessin qui représente une
-  tasse porte `data-tasse="<id>"` (horloge, spectre, carte du moulin, trajectoire,
+  tasse porte `data-cup="<id>"` (horloge, spectre, carte du moulin, trajectoire,
   courbe de la fiche). Un clic, capté en phase de capture sur `#carte-dessins` et
   `#fiche-contenu`, ouvre `#bulle-tasse` : date, café, recette, réglages, goûts,
   note, et « Modifier » (`chargerExtractionDansSaisie`) ou « Refaire »
@@ -492,7 +808,7 @@ les autres sur quatre (`.col-2` vaut `span 8`, le défaut `span 4`).
   ce café avant le sachet suivant, ou à aujourd'hui s'il est en cours et pas vide ;
   teinte = note moyenne ; un ruban ouvre la fiche), le podium des recettes
   (`UI.donneesPodium()` : les trois meilleures moyennes dès trois tasses notées ; une
-  marche porte `data-guide-recette` et ouvre la recette par `UI.montrerRecette()`), et
+  marche porte `data-guide-recipe` et ouvre la recette par `UI.montrerRecette()`), et
   ta progression (`REGLAGES.moyenneGlissante` sur cinq tasses, jalons = sachets
   ouverts et premières tasses de chaque recette, les trois derniers nommés).
 - **Analyses** : note par café, Brikka contre Switch, goûts, arômes, diagnostics,
@@ -505,7 +821,7 @@ les autres sur quatre (`.col-2` vaut `span 8`, le défaut `span 4`).
 ## 6 ter. Le Guide en bibliothèque (js/ui-guide.js, v8.52)
 
 Le sommaire (`.guide-onglets`) est la barre d'onglets du Guide : chaque section
-est enveloppée dans un `.guide-panneau` (`#gp-recettes`, `#gp-moulin`,
+est enveloppée dans un `.guide-panneau` (`#gp-recipes`, `#gp-moulin`,
 `#gp-diagnostic`, `#gp-regles`, `#gp-vocabulaire`, `#gp-boutiques` qui porte aussi
 Quoi acheter et Règles d'achat, `#gp-materiel`, `#gp-messages`), un seul visible.
 `UI.montrerGuide(idCible)` montre le panneau qui contient la cible et y défile si
@@ -589,7 +905,7 @@ Points fixés depuis, chacun expliqué dans `DECISIONS.md` :
 - Le champ mouture préremplit le RÉGLAGE RÉEL du broyeur (`replis.molette`), pas
   la cible de la recette.
 - Pas d'estimation de volume extrait sur la Brikka ; le Switch garde
-  `eau - 2,1 x dose`.
+  `water - 2,1 x dose`.
 - Les paliers d'une recette suivent l'eau réellement saisie
   (`echelleVersements`, seuil 30 g).
 - Cinq champs portent un curseur qui PILOTE le champ nombre, lequel reste la
@@ -603,11 +919,11 @@ Points fixés depuis, chacun expliqué dans `DECISIONS.md` :
   les réintègre vit dans Paramètres, section Cet appareil (préférence locale).
 - Chaque recette porte un lien `video` (v8.64, colonne de `RECETTE_COLS`, http ou https seulement). Dans le Guide, un lien YouTube donne « Voir la vidéo », qui remplace le bouton par un lecteur youtube-nocookie au clic, et « Ouvrir sur YouTube » ; tout autre lien donne « Voir la source ». Le pas de schéma v16 donne leur vidéo aux recettes d'origine déjà stockées, sans écraser un lien posé à la main.
 - La température du SWITCH se déduit du temps passé par la bouilloire sur le
-  feu (`f-chauffe-min` et `-sec`, stocké dans `chauffe_s`) : une courbe de
+  feu (`f-chauffe-min` et `-sec`, stocké dans `heating_s`) : une courbe de
   28 à 100 °C (v8.59, montée qui ralentit près de l'ébullition) calée sur deux
   repères de la carte Ma bouilloire, les premières bulles qui remontent à 88 °C
-  (`reglages.bulles_s`, 1:30 par défaut) et le gros bouillon à 100 °C
-  (`reglages.ebullition_s`, 2:00 par défaut ; le pas de schéma v11 recale le
+  (`settings.bubbles_s`, 1:30 par défaut) et le gros bouillon à 100 °C
+  (`settings.boil_s`, 2:00 par défaut ; le pas de schéma v11 recale le
   4:00 inventé des premières versions sur 2:00, le pas v15 fait passer sur la
   courbe les degrés estimés sous l'ancienne droite et jamais retouchés). Fonctions pures
   `temperatureDepuisChauffe` et `chauffePourTemperature` dans `recipes.js`. Le
@@ -630,8 +946,8 @@ Points fixés depuis, chacun expliqué dans `DECISIONS.md` :
   transforme les diagnostics cochés en réglages. Trois sources, aucune en dur dans le
   calcul : le SENS de chaque levier dans `DIAGNOSTIC_LEVIERS` (recipes.js, à côté
   des phrases qu'il traduit ; un test vérifie qu'ils disent la même chose), les PAS
-  dans la ligne de réglages (`pas_crans`, `pas_degres`, `pas_feu`, `pas_eau_g`,
-  `pas_dose_g`, carte Paramètres « Mes pas de correction », doublés pour un
+  dans la ligne de réglages (`step_clicks`, `step_degrees`, `step_heat`, `step_water_g`,
+  `step_dose_g`, carte Paramètres « Mes pas de correction », doublés pour un
   diagnostic franc), et la valeur de départ de la tasse, la molette bornée à la
   plage de sa machine (`GRIND.METHODES`). Leviers dans l'ordre mouture, chaleur
   (degrés au Switch, feu à la Brikka), ratio (eau au Switch, dose à la Brikka).
@@ -668,7 +984,7 @@ qu'il est ouvert.
   étape sans volume met sa consigne en grand.
 - Badge de vanne au Switch, déduit des étapes passées (« OUVERTE », « FERMÉE »,
   « Ouvrir »).
-- Anneau : le total de la recette (`totalTexte`), sinon dernier palier plus une minute,
+- Anneau : le total de la recette (`totalText`), sinon dernier palier plus une minute,
   sinon la moyenne des temps de cette recette, sinon 5:00.
 - Arrêter depuis le mode reporte temps et écoulement comme le chrono, puis montre la
   note (`#br-note`, même curseur sans pouce) qui écrit dans `#f-note`, et deux boutons :
@@ -746,7 +1062,7 @@ Active UNIQUEMENT sur le site déployé, et seulement si une base D1 est liée. 
 avant. La démo n'est JAMAIS synchronisée (`syncPossible()` teste `demoActive`).
 
 Modèle : tout l'état dans UN document JSON, une ligne D1. Fusion ligne par ligne,
-le plus récent `maj_le` gagne, plus des PIERRES TOMBALES (`state.tombes`,
+le plus récent `updated_at` gagne, plus des PIERRES TOMBALES (`state.tombstones`,
 `{table: {id: horodatage}}`) purgées après 90 jours. Commutative et idempotente.
 Pourquoi D1 et pas KV, pourquoi un document et pas des tables : `DECISIONS.md`.
 
@@ -760,26 +1076,26 @@ l'ajouter à `chargeUtileLocale()`, à l'adoption dans `synchroniser()`, à
 tables présentes, donc elles échouent si un oubli traîne : ne pas se contenter de
 mettre le compte à jour sans vérifier la cause.
 
-### maj_le, le piège à ne pas défaire
+### updated_at (maj_le avant la v9.06), le piège à ne pas défaire
 
-`maj_le` est ajouté par les `normaliserX` mais **préservé tel quel**, pas
+`updated_at` est ajouté par les `normaliserX` mais **préservé tel quel**, pas
 restampé. `normaliserX` est appelé au CHARGEMENT comme à l'écriture : restamper
 au chargement ferait croire à chaque appareil qu'il est le plus récent et la
 fusion ne voudrait plus rien dire. Ce sont les MUTATIONS qui estampillent, via
 `estampiller()`, explicitement.
 
-`maj_le` n'est JAMAIS dans les CSV : les colonnes exportées sont listées à la
+`updated_at` n'est JAMAIS dans les CSV : les colonnes exportées sont listées à la
 main (`CAFE_COLS` et compagnie), donc les fichiers restent identiques à avant et
 lisibles au tableur.
 
-Comme les CSV ne transportent pas `maj_le`, relire le dossier lié remettrait
+Comme les CSV ne transportent pas `updated_at`, relire le dossier lié remettrait
 tous les horodatages à zéro. `reporterHorodatage()` l'empêche : il reporte
 l'horodatage déjà connu en mémoire sur la ligne relue, et n'estampille à
 maintenant que si le CONTENU a changé (édition au tableur : geste délibéré, elle
 doit gagner) ou si la ligne est nouvelle.
 
 CE N'EST PAS UNE OPTIMISATION, c'était un vrai bug de perte de données, trouvé en
-inspectant D1 après la première synchro réelle (32 lignes sur 32 à `maj_le = 0`).
+inspectant D1 après la première synchro réelle (32 lignes sur 32 à `updated_at = 0`).
 Séquence : modifier une extraction hors ligne, RECHARGER la page avant que la
 synchro passe, et la version du serveur, elle estampillée, écrasait la
 modification. Le test 7 de `tools/data.test.mjs` verrouille les trois cas.
@@ -789,7 +1105,7 @@ table : une ligne absente du fichier reste en place, une ligne identique garde
 sa date, seules les lignes nouvelles ou changées sont estampillées. Chaque
 table a sa branche (les achats écrasaient les extractions avant), une table
 inconnue est refusée, et un aperçu demande confirmation. Le fichier
-`carnet-complet.json` d'« Exporter tout » se réimporte par la même fusion que
+`logbook-full.json` (`carnet-complet.json` avant la v9.06) d'« Exporter tout » se réimporte par la même fusion que
 la synchro.
 
 ### Mécanique
@@ -810,7 +1126,7 @@ d'échec les données locales sont laissées intactes et une relance part après
 - Identifiants : `nouvelId` produit l'heure en base 36 et quatre caractères au
   hasard. « Longueur + 1 » faisait créer « e124 » aux deux appareils, et la
   fusion écrasait l'une des deux tasses.
-- À égalité de `maj_le`, union des champs (le JSON le plus grand l'emporte sur
+- À égalité de `updated_at`, union des champs (le JSON le plus grand l'emporte sur
   un conflit, pour rester commutatif) : un onglet sur une ancienne version ne
   peut plus effacer une colonne récente.
 - Version du schéma : la charge utile porte `schema`, le document garde la
@@ -854,7 +1170,7 @@ moment il faudra archiver l'historique ; rien n'est prévu pour ça, c'est le
 signal qui déclenchera la décision.
 
 Les réglages du matériel (dose de repli, puissance de feu, molette, temps
-d'ébullition de la bouilloire) sont une TABLE `reglages` d'une ligne, d'id
+d'ébullition de la bouilloire) sont une TABLE `settings` d'une ligne, d'id
 `moi`, synchronisée comme les autres. Le thème
 et les bips restent locaux.
 
@@ -1047,7 +1363,7 @@ raccourcis s'affichent sur Android, pas sur iPhone.
   `r-dose` (0,5 g), `h-note-min` (0,5 point).
 - Les cafés INACTIFS restent comptés dans TOUT le tableau de bord (KPI,
   graphes, nuages, heatmap, dernières extractions). C'est voulu : l'historique
-  ne se réécrit pas parce qu'un sachet est fini. `actif` ne filtre QUE le
+  ne se réécrit pas parce qu'un sachet est fini. `active` ne filtre QUE le
   select de saisie et la saisie rapide, et trie les désactivés en fin de la
   liste "Mes cafés". Vérifié de bout en bout : désactiver un café ne modifie
   aucune section du tableau de bord.
@@ -1168,7 +1484,7 @@ réinitialisation de mot de passe, pas de base d'utilisateurs.
   une URL à taper. En ajouter un demanderait des clés i18n, voir plus bas.
 - La page de connexion est générée par le Worker, elle n'est pas un fichier
   statique. Elle est bilingue (attributs `data-fr` et `data-en`) et lit la
-  même clé `localStorage` `langue` que l'application.
+  même clé `localStorage` `lang` que l'application (`langue` avant la v9.06).
 - Les réponses servies portent `Cache-Control: private, no-cache` et
   `X-Robots-Tag: noindex` : jamais de cache partagé, jamais d'indexation.
 - Le contournement d'une redirection ouverte est traité (`safeTarget`) : le

@@ -2,8 +2,8 @@
  * place at startup.
  *
  * A separate file since v7.93: it shares with the entry screen only the
- * `saisie` object and the field ids, and it calls it through UI. It loads
- * AFTER ui-entry.js to borrow `saisie`, which is an object mutated in
+ * `entry` object and the field ids, and it calls it through UI. It loads
+ * AFTER ui-entry.js to borrow `entry`, which is an object mutated in
  * place, so safe to borrow. */
 "use strict";
 
@@ -21,7 +21,7 @@
      Deliberately in localStorage and NOT in the synced data: a draft belongs
      to one device, sending it to the server would make a ghost entry appear
      on the other one. */
-  const DRAFT_KEY = "brouillon-saisie";
+  const DRAFT_KEY = "entry-draft";
   const DRAFT_MAX_MS = 24 * 60 * 60 * 1000;
   /* The draft's DATE has its own, much shorter, validity. The draft exists to
      survive the page being unloaded during an extraction, which is counted in
@@ -38,16 +38,6 @@
   ];
   // "ratée" and agitation were forgotten on restore (v8.72).
   const DRAFT_CHECKBOXES = ["f-preheat", "f-add-water-yes", "f-failed", "f-agitation-yes"];
-  /* A draft saved before the ids went English keys its fields by the French
-     ids. Read-side only: the next save writes the new ids. */
-  const LEGACY_IDS = {
-    "f-cafe": "f-coffee", "f-recette": "f-recipe", "f-eau": "f-water", "f-mouture": "f-grind",
-    "f-chauffe-min": "f-heat-min", "f-chauffe-sec": "f-heat-sec", "f-eau-ajoutee": "f-water-added",
-    "f-lait": "f-milk", "f-tasse": "f-cup", "f-note": "f-rating", "f-commentaire": "f-comment",
-    "f-ecoulement-min": "f-flow-min", "f-ecoulement-sec": "f-flow-sec", "f-puissance": "f-power",
-    "f-prechauffe": "f-preheat", "f-ajout-eau-oui": "f-add-water-yes", "f-ratee": "f-failed",
-    "f-agitation-oui": "f-agitation-yes",
-  };
   let draftTimer = null;
 
   function saveDraft() {
@@ -60,15 +50,15 @@
     DRAFT_CHECKBOXES.forEach(id => { const el = $("#" + id); if (el) values[id] = el.checked; });
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({
-        le: Date.now(),
-        methode: entry.methode,
+        savedAt: Date.now(),
+        method: entry.method,
         diagnostics: [...entry.diagnostics],
-        descripteurs: [...entry.descripteurs],
+        descriptors: [...entry.descriptors],
         /* The rating lives in the slider's value AND in its "not rated yet"
            state (v8.40). Without the state, a rating given before the page
            was unloaded came back unrated. */
-        noteVide: isRatingEmpty($("#f-rating")),
-        valeurs: values,
+        ratingEmpty: isRatingEmpty($("#f-rating")),
+        values,
       }));
     } catch (e) { /* storage full or refused, never mind */ }
   }
@@ -87,18 +77,20 @@
      form saved at first load would trigger a "draft restored" message at
      every opening, which would be absurd. */
   function isDraftUseful(b) {
-    const v = b.valeurs || {};
+    const v = b.values || {};
     return Boolean(v["f-coffee"] || (v["f-comment"] || "").trim() ||
-      b.diagnostics.length || b.descripteurs.length || b.noteVide === false ||
+      b.diagnostics.length || b.descriptors.length || b.ratingEmpty === false ||
       v["f-total-min"] || v["f-total-sec"] || v["f-volume"] || v["f-water"]);
   }
 
   function restoreDraft() {
     let b;
     try { b = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch (e) { return false; }
-    if (!b || !b.valeurs) return false;
-    b.valeurs = Object.fromEntries(Object.entries(b.valeurs).map(([k, v]) => [LEGACY_IDS[k] || k, v]));
-    if (Date.now() - (b.le || 0) > DRAFT_MAX_MS) { clearDraft(); return false; }
+    /* A draft saved before v9.06 has French keys (le, methode, valeurs...)
+       and possibly French field ids: both translated (js/legacy-names.js). */
+    b = LEGACY.renameDraft(b);
+    if (!b || !b.values) return false;
+    if (Date.now() - (b.savedAt || 0) > DRAFT_MAX_MS) { clearDraft(); return false; }
     if (!isDraftUseful(b)) return false;
 
     /* WITHOUT garderRecette (v8.37): with it, the draft's method applied but
@@ -106,9 +98,9 @@
        set in a menu of Brikka recipes does not exist, and the browser left
        the menu EMPTY. Chris then landed on the entry screen without a recipe,
        every time he had brewed on the Switch the day before. */
-    if (b.methode) UI.chooseMethod(b.methode);
-    const freshDate = Date.now() - (b.le || 0) <= DRAFT_DATE_MAX_MS;
-    Object.entries(b.valeurs).forEach(([id, value]) => {
+    if (b.method) UI.chooseMethod(b.method);
+    const freshDate = Date.now() - (b.savedAt || 0) <= DRAFT_DATE_MAX_MS;
+    Object.entries(b.values).forEach(([id, value]) => {
       // A stale date does not replace the current time.
       if (id === "f-date" && !freshDate) return;
       const el = $("#" + id);
@@ -116,8 +108,8 @@
     });
     /* A date restored from a fresh draft comes from Chris, not from a default:
        arriving on the screen must therefore not replace it. */
-    if (freshDate && b.valeurs["f-date"]) entry.dateTouched = true;
-    DRAFT_CHECKBOXES.forEach(id => { const el = $("#" + id); if (el) el.checked = !!b.valeurs[id]; });
+    if (freshDate && b.values["f-date"]) entry.dateTouched = true;
+    DRAFT_CHECKBOXES.forEach(id => { const el = $("#" + id); if (el) el.checked = !!b.values[id]; });
 
     /* NEVER an empty coffee or recipe after a restore: a draft can keep a
        coffee deactivated since, a recipe renamed or deleted, or an empty
@@ -132,9 +124,9 @@
     if (!$("#f-recipe").value) UI.fillRecipeSelect();
 
     entry.diagnostics = new Set(b.diagnostics || []);
-    entry.descripteurs = new Set(b.descripteurs || []);
+    entry.descriptors = new Set(b.descriptors || []);
     $$("#f-diagnostic .pill").forEach(x => setPressed(x, entry.diagnostics.has(x.dataset.diag)));
-    $$("#f-descriptors .tag").forEach(x => setPressed(x, entry.descripteurs.has(x.dataset.tag)));
+    $$("#f-descriptors .tag").forEach(x => setPressed(x, entry.descriptors.has(x.dataset.tag)));
 
     /* THROUGH THE OFFICIAL FUNCTION, not by hand. This line wrote the field's
         value directly, ignoring "not rated yet": after restoring an unrated
@@ -142,7 +134,7 @@
         file as UNRATED. With the slider also sitting on 5, nothing betrayed
         the gap. It also forgot the "/ 10" and the stepper's inactive state. */
     // A draft from before v8.40 has no state: it stays unrated.
-    markRating($("#f-rating"), b.noteVide !== false);
+    markRating($("#f-rating"), b.ratingEmpty !== false);
     UI.updateRatingDisplay();
     $("#f-water-added").hidden = !$("#f-add-water-yes").checked;
     UI.updateDiagnosticCorrection();

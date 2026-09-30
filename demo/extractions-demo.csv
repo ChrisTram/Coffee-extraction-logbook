@@ -1,4 +1,4 @@
-id,date_heure,cafe_id,methode,recette,dose_g,eau_g,mouture_dial,temperature_c,temps_total_s,temps_ecoulement_s,volume_extrait_ml,eau_ajoutee_ml,lait_ml,agitation_nb,tasse,eau_prechauffee,note_sur_10,diagnostic,descripteurs,commentaire
+id,date_time,coffee_id,method,recipe,dose_g,water_g,grind_dial,temperature_c,total_time_s,flow_time_s,yield_ml,added_water_ml,milk_ml,stir_count,cup,preheated_water,score_10,diagnostic,descriptors,comment
 e1,2026-06-29T13:21,c1,Brikka,Brikka classique,14,100,,80,241,34,90,,,,Loveramics Flat White Egg,1,4.0,Sur-extrait (amer),sucre roux|chocolat noir|brûlé,
 e2,2026-06-30T14:18,c3,Brikka,Brikka classique,14,100,0.9.3,90,238,23,90,,,,Loveramics Flat White Egg,1,4.5,Acide ET amer (extraction inégale),amande|cacao,
 e3,2026-07-01T08:22,c5,Brikka,Brikka classique,14,100,0.9.4,90,317,42,90,,,,Loveramics Flat White Egg,1,4.0,Brûlé (défaut du sachet),tabac|terreux|brûlé,"Goût de cendre, aucun réglage n'y changera rien, sachet abandonné."

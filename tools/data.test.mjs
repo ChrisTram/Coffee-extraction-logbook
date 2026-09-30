@@ -7,7 +7,7 @@
  * what is tested here is the pure part, the one that can corrupt the user's
  * data without anyone noticing.
  *
- * The central invariant: `maj_le`, the internal sync column, must NEVER end up
+ * The central invariant: `updated_at`, the internal sync column, must NEVER end up
  * in a CSV. The CSVs are opened in a spreadsheet by the user, and one extra
  * technical column would break the promise of the format.
  */
@@ -38,7 +38,7 @@ const SOURCE_UI = ["js/ui-core.js", "js/ui-findings.js", "js/ui-last-cup.js", "j
 const DATA_FILES = ["js/data-csv.js", "js/data-schema.js", "js/data-store.js", "js/data-calcs.js",
   "js/data-migrations.js", "js/data.js"];
 const SOURCE_DATA = DATA_FILES.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
-const SCRIPTS = ["js/tools.js", "js/grind.js", "js/recipes.js", "js/demo-data.js", "js/sync.js",
+const SCRIPTS = ["js/legacy-names.js", "js/tools.js", "js/grind.js", "js/recipes.js", "js/demo-data.js", "js/sync.js",
   ...DATA_FILES, "js/tuning.js"];
 
 const source = SCRIPTS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
@@ -69,51 +69,51 @@ function check(label, condition, detail) {
 }
 
 const COFFEES_HEADER =
-  "id,nom,torrefacteur,origine,espece,procede,torrefaction,deja_moulu,pourcentage_cafe_reel," +
-  "tag,notes_annoncees,format_grammes,prix_vnd,date_torrefaction,machine_recommandee," +
-  "recette_recommandee,date_ajout,actif";
+  "id,name,roaster,origin,species,process,roast,pre_ground,real_coffee_pct," +
+  "tag,roaster_notes,bag_size_g,price_vnd,roast_date,recommended_method," +
+  "recommended_recipe,added_date,active";
 
-// 1. maj_le does not leak into the CSVs, and the headers are unchanged
-const coffeeCsv = DATA.csvSerialize([{ id: "c1", nom: "Test", maj_le: 1699999999999 }], DATA.COFFEE_COLS);
-check("cafes.csv header unchanged", coffeeCsv.split("\n")[0] === COFFEES_HEADER, coffeeCsv.split("\n")[0]);
-check("maj_le missing from the coffees CSV", !coffeeCsv.includes("maj_le") && !coffeeCsv.includes("1699999999999"));
+// 1. updated_at does not leak into the CSVs, and the headers are unchanged
+const coffeeCsv = DATA.csvSerialize([{ id: "c1", name: "Test", updated_at: 1699999999999 }], DATA.COFFEE_COLS);
+check("coffees.csv header unchanged", coffeeCsv.split("\n")[0] === COFFEES_HEADER, coffeeCsv.split("\n")[0]);
+check("updated_at missing from the coffees CSV", !coffeeCsv.includes("updated_at") && !coffeeCsv.includes("1699999999999"));
 
-const extCsv = DATA.csvSerialize([{ id: "e1", maj_le: 123 }], DATA.EXT_COLS);
-check("maj_le missing from the extractions CSV", !extCsv.includes("maj_le") && !extCsv.includes(",123"));
-check("extractions header unchanged", extCsv.split("\n")[0].startsWith("id,date_heure,cafe_id,methode"));
+const extCsv = DATA.csvSerialize([{ id: "e1", updated_at: 123 }], DATA.EXT_COLS);
+check("updated_at missing from the extractions CSV", !extCsv.includes("updated_at") && !extCsv.includes(",123"));
+check("extractions header unchanged", extCsv.split("\n")[0].startsWith("id,date_time,coffee_id,method"));
 
-const recCsv = DATA.csvSerialize([{ id: "r1", maj_le: 456 }], DATA.RECIPE_COLS);
-check("maj_le missing from the recipes CSV", !recCsv.includes("maj_le"));
+const recCsv = DATA.csvSerialize([{ id: "r1", updated_at: 456 }], DATA.RECIPE_COLS);
+check("updated_at missing from the recipes CSV", !recCsv.includes("updated_at"));
 
-// 2. A CSV round trip does not carry maj_le: the reread row is worth 0, so
+// 2. A CSV round trip does not carry updated_at: the reread row is worth 0, so
 // the server version wins. Intended behaviour, documented in section 8 bis.
-const csvRoundTrip = DATA.csvParse(DATA.csvSerialize([{ id: "c1", nom: "Test", maj_le: 999 }], DATA.COFFEE_COLS));
-check("CSV does not carry maj_le", csvRoundTrip[0].maj_le === undefined);
+const csvRoundTrip = DATA.csvParse(DATA.csvSerialize([{ id: "c1", name: "Test", updated_at: 999 }], DATA.COFFEE_COLS));
+check("CSV does not carry updated_at", csvRoundTrip[0].updated_at === undefined);
 
 // 3. The business calculations have not moved
 const calc = DATA.calcs({
   dose_g: 15,
-  eau_g: 225,
-  mouture_dial: "1.5.0",
-  date_heure: "2026-08-12T08:00",
-  volume_extrait_ml: 190,
-  eau_ajoutee_ml: "",
-  lait_ml: "",
+  water_g: 225,
+  grind_dial: "1.5.0",
+  date_time: "2026-08-12T08:00",
+  yield_ml: 190,
+  added_water_ml: "",
+  milk_ml: "",
 });
-check("ratio computed", calc.ratioTexte === "1:15.0", calc.ratioTexte);
+check("ratio computed", calc.ratioText === "1:15.0", calc.ratioText);
 check("microns computed on base 8.32", calc.microns === 624, String(calc.microns));
 check("retention computed", calc.retention_ml === 35, String(calc.retention_ml));
 
 // 4. Under file:// the sync is inert
-check("initial sync state", DATA.state.syncState === "inconnu", DATA.state.syncState);
+check("initial sync state", DATA.state.syncState === "unknown", DATA.state.syncState);
 check("syncPossible false under file://", DATA.syncPossible() === false);
 /* No hardcoded count: the list of tables is written TWICE, in js/sync.js and
    worker/sync.js, and forgetting it in one place makes the sync fail SILENTLY.
    So we compare the three sources with each other. */
-const EXPECTED_TABLES = ["achats", "cafes", "extractions", "recettes", "reglages", "tasses"];
+const EXPECTED_TABLES = ["coffees", "cups", "extractions", "purchases", "recipes", "settings"];
 check("tombstones initialised for every table",
-  Object.keys(DATA.state.tombes).sort().join() === EXPECTED_TABLES.join(),
-  Object.keys(DATA.state.tombes).sort().join());
+  Object.keys(DATA.state.tombstones).sort().join() === EXPECTED_TABLES.join(),
+  Object.keys(DATA.state.tombstones).sort().join());
 {
   const readTables = f => {
     const m = readFileSync(join(ROOT, f), "utf8").match(/TABLES = \[([^\]]*)\]/);
@@ -128,104 +128,104 @@ check("tombstones initialised for every table",
 }
 
 // 5. An impossible sync degrades without throwing and without losing anything
-DATA.state.cafes = [{ id: "c1", nom: "garde moi" }];
+DATA.state.coffees = [{ id: "c1", name: "garde moi" }];
 const state = await DATA.synchronize(true);
 check("synchroniser degrades cleanly", state === "local", state);
 check(
   "local data intact after failure",
-  DATA.state.cafes.length === 1 && DATA.state.cafes[0].nom === "garde moi"
+  DATA.state.coffees.length === 1 && DATA.state.coffees[0].name === "garde moi"
 );
 
 // 6. Stock per bag. The CENTRAL behaviour: a repurchase starts again from the full
 // size. Without that the purchases table would add nothing for a re-bought coffee,
 // which is precisely the use case that justifies it.
-const PURCHASE_HEADER = "id,cafe_id,date_achat,format_grammes,prix_vnd,date_torrefaction,date_ouverture,restant_g,restant_le";
-const purchaseCsv = DATA.csvSerialize([{ id: "a1", cafe_id: "c1", format_grammes: 250, maj_le: 999 }], DATA.PURCHASE_COLS);
+const PURCHASE_HEADER = "id,coffee_id,purchase_date,bag_size_g,price_vnd,roast_date,opened_date,remaining_g,remaining_at";
+const purchaseCsv = DATA.csvSerialize([{ id: "a1", coffee_id: "c1", bag_size_g: 250, updated_at: 999 }], DATA.PURCHASE_COLS);
 const purchasesFirstLine = purchaseCsv.split("\n")[0];
-check("achats.csv header", purchasesFirstLine === PURCHASE_HEADER, purchasesFirstLine);
-check("maj_le missing from the purchases CSV", !purchaseCsv.includes("999"));
+check("purchases.csv header", purchasesFirstLine === PURCHASE_HEADER, purchasesFirstLine);
+check("updated_at missing from the purchases CSV", !purchaseCsv.includes("999"));
 
-DATA.state.cafes = [{ id: "c1", nom: "Test", format_grammes: 250, date_torrefaction: "2026-07-01", date_ajout: "2026-07-05", actif: 1 }];
-DATA.state.achats = [{ id: "a1", cafe_id: "c1", date_achat: "2026-07-05", format_grammes: 250, date_torrefaction: "2026-07-01", maj_le: 1 }];
+DATA.state.coffees = [{ id: "c1", name: "Test", bag_size_g: 250, roast_date: "2026-07-01", added_date: "2026-07-05", active: 1 }];
+DATA.state.purchases = [{ id: "a1", coffee_id: "c1", purchase_date: "2026-07-05", bag_size_g: 250, roast_date: "2026-07-01", updated_at: 1 }];
 DATA.state.extractions = [
-  { id: "e1", cafe_id: "c1", date_heure: "2026-07-06T08:00", dose_g: 15 },
-  { id: "e2", cafe_id: "c1", date_heure: "2026-07-07T08:00", dose_g: 15 },
-  { id: "e3", cafe_id: "c1", date_heure: "2026-07-08T08:00", dose_g: "" },
+  { id: "e1", coffee_id: "c1", date_time: "2026-07-06T08:00", dose_g: 15 },
+  { id: "e2", coffee_id: "c1", date_time: "2026-07-07T08:00", dose_g: 15 },
+  { id: "e3", coffee_id: "c1", date_time: "2026-07-08T08:00", dose_g: "" },
 ];
 let stock = DATA.bagStock("c1", 15);
 check("forgotten dose counted as the default dose", stock.consumed === 45, String(stock.consumed));
 check("remaining in the first bag", stock.remaining === 205, String(stock.remaining));
 
-DATA.state.achats.push({ id: "a2", cafe_id: "c1", date_achat: "2026-07-10", format_grammes: 340, date_torrefaction: "2026-08-05", maj_le: 2 });
+DATA.state.purchases.push({ id: "a2", coffee_id: "c1", purchase_date: "2026-07-10", bag_size_g: 340, roast_date: "2026-08-05", updated_at: 2 });
 stock = DATA.bagStock("c1", 15);
 check("a repurchase starts again from the full size", stock.remaining === 340, String(stock.remaining));
 check("freshness follows the new bag", stock.roastDate === "2026-08-05", stock.roastDate);
 check("current bag = the last one bought", DATA.currentBag("c1").id === "a2");
 check("two bags counted", stock.bags === 2, String(stock.bags));
 
-DATA.state.cafes.push({ id: "c9", nom: "Sans format", format_grammes: "", actif: 1 });
+DATA.state.coffees.push({ id: "c9", name: "Sans format", bag_size_g: "", active: 1 });
 check("no size, no stock badge", DATA.bagStock("c9", 15) === null);
 
-DATA.state.extractions.push({ id: "e9", cafe_id: "c1", date_heure: "2026-07-11T08:00", dose_g: 400 });
+DATA.state.extractions.push({ id: "e9", coffee_id: "c1", date_time: "2026-07-11T08:00", dose_g: 400 });
 check("overrun shown as negative, not hidden", DATA.bagStock("c1", 15).remaining < 0);
 
 // 6 bis. THE MANUAL COUNT (v8.96). Chris saw an empty bag that was not empty:
 // the stock must be able to restart from a weighed or estimated figure, and then
 // only count the cups after it. And a bag counts from its OPENING: the cups drunk
 // between purchase and opening were emptying the old bag.
-DATA.state.cafes.push({ id: "c2", nom: "Compte", format_grammes: 250, prix_vnd: 200000, actif: 1 });
-DATA.state.achats.push({ id: "a3", cafe_id: "c2", date_achat: "2026-07-01", date_ouverture: "2026-07-05", format_grammes: 250, maj_le: 3 });
+DATA.state.coffees.push({ id: "c2", name: "Compte", bag_size_g: 250, price_vnd: 200000, active: 1 });
+DATA.state.purchases.push({ id: "a3", coffee_id: "c2", purchase_date: "2026-07-01", opened_date: "2026-07-05", bag_size_g: 250, updated_at: 3 });
 DATA.state.extractions.push(
-  { id: "k0", cafe_id: "c2", date_heure: "2026-07-03T08:00", dose_g: 15 },
-  { id: "k1", cafe_id: "c2", date_heure: "2026-07-06T08:00", dose_g: 15 },
-  { id: "k2", cafe_id: "c2", date_heure: "2026-07-07T08:00", dose_g: 15 });
+  { id: "k0", coffee_id: "c2", date_time: "2026-07-03T08:00", dose_g: 15 },
+  { id: "k1", coffee_id: "c2", date_time: "2026-07-06T08:00", dose_g: 15 },
+  { id: "k2", coffee_id: "c2", date_time: "2026-07-07T08:00", dose_g: 15 });
 check("a bag counts from its opening, not its purchase",
   DATA.bagStock("c2", 15).remaining === 220, String(DATA.bagStock("c2", 15).remaining));
 check("without a manual count, nothing flags it", DATA.bagStock("c2", 15).corrected === "");
-Object.assign(DATA.state.achats.find(a => a.id === "a3"), { restant_g: 180, restant_le: "2026-07-06T12:00" });
+Object.assign(DATA.state.purchases.find(a => a.id === "a3"), { remaining_g: 180, remaining_at: "2026-07-06T12:00" });
 check("the manual count restarts from its figure, minus the cups after it",
   DATA.bagStock("c2", 15).remaining === 165, String(DATA.bagStock("c2", 15).remaining));
 check("and the stock says when it was counted", DATA.bagStock("c2", 15).corrected === "2026-07-06T12:00");
 await DATA.correctStock("c2", 200);
 check("correcting writes to the current bag", DATA.bagStock("c2", 15).remaining === 200, String(DATA.bagStock("c2", 15).remaining));
-check("without creating an extra bag", DATA.state.achats.filter(a => a.cafe_id === "c2").length === 1);
-DATA.state.cafes.push({ id: "c3", nom: "Jamais achete", format_grammes: 250, actif: 1 });
+check("without creating an extra bag", DATA.state.purchases.filter(a => a.coffee_id === "c2").length === 1);
+DATA.state.coffees.push({ id: "c3", name: "Jamais achete", bag_size_g: 250, active: 1 });
 await DATA.correctStock("c3", 120);
 check("without a bag, correcting creates one that carries the count",
-  DATA.state.achats.filter(a => a.cafe_id === "c3").length === 1 && DATA.bagStock("c3", 15).remaining === 120);
+  DATA.state.purchases.filter(a => a.coffee_id === "c3").length === 1 && DATA.bagStock("c3", 15).remaining === 120);
 check("a negative count is rejected", await DATA.correctStock("c3", -5) === null);
-const roundTrip = DATA.csvSerialize(DATA.state.achats.filter(a => a.cafe_id === "c3"), DATA.PURCHASE_COLS);
+const roundTrip = DATA.csvSerialize(DATA.state.purchases.filter(a => a.coffee_id === "c3"), DATA.PURCHASE_COLS);
 check("the count goes into the CSV", roundTrip.includes(",120,"), roundTrip);
 
 // 7. Carrying timestamps over when rereading a CSV. This was a real bug:
 // editing an extraction offline then RELOADING the page before the sync ran lost
 // the edit, overwritten by the server version, which was stamped. CSVs do not
-// carry maj_le, hence the carry-over.
+// carry updated_at, hence the carry-over.
 const T1 = 1700000000000;
 const carry = DATA.carryTimestamps;
 check("carryTimestamps is exposed", typeof carry === "function");
 
-const known = [{ id: "e1", note_sur_10: 9, dose_g: 15, maj_le: T1 }];
-const identical = carry([{ id: "e1", note_sur_10: 9, dose_g: 15, maj_le: 0 }], known, DATA.EXT_COLS);
-check("identical content: timestamp kept", identical[0].maj_le === T1, String(identical[0].maj_le));
+const known = [{ id: "e1", score_10: 9, dose_g: 15, updated_at: T1 }];
+const identical = carry([{ id: "e1", score_10: 9, dose_g: 15, updated_at: 0 }], known, DATA.EXT_COLS);
+check("identical content: timestamp kept", identical[0].updated_at === T1, String(identical[0].updated_at));
 
-const change = carry([{ id: "e1", note_sur_10: 6, dose_g: 15, maj_le: 0 }], known, DATA.EXT_COLS);
-check("spreadsheet edit: stamped now, it must win", change[0].maj_le > T1);
+const change = carry([{ id: "e1", score_10: 6, dose_g: 15, updated_at: 0 }], known, DATA.EXT_COLS);
+check("spreadsheet edit: stamped now, it must win", change[0].updated_at > T1);
 
-const newRow = carry([{ id: "e2", note_sur_10: 8, maj_le: 0 }], known, DATA.EXT_COLS);
-check("row unknown to the CSV: stamped", newRow[0].maj_le > 0);
+const newRow = carry([{ id: "e2", score_10: 8, updated_at: 0 }], known, DATA.EXT_COLS);
+check("row unknown to the CSV: stamped", newRow[0].updated_at > 0);
 
-const withoutKnown = carry([{ id: "e3", maj_le: 0 }], undefined, DATA.EXT_COLS);
-check("no known rows: does not throw", withoutKnown.length === 1 && withoutKnown[0].maj_le > 0);
+const withoutKnown = carry([{ id: "e3", updated_at: 0 }], undefined, DATA.EXT_COLS);
+check("no known rows: does not throw", withoutKnown.length === 1 && withoutKnown[0].updated_at > 0);
 
 // 8. Splitting off the preheated water recipe. Preheating changes the pressure
 // build-up, the duration and the valve behaviour: it is a distinct protocol, not
 // a checkbox, so it deserves its own row in the recipe comparisons.
 const CLASSIC = STARTER_RECIPES.find(r => r.id === "brikka-classique");
 const BOILING = STARTER_RECIPES.find(r => r.id === "brikka-classique-bouillante");
-check("the name of Brikka classique stays unchanged", CLASSIC.nom === "Brikka classique", CLASSIC.nom);
-check("the two share a family", CLASSIC.famille === "brikka-classique" && BOILING.famille === CLASSIC.famille);
-check("same dose and water, clean comparison", BOILING.dose === CLASSIC.dose && BOILING.eau === CLASSIC.eau);
+check("the name of Brikka classique stays unchanged", CLASSIC.name === "Brikka classique", CLASSIC.name);
+check("the two share a family", CLASSIC.family === "brikka-classique" && BOILING.family === CLASSIC.family);
+check("same dose and water, clean comparison", BOILING.dose === CLASSIC.dose && BOILING.water === CLASSIC.water);
 
 // migrateData is not exposed: we go through importCsvText, which calls it
 // before persisting. Persisting fails for lack of IndexedDB, which does not matter.
@@ -234,74 +234,74 @@ const SCORES = { 1: 8.5, 2: 8, 3: 8, 4: 8.5, 5: 7, 6: 7, 7: 6, 8: 7, 9: 7.5, 10:
 const rows = [];
 for (let n = 1; n <= 11; n += 1) {
   rows.push({
-    id: "e" + n, date_heure: "2026-08-" + String(n + 2).padStart(2, "0") + "T10:00",
-    cafe_id: "c1", methode: "Brikka", recette: "Brikka classique", dose_g: 14,
-    eau_prechauffee: PREHEATED.includes(n) ? 1 : "", note_sur_10: SCORES[n],
+    id: "e" + n, date_time: "2026-08-" + String(n + 2).padStart(2, "0") + "T10:00",
+    coffee_id: "c1", method: "Brikka", recipe: "Brikka classique", dose_g: 14,
+    preheated_water: PREHEATED.includes(n) ? 1 : "", score_10: SCORES[n],
   });
 }
 DATA.importCsvText(DATA.csvSerialize(rows, DATA.EXT_COLS)).catch(() => {});
 await new Promise(r => setTimeout(r, 80));
 
 const NEW_NAME = "Brikka classique (eau préchauffée)";
-const moved = DATA.state.extractions.filter(e => e.recette === NEW_NAME);
-const stayed = DATA.state.extractions.filter(e => e.recette === "Brikka classique");
+const moved = DATA.state.extractions.filter(e => e.recipe === NEW_NAME);
+const stayed = DATA.state.extractions.filter(e => e.recipe === "Brikka classique");
 check("the 3 preheated extractions are moved", moved.length === 3, String(moved.length));
 check("the 8 others stay in place", stayed.length === 8, String(stayed.length));
-check("no non-preheated one is moved", stayed.every(e => Number(e.eau_prechauffee) !== 1));
-check("scores intact after migration", DATA.state.extractions.find(e => e.id === "e11").note_sur_10 === 4.5);
-check("moved rows stamped for the sync", moved.every(e => Number(e.maj_le) > 0));
+check("no non-preheated one is moved", stayed.every(e => Number(e.preheated_water) !== 1));
+check("scores intact after migration", DATA.state.extractions.find(e => e.id === "e11").score_10 === 4.5);
+check("moved rows stamped for the sync", moved.every(e => Number(e.updated_at) > 0));
 
 DATA.importCsvText(DATA.csvSerialize(DATA.state.extractions, DATA.EXT_COLS)).catch(() => {});
 await new Promise(r => setTimeout(r, 80));
 check(
   "idempotent migration: replaying moves nothing again",
-  DATA.state.extractions.filter(e => e.recette === NEW_NAME).length === 3,
-  String(DATA.state.extractions.filter(e => e.recette === NEW_NAME).length)
+  DATA.state.extractions.filter(e => e.recipe === NEW_NAME).length === 3,
+  String(DATA.state.extractions.filter(e => e.recipe === NEW_NAME).length)
 );
 
 // 9. Heat power, Brikka only. Personal scale from 1 to 10, carried by the
 // recipes (target that prefills) AND by the extractions (what was really done).
 // It is the variable Chris tries to tune after a 5 second flow.
-check("puissance_feu in EXT_COLS", DATA.EXT_COLS.includes("puissance_feu"));
-check("puissance_feu in RECIPE_COLS", DATA.RECIPE_COLS.includes("puissance_feu"));
-const BRIKKA_RECIPES = STARTER_RECIPES.filter(r => r.methode === "Brikka");
+check("heat_level in EXT_COLS", DATA.EXT_COLS.includes("heat_level"));
+check("heat_level in RECIPE_COLS", DATA.RECIPE_COLS.includes("heat_level"));
+const BRIKKA_RECIPES = STARTER_RECIPES.filter(r => r.method === "Brikka");
 /* The count is no longer frozen: what matters is that ALL Brikka recipes carry
    a target, not that there is a precise number of them. A test that freezes the
    number needs touching up at every merge, which is exactly when we do not want
    a test to edit. */
-check("every Brikka recipe carries a heat target of 3", BRIKKA_RECIPES.length > 0 && BRIKKA_RECIPES.every(r => r.puissance_feu === 3),
-  BRIKKA_RECIPES.map(r => r.nom + "=" + r.puissance_feu).join(" | "));
-check("no Switch recipe carries one", STARTER_RECIPES.filter(r => r.methode === "Switch").every(r => r.puissance_feu === undefined));
+check("every Brikka recipe carries a heat target of 3", BRIKKA_RECIPES.length > 0 && BRIKKA_RECIPES.every(r => r.heat_level === 3),
+  BRIKKA_RECIPES.map(r => r.name + "=" + r.heat_level).join(" | "));
+check("no Switch recipe carries one", STARTER_RECIPES.filter(r => r.method === "Switch").every(r => r.heat_level === undefined));
 
 const heatRows = [];
 for (let n = 1; n <= 11; n += 1) {
   heatRows.push({
-    id: "f" + n, date_heure: "2026-08-" + String(n + 2).padStart(2, "0") + "T10:00",
-    cafe_id: "c1", methode: "Brikka", recette: "Brikka classique", dose_g: 14,
-    temperature_c: 95, note_sur_10: 7, puissance_feu: "",
+    id: "f" + n, date_time: "2026-08-" + String(n + 2).padStart(2, "0") + "T10:00",
+    coffee_id: "c1", method: "Brikka", recipe: "Brikka classique", dose_g: 14,
+    temperature_c: 95, score_10: 7, heat_level: "",
   });
 }
-heatRows.push({ id: "f12", date_heure: "2026-08-14T10:00", cafe_id: "c1", methode: "Switch", dose_g: 15, note_sur_10: 7, puissance_feu: "" });
-heatRows.push({ id: "f13", date_heure: "2026-08-15T10:00", cafe_id: "c1", methode: "Brikka", dose_g: 14, note_sur_10: 7, puissance_feu: 8 });
+heatRows.push({ id: "f12", date_time: "2026-08-14T10:00", coffee_id: "c1", method: "Switch", dose_g: 15, score_10: 7, heat_level: "" });
+heatRows.push({ id: "f13", date_time: "2026-08-15T10:00", coffee_id: "c1", method: "Brikka", dose_g: 14, score_10: 7, heat_level: 8 });
 DATA.importCsvText(DATA.csvSerialize(heatRows, DATA.EXT_COLS)).catch(() => {});
 await new Promise(r => setTimeout(r, 80));
 
 const afterHeat = DATA.state.extractions;
-const migratedBrikkas = afterHeat.filter(e => e.methode === "Brikka" && e.id !== "f13");
-check("past Brikka brews move to 3", migratedBrikkas.every(e => e.puissance_feu === 3),
-  [...new Set(migratedBrikkas.map(e => e.puissance_feu))].join());
-check("a Switch extraction stays empty", afterHeat.find(e => e.id === "f12").puissance_feu === "");
-check("an already entered value is never overwritten", afterHeat.find(e => e.id === "f13").puissance_feu === 8);
+const migratedBrikkas = afterHeat.filter(e => e.method === "Brikka" && e.id !== "f13");
+check("past Brikka brews move to 3", migratedBrikkas.every(e => e.heat_level === 3),
+  [...new Set(migratedBrikkas.map(e => e.heat_level))].join());
+check("a Switch extraction stays empty", afterHeat.find(e => e.id === "f12").heat_level === "");
+check("an already entered value is never overwritten", afterHeat.find(e => e.id === "f13").heat_level === 8);
 check("the temperature of old ones is NOT touched", afterHeat.find(e => e.id === "f1").temperature_c === 95,
   String(afterHeat.find(e => e.id === "f1").temperature_c));
 
 DATA.importCsvText(DATA.csvSerialize([
-  { id: "b1", methode: "Brikka", puissance_feu: 0 },
-  { id: "b2", methode: "Brikka", puissance_feu: 12 },
-  { id: "b3", methode: "Brikka", puissance_feu: "7.6" },
+  { id: "b1", method: "Brikka", heat_level: 0 },
+  { id: "b2", method: "Brikka", heat_level: 12 },
+  { id: "b3", method: "Brikka", heat_level: "7.6" },
 ], DATA.EXT_COLS)).catch(() => {});
 await new Promise(r => setTimeout(r, 80));
-const heatOf = id => DATA.state.extractions.find(e => e.id === id).puissance_feu;
+const heatOf = id => DATA.state.extractions.find(e => e.id === id).heat_level;
 check("0 is brought back to 1", heatOf("b1") === 1, String(heatOf("b1")));
 check("12 is brought back to 10", heatOf("b2") === 10, String(heatOf("b2")));
 check("7.6 is rounded to 8", heatOf("b3") === 8, String(heatOf("b3")));
@@ -328,7 +328,7 @@ const DERIVED = "Acide ET amer (extraction inégale)";
 check("the deduced diagnostic is no longer offered as a pill", !PILL_DIAGS.includes(DERIVED));
 check("but it stays known to the system", DIAGNOSTICS.includes(DERIVED));
 check("no group ends up empty", DIAGNOSTIC_GROUPS.every(g => g.diags.length > 0),
-  DIAGNOSTIC_GROUPS.filter(g => !g.diags.length).map(g => g.nom).join(", "));
+  DIAGNOSTIC_GROUPS.filter(g => !g.diags.length).map(g => g.name).join(", "));
 check("it keeps its correction, which is what shows on deduction",
   !!DIAGNOSTIC_CORRECTIONS[DERIVED]);
 
@@ -380,9 +380,9 @@ check("the tooltip holds two lines for each diagnostic",
 // best setting for a coffee pre-ground at 82 percent has nothing to do with that
 // of a whole bean coffee, a global average would mix the two.
 const brew = (id, coffee, recipe, grindDial, fire, preheated, rating) => ({
-  id, cafe_id: coffee, recette: recipe, mouture_dial: grindDial, puissance_feu: fire,
-  eau_prechauffee: preheated ? 1 : "", note_sur_10: rating,
-  date_heure: "2026-08-" + id.padStart(2, "0") + "T10:00",
+  id, coffee_id: coffee, recipe: recipe, grind_dial: grindDial, heat_level: fire,
+  preheated_water: preheated ? 1 : "", score_10: rating,
+  date_time: "2026-08-" + id.padStart(2, "0") + "T10:00",
 });
 
 const sample = [
@@ -400,18 +400,18 @@ check("it carries its settings", summary.best.grind === "1.2.0" && summary.best.
 check("the reference cup is the best rated one", summary.best.referenceId === "02", summary.best.referenceId);
 
 const sparse = TUNING.forCoffee("c2", [brew("10", "c2", "R", "1.2.0", 3, false, 8), brew("11", "c2", "R", "1.2.0", 3, false, 7)]);
-check("below the threshold, nothing is asserted", sparse.best === null && sparse.reason === "pas_assez");
+check("below the threshold, nothing is asserted", sparse.best === null && sparse.reason === "not_enough");
 check("and we say how many are missing", sparse.missing === 1, String(sparse.missing));
 
 const scattered = TUNING.forCoffee("c3", ["1.2.0", "1.3.0", "1.4.0", "1.5.0"]
   .map((m, k) => brew("2" + k, "c3", "R", m, 3, false, 7)));
 check("enough cups but all different: nothing", scattered.best === null);
-check("the reason distinguishes this case", scattered.reason === "eparpille", scattered.reason);
+check("the reason distinguishes this case", scattered.reason === "scattered", scattered.reason);
 
 /* CONSISTENCY FOR THE SAME COFFEE (v8.54): two very different coffees, each
    redone identically, are perfectly consistent. */
 {
-  const t = (coffee, recipe, n) => ({ cafe_id: coffee, recette: recipe, note_sur_10: n });
+  const t = (coffee, recipe, n) => ({ coffee_id: coffee, recipe: recipe, score_10: n });
   const steady = [t("a", "R", 8), t("a", "R", 8), t("b", "R", 4), t("b", "R", 4)];
   check("two different coffees redone the same: perfect consistency", TUNING.gapAtSameCoffee(steady) === 0);
   check("the spread is measured within each coffee and recipe pair",
@@ -423,7 +423,7 @@ check("the reason distinguishes this case", scattered.reason === "eparpille", sc
    to the correction sentences: this check verifies they say the same thing, so
    that one cannot be changed while forgetting the other. */
 {
-  const group = itemName => (DIAGNOSTIC_GROUPS.find(g => g.nom === itemName) || { diags: [] }).diags;
+  const group = itemName => (DIAGNOSTIC_GROUPS.find(g => g.name === itemName) || { diags: [] }).diags;
   const quantifiable = [...group("Réglage d'extraction"), ...group("Ratio café et eau")];
   check("every grind or ratio diagnostic has its levers",
     quantifiable.every(d => DIAGNOSTIC_LEVERS[d]), quantifiable.filter(d => !DIAGNOSTIC_LEVERS[d]).join(", "));
@@ -436,31 +436,31 @@ check("the reason distinguishes this case", scattered.reason === "eparpille", sc
   }).map(([d]) => d);
   check("the levers say what the correction sentences say", inconsistent.length === 0, inconsistent.join(", "));
 
-  const stepSizes = { pas_crans: 2, pas_degres: 2, pas_feu: 1, pas_eau_g: 15, pas_dose_g: 1 };
-  const sw = (diag, fields) => ({ methode: "Switch", mouture_dial: "1.4.2", temperature_c: 92, eau_g: 240, dose_g: 15, diagnostic: diag, ...fields });
+  const stepSizes = { step_clicks: 2, step_degrees: 2, step_heat: 1, step_water_g: 15, step_dose_g: 1 };
+  const sw = (diag, fields) => ({ method: "Switch", grind_dial: "1.4.2", temperature_c: 92, water_g: 240, dose_g: 15, diagnostic: diag, ...fields });
   const c = TUNING.quantifiedCorrection(sw("Un peu amer"), stepSizes, false);
   check("a bit bitter: the dial first, two clicks coarser", c[0] && c[0].lever === "grind" && c[0].to === "1.4.4" && c[0].gap === 2,
     JSON.stringify(c));
   check("then the water two degrees cooler", c[1] && c[1].lever === "temperature" && c[1].to === 90, JSON.stringify(c[1]));
   const f = TUNING.quantifiedCorrection(sw("Sur-extrait (amer)"), stepSizes, false);
   check("a strong diagnostic doubles the step", f[0].to === "1.5.1" && f[1].to === 88, JSON.stringify(f));
-  check("the steps come from the settings", TUNING.quantifiedCorrection(sw("Un peu amer"), { ...stepSizes, pas_crans: 3 }, false)[0].to === "1.5.0");
+  check("the steps come from the settings", TUNING.quantifiedCorrection(sw("Un peu amer"), { ...stepSizes, step_clicks: 3 }, false)[0].to === "1.5.0");
   // At the end of the Switch range (100 clicks, 2.0.0, since v8.74), nothing left to suggest.
   check("the dial stays within the machine's range",
-    TUNING.quantifiedCorrection(sw("Astringent", { mouture_dial: "2.0.0" }), stepSizes, false).length === 0);
+    TUNING.quantifiedCorrection(sw("Astringent", { grind_dial: "2.0.0" }), stepSizes, false).length === 0);
   check("sour and bitter together are not quantified", TUNING.quantifiedCorrection(sw("Un peu acide|Un peu amer"), stepSizes, false).length === 0);
   check("a pre-ground coffee switches to heat", TUNING.quantifiedCorrection(sw("Un peu amer"), stepSizes, true)[0].lever === "temperature");
   /* On the Brikka (v8.74): heat only downwards (raising the flame overheats the
      aluminium, the Guide says so), and never dose (the basket is full). */
-  const br = TUNING.quantifiedCorrection({ methode: "Brikka", mouture_dial: "", dose_g: 14, puissance_feu: 3, diagnostic: "Un peu léger|Un peu acide" }, stepSizes, true);
+  const br = TUNING.quantifiedCorrection({ method: "Brikka", grind_dial: "", dose_g: 14, heat_level: 3, diagnostic: "Un peu léger|Un peu acide" }, stepSizes, true);
   check("on the Brikka, neither more heat nor more coffee", br.length === 0, JSON.stringify(br));
-  const brBitter = TUNING.quantifiedCorrection({ methode: "Brikka", mouture_dial: "", dose_g: 14, puissance_feu: 3, diagnostic: "Un peu amer" }, stepSizes, true);
+  const brBitter = TUNING.quantifiedCorrection({ method: "Brikka", grind_dial: "", dose_g: 14, heat_level: 3, diagnostic: "Un peu amer" }, stepSizes, true);
   check("but one heat step less when it is bitter", brBitter.length === 1 && brBitter[0].lever === "heat" && brBitter[0].to === 2, JSON.stringify(brBitter));
   check("without a diagnostic, nothing", TUNING.quantifiedCorrection(sw(""), stepSizes, false).length === 0);
   // A row from before v8.48 lacks the columns: it takes the defaults, no migration.
   const old = DATA.normalizeSettings({ id: "moi", dose_g: 15 });
-  check("a row without steps takes the defaults", old.pas_crans === 2 && old.pas_degres === 2 && old.pas_eau_g === 15);
-  check("an out of bounds step falls back to the default", DATA.normalizeSettings({ pas_crans: 40 }).pas_crans === 2);
+  check("a row without steps takes the defaults", old.step_clicks === 2 && old.step_degrees === 2 && old.step_water_g === 15);
+  check("an out of bounds step falls back to the default", DATA.normalizeSettings({ step_clicks: 40 }).step_clicks === 2);
 }
 
 /* Twin cups (v8.44): same recipe, dial within three clicks, the same coffee
@@ -475,13 +475,13 @@ check("the reason distinguishes this case", scattered.reason === "eparpille", sc
     brew("35", "c1", "Autre", "1.4.2", 3, false, 9), // other recipe
     brew("36", "c1", "R", "1.4.2", 3, false, ""),   // not rated
   ];
-  const j = TUNING.twins(t, { cafe_id: "c1", recette: "R", mouture_dial: "1.4.2" });
+  const j = TUNING.twins(t, { coffee_id: "c1", recipe: "R", grind_dial: "1.4.2" });
   check("twins keep the same recipe and the dial within 3 clicks",
     j.map(x => x.ext.id).join(",") === "31,34,32", j.map(x => x.ext.id).join(","));
   check("the same coffee comes first, and the gap is in clicks", j[0].sameCoffee && j[1].gap === -2 && !j[2].sameCoffee);
-  const ground = TUNING.twins(t, { cafe_id: "c2", recette: "R", ground: true });
+  const ground = TUNING.twins(t, { coffee_id: "c2", recipe: "R", ground: true });
   check("a pre-ground coffee looks for the same recipe on the same coffee", ground.length === 1 && ground[0].ext.id === "32");
-  check("without a recipe, no twin", TUNING.twins(t, { cafe_id: "c1", mouture_dial: "1.4.2" }).length === 0);
+  check("without a recipe, no twin", TUNING.twins(t, { coffee_id: "c1", grind_dial: "1.4.2" }).length === 0);
 }
 
 const preheated = [false, false, false, true, true, true]
@@ -498,10 +498,10 @@ check("a never extracted coffee is flagged, not ignored",
   TUNING.forCoffee("c9", []).reason === "aucune");
 
 const tuned = TUNING.forAllCoffees(
-  [{ id: "c2", nom: "Sans", actif: 1 }, { id: "c1", nom: "Avec", actif: 1 }, { id: "cz", nom: "Off", actif: 0 }],
+  [{ id: "c2", name: "Sans", active: 1 }, { id: "c1", name: "Avec", active: 1 }, { id: "cz", name: "Off", active: 0 }],
   sample.concat([brew("10", "c2", "R", "1.2.0", 3, false, 8)]));
 check("coffees with a result come first", tuned[0].coffee.id === "c1", tuned.map(x => x.coffee.id).join());
-check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
+check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
 
 /* The main ratio is WATER over DOSE on BOTH machines: it is the universal coffee
    convention, the only one comparable to a recipe or to another drinker. The
@@ -509,50 +509,50 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
    of 29: it almost never showed and gave a number incomparable to the rest. It
    stays, as a secondary one, when it is measured. */
 {
-  const brikka = DATA.calcs({ methode: "Brikka", dose_g: 16, eau_g: 150, volume_extrait_ml: 90 });
-  check("Brikka: the main ratio is water over dose", brikka.ratioTexte === "1:9.4", brikka.ratioTexte);
-  check("Brikka: its base is named chaudiere", brikka.ratioBase === "chaudiere", brikka.ratioBase);
+  const brikka = DATA.calcs({ method: "Brikka", dose_g: 16, water_g: 150, yield_ml: 90 });
+  check("Brikka: the main ratio is water over dose", brikka.ratioText === "1:9.4", brikka.ratioText);
+  check("Brikka: its base is named boiler", brikka.ratioBase === "boiler", brikka.ratioBase);
   check("the measured volume gives a SECONDARY in-cup ratio",
     brikka.cupRatioText === "1:5.6", brikka.cupRatioText);
 
-  const noVolume = DATA.calcs({ methode: "Brikka", dose_g: 16, eau_g: 150, volume_extrait_ml: "" });
-  check("without volume, the main ratio does not change", noVolume.ratioTexte === "1:9.4", noVolume.ratioTexte);
+  const noVolume = DATA.calcs({ method: "Brikka", dose_g: 16, water_g: 150, yield_ml: "" });
+  check("without volume, the main ratio does not change", noVolume.ratioText === "1:9.4", noVolume.ratioText);
   check("without volume, no invented in-cup ratio", noVolume.cupRatioText === "", noVolume.cupRatioText);
 
-  const sw = DATA.calcs({ methode: "Switch", dose_g: 15, eau_g: 225, volume_extrait_ml: 190 });
-  check("Switch: same convention, water over dose", sw.ratioTexte === "1:15.0", sw.ratioTexte);
+  const sw = DATA.calcs({ method: "Switch", dose_g: 15, water_g: 225, yield_ml: 190 });
+  check("Switch: same convention, water over dose", sw.ratioText === "1:15.0", sw.ratioText);
   check("Switch: its base is named infusion", sw.ratioBase === "infusion", sw.ratioBase);
 
-  const diluted = DATA.calcs({ methode: "Brikka", dose_g: 16, eau_g: 150, volume_extrait_ml: 90, eau_ajoutee_ml: 40 });
-  check("diluting with water does not touch the extraction ratio", diluted.ratioTexte === "1:9.4", diluted.ratioTexte);
+  const diluted = DATA.calcs({ method: "Brikka", dose_g: 16, water_g: 150, yield_ml: 90, added_water_ml: 40 });
+  check("diluting with water does not touch the extraction ratio", diluted.ratioText === "1:9.4", diluted.ratioText);
   check("diluting with water gives an extra drink ratio", diluted.drinkRatio === "1:8.1", diluted.drinkRatio);
   check("without dilution, no drink ratio",
-    DATA.calcs({ methode: "Brikka", dose_g: 16, eau_g: 150, volume_extrait_ml: 90 }).drinkRatio === "");
+    DATA.calcs({ method: "Brikka", dose_g: 16, water_g: 150, yield_ml: 90 }).drinkRatio === "");
 
   // Without water, nothing at all: the ratio must not fall back on the volume.
   check("without entered water, no main ratio",
-    DATA.calcs({ methode: "Brikka", dose_g: 16, eau_g: "", volume_extrait_ml: 90 }).ratioTexte === "");
+    DATA.calcs({ method: "Brikka", dose_g: 16, water_g: "", yield_ml: 90 }).ratioText === "");
 }
 
 // Default values of a recipe: "" means NO target, which is not zero. Brikka
 // recipes have no target temperature, the flame decides.
 {
-  const brikkaCups = STARTER_RECIPES.filter(r => r.methode === "Brikka");
+  const brikkaCups = STARTER_RECIPES.filter(r => r.method === "Brikka");
   check("Brikka recipes impose no temperature",
     brikkaCups.length > 0 && brikkaCups.every(r => DATA.normalizeRecipe(r).temp === ""),
-    brikkaCups.map(r => r.nom + "=" + DATA.normalizeRecipe(r).temp).join(", "));
+    brikkaCups.map(r => r.name + "=" + DATA.normalizeRecipe(r).temp).join(", "));
   check("Brikka recipes prefill 150 g in the boiler",
-    brikkaCups.every(r => DATA.normalizeRecipe(r).eau === 150),
-    brikkaCups.map(r => r.nom + "=" + DATA.normalizeRecipe(r).eau).join(", "));
+    brikkaCups.every(r => DATA.normalizeRecipe(r).water === 150),
+    brikkaCups.map(r => r.name + "=" + DATA.normalizeRecipe(r).water).join(", "));
   check("Switch recipes keep a target temperature",
-    STARTER_RECIPES.filter(r => r.methode === "Switch").every(r => DATA.normalizeRecipe(r).temp > 0));
+    STARTER_RECIPES.filter(r => r.method === "Switch").every(r => DATA.normalizeRecipe(r).temp > 0));
   check("an empty temperature stays empty and does not become 0",
     DATA.normalizeRecipe({ temp: "" }).temp === "" && DATA.normalizeRecipe({ temp: 0 }).temp === "");
   check("the recipe heat power survives normalisation",
-    DATA.normalizeRecipe({ puissance_feu: 4 }).puissance_feu === 4);
+    DATA.normalizeRecipe({ heat_level: 4 }).heat_level === 4);
   check("heat power is clamped to the 1-10 scale",
-    DATA.normalizeRecipe({ puissance_feu: 99 }).puissance_feu === 10 &&
-    DATA.normalizeRecipe({ puissance_feu: 0 }).puissance_feu === 1);
+    DATA.normalizeRecipe({ heat_level: 99 }).heat_level === 10 &&
+    DATA.normalizeRecipe({ heat_level: 0 }).heat_level === 1);
 }
 
 /* SCHEMA VERSION. The catch-ups of seeded values depended on flags in
@@ -563,125 +563,125 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 {
   // An older install: old seeded values, no version.
   const before = () => {
-    DATA.state.reglages = [];
-    DATA.state.recettes = [
-      { id: "b1", nom: "Brikka classique", methode: "Brikka", famille: "", eau: 100, temp: 93,
-        puissance_feu: 4, dial: "1.2.0", etapes: [], maj_le: 0 },
-      { id: "b2", nom: "Brikka flat white", methode: "Brikka", famille: "", eau: 100, temp: 93,
-        puissance_feu: 3, dial: "1.2.0", etapes: [], maj_le: 0 },
+    DATA.state.settings = [];
+    DATA.state.recipes = [
+      { id: "b1", name: "Brikka classique", method: "Brikka", family: "", water: 100, temp: 93,
+        heat_level: 4, dial: "1.2.0", steps: [], updated_at: 0 },
+      { id: "b2", name: "Brikka flat white", method: "Brikka", family: "", water: 100, temp: 93,
+        heat_level: 3, dial: "1.2.0", steps: [], updated_at: 0 },
       // Setting DELIBERATELY chosen afterwards: must not be overwritten.
-      { id: "b3", nom: "Brikka perso", methode: "Brikka", famille: "", eau: 170, temp: "",
-        puissance_feu: 6, dial: "1.5.0", etapes: [], maj_le: 0 },
-      { id: "s1", nom: "Chronicler", methode: "Switch", famille: "chronicler", eau: 225, temp: 92,
-        puissance_feu: "", dial: "1.6.0", maj_le: 0,
-        etapes: [{ t: 0, texte: "Verser jusqu'à 112 g." }, { t: 45, texte: "Compléter à 225 g." }],
+      { id: "b3", name: "Brikka perso", method: "Brikka", family: "", water: 170, temp: "",
+        heat_level: 6, dial: "1.5.0", steps: [], updated_at: 0 },
+      { id: "s1", name: "Chronicler", method: "Switch", family: "chronicler", water: 225, temp: 92,
+        heat_level: "", dial: "1.6.0", updated_at: 0,
+        steps: [{ t: 0, text: "Verser jusqu'à 112 g." }, { t: 45, text: "Compléter à 225 g." }],
         note: "compléter à 225 g veut dire que la balance affiche 225" },
     ];
   };
-  const recipeById = id => DATA.state.recettes.find(r => r.id === id);
+  const recipeById = id => DATA.state.recipes.find(r => r.id === id);
 
   before();
   check("a document without a version starts from zero", Number(DATA.currentSettings().schema_version) === 0);
   DATA.migrateData();
 
-  check("the Brikka boiler goes from 100 to 150 g", recipeById("b1").eau === 150 && recipeById("b2").eau === 150,
-    recipeById("b1").eau + " / " + recipeById("b2").eau);
+  check("the Brikka boiler goes from 100 to 150 g", recipeById("b1").water === 150 && recipeById("b2").water === 150,
+    recipeById("b1").water + " / " + recipeById("b2").water);
   check("the Brikka target temperature disappears", recipeById("b1").temp === "" && recipeById("b2").temp === "",
     JSON.stringify([recipeById("b1").temp, recipeById("b2").temp]));
   /* The heat scale moved four times: 3, 4, 2, then 3 again (step v14, Chris's
      request). A card seeded at 4 and a card seeded at 3 therefore end up in the
      same place, and that is the point of these two checks: the whole chain is
      replayed, not just the last step. */
-  check("heat seeded at 4 ends at 3", recipeById("b1").puissance_feu === 3, recipeById("b1").puissance_feu);
-  check("heat seeded at 3 comes back to 3 after the whole path", recipeById("b2").puissance_feu === 3, recipeById("b2").puissance_feu);
+  check("heat seeded at 4 ends at 3", recipeById("b1").heat_level === 3, recipeById("b1").heat_level);
+  check("heat seeded at 3 comes back to 3 after the whole path", recipeById("b2").heat_level === 3, recipeById("b2").heat_level);
   check("the single dial also applies to the Switch", recipeById("s1").dial === "1.5.0", recipeById("s1").dial);
-  check("the Chronicler goes to 240 g", recipeById("s1").eau === 240, recipeById("s1").eau);
+  check("the Chronicler goes to 240 g", recipeById("s1").water === 240, recipeById("s1").water);
   check("its pour steps follow",
-    recipeById("s1").etapes.map(e => e.texte).join(" ").includes("120 g") &&
-    recipeById("s1").etapes.map(e => e.texte).join(" ").includes("240 g"),
-    recipeById("s1").etapes.map(e => e.texte).join(" | "));
+    recipeById("s1").steps.map(e => e.text).join(" ").includes("120 g") &&
+    recipeById("s1").steps.map(e => e.text).join(" ").includes("240 g"),
+    recipeById("s1").steps.map(e => e.text).join(" | "));
   check("a hand-tuned recipe is not touched",
-    recipeById("b3").eau === 170 && recipeById("b3").puissance_feu === 6,
-    recipeById("b3").eau + " / " + recipeById("b3").puissance_feu);
-  check("touched recipes are stamped for the sync", recipeById("b1").maj_le > 0);
+    recipeById("b3").water === 170 && recipeById("b3").heat_level === 6,
+    recipeById("b3").water + " / " + recipeById("b3").heat_level);
+  check("touched recipes are stamped for the sync", recipeById("b1").updated_at > 0);
 
   // The version is written, and it travels with the data.
   const v = Number(DATA.currentSettings().schema_version);
   check("the schema version is written afterwards", v > 0, String(v));
-  check("it is stamped like the rest", DATA.state.reglages[0].maj_le > 0);
+  check("it is stamped like the rest", DATA.state.settings[0].updated_at > 0);
 
   /* Replaying must do NOTHING: otherwise a setting put back by hand would fall back
      to the migrated value on the next load. */
-  recipeById("b1").puissance_feu = 4;
-  recipeById("b1").eau = 100;
+  recipeById("b1").heat_level = 4;
+  recipeById("b1").water = 100;
   DATA.migrateData();
   check("steps do not replay once the version is reached",
-    recipeById("b1").puissance_feu === 4 && recipeById("b1").eau === 100,
-    recipeById("b1").puissance_feu + " / " + recipeById("b1").eau);
+    recipeById("b1").heat_level === 4 && recipeById("b1").water === 100,
+    recipeById("b1").heat_level + " / " + recipeById("b1").water);
 
   /* THE case that used to break: a new device, empty storage, receiving an ALREADY
      migrated document. It must replay nothing, even without any local flag. */
   before();
-  DATA.state.reglages = [DATA.normalizeSettings({ schema_version: v })];
+  DATA.state.settings = [DATA.normalizeSettings({ schema_version: v })];
   DATA.migrateData();
   check("an already migrated document is never touched again",
-    recipeById("b1").eau === 100 && recipeById("b1").puissance_feu === 4,
-    recipeById("b1").eau + " / " + recipeById("b1").puissance_feu);
+    recipeById("b1").water === 100 && recipeById("b1").heat_level === 4,
+    recipeById("b1").water + " / " + recipeById("b1").heat_level);
 
   // And the reverse: a new device receiving a LAGGING document catches it up.
   before();
-  DATA.state.reglages = [DATA.normalizeSettings({ schema_version: 3 })];
+  DATA.state.settings = [DATA.normalizeSettings({ schema_version: 3 })];
   DATA.migrateData();
   check("a lagging document is caught up by any device",
-    recipeById("b1").eau === 150 && recipeById("s1").dial === "1.5.0",
-    recipeById("b1").eau + " / " + recipeById("s1").dial);
+    recipeById("b1").water === 150 && recipeById("s1").dial === "1.5.0",
+    recipeById("b1").water + " / " + recipeById("s1").dial);
   check("but only the missing steps: b1's heat had already been handled",
-    recipeById("b1").puissance_feu === 4, recipeById("b1").puissance_feu);
+    recipeById("b1").heat_level === 4, recipeById("b1").heat_level);
 
   /* Step v11: the factory 4:00 written in the synced settings goes to 2:00.
      A duration timed by hand (300) is not touched. */
   before();
-  DATA.state.reglages = [DATA.normalizeSettings({ schema_version: 10, ebullition_s: 240 })];
+  DATA.state.settings = [DATA.normalizeSettings({ schema_version: 10, boil_s: 240 })];
   DATA.migrateData();
-  check("the invented 4:00 goes to 2:00", Number(DATA.currentSettings().ebullition_s) === 120,
-    String(DATA.currentSettings().ebullition_s));
+  check("the invented 4:00 goes to 2:00", Number(DATA.currentSettings().boil_s) === 120,
+    String(DATA.currentSettings().boil_s));
   before();
-  DATA.state.reglages = [DATA.normalizeSettings({ schema_version: 10, ebullition_s: 300 })];
+  DATA.state.settings = [DATA.normalizeSettings({ schema_version: 10, boil_s: 300 })];
   DATA.migrateData();
-  check("a hand-timed kettle is not overwritten", Number(DATA.currentSettings().ebullition_s) === 300,
-    String(DATA.currentSettings().ebullition_s));
+  check("a hand-timed kettle is not overwritten", Number(DATA.currentSettings().boil_s) === 300,
+    String(DATA.currentSettings().boil_s));
 
   // Step v12: the Hoffmann bloom mentions the swirl during the bloom. A card
   // rewritten by hand keeps its text.
   before();
-  DATA.state.reglages = [DATA.normalizeSettings({ schema_version: 11 })];
-  const hof = () => DATA.state.recettes.find(r => r.id === "hoffmann-1cup");
-  const seedHof = text => DATA.state.recettes.push({ id: "hoffmann-1cup", nom: "Better 1 Cup (Hoffmann)", methode: "Switch",
-    famille: "", eau: 250, temp: 95, puissance_feu: "", dial: "1.5.0", maj_le: 0, etapes: [{ t: 0, texte: text }] });
+  DATA.state.settings = [DATA.normalizeSettings({ schema_version: 11 })];
+  const hof = () => DATA.state.recipes.find(r => r.id === "hoffmann-1cup");
+  const seedHof = text => DATA.state.recipes.push({ id: "hoffmann-1cup", name: "Better 1 Cup (Hoffmann)", method: "Switch",
+    family: "", water: 250, temp: 95, heat_level: "", dial: "1.5.0", updated_at: 0, steps: [{ t: 0, text: text }] });
   seedHof("Bloom : verser 50 g lentement, en quinze secondes environ, vanne OUVERTE. Tourbillon doux de la carafe.");
   DATA.migrateData();
   check("the Hoffmann bloom mentions the swirl during the bloom",
-    hof().etapes[0].texte.includes("PENDANT le bloom"), hof().etapes[0].texte);
+    hof().steps[0].text.includes("PENDANT le bloom"), hof().steps[0].text);
   before();
-  DATA.state.reglages = [DATA.normalizeSettings({ schema_version: 11 })];
+  DATA.state.settings = [DATA.normalizeSettings({ schema_version: 11 })];
   seedHof("Mon bloom a moi.");
   DATA.migrateData();
-  check("a bloom rewritten by hand is not touched", hof().etapes[0].texte === "Mon bloom a moi.");
+  check("a bloom rewritten by hand is not touched", hof().steps[0].text === "Mon bloom a moi.");
 
   // Step v13: the spoon is allowed on the last Hoffmann step.
   before();
-  DATA.state.reglages = [DATA.normalizeSettings({ schema_version: 12 })];
+  DATA.state.settings = [DATA.normalizeSettings({ schema_version: 12 })];
   seedHof("Tourbillon doux, AUCUNE cuillère. Laisser s'écouler, fin vers 2:45 à 3:15.");
   DATA.migrateData();
   check("the last Hoffmann step no longer forbids the spoon",
-    !hof().etapes[0].texte.includes("AUCUNE") && hof().etapes[0].texte.includes("cuillère"), hof().etapes[0].texte);
+    !hof().steps[0].text.includes("AUCUNE") && hof().steps[0].text.includes("cuillère"), hof().steps[0].text);
 
   /* Step v15: the kettle as a curve. A cup whose degree equals the old straight
      line takes the curve; a degree touched up by hand, or a Brikka, does not. */
   before();
-  DATA.state.reglages = [DATA.normalizeSettings({ schema_version: 14, ebullition_s: 120, bulles_s: 90 })];
+  DATA.state.settings = [DATA.normalizeSettings({ schema_version: 14, boil_s: 120, bubbles_s: 90 })];
   const cup = (id, method, temperature_c) => DATA.state.extractions.push(DATA.normalizeExtraction(
-    { id, date: "2026-09-20", methode: method, cafe_id: "", chauffe_s: 90, temperature_c, maj_le: 0 }));
+    { id, date: "2026-09-20", method: method, coffee_id: "", heating_s: 90, temperature_c, updated_at: 0 }));
   cup("x-droite", "Switch", 82);
   cup("x-main", "Switch", 91);
   cup("x-brikka", "Brikka", 82);
@@ -694,50 +694,50 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   /* Step v16: an already stored original recipe receives its seed's video;
      a link set by hand is not replaced. */
   before();
-  DATA.state.reglages = [DATA.normalizeSettings({ schema_version: 15 })];
-  DATA.state.recettes = STARTER_RECIPES.map(d => DATA.normalizeRecipe({ ...d, video: "" }));
-  const hofVideo = DATA.state.recettes.find(r => r.id === "hoffmann-1cup");
+  DATA.state.settings = [DATA.normalizeSettings({ schema_version: 15 })];
+  DATA.state.recipes = STARTER_RECIPES.map(d => DATA.normalizeRecipe({ ...d, video: "" }));
+  const hofVideo = DATA.state.recipes.find(r => r.id === "hoffmann-1cup");
   hofVideo.video = "https://exemple.org/ma-video";
   DATA.migrateData();
   check("an original recipe without a video receives its seed's one",
-    DATA.state.recettes.find(r => r.id === "neo-brew").video === "https://www.youtube.com/watch?v=k0nsShguOsU");
+    DATA.state.recipes.find(r => r.id === "neo-brew").video === "https://www.youtube.com/watch?v=k0nsShguOsU");
   check("a link set by hand is not replaced", hofVideo.video === "https://exemple.org/ma-video");
   check("the video makes the round trip through the stored row",
     DATA.normalizeRecipe(DATA.recipeToRow ? DATA.recipeToRow(hofVideo) : hofVideo).video === "https://exemple.org/ma-video");
   check("a link that is not http is never written",
-    DATA.normalizeRecipe({ nom: "x", video: "javascript:alert(1)" }).video === "");
+    DATA.normalizeRecipe({ name: "x", video: "javascript:alert(1)" }).video === "");
   check("eight original recipes have their video",
     STARTER_RECIPES.filter(r => /^https:\/\/www\.youtube\.com\/watch\?v=[\w-]{11}$/.test(r.video || "")).length === 8);
   /* The Tetsu Devil (v8.70): the weighed mix of step 2 must give 70 degrees with
      the ambient water of the kettle curve, and add up. */
   const devil = STARTER_RECIPES.find(r => r.id === "devil-switch");
-  const [hot, cold] = (devil.etapes[1].texte.match(/(\d+) g d'eau à 90 °C et (\d+) g/) || []).slice(1).map(Number);
+  const [hot, cold] = (devil.steps[1].text.match(/(\d+) g d'eau à 90 °C et (\d+) g/) || []).slice(1).map(Number);
   const tMix = (hot * 90 + cold * 28) / (hot + cold);
   check("the Devil mix gives 70 degrees within one degree", Math.abs(tMix - 70) <= 1, String(tMix));
-  check("and makes exactly the immersion water", hot + cold === devil.eau - 90, (hot + cold) + " / " + (devil.eau - 90));
+  check("and makes exactly the immersion water", hot + cold === devil.water - 90, (hot + cold) + " / " + (devil.water - 90));
 
   /* Step v17: "The Tetsu Devil" becomes "Tetsu 4:6", the recipe and its cups,
      stamped so that the sync carries the new name. */
   before();
-  DATA.state.reglages = [DATA.normalizeSettings({ schema_version: 16 })];
-  DATA.state.recettes = STARTER_RECIPES.map(d => DATA.normalizeRecipe(d.id === "tetsu-devil" ? { ...d, nom: "The Tetsu Devil" } : d));
+  DATA.state.settings = [DATA.normalizeSettings({ schema_version: 16 })];
+  DATA.state.recipes = STARTER_RECIPES.map(d => DATA.normalizeRecipe(d.id === "tetsu-devil" ? { ...d, name: "The Tetsu Devil" } : d));
   DATA.state.extractions.push(DATA.normalizeExtraction(
-    { id: "x-devil", date: "2026-08-05", methode: "Switch", recette: "The Tetsu Devil", maj_le: 5 }));
+    { id: "x-devil", date: "2026-08-05", method: "Switch", recipe: "The Tetsu Devil", updated_at: 5 }));
   DATA.migrateData();
   const x46 = DATA.state.extractions.find(e => e.id === "x-devil");
   check("the Devil recipe is now called Tetsu 4:6",
-    DATA.state.recettes.find(r => r.id === "tetsu-devil").nom === "Tetsu 4:6");
-  check("and its cups follow, stamped", x46.recette === "Tetsu 4:6" && Number(x46.maj_le) > 5, x46.recette + " " + x46.maj_le);
+    DATA.state.recipes.find(r => r.id === "tetsu-devil").name === "Tetsu 4:6");
+  check("and its cups follow, stamped", x46.recipe === "Tetsu 4:6" && Number(x46.updated_at) > 5, x46.recipe + " " + x46.updated_at);
 
   /* A NEW logbook plays every step, including v5 (single dial): the Neo Brew,
      seeded afterwards with its extra coarse grind, must keep it. */
   before();
-  DATA.state.reglages = [DATA.normalizeSettings({ schema_version: 0 })];
+  DATA.state.settings = [DATA.normalizeSettings({ schema_version: 0 })];
   DATA.migrateData();
-  const neo = DATA.state.recettes.find(r => r.id === "neo-brew");
+  const neo = DATA.state.recipes.find(r => r.id === "neo-brew");
   check("on a new logbook, the Neo Brew keeps its extra coarse dial", neo && neo.dial === "2.8.0", neo && neo.dial);
   check("and the other recipes stay at 1.5.0",
-    DATA.state.recettes.filter(r => r.id !== "neo-brew").every(r => r.dial === "1.5.0"));
+    DATA.state.recipes.filter(r => r.id !== "neo-brew").every(r => r.dial === "1.5.0"));
 
   // No more per-device flags in the data layer.
   const data = SOURCE_DATA;
@@ -855,10 +855,10 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
     const shortcuts = Array.isArray(manifest.shortcuts) ? manifest.shortcuts : [];
     check("at least one long press shortcut", shortcuts.length >= 1);
     /* A shortcut targets a screen, or an ACTION that app.js handles by name
-       ("refaire", v8.41): at startup AND on hash change, otherwise an already
+       ("redo", v8.41): at startup AND on hash change, otherwise an already
        open app would ignore it. */
     const appJs = readFileSync(join(ROOT, "js/app.js"), "utf8");
-    const isHandledAction = key => (appJs.match(new RegExp('h === "' + key + '"', "g")) || []).length >= 2;
+    const isHandledAction = key => (appJs.match(new RegExp('=== "' + key + '"', "g")) || []).length >= 2;
     const dead = shortcuts.filter(r => {
       const key = String(r.url).replace("./#", "");
       return !list.includes('"' + key + '"') && !isHandledAction(key);
@@ -932,7 +932,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
    An ID selector outweighs a class. A rule that sets a display on an #ecran-*
    without requiring .on therefore beats the display:none, and that screen
    stays shown forever: the next ones stack below it instead of replacing it.
-   That is exactly what #screen-saisie { display: grid } did in the Comptoir
+   That is exactly what #screen-entry { display: grid } did in the Comptoir
    redesign, and nothing in the five suites saw it.
 
    The check targets the RULE: any screen could cause the breakdown again. */
@@ -958,7 +958,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 
   /* SAME LESSON, ANOTHER FACE: a screen does not lay itself out.
 
-     #screen-saisie has only ONE child, .entry-layout, which already carried the
+     #screen-entry has only ONE child, .entry-layout, which already carried the
      "form plus fixed column" grid. A second grid set on the screen put the whole
      form in column 1 and left 360 px empty on the right: the content looked
      cramped and shifted, without anything being in error.
@@ -1084,13 +1084,13 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
    recipe without a table keeps its own. */
 {
   const t46 = STARTER_RECIPES.find(r => r.id === "tetsu-devil");
-  check("4:6 light at 93", temperatureForCoffee(t46, { torrefaction: "Claire" }) === 93);
-  check("4:6 medium at 88", temperatureForCoffee(t46, { torrefaction: "Medium" }) === 88);
-  check("4:6 dark at 83", temperatureForCoffee(t46, { torrefaction: "Foncée" }) === 83);
-  check("4:6 without roast keeps 93", temperatureForCoffee(t46, { torrefaction: "" }) === 93);
-  check("4:6 touched up to 90 keeps 90", temperatureForCoffee({ ...t46, temp: 90 }, { torrefaction: "Medium" }) === 90);
+  check("4:6 light at 93", temperatureForCoffee(t46, { roast: "Claire" }) === 93);
+  check("4:6 medium at 88", temperatureForCoffee(t46, { roast: "Medium" }) === 88);
+  check("4:6 dark at 83", temperatureForCoffee(t46, { roast: "Foncée" }) === 83);
+  check("4:6 without roast keeps 93", temperatureForCoffee(t46, { roast: "" }) === 93);
+  check("4:6 touched up to 90 keeps 90", temperatureForCoffee({ ...t46, temp: 90 }, { roast: "Medium" }) === 90);
   const chron = STARTER_RECIPES.find(r => r.id === "chronicler");
-  check("Chronicler without a table keeps 92", temperatureForCoffee(chron, { torrefaction: "Medium" }) === 92);
+  check("Chronicler without a table keeps 92", temperatureForCoffee(chron, { roast: "Medium" }) === 92);
 }
 /* THE DEFAULT HEAT IS THE SAME FIGURE EVERYWHERE.
 
@@ -1105,8 +1105,8 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 {
   const coreSrc2 = readFileSync(join(ROOT, "js/ui-core.js"), "utf8");
   const fallback = Number((coreSrc2.match(/FACTORY_FIRE\s*=\s*(\d+)/) || [])[1]);
-  const schema = DATA.normalizeSettings({}).puissance_feu;
-  const seeded = STARTER_RECIPES.filter(r => r.methode === "Brikka").map(r => r.puissance_feu);
+  const schema = DATA.normalizeSettings({}).heat_level;
+  const seeded = STARTER_RECIPES.filter(r => r.method === "Brikka").map(r => r.heat_level);
   const same = seeded.every(v => v === fallback) && fallback === schema;
   check("the default heat is the same in the three sources",
     same, "seed " + seeded.join("/") + ", fallback " + fallback + ", schema " + schema);
@@ -1233,23 +1233,23 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("the heating method select has gone", !html.includes('id="f-temp-preset"'));
   check("the heating time is entered in minutes and seconds",
     html.includes('id="f-heat-min"') && html.includes('id="f-heat-sec"'));
-  check("chauffe_s is a column, at the end of the row, after ratee",
-    DATA.EXT_COLS.indexOf("chauffe_s") === DATA.EXT_COLS.length - 1 && DATA.EXT_COLS.includes("temperature_c"));
+  check("heating_s is a column, at the end of the row, after failed",
+    DATA.EXT_COLS.indexOf("heating_s") === DATA.EXT_COLS.length - 1 && DATA.EXT_COLS.includes("temperature_c"));
   check("the kettle boiling time is a synced setting",
-    DATA.SETTINGS_COLS.includes("ebullition_s"));
+    DATA.SETTINGS_COLS.includes("boil_s"));
   /* 120 s by default since Chris measured his kettle. Zero left the function
      switched off: temperatureFromHeating refuses to compute without a boiling
      time, so the estimate never kicked in. */
   check("the default is Chris's measurement, 2 minutes",
-    DATA.normalizeSettings({}).ebullition_s === 120,
-    String(DATA.normalizeSettings({}).ebullition_s));
+    DATA.normalizeSettings({}).boil_s === 120,
+    String(DATA.normalizeSettings({}).boil_s));
   /* The function still refuses to compute without a time: it is its guard, and
      it stays useful for old data or data deliberately set to zero. */
   check("without a boiling time, no estimate is invented",
     temperatureFromHeating(120, 0) === "" && heatTimeForTemperature(92, 0) === "");
   check("an absurd boiling time falls back on the measurement, not on zero",
-    DATA.normalizeSettings({ ebullition_s: 5 }).ebullition_s === 120 &&
-    DATA.normalizeSettings({ ebullition_s: 300 }).ebullition_s === 300);
+    DATA.normalizeSettings({ boil_s: 5 }).boil_s === 120 &&
+    DATA.normalizeSettings({ boil_s: 300 }).boil_s === 300);
 
   /* The model (v8.59): a curve from tap water (28) to boiling (100), which
      passes 88 at the first bubbles marker. Chris found the straight line too
@@ -1277,7 +1277,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("88 degrees is the bubbles marker", heatTimeForTemperature(88, 120, 90) === 90);
   check("100 degrees is the full boiling time", heatTimeForTemperature(100, 120, 90) === 120);
   check("the bubbles marker is a synced setting, 1:30 by default",
-    DATA.SETTINGS_COLS.includes("bulles_s") && DATA.normalizeSettings({}).bulles_s === 90);
+    DATA.SETTINGS_COLS.includes("bubbles_s") && DATA.normalizeSettings({}).bubbles_s === 90);
   check("and Parametres enters it in minutes and seconds",
     html.includes('id="param-bubbles-min"') && html.includes('id="param-bubbles-sec"'));
   const entryJs = readFileSync(join(ROOT, "js/ui-entry.js"), "utf8");
@@ -1286,12 +1286,12 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
     (entryJs.match(/(temperatureFromHeating|heatTimeForTemperature)\([^)]*fallbacks\.bubbles\)/g) || []).length);
 
   // A normalised extraction keeps the time, and a Brikka never has one.
-  const n = DATA.normalizeExtraction({ chauffe_s: "215.4" });
-  check("the heating time is rounded to the second and kept", n.chauffe_s === 215);
-  check("empty stays empty, never zero", DATA.normalizeExtraction({}).chauffe_s === "");
+  const n = DATA.normalizeExtraction({ heating_s: "215.4" });
+  check("the heating time is rounded to the second and kept", n.heating_s === 215);
+  check("empty stays empty, never zero", DATA.normalizeExtraction({}).heating_s === "");
   const app = SOURCE_UI;
   check("the entry only saves a heating time on the Switch",
-    /chauffe_s: entry\.methode === "Switch" \? readDuration\("f-heat"\) : ""/.test(app));
+    /heating_s: entry\.method === "Switch" \? readDuration\("f-heat"\) : ""/.test(app));
   check("the heating row is hidden on the Brikka", /row-heat"\)\.hidden = m !== "Switch"/.test(app));
   check("the help texts are bilingual",
     bilingual("temp_estimate") && bilingual("temp_advice") && bilingual("temp_no_kettle") && bilingual("detail_kettle") && bilingual("toast_param_boil"));
@@ -1304,14 +1304,14 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   /* The Chronicler carries 240 g since August 24: Chris's source document says
      "15 g / 240 g, ratio 1:16", the original transcription had shrunk it to
      225. The pour steps follow, 120 g then 240 g. */
-  const cc = STARTER_RECIPES.find(r => r.nom === "The Coffee Chronicler's Recipe");
-  check("the Chronicler recipe exists and carries 240 g", cc && Number(cc.eau) === 240,
-    cc && String(cc.eau));
-  check("its ratio does announce 1:16", (cc.ratioTexte || "").includes("1:16"), cc.ratioTexte);
+  const cc = STARTER_RECIPES.find(r => r.name === "The Coffee Chronicler's Recipe");
+  check("the Chronicler recipe exists and carries 240 g", cc && Number(cc.water) === 240,
+    cc && String(cc.water));
+  check("its ratio does announce 1:16", (cc.ratioText || "").includes("1:16"), cc.ratioText);
   check("its Sweet variant carries the same water",
-    STARTER_RECIPES.filter(r => r.famille === "chronicler").every(r => Number(r.eau) === 240));
+    STARTER_RECIPES.filter(r => r.family === "chronicler").every(r => Number(r.water) === 240));
 
-  const milestones = cc.etapes.map(e => e.texte);
+  const milestones = cc.steps.map(e => e.text);
   check("its pour steps quote 120 g then 240 g",
     milestones[0].includes("120 g") && milestones[1].includes("240 g"), milestones.join(" | "));
 
@@ -1348,7 +1348,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
      "Extraire exactement comme la Brikka classique : 14 g". That is precisely
      what the threshold protects. We check that these doses do not move even
      when doubled, and that the water pours, for their part, do follow. */
-  const allSteps = STARTER_RECIPES.flatMap(r => (r.etapes || []).map(e => e.texte));
+  const allSteps = STARTER_RECIPES.flatMap(r => (r.steps || []).map(e => e.text));
   const withDose = allSteps.filter(x => x.includes("14 g"));
   check("pour steps do quote a coffee dose, the case the threshold protects",
     withDose.length > 0, String(withDose.length));
@@ -1370,7 +1370,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   const app = SOURCE_UI;
   check("the Brikka formula has gone from app.js", !app.includes("0.7 * dose"));
   check("estimatedVolume returns right away on the Brikka",
-    /function estimatedVolume[\s\S]{0,220}methode === "Brikka"[\s\S]{0,20}return 0/.test(app));
+    /function estimatedVolume[\s\S]{0,220}method === "Brikka"[\s\S]{0,20}return 0/.test(app));
   check("a single yield formula remains, the Switch one",
     (app.match(/2\.1 \* dose/g) || []).length === 1,
     String((app.match(/2\.1 \* dose/g) || []).length));
@@ -1378,10 +1378,10 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
     app.includes("milk_no_volume"));
 
   // Retention, for its part, stays computed: it is a MEASUREMENT, not an estimate.
-  const c = DATA.calcs({ methode: "Brikka", dose_g: 16, eau_g: 150, volume_extrait_ml: 95 });
+  const c = DATA.calcs({ method: "Brikka", dose_g: 16, water_g: 150, yield_ml: 95 });
   check("retention is deduced from the two measurements", c.retention_ml === 55, String(c.retention_ml));
   check("without a measured volume, no invented retention",
-    DATA.calcs({ methode: "Brikka", dose_g: 16, eau_g: 150, volume_extrait_ml: "" }).retention_ml === "");
+    DATA.calcs({ method: "Brikka", dose_g: 16, water_g: 150, yield_ml: "" }).retention_ml === "");
 }
 
 /* The grind field had a hardcoded "1.5.0" placeholder, which promised a default
@@ -1399,7 +1399,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("the prefill reads the grinder setting, not the recipe dial",
     app.includes('$("#f-grind").value = currentCoffeeGround() ? "" : wantedDial(r) ? r.dial : fallbacks.dial;'));
   check("and only a recipe outside its machine's range imposes its dial",
-    app.includes("!GRIND.checkRange(r.methode, r.dial).ok"));
+    app.includes("!GRIND.checkRange(r.method, r.dial).ok"));
   check("the factory setting is the compromise of both machines",
     app.includes('FACTORY_DIAL = "1.5.0"'));
 }
@@ -1411,7 +1411,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 {
   const app = SOURCE_UI;
   check("arriving on Saisie via navigation abandons the edit",
-    app.includes('if (nameKey === "saisie" && UI.entry.editId && !forEditing)'));
+    app.includes('if (nameKey === "entry" && UI.entry.editId && !forEditing)'));
   check("the abandonment is announced, it is not silent",
     app.includes('toast_edit_dropped'));
   /* The legitimate exception goes through a PARAMETER, no longer a shared flag.
@@ -1423,7 +1423,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("the exception goes through a parameter, not a shared state",
     !app.includes("ouvertureEdition"), "ouvertureEdition still exists");
   check("and only opening an edit asks for it",
-    app.includes('activateScreen("saisie", true)') &&
+    app.includes('activateScreen("entry", true)') &&
     (app.match(/activateScreen\([^)]*,\s*true\)/g) || []).length === 1,
     (app.match(/activateScreen\([^)]*,\s*true\)/g) || []).join(", "));
 
@@ -1431,7 +1431,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
      the function already opens the screen, and the extra call now reset the
      edit that had just been opened. */
   check("no more redundant activateScreen after loading an extraction",
-    !/loadExtractionIntoEntry\([^)]*\);\s*\n\s*activateScreen\("saisie"\)/.test(app));
+    !/loadExtractionIntoEntry\([^)]*\);\s*\n\s*activateScreen\("entry"\)/.test(app));
 
   const i18n = readFileSync(join(ROOT, "js/i18n.js"), "utf8");
   check("the abandonment message exists in FR and EN", bilingual("toast_edit_dropped"));
@@ -1453,7 +1453,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("a schema step catches up the dial of stored recipes",
     data.includes("single dial at 1.5.0"));
   check("it is not limited to the Brikka, the Switch ones are concerned too",
-    /single dial at 1\.5\.0[\s\S]{0,300}state\.recettes\.forEach/.test(data));
+    /single dial at 1\.5\.0[\s\S]{0,300}state\.recipes\.forEach/.test(data));
 }
 
 /* The frame is set ONCE, on .screen: max width and centering. No #ecran-* must
@@ -1462,7 +1462,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
    widening, while its neighbours were centred. General rule, not a one-off
    fix. */
 {
-  // Without comments: a comment quoting #screen-saisie is not a rule.
+  // Without comments: a comment quoting #screen-entry is not a rule.
   const css = readCss().replace(/\/\*[\s\S]*?\*\//g, "");
   const frame =(css.match(/\.screen \{([^}]*)\}/g) || []).join(" ");
   check("the common frame bounds and centres every screen",
@@ -1514,8 +1514,8 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
    settings that no longer matched the recipes. */
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
-  const brikkaCount = STARTER_RECIPES.filter(r => r.methode === "Brikka").length;
-  const switchCount = STARTER_RECIPES.filter(r => r.methode === "Switch").length;
+  const brikkaCount = STARTER_RECIPES.filter(r => r.method === "Brikka").length;
+  const switchCount = STARTER_RECIPES.filter(r => r.method === "Switch").length;
   /* The guide sentence must follow the data. We reread it and compare, instead of
      freezing both sides: otherwise merging two recipes leaves a guide that lies,
      and that is the kind of gap nobody is going to check. */
@@ -1536,7 +1536,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("a schema step catches up the stored Chronicler recipes",
     data.includes("Chronicler at 240 g"));
   check("it only targets the family concerned and the wrong value",
-    /Chronicler at 240 g[\s\S]{0,300}famille !== "chronicler"[\s\S]{0,80}225/.test(data));
+    /Chronicler at 240 g[\s\S]{0,300}family !== "chronicler"[\s\S]{0,80}225/.test(data));
 }
 
 /* A selected state must change ONLY colours. Any property that touches the text
@@ -1581,14 +1581,14 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 
   const app = SOURCE_UI;
   check("saving reads entryRating and no longer the raw slider",
-    app.includes("note_sur_10: entryRating()"));
+    app.includes("score_10: entryRating()"));
   check("putting a finger on the slider counts, even without movement",
     app.includes("pointerdown"));
 
   // The point that really matters: "" must not turn into 0.
-  const csv = DATA.csvSerialize([{ id: "e1", note_sur_10: "" }], DATA.EXT_COLS);
+  const csv = DATA.csvSerialize([{ id: "e1", score_10: "" }], DATA.EXT_COLS);
   const row = csv.split("\n")[1];
-  const iScore = DATA.EXT_COLS.indexOf("note_sur_10");
+  const iScore = DATA.EXT_COLS.indexOf("score_10");
   check("an empty score stays empty in the CSV", row.split(",")[iScore] === "",
     JSON.stringify(row.split(",")[iScore]));
 }
@@ -1598,34 +1598,34 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
    is holding. They lived in localStorage, so his phone ignored what he set on
    the computer. */
 {
-  check("settings are a synced table", Array.isArray(DATA.state.reglages));
+  check("settings are a synced table", Array.isArray(DATA.state.settings));
 
   const defaults = DATA.normalizeSettings({});
   check("factory values: 15 g, heat 3, dial 1.5.0",
-    defaults.dose_g === 15 && defaults.puissance_feu === 3 && defaults.mouture_dial === "1.5.0",
+    defaults.dose_g === 15 && defaults.heat_level === 3 && defaults.grind_dial === "1.5.0",
     JSON.stringify(defaults));
   check("a single row, with a fixed id", defaults.id === DATA.SETTINGS_ID);
 
   // What comes from the network is not trustworthy: we clamp everything.
-  const absurd = DATA.normalizeSettings({ dose_g: -5, puissance_feu: 99, mouture_dial: "nawak" });
+  const absurd = DATA.normalizeSettings({ dose_g: -5, heat_level: 99, grind_dial: "nawak" });
   check("a negative dose falls back to the factory value", absurd.dose_g === 15, String(absurd.dose_g));
-  check("an out of scale heat falls back to the factory value", absurd.puissance_feu === 3);
-  check("an invalid dial falls back to the factory value", absurd.mouture_dial === "1.5.0");
+  check("an out of scale heat falls back to the factory value", absurd.heat_level === 3);
+  check("an invalid dial falls back to the factory value", absurd.grind_dial === "1.5.0");
   /* 5 and not 3: 3 became the factory value, and a check verifying that a value
      passes through as is proves nothing if it is also the one obtained on
      failure. */
-  const good = DATA.normalizeSettings({ dose_g: 16, puissance_feu: 5, mouture_dial: "1.2.0" });
+  const good = DATA.normalizeSettings({ dose_g: 16, heat_level: 5, grind_dial: "1.2.0" });
   check("valid values pass through as is",
-    good.dose_g === 16 && good.puissance_feu === 5 && good.mouture_dial === "1.2.0", JSON.stringify(good));
+    good.dose_g === 16 && good.heat_level === 5 && good.grind_dial === "1.2.0", JSON.stringify(good));
 
-  // maj_le preserved, never restamped on read: same rule as everywhere.
-  check("maj_le is preserved as is", DATA.normalizeSettings({ maj_le: 1234 }).maj_le === 1234);
+  // updated_at preserved, never restamped on read: same rule as everywhere.
+  check("updated_at is preserved as is", DATA.normalizeSettings({ updated_at: 1234 }).updated_at === 1234);
 
-  // And above all: maj_le must not leak into the CSV.
-  const csv = DATA.csvSerialize([{ id: "moi", maj_le: 1699999999999, dose_g: 16 }], DATA.SETTINGS_COLS);
-  check("reglages.csv header", csv.split("\n")[0] === "id,dose_g,puissance_feu,mouture_dial,schema_version,ebullition_s,pas_crans,pas_degres,pas_feu,pas_eau_g,pas_dose_g,dessins,bulles_s",
+  // And above all: updated_at must not leak into the CSV.
+  const csv = DATA.csvSerialize([{ id: "moi", updated_at: 1699999999999, dose_g: 16 }], DATA.SETTINGS_COLS);
+  check("settings.csv header", csv.split("\n")[0] === "id,dose_g,heat_level,grind_dial,schema_version,boil_s,step_clicks,step_degrees,step_heat,step_water_g,step_dose_g,drawings,bubbles_s",
     csv.split("\n")[0]);
-  check("maj_le missing from the settings CSV", !csv.includes("1699999999999"));
+  check("updated_at missing from the settings CSV", !csv.includes("1699999999999"));
 }
 
 /* DAYS SINCE THE BAG WAS OPENED. The roast date was of no use: none of Chris's
@@ -1633,13 +1633,13 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
    hand, he always knows, and it is what moves his cups the most between D+1
    and D+21. */
 {
-  DATA.state.cafes = [{ id: "c1", nom: "Test", actif: 1 }];
-  DATA.state.achats = [
-    { id: "a1", cafe_id: "c1", date_achat: "2026-08-01", date_ouverture: "2026-08-03", format_grammes: 250 },
-    { id: "a2", cafe_id: "c1", date_achat: "2026-08-20", date_ouverture: "2026-08-25", format_grammes: 250 },
+  DATA.state.coffees = [{ id: "c1", name: "Test", active: 1 }];
+  DATA.state.purchases = [
+    { id: "a1", coffee_id: "c1", purchase_date: "2026-08-01", opened_date: "2026-08-03", bag_size_g: 250 },
+    { id: "a2", coffee_id: "c1", purchase_date: "2026-08-20", opened_date: "2026-08-25", bag_size_g: 250 },
   ];
 
-  const days = (date) => DATA.calcs({ cafe_id: "c1", date_heure: date }).jours_ouvert;
+  const days = (date) => DATA.calcs({ coffee_id: "c1", date_time: date }).days_open;
   check("the opening day counts as zero", days("2026-08-03T09:00") === 0, String(days("2026-08-03T09:00")));
   check("one week later, seven days", days("2026-08-10T09:00") === 7, String(days("2026-08-10T09:00")));
 
@@ -1652,17 +1652,17 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
     days("2026-08-27T09:00") === 2, String(days("2026-08-27T09:00")));
 
   // Without an opening date, we say nothing rather than show a false zero.
-  DATA.state.achats = [{ id: "a1", cafe_id: "c1", date_achat: "2026-08-01", date_ouverture: "", format_grammes: 250 }];
+  DATA.state.purchases = [{ id: "a1", coffee_id: "c1", purchase_date: "2026-08-01", opened_date: "", bag_size_g: 250 }];
   check("bag not opened yet: no age", days("2026-08-10T09:00") === "",
     JSON.stringify(days("2026-08-10T09:00")));
   check("coffee without any bag: no age",
-    DATA.calcs({ cafe_id: "inconnu", date_heure: "2026-08-10T09:00" }).jours_ouvert === "");
+    DATA.calcs({ coffee_id: "inconnu", date_time: "2026-08-10T09:00" }).days_open === "");
 
-  // The column exists in the CSV, and maj_le still does not get in.
-  check("date_ouverture is a purchases column", DATA.PURCHASE_COLS.includes("date_ouverture"));
-  const csv = DATA.csvSerialize([{ id: "a1", maj_le: 1699999999999, date_ouverture: "2026-08-03" }], DATA.PURCHASE_COLS);
+  // The column exists in the CSV, and updated_at still does not get in.
+  check("opened_date is a purchases column", DATA.PURCHASE_COLS.includes("opened_date"));
+  const csv = DATA.csvSerialize([{ id: "a1", updated_at: 1699999999999, opened_date: "2026-08-03" }], DATA.PURCHASE_COLS);
   check("the opening date goes out in the CSV", csv.includes("2026-08-03"));
-  check("maj_le still does not get into the CSV", !csv.includes("1699999999999"));
+  check("updated_at still does not get into the CSV", !csv.includes("1699999999999"));
 
   // The old freshness rule has gone, the new one replaced it.
   const app = SOURCE_UI;
@@ -1675,7 +1675,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 /* TREND CURVE. Raw scores jump too much to be read: 8 then 4 then 7.5 from one
    day to the next. The moving average tells the real story. */
 {
-  const cup = (day, rating) => ({ id: "t" + day, date_heure: "2026-08-" + day + "T12:00", note_sur_10: rating });
+  const cup = (day, rating) => ({ id: "t" + day, date_time: "2026-08-" + day + "T12:00", score_10: rating });
   const sample = [cup("01", 8), cup("02", 8), cup("03", 8), cup("04", 8), cup("05", 8),
               cup("06", 3), cup("07", 3), cup("08", 3), cup("09", 3), cup("10", 3)];
   const g = TUNING.rollingAverage(sample, 5);
@@ -1691,7 +1691,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
     g.slice(4).map(x => x.value).join());
 
   // UNRATED cups do not count, they must not dig into the curve.
-  const withGaps = sample.concat([{ id: "x", date_heure: "2026-08-11T12:00", note_sur_10: "" }]);
+  const withGaps = sample.concat([{ id: "x", date_time: "2026-08-11T12:00", score_10: "" }]);
   check("a cup without a score is ignored", TUNING.rollingAverage(withGaps, 5).length === 10);
 
   // Input order must change nothing: we sort by date.
@@ -1711,10 +1711,10 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 {
   const t = (coffee, method, fire, rating) => ({
     id: coffee + method + fire + rating + Math.round(rating * 10),
-    cafe_id: coffee, methode: method, puissance_feu: fire, note_sur_10: rating,
-    date_heure: "2026-08-01T12:00", recette: "R", dose_g: 15,
+    coffee_id: coffee, method: method, heat_level: fire, score_10: rating,
+    date_time: "2026-08-01T12:00", recipe: "R", dose_g: 15,
   });
-  const coffees = [{ id: "c1", nom: "Cafe un" }, { id: "c2", nom: "Cafe deux" }];
+  const coffees = [{ id: "c1", name: "Cafe un" }, { id: "c2", name: "Cafe deux" }];
 
   // A clear-cut batch: heat 3 clearly above heat 2, on the same coffee.
   const net = [
@@ -1728,7 +1728,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("both averages are correct", r[0] && r[0].high === 8 && r[0].low === 5,
     r[0] && r[0].high + " / " + r[0].low);
   check("the coffee and the machine are named",
-    r[0] && r[0].coffee.nom === "Cafe un" && r[0].methode === "Brikka");
+    r[0] && r[0].coffee.name === "Cafe un" && r[0].method === "Brikka");
 
   /* THE CENTRAL POINT: the same cups spread over TWO coffees must no longer
      conclude anything. That is exactly the trap of global rules. */
@@ -1740,24 +1740,24 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
     TUNING.findingsByCoffee(coffees, shuffled, { minBatch: 6, minPerGroup: 3, minGap: 0.4 }).length === 0);
 
   // Same coffee, different machines: we do not mix either.
-  const twoMachines = net.map((e, i) => i < 3 ? e : { ...e, methode: "Switch" });
+  const twoMachines = net.map((e, i) => i < 3 ? e : { ...e, method: "Switch" });
   check("two machines are not compared with each other",
     TUNING.findingsByCoffee(coffees, twoMachines, { minBatch: 6, minPerGroup: 3, minGap: 0.4 }).length === 0);
 
   // The safeguards: below the gap threshold, we stay quiet.
-  const weakPower = net.map(e => e.puissance_feu === 2 ? { ...e, note_sur_10: 7.8 } : e);
+  const weakPower = net.map(e => e.heat_level === 2 ? { ...e, score_10: 7.8 } : e);
   check("a 0.2 point gap says nothing",
     TUNING.findingsByCoffee(coffees, weakPower, { minBatch: 6, minPerGroup: 3, minGap: 0.4 }).length === 0);
   // And below the count threshold too.
   check("two cups per group are not enough",
     TUNING.bestLever(net.slice(0, 2).concat(net.slice(3, 5)), 3, 0.4) === null);
   // A lever that never varied cannot explain anything.
-  const constant = net.map(e => ({ ...e, puissance_feu: 3 }));
+  const constant = net.map(e => ({ ...e, heat_level: 3 }));
   check("a constant lever concludes nothing", TUNING.bestLever(constant, 3, 0.4) === null);
 
   // Unrated cups do not count.
   check("cups without a score are ignored",
-    TUNING.findingsByCoffee(coffees, net.concat([{ id: "z", cafe_id: "c1", methode: "Brikka", note_sur_10: "" }]),
+    TUNING.findingsByCoffee(coffees, net.concat([{ id: "z", coffee_id: "c1", method: "Brikka", score_10: "" }]),
       { minBatch: 6, minPerGroup: 3, minGap: 0.4 })[0].total === 6);
 }
 
@@ -1773,7 +1773,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 
   /* The second figure, for NON PURE coffees: the Sang Tao is 82 % coffee, so much
      more expensive per gram of REAL coffee than it looks. The
-     pourcentage_cafe_reel field was only used for the caffeine calculation. */
+     real_coffee_pct field was only used for the caffeine calculation. */
   check("the non pure coffee shows its real cost", app.includes("cost_real"));
   const i18n = readFileSync(join(ROOT, "js/i18n.js"), "utf8");
   check("both labels exist in FR and EN",
@@ -1989,10 +1989,10 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   // The signature guard.
   check("a table signature exists", app.includes("function signatureTable"));
   check("it covers edits AND deletions",
-    /function signatureTable[\s\S]{0,260}maj_le[\s\S]{0,120}length/.test(app));
-  check("the recipe render is guarded", /ifChanged\("recettes"/.test(app));
-  check("so is the coffees one", /ifChanged\("cafes"/.test(app));
-  check("so is the cups one", /ifChanged\("tasses"/.test(app));
+    /function signatureTable[\s\S]{0,260}updated_at[\s\S]{0,120}length/.test(app));
+  check("the recipe render is guarded", /ifChanged\("recipes"/.test(app));
+  check("so is the coffees one", /ifChanged\("coffees"/.test(app));
+  check("so is the cups one", /ifChanged\("cups"/.test(app));
 
   /* THE trap: switching language changes no data, so no signature, but all the
      text must be redone. Without invalidation, switching to English would leave
@@ -2041,7 +2041,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
      must find the accented brule. */
   check("it ignores accents", app.includes("function withoutAccents") && app.includes("NFD"));
   check("it searches what Chris wrote",
-    /function searchableText[\s\S]{0,260}commentaire[\s\S]{0,120}descripteurs/.test(app));
+    /function searchableText[\s\S]{0,260}comment[\s\S]{0,120}descriptors/.test(app));
   check("it resets with the other filters",
     /h-reset[\s\S]{0,200}FILTERS\.forEach/.test(app) &&
     /const FILTERS = \[[^\]]*"h-search"/.test(app));
@@ -2321,7 +2321,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   const table = readFileSync(join(ROOT, "js/ui-dashboard.js"), "utf8");
   const historySrc = readFileSync(join(ROOT, "js/ui-history.js"), "utf8");
   check("no tooltip repeats the already written comment",
-    !/data-info="' \+ titleAttr\(e\.commentaire\)/.test(table + historySrc));
+    !/data-info="' \+ titleAttr\(e\.comment\)/.test(table + historySrc));
 }
 
 /* LONG PRESS NO LONGER ACTS ON TOP OF EXPLAINING.
@@ -2463,15 +2463,15 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 
   const mistakes = [];
   for (const r of recipes) {
-    for (const field of ["note", "pourQui", "ratioTexte", "totalTexte"]) {
+    for (const field of ["note", "bestFor", "ratioText", "totalText"]) {
       const txt = String(r[field] || "");
       // "trop fine ... passer a X.Y.Z" and its mirror case.
       for (const m of txt.matchAll(/trop (fine|grossi[eè]re)[^.]{0,120}?(\d+\.\d+\.\d+)/g)) {
         const aimed = clicks(m[2]), ref = clicks(r.dial);
         if (aimed === null || ref === null) continue;
         const coarser = aimed > ref;
-        if (m[1] === "fine" && !coarser) mistakes.push(r.nom + ": too fine but points to " + m[2]);
-        if (m[1] !== "fine" && coarser) mistakes.push(r.nom + ": too coarse but points to " + m[2]);
+        if (m[1] === "fine" && !coarser) mistakes.push(r.name + ": too fine but points to " + m[2]);
+        if (m[1] !== "fine" && coarser) mistakes.push(r.name + ": too coarse but points to " + m[2]);
       }
     }
   }
@@ -2482,8 +2482,8 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
      its weighted valve is calibrated on that pressure build-up. Preheated water
      is the Moka Express method, and the so-called "classique" recipe prescribed
      80 to 90 degrees. */
-  const classic = recipes.find(r => r.famille === "brikka-classique" && r.variante === "Standard");
-  const steps = (classic.etapes || []).map(e => e.texte).join(" ");
+  const classic = recipes.find(r => r.family === "brikka-classique" && r.variant === "Standard");
+  const steps = (classic.steps || []).map(e => e.text).join(" ");
   check("the Brikka classique starts with cold water",
     /eau FROIDE/.test(steps), steps.slice(0, 90));
   check("and it says why, otherwise the advice gets lost at the first doubt",
@@ -2491,21 +2491,21 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 
   /* The preheated water variant applies the other method ON PURPOSE: without
      saying so, the comparison between the two would be skewed by a misunderstanding. */
-  const variant = recipes.find(r => r.variante === "Eau préchauffée");
+  const variant = recipes.find(r => r.variant === "Eau préchauffée");
   check("the variant announces that it applies the other method",
-    /Moka Express/.test(String(variant.pourQui || "")));
+    /Moka Express/.test(String(variant.bestFor || "")));
 
   /* Step v5 aligned the ten recipes on 1.5.0: a text can no longer promise
      "plus fin" without saying it is a gesture to make by hand. */
   const promises = recipes.filter(r => {
-    const t = String(r.pourQui || "");
+    const t = String(r.bestFor || "");
     /* Promising "plus fin" is legitimate IF the text says it is a gesture to make
        by hand: what is not, is promising it as if the card carried it, while it
        shows 1.5.0 like the nine others. */
     return /plus fin/.test(t) && !/à la main/.test(t) && r.dial === "1.5.0";
   });
   check("no recipe promises a grind it does not carry",
-    promises.length === 0, promises.map(r => r.nom).join(", "));
+    promises.length === 0, promises.map(r => r.name).join(", "));
 }
 
 /* THE GUIDE SAYS WHAT THE RECIPES DO.
@@ -2531,7 +2531,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 
    csvSerialize reads row[column]: a column present in RECIPE_COLS but missing
    from recipeToRow therefore comes out EMPTY, without error or warning.
-   That was the case of puissance_feu since it existed: exporting the recipes
+   That was the case of heat_level since it existed: exporting the recipes
    then rereading them erased the heat target of the ten recipes.
 
    The check targets the RULE, not this case: we serialise a real recipe and
@@ -2546,17 +2546,17 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 
   /* We export, reread, and compare field by field. A round trip is the only
      honest test: it goes through exactly the path that lost the data. */
-  const stateBefore = DATA.state.recettes;
-  DATA.state.recettes = recipes;
+  const stateBefore = DATA.state.recipes;
+  DATA.state.recipes = recipes;
   const text = DATA.csvRecipes ? DATA.csvRecipes() : null;
-  DATA.state.recettes = stateBefore;
+  DATA.state.recipes = stateBefore;
   if (text) {
     const reread = DATA.csvParse(text).map(DATA.normalizeRecipe);
     const losses = [];
     recipes.forEach(before => {
       const after = reread.find(x => x.id === before.id);
       if (!after) { losses.push(before.id + " gone"); return; }
-      ["nom", "dose", "eau", "dial", "puissance_feu", "volumeTypique", "lait", "actif"]
+      ["name", "dose", "water", "dial", "heat_level", "typicalVolume", "milk", "active"]
         .forEach(field => {
           if (String(before[field] === undefined ? "" : before[field]) !==
               String(after[field] === undefined ? "" : after[field])) {
@@ -2585,8 +2585,8 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
     const body = css.slice(i, css.indexOf("\n}", i));
     return Object.fromEntries([...body.matchAll(/(--[\w-]+):\s*(#[0-9a-f]{6})\s*;/gi)].map(m => [m[1], m[2]]));
   };
-  const graphite = block('html[data-theme="sombre"]');
-  const night = { ...graphite, ...block('html[data-theme="sombre"][data-palette="nuit"]') };
+  const graphite = block('html[data-theme="dark"]');
+  const night = { ...graphite, ...block('html[data-theme="dark"][data-palette="night"]') };
   const lum = h => {
     const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255)
       .map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
@@ -2617,11 +2617,11 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 
   // The button cycles through all three, and the choice survives a reload.
   const head = readFileSync(join(ROOT, "index.html"), "utf8");
-  check("the head restores the dark palette", head.includes('localStorage.getItem("sombre")') &&
+  check("the head restores the dark palette", head.includes('localStorage.getItem("palette")') &&
     head.includes('"data-palette"'));
   const app = readFileSync(join(ROOT, "js/app.js"), "utf8");
   check("the theme button offers Graphite then Nuit",
-    app.includes('applyTheme("sombre", "graphite")') && app.includes('applyTheme("sombre", "nuit")'));
+    app.includes('applyTheme("dark", "graphite")') && app.includes('applyTheme("dark", "night")'));
 }
 
 /* AUDIT BATCH 1 (v8.71): NEVER LOSE ANYTHING AGAIN. */
@@ -2633,7 +2633,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   const before = DATA.state.extractions.length;
   const seenIds = new Set();
   for (let i = 0; i < 50; i++) {
-    const e = await DATA.addExtraction({ date_heure: "2026-09-27T08:00", methode: "Switch", dose_g: 15 });
+    const e = await DATA.addExtraction({ date_time: "2026-09-27T08:00", method: "Switch", dose_g: 15 });
     seenIds.add(e.id);
   }
   check("fifty cups in a row, fifty different ids", seenIds.size === 50);
@@ -2642,25 +2642,25 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("the test cups go away", DATA.state.extractions.length === before);
 
   // The app's merge is the server's.
-  const g = { tables: { extractions: [{ id: "e1", maj_le: 10, n: 1 }, { id: "e2", maj_le: 20, n: 2, x: 1 }] }, tombes: { extractions: { e3: 30 } } };
-  const d = { tables: { extractions: [{ id: "e1", maj_le: 15, n: 9 }, { id: "e2", maj_le: 20, n: 2, y: 2 }, { id: "e3", maj_le: 25 }] }, tombes: { extractions: {} } };
+  const g = { tables: { extractions: [{ id: "e1", updated_at: 10, n: 1 }, { id: "e2", updated_at: 20, n: 2, x: 1 }] }, tombstones: { extractions: { e3: 30 } } };
+  const d = { tables: { extractions: [{ id: "e1", updated_at: 15, n: 9 }, { id: "e2", updated_at: 20, n: 2, y: 2 }, { id: "e3", updated_at: 25 }] }, tombstones: { extractions: {} } };
   const client = SYNC.mergeStates(g, d);
   const serverTables = mergePayloads(sanitisePayload(g), sanitisePayload(d), 40);
   const sortRows = l => JSON.stringify([...l].sort((a, b) => a.id.localeCompare(b.id)));
   check("the app's merge gives exactly the server's",
     sortRows(client.tables.extractions) === sortRows(serverTables.tables.extractions), sortRows(client.tables.extractions) + " / " + sortRows(serverTables.tables.extractions));
   check("and a cup added during the exchange survives the merge",
-    SYNC.mergeStates({ tables: { extractions: [] }, tombes: {} }, { tables: { extractions: [{ id: "neuve", maj_le: 5 }] }, tombes: {} })
+    SYNC.mergeStates({ tables: { extractions: [] }, tombstones: {} }, { tables: { extractions: [{ id: "neuve", updated_at: 5 }] }, tombstones: {} })
       .tables.extractions.some(l => l.id === "neuve"));
 
   // Importing purchases no longer touches the extractions.
   const extCount = DATA.state.extractions.length;
-  const purchasesCsv = DATA.csvSerialize([{ id: "a-import", cafe_id: "c1", date_achat: "2026-09-01", format_grammes: 250 }], DATA.PURCHASE_COLS);
+  const purchasesCsv = DATA.csvSerialize([{ id: "a-import", coffee_id: "c1", purchase_date: "2026-09-01", bag_size_g: 250 }], DATA.PURCHASE_COLS);
   const preview = DATA.analyzeImport(purchasesCsv);
-  check("a purchases file is recognised as such", preview.table === "achats" && preview.added === 1, JSON.stringify(preview));
+  check("a purchases file is recognised as such", preview.table === "purchases" && preview.added === 1, JSON.stringify(preview));
   await DATA.importCsvText(purchasesCsv);
   check("and its import leaves the extractions intact", DATA.state.extractions.length === extCount, DATA.state.extractions.length + " / " + extCount);
-  check("the bag did arrive in the purchases", DATA.state.achats.some(a => a.id === "a-import"));
+  check("the bag did arrive in the purchases", DATA.state.purchases.some(a => a.id === "a-import"));
   // An import merges: rows missing from the file stay.
   const singleRow = DATA.csvSerialize([DATA.state.extractions[0]], DATA.EXT_COLS);
   await DATA.importCsvText(singleRow);
@@ -2672,8 +2672,8 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 
   // A missing field stays empty, never 0.
   const noScore = DATA.state.extractions.length ? null : null;
-  const n = (await DATA.addExtraction({ date_heure: "2026-09-27T09:00", methode: "Switch" }));
-  check("a missing score stays empty, not 0/10", n.note_sur_10 === "" && n.dose_g === "" && n.temperature_c === "");
+  const n = (await DATA.addExtraction({ date_time: "2026-09-27T09:00", method: "Switch" }));
+  check("a missing score stays empty, not 0/10", n.score_10 === "" && n.dose_g === "" && n.temperature_c === "");
   await DATA.deleteExtraction(n.id);
 
   // The schema version travels with the data.
@@ -2682,27 +2682,28 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("and the app then offers to reload", bilingual("sync_outdated") && bilingual("update_reload"));
   // The full export covers the six tables and a JSON file.
   check("export all covers the six tables and the full file",
-    ["cafes.csv", "extractions.csv", "recettes.csv", "tasses.csv", "achats.csv", "reglages.csv", "carnet-complet.json"]
-      .every(f => SOURCE_DATA.includes('"' + f + '"')));
+    /const CSV_TEXT = \{\s*coffees:[^}]*extractions:[^}]*recipes:[^}]*cups:[^}]*purchases:[^}]*settings:/.test(SOURCE_DATA) &&
+      SOURCE_DATA.includes("TABLE_NAMES.forEach(table => download(csvFileName(table), CSV_TEXT[table]()))") &&
+      SOURCE_DATA.includes('"logbook-full.json"'));
 }
 
 /* AUDIT BATCH 2 (v8.72): THE BUGS YOU CAN SEE. */
 {
   // The bag in the cupboard does not become the current bag.
-  const saved = DATA.state.achats;
-  DATA.state.achats = [
-    { id: "a-ouvert", cafe_id: "cx", date_achat: "2026-09-01", date_ouverture: "2026-09-02", format_grammes: 250 },
-    { id: "a-placard", cafe_id: "cx", date_achat: "2026-09-20", date_ouverture: "", format_grammes: 250 },
+  const saved = DATA.state.purchases;
+  DATA.state.purchases = [
+    { id: "a-ouvert", coffee_id: "cx", purchase_date: "2026-09-01", opened_date: "2026-09-02", bag_size_g: 250 },
+    { id: "a-placard", coffee_id: "cx", purchase_date: "2026-09-20", opened_date: "", bag_size_g: 250 },
   ];
   check("a bag bought in advance, not opened yet, does not replace the one being drunk",
     DATA.currentBag("cx").id === "a-ouvert", DATA.currentBag("cx").id);
-  DATA.state.achats[1].date_ouverture = "2026-09-25";
+  DATA.state.purchases[1].opened_date = "2026-09-25";
   check("once opened, it becomes the current bag", DATA.currentBag("cx").id === "a-placard");
-  const calc = DATA.calcs({ cafe_id: "cx", date_heure: "2026-09-22T08:00", methode: "Switch", dose_g: 15 });
-  check("a cup from before its opening stays tied to the old bag", calc.jours_ouvert === 20, String(calc.jours_ouvert));
-  DATA.state.achats = [{ id: "a-seul", cafe_id: "cx", date_achat: "2026-09-01", date_ouverture: "", format_grammes: 250 }];
+  const calc = DATA.calcs({ coffee_id: "cx", date_time: "2026-09-22T08:00", method: "Switch", dose_g: 15 });
+  check("a cup from before its opening stays tied to the old bag", calc.days_open === 20, String(calc.days_open));
+  DATA.state.purchases = [{ id: "a-seul", coffee_id: "cx", purchase_date: "2026-09-01", opened_date: "", bag_size_g: 250 }];
   check("with no opened bag at all, the last one bought stays the current bag", DATA.currentBag("cx").id === "a-seul");
-  DATA.state.achats = saved;
+  DATA.state.purchases = saved;
 
   const sw = readFileSync(join(ROOT, "sw.js"), "utf8");
   check("the service worker serves versioned files cache first", sw.includes('url.searchParams.has("v")'));
@@ -2731,13 +2732,13 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   const trap = DATA.normalizeCoffee ? null : null;
   const SCHEMA_SRC = readFileSync(join(ROOT, "js/data-schema.js"), "utf8");
   // The normalisers are not all exposed: we go through a coffee import.
-  const csvTrap = DATA.csvSerialize([{ id: "c-piege\"><x", nom: "<img src=x onerror=alert(1)>", torrefacteur: "A & B" }], DATA.COFFEE_COLS);
+  const csvTrap = DATA.csvSerialize([{ id: "c-piege\"><x", name: "<img src=x onerror=alert(1)>", roaster: "A & B" }], DATA.COFFEE_COLS);
   await DATA.importCsvText(csvTrap);
-  const c = DATA.state.cafes.find(x => x.nom.includes("img"));
-  check("a trap name keeps no angle bracket", c && !/[<>]/.test(c.nom), c && c.nom);
+  const c = DATA.state.coffees.find(x => x.name.includes("img"));
+  check("a trap name keeps no angle bracket", c && !/[<>]/.test(c.name), c && c.name);
   check("and its id only keeps safe characters", c && /^[\w\-.@]+$/.test(c.id), c && c.id);
-  check("the text stays readable", c && c.nom === "‹img src=x onerror=alert(1)›");
-  DATA.state.cafes = DATA.state.cafes.filter(x => x !== c);
+  check("the text stays readable", c && c.name === "‹img src=x onerror=alert(1)›");
+  DATA.state.coffees = DATA.state.coffees.filter(x => x !== c);
 
   // A single escaping function for the whole site.
   const copies = ["js/charts.js", "js/ui-brew.js", "js/ui-drawings.js", "js/ui-coffee-sheet.js", "js/ui-guide.js", "js/ui-core.js"]
@@ -2747,10 +2748,10 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
     /replace\(\/'\/g, "&#39;"\)/.test(readFileSync(join(ROOT, "js/tools.js"), "utf8")));
 
   // No spreadsheet formula, and the round trip keeps the text.
-  const csv = DATA.csvSerialize([{ id: "e-f", commentaire: "=HYPERLINK(\"x\")", dose_g: -1 }], ["id", "commentaire", "dose_g"]);
+  const csv = DATA.csvSerialize([{ id: "e-f", comment: "=HYPERLINK(\"x\")", dose_g: -1 }], ["id", "comment", "dose_g"]);
   check("a comment starting with = is neutralised in the CSV", csv.includes("'=HYPERLINK"));
   check("a negative number is not touched", csv.trim().endsWith(",-1"));
-  check("and rereading gives back the original text", DATA.csvParse(csv)[0].commentaire === "=HYPERLINK(\"x\")");
+  check("and rereading gives back the original text", DATA.csvParse(csv)[0].comment === "=HYPERLINK(\"x\")");
 }
 
 /* AUDIT BATCHES 4 AND 5 (v8.74): A GUIDE THAT TELLS THE TRUTH, AND ACCURATELY. */
@@ -2762,10 +2763,10 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   const cells = Object.values(COFFEE_RECIPE_MATRIX.cells);
   check("the matrix covers its fifteen cells",
     Object.keys(COFFEE_RECIPE_MATRIX.cells).length === COFFEE_RECIPE_MATRIX.rows.length * COFFEE_RECIPE_MATRIX.columns.length);
-  const unknownTargets = cells.flatMap(c => [c.recette, c.alternative]).filter(id => id && !ids.has(id));
+  const unknownTargets = cells.flatMap(c => [c.recipe, c.alternative]).filter(id => id && !ids.has(id));
   check("every matrix recipe exists", unknownTargets.length === 0, unknownTargets.join(", "));
   // A coffee's profile is read from its card.
-  const p = (processName, roastLevel, species) => { const r = coffeeProfile({ procede: processName, torrefaction: roastLevel, espece: species }); return r.row + "|" + r.column; };
+  const p = (processName, roastLevel, species) => { const r = coffeeProfile({ process: processName, roast: roastLevel, species: species }); return r.row + "|" + r.column; };
   check("a washed medium falls in its cell", p("Lavé", "Medium", "Arabica") === "lave|medium");
   check("so does a light natural", p("Natural", "Light", "Arabica") === "natural|clair");
   check("an anaerobic is not taken for a natural", p("Anaerobic natural", "Light medium", "Arabica") === "anaerobic|medium");
@@ -2778,7 +2779,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   const newTags = ["salé", "métallique", "cassis", "prune", "orange", "sucre de canne", "cuir"];
   check("the missing tastes exist", newTags.every(t => allIds.includes(t)), newTags.filter(t => !allIds.includes(t)).join(", "));
   check("earthy and woody are no longer defects",
-    !DESCRIPTOR_GROUPS.find(g => g.nom === "Torréfaction et défauts").tags.some(t => ["terreux", "boisé", "tabac"].includes(t)));
+    !DESCRIPTOR_GROUPS.find(g => g.name === "Torréfaction et défauts").tags.some(t => ["terreux", "boisé", "tabac"].includes(t)));
   check("no duplicate taste", new Set(allIds).size === allIds.length);
   const enSrc = readFileSync(join(ROOT, "js/i18n.en.js"), "utf8");
   check("every new taste has its English translation", newTags.every(t => enSrc.includes(JSON.stringify(t) + ": ")));
@@ -2797,7 +2798,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("sourness, not acidity, signals under-extraction", html.includes("<h3>Aigreur</h3>"));
   check("freshness accounts for the 30 degrees", html.includes("Par 30 °C et l'humidité"));
   check("the SCA water standard is the right one", html.includes("68 mg/L (17 à 85)"));
-  check("the milk Brikka no longer shows a recipe number", STARTER_RECIPES.find(r => r.id === "brikka-flatwhite").numero === "");
+  check("the milk Brikka no longer shows a recipe number", STARTER_RECIPES.find(r => r.id === "brikka-flatwhite").number === "");
 }
 
 /* AUDIT BATCH 6 (v8.75): FASTER. */
@@ -2808,7 +2809,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("per cup calculations are kept in memory", coreSrc2.includes("memoPerCup") && coreSrc2.includes("dataRevision"));
   check("a sync-only notification only redraws the badge", app.includes('if (kind === "sync")'));
   check("charts are updated instead of recreated", charts.includes('existing.update("none")'));
-  check("drawings are no longer drawn twice", !readFileSync(join(ROOT, "js/ui-drawings.js"), "utf8").includes('DATA.subscribe(() => { if (nav.screenName === "tableau") renderDrawings(); });'));
+  check("drawings are no longer drawn twice", !readFileSync(join(ROOT, "js/ui-drawings.js"), "utf8").includes('DATA.subscribe(() => { if (nav.screenName === "dashboard") renderDrawings(); });'));
   check("the history renders in slices of one hundred", SOURCE_UI.includes("HISTORY_CHUNK = 100") && bilingual("history_more"));
   const worker = readFileSync(join(ROOT, "worker/index.js"), "utf8");
   check("the server strips comments from the stylesheet and the page", worker.includes("function minifyCss") && worker.includes("function minifyHtml"));
@@ -2837,7 +2838,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   check("the recipe table fields are named", readFileSync(join(ROOT, "js/ui-catalog.js"), "utf8").includes('aria-label="\' + fieldName(r, "param_col_dose")'));
 
   // Light theme contrasts, computed the way WCAG does.
-  const block = css.slice(css.indexOf('html[data-theme="clair"] {'), css.indexOf("}", css.indexOf('html[data-theme="clair"] {')));
+  const block = css.slice(css.indexOf('html[data-theme="light"] {'), css.indexOf("}", css.indexOf('html[data-theme="light"] {')));
   const token = itemName => (block.match(new RegExp("--" + itemName + ":\\s*(#[0-9a-fA-F]{6})")) || [])[1];
   const lum = h => { const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(v => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4))); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
   const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
@@ -2854,11 +2855,11 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
   const enSrc = readFileSync(join(ROOT, "js/i18n.en.js"), "utf8");
   const missing = [];
   STARTER_RECIPES.forEach(r => {
-    ["sousTitre", "tempTexte", "ratioTexte", "totalTexte", "pourQui", "note"].forEach(k => { if (r[k] && !enSrc.includes(JSON.stringify(r[k]) + ":")) missing.push(r.id + "." + k); });
-    (r.etapes || []).forEach((e, i) => { if (!enSrc.includes(JSON.stringify(e.texte) + ":")) missing.push(r.id + ".etape" + i); });
+    ["subtitle", "tempText", "ratioText", "totalText", "bestFor", "note"].forEach(k => { if (r[k] && !enSrc.includes(JSON.stringify(r[k]) + ":")) missing.push(r.id + "." + k); });
+    (r.steps || []).forEach((e, i) => { if (!enSrc.includes(JSON.stringify(e.text) + ":")) missing.push(r.id + ".etape" + i); });
   });
   check("every original recipe text has its English translation", missing.length === 0, missing.slice(0, 6).join(", "));
-  check("steps are translated before being scaled", SOURCE_UI.includes("rescale(translate(recipe.etapes))"));
+  check("steps are translated before being scaled", SOURCE_UI.includes("rescale(translate(recipe.steps))"));
   check("tr no longer mistakes a coffee name for an object property", readFileSync(join(ROOT, "js/i18n.js"), "utf8").includes("hasOwnProperty.call(UI, text)"));
   check("the dead code is gone", !SOURCE_UI.includes("function ecartMoyen") && !SOURCE_UI.includes("function mesuresDerniere"));
   check("deleting a bag and unlinking the folder have their button",
@@ -2868,8 +2869,8 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 
 /* v8.80: A SCORE IS WRITTEN THE FRENCH WAY EVERYWHERE, and the shelf says what is left. */
 {
-  check("no raw score displayed as is", !/note_sur_10 !== "" \? e\.note_sur_10 [:+]/.test(SOURCE_UI));
-  check("an empty jar says «sachet vide», not «0 tasses»", SOURCE_UI.includes('b.tasses === 0 ? I18N.t("drawing_bag_empty")'));
+  check("no raw score displayed as is", !/score_10 !== "" \? e\.score_10 [:+]/.test(SOURCE_UI));
+  check("an empty jar says «sachet vide», not «0 tasses»", SOURCE_UI.includes('b.cups === 0 ? I18N.t("drawing_bag_empty")'));
 }
 
 /* A1 (v8.82): THE LATEST EXTRACTIONS ARE READABLE, grouped by day. */
@@ -2904,7 +2905,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 {
   const guide = readFileSync(join(ROOT, "js/ui-guide.js"), "utf8");
   check("a collapsed recipe fits on one line that unfolds", guide.includes('class="recipe-toggle" data-toggle="') && readCss().includes(".recipe-card.collapsed .recipe-body { display: none; }"));
-  check("a link to a recipe opens it before scrolling to it", /toggleRecipe\(id, true\);\s+filter\.value = "tout";/.test(guide));
+  check("a link to a recipe opens it before scrolling to it", /toggleRecipe\(id, true\);\s+filter\.value = "all";/.test(guide));
   check("on phone each cell of the coffee and recipe table states its column", guide.includes("'<td data-col=\"'") && readCss().includes("content: attr(data-col)"));
 }
 
@@ -2962,7 +2963,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 /* L4 (v8.92): THE COFFEE CARD, A PASSPORT IN FOUR TABS. */
 {
   const sheet = readFileSync(join(ROOT, "js/ui-coffee-sheet.js"), "utf8");
-  check("the card arranges its blocks in four tabs", ["reglage", "gouts", "sachets", "tasses"].every(k => sheet.includes('panel("' + k + '"')));
+  check("the card arranges its blocks in four tabs", ["setting", "tastes", "bags", "cups"].every(k => sheet.includes('panel("' + k + '"')));
   check("and all the card's drawings are still there", ["sheet-footprint", "sheet-trajectory", "sheet-grinder", "sheet-wheel"].every(id => sheet.includes('id="' + id + '"')));
   check("the phone back button closes the card", sheet.includes("history.pushState({ sheet: coffeeId }") && sheet.includes('addEventListener("popstate"'));
 }
@@ -2970,7 +2971,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 /* L3 (v8.93): THE JOURNAL, BY BAG. */
 {
   const j = readFileSync(join(ROOT, "js/ui-journal.js"), "utf8");
-  check("cups are grouped by bag, the bag at the cup's date", j.includes("DATA.bagAtDate(e.cafe_id, e.date_heure)"));
+  check("cups are grouped by bag, the bag at the cup's date", j.includes("DATA.bagAtDate(e.coffee_id, e.date_time)"));
   check("each chapter has its summary and its cards", j.includes("function resume(c)") && j.includes("UI.extractionCard(e)"));
   check("the by-date view stays one tap away", readFileSync(join(ROOT, "index.html"), "utf8").includes('data-view="date"'));
 }
@@ -2979,9 +2980,363 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.actif === 0);
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
   const g = readFileSync(join(ROOT, "js/ui-guide.js"), "utf8");
-  check("the Guide opens on its home, with its search", html.includes('id="gp-accueil" data-panel="accueil"') && html.includes('id="guide-search"') && g.includes('localStorage.getItem("guide-onglet") || "accueil"'));
+  check("the Guide opens on its home, with its search", html.includes('id="gp-home" data-panel="home"') && html.includes('id="guide-search"') && g.includes('localStorage.getItem("guide-tab") || "home"'));
   check("search covers recipes, vocabulary and tips", g.includes('type: "guide_type_recipe"') && g.includes('type: "guide_type_word"') && g.includes('type: "guide_type_tip"'));
   check("every recipe can be brewed in one tap", g.includes('data-brew="') && g.includes("function brewRecipe"));
+}
+
+/* PASS 3 (v9.06): EVERY PERSISTED NAME IN ENGLISH. Tables, columns,
+   tombstones, CSV files and headers, local keys, the draft and the hashes went
+   English; what v9.05 wrote is still read, everywhere, forever. Each check
+   below starts from the exact v9.05 shapes. */
+{
+  const quiet = { log() {}, warn() {}, error() {} };
+  const boot = (windowObject, idb) => new Function("window", "location", "indexedDB", "console", "localStorage",
+    source + "\nreturn { DATA, LEGACY, SYNC, STARTER_RECIPES, DATA_SCHEMA };")(windowObject, { protocol: "file:" }, idb, quiet, undefined);
+  const { LEGACY, DATA_SCHEMA: S } = boot(undefined, undefined);
+
+  /* A fake IndexedDB that really keeps, reads and deletes: the v9.05 local copy
+     is put in it under the French keys, and init() reads it like the browser. */
+  const fakeIndexedDB = initial => {
+    const store = new Map(Object.entries(initial || {}).map(([k, v]) => [k, JSON.parse(JSON.stringify(v))]));
+    const copy = v => { try { return v && typeof v === "object" && !v.getFileHandle ? JSON.parse(JSON.stringify(v)) : v; } catch (e) { return v; } };
+    const db = {
+      createObjectStore() {},
+      transaction() {
+        const tx = { objectStore: () => ({
+          put(v, k) { store.set(k, copy(v)); },
+          delete(k) { store.delete(k); },
+          get(k) { const r = {}; setTimeout(() => { r.result = store.has(k) ? copy(store.get(k)) : undefined; if (r.onsuccess) r.onsuccess(); }, 0); return r; },
+        }) };
+        setTimeout(() => { if (tx.oncomplete) tx.oncomplete(); }, 0);
+        return tx;
+      },
+    };
+    return { store, open() { const req = { result: db }; setTimeout(() => { if (req.onsuccess) req.onsuccess(); }, 0); return req; } };
+  };
+  /* A fake linked folder: files by name, readable and writable. */
+  const fakeFolder = initial => {
+    const files = new Map(Object.entries(initial || {}));
+    return {
+      files, name: "Carnet",
+      queryPermission: async () => "granted", requestPermission: async () => "granted",
+      async getFileHandle(fileName, opts) {
+        if (!files.has(fileName) && !(opts && opts.create)) throw new Error("NotFoundError");
+        return {
+          getFile: async () => ({ text: async () => files.get(fileName) }),
+          createWritable: async () => { let buf = ""; return { write: async c => { buf += c; }, close: async () => { files.set(fileName, buf); } }; },
+        };
+      },
+    };
+  };
+
+  // The logbook in the NEW shape, normalised, with every table and many fields.
+  const recipeOf = r => DATA.normalizeRecipe({ ...r, steps: r.steps.map(e => ({ ...e })), pairedCoffees: [...r.pairedCoffees] });
+  const NEW = {
+    coffees: [
+      S.normalizeCoffee({ id: "cA", updated_at: 1001, name: "Là Việt Balanced", roaster: "Là Việt", origin: "Đà Lạt, Vietnam",
+        species: "Arabica", process: "Lavé", roast: "Medium", pre_ground: 0, real_coffee_pct: 100, tag: "café de référence",
+        roaster_notes: "noisette", bag_size_g: 250, price_vnd: 125000, roast_date: "2026-08-01",
+        recommended_method: "Les deux", recommended_recipe: "Tetsu 4:6", added_date: "2026-08-02", active: 1 }),
+      S.normalizeCoffee({ id: "cB", updated_at: 1002, name: "Bana Cofe G4", roaster: "Bana Cofe", roast: "Foncée", pre_ground: 1,
+        real_coffee_pct: 82, bag_size_g: 340, price_vnd: 87000, added_date: "2026-08-03", active: 0 }),
+    ],
+    extractions: [
+      DATA.normalizeExtraction({ id: "e1", updated_at: 2001, date_time: "2026-09-01T07:30", coffee_id: "cA", method: "Switch",
+        recipe: "Tetsu 4:6", dose_g: 15, water_g: 240, grind_dial: "2.0.0", temperature_c: 93, total_time_s: 200,
+        flow_time_s: 40, yield_ml: 210, added_water_ml: 20, milk_ml: "", stir_count: 2, cup: "Classic Mug",
+        preheated_water: "", score_10: 8.5, diagnostic: "Équilibré", descriptors: "noisette|caramel", comment: "rond",
+        heat_level: "", failed: "", heating_s: 110 }),
+      DATA.normalizeExtraction({ id: "e2", updated_at: 2002, date_time: "2026-09-02T07:30", coffee_id: "cB", method: "Brikka",
+        recipe: "Brikka classique", dose_g: 14, water_g: 150, grind_dial: "1.5.0", total_time_s: 240, flow_time_s: 30,
+        yield_ml: 95, milk_ml: 60, cup: "Loveramics Flat White Egg", score_10: 4, diagnostic: "Sur-extrait (amer)",
+        descriptors: "brûlé", heat_level: 3, failed: 1 }),
+    ],
+    recipes: [...STARTER_RECIPES.map(recipeOf), recipeOf({ id: "perso", updated_at: 3001, name: "Ma recette", number: "",
+      method: "Switch", family: "", variant: "", subtitle: "Pour tester", dose: 16, water: 250, temp: 92, tempText: "92 °C",
+      heat_level: "", dial: "1.8.0", ratioText: "1:15,6", typicalVolume: 220, totalText: "3:00", milk: false,
+      steps: [{ t: 0, text: "Bloom 50 g" }, { t: 45, text: "Jusqu'à 250 g" }], bestFor: "Les lavés", pairedCoffees: ["Là Việt Balanced"],
+      note: "note", video: "https://www.youtube.com/watch?v=abc", isDefault: false, advanced: true, has_variants: false, active: 1 })],
+    cups: [S.normalizeCup({ id: "t1", updated_at: 4001, name: "Classic Mug", capacity_ml: 330 }),
+      S.normalizeCup({ id: "t2", updated_at: 4002, name: "Loveramics Flat White Egg", capacity_ml: 150 })],
+    purchases: [
+      S.normalizePurchase({ id: "a1", updated_at: 5001, coffee_id: "cA", purchase_date: "2026-08-02", bag_size_g: 250,
+        price_vnd: 125000, roast_date: "2026-08-01", opened_date: "2026-08-05", remaining_g: 120, remaining_at: "2026-09-01T08:00" }),
+      S.normalizePurchase({ id: "a2", updated_at: 5002, coffee_id: "cB", purchase_date: "2026-08-03", bag_size_g: 340 }),
+    ],
+    settings: [DATA.normalizeSettings({ id: "moi", updated_at: 6001, dose_g: 14, heat_level: 4, grind_dial: "1.4.0",
+      schema_version: 20, boil_s: 130, bubbles_s: 95, step_clicks: 3, step_degrees: 2, step_heat: 1, step_water_g: 10,
+      step_dose_g: 1, drawings: "shelf,!clock,podium" })],
+  };
+  const NEW_TOMBS = { coffees: { gone: 7001 }, extractions: { e0: 7002 }, recipes: { oldperso: 7003 }, cups: {}, purchases: { a0: 7004 }, settings: {} };
+
+  // The same logbook as v9.05 wrote it: French keys, French tables, French drawing names.
+  const invert = map => Object.fromEntries(Object.entries(map).map(([o, n]) => [n, o]));
+  const RECIPE_JS_OLD = invert(Object.fromEntries(Object.entries(LEGACY.FIELDS.recipes)
+    .filter(([o]) => !["sous_titre", "eau_g", "temp_texte", "mouture_dial", "ratio_texte", "total_texte", "pour_qui",
+      "cafes_associes", "par_defaut", "volume_typique"].includes(o))));
+  const oldRow = (table, row) => {
+    const inv = table === "recipes" ? RECIPE_JS_OLD
+      : invert(Object.fromEntries(Object.entries(LEGACY.FIELDS[table]).filter(([o]) => o !== "volume_tasse_ml")));
+    const out = Object.fromEntries(Object.entries(row).map(([k, v]) => [inv[k] || k, v]));
+    if (table === "recipes") out.etapes = out.etapes.map(e => ({ t: e.t, texte: e.text }));
+    if (table === "settings") out.dessins = "etagere,!horloge,podium";
+    return out;
+  };
+  const OLD_TABLE = invert(LEGACY.TABLES);
+  const oldName = t => OLD_TABLE[t] || t;
+  const OLD = Object.fromEntries(Object.entries(NEW).map(([t, rows]) => [oldName(t), rows.map(r => oldRow(t, r))]));
+  const OLD_TOMBS = Object.fromEntries(Object.entries(NEW_TOMBS).map(([t, m]) => [oldName(t), m]));
+  const OLD_KEYS = [...new Set([...Object.keys(LEGACY.TABLES), ...Object.keys(LEGACY.DOCUMENT),
+    ...Object.values(LEGACY.FIELDS).flatMap(Object.keys), ...Object.keys(LEGACY.STEP_FIELDS)])];
+  const jsonKeys = v => { const s = new Set(); JSON.stringify(v, (k, x) => { s.add(k); return x; }); return s; };
+  const oldKeysIn = v => { const s = jsonKeys(v); return OLD_KEYS.filter(k => s.has(k)); };
+  check("the v9.05 fixture really is in the old shape",
+    oldKeysIn(OLD).length > 40 && OLD.cafes[0].nom === "Là Việt Balanced" && OLD.recettes[0].etapes[0].texte !== undefined,
+    oldKeysIn(OLD).length + "");
+
+  const TABLE_NAMES = ["coffees", "extractions", "recipes", "cups", "purchases", "settings"];
+  const byId = rows => new Map(rows.map(r => [r.id, r]));
+  const sameRows = (table, got, want, { skipStamp } = {}) => {
+    const g = byId(got), bad = [];
+    for (const w of want) {
+      const r = g.get(w.id);
+      if (!r) { bad.push(w.id + " missing"); continue; }
+      for (const [k, v] of Object.entries(w)) {
+        if (skipStamp && k === "updated_at") continue;
+        if (table === "settings" && (k === "updated_at" || k === "schema_version")) continue;
+        if (JSON.stringify(r[k]) !== JSON.stringify(v)) bad.push(w.id + "." + k + " " + JSON.stringify(r[k]) + " != " + JSON.stringify(v));
+      }
+    }
+    return bad;
+  };
+
+  // 1. The local copy of v9.05 (IndexedDB, French keys) opens losslessly.
+  {
+    const idb = fakeIndexedDB({ ...OLD, tombes: OLD_TOMBS, demoActive: false });
+    const app = boot(undefined, idb);
+    await app.DATA.init();
+    const st = app.DATA.state;
+    for (const t of TABLE_NAMES) {
+      check("IndexedDB v9.05: same row count for " + t, st[t].length === NEW[t].length, st[t].length + " vs " + NEW[t].length);
+      const bad = sameRows(t, st[t], NEW[t]);
+      check("IndexedDB v9.05: every value of " + t + " under its new key, stamps kept", bad.length === 0, bad.slice(0, 3).join(" | "));
+    }
+    const tables = Object.fromEntries(TABLE_NAMES.map(t => [t, st[t]]));
+    check("no old key left in the state", oldKeysIn({ tables, tombstones: st.tombstones }).length === 0,
+      oldKeysIn({ tables, tombstones: st.tombstones }).join());
+    check("tombstones preserved under the new table names", JSON.stringify(st.tombstones) === JSON.stringify(NEW_TOMBS),
+      JSON.stringify(st.tombstones));
+    check("the drawing names follow", st.settings[0].drawings === "shelf,!clock,podium", st.settings[0].drawings);
+    check("the logbook moves to schema 21", st.settings[0].schema_version === 21, String(st.settings[0].schema_version));
+    const keys = [...idb.store.keys()].sort();
+    check("the French keys are removed from IndexedDB", Object.keys(LEGACY.TABLES).concat("tombes").every(k => !idb.store.has(k)), keys.join());
+    check("and the English ones written", TABLE_NAMES.concat("tombstones").every(k => idb.store.has(k)), keys.join());
+    check("nothing old in the written copy", oldKeysIn([...idb.store.entries()].filter(([k]) => k !== "dirHandle")).length === 0,
+      oldKeysIn([...idb.store.entries()]).join());
+  }
+
+  // 2. Both key sets present (an old tab kept writing): merged by id, the most recent wins.
+  {
+    const idb = fakeIndexedDB({
+      coffees: [{ ...NEW.coffees[0], updated_at: 100, name: "stale" }, NEW.coffees[1]],
+      cafes: [{ ...OLD.cafes[0], maj_le: 200, nom: "written by the old tab" }, { id: "cOld", maj_le: 50, nom: "only old" }],
+      tombstones: { coffees: { x: 5 } }, tombes: { cafes: { x: 9, y: 3 } },
+    });
+    const app = boot(undefined, idb);
+    await app.DATA.init();
+    const c = byId(app.DATA.state.coffees);
+    check("old and new keys together: the newer row wins", c.get("cA").name === "written by the old tab", c.get("cA").name);
+    check("and no row is lost on either side", c.has("cB") && c.has("cOld") && app.DATA.state.coffees.length === 3);
+    check("the tombstones of both are merged, latest mark kept",
+      app.DATA.state.tombstones.coffees.x === 9 && app.DATA.state.tombstones.coffees.y === 3);
+    check("and the old keys go", !idb.store.has("cafes") && !idb.store.has("tombes"));
+  }
+
+  // 3. The linked folder: French files (cafes.csv...) and French headers read like the English ones.
+  const makeCsv = app => {
+    const st = app.DATA.state;
+    TABLE_NAMES.forEach(t => { st[t] = JSON.parse(JSON.stringify(NEW[t])); });
+    return {
+      coffees: app.DATA.csvSerialize(st.coffees, app.DATA.COFFEE_COLS),
+      extractions: app.DATA.csvSerialize(st.extractions, app.DATA.EXT_COLS),
+      recipes: app.DATA.csvRecipes(),
+      cups: app.DATA.csvSerialize(st.cups, S.CUP_COLS),
+      purchases: app.DATA.csvSerialize(st.purchases, app.DATA.PURCHASE_COLS),
+      settings: app.DATA.csvSerialize(st.settings, app.DATA.SETTINGS_COLS),
+    };
+  };
+  const NEW_CSV = makeCsv(boot(undefined, undefined));
+  const CSV_OLD_HEADER = {
+    recipes: invert(Object.fromEntries(Object.entries(LEGACY.FIELDS.recipes).filter(([o]) => !/[A-Z]/.test(o) && o !== "eau"))),
+  };
+  const toOldCsv = (t, text) => {
+    const inv = CSV_OLD_HEADER[t] || invert(Object.fromEntries(Object.entries(LEGACY.FIELDS[t]).filter(([o]) => o !== "volume_tasse_ml")));
+    const [head, ...rest] = text.split("\n");
+    const body = rest.join("\n");
+    return head.split(",").map(c => inv[c] || c).join(",") + "\n" + (t === "settings" ? body.replace("shelf,!clock,podium", "etagere,!horloge,podium") : body);
+  };
+  const OLD_CSV = Object.fromEntries(TABLE_NAMES.map(t => [t, toOldCsv(t, NEW_CSV[t])]));
+  check("the old CSV fixture carries the v9.05 headers",
+    OLD_CSV.coffees.startsWith("id,nom,torrefacteur,") && OLD_CSV.extractions.startsWith("id,date_heure,cafe_id,methode,recette,") &&
+    OLD_CSV.recipes.startsWith("id,nom,numero,methode,famille,variante,sous_titre,") && OLD_CSV.purchases.startsWith("id,cafe_id,date_achat,") &&
+    OLD_CSV.cups.startsWith("id,nom,contenance_ml") && OLD_CSV.settings.startsWith("id,dose_g,puissance_feu,mouture_dial,"),
+    OLD_CSV.recipes.split("\n")[0]);
+  const oldFiles = Object.fromEntries(TABLE_NAMES.map(t => [(oldName(t)) + ".csv", OLD_CSV[t]]));
+  const newFiles = Object.fromEntries(TABLE_NAMES.map(t => [t + ".csv", NEW_CSV[t]]));
+  check("the old folder has the French file names", Object.keys(oldFiles).sort().join() ===
+    "achats.csv,cafes.csv,extractions.csv,recettes.csv,reglages.csv,tasses.csv", Object.keys(oldFiles).sort().join());
+  const linkWith = async files => {
+    const dir = fakeFolder(files);
+    const app = boot({ showDirectoryPicker: async () => dir }, fakeIndexedDB());
+    await app.DATA.init();
+    await app.DATA.linkFolder(false);
+    return { app, dir };
+  };
+  const strip = rows => JSON.stringify([...rows].sort((a, b) => String(a.id).localeCompare(String(b.id)))
+    .map(r => { const { updated_at: _, ...rest } = r; return rest; }));
+  {
+    const fromOld = await linkWith(oldFiles);
+    const fromNew = await linkWith(newFiles);
+    for (const t of TABLE_NAMES) {
+      check("old folder reads like the new one: " + t, strip(fromOld.app.DATA.state[t]) === strip(fromNew.app.DATA.state[t]),
+        strip(fromOld.app.DATA.state[t]).slice(0, 120) + " / " + strip(fromNew.app.DATA.state[t]).slice(0, 120));
+    }
+    const bad = TABLE_NAMES.flatMap(t => sameRows(t, fromOld.app.DATA.state[t], NEW[t], { skipStamp: true }));
+    check("and every value of the old files is kept", bad.length === 0, bad.slice(0, 3).join(" | "));
+    check("the English files are written into the old folder",
+      TABLE_NAMES.every(t => fromOld.dir.files.has(t + ".csv")), [...fromOld.dir.files.keys()].join());
+    check("with the English headers", TABLE_NAMES.every(t => fromOld.dir.files.get(t + ".csv").split("\n")[0] === NEW_CSV[t].split("\n")[0]));
+    // extractions.csv has the same name in both languages: it is the one file rewritten in place.
+    check("and the French files are left untouched", Object.entries(oldFiles).filter(([f]) => f !== "extractions.csv")
+      .every(([f, text]) => fromOld.dir.files.get(f) === text));
+    // A folder with BOTH: the English file is the one read.
+    const mixed = await linkWith({ ...oldFiles, "coffees.csv": NEW_CSV.coffees.replace("Là Việt Balanced", "English file") });
+    check("a folder holding both reads the English file", mixed.app.DATA.state.coffees.some(c => c.name === "English file"));
+    const none = fakeFolder({ "notes.txt": "x" });
+    const lost = boot({ showDirectoryPicker: async () => none }, fakeIndexedDB());
+    await lost.DATA.init();
+    let refused = null;
+    try { await lost.DATA.linkFolder(false); } catch (e) { refused = e.message; }
+    check("a folder with neither is refused, naming both file names", !!refused && refused.includes("coffees.csv") && refused.includes("cafes.csv"), refused);
+  }
+
+  // 4. Importing one CSV file: old header, same rows as the new header, detected the same.
+  {
+    for (const t of ["coffees", "extractions", "recipes", "cups", "purchases"]) {
+      const a = boot(undefined, undefined), b = boot(undefined, undefined);
+      const pa = a.DATA.analyzeImport(OLD_CSV[t]), pb = b.DATA.analyzeImport(NEW_CSV[t]);
+      check("old " + t + " CSV detected as " + t, pa.table === t && pb.table === t, pa.table + " / " + pb.table);
+      await a.DATA.importCsvText(OLD_CSV[t]).catch(() => {});
+      await b.DATA.importCsvText(NEW_CSV[t]).catch(() => {});
+      const ids = new Set(NEW[t].map(r => r.id));
+      const pick = app => strip(app.DATA.state[t].filter(r => ids.has(r.id)));
+      check("old " + t + " CSV imports identically to the new one", pick(a) === pick(b), pick(a).slice(0, 100) + " / " + pick(b).slice(0, 100));
+    }
+  }
+
+  // 5. The full JSON export of v9.05 (tables, tombes, exporte_le) reimports.
+  {
+    const app = boot(undefined, undefined);
+    const exported = JSON.stringify({ tables: OLD, tombes: OLD_TOMBS, schema: 20, exporte_le: "2026-09-20T10:00:00.000Z" });
+    check("an old full export is recognised", app.DATA.analyzeImport(exported).table === "all");
+    await app.DATA.importCsvText(exported).catch(() => {});
+    const st = app.DATA.state;
+    const bad = ["coffees", "extractions", "cups", "purchases"].flatMap(t => sameRows(t, st[t], NEW[t]));
+    check("its rows land under the new names, stamps kept", bad.length === 0, bad.slice(0, 3).join(" | "));
+    check("its personal recipe too", byId(st.recipes).get("perso") && byId(st.recipes).get("perso").steps[1].text === "Jusqu'à 250 g");
+    check("and its tombstones", st.tombstones.coffees.gone === 7001 && st.tombstones.purchases.a0 === 7004);
+    check("nothing old in the state after the import",
+      oldKeysIn({ t: TABLE_NAMES.map(t => st[t]), m: st.tombstones }).length === 0);
+  }
+
+  // 6. A row put in the state without the entry points is converted by migrateData (step 21).
+  {
+    const app = boot(undefined, undefined);
+    app.DATA.state.extractions = [OLD.extractions[0]];
+    app.DATA.state.tombstones = { cafes: { z: 1 } };
+    app.DATA.migrateData();
+    check("migrateData converts a raw old row", app.DATA.state.extractions[0].score_10 === 8.5 &&
+      !("note_sur_10" in app.DATA.state.extractions[0]), JSON.stringify(app.DATA.state.extractions[0]).slice(0, 80));
+    check("and raw old tombstones", app.DATA.state.tombstones.coffees && app.DATA.state.tombstones.coffees.z === 1);
+    check("without restamping the row", app.DATA.state.extractions[0].updated_at === 2001);
+    check("the schema is at 21, with its step", SOURCE_DATA.includes("const CURRENT_SCHEMA = 21;") &&
+      SOURCE_DATA.includes('{ v: 21, name: "English names", apply: convertLegacyNames }'));
+  }
+
+  // 7. The row rule: the new key wins over the old one.
+  {
+    const r = LEGACY.renameRow("coffees", { id: "x", nom: "old", name: "new", maj_le: 3 });
+    check("both names on a row: the new key wins", r.name === "new" && !("nom" in r) && r.updated_at === 3, JSON.stringify(r));
+    check("an old table name is accepted by renameRow", LEGACY.renameRow("cafes", { id: "x", nom: "A" }).name === "A");
+    check("an unknown key passes through", LEGACY.renameRow("cups", { id: "t", nom: "A", extra: 1 }).extra === 1);
+    check("drawing names: unknown ones are kept as is", LEGACY.renameDrawings("moulin,!neuf") === "grinder,!neuf");
+  }
+
+  // 8. localStorage: every old key moves to its new name, its value translated, then goes.
+  {
+    const mem = new Map(Object.entries({
+      langue: "en", theme: "sombre", sombre: "nuit", bips: "0", "historique-vue": "sachet", "guide-onglet": "vocabulaire",
+      "guide-filtre": "tout", "guide-recettes-ouvertes": '["tetsu-devil"]', "analyse-onglet": "gouts",
+      "brouillon-saisie": '{"le":1}', "recap-ferme": "2026-09-14", "replis-saisie": '{"dose":15}', "replis-repris": "1",
+      "inclure-ratees": "1", "brassage-unite": "ml", "gouts-toutes-familles": "0", "beeps": "1",
+    }));
+    const storage = { getItem: k => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)), removeItem: k => mem.delete(k) };
+    LEGACY.migratePrefs(storage);
+    const want = { lang: "en", theme: "dark", palette: "night", "history-view": "bag", "guide-tab": "vocabulary",
+      "guide-filter": "all", "guide-open-recipes": '["tetsu-devil"]', "analysis-tab": "tastes", "entry-draft": '{"le":1}',
+      "recap-closed": "2026-09-14", "entry-fallbacks": '{"dose":15}', "fallbacks-migrated": "1", "include-failed": "1",
+      "brew-unit": "ml", "tastes-all-families": "0" };
+    const wrong = Object.entries(want).filter(([k, v]) => storage.getItem(k) !== v).map(([k]) => k + "=" + storage.getItem(k));
+    check("every old preference is under its new key, value translated", wrong.length === 0, wrong.join(", "));
+    check("the old keys are gone", Object.keys(LEGACY.PREF_KEYS).every(k => !mem.has(k)), [...mem.keys()].join());
+    check("a new key already there wins over the old one", storage.getItem("beeps") === "1");
+    const before = JSON.stringify([...mem.entries()]);
+    LEGACY.migratePrefs(storage);
+    check("the migration is idempotent", JSON.stringify([...mem.entries()]) === before);
+    check("the code reads the new keys only",
+      ["\"lang\"", "\"beeps\"", "\"history-view\"", "\"guide-tab\"", "\"guide-filter\"", "\"guide-open-recipes\"", "\"analysis-tab\"",
+        "\"entry-draft\"", "\"recap-closed\"", "\"entry-fallbacks\"", "\"include-failed\"", "\"brew-unit\"", "\"tastes-all-families\""]
+        .every(k => (SOURCE_UI + I18N_FR_SRC).includes(k)) &&
+      !/localStorage\.(get|set)Item\("(langue|bips|sombre|historique-vue|guide-onglet|guide-filtre|brouillon-saisie)"/.test(SOURCE_UI + I18N_FR_SRC));
+    const head = readFileSync(join(ROOT, "index.html"), "utf8");
+    check("the head theme script still understands the old values before the move",
+      head.includes('localStorage.getItem("palette") || localStorage.getItem("sombre")') && head.includes('choice === "sombre"') &&
+      head.includes('palette === "nuit"'));
+    check("legacy-names.js is the first script of the page, before i18n.js reads the language",
+      head.indexOf('src="js/legacy-names.js') > 0 && head.indexOf('src="js/legacy-names.js') < head.indexOf('src="js/tools.js') &&
+      readFileSync(join(ROOT, "sw.js"), "utf8").includes('"./js/legacy-names.js"'));
+  }
+
+  // 9. The entry draft of v9.05: French keys and French field ids, both accepted.
+  {
+    const old = { le: 123, methode: "Switch", diagnostics: ["Équilibré"], descripteurs: ["caramel"], noteVide: false,
+      valeurs: { "f-cafe": "cA", "f-commentaire": "rond", "f-water": "240" } };
+    const d = LEGACY.renameDraft(old);
+    check("an old draft reads under the new keys", d.savedAt === 123 && d.method === "Switch" && d.descriptors[0] === "caramel" &&
+      d.ratingEmpty === false && d.values["f-coffee"] === "cA" && d.values["f-comment"] === "rond" && d.values["f-water"] === "240",
+      JSON.stringify(d));
+    check("no old key left in it", !("le" in d) && !("valeurs" in d) && !("f-cafe" in d.values));
+    const current = { savedAt: 1, method: "Brikka", values: { "f-coffee": "c1" } };
+    check("a new draft is untouched", JSON.stringify(LEGACY.renameDraft(current)) === JSON.stringify(current));
+    const draftSrc = readFileSync(join(ROOT, "js/ui-draft.js"), "utf8");
+    check("the draft is saved with the English keys and read through renameDraft",
+      draftSrc.includes("savedAt: Date.now()") && draftSrc.includes("ratingEmpty: isRatingEmpty") && draftSrc.includes("b = LEGACY.renameDraft(b)"));
+  }
+
+  // 10. Hash routes: the French hashes still open their screen, the manifest uses the new ones.
+  {
+    const screens = (SOURCE_UI.match(/const SCREEN_NAMES = \[([^\]]*)\]/) || [])[1] || "";
+    const want = { tableau: "dashboard", saisie: "entry", historique: "history", reglages: "tuning", parametres: "settings",
+      refaire: "redo", reference: "guide" };
+    check("every old hash has its new screen", Object.entries(want).every(([o, n]) => LEGACY.route(o) === n));
+    check("and every new screen exists", Object.values(want).every(n => n === "redo" || screens.includes('"' + n + '"')), screens);
+    check("a new hash is its own route", LEGACY.route("history") === "history" && LEGACY.route("dashboard") === "dashboard");
+    const manifest = JSON.parse(readFileSync(join(ROOT, "manifest.json"), "utf8"));
+    check("the manifest shortcuts use the new hashes",
+      manifest.shortcuts.map(s => s.url).join() === "./#entry,./#redo,./#history", manifest.shortcuts.map(s => s.url).join());
+    check("the screens are routed through LEGACY.route", SOURCE_UI.includes("return LEGACY.route(nameKey);"));
+  }
 }
 
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);

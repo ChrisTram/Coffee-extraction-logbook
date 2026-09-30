@@ -46,18 +46,18 @@
      that is the one you come to look at. The rim shows freshness, as the
      coffee sheet learns it: inside the window, before, after, or unknown. */
   function shelfData() {
-    return DATA.state.cafes.filter(c => c.actif !== 0).map(c => {
+    return DATA.state.coffees.filter(c => c.active !== 0).map(c => {
       const stock = DATA.bagStock(c.id, fallbacks.dose);
       if (!stock) return null;
-      const doses = DATA.state.extractions.filter(e => e.cafe_id === c.id && Number(e.dose_g) > 0).map(e => Number(e.dose_g));
+      const doses = DATA.state.extractions.filter(e => e.coffee_id === c.id && Number(e.dose_g) > 0).map(e => Number(e.dose_g));
       const dose = doses.length ? average(doses) : fallbacks.dose;
       const left = Math.max(0, stock.remaining);
-      const rated = analyzableExts().filter(e => e.cafe_id === c.id && e.note_sur_10 !== "");
-      const avg = rated.length ? average(rated.map(e => Number(e.note_sur_10))) : 0;
+      const rated = analyzableExts().filter(e => e.coffee_id === c.id && e.score_10 !== "");
+      const avg = rated.length ? average(rated.map(e => Number(e.score_10))) : 0;
       const f = UI.freshnessWindow(rated, avg).sweetSpot;
       const jc = UI.bagDay(c.id);
       const state = !f || !jc ? "unknown" : jc.day < f.start ? "before" : jc.day > f.end ? "after" : "inside";
-      return { coffee: c, pc: Math.min(100, (left / stock.format) * 100), tasses: Math.floor(left / dose), state: state };
+      return { coffee: c, pc: Math.min(100, (left / stock.format) * 100), cups: Math.floor(left / dose), state: state };
     }).filter(Boolean).sort((a, b) => a.pc - b.pc).slice(0, 6);
   }
 
@@ -74,17 +74,17 @@
     jars.forEach((b, i) => {
       const x = step * i + (step - w) / 2, top = 26, low = 126, level = low - ((low - top - 4) * b.pc) / 100;
       s += '<g class="dw-jar dw-' + b.state + '" data-sheet="' + escapeHtml(b.coffee.id) + '" tabindex="0" role="button" aria-label="' +
-        escapeHtml(I18N.t("drawing_jar_aria", { c: b.coffee.nom, n: b.tasses })) + '"><title>' + escapeHtml(b.coffee.nom) + "</title>" +
+        escapeHtml(I18N.t("drawing_jar_aria", { c: b.coffee.name, n: b.cups })) + '"><title>' + escapeHtml(b.coffee.name) + "</title>" +
         '<rect x="' + x.toFixed(1) + '" y="' + top + '" width="' + w.toFixed(1) + '" height="' + (low - top) + '" rx="7" class="dw-glass"></rect>' +
         '<rect x="' + (x + 3).toFixed(1) + '" y="' + level.toFixed(1) + '" width="' + (w - 6).toFixed(1) + '" height="' +
-        Math.max(0, low - 3 - level).toFixed(1) + '" rx="4" class="dw-grains" style="fill-opacity:' + (b.tasses <= 3 ? 0.45 : 0.85) + '"></rect>' +
+        Math.max(0, low - 3 - level).toFixed(1) + '" rx="4" class="dw-grains" style="fill-opacity:' + (b.cups <= 3 ? 0.45 : 0.85) + '"></rect>' +
         '<rect x="' + (x + 8).toFixed(1) + '" y="' + (top - 7) + '" width="' + (w - 16).toFixed(1) + '" height="7" rx="2" class="dw-lid"></rect>' +
-        '<text x="' + (x + w / 2).toFixed(1) + '" y="143" text-anchor="middle" class="dw-strong">' + escapeHtml(brief(b.coffee.nom, 11)) + "</text>" +
-        '<text x="' + (x + w / 2).toFixed(1) + '" y="155" text-anchor="middle">' + escapeHtml(b.tasses === 0 ? I18N.t("drawing_bag_empty") : I18N.t(b.tasses === 1 ? "drawing_one_cup_left" : "drawing_cups_left", { n: b.tasses })) + "</text></g>";
+        '<text x="' + (x + w / 2).toFixed(1) + '" y="143" text-anchor="middle" class="dw-strong">' + escapeHtml(brief(b.coffee.name, 11)) + "</text>" +
+        '<text x="' + (x + w / 2).toFixed(1) + '" y="155" text-anchor="middle">' + escapeHtml(b.cups === 0 ? I18N.t("drawing_bag_empty") : I18N.t(b.cups === 1 ? "drawing_one_cup_left" : "drawing_cups_left", { n: b.cups })) + "</text></g>";
     });
-    const low = jars.filter(b => b.tasses <= 3);
+    const low = jars.filter(b => b.cups <= 3);
     setDrawing(id, s, low.length
-      ? I18N.t("drawing_shelf_rebuy", { c: low.map(b => b.coffee.nom).join(", ") })
+      ? I18N.t("drawing_shelf_rebuy", { c: low.map(b => b.coffee.name).join(", ") })
       : I18N.t("drawing_shelf_ok"));
   }
 
@@ -95,9 +95,9 @@
      The reading compares times of day, same thresholds as the insights. */
   function drawClock(id) {
     const since = new Date(); since.setDate(since.getDate() - 90);
-    const cups = analyzableExts().filter(e => e.note_sur_10 !== "" && new Date(e.date_heure) >= since)
-      .map(e => ({ h: Number(String(e.date_heure).slice(11, 13)) + Number(String(e.date_heure).slice(14, 16)) / 60,
-        n: Number(e.note_sur_10), m: e.methode, id: e.id }))
+    const cups = analyzableExts().filter(e => e.score_10 !== "" && new Date(e.date_time) >= since)
+      .map(e => ({ h: Number(String(e.date_time).slice(11, 13)) + Number(String(e.date_time).slice(14, 16)) / 60,
+        n: Number(e.score_10), m: e.method, id: e.id }))
       .filter(t => Number.isFinite(t.h));
     if (cups.length < MIN) { showEmpty(id, "drawing_clock_empty", { n: MIN }); return; }
     const C = [104, 100], R0 = 20, R1 = 84;
@@ -143,14 +143,14 @@
     const byRecipe = {};
     analyzableExts().forEach(e => {
       const pos = String(e.diagnostic || "").split("|").map(position).filter(v => v !== null);
-      if (!pos.length || !e.recette) return;
+      if (!pos.length || !e.recipe) return;
       // One cup, one point: the most clear-cut diagnostic places it.
       const v = pos.reduce((a, b) => (Math.abs(b) > Math.abs(a) ? b : a), 0);
-      (byRecipe[e.recette] = byRecipe[e.recette] || []).push({ v, id: e.id });
+      (byRecipe[e.recipe] = byRecipe[e.recipe] || []).push({ v, id: e.id });
     });
     return Object.entries(byRecipe).filter(([, v]) => v.length >= MIN)
       .sort((a, b) => b[1].length - a[1].length).slice(0, 4)
-      .map(([recipe, l]) => ({ recette: recipe, vals: l.map(x => x.v), ids: l.map(x => x.id), mean: average(l.map(x => x.v)) }));
+      .map(([recipe, l]) => ({ recipe: recipe, vals: l.map(x => x.v), ids: l.map(x => x.id), mean: average(l.map(x => x.v)) }));
   }
 
   function drawSpectrum(id) {
@@ -161,7 +161,7 @@
     rows.forEach((r, i) => {
       const y = 36 + i * 40;
       s += '<line x1="' + x(-2) + '" y1="' + y + '" x2="' + x(2) + '" y2="' + y + '" class="dw-axis"></line>' +
-        '<text x="' + x(-2) + '" y="' + (y - 14) + '" class="dw-strong">' + escapeHtml(brief(I18N.tr(r.recette), 30)) + "</text>";
+        '<text x="' + x(-2) + '" y="' + (y - 14) + '" class="dw-strong">' + escapeHtml(brief(I18N.tr(r.recipe), 30)) + "</text>";
       const stack = {};
       r.vals.forEach((v, j) => {
         const k = (stack[v] = (stack[v] || 0) + 1) - 1;
@@ -179,7 +179,7 @@
     if (el) el.setAttribute("viewBox", "0 0 320 " + (H + 8));
     const leaning = rows.filter(r => Math.abs(r.mean) >= 0.4).sort((a, b) => Math.abs(b.mean) - Math.abs(a.mean))[0];
     setDrawing(id, s, leaning
-      ? I18N.t(leaning.mean > 0 ? "drawing_spectrum_over" : "drawing_spectrum_under", { r: I18N.tr(leaning.recette) })
+      ? I18N.t(leaning.mean > 0 ? "drawing_spectrum_over" : "drawing_spectrum_under", { r: I18N.tr(leaning.recipe) })
       : I18N.t("drawing_spectrum_centre"));
   }
 
@@ -192,8 +192,8 @@
   function grinderData(coffeeId) {
     return ["Brikka", "Switch"].map(m => {
       const range = GRIND.METHODS.find(x => x.id === m.toLowerCase());
-      const cups = analyzableExts().filter(e => e.methode === m && e.note_sur_10 !== "" && (!coffeeId || e.cafe_id === coffeeId))
-        .map(e => ({ d: GRIND.parseDial(String(e.mouture_dial || "")), n: Number(e.note_sur_10), id: e.id })).filter(t => t.d);
+      const cups = analyzableExts().filter(e => e.method === m && e.score_10 !== "" && (!coffeeId || e.coffee_id === coffeeId))
+        .map(e => ({ d: GRIND.parseDial(String(e.grind_dial || "")), n: Number(e.score_10), id: e.id })).filter(t => t.d);
       let golden = null;
       cups.forEach(t => {
         const inside = cups.filter(u => u.d.clicks >= t.d.clicks && u.d.clicks <= t.d.clicks + 2);
@@ -201,8 +201,8 @@
         const avg = average(inside.map(u => u.n));
         if (!golden || avg > golden.mean) golden = { from: t.d.clicks, a: t.d.clicks + 2, mean: avg, n: inside.length };
       });
-      return { m, range: range, tasses: cups, golden: golden };
-    }).filter(r => r.tasses.length);
+      return { m, range: range, cups: cups, golden: golden };
+    }).filter(r => r.cups.length);
   }
 
   function drawGrinder(id, coffeeId) {
@@ -225,7 +225,7 @@
         const a = x(r.golden.from * GRIND.MICRONS_PER_CLICK) - 5, b = x(r.golden.a * GRIND.MICRONS_PER_CLICK) + 5;
         s += '<rect x="' + a.toFixed(1) + '" y="' + (y - 13) + '" width="' + (b - a).toFixed(1) + '" height="26" rx="7" class="dw-golden"></rect>';
       }
-      r.tasses.forEach((t, k) => {
+      r.cups.forEach((t, k) => {
         s += '<circle cx="' + x(t.d.microns).toFixed(1) + '" cy="' + (y + ((k % 3) - 1) * 5) + '" r="3.8" class="dw-grain" style="fill-opacity:' +
           opacity(t.n) + '"' + ' data-cup="' + escapeHtml(t.id) + '"></circle>';
       });
@@ -248,13 +248,13 @@
   function profile(cups) {
     const n = {};
     let total = 0;
-    cups.forEach(e => String(e.descripteurs || "").split("|").filter(Boolean).forEach(t => {
+    cups.forEach(e => String(e.descriptors || "").split("|").filter(Boolean).forEach(t => {
       const g = DESCRIPTOR_GROUPS.find(x => x.tags.includes(t));
       if (!g) return;
-      n[g.nom] = (n[g.nom] || 0) + 1;
+      n[g.name] = (n[g.name] || 0) + 1;
       total += 1;
     }));
-    const parts = DESCRIPTOR_GROUPS.map(g => (total ? (n[g.nom] || 0) / total : 0));
+    const parts = DESCRIPTOR_GROUPS.map(g => (total ? (n[g.name] || 0) / total : 0));
     const max = Math.max(...parts, 0.0001);
     return { parts, norm: parts.map(p => p / max), total };
   }
@@ -263,13 +263,13 @@
      instead of all your coffees, and the sentence names it. */
   function drawFingerprint(id, coffeeId, otherId) {
     const all = analyzableExts();
-    const hasTags = e => String(e.descripteurs || "").trim() !== "";
-    const own = all.filter(e => e.cafe_id === coffeeId && hasTags(e));
+    const hasTags = e => String(e.descriptors || "").trim() !== "";
+    const own = all.filter(e => e.coffee_id === coffeeId && hasTags(e));
     if (own.length < MIN) { showEmpty(id, "drawing_fingerprint_empty", { n: MIN }); return; }
-    const others = otherId ? all.filter(e => e.cafe_id === otherId && hasTags(e)) : all.filter(hasTags);
+    const others = otherId ? all.filter(e => e.coffee_id === otherId && hasTags(e)) : all.filter(hasTags);
     if (otherId && others.length < MIN) { showEmpty(id, "drawing_fingerprint_empty_other", { n: MIN }); return; }
     const a = profile(own), b = profile(others);
-    const other = otherId ? DATA.state.cafes.find(c => c.id === otherId) : null;
+    const other = otherId ? DATA.state.coffees.find(c => c.id === otherId) : null;
     const N = DESCRIPTOR_GROUPS.length, C = [160, 104], R = 72;
     const pt = (i, r) => { const ang = -Math.PI / 2 + (i / N) * Math.PI * 2; return [C[0] + Math.cos(ang) * r, C[1] + Math.sin(ang) * r]; };
     let s = "";
@@ -280,14 +280,14 @@
       const [x, y] = pt(i, R + 13);
       s += '<line x1="' + C[0] + '" y1="' + C[1] + '" x2="' + pt(i, R)[0].toFixed(1) + '" y2="' + pt(i, R)[1].toFixed(1) + '" class="dw-radius"></line>' +
         '<text x="' + x.toFixed(1) + '" y="' + (y + 3).toFixed(1) + '" text-anchor="' + (x < C[0] - 8 ? "end" : x > C[0] + 8 ? "start" : "middle") + '">' +
-        escapeHtml(I18N.group(g.nom).split(" ")[0]) + "</text>";
+        escapeHtml(I18N.group(g.name).split(" ")[0]) + "</text>";
     });
     const poly = (v, cls) => '<polygon points="' + v.map((k, i) => pt(i, R * k).map(n => n.toFixed(1)).join(",")).join(" ") + '" class="' + cls + '"></polygon>';
     s += poly(b.norm, "dw-footprint-all") + poly(a.norm, "dw-footprint-coffee");
     // The reading: the family where this coffee exceeds your others most, and the one where it lacks.
-    const gaps = a.parts.map((p, i) => ({ g: DESCRIPTOR_GROUPS[i].nom, d: p - b.parts[i] })).sort((x, y) => y.d - x.d);
+    const gaps = a.parts.map((p, i) => ({ g: DESCRIPTOR_GROUPS[i].name, d: p - b.parts[i] })).sort((x, y) => y.d - x.d);
     const most = gaps[0], least = gaps[gaps.length - 1];
-    const v = { p: I18N.group(most.g).toLowerCase(), m: I18N.group(least.g).toLowerCase(), c: other ? other.nom : "" };
+    const v = { p: I18N.group(most.g).toLowerCase(), m: I18N.group(least.g).toLowerCase(), c: other ? other.name : "" };
     setDrawing(id, s, most.d >= 0.05 && least.d <= -0.05
       ? I18N.t(other ? "drawing_fingerprint_reading_other" : "drawing_fingerprint_reading", v)
       : I18N.t(other ? "drawing_fingerprint_close_other" : "drawing_fingerprint_close", v));
@@ -301,16 +301,16 @@
      and a Sherrycipe at 2.0.2 crushed the scale for everything else. The tint
      is the rating, the last cup circled. */
   function drawTrajectory(id, coffeeId) {
-    const withDial = analyzableExts().filter(e => e.cafe_id === coffeeId && e.note_sur_10 !== "" && GRIND.parseDial(String(e.mouture_dial || "")));
+    const withDial = analyzableExts().filter(e => e.coffee_id === coffeeId && e.score_10 !== "" && GRIND.parseDial(String(e.grind_dial || "")));
     const recipeCounts = {};
-    withDial.forEach(e => { if (e.recette) recipeCounts[e.recette] = (recipeCounts[e.recette] || 0) + 1; });
+    withDial.forEach(e => { if (e.recipe) recipeCounts[e.recipe] = (recipeCounts[e.recipe] || 0) + 1; });
     const recipe = Object.keys(recipeCounts).sort((a, b) => recipeCounts[b] - recipeCounts[a])[0];
-    const machine = (withDial.find(e => e.recette === recipe) || {}).methode;
-    const heat = e => Number(machine === "Switch" ? e.temperature_c : e.puissance_feu);
-    const cups = withDial.filter(e => e.recette === recipe)
+    const machine = (withDial.find(e => e.recipe === recipe) || {}).method;
+    const heat = e => Number(machine === "Switch" ? e.temperature_c : e.heat_level);
+    const cups = withDial.filter(e => e.recipe === recipe)
       .filter(e => Number.isFinite(heat(e)) && heat(e) > 0)
-      .sort((a, b) => String(a.date_heure).localeCompare(String(b.date_heure)))
-      .map(e => ({ c: GRIND.parseDial(String(e.mouture_dial)).clicks, y: heat(e), n: Number(e.note_sur_10), dial: e.mouture_dial, id: e.id }));
+      .sort((a, b) => String(a.date_time).localeCompare(String(b.date_time)))
+      .map(e => ({ c: GRIND.parseDial(String(e.grind_dial)).clicks, y: heat(e), n: Number(e.score_10), dial: e.grind_dial, id: e.id }));
     if (cups.length < MIN) { showEmpty(id, "drawing_trajectory_empty", { n: MIN }); return; }
     const cs = cups.map(t => t.c), ys = cups.map(t => t.y);
     const c0 = Math.min(...cs) - 2, c1 = Math.max(...cs) + 2, y0 = Math.min(...ys) - 1, y1 = Math.max(...ys) + 1;
@@ -345,14 +345,14 @@
      three rated cups on each side, the insights thresholds), the coffee of
      the week if it makes up half, the bags opened or finished, the best
      cup. Fewer than two cups in the week: no recap. */
-  const RECAP_KEY = "recap-ferme";
+  const RECAP_KEY = "recap-closed";
   function mondayOf(d) {
     const l = new Date(d); l.setHours(0, 0, 0, 0);
     l.setDate(l.getDate() - ((l.getDay() + 6) % 7));
     return l;
   }
   const inWeek = (e, start) => {
-    const t = new Date(e.date_heure), end = new Date(start); end.setDate(end.getDate() + 7);
+    const t = new Date(e.date_time), end = new Date(start); end.setDate(end.getDate() + 7);
     return t >= start && t < end;
   };
 
@@ -361,15 +361,15 @@
     const before = new Date(start); before.setDate(before.getDate() - 7);
     const cups = DATA.state.extractions.filter(e => inWeek(e, start));
     if (cups.length < 2) return null;
-    const rated = analyzableExts().filter(e => e.note_sur_10 !== "" && inWeek(e, start));
-    const ratedBefore = analyzableExts().filter(e => e.note_sur_10 !== "" && inWeek(e, before));
-    const avg = rated.length ? average(rated.map(e => Number(e.note_sur_10))) : null;
-    const avgBefore = ratedBefore.length ? average(ratedBefore.map(e => Number(e.note_sur_10))) : null;
+    const rated = analyzableExts().filter(e => e.score_10 !== "" && inWeek(e, start));
+    const ratedBefore = analyzableExts().filter(e => e.score_10 !== "" && inWeek(e, before));
+    const avg = rated.length ? average(rated.map(e => Number(e.score_10))) : null;
+    const avgBefore = ratedBefore.length ? average(ratedBefore.map(e => Number(e.score_10))) : null;
     const days = Array.from({ length: 7 }, (_, i) => {
       const j = new Date(start); j.setDate(j.getDate() + i);
       const key = UI.localDateKey(j);
-      const dayNotes = rated.filter(e => String(e.date_heure).slice(0, 10) === key).map(e => Number(e.note_sur_10));
-      return { date: j, key: key, n: cups.filter(e => String(e.date_heure).slice(0, 10) === key).length,
+      const dayNotes = rated.filter(e => String(e.date_time).slice(0, 10) === key).map(e => Number(e.score_10));
+      return { date: j, key: key, n: cups.filter(e => String(e.date_time).slice(0, 10) === key).length,
         mean: dayNotes.length ? average(dayNotes) : null };
     });
     const facts = [];
@@ -377,20 +377,20 @@
       facts.push(I18N.t(avg > avgBefore ? "recap_better" : "recap_worse", { x: fmtRating(Math.abs(avg - avgBefore)), s: Math.abs(avg - avgBefore) >= 2 ? "s" : "" }));
     }
     const byCoffee = {};
-    cups.forEach(e => { byCoffee[e.cafe_id] = (byCoffee[e.cafe_id] || 0) + 1; });
+    cups.forEach(e => { byCoffee[e.coffee_id] = (byCoffee[e.coffee_id] || 0) + 1; });
     const [coffeeId, coffeeCount] = Object.entries(byCoffee).sort((a, b) => b[1] - a[1])[0];
-    const coffee = DATA.state.cafes.find(c => c.id === coffeeId);
+    const coffee = DATA.state.coffees.find(c => c.id === coffeeId);
     if (coffee && coffeeCount * 2 >= cups.length && Object.keys(byCoffee).length > 1) {
-      facts.push(I18N.t("recap_coffee", { c: coffee.nom, n: coffeeCount, t: cups.length }));
+      facts.push(I18N.t("recap_coffee", { c: coffee.name, n: coffeeCount, t: cups.length }));
     }
     const weekEnd = new Date(start); weekEnd.setDate(weekEnd.getDate() + 7);
-    DATA.state.achats.filter(a => a.date_ouverture && new Date(a.date_ouverture + "T12:00") >= start &&
-      new Date(a.date_ouverture + "T12:00") < weekEnd).forEach(a => {
-      const c = DATA.state.cafes.find(x => x.id === a.cafe_id);
-      if (c) facts.push(I18N.t("recap_opened", { c: c.nom, j: new Date(a.date_ouverture + "T12:00").toLocaleDateString(I18N.locale(), { weekday: "long" }) }));
+    DATA.state.purchases.filter(a => a.opened_date && new Date(a.opened_date + "T12:00") >= start &&
+      new Date(a.opened_date + "T12:00") < weekEnd).forEach(a => {
+      const c = DATA.state.coffees.find(x => x.id === a.coffee_id);
+      if (c) facts.push(I18N.t("recap_opened", { c: c.name, j: new Date(a.opened_date + "T12:00").toLocaleDateString(I18N.locale(), { weekday: "long" }) }));
     });
-    const best = rated.slice().sort((a, b) => Number(b.note_sur_10) - Number(a.note_sur_10))[0];
-    return { start: start, tasses: cups.length, rated: rated.length, mean: avg, meanBefore: avgBefore, days: days, facts: facts, best: best };
+    const best = rated.slice().sort((a, b) => Number(b.score_10) - Number(a.score_10))[0];
+    return { start: start, cups: cups.length, rated: rated.length, mean: avg, meanBefore: avgBefore, days: days, facts: facts, best: best };
   }
 
   function renderRecap() {
@@ -417,7 +417,7 @@
         : '<span class="rc-day empty" title="' + escapeHtml(title) + '">' + bar + "</span>";
     }).join("");
     const m = r.best;
-    const bestCoffee = m ? DATA.state.cafes.find(c => c.id === m.cafe_id) : null;
+    const bestCoffee = m ? DATA.state.coffees.find(c => c.id === m.coffee_id) : null;
     card.hidden = false;
     card.innerHTML =
       '<div class="rc-head"><h3>' + escapeHtml(I18N.t("recap_title", {
@@ -427,15 +427,15 @@
       (r.facts.length ? '<ul class="rc-facts">' + r.facts.map(f => "<li>" + escapeHtml(f) + "</li>").join("") + "</ul>" : "") +
       '<button type="button" class="drawing-link" id="recap-close">' + escapeHtml(I18N.t("recap_close")) + "</button></div>" +
       '<div class="rc-body">' +
-      '<div class="rc-figure"><b>' + r.tasses + "</b><span>" + escapeHtml(I18N.t("recap_cups")) + "</span></div>" +
+      '<div class="rc-figure"><b>' + r.cups + "</b><span>" + escapeHtml(I18N.t("recap_cups")) + "</span></div>" +
       (r.mean !== null ? '<div class="rc-figure"><b>' + fmtRating(r.mean) + "</b><span>" + escapeHtml(I18N.t("recap_average", { n: r.rated })) + "</span></div>" : "") +
       /* The best cup states its coffee AND its recipe (v8.60): "Là Việt Balanced,
          mercredi" alone did not let you remake it, since the same coffee goes
          through several recipes. The whole thing opens the cup in a bubble. */
-      (m ? '<div class="rc-figure rc-best" data-cup="' + escapeHtml(m.id) + '"><b>' + fmtRating(Number(m.note_sur_10)) + "</b><span>" +
-        escapeHtml(I18N.t("recap_best", { j: new Date(m.date_heure).toLocaleDateString(I18N.locale(), { weekday: "long" }) })) +
-        "</span><em>" + escapeHtml(bestCoffee ? bestCoffee.nom : I18N.t("recap_no_coffee")) + "</em><em>" +
-        escapeHtml(m.recette ? I18N.tr(m.recette) : I18N.t("recap_no_recipe")) + "</em></div>" : "") +
+      (m ? '<div class="rc-figure rc-best" data-cup="' + escapeHtml(m.id) + '"><b>' + fmtRating(Number(m.score_10)) + "</b><span>" +
+        escapeHtml(I18N.t("recap_best", { j: new Date(m.date_time).toLocaleDateString(I18N.locale(), { weekday: "long" }) })) +
+        "</span><em>" + escapeHtml(bestCoffee ? bestCoffee.name : I18N.t("recap_no_coffee")) + "</em><em>" +
+        escapeHtml(m.recipe ? I18N.tr(m.recipe) : I18N.t("recap_no_recipe")) + "</em></div>" : "") +
       '<div class="rc-week" aria-label="' + escapeHtml(I18N.t("recap_bars")) + '">' + bars + "</div></div>";
     card.querySelectorAll("[data-day]").forEach(b => b.addEventListener("click", () =>
       UI.openHistoryOn({ "h-from": b.dataset.day, "h-to": b.dataset.day })));
@@ -452,10 +452,10 @@
      like a real podium. Tapping a step opens the recipe in the Guide. */
   function podiumData() {
     const ratingsByRecipe = {};
-    analyzableExts().filter(e => e.note_sur_10 !== "" && e.recette)
-      .forEach(e => (ratingsByRecipe[e.recette] = ratingsByRecipe[e.recette] || []).push(Number(e.note_sur_10)));
+    analyzableExts().filter(e => e.score_10 !== "" && e.recipe)
+      .forEach(e => (ratingsByRecipe[e.recipe] = ratingsByRecipe[e.recipe] || []).push(Number(e.score_10)));
     return Object.entries(ratingsByRecipe).filter(([, n]) => n.length >= MIN)
-      .map(([name, n]) => ({ nom: name, mean: average(n), n: n.length, r: UI.findRecipe(name) }))
+      .map(([name, n]) => ({ name: name, mean: average(n), n: n.length, r: UI.findRecipe(name) }))
       .sort((a, b) => b.mean - a.mean || b.n - a.n).slice(0, 3);
   }
 
@@ -471,14 +471,14 @@
       const rank = i === 1 ? 1 : i === 0 ? 2 : 3;
       const x = 22 + i * 96, w = 84, h = heights[i], top = 130 - h;
       const link = m.r ? ' data-guide-recipe="' + escapeHtml(m.r.id) + '" tabindex="0" role="button" aria-label="' +
-        escapeHtml(I18N.t("drawing_podium_aria", { r: I18N.tr(m.nom), m: fmtRating(m.mean) })) + '"' : "";
-      s += '<g class="dw-stair dw-rank-' + rank + '"' + link + "><title>" + escapeHtml(I18N.tr(m.nom)) + "</title>" +
+        escapeHtml(I18N.t("drawing_podium_aria", { r: I18N.tr(m.name), m: fmtRating(m.mean) })) + '"' : "";
+      s += '<g class="dw-stair dw-rank-' + rank + '"' + link + "><title>" + escapeHtml(I18N.tr(m.name)) + "</title>" +
         '<rect x="' + x + '" y="' + top + '" width="' + w + '" height="' + h + '" rx="6" class="dw-stair-block"></rect>' +
         '<text x="' + (x + w / 2) + '" y="' + (top + 26) + '" text-anchor="middle" class="dw-stair-rating">' + fmtRating(m.mean) + "</text>" +
-        '<text x="' + (x + w / 2) + '" y="' + (top - 7) + '" text-anchor="middle" class="dw-strong">' + escapeHtml(brief(I18N.tr(m.nom), 17)) + "</text>" +
+        '<text x="' + (x + w / 2) + '" y="' + (top - 7) + '" text-anchor="middle" class="dw-strong">' + escapeHtml(brief(I18N.tr(m.name), 17)) + "</text>" +
         '<text x="' + (x + w / 2) + '" y="144" text-anchor="middle">' + escapeHtml(I18N.t("drawing_podium_count", { n: m.n })) + "</text></g>";
     });
-    setDrawing(id, s, I18N.t("drawing_podium_reading", { r: I18N.tr(p[0].nom), m: fmtRating(p[0].mean), n: p[0].n }));
+    setDrawing(id, s, I18N.t("drawing_podium_reading", { r: I18N.tr(p[0].name), m: fmtRating(p[0].mean), n: p[0].n }));
   }
 
   // ---------- Your progress (v8.54) ----------
@@ -488,7 +488,7 @@
      made for the first time. You can see what moved the curve. The three most
      recent milestones carry their name, the others stay as points. */
   function drawProgress(id) {
-    const rated = analyzableExts().filter(e => e.note_sur_10 !== "");
+    const rated = analyzableExts().filter(e => e.score_10 !== "");
     const series = TUNING.rollingAverage(rated, 5).filter(p => p.value !== null);
     if (series.length < 2) { showEmpty(id, "drawing_progress_empty"); return; }
     const t = d => new Date(d).getTime();
@@ -507,16 +507,16 @@
       '<path d="' + d + '" class="dw-curve"></path>';
     // The milestones, within the curve's period.
     const milestones = [];
-    DATA.state.achats.forEach(a => {
-      const when = a.date_ouverture || "";
-      const c = DATA.state.cafes.find(x => x.id === a.cafe_id);
-      if (when && c) milestones.push({ date: when + "T12:00", lib: I18N.t("drawing_milestone_bag", { c: brief(c.nom, 16) }) });
+    DATA.state.purchases.forEach(a => {
+      const when = a.opened_date || "";
+      const c = DATA.state.coffees.find(x => x.id === a.coffee_id);
+      if (when && c) milestones.push({ date: when + "T12:00", lib: I18N.t("drawing_milestone_bag", { c: brief(c.name, 16) }) });
     });
     const seenRecipes = new Set();
-    rated.slice().sort((a, b) => String(a.date_heure).localeCompare(String(b.date_heure))).forEach(e => {
-      if (!e.recette || seenRecipes.has(e.recette)) return;
-      seenRecipes.add(e.recette);
-      milestones.push({ date: e.date_heure, lib: I18N.t("drawing_milestone_recipe", { r: brief(I18N.tr(e.recette), 16) }) });
+    rated.slice().sort((a, b) => String(a.date_time).localeCompare(String(b.date_time))).forEach(e => {
+      if (!e.recipe || seenRecipes.has(e.recipe)) return;
+      seenRecipes.add(e.recipe);
+      milestones.push({ date: e.date_time, lib: I18N.t("drawing_milestone_recipe", { r: brief(I18N.tr(e.recipe), 16) }) });
     });
     const inRange = milestones.filter(j => t(j.date) > t0 && t(j.date) <= t1).sort((a, b) => t(a.date) - t(b.date));
     const valueAt = d => { let v = series[0].value; series.forEach(p => { if (t(p.date) <= t(d)) v = p.value; }); return v; };
@@ -561,24 +561,24 @@
     const dayOf = s => new Date(String(s).slice(0, 10) + "T12:00");
     // Cups grouped by coffee once, instead of a filter over the whole history per bag (v8.75).
     const byCoffee = {};
-    DATA.state.extractions.forEach(e => { (byCoffee[e.cafe_id] = byCoffee[e.cafe_id] || []).push(e); });
-    return DATA.state.achats.map(a => {
-      const start = dayOf(a.date_ouverture || a.date_achat);
+    DATA.state.extractions.forEach(e => { (byCoffee[e.coffee_id] = byCoffee[e.coffee_id] || []).push(e); });
+    return DATA.state.purchases.map(a => {
+      const start = dayOf(a.opened_date || a.purchase_date);
       if (isNaN(start)) return null;
-      const laterBags = DATA.state.achats.filter(b => b.cafe_id === a.cafe_id && b !== a &&
-        dayOf(b.date_ouverture || b.date_achat) > start).map(b => dayOf(b.date_ouverture || b.date_achat)).sort((x, y) => x - y);
+      const laterBags = DATA.state.purchases.filter(b => b.coffee_id === a.coffee_id && b !== a &&
+        dayOf(b.opened_date || b.purchase_date) > start).map(b => dayOf(b.opened_date || b.purchase_date)).sort((x, y) => x - y);
       const limit = laterBags[0] || null;
-      const cups = (byCoffee[a.cafe_id] || []).filter(e => new Date(e.date_heure) >= start &&
-        (!limit || new Date(e.date_heure) < limit));
-      const last = cups.reduce((m, e) => (new Date(e.date_heure) > m ? new Date(e.date_heure) : m), start);
-      const stock = limit ? null : DATA.bagStock(a.cafe_id, fallbacks.dose);
+      const cups = (byCoffee[a.coffee_id] || []).filter(e => new Date(e.date_time) >= start &&
+        (!limit || new Date(e.date_time) < limit));
+      const last = cups.reduce((m, e) => (new Date(e.date_time) > m ? new Date(e.date_time) : m), start);
+      const stock = limit ? null : DATA.bagStock(a.coffee_id, fallbacks.dose);
       const recent = (today - last) / 86400000 <= DORMANT_BAG_DAYS;
       const ongoing = !limit && !!stock && stock.remaining > 0 && recent;
       if (!cups.length && !ongoing) return null;
       const end = ongoing ? today : last;
       if (end < since) return null;
-      const notes = analyzableExts().filter(e => cups.some(t => t.id === e.id) && e.note_sur_10 !== "").map(e => Number(e.note_sur_10));
-      const coffee = DATA.state.cafes.find(c => c.id === a.cafe_id);
+      const notes = analyzableExts().filter(e => cups.some(t => t.id === e.id) && e.score_10 !== "").map(e => Number(e.score_10));
+      const coffee = DATA.state.coffees.find(c => c.id === a.coffee_id);
       return coffee ? { coffee: coffee, start: start, end: end, ongoing: ongoing, n: cups.length, mean: notes.length ? average(notes) : null } : null;
     }).filter(Boolean).sort((a, b) => a.start - b.start).slice(-8);
   }
@@ -599,9 +599,9 @@
     }
     bags.forEach((b, i) => {
       const y = 10 + i * 18, a = x(b.start), w = Math.max(10, x(b.end) - a);
-      const label = brief(b.coffee.nom, 18) + (b.mean !== null ? " · " + fmtRating(b.mean) : "");
+      const label = brief(b.coffee.name, 18) + (b.mean !== null ? " · " + fmtRating(b.mean) : "");
       s += '<g class="dw-ribbon' + (b.ongoing ? " in-progress" : "") + '" data-sheet="' + escapeHtml(b.coffee.id) + '" tabindex="0" role="button" aria-label="' +
-        escapeHtml(I18N.t("drawing_ribbon_aria", { c: b.coffee.nom, n: b.n })) + '"><title>' + escapeHtml(b.coffee.nom) + "</title>" +
+        escapeHtml(I18N.t("drawing_ribbon_aria", { c: b.coffee.name, n: b.n })) + '"><title>' + escapeHtml(b.coffee.name) + "</title>" +
         '<rect x="' + a.toFixed(1) + '" y="' + y + '" width="' + w.toFixed(1) + '" height="13" rx="6.5" class="dw-ribbon-block" style="fill-opacity:' +
         (b.mean === null ? 0.18 : opacity(b.mean)) + '"></rect>' +
         '<text x="' + Math.min(a + 6, 250).toFixed(1) + '" y="' + (y + 10) + '" class="dw-ribbon-text">' + escapeHtml(label) + "</text></g>";
@@ -610,7 +610,7 @@
     if (el) el.setAttribute("viewBox", "0 0 320 " + (H + 18));
     const notes = bags.filter(b => b.mean !== null && b.n >= MIN).sort((a, b) => b.mean - a.mean);
     setDrawing(id, s, notes.length >= 2
-      ? I18N.t("drawing_ribbon_reading", { a: notes[0].coffee.nom, x: fmtRating(notes[0].mean), b: notes[notes.length - 1].coffee.nom, y: fmtRating(notes[notes.length - 1].mean) })
+      ? I18N.t("drawing_ribbon_reading", { a: notes[0].coffee.name, x: fmtRating(notes[0].mean), b: notes[notes.length - 1].coffee.name, y: fmtRating(notes[notes.length - 1].mean) })
       : I18N.t("drawing_ribbon_short"));
   }
 
@@ -633,25 +633,25 @@
     if (!e || !b) return;
     const host = ev.target.closest("dialog") || document.body;
     if (b.parentNode !== host) host.appendChild(b);
-    const coffee = DATA.state.cafes.find(c => c.id === e.cafe_id);
-    const d = new Date(e.date_heure);
+    const coffee = DATA.state.coffees.find(c => c.id === e.coffee_id);
+    const d = new Date(e.date_time);
     const when = isNaN(d) ? "" : d.toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" }) + ", " +
       d.toLocaleTimeString(I18N.locale(), { hour: "2-digit", minute: "2-digit" });
     // The bubble is named after its cup (v8.76), no longer a generic "Une tasse".
-    b.setAttribute("aria-label", I18N.t("bubble_aria", { q: when || e.date_heure }) + (coffee ? ", " + coffee.nom : ""));
-    const settings = [e.dose_g ? e.dose_g + " g" : "", e.eau_g ? e.eau_g + " g" : "", e.mouture_dial,
-      e.methode === "Switch" && e.temperature_c !== "" ? e.temperature_c + " °C" : "",
-      e.methode === "Brikka" && e.puissance_feu !== "" ? I18N.t("twins_heat", { f: e.puissance_feu }) : ""].filter(Boolean).join(" · ");
-    const tastes = String(e.descripteurs || "").split("|").filter(Boolean).slice(0, 4).map(t => escapeHtml(I18N.tag(t))).join(", ");
+    b.setAttribute("aria-label", I18N.t("bubble_aria", { q: when || e.date_time }) + (coffee ? ", " + coffee.name : ""));
+    const settings = [e.dose_g ? e.dose_g + " g" : "", e.water_g ? e.water_g + " g" : "", e.grind_dial,
+      e.method === "Switch" && e.temperature_c !== "" ? e.temperature_c + " °C" : "",
+      e.method === "Brikka" && e.heat_level !== "" ? I18N.t("twins_heat", { f: e.heat_level }) : ""].filter(Boolean).join(" · ");
+    const tastes = String(e.descriptors || "").split("|").filter(Boolean).slice(0, 4).map(t => escapeHtml(I18N.tag(t))).join(", ");
     b.innerHTML =
       '<div class="bt-head"><span class="bt-when">' + escapeHtml(when) + "</span>" +
-      '<button type="button" class="bt-close" data-bubble="fermer" aria-label="' + escapeHtml(I18N.t("bubble_close")) + '">×</button></div>' +
-      '<div class="bt-body"><div><b class="bt-coffee">' + escapeHtml(coffee ? coffee.nom : "") + "</b>" +
-      '<span><i class="dot-method ' + String(e.methode || "").toLowerCase() + '"></i>' + escapeHtml(I18N.tr(e.recette || "")) + "</span>" +
+      '<button type="button" class="bt-close" data-bubble="close" aria-label="' + escapeHtml(I18N.t("bubble_close")) + '">×</button></div>' +
+      '<div class="bt-body"><div><b class="bt-coffee">' + escapeHtml(coffee ? coffee.name : "") + "</b>" +
+      '<span><i class="dot-method ' + String(e.method || "").toLowerCase() + '"></i>' + escapeHtml(I18N.tr(e.recipe || "")) + "</span>" +
       "<span>" + escapeHtml(settings) + "</span>" + (tastes ? '<span class="bt-tastes">' + tastes + "</span>" : "") + "</div>" +
-      '<b class="bt-rating">' + (e.note_sur_10 === "" ? "·" : fmtRating(Number(e.note_sur_10))) + "</b></div>" +
-      '<div class="bt-actions"><button type="button" class="btn btn-small" data-bubble="modifier">' + escapeHtml(I18N.t("btn_edit")) + "</button>" +
-      '<button type="button" class="btn btn-small btn-primary" data-bubble="refaire">' + escapeHtml(I18N.t("bubble_redo")) + "</button></div>";
+      '<b class="bt-rating">' + (e.score_10 === "" ? "·" : fmtRating(Number(e.score_10))) + "</b></div>" +
+      '<div class="bt-actions"><button type="button" class="btn btn-small" data-bubble="edit">' + escapeHtml(I18N.t("btn_edit")) + "</button>" +
+      '<button type="button" class="btn btn-small btn-primary" data-bubble="redo">' + escapeHtml(I18N.t("bubble_redo")) + "</button></div>";
     b.hidden = false;
     bubbleId = id;
     // As close as possible to the tap, without leaving the screen.
@@ -665,10 +665,10 @@
     const ext = DATA.state.extractions.find(x => x.id === bubbleId);
     const action = a.dataset.bubble;
     closeBubble();
-    if (!ext || action === "fermer") return;
+    if (!ext || action === "close") return;
     const sheet = $("#modal-sheet");
     if (sheet && sheet.open) sheet.close();
-    if (action === "modifier") UI.loadExtractionIntoEntry(ext, false);
+    if (action === "edit") UI.loadExtractionIntoEntry(ext, false);
     else UI.redoCup(ext);
   }
   // Tapping a point, anywhere: caught before the drawings' shortcuts.
@@ -692,8 +692,8 @@
     for (let i = 29; i >= 0; i--) {
       const d = new Date(); d.setDate(d.getDate() - i);
       const key = UI.localDateKey(d);
-      days.push(exts.filter(e => String(e.date_heure).slice(0, 10) === key)
-        .sort((a, b) => String(a.date_heure).localeCompare(String(b.date_heure))));
+      days.push(exts.filter(e => String(e.date_time).slice(0, 10) === key)
+        .sort((a, b) => String(a.date_time).localeCompare(String(b.date_time))));
     }
     const counts = new Map();
     days.flat().forEach(e => { const c = DATA.coffeeOf(e); if (c) counts.set(c.id, (counts.get(c.id) || 0) + 1); });
@@ -704,9 +704,9 @@
     if (zone) {
       zone.hidden = !classes.length;
       zone.innerHTML = classes.slice(0, COFFEE_TINTS).map(([id, n], i) => {
-        const c = DATA.state.cafes.find(x => x.id === id) || {};
+        const c = DATA.state.coffees.find(x => x.id === id) || {};
         return '<button type="button" class="lc-coffee" data-sheet="' + escapeHtml(id) + '" title="' + escapeHtml(I18N.t("bubble_open_sheet")) + '">' +
-          '<i style="background:var(--coffee-' + (i + 1) + ')"></i>' + escapeHtml(c.nom || "") + "<small>" + n + "</small></button>";
+          '<i style="background:var(--coffee-' + (i + 1) + ')"></i>' + escapeHtml(c.name || "") + "<small>" + n + "</small></button>";
       }).join("") + (others > 0
         ? '<span class="lc-coffee lc-others"><i></i>' + escapeHtml(I18N.t("bubble_other_coffees")) + "<small>" + others + "</small></span>" : "");
     }
@@ -716,20 +716,20 @@
   // ---------- The dashboard ----------
 
   /* YOUR DRAWINGS, YOUR WAY (v8.57). The order and the hidden ones live in the
-     settings row (fallbacks.dessins, "etagere,!horloge,…"), so they follow from
+     settings row (fallbacks.drawings, "shelf,!clock,…"), so they follow from
      one device to another. A new drawing, absent from the saved choice, shows
      up visible at the end of the list. A hidden drawing is not computed. */
   const DRAWINGS = {
-    etagere: () => drawShelf("drawing-etagere"),
-    frise: () => drawTimeline("drawing-frise"),
+    shelf: () => drawShelf("drawing-shelf"),
+    ribbon: () => drawTimeline("drawing-ribbon"),
     podium: () => drawPodium("drawing-podium"),
-    progression: () => drawProgress("drawing-progression"),
-    horloge: () => drawClock("drawing-horloge"),
-    spectre: () => drawSpectrum("drawing-spectre"),
-    moulin: () => drawGrinder("drawing-moulin"),
+    progress: () => drawProgress("drawing-progress"),
+    clock: () => drawClock("drawing-clock"),
+    spectrum: () => drawSpectrum("drawing-spectrum"),
+    grinder: () => drawGrinder("drawing-grinder"),
   };
   function drawingOrder() {
-    const parsed = String(fallbacks.dessins || "").split(",").filter(Boolean)
+    const parsed = String(fallbacks.drawings || "").split(",").filter(Boolean)
       .map(x => ({ key: x.replace(/^!/, ""), visible: !x.startsWith("!") })).filter(x => DRAWINGS[x.key]);
     const seenKeys = new Set(parsed.map(x => x.key));
     return parsed.concat(Object.keys(DRAWINGS).filter(k => !seenKeys.has(k)).map(key => ({ key: key, visible: true })));
@@ -769,7 +769,7 @@
       '<button type="button" class="btn btn-small btn-primary" data-dp-done>' + escapeHtml(I18N.t("drawings_panel_done")) + "</button></div>";
   }
   async function saveOrder(order) {
-    fallbacks.dessins = order.map(o => (o.visible ? "" : "!") + o.key).join(",");
+    fallbacks.drawings = order.map(o => (o.visible ? "" : "!") + o.key).join(",");
     renderDrawings();
     await UI.saveFallbacks();
   }
@@ -790,7 +790,7 @@
       const i = order.findIndex(o => o.key === (b.dataset.dpUp || b.dataset.dpDown));
       if (b.dataset.dpUp && i > 0) { [order[i - 1], order[i]] = [order[i], order[i - 1]]; saveOrder(order); }
       else if (b.dataset.dpDown && i >= 0 && i < order.length - 1) { [order[i + 1], order[i]] = [order[i], order[i + 1]]; saveOrder(order); }
-      else if (b.hasAttribute("data-dp-origin")) { fallbacks.dessins = ""; renderDrawings(); UI.saveFallbacks(); }
+      else if (b.hasAttribute("data-dp-origin")) { fallbacks.drawings = ""; renderDrawings(); UI.saveFallbacks(); }
       else if (b.hasAttribute("data-dp-done")) togglePanel(false);
     });
     p.addEventListener("change", ev => {
@@ -804,14 +804,14 @@
   /* The shortcuts. A drawing sums up a page: tapping it leads there. A jar, for
      its part, carries data-sheet and opens its coffee's sheet (delegated to ui-coffee-sheet.js). */
   const SHORTCUTS = {
-    cafes: () => UI.openCoffeesModal(),
-    historique: () => activateScreen("historique"),
+    coffees: () => UI.openCoffeesModal(),
+    history: () => activateScreen("history"),
     guide: () => { activateScreen("guide"); UI.showGuide("ref-recipes"); },
     diagnostics: () => {
       const tab = $("#tab-diagnostics");
       if (tab) { tab.click(); tab.scrollIntoView({ behavior: "smooth", block: "start" }); }
     },
-    moulin: () => {
+    grinder: () => {
       activateScreen("guide");
       UI.showGuide("ref-grinder");
     },

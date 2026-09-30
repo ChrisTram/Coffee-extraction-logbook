@@ -13,7 +13,7 @@
 
   // ---------- History ----------
 
-  const sortState = { column: "date_heure", dir: -1 };
+  const sortState = { column: "date_time", dir: -1 };
 
   /* Strips diacritics so that "brule" finds "brûlé" and "cafe" finds
      "café". Without it a search in French is unusable from the keyboard. */
@@ -26,8 +26,8 @@
   function searchableText(e) {
     const coffee = DATA.coffeeOf(e);
     return withoutAccents([
-      e.commentaire, e.descripteurs, e.diagnostic, e.recette, e.methode,
-      coffee ? coffee.nom : "",
+      e.comment, e.descriptors, e.diagnostic, e.recipe, e.method,
+      coffee ? coffee.name : "",
     ].filter(Boolean).join(" ").toLowerCase());
   }
 
@@ -43,33 +43,33 @@
        "brûlé". normalize plus stripping the diacritics is the only correct
        way to do it in French without a lookup table. */
     const q = withoutAccents($("#h-search").value.trim().toLowerCase());
-    /* "" all, "ok" the successful ones, "ratee" the failed ones. The filter
+    /* "" all, "ok" the successful ones, "failed" the failed ones. The filter
        lives here and not in analyzableExts(): the history is the log, it shows
        everything by default, and it is Chris who asks to see only one side. */
     const fFailed = $("#h-failed").value;
     return exts.filter(e =>
-      (!fFailed || (fFailed === "ratee" ? isFailed(e) : !isFailed(e))) &&
+      (!fFailed || (fFailed === "failed" ? isFailed(e) : !isFailed(e))) &&
       (!q || searchableText(e).includes(q)) &&
-      (!fCoffee || e.cafe_id === fCoffee) &&
-      (!fMethod || e.methode === fMethod) &&
+      (!fCoffee || e.coffee_id === fCoffee) &&
+      (!fMethod || e.method === fMethod) &&
       (!fDiag || (e.diagnostic || "").split("|").includes(fDiag)) &&
-      (isNaN(fScore) || (e.note_sur_10 !== "" && e.note_sur_10 >= fScore)) &&
-      (!fFrom || e.date_heure.slice(0, 10) >= fFrom) &&
-      (!fTo || e.date_heure.slice(0, 10) <= fTo)
+      (isNaN(fScore) || (e.score_10 !== "" && e.score_10 >= fScore)) &&
+      (!fFrom || e.date_time.slice(0, 10) >= fFrom) &&
+      (!fTo || e.date_time.slice(0, 10) <= fTo)
     );
   }
 
   function sortValue(e, col) {
-    if (col === "cafe_nom") return e._c.cafe_nom;
+    if (col === "coffee_name") return e._c.coffee_name;
     /* Empty numeric columns must end up at the BOTTOM whatever the direction,
        hence -1 rather than "": an empty string would compare as text and
        rise to the top in ascending order. */
-    if (col === "dose_g" || col === "temps_total_s" || col === "temperature_c" || col === "puissance_feu") {
+    if (col === "dose_g" || col === "total_time_s" || col === "temperature_c" || col === "heat_level") {
       return e[col] === "" || e[col] === undefined ? -1 : Number(e[col]);
     }
     if (col === "ratio") return e._c.ratio === "" ? -1 : e._c.ratio;
-    if (col === "mouture") return e._c.clicks === "" ? -1 : e._c.clicks;
-    if (col === "note_sur_10") return e.note_sur_10 === "" ? -1 : e.note_sur_10;
+    if (col === "grind") return e._c.clicks === "" ? -1 : e._c.clicks;
+    if (col === "score_10") return e.score_10 === "" ? -1 : e.score_10;
     return e[col] === "" ? -1 : e[col];
   }
 
@@ -124,7 +124,7 @@
        screen's identity, the filter has its own banner just below. */
     const allExts = extsWithCalcs();
     const first = allExts.length
-      ? allExts.reduce((a, e) => (a && a.date_heure < e.date_heure ? a : e)).date_heure : "";
+      ? allExts.reduce((a, e) => (a && a.date_time < e.date_time ? a : e)).date_time : "";
     $("#h-highlight").textContent = allExts.length
       ? I18N.t("history_highlight", { n: allExts.length, s: allExts.length > 1 ? "s" : "",
           d: fmtShortDate(String(first).slice(0, 10)) })
@@ -145,9 +145,9 @@
     /* L3 (v8.93): BY BAG, the journal replaces the table and the cards. The
        filters, the summary and the count above stay the same. */
     UI.updateViews();
-    const byBag = UI.historyView() === "sachet" && list.length > 0;
+    const byBag = UI.historyView() === "bag" && list.length > 0;
     $("#h-journal").hidden = !byBag;
-    $("#screen-historique .table-container").hidden = byBag;
+    $("#screen-history .table-container").hidden = byBag;
     if (byBag) {
       $("#h-body").innerHTML = "";
       $("#h-cards").innerHTML = "";
@@ -215,8 +215,8 @@
     const target = $("#h-summary");
     if (!list.length) { target.innerHTML = ""; target.hidden = true; return; }
     target.hidden = false;
-    const rated = list.filter(e => e.note_sur_10 !== "" && !isFailed(e));
-    const best = rated.slice().sort((a, b) => b.note_sur_10 - a.note_sur_10)[0];
+    const rated = list.filter(e => e.score_10 !== "" && !isFailed(e));
+    const best = rated.slice().sort((a, b) => b.score_10 - a.score_10)[0];
     const failed = list.filter(isFailed).length;
     const block = (value, label, rating) =>
       '<div class="summary-item"><span class="summary-value">' + value + "</span>" +
@@ -224,11 +224,11 @@
       (rating ? '<span class="summary-rating">' + rating + "</span>" : "") + "</div>";
     target.innerHTML =
       block(list.length, I18N.t("history_summary_cups")) +
-      block(rated.length ? fmtDecimal(average(rated.map(e => e.note_sur_10)), 1) : I18N.t("history_summary_none"),
+      block(rated.length ? fmtDecimal(average(rated.map(e => e.score_10)), 1) : I18N.t("history_summary_none"),
         I18N.t("history_summary_average")) +
       (best
-        ? block(best.note_sur_10, I18N.t("history_summary_best"),
-            I18N.tr(best._c.cafe_nom) + " · " + best.methode)
+        ? block(best.score_10, I18N.t("history_summary_best"),
+            I18N.tr(best._c.coffee_name) + " · " + best.method)
         : block(I18N.t("history_summary_none"), I18N.t("history_summary_best"))) +
       block(failed, I18N.t("history_summary_botched"));
   }
@@ -244,7 +244,7 @@
      It carries the same data-id as its row: clicking it opens the same
      extraction, otherwise half the surface of a cup does not respond. */
   function historyComment(e) {
-    const c = String(e.commentaire || "").trim();
+    const c = String(e.comment || "").trim();
     if (!c) return "";
     return '<tr class="row-comment" data-id="' + e.id + '"><td colspan="10">' +
       titleAttr(c) + "</td></tr>";
@@ -254,7 +254,7 @@
      five: two views of the same object must say the same thing. */
   const MAX_HISTORY_TASTES = 3;
   function historyTastes(e) {
-    const tags = String(e.descripteurs || "").split("|").filter(Boolean);
+    const tags = String(e.descriptors || "").split("|").filter(Boolean);
     if (!tags.length) return "";
     const seen = tags.slice(0, MAX_HISTORY_TASTES).map(t => '<span class="last-tag">' + I18N.tag(t) + "</span>");
     const leftover = tags.length - seen.length;
@@ -280,24 +280,24 @@
     const item = (key, value) => value === "" || value === undefined || value === null
       ? "" : '<div class="detail-item"><span>' + I18N.t(key) + "</span><b>" + value + "</b></div>";
     const cells = [
-      item("detail_time", e.temps_total_s !== "" ? fmtDuration(e.temps_total_s) : ""),
-      item("detail_drawdown", e.temps_ecoulement_s !== "" ? fmtDuration(e.temps_ecoulement_s) : ""),
+      item("detail_time", e.total_time_s !== "" ? fmtDuration(e.total_time_s) : ""),
+      item("detail_drawdown", e.flow_time_s !== "" ? fmtDuration(e.flow_time_s) : ""),
       item("detail_temp", e.temperature_c !== "" && e.temperature_c !== undefined ? e.temperature_c + " °C" : ""),
-      item("detail_heat", e.methode === "Brikka" && e.puissance_feu !== "" && e.puissance_feu !== undefined
-        ? e.puissance_feu : ""),
-      item("detail_kettle", e.chauffe_s !== "" && e.chauffe_s !== undefined ? fmtDuration(e.chauffe_s) : ""),
-      item("detail_volume", e.volume_extrait_ml !== "" ? e.volume_extrait_ml + " ml" : ""),
-      item("detail_water_added", e.eau_ajoutee_ml !== "" ? e.eau_ajoutee_ml + " ml" : ""),
-      item("detail_milk", e.lait_ml !== "" ? e.lait_ml + " ml" : ""),
-      item("detail_stirring", e.agitation_nb !== "" ? e.agitation_nb : ""),
-      item("detail_cup", e.tasse),
-      item("detail_preheated", Number(e.eau_prechauffee) === 1 ? I18N.t("yes") : ""),
-      item("detail_drink", e._c.volume_boisson_ml !== "" ? e._c.volume_boisson_ml + " ml" : ""),
-      item("detail_cost", e._c.cout_tasse_vnd !== "" ? fmtVND(e._c.cout_tasse_vnd) : ""),
+      item("detail_heat", e.method === "Brikka" && e.heat_level !== "" && e.heat_level !== undefined
+        ? e.heat_level : ""),
+      item("detail_kettle", e.heating_s !== "" && e.heating_s !== undefined ? fmtDuration(e.heating_s) : ""),
+      item("detail_volume", e.yield_ml !== "" ? e.yield_ml + " ml" : ""),
+      item("detail_water_added", e.added_water_ml !== "" ? e.added_water_ml + " ml" : ""),
+      item("detail_milk", e.milk_ml !== "" ? e.milk_ml + " ml" : ""),
+      item("detail_stirring", e.stir_count !== "" ? e.stir_count : ""),
+      item("detail_cup", e.cup),
+      item("detail_preheated", Number(e.preheated_water) === 1 ? I18N.t("yes") : ""),
+      item("detail_drink", e._c.drink_ml !== "" ? e._c.drink_ml + " ml" : ""),
+      item("detail_cost", e._c.cup_cost_vnd !== "" ? fmtVND(e._c.cup_cost_vnd) : ""),
     ].filter(Boolean).join("");
-    const tags = (e.descripteurs || "").split("|").filter(Boolean)
+    const tags = (e.descriptors || "").split("|").filter(Boolean)
       .map(t => '<span class="detail-tag">' + I18N.tag(t) + "</span>").join("");
-    const comment = withoutComment ? "" : e.commentaire;
+    const comment = withoutComment ? "" : e.comment;
     return (cells ? '<div class="detail-grid">' + cells + "</div>" : "") +
       (tags ? '<div class="detail-tags">' + tags + "</div>" : "") +
       (comment ? '<p class="detail-comment">' + comment + "</p>" : "") +
@@ -318,26 +318,26 @@
   function historyRow(e) {
     const compare = comparison.has(e.id);
     return '<tr data-id="' + e.id + '" class="row-hist' + (compare ? " compared" : "") + '">' +
-      '<td><span class="td-date">' + twoToneDate(e.date_heure) + "</span></td>" +
-      '<td class="td-text">' + I18N.tr(e._c.cafe_nom) + "</td>" +
-      '<td><span class="chip-method ' + e.methode.toLowerCase() + '">' + e.methode + "</span></td>" +
-      '<td class="td-recipe">' + (e.recette || "") + "</td>" +
+      '<td><span class="td-date">' + twoToneDate(e.date_time) + "</span></td>" +
+      '<td class="td-text">' + I18N.tr(e._c.coffee_name) + "</td>" +
+      '<td><span class="chip-method ' + e.method.toLowerCase() + '">' + e.method + "</span></td>" +
+      '<td class="td-recipe">' + (e.recipe || "") + "</td>" +
       /* Dose and water together, as on the card of the last five: they are
          two halves of the same gesture, and splitting them into two columns
          would have cost width without teaching anything. */
-      '<td class="td-num">' + (e.dose_g !== "" && e.eau_g !== "" ? e.dose_g + " → " + e.eau_g + " <small>g</small>" : "") + "</td>" +
+      '<td class="td-num">' + (e.dose_g !== "" && e.water_g !== "" ? e.dose_g + " → " + e.water_g + " <small>g</small>" : "") + "</td>" +
       /* The complement (microns, ratio in the cup or in the drink) goes UNDER
          the value, small: on one line, "1.2.0 (499 µm)" was truncated to
          "1.2.0 (49…" in its column. */
-      '<td class="td-num">' + (e.mouture_dial ? e.mouture_dial + '<small class="sub">' + e._c.microns + " µm</small>"
+      '<td class="td-num">' + (e.grind_dial ? e.grind_dial + '<small class="sub">' + e._c.microns + " µm</small>"
         : e._c.ground ? "<small>" + I18N.t("bag_default") + "</small>" : "") + "</td>" +
-      '<td class="td-num" title="' + titleAttr(detailRatio(e._c.ratioBase, e.dose_g, e.eau_g)) + '">' +
-      e._c.ratioTexte +
+      '<td class="td-num" title="' + titleAttr(detailRatio(e._c.ratioBase, e.dose_g, e.water_g)) + '">' +
+      e._c.ratioText +
       (e._c.cupRatioText ? '<small class="sub">' + I18N.t("ratio_cup_short") + " " + e._c.cupRatioText + "</small>" : "") +
       (e._c.drinkRatio ? '<small class="sub">' + I18N.t("ratio_drink_short") + " " + e._c.drinkRatio + "</small>" : "") + "</td>" +
       '<td class="rating-cell">' + (isFailed(e)
         ? '<span class="badge-failed" title="' + titleAttr(I18N.t("botched_badge_title")) + '">' + I18N.t("botched_badge") + "</span>"
-        : "") + (e.note_sur_10 !== "" ? fmtDecimal(Number(e.note_sur_10), 1) : "") + "</td>" +
+        : "") + (e.score_10 !== "" ? fmtDecimal(Number(e.score_10), 1) : "") + "</td>" +
       /* TASTES AND DIAGNOSIS in the same cell, not in two columns: one more
          column asks for four coordinated edits (see DECISIONS, "The trap of
          frozen widths") and shifts silently if one of them is
@@ -361,8 +361,8 @@
       titleAttr(I18N.t("history_compare")) + '">' + icon("comparer") + "</button>" +
       /* The failed toggle, FIRST among the write actions: it is the one
          clicked most often after the fact, and its state shows without hover. */
-      '<button class="btn-row' + (isFailed(e) ? " on-failed" : "") + '" data-action="ratee" aria-pressed="' +
-      isFailed(e) + '" title="' + titleAttr(I18N.t(isFailed(e) ? "history_unmark_botched" : "history_mark_botched")) + '">' + icon("ratee") + "</button>" +
+      '<button class="btn-row' + (isFailed(e) ? " on-failed" : "") + '" data-action="failed" aria-pressed="' +
+      isFailed(e) + '" title="' + titleAttr(I18N.t(isFailed(e) ? "history_unmark_botched" : "history_mark_botched")) + '">' + icon("failed") + "</button>" +
       '<button class="btn-row" data-action="dupliquer" title="Dupliquer pour refaire la même">' + icon("dupliquer") + "</button>" +
       '<button class="btn-row" data-action="modifier" title="Modifier">' + icon("modifier") + "</button>" +
       '<button class="btn-row danger" data-action="supprimer" title="Supprimer">' + icon("supprimer") + "</button>" +
@@ -381,29 +381,29 @@
     const expanded = openDetails.has(e.id);
     const menu = expanded || openMenus.has(e.id);
     const meta = [];
-    if (e.recette) meta.push('<span class="h-card-recipe">' + I18N.tr(e.recette) + "</span>");
-    if (e.dose_g !== "" && e.eau_g !== "") meta.push(e.dose_g + " → " + e.eau_g + " g");
-    if (e._c.ratioTexte) meta.push(e._c.ratioTexte);
-    if (e.mouture_dial) meta.push(I18N.t("dial") + " " + e.mouture_dial);
+    if (e.recipe) meta.push('<span class="h-card-recipe">' + I18N.tr(e.recipe) + "</span>");
+    if (e.dose_g !== "" && e.water_g !== "") meta.push(e.dose_g + " → " + e.water_g + " g");
+    if (e._c.ratioText) meta.push(e._c.ratioText);
+    if (e.grind_dial) meta.push(I18N.t("dial") + " " + e.grind_dial);
     return '<article class="h-card' + (expanded ? " expanded" : "") + (menu ? " menu-ouvert" : "") +
       (comparison.has(e.id) ? " compared" : "") + (isFailed(e) ? " failed" : "") +
       '" data-id="' + e.id + '">' +
       '<div class="h-card-head">' +
-        '<span class="h-card-hour">' + fmtDateTime(e.date_heure) + "</span>" +
-        '<span class="chip-method ' + e.methode.toLowerCase() + '">' + e.methode + "</span>" +
-        '<span class="h-card-rating">' + (e.note_sur_10 !== "" ? fmtDecimal(Number(e.note_sur_10), 1) : "") + "</span>" +
+        '<span class="h-card-hour">' + fmtDateTime(e.date_time) + "</span>" +
+        '<span class="chip-method ' + e.method.toLowerCase() + '">' + e.method + "</span>" +
+        '<span class="h-card-rating">' + (e.score_10 !== "" ? fmtDecimal(Number(e.score_10), 1) : "") + "</span>" +
         '<button type="button" class="btn-menu-card" data-action="menu" aria-expanded="' + menu + '" aria-label="' +
           titleAttr(I18N.t("history_actions")) + '">⋯</button>' +
       "</div>" +
-      '<p class="h-card-coffee">' + I18N.tr(e._c.cafe_nom) +
+      '<p class="h-card-coffee">' + I18N.tr(e._c.coffee_name) +
         (isFailed(e) ? '<span class="mention-failed">' + I18N.t("botched_badge") + "</span>" : "") + "</p>" +
       (meta.length ? '<p class="h-card-meta">' + meta.join(" · ") + "</p>" : "") +
-      ((e.diagnostic || e.descripteurs)
+      ((e.diagnostic || e.descriptors)
         ? '<p class="h-card-tastes">' +
           (e.diagnostic ? '<span class="h-diag">' + displayedDiags(e.diagnostic) + "</span>" : "") +
           historyTastes(e) + "</p>"
         : "") +
-      (e.commentaire ? '<p class="h-card-comment">' + titleAttr(e.commentaire) + "</p>" : "") +
+      (e.comment ? '<p class="h-card-comment">' + titleAttr(e.comment) + "</p>" : "") +
       (!menu ? "" : '<div class="h-card-footer">' +
         /* In words and not as an arrow: the phone has no hover, the detail
            expands there, and the button says what it does. */
@@ -446,37 +446,37 @@
   // Rows of the comparison table. Each entry knows how to read its displayable value.
   function comparisonFields() {
     return [
-      { key: "detail_coffee", read: e => I18N.tr(e._c.cafe_nom) },
-      { key: "detail_method", read: e => e.methode },
-      { key: "detail_recipe", read: e => e.recette },
+      { key: "detail_coffee", read: e => I18N.tr(e._c.coffee_name) },
+      { key: "detail_method", read: e => e.method },
+      { key: "detail_recipe", read: e => e.recipe },
       { key: "detail_dose", read: e => e.dose_g !== "" ? e.dose_g + " g" : "" },
-      { key: "detail_water", read: e => e.eau_g !== "" ? e.eau_g + " g" : "" },
-      { key: "detail_ratio", read: e => e._c.ratioTexte },
-      { key: "detail_days_open", read: e => e._c.jours_ouvert === "" ? "" : e._c.jours_ouvert },
-      { key: "detail_grind", read: e => e.mouture_dial || (e._c.ground ? I18N.t("bag_default") : "") },
+      { key: "detail_water", read: e => e.water_g !== "" ? e.water_g + " g" : "" },
+      { key: "detail_ratio", read: e => e._c.ratioText },
+      { key: "detail_days_open", read: e => e._c.days_open === "" ? "" : e._c.days_open },
+      { key: "detail_grind", read: e => e.grind_dial || (e._c.ground ? I18N.t("bag_default") : "") },
       { key: "detail_temp", read: e => e.temperature_c !== "" ? e.temperature_c + " °C" : "" },
-      { key: "detail_heat_power", read: e => e.puissance_feu !== "" ? e.puissance_feu + " / 10" : "" },
-      { key: "detail_preheated", read: e => Number(e.eau_prechauffee) === 1 ? I18N.t("yes") : I18N.t("no") },
-      { key: "detail_total", read: e => e.temps_total_s !== "" ? fmtDuration(e.temps_total_s) : "" },
-      { key: "detail_drawdown", read: e => e.temps_ecoulement_s !== "" ? fmtDuration(e.temps_ecoulement_s) : "" },
-      { key: "detail_volume", read: e => e.volume_extrait_ml !== "" ? e.volume_extrait_ml + " ml" : "" },
-      { key: "detail_cup", read: e => e.tasse },
-      { key: "detail_score", read: e => e.note_sur_10 !== "" ? fmtDecimal(Number(e.note_sur_10), 1) + " / 10" : "" },
+      { key: "detail_heat_power", read: e => e.heat_level !== "" ? e.heat_level + " / 10" : "" },
+      { key: "detail_preheated", read: e => Number(e.preheated_water) === 1 ? I18N.t("yes") : I18N.t("no") },
+      { key: "detail_total", read: e => e.total_time_s !== "" ? fmtDuration(e.total_time_s) : "" },
+      { key: "detail_drawdown", read: e => e.flow_time_s !== "" ? fmtDuration(e.flow_time_s) : "" },
+      { key: "detail_volume", read: e => e.yield_ml !== "" ? e.yield_ml + " ml" : "" },
+      { key: "detail_cup", read: e => e.cup },
+      { key: "detail_score", read: e => e.score_10 !== "" ? fmtDecimal(Number(e.score_10), 1) + " / 10" : "" },
       { key: "detail_diagnosis", read: e => e.diagnostic ? displayedDiags(e.diagnostic) : "" },
-      { key: "detail_descriptors", read: e => (e.descripteurs || "").split("|").filter(Boolean).map(t => I18N.tag(t)).join(", ") },
-      { key: "detail_comment", read: e => e.commentaire },
+      { key: "detail_descriptors", read: e => (e.descriptors || "").split("|").filter(Boolean).map(t => I18N.tag(t)).join(", ") },
+      { key: "detail_comment", read: e => e.comment },
     ];
   }
 
   function openComparison() {
     const ids = [...comparison];
     const exts = extsWithCalcs().filter(e => ids.includes(e.id))
-      .sort((x, y) => String(x.date_heure).localeCompare(String(y.date_heure)));
+      .sort((x, y) => String(x.date_time).localeCompare(String(y.date_time)));
     if (exts.length !== 2) return;
     const [a, b] = exts;
 
-    $("#comparison-titles").innerHTML = "<th></th><th>" + fmtDateTime(a.date_heure) +
-      "</th><th>" + fmtDateTime(b.date_heure) + "</th>";
+    $("#comparison-titles").innerHTML = "<th></th><th>" + fmtDateTime(a.date_time) +
+      "</th><th>" + fmtDateTime(b.date_time) + "</th>";
     $("#comparison-body").innerHTML = comparisonFields().map(c => {
       const va = String(c.read(a) || ""), vb = String(c.read(b) || "");
       if (!va && !vb) return "";
@@ -487,8 +487,8 @@
         "<td>" + va + "</td><td>" + vb + "</td></tr>";
     }).join("");
 
-    const gap = a.note_sur_10 !== "" && b.note_sur_10 !== ""
-      ? I18N.t("compare_gap", { x: fmtDecimal(Math.abs(a.note_sur_10 - b.note_sur_10), 1) })
+    const gap = a.score_10 !== "" && b.score_10 !== ""
+      ? I18N.t("compare_gap", { x: fmtDecimal(Math.abs(a.score_10 - b.score_10), 1) })
       : I18N.t("compare_no_score");
     $("#comparison-summary").textContent = gap;
     $("#modal-comparison").showModal();
@@ -503,15 +503,15 @@
 
   function tuningCard(summary) {
     const c = summary.coffee;
-    const header = '<div class="setting-header"><b>' + c.nom + "</b>" +
-      (c.actif === 0 ? ' <span class="coffee-meta">' + I18N.t("list_inactive") + "</span>" : "") +
+    const header = '<div class="setting-header"><b>' + c.name + "</b>" +
+      (c.active === 0 ? ' <span class="coffee-meta">' + I18N.t("list_inactive") + "</span>" : "") +
       (summary.average !== null
         ? '<span class="setting-average">' + I18N.t("setting_average", { m: fmtDecimal(summary.average, 1), n: summary.total }) + "</span>"
         : "") + "</div>";
 
-    if (summary.reason === "sous_moyenne") {
+    if (summary.reason === "below_average") {
       const t = summary.bestCup;
-      return '<article class="card setting' + (c.actif === 0 ? " inactive" : "") + '">' + header +
+      return '<article class="card setting' + (c.active === 0 ? " inactive" : "") + '">' + header +
         '<p class="card-empty">' + I18N.t("setting_below_average", {
           s: TUNING.MIN_CUPS, score: fmtDecimal(t.note, 1), k: t.times, n: summary.missing,
         }) + "</p>" +
@@ -520,8 +520,8 @@
     }
     if (!summary.best) {
       const key = summary.reason === "aucune" ? "setting_none"
-        : summary.reason === "pas_assez" ? "setting_not_enough" : "setting_scattered";
-      return '<article class="card setting' + (c.actif === 0 ? " inactive" : "") + '">' + header +
+        : summary.reason === "not_enough" ? "setting_not_enough" : "setting_scattered";
+      return '<article class="card setting' + (c.active === 0 ? " inactive" : "") + '">' + header +
         '<p class="card-empty">' + I18N.t(key, { n: summary.missing, s: TUNING.MIN_CUPS }) + "</p>" +
         '<div class="setting-actions">' + sheetButton(c) + "</div></article>";
     }
@@ -531,14 +531,14 @@
     // what says whether the setting is really worth it or everything is equal.
     const gap = m.average - summary.average;
     const chips = [
-      m.recette ? '<span class="setting-chip">' + I18N.tr(m.recette) + "</span>" : "",
+      m.recipe ? '<span class="setting-chip">' + I18N.tr(m.recipe) + "</span>" : "",
       m.grind ? '<span class="setting-chip">' + I18N.t("dial") + " " + m.grind + "</span>"
         : '<span class="setting-chip">' + I18N.t("bag_default") + "</span>",
       m.power ? '<span class="setting-chip">' + I18N.t("setting_heat", { f: m.power }) + "</span>" : "",
       m.preheat ? '<span class="setting-chip">' + I18N.t("detail_preheated") + "</span>" : "",
     ].filter(Boolean).join("");
 
-    return '<article class="card setting' + (c.actif === 0 ? " inactive" : "") + '">' + header +
+    return '<article class="card setting' + (c.active === 0 ? " inactive" : "") + '">' + header +
       '<div class="setting-rating"><b>' + fmtDecimal(m.average, 1) + "</b><small> / 10</small>" +
       '<span>' + I18N.t("setting_over", { n: m.n }) +
       (Math.abs(gap) >= 0.2 ? ", " + I18N.t(gap > 0 ? "setting_better" : "setting_worse",
@@ -552,7 +552,7 @@
     /* Advice, so the analysable set: a failed cup describes a missed gesture
        and would get a correct setting condemned. */
     const exts = analyzableExts();
-    const summaries = TUNING.forAllCoffees(DATA.state.cafes, exts);
+    const summaries = TUNING.forAllCoffees(DATA.state.coffees, exts);
     $("#tuning-list").innerHTML = summaries.length
       ? summaries.map(tuningCard).join("")
       : '<p class="card-empty">' + I18N.t("setting_no_coffee") + "</p>";
@@ -568,7 +568,7 @@
     const selCoffee = $("#h-coffee");
     const v = selCoffee.value;
     selCoffee.innerHTML = '<option value="">' + I18N.t("all") + "</option>" +
-      DATA.state.cafes.map(c => '<option value="' + TOOLS.escapeHtml(c.id) + '">' + TOOLS.escapeHtml(c.nom) + "</option>").join("");
+      DATA.state.coffees.map(c => '<option value="' + TOOLS.escapeHtml(c.id) + '">' + TOOLS.escapeHtml(c.name) + "</option>").join("");
     selCoffee.value = v;
     const selDiag = $("#h-diagnostic");
     const vd = selDiag.value;
@@ -651,7 +651,7 @@
   function openHistoryOn(values) {
     FILTERS.forEach(id => { $("#" + id).value = ""; });
     Object.entries(values).forEach(([id, v]) => { $("#" + id).value = v; });
-    UI.activateScreen("historique");
+    UI.activateScreen("history");
     renderHistory();
   }
 
@@ -663,7 +663,7 @@
     });
     // A3: the filter panel folds on the phone, the active ones stay as pills.
     $("#h-filter").addEventListener("click", () => {
-      const expanded = $("#screen-historique").classList.toggle("filters-open");
+      const expanded = $("#screen-history").classList.toggle("filters-open");
       $("#h-filter").setAttribute("aria-expanded", String(expanded));
     });
     $("#h-actives").addEventListener("click", ev => {
@@ -723,12 +723,12 @@
         renderHistory();
       } else if (btn.dataset.action === "comparer") {
         toggleComparison(id);
-      } else if (btn.dataset.action === "ratee") {
+      } else if (btn.dataset.action === "failed") {
         /* One click writes. No confirmation: the gesture is reversible from
            the same button, and asking to confirm a toggle would be heavier
            than the toggle itself. */
-        await DATA.editExtraction(id, { ...ext, ratee: Number(ext.ratee) === 1 ? "" : 1 });
-        toast(I18N.t(Number(ext.ratee) === 1 ? "toast_unbotched" : "toast_botched"));
+        await DATA.editExtraction(id, { ...ext, failed: Number(ext.failed) === 1 ? "" : 1 });
+        toast(I18N.t(Number(ext.failed) === 1 ? "toast_unbotched" : "toast_botched"));
       }
     };
     [$("#h-body"), $("#h-cards"), $("#h-journal")].forEach(z => z.addEventListener("click", onHistoryClick));

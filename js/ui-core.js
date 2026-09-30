@@ -78,7 +78,7 @@ const UI = (() => {
   /* Delays a call until the keystrokes stop. One function per use, not a
      shared queue: two different fields must not cancel each other. */
   /* Signature of a table: enough to know whether it moved, without comparing
-     it row by row. maj_le moves on every mutation (see estampiller in
+     it row by row. updated_at moves on every mutation (see estampiller in
      data.js), the length covers deletions. */
   /* Lookup cache for the STATIC elements of index.html. Only use it on nodes
      that are never replaced ("jamais remplacés", a phrase the tests look for):
@@ -105,7 +105,7 @@ const UI = (() => {
 
   function signatureTable(table) {
     let max = 0;
-    for (const x of table) if (x.maj_le > max) max = x.maj_le;
+    for (const x of table) if (x.updated_at > max) max = x.updated_at;
     return table.length + ":" + max;
   }
 
@@ -370,7 +370,7 @@ const UI = (() => {
     chevron: '<path d="m9 6 6 6-6 6"/>',
     gauche: '<path d="m15 6-6 6 6 6"/>',
     comparer: '<path d="M4 8h13"/><path d="m14 5 3 3-3 3"/><path d="M20 16H7"/><path d="m10 13-3 3 3 3"/>',
-    ratee: '<path d="M12 4 3 19h18z"/><path d="M12 10v4"/><path d="M12 17h.01"/>',
+    failed: '<path d="M12 4 3 19h18z"/><path d="M12 10v4"/><path d="M12 17h.01"/>',
     dupliquer: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
     modifier: '<path d="M12 20h8"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
     supprimer: '<path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/>',
@@ -405,7 +405,7 @@ const UI = (() => {
       year: d.getFullYear() === todayDate.getFullYear() ? undefined : "numeric" });
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
-  // The day key of a date_heure, for grouping: "2026-09-26".
+  // The day key of a date_time, for grouping: "2026-09-26".
   const dayKey = dh => String(dh).slice(0, 10);
   function fmtHour(dh) {
     const d = new Date(dh);
@@ -439,10 +439,10 @@ const UI = (() => {
   }
 
   // Live recipes (editable, stored with the data).
-  function liveRecipes() { return DATA.state.recettes.filter(r => r.actif !== 0); }
-  function recipesForMethod(m) { return liveRecipes().filter(r => r.methode === m); }
-  function findRecipe(nameKey) { return DATA.state.recettes.find(r => r.nom === nameKey); }
-  function recipeWithVariants() { return liveRecipes().find(r => r.variantes); }
+  function liveRecipes() { return DATA.state.recipes.filter(r => r.active !== 0); }
+  function recipesForMethod(m) { return liveRecipes().filter(r => r.method === m); }
+  function findRecipe(nameKey) { return DATA.state.recipes.find(r => r.name === nameKey); }
+  function recipeWithVariants() { return liveRecipes().find(r => r.has_variants); }
 
   // title attribute: the full value of a truncated cell, on hover.
   // Double quotes would break the attribute, so they are neutralised.
@@ -457,16 +457,16 @@ const UI = (() => {
   }
 
   function detailRatio(base, dose, water) {
-    if (base === "chaudiere") return I18N.t("ratio_boiler", { d: dose, e: water });
+    if (base === "boiler") return I18N.t("ratio_boiler", { d: dose, e: water });
     if (base === "infusion") return I18N.t("ratio_brew", { d: dose, e: water });
     return "";
   }
 
   /* True when the cup was marked failed. An empty column means "not said",
      so not failed: that is the case of everything before the flag. */
-  function isFailed(e) { return Number(e.ratee) === 1; }
+  function isFailed(e) { return Number(e.failed) === 1; }
 
-  const INCLUDE_FAILED_KEY = "inclure-ratees";
+  const INCLUDE_FAILED_KEY = "include-failed";
   /* A READING preference, so local like the theme and the beeps: it changes
      what the figures tell, not the data. Nothing to sync. */
   function includeFailed() {
@@ -505,7 +505,7 @@ const UI = (() => {
   const memoPerCup = new WeakMap();
   function extsWithCalcs() {
     const s = DATA.state;
-    const key = [DATA.dataRevision ? DATA.dataRevision() : 0, s.cafes, s.cafes.length, s.achats, s.achats.length];
+    const key = [DATA.dataRevision ? DATA.dataRevision() : 0, s.coffees, s.coffees.length, s.purchases, s.purchases.length];
     if (!globalMemo || key.some((v, i) => v !== globalMemo[i])) { globalMemo = key; memoVersion++; }
     return s.extractions.map(e => {
       const sig = JSON.stringify(e);
@@ -536,7 +536,7 @@ const UI = (() => {
      reporting a real gap. */
   const FACTORY_DIAL = "1.5.0";
 
-  /* Read VIEW on the `reglages` table, which syncs. These three values
+  /* Read VIEW on the `settings` table, which syncs. These three values
      describe Chris's EQUIPMENT: his grinder dial is the same seen from the
      phone and from the computer. They lived in localStorage, so his phone
      ignored what he set on the computer, and he could not see it since these
@@ -547,7 +547,7 @@ const UI = (() => {
 
      `replis` stays a plain object because it is read everywhere in the
      rendering code; it is just refreshed from DATA on every notification. */
-  const FALLBACKS_KEY = "replis-saisie";
+  const FALLBACKS_KEY = "entry-fallbacks";
   /* Kettle boiling time, in seconds, from tap water.
      ZERO as long as Chris has not timed it: without a measure, no estimate,
      the entry help asks to do it once. */
@@ -562,14 +562,14 @@ const UI = (() => {
   function loadFallbacks() {
     const r = DATA.currentSettings();
     fallbacks.dose = r.dose_g;
-    fallbacks.fire = r.puissance_feu;
-    fallbacks.dial = r.mouture_dial;
-    fallbacks.boil = r.ebullition_s;
-    fallbacks.bubbles = r.bulles_s;
+    fallbacks.fire = r.heat_level;
+    fallbacks.dial = r.grind_dial;
+    fallbacks.boil = r.boil_s;
+    fallbacks.bubbles = r.bubbles_s;
     // The steps of the numeric correction (v8.48), as is: the row's columns.
-    fallbacks.dessins = r.dessins || "";
-    fallbacks.stepSizes = { pas_crans: r.pas_crans, pas_degres: r.pas_degres, pas_feu: r.pas_feu,
-      pas_eau_g: r.pas_eau_g, pas_dose_g: r.pas_dose_g };
+    fallbacks.drawings = r.drawings || "";
+    fallbacks.stepSizes = { step_clicks: r.step_clicks, step_degrees: r.step_degrees, step_heat: r.step_heat,
+      step_water_g: r.step_water_g, step_dose_g: r.step_dose_g };
   }
 
   /* One-time takeover of the settings set before the sync. Without it, Chris
@@ -579,15 +579,16 @@ const UI = (() => {
   async function migrateLocalFallbacks() {
     let raw = null;
     try {
-      if (localStorage.getItem("replis-repris")) return;
+      if (localStorage.getItem("fallbacks-migrated")) return;
+      // The keys of this old object (dose, feu, molette) are read as they were written.
       raw = JSON.parse(localStorage.getItem(FALLBACKS_KEY) || "null");
-      localStorage.setItem("replis-repris", "1");
+      localStorage.setItem("fallbacks-migrated", "1");
     } catch (e) { return; }
-    if (!raw || DATA.state.reglages.length) return;
+    if (!raw || DATA.state.settings.length) return;
     await DATA.updateSettings({
       dose_g: raw.dose,
-      puissance_feu: raw.feu,
-      mouture_dial: raw.molette,
+      heat_level: raw.feu,
+      grind_dial: raw.molette,
     });
     loadFallbacks();
   }
@@ -595,12 +596,12 @@ const UI = (() => {
   async function saveFallbacks() {
     await DATA.updateSettings({
       dose_g: fallbacks.dose,
-      puissance_feu: fallbacks.fire,
-      mouture_dial: fallbacks.dial,
-      ebullition_s: fallbacks.boil,
-      bulles_s: fallbacks.bubbles,
+      heat_level: fallbacks.fire,
+      grind_dial: fallbacks.dial,
+      boil_s: fallbacks.boil,
+      bubbles_s: fallbacks.bubbles,
       ...(fallbacks.stepSizes || {}),
-      dessins: fallbacks.dessins || "",
+      drawings: fallbacks.drawings || "",
     });
   }
 
@@ -608,21 +609,21 @@ const UI = (() => {
 
   /* The two dark palettes (v8.34): data-theme gives the family, data-palette
      the palette. The status bar colour follows the palette. */
-  const TINTS = { clair: "#f4ede3", graphite: "#111113", nuit: "#0b1017" };
+  const TINTS = { light: "#f4ede3", graphite: "#111113", night: "#0b1017" };
   function applyTheme(theme, palette) {
     document.documentElement.setAttribute("data-theme", theme);
     if (palette) document.documentElement.setAttribute("data-palette", palette);
     try {
       localStorage.setItem("theme", theme);
-      if (palette) localStorage.setItem("sombre", palette);
+      if (palette) localStorage.setItem("palette", palette);
     } catch (e) { /* unavailable, too bad */ }
     /* The status bar of the installed PWA follows the theme. The two tags of
        the <head> only know the system preference, and the browser keeps the
        one whose media matches: so we write the chosen colour into BOTH,
        otherwise the one it keeps would contradict the choice. */
-    const tint = theme === "sombre"
+    const tint = theme === "dark"
       ? TINTS[document.documentElement.getAttribute("data-palette")] || TINTS.graphite
-      : TINTS.clair;
+      : TINTS.light;
     document.querySelectorAll('meta[name="theme-color"]')
       .forEach(m => m.setAttribute("content", tint));
     if (typeof Chart !== "undefined") {
@@ -637,20 +638,20 @@ const UI = (() => {
 
   // ---------- Navigation ----------
 
-  const SCREEN_NAMES = ["tableau", "saisie", "historique", "reglages", "guide", "parametres"];
+  const SCREEN_NAMES = ["dashboard", "entry", "history", "tuning", "guide", "settings"];
 
-  /* Old screen names still present in a bookmark or a PWA shortcut.
-     "reference" merged into "guide": the reference and the buying guide
-     talked about the same equipment and were read one after the other. */
-  const RENAMED_SCREENS = { reference: "guide" };
+  /* Old screen names still present in a bookmark or a PWA shortcut: the
+     French hashes of before v9.06 (#tableau, #saisie...) and "reference",
+     merged into "guide". The table lives in js/legacy-names.js (ROUTES). */
+  const RENAMED_SCREENS = LEGACY.ROUTES;
   function normalizeScreen(nameKey) {
-    return RENAMED_SCREENS[nameKey] || nameKey;
+    return LEGACY.route(nameKey);
   }
   /* Navigation state, in a single object mutated in place rather than in
      separate variables. The shape matters: several files read and write it,
      and a shared object reads up to date everywhere, where a borrowed
      variable would be frozen on its value at load time. */
-  const nav = { screenName: "tableau" };
+  const nav = { screenName: "dashboard" };
 
   /* Wraps a screen change in a view transition when the engine can do it.
      Otherwise we call directly: the fallback is the previous behaviour, not
@@ -690,7 +691,7 @@ const UI = (() => {
        progress, and we SAY so: without the message, the abandonment would be
        as silent as the bug it fixes. Nothing is lost in storage, the modified
        extraction had not been saved and can still be opened from the history. */
-    if (nameKey === "saisie" && UI.entry.editId && !forEditing) {
+    if (nameKey === "entry" && UI.entry.editId && !forEditing) {
       UI.resetEntry();
       toast(I18N.t("toast_edit_dropped"));
     }
@@ -698,7 +699,7 @@ const UI = (() => {
        not in renderCurrentScreen: that one replays on every data
        notification, and the date would jump while filling in the form. On
        arrival, once, is what we want. */
-    if (nameKey === "saisie" && !UI.entry.editId) UI.refreshEntryDate();
+    if (nameKey === "entry" && !UI.entry.editId) UI.refreshEntryDate();
     nav.screenName = nameKey;
     // Only the VISUAL switch goes into the transition. The edit abandonment
     // above is business logic: it happens in every case.
@@ -720,10 +721,10 @@ const UI = (() => {
   }
 
   function renderCurrentScreen(force) {
-    if (nav.screenName === "tableau") { UI.renderDashboard(); UI.renderDrawings(); }
-    else if (nav.screenName === "reglages") UI.renderTuning();
-    else if (nav.screenName === "historique") UI.renderHistory();
-    else if (nav.screenName === "parametres") UI.renderParameters();
+    if (nav.screenName === "dashboard") { UI.renderDashboard(); UI.renderDrawings(); }
+    else if (nav.screenName === "tuning") UI.renderTuning();
+    else if (nav.screenName === "history") UI.renderHistory();
+    else if (nav.screenName === "settings") UI.renderParameters();
     else if (nav.screenName === "guide" && force) UI.renderConverter();
   }
 

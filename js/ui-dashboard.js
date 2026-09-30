@@ -88,7 +88,7 @@
     const coveredDays = firstActive === -1 ? 0 : days.length - firstActive;
     const perWeek = coveredDays > 0 ? cups / (coveredDays / 7) : 0;
 
-    return { tasses: cups, activeDays: activeDays, currentStreak: currentStreak, bestStreak: bestStreak, perWeek: perWeek };
+    return { cups: cups, activeDays: activeDays, currentStreak: currentStreak, bestStreak: bestStreak, perWeek: perWeek };
   }
 
   /* THE SCALE LEGEND. The calendar shades follow an ABSOLUTE scale, so a
@@ -107,13 +107,13 @@
   function renderHeatmapStats(perDay, weeks) {
     const windowWeeks = weeks || HEATMAP_WEEKS;
     const s = statsHeatmap(perDay, windowWeeks);
-    if (!s.tasses) {
+    if (!s.cups) {
       $("#heatmap-stats").innerHTML =
         '<p class="card-empty">' + I18N.t("heatmap_summary_empty", { s: windowWeeks }) + "</p>";
       return;
     }
     const cells = [
-      { v: s.tasses, l: I18N.t("heatmap_stat_cups") },
+      { v: s.cups, l: I18N.t("heatmap_stat_cups") },
       { v: s.activeDays, l: I18N.t("heatmap_stat_days") },
       { v: s.currentStreak, l: I18N.t("heatmap_stat_streak_now") },
       { v: s.bestStreak, l: I18N.t("heatmap_stat_streak_max") },
@@ -142,14 +142,14 @@
     // deliberately not stored, so the scatter cannot show anything.
     const allPreGround = rated.every(e => {
       const c = DATA.coffeeOf(e);
-      return c && Number(c.deja_moulu) === 1;
+      return c && Number(c.pre_ground) === 1;
     });
     return allPreGround ? "empty_grind_preground" : "empty_grind";
   }
 
   function emptyTastesCause(rated) {
     if (!rated.length) return "empty_nothing";
-    const withTags = rated.filter(e => (e.descripteurs || "").trim() !== "").length;
+    const withTags = rated.filter(e => (e.descriptors || "").trim() !== "").length;
     // Tell "you never tick descriptors" apart from "not enough times the
     // same one yet", because the action to take is not the same.
     return withTags === 0 ? "empty_tastes_none" : "empty_tastes_threshold";
@@ -171,8 +171,8 @@
   function renderTastes(rated) {
     const byTag = {};
     rated.forEach(e => {
-      (e.descripteurs || "").split("|").filter(Boolean).forEach(tag => {
-        (byTag[tag] = byTag[tag] || []).push(e.note_sur_10);
+      (e.descriptors || "").split("|").filter(Boolean).forEach(tag => {
+        (byTag[tag] = byTag[tag] || []).push(e.score_10);
       });
     });
 
@@ -191,7 +191,7 @@
       ? [...ranked.slice(0, TOP_TASTES), ...ranked.slice(-WORST_TASTES)]
       : ranked;
 
-    const overallAvg = average(rated.map(e => e.note_sur_10));
+    const overallAvg = average(rated.map(e => e.score_10));
     const items = kept.map(c => ({
       label: I18N.tag(c.tag),
       value: +c.mean.toFixed(1),
@@ -247,8 +247,8 @@
     let best = null;
     ["Brikka", "Switch"].forEach(m => {
       const byDial = {};
-      analyzable.filter(e => e.methode === m && e.note_sur_10 !== "" && e.mouture_dial)
-        .forEach(e => (byDial[e.mouture_dial] = byDial[e.mouture_dial] || []).push(e.note_sur_10));
+      analyzable.filter(e => e.method === m && e.score_10 !== "" && e.grind_dial)
+        .forEach(e => (byDial[e.grind_dial] = byDial[e.grind_dial] || []).push(e.score_10));
       Object.entries(byDial).filter(([, ns]) => ns.length >= MIN_SAMPLE).forEach(([dial, ns]) => {
         const avg = average(ns);
         if (!best || avg > best.mean) best = { m, dial, mean: avg, n: ns.length };
@@ -273,10 +273,10 @@
      the question you were asking. The panels are never display: none (see
      .analyses-stack): they are inert and invisible, so that each chart keeps
      its size. */
-  const TAB_KEY = "analyse-onglet";
+  const TAB_KEY = "analysis-tab";
   function showAnalysis(name, focus) {
     const buttons = $$(".tabs-analyses [role=tab]");
-    if (!buttons.some(b => b.dataset.analysis === name)) name = "cafes";
+    if (!buttons.some(b => b.dataset.analysis === name)) name = "coffees";
     buttons.forEach(b => {
       const active = b.dataset.analysis === name;
       b.setAttribute("aria-selected", String(active));
@@ -292,7 +292,7 @@
 
   function emptyDuelCause(rated) {
     if (!rated.length) return "empty_nothing";
-    const machines = new Set(rated.map(e => e.methode).filter(Boolean));
+    const machines = new Set(rated.map(e => e.method).filter(Boolean));
     // A single brewer used: there is nothing to compare, it is not a bug.
     return machines.size < 2 ? "empty_duel_one_machine" : "empty_duel";
   }
@@ -320,15 +320,15 @@
     const currentMonth = today.slice(0, 7);
     const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
 
-    const ratings = analyzable.filter(e => e.note_sur_10 !== "").map(e => e.note_sur_10);
-    const ratings7d = analyzable.filter(e => e.note_sur_10 !== "" && new Date(e.date_heure) >= weekAgo).map(e => e.note_sur_10);
+    const ratings = analyzable.filter(e => e.score_10 !== "").map(e => e.score_10);
+    const ratings7d = analyzable.filter(e => e.score_10 !== "" && new Date(e.date_time) >= weekAgo).map(e => e.score_10);
 
     // Estimated caffeine per day over the last 7 days.
     const caffeineOf = e => {
       const coffee = DATA.coffeeOf(e);
-      return caffeineMg(e.dose_g || 0, coffee ? coffee.espece : "", coffee ? coffee.pourcentage_cafe_reel : 100);
+      return caffeineMg(e.dose_g || 0, coffee ? coffee.species : "", coffee ? coffee.real_coffee_pct : 100);
     };
-    const caffeine7d = exts.filter(e => new Date(e.date_heure) >= weekAgo).reduce((a, e) => a + caffeineOf(e), 0);
+    const caffeine7d = exts.filter(e => new Date(e.date_time) >= weekAgo).reduce((a, e) => a + caffeineOf(e), 0);
 
     /* FOUR tiles, not seven. Seven aligned figures get COUNTED instead of
        read: you hunt for the one you wanted. The four that remain are those
@@ -336,8 +336,8 @@
        rating and caffeine, have not gone: they move to a line under the grid,
        where they can be read when looked for without taking the glance. */
     const kpis = [
-      { value: exts.filter(e => e.date_heure.slice(0, 10) === today).length, label: I18N.t("kpi_today"), dec: 0 },
-      { value: exts.filter(e => e.date_heure.slice(0, 10) >= mondayKey).length, label: I18N.t("kpi_week"), dec: 0 },
+      { value: exts.filter(e => e.date_time.slice(0, 10) === today).length, label: I18N.t("kpi_today"), dec: 0 },
+      { value: exts.filter(e => e.date_time.slice(0, 10) >= mondayKey).length, label: I18N.t("kpi_week"), dec: 0 },
       { value: average(ratings7d) || 0, label: I18N.t("kpi_score_7d"), dec: 1, outOf10: true },
       { value: TUNING.gapAtSameCoffee(analyzable) || 0, label: I18N.t("kpi_consistency"), dec: 1, plusMinus: true },
     ];
@@ -387,15 +387,15 @@
     for (let i = 29; i >= 0; i--) {
       const d = new Date(); d.setDate(d.getDate() - i);
       const key = localDateKey(d);
-      const dayCups = exts.filter(e => e.date_heure.slice(0, 10) === key);
+      const dayCups = exts.filter(e => e.date_time.slice(0, 10) === key);
       labels.push(d.toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" }));
       counts.push(dayCups.length);
-      const dayRatings = dayCups.filter(e => e.note_sur_10 !== "").map(e => e.note_sur_10);
+      const dayRatings = dayCups.filter(e => e.score_10 !== "").map(e => e.score_10);
       averages.push(dayRatings.length ? +average(dayRatings).toFixed(1) : null);
       if (!dayCups.length) { details.push(""); continue; }
       const g = dayCups.reduce((a, e) => a + (e.dose_g || 0), 0);
       const mg = dayCups.reduce((a, e) => a + caffeineOf(e), 0);
-      const coffeeNames = [...new Set(dayCups.map(e => (DATA.coffeeOf(e) || {}).nom).filter(Boolean))];
+      const coffeeNames = [...new Set(dayCups.map(e => (DATA.coffeeOf(e) || {}).name).filter(Boolean))];
       details.push(I18N.t("tip_coffee_grams", { g: Math.round(g * 10) / 10 }) + "\n" +
         I18N.t("tip_caffeine", { mg }) + "\n" + coffeeNames.join(", "));
     }
@@ -422,11 +422,11 @@
     // Heatmap
     const perDay = {}, infoPerDay = {};
     exts.forEach(e => {
-      const key = e.date_heure.slice(0, 10);
+      const key = e.date_time.slice(0, 10);
       perDay[key] = (perDay[key] || 0) + 1;
     });
     const ratingsPerDay = {};
-    analyzable.forEach(e => { if (e.note_sur_10 !== "") (ratingsPerDay[e.date_heure.slice(0, 10)] = ratingsPerDay[e.date_heure.slice(0, 10)] || []).push(e.note_sur_10); });
+    analyzable.forEach(e => { if (e.score_10 !== "") (ratingsPerDay[e.date_time.slice(0, 10)] = ratingsPerDay[e.date_time.slice(0, 10)] || []).push(e.score_10); });
     Object.keys(perDay).forEach(key => { if (ratingsPerDay[key]) infoPerDay[key] = I18N.t("detail_score") + " " + average(ratingsPerDay[key]).toFixed(1); });
     /* As many weeks as the card can show, without scrolling. The same number
        goes to the five figures below: the grid and its summary describe the
@@ -445,22 +445,22 @@
       heatmapRecounted = true;
       setTimeout(() => {
         heatmapRecounted = false;
-        if (nav.screenName === "tableau" && visibleWeeks() !== weeks) UI.renderDashboard();
+        if (nav.screenName === "dashboard" && visibleWeeks() !== weeks) UI.renderDashboard();
       }, 0);
     }
 
     // Average rating per coffee
     const byCoffee = {};
     exts.forEach(e => {
-      if (e.note_sur_10 === "") return;
-      (byCoffee[e._c.cafe_nom] = byCoffee[e._c.cafe_nom] || []).push(e.note_sur_10);
+      if (e.score_10 === "") return;
+      (byCoffee[e._c.coffee_name] = byCoffee[e._c.coffee_name] || []).push(e.score_10);
     });
     const coffeeItems = Object.entries(byCoffee)
       .map(([name, ns]) => ({ label: I18N.tr(name), value: +average(ns).toFixed(1), extra: I18N.t("count_brews", { n: ns.length }), rawName: name }))
       .sort((a, b) => b.value - a.value);
     // The reference coffee (benchmark) stands out in green.
     const coffeeColors = coffeeItems.map(i => {
-      const c = DATA.state.cafes.find(x => x.nom === i.rawName);
+      const c = DATA.state.coffees.find(x => x.name === i.rawName);
       return c && (c.tag || "").includes("référence") ? CHARTS.C_BOTH : undefined;
     });
     const coffeeAccents = coffeeColors.some(Boolean) ? coffeeColors.map(c => c || getComputedStyle(document.documentElement).getPropertyValue("--accent").trim()) : null;
@@ -469,10 +469,10 @@
       coffeeItems.map(i => ({ ...i, n: byCoffee[i.rawName].length })), "reading_coffees_two", "reading_coffees");
 
     // Brikka versus Switch duel
-    const brikka = analyzable.filter(e => e.methode === "Brikka");
-    const swtch = analyzable.filter(e => e.methode === "Switch");
-    const nB = brikka.filter(e => e.note_sur_10 !== "").map(e => e.note_sur_10);
-    const nS = swtch.filter(e => e.note_sur_10 !== "").map(e => e.note_sur_10);
+    const brikka = analyzable.filter(e => e.method === "Brikka");
+    const swtch = analyzable.filter(e => e.method === "Switch");
+    const nB = brikka.filter(e => e.score_10 !== "").map(e => e.score_10);
+    const nS = swtch.filter(e => e.score_10 !== "").map(e => e.score_10);
     $("#duel-machines").innerHTML =
       '<div class="duel-col brikka"><b>' + brikka.length + "</b><span>" + I18N.t("dash_brikka_brews") + "</span><b>" +
       (nB.length ? average(nB).toFixed(1) : "...") + "</b><span>" + I18N.t("detail_score") + "</span></div>" +
@@ -480,25 +480,25 @@
       (nS.length ? average(nS).toFixed(1) : "...") + "</b><span>" + I18N.t("detail_score") + "</span></div>";
 
     // Coffees brewed in both brewers
-    const bothCoffees = DATA.state.cafes.filter(c => {
-      const eb = analyzable.some(e => e.cafe_id === c.id && e.methode === "Brikka" && e.note_sur_10 !== "");
-      const es = analyzable.some(e => e.cafe_id === c.id && e.methode === "Switch" && e.note_sur_10 !== "");
+    const bothCoffees = DATA.state.coffees.filter(c => {
+      const eb = analyzable.some(e => e.coffee_id === c.id && e.method === "Brikka" && e.score_10 !== "");
+      const es = analyzable.some(e => e.coffee_id === c.id && e.method === "Switch" && e.score_10 !== "");
       return eb && es;
     });
     CHARTS.machineComparison("g-duel",
-      bothCoffees.map(c => c.nom),
-      bothCoffees.map(c => +average(analyzable.filter(e => e.cafe_id === c.id && e.methode === "Brikka" && e.note_sur_10 !== "").map(e => e.note_sur_10)).toFixed(1)),
-      bothCoffees.map(c => +average(analyzable.filter(e => e.cafe_id === c.id && e.methode === "Switch" && e.note_sur_10 !== "").map(e => e.note_sur_10)).toFixed(1)));
+      bothCoffees.map(c => c.name),
+      bothCoffees.map(c => +average(analyzable.filter(e => e.coffee_id === c.id && e.method === "Brikka" && e.score_10 !== "").map(e => e.score_10)).toFixed(1)),
+      bothCoffees.map(c => +average(analyzable.filter(e => e.coffee_id === c.id && e.method === "Switch" && e.score_10 !== "").map(e => e.score_10)).toFixed(1)));
 
     // Scatter plots
     const pts = m => analyzable
-      .filter(e => e.methode === m && e.note_sur_10 !== "" && e._c.microns !== "")
-      .map(e => ({ x: e._c.microns, y: e.note_sur_10, nom: e._c.cafe_nom + ", " + e.mouture_dial }));
+      .filter(e => e.method === m && e.score_10 !== "" && e._c.microns !== "")
+      .map(e => ({ x: e._c.microns, y: e.score_10, name: e._c.coffee_name + ", " + e.grind_dial }));
     CHARTS.scatter("g-grind", pts("Brikka"), pts("Switch"), I18N.t("axis_grind"), "µm");
 
-    const rated = analyzable.filter(e => e.note_sur_10 !== "");
+    const rated = analyzable.filter(e => e.score_10 !== "");
     const tastes = renderTastes(rated);
-    $("#reading-tastes").textContent = readTastes(tastes, average(rated.map(e => e.note_sur_10)) || 0);
+    $("#reading-tastes").textContent = readTastes(tastes, average(rated.map(e => e.score_10)) || 0);
     $("#reading-machines").textContent = readMachines(nB, nS);
     $("#reading-grind").textContent = readGrind(analyzable);
 
@@ -520,15 +520,15 @@
     // Rating per recipe
     const byRecipe = {};
     analyzable.forEach(e => {
-      if (e.note_sur_10 === "" || !e.recette) return;
-      (byRecipe[e.recette] = byRecipe[e.recette] || []).push(e.note_sur_10);
+      if (e.score_10 === "" || !e.recipe) return;
+      (byRecipe[e.recipe] = byRecipe[e.recipe] || []).push(e.score_10);
     });
     const recipeItems = Object.entries(byRecipe)
       .map(([name, ns]) => ({ label: name, value: +average(ns).toFixed(1), extra: I18N.t("count_brews", { n: ns.length }) }))
       .sort((a, b) => b.value - a.value);
     const recipeColors = recipeItems.map(i => {
       const r = findRecipe(i.label);
-      return r ? (r.methode === "Brikka" ? CHARTS.C_BRIKKA : CHARTS.C_SWITCH) : CHARTS.C_BOTH;
+      return r ? (r.method === "Brikka" ? CHARTS.C_BRIKKA : CHARTS.C_SWITCH) : CHARTS.C_BOTH;
     });
     CHARTS.horizontalBars("g-recipes", recipeItems, recipeColors, I18N.t("axis_average_score"), 10);
     $("#reading-recipes").textContent = readRanking(
@@ -537,7 +537,7 @@
     // 5 latest
     /* EIGHT and not five: the card stretches to the height of its row, and
        five lines left a big blank there. Lines are better than emptiness. */
-    const latestCups = [...exts].sort((a, b) => b.date_heure.localeCompare(a.date_heure))
+    const latestCups = [...exts].sort((a, b) => b.date_time.localeCompare(a.date_time))
       .slice(0, LATEST_SHOWN);
     // Each line opens the editing of its extraction. role and tabindex rather
     // than a real button: the content is structured (div, span) and a button is
@@ -554,24 +554,24 @@
        its column: its colour dot moves in front of the coffee name. */
     let currentDay = "";
     $("#latest-list").innerHTML = latestCups.map(e => {
-      const day = dayKey(e.date_heure);
+      const day = dayKey(e.date_time);
       const header = day !== currentDay
-        ? '<tr class="d-day"><th colspan="5" scope="colgroup">' + dayLabelOf(e.date_heure) + "</th></tr>" : "";
+        ? '<tr class="d-day"><th colspan="5" scope="colgroup">' + dayLabelOf(e.date_time) + "</th></tr>" : "";
       currentDay = day;
       return header +
       '<tr class="last-clickable' + (isFailed(e) ? " row-failed" : "") +
       '" data-ext="' + e.id + '" tabindex="0" role="button" title="' + titleAttr(I18N.t("history_edit")) + '">' +
-      '<td class="d-when">' + fmtHour(e.date_heure) + "</td>" +
-      '<td class="d-coffee"><span class="dot-method ' + e.methode.toLowerCase() +
-        '" title="' + titleAttr(e.methode) + '"></span><b>' + I18N.tr(e._c.cafe_nom) + "</b>" +
+      '<td class="d-when">' + fmtHour(e.date_time) + "</td>" +
+      '<td class="d-coffee"><span class="dot-method ' + e.method.toLowerCase() +
+        '" title="' + titleAttr(e.method) + '"></span><b>' + I18N.tr(e._c.coffee_name) + "</b>" +
         (isFailed(e) ? '<span class="mention-failed">' + I18N.t("botched_badge") + "</span>" : "") + "</td>" +
       '<td class="d-measures">' +
-        (e.recette ? '<span class="d-recipe">' + I18N.tr(e.recette) + "</span>" : "") +
+        (e.recipe ? '<span class="d-recipe">' + I18N.tr(e.recipe) + "</span>" : "") +
         shortMeasures(e) +
         (e.diagnostic ? '<span class="d-diag">' + displayedDiags(e.diagnostic) + "</span>" : "") +
       "</td>" +
       '<td class="d-tastes">' + lastTastes(e) + "</td>" +
-      '<td class="d-rating">' + (e.note_sur_10 !== "" ? fmtDecimal(Number(e.note_sur_10), 1) : "") + "</td></tr>" +
+      '<td class="d-rating">' + (e.score_10 !== "" ? fmtDecimal(Number(e.score_10), 1) : "") + "</td></tr>" +
       lastComment(e);
     }).join("");
     /* The full text on hover, but ONLY if the line truncated it: a comment
@@ -593,16 +593,16 @@
   function stockData() {
     const tenDaysAgo = new Date(); tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
     const cutoff = localDateKey(tenDaysAgo);
-    return DATA.state.cafes.filter(c => c.actif !== 0).map(c => {
+    return DATA.state.coffees.filter(c => c.active !== 0).map(c => {
       const stock = DATA.bagStock(c.id, fallbacks.dose);
       if (!stock) return null;
-      const ownCups = DATA.state.extractions.filter(e => e.cafe_id === c.id);
+      const ownCups = DATA.state.extractions.filter(e => e.coffee_id === c.id);
       const doses = ownCups.filter(e => Number(e.dose_g) > 0).map(e => Number(e.dose_g));
       const dose = doses.length ? average(doses) : fallbacks.dose;
       const left = Math.max(0, stock.remaining);
-      const latest = ownCups.reduce((m, e) => (String(e.date_heure) > m ? String(e.date_heure) : m), "");
+      const latest = ownCups.reduce((m, e) => (String(e.date_time) > m ? String(e.date_time) : m), "");
       if (left <= 0 && latest.slice(0, 10) < cutoff) return null;
-      return { coffee: c, leftover: left, pc: Math.min(100, (left / stock.format) * 100), tasses: Math.floor(left / dose) };
+      return { coffee: c, leftover: left, pc: Math.min(100, (left / stock.format) * 100), cups: Math.floor(left / dose) };
       // What is left first, lowest to highest; empty bags after.
     }).filter(Boolean).sort((a, b) => (a.leftover <= 0) - (b.leftover <= 0) || a.leftover - b.leftover);
   }
@@ -613,12 +613,12 @@
     zone.hidden = !all.length;
     const shown = all.slice(0, STOCK_MAX);
     zone.innerHTML = shown.map(s => {
-      const low = s.tasses < 3;
-      const tooltip = I18N.t(s.leftover <= 0 ? "stock_chip_empty_title" : "stock_chip_title", { c: I18N.tr(s.coffee.nom), g: Math.round(s.leftover), n: s.tasses, s: s.tasses > 1 ? "s" : "" });
+      const low = s.cups < 3;
+      const tooltip = I18N.t(s.leftover <= 0 ? "stock_chip_empty_title" : "stock_chip_title", { c: I18N.tr(s.coffee.name), g: Math.round(s.leftover), n: s.cups, s: s.cups > 1 ? "s" : "" });
       return '<button type="button" class="sc-bag' + (low ? " low" : "") + '" data-sheet="' + s.coffee.id + '" title="' + titleAttr(tooltip) + '" aria-label="' + titleAttr(tooltip) + '">' +
         '<span class="sc-glass" style="--pc:' + s.pc.toFixed(0) + '%" aria-hidden="true"></span>' +
         '<b>' + (s.leftover <= 0 ? I18N.t("stock_chip_empty") : Math.round(s.leftover) + " g") + "</b>" +
-        '<span class="sc-name">' + titleAttr(I18N.tr(s.coffee.nom)) + "</span></button>";
+        '<span class="sc-name">' + titleAttr(I18N.tr(s.coffee.name)) + "</span></button>";
     }).join("") + (all.length > STOCK_MAX ? '<span class="sc-plus">+' + (all.length - STOCK_MAX) + "</span>" : "");
   }
 
@@ -639,7 +639,7 @@
       ev.preventDefault();
       showAnalysis(list[(target + list.length) % list.length].dataset.analysis, true);
     });
-    let initial = "cafes";
+    let initial = "coffees";
     try { initial = localStorage.getItem(TAB_KEY) || initial; } catch (e) { /* same */ }
     showAnalysis(initial);
 

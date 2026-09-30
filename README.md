@@ -92,7 +92,7 @@ The whole translation layer lives in `js/i18n.js` and `js/i18n.en.js`.
 1. Double-click `index.html`, or drag it into Chrome.
 2. On first launch you get three choices:
    - **Create a data folder**: pick a folder on your disk. The site creates
-     `cafes.csv` and `extractions.csv` there with your 5 starting coffees, then
+     `coffees.csv` and `extractions.csv` there with your 5 starting coffees, then
      writes to them on every add or edit.
    - **Open an existing folder**: pick up a folder that already holds those
      files.
@@ -138,7 +138,7 @@ to see the expected format.
   restored to their verified version in one click, and your own recipes are free
   to add. Renaming a recipe updates the history and the coffees that recommend
   it.
-- Recipes live in a third file, `recettes.csv`, alongside the other two.
+- Recipes live in a third file, `recipes.csv`, alongside the other two (until v9.05 the files had French names, `cafes.csv`, `recettes.csv`...; a folder that still has them is read as is).
 
 Eleven recipes ship with the site: three for the Brikka (classic, classic with
 preheated water, and one milk recipe covering both flat white and cappuccino)

@@ -1,14 +1,14 @@
 // Embedded demo dataset. Identical to the files in the demo folder.
 // Generated once, do not edit by hand: go through the CSVs.
 "use strict";
-const DEMO_COFFEES_CSV = `id,nom,torrefacteur,origine,espece,procede,torrefaction,deja_moulu,pourcentage_cafe_reel,tag,notes_annoncees,format_grammes,prix_vnd,date_torrefaction,machine_recommandee,recette_recommandee,date_ajout,actif
+const DEMO_COFFEES_CSV = `id,name,roaster,origin,species,process,roast,pre_ground,real_coffee_pct,tag,roaster_notes,bag_size_g,price_vnd,roast_date,recommended_method,recommended_recipe,added_date,active
 c1,Trung Nguyên Sáng Tạo 4,Trung Nguyên,"Buôn Ma Thuột, Vietnam","Blend Arabica, Robusta, Excelsa, Catimor",Torréfaction traditionnelle avec additifs,Foncée,1,82,café aromatisé,"Corps rond, sucré, faible acidité, arôme persistant. Étiquette : café 82 pour cent, soja torréfié, sirop de sucre brun, substitut de beurre, arômes de synthèse, beurre.",340,148800,2026-05-20,Brikka,Brikka classique,,1
 c2,Bana Cofe G4,Bana Cofe,Vietnam,Robusta,Rang bơ,Foncée,1,100,,"Beurre, caramel, sucre roux, déjà moulu",250,87000,2026-06-15,Brikka,Brikka classique,,1
 c3,Cà Phê Mít Liberica,Fine Coffee Agency,Vietnam,Liberica,Natural,Medium,0,100,,"Jacquier mûr, cacao, amande",200,280000,2026-06-20,Les deux,The Coffee Chronicler's Recipe,,1
 c4,Là Việt Balanced,Là Việt,"Đà Lạt, Vietnam",Arabica,Lavé,Medium,0,100,café de référence,"100 pour cent arabica, medium, Đà Lạt, rien d'ajouté",250,125000,2026-06-22,Les deux,The Coffee Chronicler's Recipe,,1
 c5,Là Việt Strong,Là Việt,"Đà Lạt, Vietnam",Blend arabica et robusta,Classique,Foncée,0,100,,"Corps fort, amertume marquée",250,125000,2026-06-10,Brikka,Brikka classique,,0
 `;
-const DEMO_EXTRACTIONS_CSV = `id,date_heure,cafe_id,methode,recette,dose_g,eau_g,mouture_dial,temperature_c,temps_total_s,temps_ecoulement_s,volume_extrait_ml,eau_ajoutee_ml,lait_ml,agitation_nb,tasse,eau_prechauffee,note_sur_10,diagnostic,descripteurs,commentaire
+const DEMO_EXTRACTIONS_CSV = `id,date_time,coffee_id,method,recipe,dose_g,water_g,grind_dial,temperature_c,total_time_s,flow_time_s,yield_ml,added_water_ml,milk_ml,stir_count,cup,preheated_water,score_10,diagnostic,descriptors,comment
 e1,2026-06-29T13:21,c1,Brikka,Brikka classique,14,100,,80,241,34,90,,,,Loveramics Flat White Egg,1,4.0,Sur-extrait (amer),sucre roux|chocolat noir|brûlé,
 e2,2026-06-30T14:18,c3,Brikka,Brikka classique,14,100,0.9.3,90,238,23,90,,,,Loveramics Flat White Egg,1,4.5,Acide ET amer (extraction inégale),amande|cacao,
 e3,2026-07-01T08:22,c5,Brikka,Brikka classique,14,100,0.9.4,90,317,42,90,,,,Loveramics Flat White Egg,1,4.0,Brûlé (défaut du sachet),tabac|terreux|brûlé,"Goût de cendre, aucun réglage n'y changera rien, sachet abandonné."

@@ -32,7 +32,7 @@
     const v = coffeeSelect.value;
     const coffees = UI.selectableCoffees();
     coffeeSelect.innerHTML = '<option value="">' + I18N.t("pick_coffee") + "</option>" +
-      coffees.map(c => '<option value="' + TOOLS.escapeHtml(c.id) + '">' + TOOLS.escapeHtml(c.nom) + "</option>").join("");
+      coffees.map(c => '<option value="' + TOOLS.escapeHtml(c.id) + '">' + TOOLS.escapeHtml(c.name) + "</option>").join("");
     if (v && coffees.some(c => c.id === v)) coffeeSelect.value = v;
     /* Same default as the full form: the quick panel REFUSES to save without
        a coffee, so opening it on an empty field guaranteed a round trip. We
@@ -76,7 +76,7 @@
       const list = recipesForMethod(m);
       if (!list.length) return "";
       return '<optgroup label="' + m + '">' +
-        list.map(r => "<option>" + r.nom + "</option>").join("") + "</optgroup>";
+        list.map(r => "<option>" + r.name + "</option>").join("") + "</optgroup>";
     }).join("");
     sel.innerHTML = groups;
     if (v && findRecipe(v)) sel.value = v;
@@ -84,18 +84,18 @@
   }
 
   function onQuickCoffeeChoice() {
-    const coffee = DATA.state.cafes.find(c => c.id === $("#q-coffee").value);
+    const coffee = DATA.state.coffees.find(c => c.id === $("#q-coffee").value);
     if (coffee) {
-      const r = findRecipe(coffee.recette_recommandee);
-      if (r && r.actif !== 0) $("#q-recipe").value = r.nom;
+      const r = findRecipe(coffee.recommended_recipe);
+      if (r && r.active !== 0) $("#q-recipe").value = r.name;
     }
     updateQuickWarnings();
   }
 
   function updateQuickWarnings() {
-    const coffee = DATA.state.cafes.find(c => c.id === $("#q-coffee").value);
+    const coffee = DATA.state.coffees.find(c => c.id === $("#q-coffee").value);
     const r = findRecipe($("#q-recipe").value);
-    const warn = r ? combinationWarnings(coffee, r.methode, r.nom, DATA.state.recettes) : { msgs: [] };
+    const warn = r ? combinationWarnings(coffee, r.method, r.name, DATA.state.recipes) : { msgs: [] };
     $("#q-warn").textContent = warn.msgs.length ? "⚠ " + warn.msgs[0] : "";
     updateQuickRepeat();
   }
@@ -110,11 +110,11 @@
     if (!r) { target.innerHTML = ""; return; }
     const parts = [];
     if (r.dose) parts.push(r.dose + " g");
-    if (r.eau) parts.push(r.eau + " g");
+    if (r.water) parts.push(r.water + " g");
     if (r.dial) parts.push(I18N.t("dial") + " " + r.dial);
     target.innerHTML =
-      '<span class="dot-method ' + String(r.methode).toLowerCase() + '"></span>' +
-      "<span>" + (parts.length ? I18N.t("quick_from_recipe", { v: parts.join(", ") }) : I18N.tr(r.methode)) + "</span>";
+      '<span class="dot-method ' + String(r.method).toLowerCase() + '"></span>' +
+      "<span>" + (parts.length ? I18N.t("quick_from_recipe", { v: parts.join(", ") }) : I18N.tr(r.method)) + "</span>";
   }
 
   async function saveQuick() {
@@ -124,27 +124,27 @@
     if (!r) { toast(I18N.t("toast_pick_recipe")); return; }
     // The coffee chosen in the panel. A pre-ground coffee has no grinder
     // setting to save: the recipe's value would be made up.
-    const quickCoffee = DATA.state.cafes.find(c => c.id === coffeeId);
+    const quickCoffee = DATA.state.coffees.find(c => c.id === coffeeId);
     await DATA.addExtraction({
-      date_heure: localNow(),
-      cafe_id: coffeeId,
-      methode: r.methode,
-      recette: r.nom,
+      date_time: localNow(),
+      coffee_id: coffeeId,
+      method: r.method,
+      recipe: r.name,
       dose_g: r.dose || fallbacks.dose,
-      eau_g: r.eau,
-      mouture_dial: quickCoffee && Number(quickCoffee.deja_moulu) === 1 ? "" : r.dial,
+      water_g: r.water,
+      grind_dial: quickCoffee && Number(quickCoffee.pre_ground) === 1 ? "" : r.dial,
       temperature_c: r.temp,
-      temps_total_s: "",
-      temps_ecoulement_s: "",
-      volume_extrait_ml: "",
-      tasse: (DATA.state.tasses.find(t => t.nom === (r.methode === "Brikka" ? "Loveramics Flat White Egg" : "Classic Mug")) || { nom: "" }).nom,
-      note_sur_10: quickRating(),
+      total_time_s: "",
+      flow_time_s: "",
+      yield_ml: "",
+      cup: (DATA.state.cups.find(t => t.name === (r.method === "Brikka" ? "Loveramics Flat White Egg" : "Classic Mug")) || { name: "" }).name,
+      score_10: quickRating(),
       diagnostic: "",
-      descripteurs: "",
-      commentaire: "",
+      descriptors: "",
+      comment: "",
     });
     const rating = quickRating();
-    toast(rating === "" ? I18N.t("toast_quick_unrated", { r: r.nom }) : I18N.t("toast_quick", { r: r.nom, n: rating }));
+    toast(rating === "" ? I18N.t("toast_quick_unrated", { r: r.name }) : I18N.t("toast_quick", { r: r.name, n: rating }));
     toggleQuick(false);
   }
 
@@ -163,7 +163,7 @@
       $("#q-rating").focus();
     });
     $("#q-save").addEventListener("click", oneAtATime(saveQuick));
-    $("#q-full").addEventListener("click", () => { toggleQuick(false); activateScreen("saisie"); });
+    $("#q-full").addEventListener("click", () => { toggleQuick(false); activateScreen("entry"); });
 
     /* A9 (v8.88): THE BUTTON STEPS ASIDE WHEN YOU SCROLL DOWN. Sitting at the
        bottom right, it hid the end of the comments and a column of the last
