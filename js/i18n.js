@@ -499,14 +499,14 @@ const I18N = (() => {
     tetsu_40: { fr: "Les 40 premiers pourcents : sucre contre acidité" },
     tetsu_60: { fr: "Les 60 derniers pourcents : le corps" },
     tetsu_line: { fr: "jusqu'à <b>{c} g</b>, soit {p} g" },
-    tetsu_end: { fr: "Pas de chrono : verser dès que le lit réapparaît en surface, vanne ouverte. Ni flaque, ni lit sec qui attend." },
-    walkthrough_bed: { fr: ", dès que le lit réapparaît" },
+    tetsu_end: { fr: "Le bloom se compte : 45 s, le lit gonfle mais ne se vide pas. Ensuite, verser dès que la surface devient mate : plus de reflet d'eau, juste le café mouillé (environ 30 à 40 s à 15 g). Ni flaque, ni lit sec qui attend." },
+    walkthrough_bed: { fr: ", dès que la surface devient mate" },
 
     walkthrough_start: { fr: "Démarrer" },
     walkthrough_stop: { fr: "Arrêter" },
     walkthrough_restart: { fr: "Reprendre à zéro" },
     walkthrough_pour: { fr: "Verser jusqu'à {c} g, soit {p} g{b}." },
-    walkthrough_first: { fr: "Verser {c} g{b}, vanne OUVERTE. PENDANT le bloom, tourbillon doux du porte-filtre pour mouiller tout le lit." },
+    walkthrough_first: { fr: "Verser {c} g{b}, vanne OUVERTE, tourbillon doux pour tout mouiller. Puis attendre 45 s : le lit gonfle mais ne se vide pas, c'est normal." },
     walkthrough_bloom: { fr: " (bloom)" },
     walkthrough_drain: { fr: "Laisser s'écouler entièrement." },
 
