@@ -37,7 +37,7 @@ const DATA_MIGRATIONS = (() => {
 
        Each step touches ONLY the previously seeded value. A step that
        overwrote a deliberately chosen setting would be a bug, not a migration. */
-    const CURRENT_SCHEMA = 21;
+    const CURRENT_SCHEMA = 22;
 
     /* THE ENGLISH NAMES (v9.06). Every row is translated on its way in
        (normalize*, see js/legacy-names.js), so a state that went through the
@@ -438,6 +438,20 @@ const DATA_MIGRATIONS = (() => {
        server refuses a tab still on the French names, which could neither
        read the new document nor write it without losing columns. */
     { v: 21, name: "English names", apply: convertLegacyNames },
+    /* Tetsu 4:6 at 250 g of water by default (v9.08, Chris's request): the
+       pours follow (40 percent is 33 then 67 g, then 3 x 50 g). Targeted at
+       the seeded values: water retouched by hand is left alone. */
+    { v: 22, name: "Tetsu 4:6 at 250 g", apply: () => {
+      let changed = false;
+      state.recipes.forEach(rec => {
+        if (rec.id !== "tetsu-devil" || Number(rec.water) !== 225) return;
+        rec.water = 250;
+        if (rec.ratioText === "ratio 1:15, environ 195 ml en tasse") rec.ratioText = "ratio 1:16,7, environ 220 ml en tasse";
+        stampRow(rec);
+        changed = true;
+      });
+      return changed;
+    } },
     ];
 
     /* Applies the missing steps and writes the new version. Returns true if

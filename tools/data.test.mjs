@@ -3128,7 +3128,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
     check("tombstones preserved under the new table names", JSON.stringify(st.tombstones) === JSON.stringify(NEW_TOMBS),
       JSON.stringify(st.tombstones));
     check("the drawing names follow", st.settings[0].drawings === "shelf,!clock,podium", st.settings[0].drawings);
-    check("the logbook moves to schema 21", st.settings[0].schema_version === 21, String(st.settings[0].schema_version));
+    check("the logbook moves to the current schema (22)", st.settings[0].schema_version === 22, String(st.settings[0].schema_version));
     const keys = [...idb.store.keys()].sort();
     check("the French keys are removed from IndexedDB", Object.keys(LEGACY.TABLES).concat("tombes").every(k => !idb.store.has(k)), keys.join());
     check("and the English ones written", TABLE_NAMES.concat("tombstones").every(k => idb.store.has(k)), keys.join());
@@ -3260,8 +3260,14 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
       !("note_sur_10" in app.DATA.state.extractions[0]), JSON.stringify(app.DATA.state.extractions[0]).slice(0, 80));
     check("and raw old tombstones", app.DATA.state.tombstones.coffees && app.DATA.state.tombstones.coffees.z === 1);
     check("without restamping the row", app.DATA.state.extractions[0].updated_at === 2001);
-    check("the schema is at 21, with its step", SOURCE_DATA.includes("const CURRENT_SCHEMA = 21;") &&
+    check("the schema is at 22, step 21 still there", SOURCE_DATA.includes("const CURRENT_SCHEMA = 22;") &&
       SOURCE_DATA.includes('{ v: 21, name: "English names", apply: convertLegacyNames }'));
+    /* Tetsu 4:6 at 250 g by default (v9.08): the seed says so, and step 22
+       moves a stored recipe still at the seeded 225 g, never a retouched one. */
+    const t46 = STARTER_RECIPES.find(x => x.id === "tetsu-devil");
+    check("the 4:6 starts at 250 g of water", t46.water === 250 && t46.ratioText === "ratio 1:16,7, environ 220 ml en tasse");
+    check("step 22 targets the seeded 225 g only", SOURCE_DATA.includes('{ v: 22, name: "Tetsu 4:6 at 250 g"') &&
+      SOURCE_DATA.includes('rec.id !== "tetsu-devil" || Number(rec.water) !== 225'));
   }
 
   // 7. The row rule: the new key wins over the old one.

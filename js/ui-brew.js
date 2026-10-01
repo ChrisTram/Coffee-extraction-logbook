@@ -167,13 +167,16 @@
       '<li class="' + (k === i ? "current" : k < i ? "past" : "") + '"><time>' + fmtDuration(p.t) + "</time><span>" +
       escapeHtml(p.text) + "</span></li>").join("") +
       untimed.map((p, k) => '<li class="free' + (!steps.length ? (k === manualStep ? " current" : k < manualStep ? " past" : "") : "") + '" data-incr="' + k + '"><time aria-hidden="true">' + (k + 1) + "</time><span>" + escapeHtml(p.text) + "</span></li>").join(""));
-    /* v9.01: the timeline is what Chris reads, the scale under the Switch. The
-       current step scrolls to the middle of the screen when it changes, not on every tick. */
-    const currentKey = (steps.length ? "p" + i : "l" + manualStep) + "|" + (r ? r.id : "");
+    /* v9.08: the timeline is what Chris reads, the scale under the Switch, from
+       across the counter. It fills the screen without scrolling: the text takes
+       the largest size that still fits. Refitted only when the steps, the
+       current one or the available space change, not on every tick. */
+    const ol = $("#br-timeline");
+    const currentKey = (steps.length ? "p" + i : "l" + manualStep) + "|" + (r ? r.id : "") + "|" +
+      ol.textContent.length + "|" + ol.clientWidth + "x" + ol.clientHeight;
     if (currentKey !== lastCurrentKey) {
       lastCurrentKey = currentKey;
-      const li = $("#br-timeline li.current");
-      if (li && li.scrollIntoView) li.scrollIntoView({ block: "center", behavior: "smooth" });
+      fitTimeline(ol);
     }
 
     const state = UI.stopwatch.state;
@@ -185,6 +188,20 @@
     $(".br-buttons").hidden = endVisible && state === "stopped";
     $(".br-unit [data-unit=ml]").setAttribute("aria-pressed", String(unit() === "ml"));
     $(".br-unit [data-unit=g]").setAttribute("aria-pressed", String(unit() === "g"));
+  }
+
+  /* The largest font size, in pixels, at which every step fits in the space
+     left to the timeline, found by bisection. Capped so that a two-step
+     recipe does not turn into a poster. */
+  function fitTimeline(ol) {
+    if (!ol || !ol.clientHeight || !ol.children.length) return;
+    let low = 14, high = window.innerWidth < 760 ? 46 : 88;
+    for (let k = 0; k < 9; k++) {
+      const mid = (low + high) / 2;
+      ol.style.fontSize = mid + "px";
+      if (ol.scrollHeight <= ol.clientHeight + 1 && ol.scrollWidth <= ol.clientWidth + 1) low = mid; else high = mid;
+    }
+    ol.style.fontSize = Math.floor(low) + "px";
   }
 
   function openBrew() {

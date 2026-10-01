@@ -1027,3 +1027,42 @@ button.sh-to-count { white-space: nowrap; font: inherit; font-size: 0.78rem; fon
   .br-timeline li time { font-size: 1.45rem; }
   .br-timeline li.free { grid-template-columns: 30px minmax(0, 1fr); }
 }
+
+/* ---------- v9.08: the brew mode fits the screen, no scrolling ---------- */
+/* One column the height of the screen: a compact header, a compact strip
+   (ring, time, total), then the step list takes all the rest. ui-brew.js
+   picks the largest font size at which every step fits (fitTimeline); the
+   sizes below are in em so the whole list scales with it. */
+.br-head { padding-top: calc(10px + env(safe-area-inset-top, 0px)); padding-bottom: 6px; align-items: center; }
+.br-titles h2 { font-size: clamp(1.4rem, 3.4vw, 2rem); }
+.br-dose { margin-top: 2px; font-size: clamp(0.95rem, 2.2vw, 1.1rem); }
+.br-body {
+  display: flex; flex-direction: column; gap: 10px; overflow: hidden;
+  padding-top: 4px; padding-bottom: 10px;
+}
+.br-scene { flex: none; padding: 8px 12px; gap: 14px; }
+.br-ring { width: clamp(72px, 11vw, 104px); }
+.br-center #br-target { font-size: clamp(1.7rem, 4vw, 2.4rem); }
+.br-time-row b { font-size: clamp(1.4rem, 3.4vw, 1.9rem); }
+.br-next { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.br-timeline {
+  flex: 1 1 auto; min-height: 0; overflow: hidden;
+  display: flex; flex-direction: column; font-size: 32px;
+}
+.br-timeline li {
+  font-size: 1em; line-height: 1.18; padding: 0.3em 0.4em;
+  grid-template-columns: 2.5em minmax(0, 1fr); gap: 0.4em;
+}
+.br-timeline li time { font-size: 0.86em; }
+.br-timeline li.free { grid-template-columns: 1.1em minmax(0, 1fr); }
+/* Done steps shrink: the room goes to the current one and the next ones. */
+.br-timeline li.past { font-size: 0.6em; opacity: 0.45; }
+/* Once stopped, the rating form replaces the list, and may scroll. */
+.br-body:has(> .br-end:not([hidden])) { overflow-y: auto; }
+.br-body:has(> .br-end:not([hidden])) .br-timeline { display: none; }
+@media (max-width: 760px) {
+  .br-timeline li { font-size: 1em; padding: 0.28em 0.3em; grid-template-columns: 1.9em minmax(0, 1fr); gap: 0.3em; }
+  .br-timeline li time { font-size: 0.8em; }
+  .br-timeline li.free { grid-template-columns: 0.9em minmax(0, 1fr); }
+  .br-ring { width: 76px; }
+}
