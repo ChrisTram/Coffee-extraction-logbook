@@ -173,7 +173,7 @@
        current one or the available space change, not on every tick. */
     const ol = $("#br-timeline");
     const currentKey = (steps.length ? "p" + i : "l" + manualStep) + "|" + (r ? r.id : "") + "|" +
-      ol.textContent.length + "|" + ol.clientWidth + "x" + ol.clientHeight;
+      ol.textContent.length + "|" + ol.clientWidth + "x" + ol.clientHeight + "|" + window.innerWidth + "x" + window.innerHeight;
     if (currentKey !== lastCurrentKey) {
       lastCurrentKey = currentKey;
       fitTimeline(ol);
@@ -194,12 +194,21 @@
      left to the timeline, found by bisection. Capped so that a two-step
      recipe does not turn into a poster. */
   function fitTimeline(ol) {
-    if (!ol || !ol.clientHeight || !ol.children.length) return;
-    let low = 14, high = window.innerWidth < 760 ? 46 : 88;
+    if (!ol || !ol.clientWidth || !ol.children.length) return;
+    /* The room is MEASURED (v9.11): from the top of the list to the buttons
+       at the bottom (or the bottom of the screen), instead of trusting the
+       list's own height, which a browser that lays the flex column out
+       differently (zoom, old engine) let grow with its content. */
+    const buttons = $(".br-buttons");
+    const bottom = buttons && !buttons.hidden ? buttons.getBoundingClientRect().top : window.innerHeight;
+    const room = Math.floor(bottom - ol.getBoundingClientRect().top - 8);
+    if (room < 40) return;
+    ol.style.maxHeight = room + "px";
+    let low = 12, high = window.innerWidth < 760 ? 46 : 88;
     for (let k = 0; k < 9; k++) {
       const mid = (low + high) / 2;
       ol.style.fontSize = mid + "px";
-      if (ol.scrollHeight <= ol.clientHeight + 1 && ol.scrollWidth <= ol.clientWidth + 1) low = mid; else high = mid;
+      if (ol.scrollHeight <= room + 1 && ol.scrollWidth <= ol.clientWidth + 1) low = mid; else high = mid;
     }
     ol.style.fontSize = Math.floor(low) + "px";
   }
