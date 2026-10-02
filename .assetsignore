@@ -10,3 +10,7 @@ worker
 tools
 *.md
 .wrangler
+
+# Registration of the catalog MCP server for Claude Code (v9.12): local tooling,
+# nothing the site serves.
+.mcp.json

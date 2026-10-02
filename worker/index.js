@@ -12,6 +12,11 @@
  *   AUTH_SECRET    the signing key of the session cookies
  * If one is missing, the Worker refuses everything (fail closed).
  *
+ * A fourth, OPTIONAL secret turns on the tools API (v9.12):
+ *   TOOLS_TOKEN    the bearer token of POST /api/tools/sync, used by the
+ *                  catalog MCP server (tools/logbook-mcp.mjs)
+ * Unset or shorter than 32 characters, that route does not exist (404).
+ *
  * Opening index.html over file:// keeps working exactly as before:
  * this file only exists on Cloudflare.
  */
@@ -24,6 +29,8 @@ const SESSION_MAX_AGE = SESSION_DAYS * 24 * 60 * 60;
 const LOGIN_PATH = "/login";
 const LOGOUT_PATH = "/logout";
 const SYNC_PATH = "/api/sync";
+const TOOLS_SYNC_PATH = "/api/tools/sync";
+const TOOLS_TOKEN_MIN_LENGTH = 32;
 const FAILED_ATTEMPT_DELAY_MS = 700;
 
 const encoder = new TextEncoder();
@@ -45,6 +52,10 @@ export default {
     const config = readConfig(env);
 
     if (url.pathname === LOGOUT_PATH) return logout(url);
+
+    // The tools API never looks at the session cookie: its bearer token is
+    // its only key, see toolsSync below.
+    if (url.pathname === TOOLS_SYNC_PATH) return toolsSync(request, config, env);
 
     const signedIn = await hasValidSession(request, config);
 
@@ -238,6 +249,76 @@ async function submitLogin(request, config, url, env) {
   const response = redirectTo(target, url);
   response.headers.append("Set-Cookie", sessionCookie(await issueSession(config), SESSION_MAX_AGE));
   return response;
+}
+
+/* ---------- Tools API (v9.12) ----------
+
+   POST /api/tools/sync lets a program on Chris's computer (the catalog MCP
+   server, tools/logbook-mcp.mjs) read and edit the logbook without a browser.
+   It is EXACTLY the device sync: same body, same handleSync, so whatever it
+   sends merges row by row by updated_at like a phone would. It can never
+   replace the document wholesale, and it has no delete of its own beyond what
+   a device could already do.
+
+   Its only key is the bearer token, compared with the Cloudflare secret
+   TOOLS_TOKEN. No cookie is read: a signed-in browser cannot reach it, and a
+   token holder cannot reach the site. Unset or too short (under 32
+   characters), the route answers 404 like any unknown path: the feature is
+   off until Chris creates the secret himself. */
+function toolsEnabled(env) {
+  const value = env.TOOLS_TOKEN;
+  return typeof value === "string" && value.trim().length >= TOOLS_TOKEN_MIN_LENGTH;
+}
+
+function toolsJson(body, status, extraHeaders) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+      "X-Robots-Tag": "noindex, nofollow",
+      ...(extraHeaders || {}),
+    },
+  });
+}
+
+function bearerToken(request) {
+  const header = request.headers.get("Authorization") || "";
+  const match = /^Bearer\s+(.+)$/i.exec(header.trim());
+  return match ? match[1].trim() : "";
+}
+
+/* Constant time, same trick as passwordMatches: the HMACs of both values are
+   compared, never the values themselves. */
+async function toolsTokenMatches(config, env, submitted) {
+  if (!submitted) return false;
+  const [given, expected] = await Promise.all([
+    sign(config.secret, `tools-token:${submitted}`),
+    sign(config.secret, `tools-token:${env.TOOLS_TOKEN.trim()}`),
+  ]);
+  return given === expected;
+}
+
+async function toolsSync(request, config, env) {
+  if (!toolsEnabled(env)) return toolsJson({ error: "not-found" }, 404);
+  if (request.method !== "POST") return toolsJson({ error: "method-not-allowed" }, 405, { Allow: "POST" });
+
+  /* EVERY call goes through the attempt limit BEFORE the comparison, as on
+     /login: counting only the failures would still let a correct guess
+     through once past the limit. Its own key, so a burst of tool calls never
+     locks Chris out of the login page, and the reverse. */
+  if (env.LOGIN_LIMITER) {
+    try {
+      const { success } = await env.LOGIN_LIMITER.limit({ key: "tools:" + (request.headers.get("CF-Connecting-IP") || "inconnue") });
+      if (!success) return toolsJson({ error: "too-many" }, 429);
+    } catch (error) { /* limit unavailable: carry on with the delay */ }
+  }
+
+  if (!(await toolsTokenMatches(config, env, bearerToken(request)))) {
+    await new Promise((resolve) => setTimeout(resolve, FAILED_ATTEMPT_DELAY_MS));
+    return toolsJson({ error: "unauthorized" }, 401, { "WWW-Authenticate": "Bearer" });
+  }
+  return handleSync(request, env);
 }
 
 function logout(url) {

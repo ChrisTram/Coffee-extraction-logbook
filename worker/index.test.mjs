@@ -246,5 +246,112 @@ check("expired session rejected", expired.status === 302, `status ${expired.stat
     html.includes('localStorage.getItem("lang") || localStorage.getItem("langue")') && html.includes('localStorage.setItem("lang", lang)'));
 }
 
+// v9.12: the tools API, POST /api/tools/sync, behind a bearer token only.
+{
+  const TOKEN = "fake-tools-token-for-tests-0123456789abcdef";
+  const T = Date.now() - 60000;
+  const stored = {
+    schema: 22,
+    tables: {
+      coffees: [{ id: "c1", updated_at: T, name: "Ethiopia Guji", roaster: "Shin", active: 1 }],
+      extractions: [{ id: "e1", updated_at: T, coffee_id: "c1", method: "Switch", score_10: 8 }],
+      recipes: [], cups: [], purchases: [], settings: [],
+    },
+    tombstones: { coffees: { gone: T - 1000 }, extractions: {}, recipes: {}, cups: {}, purchases: {}, settings: {} },
+  };
+  const makeDb = () => {
+    const docs = new Map([["state", JSON.stringify(stored)]]);
+    return {
+      docs,
+      exec: async () => {},
+      prepare: sql => ({
+        bind: (...args) => ({
+          first: async () => (docs.has(args[0]) ? { payload: docs.get(args[0]) } : null),
+          run: async () => { if (/^INSERT/.test(sql)) docs.set(args[0], args[1]); },
+        }),
+      }),
+    };
+  };
+  const toolsCall = (envX, init) => worker.fetch(new Request("https://site.test/api/tools/sync", init), envX);
+  const postBody = (body, token, extra) => ({
+    method: "POST",
+    body: JSON.stringify(body),
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: "Bearer " + token } : {}), ...(extra || {}) },
+  });
+  const newCoffee = { id: "c2", updated_at: Date.now(), name: "Kenya AA", roaster: "Shin", active: 1 };
+
+  const offDb = makeDb();
+  const off = await toolsCall({ ...env, DB: offDb }, postBody({ schema: 22, tables: { coffees: [newCoffee] } }, TOKEN));
+  check("tools API: without TOOLS_TOKEN the route answers 404", off.status === 404, String(off.status));
+  check("tools API: and the document is not touched", offDb.docs.get("state") === JSON.stringify(stored));
+  const shortDb = makeDb();
+  const short = await toolsCall({ ...env, DB: shortDb, TOOLS_TOKEN: "too-short-0123456789" },
+    postBody({ schema: 22, tables: { coffees: [newCoffee] } }, "too-short-0123456789"));
+  check("tools API: a secret under 32 characters keeps the route off", short.status === 404, String(short.status));
+  check("tools API: even with the matching short token, nothing is written", shortDb.docs.get("state") === JSON.stringify(stored));
+
+  const db = makeDb();
+  const onEnv = { ...env, DB: db, TOOLS_TOKEN: TOKEN };
+  const getIt = await toolsCall(onEnv, { headers: { Authorization: "Bearer " + TOKEN } });
+  check("tools API: GET is refused (405), never a read", getIt.status === 405, String(getIt.status));
+  const wrong = await toolsCall(onEnv, postBody({ schema: 22, tables: { coffees: [newCoffee] } }, "x" + TOKEN.slice(1)));
+  check("tools API: a wrong token answers 401", wrong.status === 401, String(wrong.status));
+  const wrongText = await wrong.text();
+  check("tools API: the 401 never echoes the secret", !wrongText.includes(TOKEN));
+  const missing = await toolsCall(onEnv, postBody({ schema: 22, tables: { coffees: [newCoffee] } }, null));
+  check("tools API: a missing token answers 401", missing.status === 401, String(missing.status));
+  check("tools API: refused calls leave the document as it was", db.docs.get("state") === JSON.stringify(stored));
+
+  // A browser session alone is not a key.
+  const goodLogin = await post("/login", { username: "Chris", password: "correct-horse", next: "/" });
+  const sessionCookie = (goodLogin.headers.get("Set-Cookie") || "").split(";")[0];
+  const cookieOnly = await toolsCall(onEnv, postBody({ schema: 22, tables: { coffees: [newCoffee] } }, null, { Cookie: sessionCookie }));
+  check("tools API: a session cookie without the token answers 401", cookieOnly.status === 401, String(cookieOnly.status));
+
+  // The schema gate of the sync applies as is.
+  const oldTab = await toolsCall(onEnv, postBody({ schema: 21, tables: { coffees: [newCoffee] } }, TOKEN));
+  check("tools API: the schema gate still applies (an older schema gets 409)", oldTab.status === 409, String(oldTab.status));
+
+  const good = await toolsCall(onEnv, postBody({ schema: 22, tables: { coffees: [newCoffee] }, tombstones: {} }, TOKEN));
+  check("tools API: the right token merges", good.status === 200, String(good.status));
+  const after = JSON.parse(db.docs.get("state"));
+  check("tools API: the new coffee row is added", after.tables.coffees.some(c => c.id === "c2" && c.name === "Kenya AA"));
+  check("tools API: the existing rows are untouched",
+    JSON.stringify(after.tables.coffees.find(c => c.id === "c1")) === JSON.stringify(stored.tables.coffees[0]) &&
+    JSON.stringify(after.tables.extractions) === JSON.stringify(stored.tables.extractions));
+  check("tools API: the tombstones are untouched", after.tombstones.coffees.gone === T - 1000 &&
+    Object.keys(after.tombstones.coffees).length === 1);
+  const body = await good.json();
+  check("tools API: the answer is the merged document, like /api/sync", Array.isArray(body.tables.coffees) && body.tables.coffees.length === 2);
+  check("tools API: no cookie is ever set", !good.headers.get("Set-Cookie"));
+
+  // An empty payload is a pure read: nothing changes.
+  const before = db.docs.get("state");
+  const read = await toolsCall(onEnv, postBody({ schema: 22, tables: {}, tombstones: {} }, TOKEN));
+  check("tools API: an empty payload reads the document without changing a row",
+    read.status === 200 && JSON.stringify(JSON.parse(db.docs.get("state")).tables) === JSON.stringify(JSON.parse(before).tables));
+
+  // The attempt limit counts tool calls too, on their own key.
+  const keys = [];
+  let calls = 0;
+  const limited = { ...onEnv, LOGIN_LIMITER: { limit: async ({ key }) => { keys.push(key); return { success: ++calls <= 1 }; } } };
+  const firstLimited = await toolsCall(limited, postBody({ schema: 22 }, "nope-" + TOKEN));
+  const secondLimited = await toolsCall(limited, postBody({ schema: 22 }, TOKEN));
+  check("tools API: a wrong token is counted by the attempt limit", firstLimited.status === 401 && keys.length >= 1);
+  check("tools API: past the limit, even the right token gets 429", secondLimited.status === 429, String(secondLimited.status));
+  check("tools API: the limit key is separate from the login page's", keys.every(k => k.startsWith("tools:")), keys.join());
+
+  // /api/sync itself did not change: still the session, never the token.
+  const syncWithToken = await worker.fetch(new Request("https://site.test/api/sync", postBody({ schema: 22 }, TOKEN)), onEnv);
+  check("tools API: the token does not open /api/sync", syncWithToken.status === 401, String(syncWithToken.status));
+
+  const { readFileSync } = await import("node:fs");
+  const { dirname, join } = await import("node:path");
+  const { fileURLToPath } = await import("node:url");
+  const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+  check("the MCP registration file is not uploaded as an asset",
+    /^\.mcp\.json$/m.test(readFileSync(join(root, ".assetsignore"), "utf8")));
+}
+
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);
 process.exit(failures === 0 ? 0 : 1);

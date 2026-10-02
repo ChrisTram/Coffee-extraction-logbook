@@ -130,7 +130,7 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `css/fonts/` | les deux polices de la DA, embarquées en woff2, sous OFL (section 10) |
 | `sw.js`, `manifest.json`, `icons/` | PWA et hors ligne (section 10) |
 | `worker/index.js`, `worker/sync.js` | porte d'entrée et fusion D1, Cloudflare seulement (section 13) |
-| `tools/` | tests, générateurs, montée de version |
+| `tools/` | tests, générateurs, montée de version, serveur MCP du catalogue (`logbook-mcp.mjs`, section 14) |
 
 ### Les deux règles de l'interface
 
@@ -1379,8 +1379,8 @@ raccourcis s'affichent sur Android, pas sur iPhone.
 
 ## 12. Tests
 
-Cinq suites sans navigateur, sans dépendance, à lancer depuis `tracker/`, toutes
-en moins de deux secondes :
+Six suites sans navigateur, sans dépendance, à lancer depuis `tracker/`, toutes
+en quelques secondes :
 
 ```
 node tools/boot.test.mjs     demarrage reel dans un faux DOM, rendu des ecrans, bascule EN
@@ -1388,6 +1388,7 @@ node tools/data.test.mjs     couche de donnees, CSV, migrations, et les controle
 node tools/modules.test.mjs  frontieres entre fichiers : noms libres, UI, cablage, plafonds de lignes
 node worker/index.test.mjs   porte d'entree, cache des assets, fichiers ignores
 node worker/sync.test.mjs    fusion entre appareils, taille du document
+node tools/logbook-mcp.test.mjs  serveur MCP du catalogue contre le vrai Worker et un faux D1
 ```
 
 Ce que chacune couvre, et le bug qui l'a motivée : `DECISIONS.md`, « Tests ».
@@ -1489,6 +1490,9 @@ réinitialisation de mot de passe, pas de base d'utilisateurs.
   `X-Robots-Tag: noindex` : jamais de cache partagé, jamais d'indexation.
 - Le contournement d'une redirection ouverte est traité (`safeTarget`) : le
   paramètre `?next=` n'accepte qu'un chemin interne.
+- Une seule route échappe au cookie : `POST /api/tools/sync`, l'API des outils
+  (v9.12), protégée par son propre jeton et éteinte tant que le secret
+  `TOOLS_TOKEN` n'existe pas. Voir section 14.
 - EN LOCAL, RIEN DE TOUT ÇA NE S'APPLIQUE. Le Worker n'existe que sur
   Cloudflare, le double clic sur `index.html` en `file://` ouvre le site
   directement, sans login. C'est voulu.
@@ -1595,3 +1599,95 @@ elle ne vit pas dans le dépôt, d'où cette section.
 `servePrivately()` pose `Cache-Control: private, no-cache, must-revalidate` sur
 tout ce qui n'est pas un fichier de code versionné, et `private, max-age=31536000,
 immutable` sur `/js/*` et `/css/*` quand l'URL porte `?v=`. Voir section 10.
+
+## 14. Catalogue par MCP (v9.12)
+
+Claude peut lire et tenir à jour le catalogue des cafés sans ouvrir le site :
+ajouter le café qui vient d'arriver, enregistrer un nouveau sachet, corriger
+le stock, relire les dernières tasses. Deux pièces :
+
+- **L'API des outils**, `POST /api/tools/sync` (worker/index.js,
+  `toolsSync`). C'est la synchronisation des appareils elle-même : même corps
+  que `/api/sync` (`tables`, `tombstones`, `schema`), même `handleSync`,
+  même fusion ligne à ligne par `updated_at`. Un outil y est un appareil de
+  plus, rien de moins, rien de plus.
+- **Le serveur MCP**, `tools/logbook-mcp.mjs`, lancé par Claude Code (fichiers
+  `.mcp.json` du dossier Cafe et de `tracker/`). Sans dépendance, en stdio. Il
+  charge le code de l'app elle-même (`normalizeCoffee`, `stampRow`, `newId`,
+  `bagStock`...) dans une vm Node, comme les tests : un café ajouté par Claude
+  est exactement celui que l'app aurait écrit. Chaque appel lit d'abord le
+  document fusionné (un POST au contenu vide), puis, pour une écriture, envoie
+  SEULEMENT les lignes nouvelles ou modifiées, et les retrouve dans le document
+  que le serveur renvoie après l'avoir enregistré.
+
+### Les outils
+
+| Outil | Ce qu'il fait |
+|---|---|
+| `list_coffees` | cafés actifs (ou tous avec `include_archived`) : torréfacteur, torréfaction, traitement, méthode et recette recommandées, grammes restants dans le sachet en cours, date d'ouverture |
+| `get_coffee` | fiche complète d'un café, ses sachets, son stock, le résumé de ses tasses |
+| `add_coffee` | ajoute un café ; refuse un doublon actif (même nom, même torréfacteur) ; la recette recommandée doit exister ; avec `opened_date` ou `opened_today`, crée aussi le premier sachet |
+| `edit_coffee` | change seulement les champs fournis ; `active: true` réactive un café archivé |
+| `archive_coffee` | passe le café en archivé, ne supprime rien |
+| `add_bag` | nouveau sachet, avec les mêmes effets que le bouton de l'app (la fiche du café suit le sachet) ; ouvert aujourd'hui par défaut |
+| `correct_stock` | grammes restants du sachet en cours, mêmes règles que la correction de stock de l'app |
+| `recent_cups` | les dernières tasses (10 par défaut), éventuellement pour un seul café |
+
+Un café se désigne par son identifiant ou par son nom, sans tenir compte des
+majuscules ni des accents, un morceau du nom suffisant. Si plusieurs cafés
+correspondent, l'outil rend la liste des candidats et ne fait rien. Les dates
+suivent la convention de l'app : la date locale de l'ordinateur.
+
+### Les règles de sécurité
+
+- **Un jeton, et rien d'autre.** La route n'accepte que l'en-tête
+  `Authorization: Bearer` comparé en temps constant (HMAC des deux valeurs)
+  au secret `TOOLS_TOKEN`. Elle ne lit aucun cookie : une session du
+  navigateur n'y entre pas, et le jeton n'ouvre ni le site ni `/api/sync`.
+- **Éteinte par défaut.** Sans `TOOLS_TOKEN`, ou avec moins de 32 caractères,
+  la route répond 404 comme un chemin inconnu. GET est refusé (405).
+- **Pas de force brute.** Chaque appel passe par la limite d'essais
+  `LOGIN_LIMITER` (10 par minute et par adresse), sur une clé à part de celle
+  de `/login` : un appel au mauvais jeton répond 401 après 700 ms, et au delà
+  de la limite tout répond 429, même le bon jeton. Une écriture coûte deux
+  appels, une lecture un seul.
+- **Aucune suppression.** Aucun outil ne supprime ni n'envoie de tombe ;
+  archiver est réversible.
+- **La même fusion que la synchro.** Les lignes envoyées gagnent seulement si
+  elles sont plus récentes, le document n'est jamais remplacé en bloc, et la
+  porte de version s'applique : si le carnet est passé à un schéma plus récent
+  que l'outil, il refuse d'écrire et demande de mettre le dépôt à jour.
+- **Les sauvegardes quotidiennes** du document (section 9) couvrent aussi ce
+  que les outils écrivent.
+- **Le jeton ne sort jamais.** Le serveur MCP le lit et ne l'écrit nulle part :
+  ni dans ses réponses, ni dans ses erreurs, ni dans ses journaux (stderr). Il
+  ne l'envoie qu'en https, au site configuré.
+
+### Ce que Chris doit faire pour l'allumer
+
+Rien n'est actif tant que ces trois gestes ne sont pas faits, et aucun script
+du dépôt ne les fait à sa place : le secret ne doit exister que chez lui.
+
+1. **Créer le secret côté site.** Dans le dashboard Cloudflare, Workers &
+   Pages, puis le Worker coffee-extraction-logbook, onglet Settings, section
+   Variables and Secrets : ajouter une variable de type Secret nommée
+   TOOLS_TOKEN, avec pour valeur une longue chaîne aléatoire, au moins 32
+   caractères et plutôt une soixantaine, tirée d'un gestionnaire de mots de
+   passe par exemple. La garder dans ce gestionnaire.
+2. **Donner la même valeur à l'ordinateur.** Au choix : une variable
+   d'environnement utilisateur Windows nommée LOGBOOK_TOKEN (Paramètres,
+   Système, Informations système, Paramètres avancés du système, Variables
+   d'environnement, section de l'utilisateur), ou un fichier texte nommé
+   token, sans extension, dans un dossier .coffee-logbook du dossier
+   personnel (`%USERPROFILE%\.coffee-logbook\token`), contenant la valeur seule
+   sur la première ligne. La variable passe avant le fichier.
+3. **Redémarrer Claude Code**, pour qu'il relise la variable et lance le
+   serveur coffee-logbook déclaré dans `.mcp.json` (Claude Code demande la
+   première fois s'il faut faire confiance au serveur du projet).
+
+Pour couper l'accès : supprimer le secret TOOLS_TOKEN dans Cloudflare, la
+route repasse à 404 aussitôt. Pour changer de jeton : remplacer la valeur aux
+deux endroits. Sans jeton sur l'ordinateur, chaque outil répond simplement
+que la fonction n'est pas encore configurée et renvoie ici. La variable
+LOGBOOK_URL, facultative, change l'adresse du site (https obligatoire) ; par
+défaut c'est l'adresse du Worker en workers.dev.

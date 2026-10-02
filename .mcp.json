@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "coffee-logbook": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["A:/Claude - Workspaces/Workspace - Perso/Cafe/tracker/tools/logbook-mcp.mjs"]
+    }
+  }
+}
