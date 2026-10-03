@@ -207,12 +207,14 @@
      goes through I18N.tag. */
   const LATEST_SHOWN = 8;
   const MAX_LAST_TASTES = 4;
-  function lastTastes(e) {
+  /* `lead` goes first in the row, before the tastes: the pill of a cup that
+     came in from the other device (Q13, v9.17). */
+  function lastTastes(e, lead) {
     const tags = String(e.descriptors || "").split("|").filter(Boolean);
-    if (!tags.length) return "";
+    if (!tags.length && !lead) return "";
     const shown = tags.slice(0, MAX_LAST_TASTES).map(t => '<span class="last-tag">' + I18N.tag(t) + "</span>");
     const rest = tags.length - shown.length;
-    return '<div class="last-tastes">' + shown.join("") +
+    return '<div class="last-tastes">' + (lead || "") + shown.join("") +
       (rest > 0 ? '<span class="last-tag last-tag-plus">+' + rest + "</span>" : "") + "</div>";
   }
 

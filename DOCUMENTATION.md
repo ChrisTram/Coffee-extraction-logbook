@@ -161,6 +161,9 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/ui-jar.js` | le bocal au gramme près (v9.13, Q8) : son dessin, et son mouvement quand les grammes changent |
 | `js/ui-moments.js` | l'arrivée du matin (v9.13, Q7) et le record qui brille (J6) |
 | `js/ui-empty.js` | les écrans vides qui disent quoi faire (v9.13, M6) : dessin, phrase, bouton |
+| `js/ui-roll.js` | la valeur qui roule (v9.17) : un texte, ou une copie du texte d'un champ au dessus de lui |
+| `js/ui-brewer.js` | la cafetière qui change de forme (v9.17, Q12) : la Brikka fond en Switch, les champs roulent |
+| `js/ui-arrivals.js` | la tasse qui arrive de l'autre appareil (v9.17, Q13) : pastille, glissé, chiffres qui roulent |
 | `js/app.js` | démarrage, navigation, thème, langue, modales d'accueil et de données, abonnement aux données |
 | `css/fonts/` | les deux polices de la DA, embarquées en woff2, sous OFL (section 10) |
 | `sw.js`, `manifest.json`, `icons/` | PWA et hors ligne (section 10) |
@@ -810,6 +813,17 @@ les autres sur quatre (`.col-2` vaut `span 8`, le défaut `span 4`).
   jusqu'à sa valeur, les barres du récap poussent, un filet de vapeur monte de la note.
   Moins d'une seconde, une fois par jour. Chaque mouvement est fonction du temps écoulé
   depuis son début : un rendu au milieu (la synchro qui répond) le reprend où il en est.
+- **La tasse qui arrive de l'autre appareil** (v9.17, Q13, js/ui-arrivals.js) : quand une
+  synchro rapporte des tasses que cet appareil n'avait pas juste avant la fusion
+  (`DATA.lastArrivals()`, section 9), leur ligne dans les dernières tasses porte la classe
+  `arrived` et une pastille « de l'autre appareil » en tête des goûts, pendant dix minutes
+  (`ARRIVAL_SHOWN_MS`). La pastille ne devine pas l'appareil : une tasse ne dit pas où elle a
+  été saisie. La ligne glisse depuis le haut sur un fond cuivre qui s'efface (`arrival-play`,
+  2,2 s) UNE fois, quand elle est vue (IntersectionObserver ; page cachée ou carte hors
+  écran, elle attend) ; un rendu au milieu la reprend où elle en est (`--arrival-shift`).
+  Tant qu'une arrivée n'a pas glissé, les quatre chiffres clés ROULENT depuis ce qu'ils
+  montraient (`UI.rollText`) au lieu de recompter depuis zéro ; le grain de synchro saute
+  et les pastilles du stock bougent comme d'habitude. Moins d'animations : la pastille seule.
 - **Le stock dans le coin** (v8.89) : ses petits bocaux sont des bocaux de
   js/ui-jar.js depuis la v9.13 (`data-jar-kind="glass"`) : le niveau bouge et les
   grammes défilent quand ils changent, rouge et une secousse sous trois tasses.
@@ -1052,7 +1066,12 @@ qu'il est ouvert.
 - Badge de vanne au Switch, déduit des étapes passées (« OUVERTE », « FERMÉE »,
   « Ouvrir »).
 - Anneau : le total de la recette (`totalText`), sinon dernier palier plus une minute,
-  sinon la moyenne des temps de cette recette, sinon 5:00.
+  sinon la moyenne des temps de cette recette, sinon 5:00. Depuis la v9.01 c'est un
+  petit anneau (72 à 104 px, 76 au téléphone) : en v9.17 son étiquette (« verse jusqu'à »,
+  « étape 2 sur 5 ») est masquée, elle débordait du cercle (99 px de large pour 61 à 84 px
+  dedans) et l'étape surlignée le dit déjà, et le chiffre est dimensionné sur l'anneau
+  (`container-type: inline-size`, `min(..., 33cqi)`) : 1000 ou 59:59 restent dedans à
+  toutes les largeurs. `#br-in` est masqué depuis la v9.01.
 - Arrêter depuis le mode reporte temps et écoulement comme le chrono, puis montre la
   note (`#br-note`, même curseur sans pouce) qui écrit dans `#f-note`, et deux boutons :
   Enregistrer la tasse (soumet le formulaire) ou Compléter la saisie.
@@ -1093,6 +1112,18 @@ qu'avant.
   +15 s, et « Reprendre le chrono » quand le chrono a un temps. Une roue n'écrit
   son champ que si Chris l'a tournée ; `writeDuration` et le brouillon la
   remettent sur son champ.
+- **La cafetière qui change de forme** (Q12, v9.17, js/ui-brewer.js) : `#f-brewer`, à gauche des
+  deux boutons de machine, dessine la Brikka ou le Switch (deux silhouettes au même nombre de
+  points). Changer de machine la fait fondre en l'autre en 600 ms, l'alu devient verre, et les
+  champs que la machine change (recette, dose, eau, molette, feu, tasse) ROULENT de l'ancienne
+  valeur à la nouvelle (`UI.methodSnapshot`, `UI.playMethodChange`, `UI.rollField`) : le champ
+  garde sa nouvelle valeur tout de suite, une copie de son texte roule au dessus, et le premier
+  toucher, focus ou frappe l'arrête. Un champ propre à l'autre machine (la température du
+  Switch, le feu de la Brikka) glisse en place. Seul un geste de Chris fait bouger le dessin
+  (`navigator.userActivation`) : le démarrage et le brouillon le posent immobile ; « Refaire »
+  ou « Modifier » une tasse de l'autre machine le fait fondre quand la saisie apparaît. Même
+  dessin en petit dans la saisie rapide, à la place du point de machine. Moins d'animations :
+  tout est posé d'un coup.
 - Grille des réglages : la température (Switch) et la mouture prennent chacune une
   rangée entière (`.field-wide`), `grid-auto-flow: dense` évite le trou.
 
@@ -1241,7 +1272,11 @@ réponse avec son état tel qu'il est au retour (`SYNC.fusionner`, la même règ
 que le serveur, un test compare les deux) : une tasse saisie pendant l'échange
 n'est plus perdue. Un compteur de génération relance une synchro si quelque
 chose a bougé pendant le vol, et une synchro demandée pendant une autre repart
-à la fin. Elle ne rappelle PAS `persister()`, ce qui bouclerait. En cas
+à la fin. Elle ne rappelle PAS `persister()`, ce qui bouclerait. Au retour, elle note les
+tasses que la fusion apporte et que cet appareil n'avait pas (`arrivedIds`, les ids pris
+juste avant la fusion, donc une tasse saisie ici pendant l'échange n'en est jamais une ; rien
+sur un appareil vide) : `DATA.lastArrivals()` les rend, en mémoire seulement, jamais écrites
+ni envoyées (Q13, v9.17). En cas
 d'échec les données locales sont laissées intactes et une relance part après
 5 s, 15 s, 1 min, puis toutes les 5 min ; au retour sur l'appli
 (`visibilitychange`) aussi.

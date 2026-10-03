@@ -98,6 +98,8 @@
   function chooseMethod(m, keepRecipe) {
     entry.method = m;
     $$(".btn-method").forEach(b => setPressed(b, b.dataset.method === m));
+    // Q12 (v9.17): the brewer drawn next to the buttons melts into the other one.
+    UI.paintBrewer($("#f-brewer"), m);
     // Fields specific to each method.
     $("#field-add-water").hidden = m !== "Brikka";
     $("#field-power").hidden = m !== "Brikka";
@@ -283,6 +285,8 @@
   function onCoffeeChoice() {
     const coffee = DATA.state.coffees.find(c => c.id === $("#f-coffee").value);
     if (!coffee) { updateWarnings(); return; }
+    // A coffee made on the other machine switches it: the fields roll as for a tap on the machine (Q12).
+    const before = UI.methodSnapshot();
     // Preselects the recommended machine and recipe, everything stays editable.
     const recommended = findRecipe(coffee.recommended_recipe);
     if (recommended) {
@@ -299,6 +303,7 @@
       const t = r && TEMP_BY_ROAST[r.id] ? temperatureForCoffee(r, coffee) : "";
       if (t !== "" && t !== undefined) { $("#f-temp").value = t; updateTempHint(); }
     }
+    if (entry.method !== before.method) UI.playMethodChange(before);
     updateWarnings();
     updateLive();
   }
@@ -863,9 +868,14 @@
 
   function wireEntry() {
     wireDictation($("#f-dictate"), $("#f-comment"), $("#f-dictate-text"));
+    /* Q12 (v9.17): what the fields showed before, so that what the other
+       machine changes rolls to its new value (js/ui-brewer.js). The fields
+       hold their new values at once: the roll only draws on top of them. */
     $$(".btn-method").forEach(b => b.addEventListener("click", () => {
+      const before = UI.methodSnapshot();
       chooseMethod(b.dataset.method);
       prefillFromRecipe($("#f-recipe").value);
+      UI.playMethodChange(before);
     }));
     $("#f-coffee").addEventListener("change", onCoffeeChoice);
     /* As soon as Chris touches the date, it is HIS: arriving on the screen will

@@ -264,7 +264,7 @@ Chart.defaults = hollow();
 const SCRIPTS = ["js/legacy-names.js", "js/tools.js", "js/i18n.en.js", "js/i18n.js", "js/grind.js", "js/recipes.js", "js/demo-data.js",
   "js/sync.js", "js/data-csv.js", "js/data-schema.js", "js/data-store.js", "js/data-calcs.js",
   "js/data-migrations.js", "js/data.js", "js/tuning.js", "js/charts.js",
-  "js/ui-core.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-wheel.js", "js/ui-cup.js", "js/ui-dial.js", "js/ui-rating-dial.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js", "js/ui-history.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/ui-jar.js", "js/ui-moments.js", "js/ui-empty.js", "js/search.js", "js/ui-panel.js", "js/ui-palette.js", "js/ui-shortcuts.js", "js/app.js"];
+  "js/ui-core.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-wheel.js", "js/ui-cup.js", "js/ui-dial.js", "js/ui-rating-dial.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js", "js/ui-history.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/ui-jar.js", "js/ui-moments.js", "js/ui-roll.js", "js/ui-brewer.js", "js/ui-arrivals.js", "js/ui-empty.js", "js/search.js", "js/ui-panel.js", "js/ui-palette.js", "js/ui-shortcuts.js", "js/app.js"];
 const source = SCRIPTS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 
 // Intercepted console.error: that is where render errors come out.
@@ -1511,6 +1511,86 @@ check("the temperature field no longer has a misleading placeholder", !tempField
     ui.nav.screenName + " " + ui.entry.editId);
   check("and the panel has nothing to walk", ui.panelStep(1) === false);
   ui.resetEntry();
+}
+
+/* v9.17, Q13: A CUP THAT ARRIVES FROM THE OTHER DEVICE, through the real sync
+   path. A fake server answers with one cup more; meanwhile a cup is saved on
+   this device. Only the first one is an arrival, and the dashboard says so. */
+{
+  const D = api.DATA, ui = api.UI;
+  const keep = { demo: D.state.demoActive, protocol: location.protocol, fetch: globalThis.fetch };
+  const pad = n => String(n).padStart(2, "0"), now = new Date();
+  const today = now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate());
+  const known = D.state.extractions[0];
+  const remote = { ...known, id: "e-from-phone", date_time: today + "T23:58", descriptors: "", comment: "", updated_at: Date.now() + 5000 };
+  let mine = null, calls = 0;
+  D.state.demoActive = false;
+  location.protocol = "https:";
+  globalThis.fetch = async (url, init) => {
+    calls++;
+    const sent = JSON.parse(init.body);
+    // Saved on this device while the exchange is in flight.
+    if (!mine) mine = await D.addExtraction({ ...known, date_time: today + "T23:57" });
+    const extra = calls === 1 ? [remote] : [];
+    return { status: 200, ok: true, redirected: false,
+      json: async () => ({ tables: { ...sent.tables, extractions: [...sent.tables.extractions, ...extra] }, tombstones: sent.tombstones, serverTime: Date.now(), size: 10, cap: 1000 }) };
+  };
+  location.hash = "#dashboard";
+  if (window._handlers.hashchange) window._handlers.hashchange();
+  await new Promise(r => setTimeout(r, 60));
+  const result = await D.synchronize(true);
+  const ids = D.lastArrivals().map(a => a.id);
+  check("a sync that brings a cup from the other device succeeds", result === "ok" && calls === 1, result + " " + calls);
+  check("that cup is an arrival", ids.includes("e-from-phone"), ids.join(","));
+  check("the cup saved here during the exchange is not", !!mine && !ids.includes(mine.id), mine && mine.id);
+  const table = document.querySelector("#latest-list").innerHTML;
+  const rowOf = id => table.split("<tr").find(t => t.includes('data-ext="' + id + '"') && t.includes("last-clickable")) || "";
+  // Written through the shared escaping: the apostrophe comes out as &#39;.
+  const pill = '<span class="arrival-from">' + api.I18N.t("arrival_from_other").replace(/'/g, "&#39;") + "</span>";
+  check("it tops the latest cups, marked as arrived, with its pill",
+    table.indexOf('data-ext="e-from-phone"') > -1 && table.indexOf('data-ext="e-from-phone"') < table.indexOf('data-ext="' + mine.id + '"') &&
+    rowOf("e-from-phone").includes("arrived") && rowOf("e-from-phone").includes(pill), rowOf("e-from-phone").slice(-400));
+  check("the cup of this device has neither", !rowOf(mine.id).includes("arrived") && !rowOf(mine.id).includes("arrival-from"));
+  check("until it has slid in, the counts roll from what they showed instead of counting from zero", ui.arrivalsPlaying() === true);
+  // A second exchange that brings nothing new: the arrival keeps its pill, nothing is added.
+  await D.synchronize(true);
+  check("an exchange with nothing new adds no arrival", D.lastArrivals().length === ids.length && calls === 2, D.lastArrivals().length + " " + calls);
+  check("and the pill stays on the cup that came in", document.querySelector("#latest-list").innerHTML.includes(pill));
+  check("nothing about it is stored on the device", ![...store.keys()].some(k => /arriv/i.test(k)) && !JSON.stringify(store.get("extractions") || []).includes("arriv"));
+  // The pill lasts ten minutes after the arrival.
+  const t = 1e9;
+  const shown = ui.shownArrivals([{ id: "a", at: t - 60000 }, { id: "b", at: t - ui.ARRIVAL_SHOWN_MS - 1 }, null], t);
+  check("the pill lasts ten minutes, then goes", shown.has("a") && !shown.has("b") && shown.size === 1);
+  check("without a list, nothing shows", ui.shownArrivals(undefined, t).size === 0);
+  // Back as it was.
+  D.state.extractions = D.state.extractions.filter(e => e.id !== "e-from-phone" && e.id !== mine.id);
+  D.state.demoActive = keep.demo;
+  location.protocol = keep.protocol;
+  globalThis.fetch = keep.fetch;
+  D.notify();
+}
+
+/* v9.17, Q12: THE BREWER FOLLOWS THE MACHINE, and the fields keep their values. */
+{
+  const ui = api.UI;
+  const brewer = document.querySelector("#f-brewer");
+  ui.chooseMethod("Switch");
+  check("the entry's brewer is drawn, both silhouettes in one", brewer.innerHTML.includes('class="bw-body"') && brewer.innerHTML.includes('class="bw-switch"'));
+  check("and takes the Switch's shape", brewer.dataset.method === "Switch");
+  const before = ui.methodSnapshot();
+  ui.chooseMethod("Brikka");
+  ui.prefillFromRecipe(document.querySelector("#f-recipe").value);
+  check("then the Brikka's", brewer.dataset.method === "Brikka");
+  check("switching machine never holds the fields: nothing to roll off screen", ui.playMethodChange(before) === 0 && before.method === "Switch");
+  const k0 = ui.brewerPathAt(ui.BREWER_SHAPES.Brikka.body, ui.BREWER_SHAPES.Switch.body, 0);
+  const k1 = ui.brewerPathAt(ui.BREWER_SHAPES.Brikka.body, ui.BREWER_SHAPES.Switch.body, 1);
+  check("the melt starts on the Brikka and ends on the Switch", k0.startsWith("M90.0 14.0") && k1.startsWith("M36.0 36.0") && k0.split("L").length === k1.split("L").length);
+  // The quick entry draws the same brewer in place of the machine dot.
+  ui.updateQuickRepeat();
+  check("the quick entry's line is drawn without error", true);
+  // A rolled text ends on its value; off screen it is written at once.
+  const probe = makeElement("probe");
+  check("off screen, a value is written at once", ui.rollText(probe, "14", "13") === false && probe.textContent === "14");
 }
 
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);

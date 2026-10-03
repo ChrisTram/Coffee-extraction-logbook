@@ -102,8 +102,11 @@
 
   /* WHAT THE RECIPE IMPOSES, in numbers. The sheet has only three fields and
      saves everything else from the recipe: without this line you had to know
-     the recipe by heart to know what you had just written. The machine dot is
-     here too, it is the only place the method shows in this sheet. */
+     the recipe by heart to know what you had just written. The machine shows
+     here too, it is the only place the method shows in this sheet: since
+     v9.17 (Q12) as the small brewer of the entry form (js/ui-brewer.js),
+     built once and kept, so that a recipe of the other machine melts it into
+     the other brewer, and the figures roll. */
   function updateQuickRepeat() {
     const r = findRecipe($("#q-recipe").value);
     const target = $("#q-resumed");
@@ -112,9 +115,15 @@
     if (r.dose) parts.push(r.dose + " g");
     if (r.water) parts.push(r.water + " g");
     if (r.dial) parts.push(I18N.t("dial") + " " + r.dial);
-    target.innerHTML =
-      '<span class="dot-method ' + String(r.method).toLowerCase() + '"></span>' +
-      "<span>" + (parts.length ? I18N.t("quick_from_recipe", { v: parts.join(", ") }) : I18N.tr(r.method)) + "</span>";
+    let art = target.querySelector(".brewer"), line = target.querySelector(".quick-resumed-text");
+    if (!art || !line) {
+      target.innerHTML = '<span class="brewer brewer-mini" aria-hidden="true"></span><span class="quick-resumed-text"></span>';
+      art = target.querySelector(".brewer");
+      line = target.querySelector(".quick-resumed-text");
+    }
+    UI.paintBrewer(art, r.method);
+    if (art) art.title = I18N.tr(r.method);
+    UI.rollText(line, parts.length ? I18N.t("quick_from_recipe", { v: parts.join(", ") }) : I18N.tr(r.method));
   }
 
   async function saveQuick() {

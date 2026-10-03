@@ -507,6 +507,32 @@ const DATA = (() => {
     if (!state.cups.length) state.cups = defaultCups();
   }
 
+  /* Q13 (v9.17): THE CUPS THAT ARRIVED FROM THE OTHER DEVICE. Pure: the ids
+     of `rows` this device did not have before the merge. Nothing when it had
+     no cup at all: a first sync (a new device, emptied site data) brings the
+     whole logbook, that is not "a cup arriving". */
+  function arrivedIds(idsBefore, rows) {
+    const known = idsBefore instanceof Set ? idsBefore : new Set(idsBefore || []);
+    if (!known.size || !Array.isArray(rows)) return [];
+    return rows.filter(r => r && r.id && !known.has(r.id)).map(r => r.id);
+  }
+
+  /* The arrivals of this page session, oldest first: { id, at }. Memory only,
+     never written anywhere and never synced: it says what came in while this
+     tab was open, for the dashboard to show it (js/ui-arrivals.js). A cup
+     saved on this device is in the state BEFORE the merge, so it never shows
+     up here, even when saved during the exchange. */
+  const ARRIVALS_KEPT = 40;
+  let arrivals = [];
+  function noteArrivals(ids, at) {
+    if (!ids.length) return;
+    const fresh = new Set(ids);
+    arrivals = arrivals.filter(a => !fresh.has(a.id))
+      .concat(ids.map(id => ({ id, at })))
+      .slice(-ARRIVALS_KEPT);
+  }
+  function lastArrivals() { return arrivals.map(a => ({ ...a })); }
+
   function syncPossible() {
     // NEVER in demo: without this guard, loading the demo on a device
     // would send 62 fake extractions into the real data.
@@ -534,10 +560,13 @@ const DATA = (() => {
     try {
       const received = await SYNC.exchange(localPayload());
       tablesBefore = JSON.stringify(localPayload().tables);
+      // The cups this device has on return, its own included (Q13).
+      const cupsBefore = new Set(state.extractions.map(e => e.id));
       setClockOffset((Number(received.serverTime) || Date.now()) - Date.now());
       /* MERGED with the state as it is on return, no longer substituted:
          whatever was entered during the exchange stays. */
       adoptTables(SYNC.mergeStates(received, localPayload()));
+      noteArrivals(arrivedIds(cupsBefore, state.extractions), Date.now());
       state.syncSize = Number(received.size) || 0;
       state.syncCap = Number(received.cap) || 0;
       migrateData();
@@ -799,6 +828,8 @@ const DATA = (() => {
   return {
     state, subscribe, notify, init, dataRevision,
     synchronize, syncPossible, carryTimestamps,
+    // Q13 (v9.17): the cups that came in through the sync, this session only.
+    arrivedIds, lastArrivals,
     /* csvRecipes is exposed so the CSV round trip is testable on the REAL
        export path: that is the one that lost heat_level. */
     csvParse, csvSerialize, csvRecipes, COFFEE_COLS, EXT_COLS, RECIPE_COLS, PURCHASE_COLS,

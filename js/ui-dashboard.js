@@ -312,6 +312,9 @@
     return machines.size < 2 ? "empty_duel_one_machine" : "empty_duel";
   }
 
+  // The key figures as last written, so an arrival can roll them from there (Q13).
+  const shownKpis = [];
+
   function renderDashboard() {
     /* TWO data sets, and knowing which one to take is the only question that
        matters here. exts counts WHAT HAPPENED, analyzable advises WHAT TO DO.
@@ -367,13 +370,23 @@
        week of failed cups. A dash, with no animation or unit. */
     kpis[2].empty = !ratings7d.length;
     kpis[3].empty = ratings.length < 2;
+    /* Q13 (v9.17): when a cup just came in from the other device, the
+       figures ROLL from what they showed to their new value instead of
+       counting up from zero again: the eye goes to what moved. */
+    const rollKpis = UI.arrivalsPlaying();
     $$("#kpis .kpi-number").forEach((el, i) => {
       if (kpis[i].empty) {
         el.textContent = "-";
         el.parentElement.querySelector("small")?.remove();
+        shownKpis[i] = "-";
         return;
       }
-      animateCounter(el, kpis[i].value, kpis[i].dec, "", kpis[i].plusMinus ? "± " : "");
+      const prefix = kpis[i].plusMinus ? "± " : "";
+      const text = prefix + kpis[i].value.toLocaleString(I18N.locale(),
+        { minimumFractionDigits: kpis[i].dec, maximumFractionDigits: kpis[i].dec });
+      if (rollKpis && shownKpis[i] !== undefined) UI.rollText(el, text, shownKpis[i]);
+      else animateCounter(el, kpis[i].value, kpis[i].dec, "", prefix);
+      shownKpis[i] = text;
     });
 
     /* The three figures taken out of the tiles. They stay readable, in plain
@@ -571,13 +584,18 @@
        phone (44 px, « 2… ») nor on a 1,280 laptop. The brewer no longer has
        its column: its colour dot moves in front of the coffee name. */
     let currentDay = "";
+    /* Q13 (v9.17): a cup that came in from the other device wears a pill in
+       its tastes cell (the widest that can give room without cutting the
+       coffee's name), and slides in once (js/ui-arrivals.js). */
+    const arrived = UI.recentArrivals();
     $("#latest-list").innerHTML = latestCups.map(e => {
       const day = dayKey(e.date_time);
       const header = day !== currentDay
         ? '<tr class="d-day"><th colspan="5" scope="colgroup">' + dayLabelOf(e.date_time) + "</th></tr>" : "";
       currentDay = day;
+      const came = arrived.has(e.id);
       return header +
-      '<tr class="last-clickable' + (isFailed(e) ? " row-failed" : "") +
+      '<tr class="last-clickable' + (isFailed(e) ? " row-failed" : "") + (came ? " arrived" : "") +
       '" data-ext="' + e.id + '" tabindex="0" role="button" title="' + titleAttr(I18N.t("history_edit")) + '">' +
       '<td class="d-when">' + fmtHour(e.date_time) + "</td>" +
       '<td class="d-coffee"><span class="dot-method ' + e.method.toLowerCase() +
@@ -588,10 +606,11 @@
         shortMeasures(e) +
         (e.diagnostic ? '<span class="d-diag">' + displayedDiags(e.diagnostic) + "</span>" : "") +
       "</td>" +
-      '<td class="d-tastes">' + lastTastes(e) + "</td>" +
+      '<td class="d-tastes">' + lastTastes(e, came ? UI.arrivalPill() : "") + "</td>" +
       '<td class="d-rating">' + (e.score_10 !== "" ? fmtDecimal(Number(e.score_10), 1) : "") + "</td></tr>" +
       lastComment(e);
     }).join("");
+    UI.playArrivals($("#latest-list"));
     /* The full text on hover, but ONLY if the line truncated it: a comment
        readable in full does not need repeating. Measured on hover and not at
        render: the screen may render hidden, and everything measures 0. */

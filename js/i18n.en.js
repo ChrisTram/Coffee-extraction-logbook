@@ -185,6 +185,7 @@ const I18N_EN = {
     sync_size: "Warning: the synced document uses {p} percent of what the server accepts. Archive the history before it reaches 100.",
     toast_sync_ok: "Synced",
     toast_sync_failed: "Sync failed",
+    arrival_from_other: "from your other device",
     dash_brikka_brews: "Brikka brews",
     dash_switch_brews: "Switch brews",
     detail_score: "average score",

@@ -494,9 +494,14 @@
 
     <div class="field">
       <span class="label">Méthode</span>
-      <div class="choice-method" role="radiogroup" aria-label="Méthode">
-        <button type="button" class="btn-method brikka" aria-pressed="false" data-method="Brikka">Brikka</button>
-        <button type="button" class="btn-method switch" aria-pressed="false" data-method="Switch">Switch</button>
+      <!-- Q12 (v9.17): the brewer, drawn by js/ui-brewer.js, melts into the
+           other one when the machine changes. -->
+      <div class="method-row">
+        <span class="brewer" id="f-brewer" aria-hidden="true"></span>
+        <div class="choice-method" role="radiogroup" aria-label="Méthode">
+          <button type="button" class="btn-method brikka" aria-pressed="false" data-method="Brikka">Brikka</button>
+          <button type="button" class="btn-method switch" aria-pressed="false" data-method="Switch">Switch</button>
+        </div>
       </div>
     </div>
 
@@ -1991,6 +1996,9 @@ Cảm ơn shop.</pre>
 <!-- v9.13: the jar to the gram, the moments that move, the empty places. -->
 <script defer src="js/ui-jar.js?v=9.16"></script>
 <script defer src="js/ui-moments.js?v=9.16"></script>
+<script defer src="js/ui-roll.js?v=9.16"></script>
+<script defer src="js/ui-brewer.js?v=9.16"></script>
+<script defer src="js/ui-arrivals.js?v=9.16"></script>
 <script defer src="js/ui-empty.js?v=9.16"></script>
 <script defer src="js/ui-panel.js?v=9.16"></script>
 <script defer src="js/ui-palette.js?v=9.16"></script>

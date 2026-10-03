@@ -28,7 +28,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const CSS_SHEETS = ["css/base.css", "css/screens.css", "css/dialogs.css", "css/finishing.css"];
 const readCss = () => CSS_SHEETS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 const SOURCE_UI = ["js/ui-core.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-wheel.js", "js/ui-cup.js", "js/ui-dial.js", "js/ui-rating-dial.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js",
-  "js/ui-history.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/ui-jar.js", "js/ui-moments.js", "js/ui-empty.js", "js/ui-panel.js", "js/ui-palette.js", "js/ui-shortcuts.js", "js/app.js"]
+  "js/ui-history.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/ui-jar.js", "js/ui-moments.js", "js/ui-roll.js", "js/ui-brewer.js", "js/ui-arrivals.js", "js/ui-empty.js", "js/ui-panel.js", "js/ui-palette.js", "js/ui-shortcuts.js", "js/app.js"]
   .map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 /* demo-data.js has not been a script tag since v7.56, but the harness still
    loads it: loadDemo() needs it and there is no network here. */
@@ -3649,6 +3649,71 @@ for (const sheet of CSS_SHEETS) {
      every Ctrl K (a $$ lost in a replacement string, the August 14 bug again). */
   const singleAsList = SOURCE_UI.match(/(^|[^$])\$\("[^"]*"\)\.(some|forEach|map|filter|find|every)\(/m);
   check("no single-element lookup is used as a list", !singleAsList, singleAsList && singleAsList[0]);
+}
+
+/* v9.17: THE CUP THAT ARRIVES (Q13), THE BREWER THAT MELTS (Q12), THE RINGS. */
+{
+  // Which cups came in through a sync: only the ids this device did not have.
+  const rows = [{ id: "e1" }, { id: "e2" }, { id: "e-phone" }, { id: "e-phone-2" }];
+  check("a sync names the cups it brought, and only those",
+    JSON.stringify(DATA.arrivedIds(new Set(["e1", "e2"]), rows)) === JSON.stringify(["e-phone", "e-phone-2"]),
+    JSON.stringify(DATA.arrivedIds(new Set(["e1", "e2"]), rows)));
+  check("a cup this device already had never counts, even edited elsewhere", DATA.arrivedIds(["e1", "e2", "e-phone", "e-phone-2"], rows).length === 0);
+  check("the first sync of an empty device brings the whole logbook, not « a cup arriving »", DATA.arrivedIds([], rows).length === 0);
+  check("rows without an id, or no rows, are not arrivals",
+    DATA.arrivedIds(["e1"], [null, {}, { id: "" }]).length === 0 && DATA.arrivedIds(["e1"], undefined).length === 0);
+  check("the arrivals are read as a copy", (() => { const a = DATA.lastArrivals(); a.push({ id: "x" }); return !DATA.lastArrivals().some(x => x.id === "x"); })());
+  // The ids are taken on return, BEFORE the merge, so a cup saved during the exchange is this device's.
+  const sync = SOURCE_DATA.slice(SOURCE_DATA.indexOf("async function synchronize("), SOURCE_DATA.indexOf("function scheduleSync("));
+  const before = sync.indexOf("const cupsBefore = new Set(state.extractions.map(e => e.id));");
+  const merge = sync.indexOf("adoptTables(SYNC.mergeStates(received, localPayload()));");
+  const noted = sync.indexOf("noteArrivals(arrivedIds(cupsBefore, state.extractions), Date.now());");
+  check("the arrivals are measured around the merge of the answer, the local cups taken on return",
+    before > sync.indexOf("await SYNC.exchange(") && before < merge && merge < noted, [before, merge, noted].join(" "));
+  // Memory only: never stored, never sent.
+  const saveLocalSrc = SOURCE_DATA.slice(SOURCE_DATA.indexOf("async function saveLocal()"), SOURCE_DATA.indexOf("// ---------- File System Access"));
+  const payloadSrc = SOURCE_DATA.slice(SOURCE_DATA.indexOf("function localPayload()"), SOURCE_DATA.indexOf("function adoptTables("));
+  check("the arrivals are neither stored nor synced, and the data schema is untouched",
+    !/arriv/i.test(saveLocalSrc) && !/arriv/i.test(payloadSrc) && !("arrivals" in DATA.state) && SOURCE_DATA.includes("const CURRENT_SCHEMA = 23;"));
+
+  // The three new modules are loaded by the page, the offline cache and the three harnesses.
+  const html = readFileSync(join(ROOT, "index.html"), "utf8"), sw = readFileSync(join(ROOT, "sw.js"), "utf8");
+  const version = (html.match(/js\/app\.js\?v=([\d.]+)/) || [])[1];
+  for (const f of ["ui-roll", "ui-brewer", "ui-arrivals"]) {
+    check(f + ".js is in the page, the offline cache and the harnesses",
+      html.includes('<script defer src="js/' + f + ".js?v=" + version + '"></script>') && sw.includes('"./js/' + f + '.js"') &&
+      ["tools/boot.test.mjs", "tools/modules.test.mjs"].every(t => readFileSync(join(ROOT, t), "utf8").includes('"js/' + f + '.js"')) &&
+      SOURCE_UI.includes("Object.assign(UI, {"), version);
+  }
+  check("the entry has its brewer next to the machine's buttons", /<div class="method-row">\s*<span class="brewer" id="f-brewer" aria-hidden="true"><\/span>\s*<div class="choice-method"/.test(html));
+  check("the pill and the brewer speak French and English", bilingual("arrival_from_other"));
+  const pillFr = (I18N_FR_SRC.match(/arrival_from_other: \{ fr: "([^"]*)" \}/) || [])[1];
+  check("the pill does not guess the device: « de l'autre appareil »", pillFr === "de l'autre appareil", pillFr);
+
+  // The brewer: two silhouettes with as many points each, so one melts into the other.
+  const brewerSrc = readFileSync(join(ROOT, "js/ui-brewer.js"), "utf8");
+  const shapes = new Function(brewerSrc.slice(brewerSrc.indexOf("const SHAPES = {"), brewerSrc.indexOf("const lerp")).replace("const SHAPES =", "return"))();
+  check("the Brikka and the Switch have the same number of points, body and handle",
+    shapes.Brikka.body.length === shapes.Switch.body.length && shapes.Brikka.handle.length === shapes.Switch.handle.length &&
+    shapes.Brikka.body.length >= 12, shapes.Brikka.body.length + " / " + shapes.Switch.body.length);
+  check("only a change Chris makes moves the brewer, never the startup or the draft",
+    brewerSrc.includes("const quiet = calm() || hidden() || !userActed() || from === target;") && brewerSrc.includes("navigator.userActivation"));
+  check("the inputs stay the truth: the roll only draws above them, and a touch ends it",
+    readFileSync(join(ROOT, "js/ui-roll.js"), "utf8").includes('["pointerdown", "focus", "input", "keydown"]') &&
+    SOURCE_UI.includes("const before = UI.methodSnapshot();\n      chooseMethod(b.dataset.method);\n      prefillFromRecipe($(\"#f-recipe\").value);\n      UI.playMethodChange(before);"));
+
+  // CSS: one block, reduced motion everywhere, and the rings measured.
+  const finishing = readFileSync(join(ROOT, "css/finishing.css"), "utf8");
+  const block = finishing.slice(finishing.indexOf("/* ---------- Brewer morph and sync arrival (v9.17) ---------- */"));
+  check("the v9.17 styles are one block at the end of finishing.css", block.length > 200 && block.includes(".arrival-from") && block.includes(".brewer {"));
+  check("every v9.17 movement stops under reduced motion",
+    block.includes("@media (prefers-reduced-motion: reduce) {\n  .roll-out { display: none; }\n" +
+      "  .roll-in, .method-arrive, .table-latest tr.arrival-play { animation: none; }\n  .bw-body, .bw-brikka, .bw-switch { transition: none; }\n}"));
+  check("the brew ring keeps its figure inside: no label in the compact ring, a figure sized on the ring",
+    block.includes(".br-ring { container-type: inline-size; }") && block.includes(".br-center .br-label { display: none; }") &&
+    /\.br-center #br-target \{ font-size: min\(clamp\([^)]*\), 33cqi\); \}/.test(block));
+  const tooSmall = [...block.matchAll(/font-size:\s*([\d.]+)rem/g)].filter(m => Number(m[1]) < 0.75);
+  check("no v9.17 text under 0.75rem", tooSmall.length === 0, tooSmall.map(m => m[0]).join(", "));
 }
 
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);

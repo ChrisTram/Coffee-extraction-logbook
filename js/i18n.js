@@ -227,6 +227,8 @@ const I18N = (() => {
     sync_size: { fr: "Attention : le document synchronisé occupe {p} pour cent de la place que le serveur accepte. Il faudra archiver l'historique avant d'atteindre 100." },
     toast_sync_ok: { fr: "Synchronisé" },
     toast_sync_failed: { fr: "Synchronisation impossible" },
+    // Q13 (v9.17): the pill of a cup that came in through the sync.
+    arrival_from_other: { fr: "de l'autre appareil" },
 
     dash_brikka_brews: { fr: "extractions Brikka" },
     dash_switch_brews: { fr: "extractions Switch" },
