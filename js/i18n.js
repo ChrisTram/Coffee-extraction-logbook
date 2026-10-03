@@ -749,6 +749,35 @@ const I18N = (() => {
 
     // Navigation, sync bean, charts and loading (v9.13)
     scrub_rolling: { fr: "{d} · moyenne {n}" },
+    // Entry, rating dial, grinder dial, time wheels and the saved cup (v9.13).
+    rating_word_low: { fr: "à revoir" },
+    rating_word_ok: { fr: "correcte" },
+    rating_word_good: { fr: "bonne tasse" },
+    rating_word_great: { fr: "superbe" },
+    rating_word_top: { fr: "exceptionnelle" },
+    rating_dial_aria: { fr: "Note de la tasse, de 0 à 10" },
+    rating_dial_value: { fr: "{n} sur 10, {w}" },
+    rating_dial_empty: { fr: "à noter" },
+    grind_finer: { fr: "Un clic plus fin" },
+    grind_coarser: { fr: "Un clic plus gros" },
+    grind_um: { fr: "≈ {u} µm" },
+    grind_zone_in: { fr: "Dans ta zone dorée sur ce café : {a} à {b}, {m} de moyenne sur {n} tasses." },
+    grind_zone_finer: { fr: "{k} cran{s} plus fin que ta zone dorée ({a} à {b}, {m} de moyenne)." },
+    grind_zone_coarser: { fr: "{k} cran{s} plus gros que ta zone dorée ({a} à {b}, {m} de moyenne)." },
+    wheel_chrono: { fr: "Reprendre le chrono" },
+    cup_saved: { fr: "Tasse enregistrée" },
+    cup_close: { fr: "Fermer" },
+    cup_ratio: { fr: "Ratio" },
+    cup_in_cup: { fr: "en tasse" },
+    cup_avg: { fr: "Ta moyenne ici" },
+    cup_avg_n: { fr: "sur {n} tasse{s}" },
+    cup_avg_none: { fr: "pas encore de tasse notée" },
+    cup_this: { fr: "Cette tasse" },
+    cup_diff_up: { fr: "+{d} sur ta moyenne" },
+    cup_diff_down: { fr: "−{d} sous ta moyenne" },
+    cup_diff_same: { fr: "pile ta moyenne" },
+    cup_left: { fr: "Dans le sachet" },
+    cup_bag_empty: { fr: "sachet vide" },
   };
 
   // ---------- 3. Display maps for data values ----------

@@ -133,12 +133,25 @@
     }
     $(".br-time-row").hidden = !target;
 
-    // Total poured, out of the cup's water: the carafe, as one bar.
+    /* J2 (v9.13): THE CUP FILLS as the water goes in. Chris has no carafe:
+       the entry's cup is where the coffee ends up. Up to the current step's
+       target, timed or, for a by-eye recipe (the 4:6), the step tapped to;
+       each pour target is a mark on the cup. */
     const water = Number($("#f-water").value) || 0;
-    const poured = steps.slice(0, i + 1).reduce((m, p) => Math.max(m, targetOf(p.text) || 0), 0);
-    $("#br-total").hidden = !(water > 0 && steps.some(p => targetOf(p.text)));
-    $("#br-total-level").style.width = (water > 0 ? Math.min(100, (poured / water) * 100) : 0).toFixed(1) + "%";
-    $("#br-total-text").textContent = I18N.t("brew_total", { v: poured, e: water, u });
+    const pours = steps.length ? steps : freeOnly;
+    const upTo = steps.length ? i : manualStep;
+    const poured = pours.slice(0, upTo + 1).reduce((m, p) => Math.max(m, targetOf(p.text) || 0), 0);
+    const targets = pours.map(p => targetOf(p.text)).filter(Boolean);
+    $("#br-total").hidden = !(water > 0 && targets.length);
+    if (water > 0 && targets.length) {
+      UI.paintBrewCup($("#br-cup"), {
+        cup: $("#f-cup").value, method: UI.entry.method,
+        fraction: Math.min(1, poured / water), marks: targets.map(t => Math.min(1, t / water)),
+        running: UI.stopwatch.state === "running",
+      });
+    }
+    $("#br-total-text").textContent = poured + " / " + water + " " + u;
+    $("#br-total").title = I18N.t("brew_total", { v: poured, e: water, u });
 
     // A step crossed while running: the phone vibrates, on top of the stopwatch beep.
     if (i !== lastStepIdx) {
@@ -279,6 +292,8 @@
       UI.updateRatingDisplay();
       updateBrewNote();
     });
+    // J1 (v9.13): the same rating dial as the entry, larger, read from afar.
+    UI.mountRatingDial($("#br-rating"), $("#br-rating-dial"));
     $("#br-save").addEventListener("click", () => {
       closeBrew();
       $("#form-entry").requestSubmit();
@@ -291,6 +306,7 @@
     const empty = UI.isRatingEmpty(c);
     $("#br-rating-spoken").textContent = empty ? I18N.t("not_rated_yet") : c.value + " / 10";
     UI.paintSlider(c);
+    UI.paintRatingDial(c);
   }
 
   Object.assign(UI, { wireBrew, pourTarget: targetOf, closeBrew, openBrew });

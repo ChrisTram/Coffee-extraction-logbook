@@ -37,10 +37,12 @@
     if (seconds === "" || seconds === null || seconds === undefined || !Number.isFinite(total)) {
       $("#" + prefix + "-min").value = "";
       $("#" + prefix + "-sec").value = "";
-      return;
+    } else {
+      $("#" + prefix + "-min").value = Math.floor(total / 60);
+      $("#" + prefix + "-sec").value = total % 60;
     }
-    $("#" + prefix + "-min").value = Math.floor(total / 60);
-    $("#" + prefix + "-sec").value = total % 60;
+    // The wheels drawn over the fields (v9.13) follow what was just written.
+    UI.syncTimeWheel(prefix);
   }
 
   const entry = {
@@ -105,6 +107,7 @@
        the "preheated water" box, and it has its own field. */
     $("#field-temp").hidden = m !== "Switch";
     if ($("#row-heat")) $("#row-heat").hidden = m !== "Switch";
+    UI.syncTimeWheel("f-heat");
     updateTempHint();
     // Default cup: Flat White Egg for the Brikka, Classic Mug for the Switch.
     const defaultCups = { "Brikka": "Loveramics Flat White Egg", "Switch": "Classic Mug" };
@@ -350,6 +353,7 @@
     $("#f-rating-help").hidden = !empty;
     $("#f-rating-clear").hidden = empty;
     paintSlider(slider);
+    UI.paintRatingDial(slider);
   }
 
   /* What goes to the database: an empty string when the cup is not rated, so
@@ -460,6 +464,9 @@
       setText(grindDetail, dial ? I18N.t("live_invalid") : "");
       grindDetail.classList.toggle("hint-alert", !!dial);
     }
+    /* The dials (v9.13) after the field's state: value, pre-ground, coffee and
+       machine; the recipe form's and Settings' follow a language switch here too. */
+    UI.paintGrindDials();
 
     const coffee = DATA.state.coffees.find(c => c.id === $f("#f-coffee").value);
     let cost = "…";
@@ -827,7 +834,7 @@
       resetEntry();
       activateScreen("history");
     } else {
-      await DATA.addExtraction(ext);
+      const saved = await DATA.addExtraction(ext);
       UI.clearDraft();
       /* A quantifiable diagnostic: the message offers to prepare the next cup
          with the correction applied. Nothing changes without that click, and
@@ -844,6 +851,8 @@
       }
       resetEntry(true);
       activateScreen("dashboard");
+      // Q2 (v9.13): the cup fills on top of the dashboard, without blocking it.
+      UI.showCupCard(saved);
     }
   }
 
@@ -886,7 +895,7 @@
       markRating($("#f-rating"), true);
       updateRatingDisplay();
       UI.scheduleDraft();
-      $("#f-rating").focus();
+      UI.focusRating($("#f-rating"));
     });
     $("#chrono-toggle").addEventListener("click", () => UI.toggleStopwatch());
     /* Start OPENS the timer: an extraction has just been started, the steps
@@ -901,6 +910,14 @@
     UI.wireRecipeBand();
     wireSliders();
     wireSteppers();
+    /* v9.13: the drawn controls, each driving the field it sits on: the
+       grinder dials (here, in the recipe form and in Settings), the rating
+       dial, and the time wheels. */
+    UI.wireGrindDials();
+    UI.mountRatingDial($("#f-rating"), $("#f-rating-dial"));
+    UI.mountTimeWheel("f-total", $("#f-total-wheel"), $("#f-total-quick"), "total");
+    UI.mountTimeWheel("f-flow", $("#f-flow-wheel"), $("#f-flow-quick"), "flow");
+    UI.mountTimeWheel("f-heat", $("#row-heat"), $("#f-heat-quick"), null);
     enableLongPress($("#f-diagnostic"));
     enableLongPress($("#f-descriptors"));
     $("#tastes-plus").addEventListener("click", () => UI.toggleFamilies());

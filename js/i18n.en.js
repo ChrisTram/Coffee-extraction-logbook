@@ -676,6 +676,35 @@ const I18N_EN = {
 
     // Navigation, sync bean, charts and loading (v9.13)
     scrub_rolling: "{d} · average {n}",
+    // Entry, rating dial, grinder dial, time wheels and the saved cup (v9.13).
+    rating_word_low: "needs work",
+    rating_word_ok: "decent",
+    rating_word_good: "good cup",
+    rating_word_great: "superb",
+    rating_word_top: "exceptional",
+    rating_dial_aria: "Cup score, from 0 to 10",
+    rating_dial_value: "{n} out of 10, {w}",
+    rating_dial_empty: "to rate",
+    grind_finer: "One click finer",
+    grind_coarser: "One click coarser",
+    grind_um: "≈ {u} µm",
+    grind_zone_in: "In your golden zone for this coffee: {a} to {b}, {m} on average over {n} cups.",
+    grind_zone_finer: "{k} click{s} finer than your golden zone ({a} to {b}, {m} on average).",
+    grind_zone_coarser: "{k} click{s} coarser than your golden zone ({a} to {b}, {m} on average).",
+    wheel_chrono: "Use the timer",
+    cup_saved: "Cup saved",
+    cup_close: "Close",
+    cup_ratio: "Ratio",
+    cup_in_cup: "in the cup",
+    cup_avg: "Your average here",
+    cup_avg_n: "over {n} cup{s}",
+    cup_avg_none: "no rated cup yet",
+    cup_this: "This cup",
+    cup_diff_up: "+{d} above your average",
+    cup_diff_down: "−{d} below your average",
+    cup_diff_same: "right on your average",
+    cup_left: "In the bag",
+    cup_bag_empty: "bag empty",
   },
 
   UI: {
@@ -1536,6 +1565,11 @@ const I18N_EN = {
       // Navigation, sync bean, charts and loading (v9.13)
       "Tasse": "Cup",
       "Nouvelle tasse. Appui long : saisie rapide": "New cup. Long press: quick log",
+      // Entry: rating dial, grinder dial, time wheels (v9.13)
+      "Tourne le cadran pour noter, ou reviens plus tard.": "Turn the dial to rate, or come back later.",
+      "Un clic plus fin": "One click finer",
+      "Un clic plus gros": "One click coarser",
+      "Bouilloire sur le feu": "Kettle on the stove",
   },
 
   DIAG: {

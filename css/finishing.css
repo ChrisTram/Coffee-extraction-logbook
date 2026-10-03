@@ -754,8 +754,6 @@ h1, h2, h3, h4, .ref-title, .card h3 {
 .br-time-row span { color: var(--muted); }
 .br-total { display: grid; gap: 6px; width: 100%; max-width: 420px; }
 .br-total[hidden] { display: none; }
-.br-total-track { height: 10px; border-radius: 99px; background: var(--panel-3); overflow: hidden; }
-.br-total-track i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--accent), var(--accent-strong)); transition: width 400ms ease; }
 .br-total span { font-size: 0.85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .br-scene { cursor: default; }
 @media (max-width: 760px) {
@@ -943,7 +941,6 @@ button.sh-to-count { white-space: nowrap; font: inherit; font-size: 0.78rem; fon
 .br-time-row span { font-size: clamp(1.1rem, 2.8vw, 1.4rem); }
 .br-valve { font-size: clamp(0.95rem, 2.4vw, 1.15rem); padding: 6px 14px; }
 .br-total { max-width: 560px; }
-.br-total-track { height: 14px; }
 .br-total span { font-size: clamp(1.05rem, 2.6vw, 1.3rem); }
 .br-instruction { font-size: clamp(1.6rem, 4.4vw, 2.5rem); line-height: 1.3; max-width: 30ch; }
 .br-instruction.alone { font-size: clamp(2.3rem, 6.6vw, 3.9rem); line-height: 1.12; }
@@ -1202,4 +1199,247 @@ html[data-theme="light"] .skeleton { --sk-shine: var(--panel); }
 .sk-row { height: 46px; border-radius: 10px; }
 @media (prefers-reduced-motion: reduce) {
   .sk-bone { animation: none; }
+/* ---------- Entry, rating, dial and brew cup (v9.13) ---------- */
+/* Five drawn controls, each driving the field it sits on (js/ui-cup.js,
+   ui-dial.js, ui-rating-dial.js, ui-wheel.js). Every animation below is
+   switched off by reduced motion, at the end of this block and by the
+   global rule at the top of this sheet. */
+
+/* The settings grid: the Switch temperature and the grind take a full row
+   each; dense packing pulls the next small field up so no hole opens in
+   the middle of the form. */
+.entry-block .grid-numbers { grid-auto-flow: row dense; }
+.entry-block .grid-numbers > .field-wide { grid-column: 1 / -1; }
+
+/* Q4 and M2: the grinder dial. */
+.grind-dial { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.gd-face { flex: none; width: 104px; height: 104px; display: block; }
+.gd-body { flex: 1 1 auto; min-width: 0; display: grid; gap: 6px; }
+.gd-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.gd-row input[type="text"] {
+  flex: 0 0 92px; width: 92px; text-align: center;
+  font-family: var(--serif); font-size: 1.35rem; font-variant-numeric: tabular-nums; padding-inline: 6px;
+}
+.gd-step {
+  flex: none; width: 40px; height: 40px; padding: 0; display: grid; place-items: center;
+  border-radius: var(--radius-small); border: 1px solid var(--lines); background: var(--panel-2); color: var(--ink);
+  cursor: pointer; touch-action: manipulation; transition: background var(--transition), color var(--transition);
+}
+.gd-step:hover:not(:disabled) { background: var(--panel-3); color: var(--accent-strong); }
+.gd-step:active:not(:disabled) { background: var(--accent-bg); }
+.gd-step:disabled { opacity: 0.4; cursor: default; }
+.gd-step:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.gd-row .gd-detail { margin: 0 0 0 4px; }
+.gd-zone { margin: 0; font-size: 0.8rem; line-height: 1.4; color: var(--muted); }
+.gd-zone.gd-zone-in { color: var(--accent-strong); font-weight: 600; }
+.gd-bezel { fill: var(--panel-2); stroke: var(--lines); stroke-width: 2; }
+.gd-major { stroke: var(--text); stroke-width: 3; stroke-linecap: round; }
+.gd-minor { stroke: var(--muted); stroke-width: 1.4; }
+.gd-numbers text { font-family: var(--sans); font-size: 22px; font-weight: 700; fill: var(--text); text-anchor: middle; }
+.gd-gold { fill: color-mix(in srgb, var(--accent-strong) 38%, transparent); stroke: var(--accent-strong); stroke-width: 1.5; }
+.gd-pips circle { fill: none; stroke: var(--muted); stroke-width: 1.6; }
+.gd-pips circle.on { fill: var(--accent); stroke: var(--accent); }
+/* One click, one notch, with a small spring like the real dial. */
+.gd-needle { transform-box: view-box; transform-origin: 100px 100px; transition: transform 200ms cubic-bezier(0.3, 1.6, 0.4, 1); }
+.gd-needle line { stroke: var(--accent-strong); stroke-width: 6; stroke-linecap: round; }
+.gd-needle circle { fill: var(--accent); stroke: var(--panel); stroke-width: 3; }
+.grind-dial.gd-instant .gd-needle { transition: none; }
+.grind-dial.gd-off .gd-face { opacity: 0.45; }
+/* The slider as M2's track: the machine's range, the golden zone, the thumb. */
+.gd-track { display: flex; align-items: center; height: 26px; }
+.gd-track input[type="range"] { width: 100%; height: 26px; }
+.gd-track input[type="range"]::-webkit-slider-runnable-track {
+  height: 8px; border-radius: 99px;
+  background:
+    linear-gradient(to right, transparent var(--zmin, 0%), var(--accent-strong) var(--zmin, 0%), var(--accent-strong) var(--zmax, 0%), transparent var(--zmax, 0%)),
+    linear-gradient(to right, transparent var(--rmin, 0%), color-mix(in srgb, var(--accent) 32%, transparent) var(--rmin, 0%), color-mix(in srgb, var(--accent) 32%, transparent) var(--rmax, 0%), transparent var(--rmax, 0%)),
+    var(--panel-3);
+}
+.gd-track input[type="range"]::-webkit-slider-thumb { margin-top: -5px; }
+.gd-track input[type="range"]::-moz-range-track {
+  height: 8px; border-radius: 99px;
+  background:
+    linear-gradient(to right, transparent var(--zmin, 0%), var(--accent-strong) var(--zmin, 0%), var(--accent-strong) var(--zmax, 0%), transparent var(--zmax, 0%)),
+    linear-gradient(to right, transparent var(--rmin, 0%), color-mix(in srgb, var(--accent) 32%, transparent) var(--rmin, 0%), color-mix(in srgb, var(--accent) 32%, transparent) var(--rmax, 0%), transparent var(--rmax, 0%)),
+    var(--panel-3);
+}
+.gd-track input[type="range"]::-moz-range-progress { background: transparent; }
+/* The compact dial of the recipe form and Settings. */
+.grind-dial.gd-compact { gap: 8px; }
+.gd-compact .gd-face { width: 72px; height: 72px; }
+.gd-compact .gd-row { flex-wrap: nowrap; gap: 6px; }
+.gd-compact .gd-step { width: 36px; height: 36px; }
+.gd-compact .gd-row input[type="text"] { flex: 0 1 92px; width: 92px; min-width: 56px; font-size: 1.15rem; }
+.gd-um { font-size: 0.78rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* J1: the rating dial. The ring takes the finger (no page scroll from
+   there); the middle lets the page scroll. */
+.rating-dial { display: flex; justify-content: center; padding-top: 4px; }
+.rd-svg { width: 188px; height: auto; display: block; overflow: visible; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.rd-svg:focus { outline: none; }
+.rd-svg:focus-visible { outline: 2px solid var(--accent); outline-offset: 6px; border-radius: 50%; }
+.rd-track { fill: none; stroke: var(--panel-3); stroke-width: 18; stroke-linecap: round; }
+.rd-fill { fill: none; stroke-width: 18; stroke-linecap: round; pointer-events: none; }
+.rd-hit { fill: none; stroke: transparent; stroke-width: 60; pointer-events: stroke; touch-action: none; }
+.rd-knob { fill: var(--ink); stroke: var(--accent-strong); stroke-width: 4; touch-action: none; }
+.rating-dial.rd-empty .rd-knob { display: none; }
+.rd-stop-a { stop-color: var(--accent); }
+.rd-stop-b { stop-color: var(--accent-strong); }
+.rd-major { stroke: var(--muted); stroke-width: 2.4; stroke-linecap: round; }
+.rd-minor { stroke: var(--muted); stroke-width: 1.2; opacity: 0.7; }
+.rd-score { font-family: var(--serif); font-size: 66px; fill: var(--ink); text-anchor: middle; font-variant-numeric: tabular-nums; pointer-events: none; }
+.rating-dial.rd-empty .rd-score { font-size: 30px; fill: var(--muted); }
+.rd-word { font-family: var(--sans); font-size: 17px; font-weight: 700; fill: var(--accent-strong); text-anchor: middle; pointer-events: none; }
+.rating-help .rh-dial { display: none; }
+.rating-dial:not([hidden]) ~ .rating-help { text-align: center; }
+.rating-dial:not([hidden]) ~ .rating-help .rh-slider { display: none; }
+.rating-dial:not([hidden]) ~ .rating-help .rh-dial { display: inline; }
+#q-rating-dial .rd-svg { width: 168px; }
+#br-rating-dial .rd-svg { width: min(250px, 62vw); }
+
+/* M7: the durations on two wheels, three rows high. */
+.tw-row { display: flex; align-items: center; gap: 10px 12px; flex-wrap: wrap; }
+.tw-sep { display: none; }
+.tw-scroll:empty { display: none; }
+.tw.tw-on {
+  --tw-row: 28px;
+  display: inline-flex; flex: none; align-items: center; gap: 0; padding: 0 6px;
+  border-radius: 14px; background: var(--panel-2); border: 1px solid var(--lines);
+}
+.tw.tw-on .tw-sep { display: block; padding: 0 1px; font-family: var(--serif); font-size: 1.4rem; color: var(--muted); }
+.tw.tw-on .tw-unit { display: none; }
+.tw.tw-on .tw-col { position: relative; display: block; width: 2.9rem; height: calc(var(--tw-row) * 3); }
+.tw.tw-on .tw-col::before {
+  content: ""; position: absolute; left: 0; right: 0; top: var(--tw-row); height: var(--tw-row);
+  border-radius: 8px; background: var(--accent-bg);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--accent) 45%, transparent), inset 0 -1px 0 color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.tw.tw-on .tw-scroll {
+  position: relative; z-index: 1; height: 100%; overflow-y: auto; overscroll-behavior: contain;
+  scroll-snap-type: y mandatory; scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+  mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+}
+.tw-scroll::-webkit-scrollbar { display: none; }
+.tw-pad, .tw-item { display: grid; place-items: center; height: var(--tw-row); }
+.tw-item {
+  scroll-snap-align: center; font-family: var(--serif); font-size: 1.3rem; line-height: 1; color: var(--ink);
+  font-variant-numeric: tabular-nums; opacity: 0.3; transform: scale(0.8); cursor: pointer; user-select: none;
+}
+.tw.tw-empty .tw-item { color: var(--muted); }
+/* The number field, over the middle row: hidden until it has the focus. */
+.tw.tw-on .tw-col input {
+  position: absolute; z-index: 2; left: 2px; right: 2px; top: var(--tw-row); width: auto; height: var(--tw-row);
+  min-height: 0; padding: 0; border: none; border-radius: 8px; text-align: center;
+  font-family: var(--serif); font-size: 1.3rem; background: var(--panel); color: var(--ink);
+  opacity: 0; pointer-events: none; box-shadow: 0 0 0 2px var(--accent);
+}
+.tw.tw-on .tw-col input:focus { opacity: 1; pointer-events: auto; }
+.tw-caption { flex: 0 0 100%; font-size: 0.78rem; color: var(--muted); }
+.tw-quick { display: flex; flex-wrap: wrap; gap: 6px; }
+.tw-quick:empty { display: none; }
+.tw-q {
+  font: inherit; font-size: 0.8rem; font-weight: 700; min-height: 34px; padding: 4px 11px;
+  border-radius: 999px; border: 1px solid var(--lines); background: var(--panel); color: var(--text);
+  cursor: pointer; white-space: nowrap; font-variant-numeric: tabular-nums; touch-action: manipulation;
+}
+.tw-q:hover { background: var(--panel-3); color: var(--ink); }
+.tw-q:active { background: var(--accent-bg); }
+.tw-q:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tw-q.tw-chrono { color: var(--accent-strong); border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
+#field-temp .row-temp { flex-wrap: wrap; gap: 8px 14px; }
+.row-temp .duration.tw-on { flex: none; }
+
+/* Q2 and J2: the cup. Porcelain and coffee are drawn colours, the same in
+   every theme; only the porcelain's edge darkens on the light paper. */
+.cup-art { --porcelain: #f3ede4; --porcelain-edge: #c9bca9; --saucer: #e6dccd; overflow: visible; }
+html[data-theme="light"] .cup-art { --porcelain-edge: #a8957d; --saucer: #e2d6c5; }
+.cup-porcelain { fill: var(--porcelain); }
+.cup-rim { fill: none; stroke: var(--porcelain-edge); stroke-width: 2; }
+.cup-handle-edge { fill: none; stroke: var(--porcelain-edge); stroke-width: 12; stroke-linecap: round; }
+.cup-handle { fill: none; stroke: var(--porcelain); stroke-width: 8; stroke-linecap: round; }
+.cup-saucer { fill: var(--saucer); stroke: var(--porcelain-edge); stroke-width: 1; }
+.cup-liquid { transition: transform 450ms cubic-bezier(0.3, 0.7, 0.3, 1); }
+.cup-mark { stroke: var(--porcelain-edge); stroke-width: 2; stroke-dasharray: 5 4; }
+.cup-steam path { fill: none; stroke: var(--muted); stroke-width: 2.4; stroke-linecap: round; opacity: 0; }
+.cup-pouring .cup-wave { animation: cup-wave 1.3s linear infinite; }
+@keyframes cup-wave { to { transform: translateX(-55px); } }
+@keyframes cup-steam { 0% { opacity: 0; transform: translateY(8px); } 30% { opacity: 0.6; } 100% { opacity: 0; transform: translateY(-16px); } }
+
+/* Q2: the card after saving, in a corner, never in the way: taps go through it, but its cross. */
+.cup-card {
+  position: fixed; z-index: var(--z-toast); top: calc(16px + env(safe-area-inset-top, 0px)); right: 24px;
+  width: min(360px, calc(100vw - 24px));
+  display: grid; grid-template-columns: 112px minmax(0, 1fr); grid-template-areas: "art head" "facts facts"; gap: 8px 14px;
+  padding: 14px 16px 14px 12px; border-radius: var(--radius); border: 1px solid var(--lines);
+  background: var(--panel); color: var(--text); box-shadow: var(--shadow); pointer-events: none;
+  animation: cc-in 260ms cubic-bezier(0.2, 0.9, 0.3, 1.1);
+}
+.cup-card.cc-out { opacity: 0; transform: translateY(-10px); transition: opacity 240ms, transform 240ms; }
+@keyframes cc-in { from { opacity: 0; transform: translateY(-14px) scale(0.98); } to { opacity: 1; transform: none; } }
+.cc-close {
+  position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; padding: 0; display: grid; place-items: center;
+  border: none; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; pointer-events: auto;
+}
+.cc-close:hover { background: var(--panel-3); color: var(--ink); }
+.cc-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.cc-art { grid-area: art; position: relative; align-self: center; }
+.cc-art .cup-art { width: 112px; height: 96px; display: block; }
+.cup-card .cup-liquid { transition-duration: 800ms; }
+.cup-card.cc-stamped .cup-steam path { animation: cup-steam 2.4s ease-out infinite; }
+.cup-card.cc-stamped .cup-steam path:nth-child(2) { animation-delay: 0.5s; }
+.cup-card.cc-stamped .cup-steam path:nth-child(3) { animation-delay: 1s; }
+.cc-stamp {
+  position: absolute; right: -4px; bottom: -6px; width: 50px; height: 50px; display: grid; place-items: center;
+  border-radius: 50%; border: 2.5px solid currentColor; background: color-mix(in srgb, var(--panel) 82%, transparent);
+  font-family: var(--serif); font-size: 1.55rem; line-height: 1; color: var(--accent-strong);
+  opacity: 0; transform: scale(1.8) rotate(-8deg); transition: opacity 220ms, transform 360ms cubic-bezier(0.2, 1.5, 0.4, 1);
+}
+.cup-card.cc-stamped .cc-stamp { opacity: 1; transform: scale(1) rotate(-8deg); }
+.cc-head { grid-area: head; align-self: center; min-width: 0; padding-right: 26px; }
+.cc-kicker { margin: 0; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-strong); }
+.cc-name { margin: 2px 0 0; font-family: var(--serif); font-size: 1.35rem; line-height: 1.1; color: var(--ink); overflow-wrap: anywhere; }
+.cc-sub { margin: 3px 0 0; font-size: 0.8rem; color: var(--muted); }
+.cc-facts {
+  grid-area: facts; margin: 0; padding-top: 10px; border-top: 1px solid var(--lines-soft);
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 14px;
+}
+.cc-facts div { min-width: 0; }
+.cc-facts dt { font-size: 0.75rem; color: var(--muted); }
+.cc-facts dd { margin: 1px 0 0; font-size: 0.9rem; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.cc-facts dd b { font-family: var(--serif); font-weight: 400; font-size: 1.25rem; }
+.cc-facts dd small { font-size: 0.75rem; font-weight: 500; color: var(--muted); }
+
+/* J2: the brew mode's cup at the end of the strip, as tall as the ring. */
+.br-scene { grid-template-columns: auto minmax(0, 1fr) auto; }
+.br-total { width: auto; max-width: none; display: grid; justify-items: center; gap: 2px; }
+.br-cup { width: clamp(64px, 8vw, 88px); aspect-ratio: 1.15; display: grid; }
+.br-cup .cup-art { width: 100%; height: 100%; }
+.br-total span { font-size: 0.85rem; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 1023px) {
+  .cup-card { left: 12px; right: 12px; width: auto; max-width: 420px; margin-inline: auto; }
+}
+@media (max-width: 760px) {
+  .br-scene { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .br-cup { width: 66px; }
+}
+@media (max-width: 560px) {
+  .grind-dial { gap: 12px; align-items: flex-start; }
+  .gd-face { width: 88px; height: 88px; }
+  .gd-row { gap: 6px; }
+  .gd-row input[type="text"] { flex-basis: 66px; width: 66px; }
+  .gd-row .gd-detail { flex-basis: 100%; margin-left: 0; }
+}
+@media (pointer: coarse) {
+  .gd-step, .gd-compact .gd-step { width: 46px; height: 46px; }
+  .tw-q { min-height: 44px; padding-inline: 14px; }
+  .tw.tw-on { --tw-row: 32px; }
+  .cc-close { width: 44px; height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gd-needle, .cup-liquid, .cc-stamp, .cup-card.cc-out { transition: none; }
+  .cup-card { animation: none; }
+  .cup-pouring .cup-wave { animation: none; }
+  .cup-card.cc-stamped .cup-steam path { animation: none; opacity: 0.45; }
 }

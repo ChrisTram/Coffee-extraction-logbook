@@ -142,6 +142,10 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/ui-findings.js` | les phrases calculées et leur carrousel |
 | `js/ui-last-cup.js` | la carte de la dernière tasse, et ses briques partagées avec la table |
 | `js/ui-dashboard.js` | tableau de bord : calendrier, analyses, dernières extractions |
+| `js/ui-cup.js` | la tasse dessinée (v9.13) : carte après l'enregistrement, tasse du mode Brassage |
+| `js/ui-dial.js` | le cadran du moulin (v9.13) : saisie, formulaire de recette, Paramètres |
+| `js/ui-rating-dial.js` | le cadran de note (v9.13), interrupteur `RATING_DIAL_ON` |
+| `js/ui-wheel.js` | les roues des durées (v9.13) : temps total, écoulement, chauffe |
 | `js/ui-entry.js` | formulaire, chronomètre |
 | `js/ui-entry-aside.js` | panneau latéral de la saisie, tasses jumelles |
 | `js/ui-pills.js` | pilules des diagnostics et des goûts, repli des familles |
@@ -1017,6 +1021,45 @@ qu'il est ouvert.
 - Arrêter depuis le mode reporte temps et écoulement comme le chrono, puis montre la
   note (`#br-note`, même curseur sans pouce) qui écrit dans `#f-note`, et deux boutons :
   Enregistrer la tasse (soumet le formulaire) ou Compléter la saisie.
+- La tasse (v9.13, J2) : la barre du total est devenue la tasse choisie dans la
+  saisie (`UI.paintBrewCup`, js/ui-cup.js), remplie jusqu'à la cible du palier
+  courant (minuté, ou palier touché pour une recette à l'oeil comme le 4:6), un
+  trait par cible de versement. Dessinée une fois, seul le liquide monte.
+
+## 8 quinquies. Les commandes dessinées de la saisie (v9.13)
+
+Cinq dessins, chacun piloté par le champ qu'il habille, qui RESTE la source de
+vérité : l'enregistrement, le brouillon et le mode Brassage lisent les mêmes champs
+qu'avant.
+
+- **La tasse qui se remplit** (Q2, js/ui-cup.js) : après « Enregistrer » (saisie,
+  saisie rapide, mode Brassage), `#cup-card` dans un coin, environ 2,5 s, un toucher
+  ou Échap la ferme, elle ne bloque rien. La tasse vient du champ Tasse (ou de la
+  tasse par défaut de la machine), dessinée par famille (oeuf, tasse basse, mug)
+  et taille d'après la contenance. Quatre chiffres : ratio (`DATA.calcs`), moyenne
+  de ce café sur cette recette avec l'effectif (tasses analysables), écart de cette
+  tasse, grammes restants (`DATA.bagStock`). Aucun pourcentage de remplissage, à la
+  demande de Chris. Pas de carte à la modification d'une tasse.
+- **Le cadran du moulin** (Q4 et M2, js/ui-dial.js) : 50 crans par tour, chiffres
+  0 à 9, aiguille à ressort, trois pastilles pour les tours. Boutons − et + d'un
+  clic (maintenus, ils répètent), flèches haut et bas dans le champ. En saisie, le
+  curseur montre la plage de la machine et la zone dorée du café
+  (`UI.grinderData`, la carte du moulin), et une phrase dit si le réglage y est.
+  Version compacte autour de `#r-dial` et `#param-dial`, construite par le code.
+  Le cadran suit tout ce qui écrit dans son champ (`watchValue`).
+- **Le cadran de note** (J1, js/ui-rating-dial.js) : arc de 0 à 10 par demi-point,
+  glisser, flèches, Page, Début et Fin, mot sous la note, petite vibration par cran
+  (Android). Il écrit le curseur caché (`#f-rating`, `#q-rating`, `#br-rating`) et
+  déclenche son événement, donc « pas encore notée » marche comme avant.
+  `RATING_DIAL_ON = false` remet les curseurs partout.
+- **La durée à la roue** (M7, js/ui-wheel.js) : temps total, écoulement et chauffe
+  sur deux roues à crans (scroll-snap), trois lignes de haut ; les champs nombre
+  sont posés sur la ligne du milieu, un toucher dessus fait taper. −5 s, +5 s,
+  +15 s, et « Reprendre le chrono » quand le chrono a un temps. Une roue n'écrit
+  son champ que si Chris l'a tournée ; `writeDuration` et le brouillon la
+  remettent sur son champ.
+- Grille des réglages : la température (Switch) et la mouture prennent chacune une
+  rangée entière (`.field-wide`), `grid-auto-flow: dense` évite le trou.
 
 ## 8 ter. La fiche d'un café (js/ui-coffee-sheet.js)
 

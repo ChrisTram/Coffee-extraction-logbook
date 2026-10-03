@@ -76,7 +76,7 @@ function makeElement(name) {
     textContent: "", innerHTML: "", disabled: false, tabIndex: 0, open: false,
     dataset: {}, style: { setProperty() {}, removeProperty() {} }, options: [], elements: [], files: [],
     classList: fakeClassList(),
-    addEventListener() {}, removeEventListener() {}, appendChild() {}, remove() {},
+    addEventListener() {}, removeEventListener() {}, dispatchEvent() { return true; }, appendChild() {}, remove() {},
     setAttribute() {}, getAttribute: () => null, removeAttribute() {},
     focus() {}, click() {}, showModal() {}, close() {}, submit() {}, requestSubmit() {},
     reset() {}, scrollIntoView() {}, insertAdjacentHTML() {},
@@ -261,7 +261,7 @@ Chart.defaults = hollow();
 const SCRIPTS = ["js/legacy-names.js", "js/tools.js", "js/i18n.en.js", "js/i18n.js", "js/grind.js", "js/recipes.js", "js/demo-data.js",
   "js/sync.js", "js/data-csv.js", "js/data-schema.js", "js/data-store.js", "js/data-calcs.js",
   "js/data-migrations.js", "js/data.js", "js/tuning.js", "js/charts.js",
-  "js/ui-core.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js", "js/ui-history.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/app.js"];
+  "js/ui-core.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-wheel.js", "js/ui-cup.js", "js/ui-dial.js", "js/ui-rating-dial.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js", "js/ui-history.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/app.js"];
 const source = SCRIPTS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 
 // Intercepted console.error: that is where render errors come out.
@@ -1162,6 +1162,107 @@ check("the temperature field no longer has a misleading placeholder", !tempField
   const tips = (journal.match(/data-scrub-tip="/g) || []).length;
   check("the journal's curve follows the finger and the mouse", thrown === null && journal.includes('data-scrub="hover"'), thrown && thrown.message);
   check("with one point per rated cup, named by its day and rating", rated >= 2 && tips === rated, tips + " points for " + rated + " cups");
+}
+
+/* v9.13: THE DRAWN CONTROLS OF THE ENTRY DRIVE FIELDS THAT STAY THE TRUTH.
+   The rating dial writes the slider, the grinder dial the dial field, the
+   wheels the minute and second fields; saving, the draft and the brew mode
+   read those fields exactly as before. */
+{
+  const UIx = api.UI;
+  const f = document.querySelector("#f-rating");
+  UIx.resetEntry();
+  check("J1: the rating dial is switched on, in its place of the slider",
+    UIx.RATING_DIAL_ON === true && document.querySelector("#f-rating-dial").hidden === false && f.hidden === true &&
+    document.querySelector("#q-rating-dial").hidden === false && document.querySelector("#br-rating-dial").hidden === false);
+  check("J1: a fresh entry is still « not rated yet »", UIx.isRatingEmpty(f) && UIx.entryRating() === "");
+  UIx.setRating(f, 7.3);
+  check("J1: the dial rates by half points, into the slider", String(f.value) === "7.5" && !UIx.isRatingEmpty(f) && UIx.entryRating() === "7.5",
+    f.value + " / " + UIx.entryRating());
+  UIx.setRating(f, 12);
+  check("J1: and never beyond 10", String(f.value) === "10", f.value);
+  UIx.resetEntry();
+  check("J1: a reset gives the unrated state back", UIx.isRatingEmpty(f) && UIx.entryRating() === "");
+  const words = [4.5, 5, 7, 8.5, 9.5].map(n => UIx.ratingWord(n));
+  check("J1: the word under the score", words.join("|") === "à revoir|correcte|bonne tasse|superbe|exceptionnelle", words.join("|"));
+  const at = deg => [120 + 92 * Math.cos(deg * Math.PI / 180), 120 + 92 * Math.sin(deg * Math.PI / 180)];
+  check("J1: the arc runs from 0 at the bottom left to 10 at the bottom right, 5 at the top",
+    UIx.ratingAt(...at(135)) === 0 && UIx.ratingAt(...at(270)) === 5 && UIx.ratingAt(...at(45)) === 10,
+    [135, 270, 45].map(d => UIx.ratingAt(...at(d))).join(","));
+  check("J1: a finger in the middle rates nothing, the page scrolls", UIx.ratingAt(120, 120) === null);
+
+  // Q4 and M2: one click per press, through the hard stop and the turns.
+  check("Q4: a click coarser, and a click finer across a number",
+    UIx.stepDial("1.5.0", 1) === "1.5.1" && UIx.stepDial("1.5.0", -1) === "1.4.4" && UIx.stepDial("1.4.4", 1) === "1.5.0");
+  check("Q4: the dial stops at 0.0.0 and at the 3.0.0 hard stop",
+    UIx.stepDial("0.0.0", -1) === "0.0.0" && UIx.stepDial("3.0.0", 1) === "3.0.0");
+  check("Q4: an empty field starts from the grinder's real setting", UIx.stepDial("", 1, "1.2.0") === "1.2.1");
+  const zone = { from: 72, to: 74 };
+  const z = [UIx.zoneStatus(73, zone), UIx.zoneStatus(70, zone), UIx.zoneStatus(77, zone)];
+  check("M2: inside the golden zone, or how many clicks away",
+    z[0].side === "in" && z[1].side === "finer" && z[1].k === 2 && z[2].side === "coarser" && z[2].k === 3, JSON.stringify(z));
+  const saved = { coffees: api.DATA.state.coffees, extractions: api.DATA.state.extractions, purchases: api.DATA.state.purchases };
+  const cup = (id, dial, score, extra) => ({ id, date_time: "2026-09-0" + id.slice(-1) + "T08:00", coffee_id: "z1", method: "Switch",
+    recipe: "Zone", dose_g: 15, water_g: 240, grind_dial: dial, score_10: score, failed: "", cup: "", milk_ml: "", yield_ml: "", ...extra });
+  api.DATA.state.coffees = [{ id: "z1", name: "Zone Test", active: 1, pre_ground: 0, bag_size_g: 250, price_vnd: 100000 }];
+  api.DATA.state.purchases = [{ id: "b1", coffee_id: "z1", purchase_date: "2026-09-01", opened_date: "2026-09-01", bag_size_g: 250, remaining_g: "", remaining_at: "" }];
+  api.DATA.state.extractions = [cup("x1", "1.5.0", 8), cup("x2", "1.5.1", 8.5), cup("x3", "1.5.2", 9), cup("x4", "1.2.0", 5), cup("x5", "1.2.0", 6)];
+  api.DATA.notify();
+  const g = UIx.grindGoldenZone("z1", "Switch");
+  check("M2: the coffee's golden zone, the grinder map's three clicks", g && g.from === 75 && g.to === 77 && g.n === 3, JSON.stringify(g));
+
+  // Q2: what the card says about a cup just saved.
+  const fresh = cup("x6", "1.5.0", 9, { yield_ml: 200, cup: "Classic Mug" });
+  api.DATA.state.extractions.push(fresh);
+  const s = UIx.cupSummary(fresh);
+  check("Q2: the cup's ratio comes from DATA.calcs", s.ratio === "1:16.0", s.ratio);
+  check("Q2: the average of this coffee and recipe, this cup left out, with its count",
+    s.n === 5 && Math.abs(s.avg - 7.3) < 1e-9, s.n + " / " + s.avg);
+  check("Q2: and how far this cup stands from it", s.diff === 1.7, String(s.diff));
+  check("Q2: the grams left in the bag, this cup included", s.left === 250 - 6 * 15, String(s.left));
+  check("Q2: the cup drawn is the one chosen in the entry", s.cup.family === "mug" && s.cup.ml === 330, JSON.stringify(s.cup));
+  check("Q2: no cup chosen, the machine's default", UIx.cupOf("", "Brikka").family === "egg" && UIx.cupOf("", "Switch").family === "mug");
+  UIx.showCupCard(fresh);
+  const cardHtml = document.querySelector("#cup-card").innerHTML;
+  check("Q2: the card shows, with the stamp and the four figures, never a fill percentage",
+    document.querySelector("#cup-card").hidden === false && cardHtml.includes("cc-stamp") && cardHtml.includes("1:16.0") &&
+    cardHtml.includes("160 g") && !/\d\s*%/.test(cardHtml), cardHtml.slice(0, 120));
+  UIx.hideCupCard();
+
+  // J2: the brew mode's cup is built once, then only its liquid moves.
+  let writes = 0;
+  const liquid = { style: {} };
+  const probe = {
+    dataset: {}, classList: { toggle() {} },
+    set innerHTML(v) { writes++; this._html = v; }, get innerHTML() { return this._html || ""; },
+    querySelector: sel => (sel === ".cup-liquid" ? liquid : null),
+  };
+  UIx.paintBrewCup(probe, { cup: "Classic Mug", method: "Switch", fraction: 0.2, marks: [0.2, 0.6, 1], running: true });
+  const first = liquid.style.transform;
+  UIx.paintBrewCup(probe, { cup: "Classic Mug", method: "Switch", fraction: 0.6, marks: [0.2, 0.6, 1], running: true });
+  check("J2: the cup is drawn once, then only the liquid rises", writes === 1 && first !== liquid.style.transform &&
+    probe.innerHTML.includes("cup-mark"), writes + " / " + first + " -> " + liquid.style.transform);
+
+  // M7: the fields stay the source, the stopwatch offers its time.
+  UIx.writeDuration("f-total", 245);
+  check("M7: writing a time still fills minutes and seconds",
+    String(document.querySelector("#f-total-min").value) === "4" && String(document.querySelector("#f-total-sec").value) === "5" &&
+    UIx.readDuration("f-total") === 245);
+  UIx.writeDuration("f-total", "");
+  check("M7: and « no time » stays empty, not zero", UIx.readDuration("f-total") === "");
+  api.DATA.state.coffees = saved.coffees; api.DATA.state.extractions = saved.extractions; api.DATA.state.purchases = saved.purchases;
+  api.DATA.notify();
+  const chronicler = api.DATA.state.recipes.find(r => r.id === "chronicler");
+  document.querySelector("#f-recipe").value = chronicler ? chronicler.name : "";
+  UIx.resetStopwatch();
+  check("M7: no « Reprendre le chrono » while the stopwatch is at zero", UIx.wheelChronoSeconds("total") === null);
+  UIx.stopwatch.accumulated = 125000;
+  UIx.stopwatch.state = "pause";
+  check("M7: the stopwatch's total, and the drawdown from the « open » step",
+    UIx.wheelChronoSeconds("total") === 125 && UIx.wheelChronoSeconds("flow") === 5,
+    UIx.wheelChronoSeconds("total") + " / " + UIx.wheelChronoSeconds("flow"));
+  UIx.resetStopwatch();
+  UIx.resetEntry();
 }
 
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);

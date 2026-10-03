@@ -137,6 +137,8 @@
     markRating($("#f-rating"), b.ratingEmpty !== false);
     UI.updateRatingDisplay();
     $("#f-water-added").hidden = !$("#f-add-water-yes").checked;
+    // The time wheels (v9.13) follow the fields the draft just wrote.
+    UI.syncTimeWheels();
     UI.updateDiagnosticCorrection();
     UI.updateWarnings();
     UI.updateLive();

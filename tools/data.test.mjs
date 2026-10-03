@@ -27,7 +27,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
    load order, like the browser does. */
 const CSS_SHEETS = ["css/base.css", "css/screens.css", "css/dialogs.css", "css/finishing.css"];
 const readCss = () => CSS_SHEETS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
-const SOURCE_UI = ["js/ui-core.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js",
+const SOURCE_UI = ["js/ui-core.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-wheel.js", "js/ui-cup.js", "js/ui-dial.js", "js/ui-rating-dial.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js",
   "js/ui-history.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/app.js"]
   .map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 /* demo-data.js has not been a script tag since v7.56, but the harness still
@@ -3407,6 +3407,86 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
   check("it leaves inside the first screen transition, and never stays", SOURCE_UI.includes('const skeleton = $("#loading");') &&
     SOURCE_UI.includes('setTimeout(() => { const overlay = $("#loading"); if (overlay) overlay.remove(); }, 800);'));
   check("no shimmer with reduced motion", /prefers-reduced-motion: reduce\) \{\s*\.sk-bone \{ animation: none; \}/.test(css));
+}
+
+/* v9.13: THE ENTRY'S DRAWN CONTROLS (Q2, J2, Q4 and M2, J1, M7). The
+   components run here on the real grinder engine, with a stub interface:
+   their logic, not their pixels (the pixels are boot.test's and the
+   browser's). */
+{
+  const load = (file, stub, edit) => {
+    let src = readFileSync(join(ROOT, file), "utf8");
+    if (edit) src = edit(src);
+    const ui = { $: () => null, fallbacks: { dial: "1.5.0", dose: 15 }, fmtDecimal: n => String(n),
+      isRatingEmpty: el => !!el.empty, markRating: (el, e) => { el.empty = e; }, ...stub };
+    const i18n = { t: (k, v) => k + (v ? JSON.stringify(v) : ""), locale: () => "fr-FR" };
+    new Function("UI", "GRIND", "I18N", "DATA", "TOOLS", "window", "document", "navigator", src)(
+      ui, GRIND, i18n, DATA, { escapeHtml: s => String(s) }, {}, {}, {});
+    return ui;
+  };
+
+  // Q4: one press is one click, all the way along the dial.
+  const dial = load("js/ui-dial.js");
+  let d = "0.0.0", steadyClicks = true;
+  for (let k = 0; k < GRIND.MAX_CLICKS; k++) {
+    const next = dial.stepDial(d, 1);
+    if (GRIND.parseDial(next).clicks !== GRIND.parseDial(d).clicks + 1) steadyClicks = false;
+    d = next;
+  }
+  check("Q4: + walks the whole dial one click at a time, to the 3.0.0 stop", steadyClicks && d === "3.0.0", d);
+  check("Q4: a comma typed on the phone is read too", dial.stepDial("1,4,4", 1) === "1.5.0");
+  const dialSrc = readFileSync(join(ROOT, "js/ui-dial.js"), "utf8");
+  check("Q4: microns and clicks come from GRIND, never recomputed",
+    !/8[.,]32/.test(dialSrc) && dialSrc.includes("GRIND.dialFromClicks") && dialSrc.includes("GRIND.parseDial"));
+  check("M2: the golden zone is the grinder map's own (UI.grinderData)", dialSrc.includes("UI.grinderData(coffeeId)"));
+
+  // J1: one switch puts the old slider back, untouched.
+  const slider = { hidden: false, value: "5", empty: true, id: "f-rating", getAttribute: () => null };
+  const host = { hidden: true, innerHTML: "", querySelector: () => null, classList: { toggle() {} } };
+  const off = load("js/ui-rating-dial.js", {}, src => src.replace("const RATING_DIAL_ON = true;", "const RATING_DIAL_ON = false;"));
+  check("J1: RATING_DIAL_ON = false mounts nothing, the slider stays",
+    off.mountRatingDial(slider, host) === null && slider.hidden === false && host.hidden === true);
+  const on = load("js/ui-rating-dial.js");
+  on.mountRatingDial(slider, host);
+  check("J1: switched on, the dial takes the slider's place", slider.hidden === true && host.hidden === false);
+  slider.dispatchEvent = () => true;
+  on.setRating(slider, 6.8);
+  check("J1: the dial writes the slider and marks the cup rated", slider.value === "7" && slider.empty === false, JSON.stringify(slider));
+  const ratingSrc = readFileSync(join(ROOT, "js/ui-rating-dial.js"), "utf8");
+  check("J1: a single switch, read before mounting", (ratingSrc.match(/const RATING_DIAL_ON = /g) || []).length === 1 &&
+    ratingSrc.includes("if (!RATING_DIAL_ON"));
+  check("J1: role slider with its values, and a tick per notch where the phone vibrates",
+    ratingSrc.includes('role="slider"') && ratingSrc.includes("aria-valuenow") && ratingSrc.includes("aria-valuetext") &&
+    ratingSrc.includes("navigator.vibrate(6)"));
+
+  // Q2: no fill percentage anywhere on the card, Chris does not care how full the cup is.
+  const cupSrc = readFileSync(join(ROOT, "js/ui-cup.js"), "utf8");
+  check("Q2: the card states ratio, average, gap and grams, never a percentage",
+    ["cup_ratio", "cup_avg", "cup_diff_up", "cup_left"].every(k => cupSrc.includes('"' + k + '"') && bilingual(k)) &&
+    !cupSrc.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "").includes("%"));
+  check("Q2: the average reads the analysable cups and the grams DATA.bagStock",
+    cupSrc.includes("analyzableExts()") && cupSrc.includes("DATA.bagStock(ext.coffee_id, fallbacks.dose)"));
+
+  // The CSS: one block, every motion off under reduced motion, fingers get 44 px.
+  const css = readFileSync(join(ROOT, "css/finishing.css"), "utf8");
+  const header = "/* ---------- Entry, rating, dial and brew cup (v9.13) ---------- */";
+  const block = css.slice(css.indexOf(header));
+  check("the v9.13 styles live in one block of finishing.css", css.split(header).length === 2 && block.includes(".gd-needle"));
+  const reduced = block.slice(block.lastIndexOf("@media (prefers-reduced-motion: reduce)"));
+  check("reduced motion stills the needle, the liquid, the stamp, the wave and the steam",
+    [".gd-needle", ".cup-liquid", ".cc-stamp", ".cup-wave", ".cup-steam"].every(s => reduced.includes(s)));
+  const coarse = block.slice(block.lastIndexOf("@media (pointer: coarse)"));
+  check("on touch, the dial's buttons and the quick time buttons reach 44 px",
+    /\.gd-step[^{]*\{ width: 46px; height: 46px; \}/.test(coarse) && coarse.includes(".tw-q { min-height: 44px;"));
+
+  // M7: the fields stay the truth; the wheels follow them and write only when turned.
+  const wheelSrc = readFileSync(join(ROOT, "js/ui-wheel.js"), "utf8");
+  check("M7: writeDuration and the draft bring the wheels back on their fields",
+    SOURCE_UI.includes("UI.syncTimeWheel(prefix);") && readFileSync(join(ROOT, "js/ui-draft.js"), "utf8").includes("UI.syncTimeWheels();"));
+  check("M7: a wheel writes its field only when Chris turned it", wheelSrc.includes("if (col.user) {"));
+  check("M7: quick buttons, and « Reprendre le chrono » for the total and the drawdown",
+    wheelSrc.includes("const QUICK = [-5, 5, 15];") && SOURCE_UI.includes('UI.mountTimeWheel("f-total", $("#f-total-wheel"), $("#f-total-quick"), "total");') &&
+    SOURCE_UI.includes('UI.mountTimeWheel("f-flow", $("#f-flow-wheel"), $("#f-flow-quick"), "flow");') && bilingual("wheel_chrono"));
 }
 
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);

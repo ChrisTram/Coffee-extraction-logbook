@@ -62,6 +62,7 @@
     $("#q-rating-help").hidden = !empty;
     $("#q-rating-clear").hidden = empty;
     paintSlider(slider);
+    UI.paintRatingDial(slider);
   }
 
   function quickRating() {
@@ -124,7 +125,7 @@
     // The coffee chosen in the panel. A pre-ground coffee has no grinder
     // setting to save: the recipe's value would be made up.
     const quickCoffee = DATA.state.coffees.find(c => c.id === coffeeId);
-    await DATA.addExtraction({
+    const saved = await DATA.addExtraction({
       date_time: localNow(),
       coffee_id: coffeeId,
       method: r.method,
@@ -145,6 +146,8 @@
     const rating = quickRating();
     toast(rating === "" ? I18N.t("toast_quick_unrated", { r: r.name }) : I18N.t("toast_quick", { r: r.name, n: rating }));
     toggleQuick(false);
+    // Q2 (v9.13): the cup fills, the same card as the full entry.
+    UI.showCupCard(saved);
   }
 
   /* Panel wiring. Called once by app.js, at startup. Since v9.13 the panel opens
@@ -156,11 +159,13 @@
     $("#q-recipe").addEventListener("change", updateQuickWarnings);
     $("#overlay-quick").addEventListener("click", () => toggleQuick(false));
     wireRating($("#q-rating"), updateQuickRatingDisplay);
+    // J1 (v9.13): the rating dial drives the slider, now hidden.
+    UI.mountRatingDial($("#q-rating"), $("#q-rating-dial"));
     $("#q-rating-clear").addEventListener("click", () => {
       $("#q-rating").value = 5;
       markRating($("#q-rating"), true);
       updateQuickRatingDisplay();
-      $("#q-rating").focus();
+      UI.focusRating($("#q-rating"));
     });
     $("#q-save").addEventListener("click", oneAtATime(saveQuick));
     $("#q-full").addEventListener("click", () => { toggleQuick(false); activateScreen("entry"); });

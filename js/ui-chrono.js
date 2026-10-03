@@ -126,6 +126,8 @@
   function stopwatchTick() {
     $("#chrono-total").textContent = fmtDuration(Math.floor(stopwatchElapsed()));
     updateStopwatchSteps(true);
+    // The drawdown's « Reprendre le chrono » appears once the "open" step is passed.
+    UI.refreshTimeWheels();
   }
 
   function updateStopwatchButtons() {
@@ -139,6 +141,8 @@
     // Called on every stopwatch transition, the right place to align the
     // screen lock with no risk of forgetting it in a branch.
     syncWakeLock();
+    // And the time wheels' « Reprendre le chrono » buttons (v9.13).
+    UI.refreshTimeWheels();
   }
 
   function stopwatchPrimary() {
@@ -210,6 +214,8 @@
     /* A running stopwatch is never closed. */
     const isOpen = !wants && isStopwatchRunning() ? true : wants;
     body.hidden = !isOpen;
+    // Hidden, the time wheels had no height to scroll: back on their values now.
+    if (isOpen) UI.syncTimeWheels();
     $("#chrono-widget").classList.toggle("open", isOpen);
     $("#chrono-toggle").setAttribute("aria-expanded", isOpen ? "true" : "false");
   }
@@ -217,6 +223,6 @@
   Object.assign(UI, {
     toggleStopwatch, stopwatch, stopStopwatch, stopwatchPrimary, resetStopwatch, stopwatchTick,
     isStopwatchRunning, playBeep, updateStopwatchButtons, updateStopwatchSteps, currentMilestones,
-    syncWakeLock,
+    syncWakeLock, stopwatchElapsed, openingTime,
   });
 })();

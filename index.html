@@ -7,11 +7,11 @@
 <!-- Site version, single source of truth: the footer reads it, and files
      loaded on demand put it in their URL. Set it with
      node tools/bump_version.mjs X, never by hand. -->
-<meta name="app-version" content="9.13">
-<link rel="stylesheet" href="css/base.css?v=9.13">
-<link rel="stylesheet" href="css/screens.css?v=9.13">
-<link rel="stylesheet" href="css/dialogs.css?v=9.13">
-<link rel="stylesheet" href="css/finishing.css?v=9.13">
+<meta name="app-version" content="9.14">
+<link rel="stylesheet" href="css/base.css?v=9.14">
+<link rel="stylesheet" href="css/screens.css?v=9.14">
+<link rel="stylesheet" href="css/dialogs.css?v=9.14">
+<link rel="stylesheet" href="css/finishing.css?v=9.14">
 <!-- crossorigin use-credentials: without it the browser fetches the manifest
      WITHOUT cookies, the front door redirects it to /login, and it tries to
      parse HTML as JSON. Result: "Manifest: Syntax error" and a PWA that
@@ -52,7 +52,7 @@
      the scripts. bump_version.mjs versions the charts link. -->
 <link rel="preload" href="css/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="css/fonts/instrument-serif-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="js/vendor/chart.umd.js?v=9.13" as="script">
+<link rel="preload" href="js/vendor/chart.umd.js?v=9.14" as="script">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%98%95%3C/text%3E%3C/svg%3E">
 </head>
 <body>
@@ -436,19 +436,30 @@
         <!-- The same timer full screen (v8.47), readable from a metre away. -->
         <button type="button" class="btn btn-brew" id="btn-brew">Mode Brassage</button>
       </div>
+      <!-- M7 (v9.13): each time is set on two wheels, minutes and seconds
+           (js/ui-wheel.js). The number fields stay, laid over the middle row:
+           a tap there types, and they remain what saving reads. -->
       <div class="grid-numbers chrono-manual">
-        <div class="field">
+        <div class="field field-time">
           <label for="f-total-min">Temps total</label>
-          <div class="duration">
-            <input type="number" id="f-total-min" form="form-entry" step="1" min="0" max="59" inputmode="numeric" placeholder="0" aria-label="Temps total, minutes"><span>min</span>
-            <input type="number" id="f-total-sec" form="form-entry" step="1" min="0" max="59" inputmode="numeric" placeholder="00" aria-label="Temps total, secondes"><span>s</span>
+          <div class="tw-row">
+            <div class="duration tw" id="f-total-wheel">
+              <div class="tw-col"><div class="tw-scroll" aria-hidden="true"></div><input type="number" id="f-total-min" form="form-entry" step="1" min="0" max="59" inputmode="numeric" placeholder="0" aria-label="Temps total, minutes"><span class="tw-unit">min</span></div>
+              <span class="tw-sep" aria-hidden="true">:</span>
+              <div class="tw-col"><div class="tw-scroll" aria-hidden="true"></div><input type="number" id="f-total-sec" form="form-entry" step="1" min="0" max="59" inputmode="numeric" placeholder="00" aria-label="Temps total, secondes"><span class="tw-unit">s</span></div>
+            </div>
+            <div class="tw-quick" id="f-total-quick"></div>
           </div>
         </div>
-        <div class="field">
+        <div class="field field-time">
           <label for="f-flow-min">Écoulement</label>
-          <div class="duration">
-            <input type="number" id="f-flow-min" form="form-entry" step="1" min="0" max="59" inputmode="numeric" placeholder="0" aria-label="Écoulement, minutes"><span>min</span>
-            <input type="number" id="f-flow-sec" form="form-entry" step="1" min="0" max="59" inputmode="numeric" placeholder="00" aria-label="Écoulement, secondes"><span>s</span>
+          <div class="tw-row">
+            <div class="duration tw" id="f-flow-wheel">
+              <div class="tw-col"><div class="tw-scroll" aria-hidden="true"></div><input type="number" id="f-flow-min" form="form-entry" step="1" min="0" max="59" inputmode="numeric" placeholder="0" aria-label="Écoulement, minutes"><span class="tw-unit">min</span></div>
+              <span class="tw-sep" aria-hidden="true">:</span>
+              <div class="tw-col"><div class="tw-scroll" aria-hidden="true"></div><input type="number" id="f-flow-sec" form="form-entry" step="1" min="0" max="59" inputmode="numeric" placeholder="00" aria-label="Écoulement, secondes"><span class="tw-unit">s</span></div>
+            </div>
+            <div class="tw-quick" id="f-flow-quick"></div>
           </div>
           <span class="field-hint">Déduit tout seul : du palier "ouvrir" à l'arrêt du chrono.</span>
         </div>
@@ -514,7 +525,7 @@
       </div>
       <!-- Switch only: on the Brikka the water heats in the boiler, there
            is no temperature to enter, only the preheated water checkbox. -->
-      <div class="field" id="field-temp">
+      <div class="field field-wide" id="field-temp">
         <label for="f-temp">Température (°C)</label>
         <!-- Switch: the temperature is derived from the TIME the kettle spends
              on the stove. Same kettle and same burner every time, so a
@@ -525,11 +536,16 @@
         <!-- Time and degree fit on ONE line: stacked, the Temperature cell
              became twice as tall as its neighbours and dug a hole in the
              middle of the grid. -->
+        <!-- v9.13: a full row, the heating time on wheels (M7), its quick
+             buttons, then the degree it gives. -->
         <div class="row-temp">
-          <div class="duration" id="row-heat">
-            <input type="number" id="f-heat-min" step="1" min="0" max="30" inputmode="numeric" placeholder="0" aria-label="Bouilloire sur le feu, minutes"><span>min</span>
-            <input type="number" id="f-heat-sec" step="1" min="0" max="59" inputmode="numeric" placeholder="00" aria-label="Bouilloire sur le feu, secondes"><span>s</span>
+          <span class="tw-caption" aria-hidden="true">Bouilloire sur le feu</span>
+          <div class="duration tw" id="row-heat">
+            <div class="tw-col"><div class="tw-scroll" aria-hidden="true"></div><input type="number" id="f-heat-min" step="1" min="0" max="30" inputmode="numeric" placeholder="0" aria-label="Bouilloire sur le feu, minutes"><span class="tw-unit">min</span></div>
+            <span class="tw-sep" aria-hidden="true">:</span>
+            <div class="tw-col"><div class="tw-scroll" aria-hidden="true"></div><input type="number" id="f-heat-sec" step="1" min="0" max="59" inputmode="numeric" placeholder="00" aria-label="Bouilloire sur le feu, secondes"><span class="tw-unit">s</span></div>
           </div>
+          <div class="tw-quick" id="f-heat-quick"></div>
           <!-- The browser's arrows do not appear below a certain
                width, and this field is 66 px wide: we draw them. See .field-incr. -->
           <div class="field-incr">
@@ -542,13 +558,24 @@
         </div>
         <span class="field-hint" id="temp-hint"></span>
       </div>
-      <div class="field">
+      <!-- Q4 and M2 (v9.13): the C5's dial, a click per button, the slider as
+           the machine's range with the coffee's golden zone (js/ui-dial.js).
+           The text field stays the source of truth. -->
+      <div class="field field-wide field-grind" id="field-grind">
         <label id="lbl-grind" for="f-grind">Mouture (molette)</label>
-        <div class="row-slider">
-          <input type="range" id="f-grind-slider" class="slider-field" min="0" max="150" step="1" value="75" aria-labelledby="lbl-grind">
-          <input type="text" id="f-grind" enterkeyhint="next" pattern="[0-3][.,][0-9][.,][0-4]" inputmode="decimal">
+        <div class="grind-dial">
+          <svg class="gd-face" viewBox="0 0 200 200" aria-hidden="true" focusable="false"></svg>
+          <div class="gd-body">
+            <div class="gd-row">
+              <button type="button" class="gd-step" data-grind-step="-1" aria-label="Un clic plus fin"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+              <input type="text" id="f-grind" enterkeyhint="next" pattern="[0-3][.,][0-9][.,][0-4]" inputmode="decimal">
+              <button type="button" class="gd-step" data-grind-step="1" aria-label="Un clic plus gros"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
+              <span class="field-hint gd-detail" id="grind-detail"></span>
+            </div>
+            <div class="gd-track"><input type="range" id="f-grind-slider" class="slider-field" min="0" max="150" step="1" value="75" aria-labelledby="lbl-grind"></div>
+            <p class="gd-zone" id="grind-zone" hidden></p>
+          </div>
         </div>
-        <span class="field-hint" id="grind-detail"></span>
       </div>
       <div class="field">
         <label for="f-volume">Volume extrait (ml)</label>
@@ -629,7 +656,10 @@
       <!-- The slider-inactive class IS the "not rated yet" state (v8.40),
            unstyled since v8.68: the label above states it. -->
       <input type="range" id="f-rating" min="0" max="10" step="0.5" value="5" class="slider-rating slider-inactive" aria-describedby="f-rating-help">
-      <small class="rating-help" id="f-rating-help">Touche la piste pour noter, ou reviens plus tard.</small>
+      <!-- J1 (v9.13): the rating dial, drawn by js/ui-rating-dial.js, drives the
+           slider above, which stays hidden while the dial is on. -->
+      <div class="rating-dial" id="f-rating-dial" hidden></div>
+      <small class="rating-help" id="f-rating-help"><span class="rh-slider">Touche la piste pour noter, ou reviens plus tard.</span><span class="rh-dial">Tourne le cadran pour noter, ou reviens plus tard.</span></small>
     </div>
 
     <!-- With the RATING, not with the brew options. Those describe
@@ -1692,7 +1722,8 @@ Cảm ơn shop.</pre>
          the cup as it comes out. The slider has no thumb until it has
          been touched. -->
     <input type="range" id="q-rating" min="0" max="10" step="0.5" value="5" class="slider-rating slider-inactive" aria-describedby="q-rating-help">
-    <small class="rating-help" id="q-rating-help">Touche la piste pour noter, ou reviens plus tard.</small>
+    <div class="rating-dial" id="q-rating-dial" hidden></div>
+    <small class="rating-help" id="q-rating-help"><span class="rh-slider">Touche la piste pour noter, ou reviens plus tard.</span><span class="rh-dial">Tourne le cadran pour noter, ou reviens plus tard.</span></small>
   </div>
   <p class="quick-warn" id="q-warn" aria-live="polite"></p>
   <div class="quick-actions">
@@ -1730,10 +1761,12 @@ Cảm ơn shop.</pre>
       </div>
       <div class="br-step">
         <div class="br-time-row"><b id="br-time">0:00</b><span id="br-over"></span><span class="br-valve" id="br-valve" hidden></span></div>
-        <div class="br-total" id="br-total" hidden><div class="br-total-track"><i id="br-total-level"></i></div><span id="br-total-text"></span></div>
         <p class="br-instruction" id="br-instruction" aria-live="polite"></p>
         <p class="br-next" id="br-next"></p>
       </div>
+      <!-- J2 (v9.13): the cup from the entry fills as the water goes in
+           (js/ui-cup.js); it replaced the total bar. -->
+      <div class="br-total" id="br-total" hidden><div class="br-cup" id="br-cup"></div><span id="br-total-text"></span></div>
     </div>
     <ol class="br-timeline" id="br-timeline"></ol>
     <div class="br-end" id="br-end" hidden>
@@ -1741,7 +1774,8 @@ Cảm ơn shop.</pre>
         <label for="br-rating">Note : <b id="br-rating-spoken">pas encore notée</b></label>
       </div>
       <input type="range" id="br-rating" min="0" max="10" step="0.5" value="5" class="slider-rating slider-inactive">
-      <small class="rating-help">Touche la piste pour noter, ou reviens plus tard.</small>
+      <div class="rating-dial" id="br-rating-dial" hidden></div>
+      <small class="rating-help"><span class="rh-slider">Touche la piste pour noter, ou reviens plus tard.</span><span class="rh-dial">Tourne le cadran pour noter, ou reviens plus tard.</span></small>
       <div class="br-end-buttons">
         <button type="button" class="btn btn-primary" id="br-save">Enregistrer la tasse</button>
         <button type="button" class="btn" id="br-complete">Compléter la saisie</button>
@@ -1811,6 +1845,8 @@ Cảm ơn shop.</pre>
 </dialog>
 
 <div id="toast" class="toast" hidden></div>
+<!-- Q2 (v9.13): the cup just saved, filling, for two seconds (js/ui-cup.js). -->
+<div id="cup-card" class="cup-card" role="status" aria-live="polite" hidden></div>
 
 <footer class="footer-site">
   <span id="version-site"></span>
@@ -1819,41 +1855,45 @@ Cảm ơn shop.</pre>
 <!-- ALL defer, and definitely not async: defer preserves order, async does not,
      and data.js would blow up looking for SYNC or GRIND. The download now
      runs in parallel with HTML parsing instead of blocking it. -->
-<script defer src="js/legacy-names.js?v=9.13"></script>
-<script defer src="js/tools.js?v=9.13"></script>
-<script defer src="js/i18n.js?v=9.13"></script>
-<script defer src="js/grind.js?v=9.13"></script>
-<script defer src="js/recipes.js?v=9.13"></script>
+<script defer src="js/legacy-names.js?v=9.14"></script>
+<script defer src="js/tools.js?v=9.14"></script>
+<script defer src="js/i18n.js?v=9.14"></script>
+<script defer src="js/grind.js?v=9.14"></script>
+<script defer src="js/recipes.js?v=9.14"></script>
 <!-- sync.js BEFORE data.js: data.js uses it at load time. -->
-<script defer src="js/sync.js?v=9.13"></script>
-<script defer src="js/data-csv.js?v=9.13"></script>
-<script defer src="js/data-schema.js?v=9.13"></script>
-<script defer src="js/data-store.js?v=9.13"></script>
-<script defer src="js/data-calcs.js?v=9.13"></script>
-<script defer src="js/data-migrations.js?v=9.13"></script>
-<script defer src="js/data.js?v=9.13"></script>
-<script defer src="js/tuning.js?v=9.13"></script>
-<script defer src="js/charts.js?v=9.13"></script>
-<script defer src="js/ui-core.js?v=9.13"></script>
-<script defer src="js/ui-sync-bean.js?v=9.13"></script>
-<script defer src="js/ui-nav.js?v=9.13"></script>
-<script defer src="js/ui-scrub.js?v=9.13"></script>
-<script defer src="js/ui-findings.js?v=9.13"></script>
-<script defer src="js/ui-last-cup.js?v=9.13"></script>
-<script defer src="js/ui-dashboard.js?v=9.13"></script>
-<script defer src="js/ui-entry.js?v=9.13"></script>
-<script defer src="js/ui-entry-aside.js?v=9.13"></script>
-<script defer src="js/ui-pills.js?v=9.13"></script>
-<script defer src="js/ui-chrono.js?v=9.13"></script>
-<script defer src="js/ui-draft.js?v=9.13"></script>
-<script defer src="js/ui-quick.js?v=9.13"></script>
-<script defer src="js/ui-history.js?v=9.13"></script>
-<script defer src="js/ui-journal.js?v=9.13"></script>
-<script defer src="js/ui-guide.js?v=9.13"></script>
-<script defer src="js/ui-catalog.js?v=9.13"></script>
-<script defer src="js/ui-coffee-sheet.js?v=9.13"></script>
-<script defer src="js/ui-brew.js?v=9.13"></script>
-<script defer src="js/ui-drawings.js?v=9.13"></script>
-<script defer src="js/app.js?v=9.13"></script>
+<script defer src="js/sync.js?v=9.14"></script>
+<script defer src="js/data-csv.js?v=9.14"></script>
+<script defer src="js/data-schema.js?v=9.14"></script>
+<script defer src="js/data-store.js?v=9.14"></script>
+<script defer src="js/data-calcs.js?v=9.14"></script>
+<script defer src="js/data-migrations.js?v=9.14"></script>
+<script defer src="js/data.js?v=9.14"></script>
+<script defer src="js/tuning.js?v=9.14"></script>
+<script defer src="js/charts.js?v=9.14"></script>
+<script defer src="js/ui-core.js?v=9.14"></script>
+<script defer src="js/ui-sync-bean.js?v=9.14"></script>
+<script defer src="js/ui-nav.js?v=9.14"></script>
+<script defer src="js/ui-scrub.js?v=9.14"></script>
+<script defer src="js/ui-findings.js?v=9.14"></script>
+<script defer src="js/ui-last-cup.js?v=9.14"></script>
+<script defer src="js/ui-dashboard.js?v=9.14"></script>
+<script defer src="js/ui-cup.js?v=9.14"></script>
+<script defer src="js/ui-dial.js?v=9.14"></script>
+<script defer src="js/ui-rating-dial.js?v=9.14"></script>
+<script defer src="js/ui-wheel.js?v=9.14"></script>
+<script defer src="js/ui-entry.js?v=9.14"></script>
+<script defer src="js/ui-entry-aside.js?v=9.14"></script>
+<script defer src="js/ui-pills.js?v=9.14"></script>
+<script defer src="js/ui-chrono.js?v=9.14"></script>
+<script defer src="js/ui-draft.js?v=9.14"></script>
+<script defer src="js/ui-quick.js?v=9.14"></script>
+<script defer src="js/ui-history.js?v=9.14"></script>
+<script defer src="js/ui-journal.js?v=9.14"></script>
+<script defer src="js/ui-guide.js?v=9.14"></script>
+<script defer src="js/ui-catalog.js?v=9.14"></script>
+<script defer src="js/ui-coffee-sheet.js?v=9.14"></script>
+<script defer src="js/ui-brew.js?v=9.14"></script>
+<script defer src="js/ui-drawings.js?v=9.14"></script>
+<script defer src="js/app.js?v=9.14"></script>
 </body>
 </html>
