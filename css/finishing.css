@@ -1565,3 +1565,232 @@ g.jar-shake { transform-box: fill-box; }
   .morning-steam { display: none; }
   .jar-glass, .odo.odo-go .odo-strip { transition: none; }
 }
+
+/* ---------- Desktop panel, palette, shortcuts, history empty states (v9.13) ---------- */
+
+/* O7: THE SIDE PANEL (js/ui-panel.js). From 1,100 px, a cup, a coffee or a
+   recipe opens in a column on the right instead of a window over everything,
+   and the screen shrinks beside it, whole. Below 1,100 px the panel never
+   shows: the cup opens in the entry form, the coffee sheet as its window. */
+.side-panel { display: none; }
+@media (min-width: 1100px) {
+  .side-open { --side-w: clamp(360px, 30vw, 460px); }
+  .side-open main, .side-open .footer-site { margin-inline-end: var(--side-w); }
+  .side-panel:not([hidden]) {
+    position: fixed; top: 0; right: 0; bottom: 0; width: var(--side-w);
+    /* Above the rail and the content, under the bubbles, the hover sheet and the toasts. */
+    z-index: calc(var(--z-overlay-nav) - 1);
+    display: flex; flex-direction: column;
+    background: var(--panel); border-left: 1px solid var(--lines); box-shadow: var(--shadow);
+  }
+  .side-panel.sp-enter, .modal-sheet.as-panel[open] { animation: sp-enter 220ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+  /* The coffee sheet, opened with show() instead of showModal(): same place, same width. */
+  .modal-sheet.as-panel[open] {
+    position: fixed; inset: 0 0 0 auto; width: var(--side-w); max-width: none;
+    height: 100dvh; max-height: none; margin: 0; border-radius: 0; border-width: 0 0 0 1px;
+    z-index: calc(var(--z-overlay-nav) - 1);
+  }
+  .modal-sheet.as-panel .sh-content { padding: 20px 20px 8px; gap: 14px; }
+  .modal-sheet.as-panel .sh-actions { padding: 12px 20px 16px; }
+  .modal-sheet.as-panel .sh-head h2 { font-size: 1.8rem; }
+  .modal-sheet.as-panel .sh-grid, .modal-sheet.as-panel .sh-wheel, .modal-sheet.as-panel .sh-compare-body { grid-template-columns: minmax(0, 1fr); }
+  .modal-sheet.as-panel .sh-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .modal-sheet.as-panel .sh-wheel .wheel { max-width: 260px; margin: 0 auto; }
+  /* The history table beside the panel: the columns the panel repeats
+     (machine, grind, ratio) and the action buttons (in the panel too) step
+     aside; the coffee, the recipe and the tastes keep the room. */
+  .side-open .table-history { min-width: 0; }
+  .side-open .table-history col.c-method, .side-open .table-history col.c-grind,
+  .side-open .table-history col.c-ratio, .side-open .table-history col.c-actions { width: 0; }
+  /* Emptied, not removed: a removed cell would shift the next ones into the zero-width columns. */
+  .side-open .table-history tr > :nth-child(3), .side-open .table-history tr > :nth-child(6),
+  .side-open .table-history tr > :nth-child(7), .side-open .table-history tr > :nth-child(10) {
+    padding: 0; border-width: 0; overflow: hidden; visibility: hidden;
+  }
+  /* The dashboard beside the panel: one column (600 px left at 1,280), the
+     layout it has on a narrow screen... */
+  .side-open .grid-dashboard { grid-template-columns: minmax(0, 1fr); }
+  .side-open .grid-dashboard > * { grid-column: 1 / -1; }
+}
+@media (min-width: 1400px) {
+  /* ...and two from 1,400 px, its layout under 1,100 px without the panel. */
+  .side-open .grid-dashboard { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .side-open .grid-dashboard > * { grid-column: span 1; }
+  .side-open .grid-dashboard > .col-2, .side-open .grid-dashboard > .col-full { grid-column: 1 / -1; }
+}
+@keyframes sp-enter { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: none; } }
+
+.sp-bar { display: flex; align-items: center; gap: 6px; padding: 12px 14px 12px 20px; border-bottom: 1px solid var(--lines); }
+.sp-kind {
+  margin: 0 auto 0 0; display: flex; align-items: baseline; gap: 8px;
+  font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+}
+.sp-pos { font-weight: 500; letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
+.sp-bar .btn-icon { padding: 6px; }
+.sp-bar .btn-icon:disabled { opacity: 0.35; cursor: default; }
+.sp-bar .btn-icon:disabled:hover { border-color: var(--lines); }
+.sp-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 20px; display: grid; gap: 16px; align-content: start; }
+.sp-hint { margin: 0; padding: 10px 20px; border-top: 1px solid var(--lines); font-size: 0.75rem; color: var(--muted); }
+.sp-cup { display: grid; gap: 16px; }
+.sp-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: start; }
+.sp-eyebrow { margin: 0; font-size: 0.8rem; color: var(--muted); }
+.sp-title { margin: 2px 0 6px; font-size: 1.9rem; line-height: 1.05; overflow-wrap: anywhere; }
+.sp-sub { margin: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 0.88rem; color: var(--text); }
+.sp-dot { color: var(--muted); }
+.sp-link {
+  font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: pointer; text-align: left;
+  text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 4px; text-decoration-thickness: 1px;
+  transition: text-decoration-color var(--transition), color var(--transition);
+}
+.sp-link:hover, .sp-link:focus-visible { color: var(--accent-strong); text-decoration-color: currentColor; }
+.sp-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.sp-score { display: grid; justify-items: end; gap: 2px; text-align: right; }
+.sp-rating { font-family: var(--serif); font-weight: 400; font-size: 3.4rem; line-height: 0.95; color: var(--accent-strong); font-variant-numeric: tabular-nums; }
+.sp-score span { font-size: 0.78rem; color: var(--muted); }
+.sp-unrated { font-size: 0.85rem; color: var(--muted); }
+.sp-kpis {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 14px;
+  padding: 14px 16px; border-radius: var(--radius-small); background: var(--panel-2);
+}
+.sp-kpi { display: grid; gap: 2px; min-width: 0; }
+.sp-kpi b { font-family: var(--serif); font-weight: 400; font-size: 1.5rem; line-height: 1.1; color: var(--ink); font-variant-numeric: tabular-nums; }
+.sp-kpi b small { margin-left: 6px; font-family: var(--sans); font-size: 0.75rem; color: var(--muted); }
+.sp-kpi span { font-size: 0.75rem; color: var(--muted); }
+.sp-diag { margin: 0; font-size: 0.88rem; font-weight: 600; color: var(--accent-strong); }
+.sp-detail .detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sp-detail .detail-comment { font-size: 0.95rem; line-height: 1.5; }
+.sp-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.sp-actions .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-strong); background: var(--accent-bg); }
+.sp-recipe .recipe-card { border-left: 0; border-right: 0; border-bottom: 0; border-radius: 0; box-shadow: none; padding: 14px 0 0; background: transparent; }
+.sp-recipe .recipe-card h3 { margin-top: 6px; }
+/* J and K carry the focus from row to row: it must show. */
+tr.row-hist:focus-visible, tr.last-clickable:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.h-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* P1 + M5: SEARCH AND ACT (js/ui-palette.js). A floating field on the
+   computer, the whole screen on the phone. */
+.cmd {
+  padding: 0; border: 0; background: transparent; color: var(--text);
+  width: min(640px, calc(100vw - 32px)); max-width: none; max-height: none; margin: 11vh auto auto; overflow: visible;
+}
+.cmd::backdrop { background: var(--overlay); backdrop-filter: blur(3px); }
+.cmd-box {
+  display: flex; flex-direction: column; max-height: 74vh; overflow: hidden;
+  background: var(--panel); border: 1px solid var(--lines); border-radius: var(--radius); box-shadow: var(--shadow);
+}
+.cmd[open] .cmd-box { animation: cmd-enter 160ms ease-out; }
+@keyframes cmd-enter { from { opacity: 0; transform: translateY(-6px) scale(0.99); } to { opacity: 1; transform: none; } }
+.cmd-field { display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 18px; border-bottom: 1px solid var(--lines); }
+.cmd-field:focus-within { box-shadow: inset 0 -2px 0 var(--accent); }
+.cmd-field > .ico { flex: none; color: var(--muted); }
+.cmd-field input[type="search"] {
+  flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 8px 0; border: 0; border-radius: 0;
+  background: transparent; box-shadow: none; font: inherit; font-size: 1.08rem; color: var(--ink); outline: none;
+}
+.cmd-field input[type="search"]::-webkit-search-cancel-button { display: none; }
+.cmd-results { overflow-y: auto; overscroll-behavior: contain; padding: 4px 8px 10px; }
+.cmd-group-name { margin: 12px 10px 4px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.cmd-item {
+  display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: center; gap: 12px;
+  min-height: 44px; padding: 7px 10px; border-radius: var(--radius-small); cursor: pointer; color: var(--text);
+}
+.cmd-item.on { background: var(--accent-bg); }
+.cmd-ico { display: inline-flex; color: var(--muted); }
+.cmd-item.on .cmd-ico { color: var(--accent-strong); }
+.cmd-text { display: grid; min-width: 0; }
+.cmd-text b, .cmd-text small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cmd-text b { font-size: 0.95rem; font-weight: 600; color: var(--ink); }
+.cmd-text small { font-size: 0.8rem; color: var(--muted); }
+.cmd-text mark { background: none; color: var(--accent-strong); text-decoration: underline; text-underline-offset: 3px; }
+.cmd-hint { font-size: 0.75rem; color: var(--muted); }
+.cmd-keys { display: inline-flex; gap: 4px; }
+.cmd-nothing { margin: 20px 14px; font-size: 0.9rem; color: var(--muted); }
+.cmd-foot { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0; padding: 10px 16px; border-top: 1px solid var(--lines); font-size: 0.75rem; color: var(--muted); }
+.cmd-foot span { display: inline-flex; align-items: center; gap: 4px; }
+/* Escape and the backdrop close it on a computer; the button is for fingers. */
+@media (min-width: 1024px) and (pointer: fine) { .cmd-close { display: none; } }
+@media (max-width: 1023px) {
+  .cmd { width: 100vw; height: 100dvh; max-height: 100dvh; margin: 0; }
+  .cmd-box { height: 100%; max-height: none; border: 0; border-radius: 0; padding-top: env(safe-area-inset-top, 0px); }
+  .cmd-field { padding: 8px 8px 8px 16px; }
+  /* 1rem: below 16 px the phone zooms into the field. */
+  .cmd-field input[type="search"] { font-size: 1rem; }
+  .cmd-results { padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+  .cmd-item { min-height: 52px; }
+  .cmd-foot { display: none; }
+}
+
+/* The keys, drawn as keycaps wherever a shortcut is named. */
+.cmd kbd, .keys-help kbd, .h-sheet-keys kbd, .kbd-chord kbd, .rail-search kbd {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 1.7em; padding: 1px 6px;
+  font: inherit; font-size: 0.75rem; font-weight: 600; line-height: 1.45; color: var(--text);
+  background: var(--panel-2); border: 1px solid var(--lines); border-bottom-width: 2px; border-radius: 6px;
+}
+
+/* P1: the rail's search button. On the phone it is the first line of the « Plus » sheet. */
+.rail-search {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 8px 10px 8px 12px;
+  border: 1px solid var(--lines); border-radius: var(--radius-small); background: var(--panel); color: var(--muted);
+  font: inherit; font-size: 0.9rem; text-align: left; cursor: pointer;
+  transition: border-color var(--transition), color var(--transition);
+}
+.rail-search:hover { border-color: var(--accent); color: var(--ink); }
+.rail-search:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rail-search .rail-kbd { display: inline-flex; gap: 3px; }
+/* P3: the keys of each screen, next to its name in the rail. */
+.rail-kbd { margin-left: auto; font-family: var(--sans); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; color: var(--muted); opacity: 0.8; white-space: nowrap; }
+.rail-entry:not(:hover):not(.on) .rail-kbd { opacity: 0.55; }
+@media (max-width: 1023px), (pointer: coarse) { .rail-kbd, .rail-search .rail-kbd { display: none; } }
+@media (max-width: 1023px) {
+  .rail-search { min-height: 44px; border: 0; background: transparent; color: var(--text); font-size: 0.92rem; }
+  .rail-search .ico { color: var(--muted); }
+}
+
+/* P3: the hover sheet ends on the keys that act on the hovered cup. */
+.h-sheet-keys {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+  margin: 12px 0 0; padding-top: 10px; border-top: 1px solid var(--lines-soft); font-size: 0.75rem; color: var(--muted);
+}
+/* P3: the hint while a G waits for its second letter. */
+.kbd-chord {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: var(--z-toast);
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 14px; max-width: calc(100vw - 32px);
+  padding: 10px 16px; border-radius: var(--radius-small); background: var(--panel); border: 1px solid var(--lines); box-shadow: var(--shadow);
+  font-size: 0.8rem; color: var(--text); animation: chord-enter 140ms ease-out;
+}
+@keyframes chord-enter { from { opacity: 0; } to { opacity: 1; } }
+.kbd-chord span { display: inline-flex; align-items: center; gap: 5px; }
+@media (min-width: 1024px) { .kbd-chord { left: calc(50% + var(--rail-large) / 2); } }
+/* P3: the shortcuts help, « ? ». */
+.keys-help { max-width: 880px; }
+.keys-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px 30px; margin-top: 10px; }
+.keys-grid h3 { margin: 0 0 6px; font-family: var(--sans); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.keys-list { margin: 0; }
+.keys-list div { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--lines-soft); font-size: 0.88rem; }
+.keys-list dt { color: var(--text); }
+.keys-list dd { margin: 0; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; font-size: 0.8rem; color: var(--muted); }
+
+/* M6: the empty history and journal (js/ui-history.js, renderEmpty). */
+.es-drawing { display: block; width: 150px; height: auto; margin: 0 auto 4px; }
+.es-fill { fill: var(--panel-3); stroke: var(--muted); stroke-width: 1.5; }
+.es-handle { fill: none; stroke: var(--muted); stroke-width: 4; stroke-linecap: round; }
+.es-surface { fill: var(--accent); opacity: 0.5; }
+.es-steam { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; animation: es-steam 3.2s ease-in-out infinite; }
+.es-lens { fill: var(--panel); stroke: var(--accent); stroke-width: 3; }
+.es-glass { fill: none; stroke: var(--muted); stroke-width: 5; stroke-linecap: round; }
+[data-empty="filtered"] .es-steam { animation: none; opacity: 0.7; }
+@keyframes es-steam { 0%, 100% { opacity: 0.35; transform: translateY(2px); } 50% { opacity: 1; transform: translateY(-3px); } }
+/* A title, not a card subheading: .card h3 sets small muted capitals, and the empty state lives in the history card. */
+.empty-state[data-empty] h3 { margin: 6px 0 0; font-family: var(--serif); font-weight: 400; font-size: 1.6rem; text-transform: none; letter-spacing: 0.01em; color: var(--ink); }
+[data-empty] p { max-width: 42ch; }
+
+/* A touch screen of 1,100 px and more gets the panel too: its targets go to 44 px. */
+@media (pointer: coarse) {
+  .sp-bar .btn-icon, .cmd-close { min-width: 44px; min-height: 44px; justify-content: center; }
+  .sp-actions .btn, .sp-recipe .btn, .sp-link { min-height: 44px; }
+  .sp-sub .sp-link { display: inline-flex; align-items: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .side-panel.sp-enter, .modal-sheet.as-panel[open], .cmd[open] .cmd-box, .kbd-chord, .es-steam { animation: none; }
+  .sp-link, .rail-search { transition: none; }
+}

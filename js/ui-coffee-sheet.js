@@ -462,7 +462,8 @@
        the address, which drives the screens). */
     if (!m.open) {
       try { history.pushState({ sheet: coffeeId }, ""); historyEntry = true; } catch (e) { historyEntry = false; }
-      m.showModal();
+      // v9.13: on a wide screen, beside the screen instead of over it (js/ui-panel.js).
+      if (!UI.showInSidePanel(m, coffeeId)) m.showModal();
     }
     // Now on screen: the jar plays the change since this device last showed it.
     UI.playJars($("#sheet-content"));

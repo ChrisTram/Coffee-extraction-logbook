@@ -119,6 +119,9 @@
       n: list.length, s: list.length > 1 ? "s" : "", t: DATA.state.extractions.length,
     });
     $("#h-empty").hidden = list.length > 0;
+    // M6: no cups at all, or filters that let nothing through. The bare table header goes too.
+    if (!list.length) renderEmpty(DATA.state.extractions.length === 0);
+    $("#h-table").hidden = list.length === 0;
 
     /* The overline tells the TOTAL and since when, not the filter: it is the
        screen's identity, the filter has its own banner just below. */
@@ -169,7 +172,6 @@
     $("#h-body").innerHTML = visible.map(e => historyRow(e)).join("") +
       (leftover > 0 ? '<tr class="h-row-plus"><td colspan="10">' + moreButton(leftover) + "</td></tr>" : "");
     wireMore();
-    displayed = new Map(visible.map(e => [e.id, e]));
     updateComparisonBar();
   }
 
@@ -203,6 +205,42 @@
 
   function renderCards(list) {
     return list.map(extractionCard).join("");
+  }
+
+  /* M6 (v9.13): AN EMPTY HISTORY SAYS WHAT TO DO. A grey line « Aucune
+     extraction ne correspond » left you to guess the way out. Now a small
+     drawing, one sentence, and the button that leads somewhere: the first cup
+     when there is none, clearing the filters when they let nothing through.
+     The steam drifts, unless reduced motion is asked for (css/finishing.css). */
+  const EMPTY_DRAWINGS = {
+    none: '<svg class="es-drawing" viewBox="0 0 150 110" aria-hidden="true">' +
+      '<path class="es-fill" d="M30 40 L110 40 L104 92 Q102 100 94 100 L46 100 Q38 100 36 92 Z"/>' +
+      '<path class="es-handle" d="M110 50 Q130 52 128 66 Q126 80 106 80"/>' +
+      '<path class="es-steam" d="M55 30 Q50 20 58 12 M72 30 Q67 18 76 8 M89 30 Q84 20 92 12"/>' +
+      '<ellipse class="es-surface" cx="70" cy="44" rx="36" ry="5"/></svg>',
+    filtered: '<svg class="es-drawing" viewBox="0 0 150 110" aria-hidden="true">' +
+      '<path class="es-fill" d="M22 52 L86 52 L81 92 Q79 99 72 99 L36 99 Q29 99 27 92 Z"/>' +
+      '<path class="es-handle" d="M86 60 Q102 62 100 74 Q98 85 83 85"/>' +
+      '<circle class="es-lens" cx="104" cy="38" r="20"/>' +
+      '<path class="es-glass" d="M118 52 L134 68"/>' +
+      '<path class="es-steam" d="M96 31 Q104 27 112 31"/></svg>',
+  };
+  function renderEmpty(noCups) {
+    const zone = $("#h-empty");
+    const k = noCups ? "none" : "filtered";
+    zone.dataset.empty = k;
+    zone.innerHTML = EMPTY_DRAWINGS[k] +
+      "<h3>" + I18N.t(noCups ? "empty_history_title" : "empty_filtered_title") + "</h3>" +
+      "<p>" + I18N.t(noCups ? "empty_history_text" : "empty_filtered_text") + "</p>" +
+      '<div class="empty-state-actions"><button type="button" class="btn btn-primary" data-empty-action="' + (noCups ? "new" : "clear") + '">' +
+      I18N.t(noCups ? "empty_history_button" : "empty_filtered_button") + "</button></div>";
+  }
+
+  // Every filter back to empty, the machine segment with them.
+  function clearFilters() {
+    FILTERS.forEach(id => { $("#" + id).value = ""; });
+    renderHistory();
+    updateMethodSegment();
   }
 
   /* THE SUMMARY BANNER: what the current filter tells.
@@ -268,8 +306,6 @@
      openDetails now only serves the cards. */
   const openDetails = new Set();
   const comparison = new Set();
-  // The extractions of the displayed table, by id: the sheet re-reads them on hover.
-  let displayed = new Map();
 
   /* The CONTENT of the detail, without its wrapper: the hover sheet puts it in
      a floating div, the phone card in an expanded div. A single content, so
@@ -290,7 +326,7 @@
       item("detail_water_added", e.added_water_ml !== "" ? e.added_water_ml + " ml" : ""),
       item("detail_milk", e.milk_ml !== "" ? e.milk_ml + " ml" : ""),
       item("detail_stirring", e.stir_count !== "" ? e.stir_count : ""),
-      item("detail_cup", e.cup),
+      item("detail_cup", e.cup ? titleAttr(e.cup) : ""),
       item("detail_preheated", Number(e.preheated_water) === 1 ? I18N.t("yes") : ""),
       item("detail_drink", e._c.drink_ml !== "" ? e._c.drink_ml + " ml" : ""),
       item("detail_cost", e._c.cup_cost_vnd !== "" ? fmtVND(e._c.cup_cost_vnd) : ""),
@@ -300,7 +336,7 @@
     const comment = withoutComment ? "" : e.comment;
     return (cells ? '<div class="detail-grid">' + cells + "</div>" : "") +
       (tags ? '<div class="detail-tags">' + tags + "</div>" : "") +
-      (comment ? '<p class="detail-comment">' + comment + "</p>" : "") +
+      (comment ? '<p class="detail-comment">' + titleAttr(comment) + "</p>" : "") +
       (cells || tags || comment ? "" : '<p class="detail-empty">' + I18N.t("detail_nothing") + "</p>");
   }
 
@@ -589,7 +625,20 @@
 
      Only with a real mouse: under a finger there is no hover, the phone
      cards keep their expanded detail. It hides over the action buttons,
-     which it must not get in the way of, and on scroll. */
+     which it must not get in the way of, and on scroll.
+
+     P3 (v9.13): WHEREVER A CUP APPEARS. The same sheet now follows the
+     journal cards, the cards by date and the dashboard latest cups, and it
+     ends on the keys that act on the hovered cup (R, E, C, see
+     js/ui-shortcuts.js). The hovered cup is known even before the sheet
+     shows: the keys work as soon as the mouse is on the row. */
+  const HOVER_ZONES = ["#h-body", "#h-cards", "#h-journal", "#latest-list"];
+  const HOVER_ROWS = "tr.row-hist, tr.row-comment, .h-card, tr.last-clickable, tr.last-comment";
+  const hover = { id: null, hide: null };
+  function hoverKeys() {
+    return '<p class="h-sheet-keys">' + [["R", "hover_redo"], ["E", "hover_edit"], ["C", "hover_compare"]]
+      .map(([k, key]) => "<kbd>" + k + "</kbd> " + I18N.t(key)).join('<span aria-hidden="true"> · </span>') + "</p>";
+  }
   function wireHoverSheet() {
     if (typeof matchMedia !== "function" || !matchMedia("(hover: hover) and (pointer: fine)").matches) return;
     const sheet = document.createElement("div");
@@ -602,20 +651,23 @@
     const hide = () => {
       clearTimeout(pendingTimer);
       currentId = null;
+      hover.id = null;
       sheet.classList.remove("visible");
       sheet.hidden = true;
     };
-    const show = id => {
-      const e = displayed.get(id);
-      const row = $('#h-body tr.row-hist[data-id="' + id + '"]');
-      if (!e || !row) return;
+    hover.hide = hide;
+    const show = (id, row) => {
+      const e = extsWithCalcs().find(x => x.id === id);
+      if (!e || !row || !row.isConnected) return;
+      // The side panel already shows this cup: nothing to add.
+      if (UI.panelCupId && UI.panelCupId() === id) return;
       const content = detailContent(e, true);
       if (content.includes("detail-empty")) return;
-      sheet.innerHTML = content;
+      sheet.innerHTML = content + hoverKeys();
       sheet.hidden = false;
       // Under the whole group, the row AND its comment: we do not cover what is being read.
       const following = row.nextElementSibling;
-      const last = following && following.classList.contains("row-comment") ? following : row;
+      const last = following && (following.classList.contains("row-comment") || following.classList.contains("last-comment")) ? following : row;
       const low = last.getBoundingClientRect().bottom;
       const high = row.getBoundingClientRect().top;
       const l = sheet.offsetWidth, h = sheet.offsetHeight;
@@ -626,24 +678,35 @@
       requestAnimationFrame(() => sheet.classList.add("visible"));
     };
 
-    const body = $("#h-body");
-    body.addEventListener("mousemove", ev => {
-      mouseX = ev.clientX;
-      const row = ev.target.closest("[data-id]");
-      const onAction = ev.target.closest(".actions-row");
-      const id = row && !onAction ? row.dataset.id : null;
-      if (id === currentId) return;
-      hide();
-      if (!id) return;
-      currentId = id;
-      pendingTimer = setTimeout(() => show(id), 280);
+    HOVER_ZONES.map(sel => $(sel)).filter(Boolean).forEach(zone => {
+      zone.addEventListener("mousemove", ev => {
+        mouseX = ev.clientX;
+        let row = ev.target.closest(HOVER_ROWS);
+        const onAction = ev.target.closest(".actions-row, .btn-menu-card, .h-card-footer, button");
+        // A comment line belongs to the cup above it.
+        if (row && (row.classList.contains("row-comment") || row.classList.contains("last-comment"))) row = row.previousElementSibling;
+        const id = row && !onAction ? row.getAttribute("data-id") || row.getAttribute("data-ext") : null;
+        if (id === currentId) return;
+        hide();
+        if (!id) return;
+        currentId = id;
+        hover.id = id;
+        // The dashboard rows carry a title (« Ouvrir en édition »): the sheet says more, two bubbles say too much.
+        if (row.hasAttribute("title")) row.removeAttribute("title");
+        pendingTimer = setTimeout(() => show(id, row), 280);
+      });
+      zone.addEventListener("mouseleave", hide);
     });
-    body.addEventListener("mouseleave", hide);
     /* Any click, not only in the table: the sheet lives on the body, and a
        click on the rail changes screen without leaving the row. */
     document.addEventListener("click", hide, true);
     window.addEventListener("scroll", hide, { passive: true, capture: true });
   }
+  /* The cup under the mouse, for the keyboard shortcuts. The side panel
+     forgets it when it moves to another cup: the keys then act on the cup
+     last pointed at, by the mouse or by the arrows. */
+  const hoveredCupId = () => hover.id;
+  function forgetHover() { if (hover.hide) hover.hide(); }
 
   /* OPENING THE HISTORY ON A FILTER (v8.87), for example a day of the week
      recap. The other filters start from scratch: we come to see THAT day,
@@ -689,7 +752,9 @@
       if (!btn) {
         /* Clicking the ROW opens the extraction for editing, like the last
            five on the dashboard. Without it, only the pencil worked: a 24 px
-           target for a row that looks clickable as a whole. */
+           target for a row that looks clickable as a whole.
+           O7 (v9.13): on a wide screen, in the side panel instead, beside
+           the list (js/ui-panel.js); the pencil still edits. */
         const row = ev.target.closest("[data-id]");
         if (!row) return;
         /* A text selection is not a click. Without this test, copying a
@@ -697,7 +762,7 @@
         const selection = window.getSelection ? String(window.getSelection()) : "";
         if (selection.trim()) return;
         const rowExt = DATA.state.extractions.find(e => e.id === row.dataset.id);
-        if (rowExt) UI.loadExtractionIntoEntry(rowExt, false);
+        if (rowExt) UI.openCup(rowExt, row);
         return;
       }
       const id = btn.closest("[data-id]").dataset.id;
@@ -734,6 +799,13 @@
     [$("#h-body"), $("#h-cards"), $("#h-journal")].forEach(z => z.addEventListener("click", onHistoryClick));
     UI.wireJournal(renderHistory);
     wireHoverSheet();
+    // M6: the empty state button, rendered with the list.
+    $("#h-empty").addEventListener("click", ev => {
+      const b = ev.target.closest("[data-empty-action]");
+      if (!b) return;
+      if (b.dataset.emptyAction === "clear") clearFilters();
+      else UI.activateScreen("entry");
+    });
 
     /* The machine's segmented control DRIVES the <select>, which stays the
        source of truth: all the filtering, the reset and the export read it.
@@ -748,10 +820,17 @@
     $("#h-reset").addEventListener("click", () => setTimeout(updateMethodSegment, 0));
     $("#comparison-open").addEventListener("click", openComparison);
     $("#comparison-clear").addEventListener("click", () => { comparison.clear(); renderHistory(); });
+
+    /* The desktop layer (v9.13): side panel, palette and keyboard. Wired
+       from here because app.js is at its 450-line cap; each file wires its
+       own controls. */
+    UI.wireSidePanel();
+    UI.wirePalette();
+    UI.wireShortcuts();
   }
 
   Object.assign(UI, {
-    openHistoryOn,
+    openHistoryOn, clearFilters, hoveredCupId, forgetHover,
     FILTERS, toggleComparison, wireHistory, tuningCard, comparisonFields, comparison, openDetails,
     filterHistory, historyRow, updateComparisonBar, openComparison,
     actionsExtraction, extractionCard, historyComment, detailContent, asCards,

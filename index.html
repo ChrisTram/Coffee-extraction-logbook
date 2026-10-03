@@ -7,11 +7,11 @@
 <!-- Site version, single source of truth: the footer reads it, and files
      loaded on demand put it in their URL. Set it with
      node tools/bump_version.mjs X, never by hand. -->
-<meta name="app-version" content="9.15">
-<link rel="stylesheet" href="css/base.css?v=9.15">
-<link rel="stylesheet" href="css/screens.css?v=9.15">
-<link rel="stylesheet" href="css/dialogs.css?v=9.15">
-<link rel="stylesheet" href="css/finishing.css?v=9.15">
+<meta name="app-version" content="9.16">
+<link rel="stylesheet" href="css/base.css?v=9.16">
+<link rel="stylesheet" href="css/screens.css?v=9.16">
+<link rel="stylesheet" href="css/dialogs.css?v=9.16">
+<link rel="stylesheet" href="css/finishing.css?v=9.16">
 <!-- crossorigin use-credentials: without it the browser fetches the manifest
      WITHOUT cookies, the front door redirects it to /login, and it tries to
      parse HTML as JSON. Result: "Manifest: Syntax error" and a PWA that
@@ -52,7 +52,7 @@
      the scripts. bump_version.mjs versions the charts link. -->
 <link rel="preload" href="css/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="css/fonts/instrument-serif-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="js/vendor/chart.umd.js?v=9.15" as="script">
+<link rel="preload" href="js/vendor/chart.umd.js?v=9.16" as="script">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%98%95%3C/text%3E%3C/svg%3E">
 </head>
 <body>
@@ -82,6 +82,10 @@
   <!-- On desktop, "Nouvelle tasse" opens the FULL entry form: the floating
        quick entry button disappears above 1024 px. -->
   <button class="btn btn-primary rail-new" data-go="entry"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg><span>Nouvelle tasse</span></button>
+
+  <!-- P1 (v9.13): search and act, Ctrl K (js/ui-palette.js). The rail is also
+       the phone's "Plus" sheet: there, the same button opens the search full screen. -->
+  <button type="button" class="rail-search" id="btn-search" aria-keyshortcuts="Control+K Meta+K"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg><span>Chercher</span><span class="rail-kbd" aria-hidden="true"><kbd data-key-mod>Ctrl</kbd><kbd>K</kbd></span></button>
 
   <div class="rail-entries">
       <button class="nav-btn rail-entry" data-screen="dashboard"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="8" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="11" width="7" height="10" rx="1.5"/></svg><span>Tableau de bord</span></button>
@@ -1862,6 +1866,77 @@ Cảm ơn shop.</pre>
   </div>
 </dialog>
 
+<!-- O7 (v9.13): the side panel, from 1,100 px wide (js/ui-panel.js). A cup or
+     a recipe opens here, beside the screen, which shrinks to make room; the
+     coffee sheet takes the same place as its own dialog, opened with show(). -->
+<aside id="side-panel" class="side-panel" aria-label="Détail de la sélection" hidden>
+  <div class="sp-bar">
+    <p class="sp-kind"><span id="side-panel-kind"></span><span class="sp-pos" id="side-panel-pos"></span></p>
+    <button type="button" class="btn-icon sp-step" data-panel-step="-1" aria-label="Précédente" title="Précédente (K ou ↑)"><svg class="ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg></button>
+    <button type="button" class="btn-icon sp-step" data-panel-step="1" aria-label="Suivante" title="Suivante (J ou ↓)"><svg class="ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+    <button type="button" class="btn-icon" id="side-panel-close" aria-label="Fermer le panneau" title="Fermer (Échap)"><svg class="ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg></button>
+  </div>
+  <div class="sp-body" id="side-panel-body"></div>
+  <p class="sp-hint" id="side-panel-hint"></p>
+</aside>
+
+<!-- P1 + M5 (v9.13): search and act, Ctrl K (js/ui-palette.js). Full screen
+     on the phone. The field is a combobox, the results a listbox. -->
+<dialog id="modal-cmd" class="cmd" aria-labelledby="cmd-title">
+  <div class="cmd-box">
+    <h2 id="cmd-title" class="offscreen">Chercher et agir</h2>
+    <div class="cmd-field">
+      <svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>
+      <input type="search" id="cmd-input" role="combobox" aria-expanded="true" aria-controls="cmd-results" aria-autocomplete="list" aria-labelledby="cmd-title" placeholder="Un café, une tasse, une recette, un mot du Guide…" autocomplete="off" spellcheck="false" enterkeyhint="go">
+      <button type="button" class="btn btn-subtle btn-small cmd-close" id="cmd-close">Fermer</button>
+    </div>
+    <div class="cmd-results" id="cmd-results" role="listbox" aria-label="Résultats"></div>
+    <p class="cmd-foot"><span><kbd>↑</kbd><kbd>↓</kbd> choisir</span><span><kbd>Entrée</kbd> ouvrir</span><span><kbd>Échap</kbd> fermer</span><span><kbd data-key-mod>Ctrl</kbd><kbd>K</kbd> partout</span></p>
+  </div>
+</dialog>
+
+<!-- P3 (v9.13): the keyboard shortcuts, opened by « ? » (js/ui-shortcuts.js). -->
+<dialog id="modal-shortcuts" class="modal modal-large keys-help" aria-labelledby="keys-title">
+  <h2 id="keys-title">Raccourcis clavier</h2>
+  <p class="modal-note">Une lettre suffit, quand aucun champ n'est en cours de saisie.</p>
+  <div class="keys-grid">
+    <section>
+      <h3>Partout</h3>
+      <dl class="keys-list">
+        <div><dt>Chercher et agir</dt><dd><kbd data-key-mod>Ctrl</kbd><kbd>K</kbd></dd></div>
+        <div><dt>Nouvelle tasse</dt><dd><kbd>N</kbd></dd></div>
+        <div><dt>Refaire la dernière tasse, ou celle survolée</dt><dd><kbd>R</kbd></dd></div>
+        <div><dt>Cette aide</dt><dd><kbd>?</kbd></dd></div>
+      </dl>
+    </section>
+    <section>
+      <h3>Aller à</h3>
+      <dl class="keys-list">
+        <div><dt>Tableau de bord</dt><dd><kbd>G</kbd> puis <kbd>A</kbd></dd></div>
+        <div><dt>Historique, par date</dt><dd><kbd>G</kbd> puis <kbd>H</kbd></dd></div>
+        <div><dt>Journal, par sachet</dt><dd><kbd>G</kbd> puis <kbd>J</kbd></dd></div>
+        <div><dt>Mes réglages</dt><dd><kbd>G</kbd> puis <kbd>T</kbd></dd></div>
+        <div><dt>Guide</dt><dd><kbd>G</kbd> puis <kbd>G</kbd></dd></div>
+        <div><dt>Paramètres</dt><dd><kbd>G</kbd> puis <kbd>P</kbd></dd></div>
+      </dl>
+    </section>
+    <section>
+      <h3>Les tasses</h3>
+      <dl class="keys-list">
+        <div><dt>Tasse suivante ou précédente</dt><dd><kbd>J</kbd><kbd>K</kbd></dd></div>
+        <div><dt>Dans le panneau de côté</dt><dd><kbd>↓</kbd><kbd>↑</kbd></dd></div>
+        <div><dt>Ouvrir la tasse choisie</dt><dd><kbd>Entrée</kbd></dd></div>
+        <div><dt>Modifier la tasse survolée ou ouverte</dt><dd><kbd>E</kbd></dd></div>
+        <div><dt>La comparer</dt><dd><kbd>C</kbd></dd></div>
+        <div><dt>Fermer le panneau ou une fenêtre</dt><dd><kbd>Échap</kbd></dd></div>
+      </dl>
+    </section>
+  </div>
+  <div class="entry-actions">
+    <button type="button" class="btn btn-subtle modal-close" data-closes="modal-shortcuts">Fermer</button>
+  </div>
+</dialog>
+
 <div id="toast" class="toast" hidden></div>
 <!-- Q2 (v9.13): the cup just saved, filling, for two seconds (js/ui-cup.js). -->
 <div id="cup-card" class="cup-card" role="status" aria-live="polite" hidden></div>
@@ -1873,49 +1948,53 @@ Cảm ơn shop.</pre>
 <!-- ALL defer, and definitely not async: defer preserves order, async does not,
      and data.js would blow up looking for SYNC or GRIND. The download now
      runs in parallel with HTML parsing instead of blocking it. -->
-<script defer src="js/legacy-names.js?v=9.15"></script>
-<script defer src="js/tools.js?v=9.15"></script>
-<script defer src="js/i18n.js?v=9.15"></script>
-<script defer src="js/grind.js?v=9.15"></script>
-<script defer src="js/recipes.js?v=9.15"></script>
+<script defer src="js/legacy-names.js?v=9.16"></script>
+<script defer src="js/tools.js?v=9.16"></script>
+<script defer src="js/i18n.js?v=9.16"></script>
+<script defer src="js/grind.js?v=9.16"></script>
+<script defer src="js/recipes.js?v=9.16"></script>
 <!-- sync.js BEFORE data.js: data.js uses it at load time. -->
-<script defer src="js/sync.js?v=9.15"></script>
-<script defer src="js/data-csv.js?v=9.15"></script>
-<script defer src="js/data-schema.js?v=9.15"></script>
-<script defer src="js/data-store.js?v=9.15"></script>
-<script defer src="js/data-calcs.js?v=9.15"></script>
-<script defer src="js/data-migrations.js?v=9.15"></script>
-<script defer src="js/data.js?v=9.15"></script>
-<script defer src="js/tuning.js?v=9.15"></script>
-<script defer src="js/charts.js?v=9.15"></script>
-<script defer src="js/ui-core.js?v=9.15"></script>
-<script defer src="js/ui-sync-bean.js?v=9.15"></script>
-<script defer src="js/ui-nav.js?v=9.15"></script>
-<script defer src="js/ui-scrub.js?v=9.15"></script>
-<script defer src="js/ui-findings.js?v=9.15"></script>
-<script defer src="js/ui-last-cup.js?v=9.15"></script>
-<script defer src="js/ui-dashboard.js?v=9.15"></script>
-<script defer src="js/ui-cup.js?v=9.15"></script>
-<script defer src="js/ui-dial.js?v=9.15"></script>
-<script defer src="js/ui-rating-dial.js?v=9.15"></script>
-<script defer src="js/ui-wheel.js?v=9.15"></script>
-<script defer src="js/ui-entry.js?v=9.15"></script>
-<script defer src="js/ui-entry-aside.js?v=9.15"></script>
-<script defer src="js/ui-pills.js?v=9.15"></script>
-<script defer src="js/ui-chrono.js?v=9.15"></script>
-<script defer src="js/ui-draft.js?v=9.15"></script>
-<script defer src="js/ui-quick.js?v=9.15"></script>
-<script defer src="js/ui-history.js?v=9.15"></script>
-<script defer src="js/ui-journal.js?v=9.15"></script>
-<script defer src="js/ui-guide.js?v=9.15"></script>
-<script defer src="js/ui-catalog.js?v=9.15"></script>
-<script defer src="js/ui-coffee-sheet.js?v=9.15"></script>
-<script defer src="js/ui-brew.js?v=9.15"></script>
-<script defer src="js/ui-drawings.js?v=9.15"></script>
+<script defer src="js/sync.js?v=9.16"></script>
+<script defer src="js/data-csv.js?v=9.16"></script>
+<script defer src="js/data-schema.js?v=9.16"></script>
+<script defer src="js/data-store.js?v=9.16"></script>
+<script defer src="js/data-calcs.js?v=9.16"></script>
+<script defer src="js/data-migrations.js?v=9.16"></script>
+<script defer src="js/data.js?v=9.16"></script>
+<script defer src="js/tuning.js?v=9.16"></script>
+<script defer src="js/search.js?v=9.16"></script>
+<script defer src="js/charts.js?v=9.16"></script>
+<script defer src="js/ui-core.js?v=9.16"></script>
+<script defer src="js/ui-sync-bean.js?v=9.16"></script>
+<script defer src="js/ui-nav.js?v=9.16"></script>
+<script defer src="js/ui-scrub.js?v=9.16"></script>
+<script defer src="js/ui-findings.js?v=9.16"></script>
+<script defer src="js/ui-last-cup.js?v=9.16"></script>
+<script defer src="js/ui-dashboard.js?v=9.16"></script>
+<script defer src="js/ui-cup.js?v=9.16"></script>
+<script defer src="js/ui-dial.js?v=9.16"></script>
+<script defer src="js/ui-rating-dial.js?v=9.16"></script>
+<script defer src="js/ui-wheel.js?v=9.16"></script>
+<script defer src="js/ui-entry.js?v=9.16"></script>
+<script defer src="js/ui-entry-aside.js?v=9.16"></script>
+<script defer src="js/ui-pills.js?v=9.16"></script>
+<script defer src="js/ui-chrono.js?v=9.16"></script>
+<script defer src="js/ui-draft.js?v=9.16"></script>
+<script defer src="js/ui-quick.js?v=9.16"></script>
+<script defer src="js/ui-history.js?v=9.16"></script>
+<script defer src="js/ui-journal.js?v=9.16"></script>
+<script defer src="js/ui-guide.js?v=9.16"></script>
+<script defer src="js/ui-catalog.js?v=9.16"></script>
+<script defer src="js/ui-coffee-sheet.js?v=9.16"></script>
+<script defer src="js/ui-brew.js?v=9.16"></script>
+<script defer src="js/ui-drawings.js?v=9.16"></script>
 <!-- v9.13: the jar to the gram, the moments that move, the empty places. -->
-<script defer src="js/ui-jar.js?v=9.15"></script>
-<script defer src="js/ui-moments.js?v=9.15"></script>
-<script defer src="js/ui-empty.js?v=9.15"></script>
-<script defer src="js/app.js?v=9.15"></script>
+<script defer src="js/ui-jar.js?v=9.16"></script>
+<script defer src="js/ui-moments.js?v=9.16"></script>
+<script defer src="js/ui-empty.js?v=9.16"></script>
+<script defer src="js/ui-panel.js?v=9.16"></script>
+<script defer src="js/ui-palette.js?v=9.16"></script>
+<script defer src="js/ui-shortcuts.js?v=9.16"></script>
+<script defer src="js/app.js?v=9.16"></script>
 </body>
 </html>

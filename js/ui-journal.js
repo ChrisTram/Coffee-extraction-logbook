@@ -144,10 +144,18 @@
     document.querySelectorAll(".h-views [data-view]").forEach(b => b.addEventListener("click", () => { setView(b.dataset.view); render(); }));
   }
 
+  /* The history in a given view, by bag or by date: the G J and G H
+     shortcuts and the palette (v9.13). activateScreen renders it. */
+  function openHistoryView(v) {
+    setView(v === "date" ? "date" : "bag");
+    if (UI.nav.screenName === "history") UI.renderHistory();
+    else UI.activateScreen("history");
+  }
+
   function updateViews() {
     const v = historyView();
     document.querySelectorAll(".h-views [data-view]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === v)));
   }
 
-  Object.assign(UI, { wireJournal, updateViews, renderJournal, historyView });
+  Object.assign(UI, { wireJournal, updateViews, renderJournal, historyView, openHistoryView });
 })();

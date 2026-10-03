@@ -28,7 +28,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const CSS_SHEETS = ["css/base.css", "css/screens.css", "css/dialogs.css", "css/finishing.css"];
 const readCss = () => CSS_SHEETS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 const SOURCE_UI = ["js/ui-core.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-wheel.js", "js/ui-cup.js", "js/ui-dial.js", "js/ui-rating-dial.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js",
-  "js/ui-history.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/ui-jar.js", "js/ui-moments.js", "js/ui-empty.js", "js/app.js"]
+  "js/ui-history.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/ui-jar.js", "js/ui-moments.js", "js/ui-empty.js", "js/ui-panel.js", "js/ui-palette.js", "js/ui-shortcuts.js", "js/app.js"]
   .map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 /* demo-data.js has not been a script tag since v7.56, but the harness still
    loads it: loadDemo() needs it and there is no network here. */
@@ -3585,6 +3585,70 @@ for (const sheet of CSS_SHEETS) {
   let depth = 0, negative = false;
   for (const ch of text) { if (ch === "{") depth++; if (ch === "}") { depth--; if (depth < 0) negative = true; } }
   check(sheet + " has balanced braces", depth === 0 && !negative, "depth " + depth);
+}
+
+/* v9.13: THE DESKTOP LAYER. O7 the side panel, P1 + M5 search and act (Ctrl K),
+   P3 hover and keyboard, M6 the empty history. The ranking of the palette is
+   pure (js/search.js): it is checked here word by word. */
+{
+  const SEARCH = new Function(readFileSync(join(ROOT, "js/search.js"), "utf8") + "\nreturn SEARCH;")();
+  check("search folds accents, case, spaces and the Vietnamese đ",
+    SEARCH.fold("Đà Lạt  BRÛLÉ œuf") === "da lat brule oeuf", SEARCH.fold("Đà Lạt  BRÛLÉ œuf"));
+  const bana = { name: "Bana Cofe G4", detail: "Gia Lai robusta", keywords: "beurre caramel" };
+  check("every typed word must be found (AND)", SEARCH.score("bana robusta", bana) > 0 && SEARCH.score("bana arabica", bana) === 0);
+  check("an empty query matches nothing", SEARCH.score("   ", bana) === 0 && SEARCH.rank([{ group: "coffees", ...bana }], "").length === 0);
+  check("accents and case in the query do not count either", SEARCH.score("BÁNA", bana) === SEARCH.score("bana", bana));
+  check("a word start beats a word inside", SEARCH.score("cof", bana) > SEARCH.score("ofe", bana));
+  check("the name beats the detail, which beats the keywords",
+    SEARCH.score("lai", bana) < SEARCH.score("cofe", bana) && SEARCH.score("caramel", bana) < SEARCH.score("lai", bana));
+  check("the whole name scores above its beginning", SEARCH.score("bana cofe g4", bana) > SEARCH.score("bana cofe", bana));
+  const items = [
+    { group: "cups", name: "notes de jacquier bien mûres" },
+    { group: "guide", name: "Jacquier", detail: "fruits mûrs" },
+    { group: "actions", name: "Bana Cofe G4", detail: "brasser" },
+    { group: "coffees", name: "Bana Cofe G4", detail: "Gia Lai" },
+    { group: "screens", name: "Historique" },
+  ];
+  const groupsOf = list => list.map(x => x.group).join(",");
+  check("the groups follow their best item: the exact word of the Guide first",
+    groupsOf(SEARCH.rank(items, "jacquier")) === "guide,cups", groupsOf(SEARCH.rank(items, "jacquier")));
+  check("on a tie, the actions first: « bana » then Enter brews the Bana",
+    groupsOf(SEARCH.rank(items, "bana")) === "actions,coffees", groupsOf(SEARCH.rank(items, "bana")));
+  check("each result comes back with its score", SEARCH.rank(items, "bana").every(x => x.score > 0 && x._index === undefined));
+  const cups = [{ group: "cups", name: "un peu amer", order: 2 }, { group: "cups", name: "trop amer", order: 0 }, { group: "cups", name: "amer et sec", order: 1 }];
+  check("within a group: the score, then the order the caller gave",
+    SEARCH.rank(cups, "amer").map(x => x.order).join() === "1,0,2", SEARCH.rank(cups, "amer").map(x => x.order).join());
+  const many = Array.from({ length: 12 }, (_, i) => ({ group: "cups", name: "amer " + i }));
+  check("a group is capped, a palette is read at a glance", SEARCH.rank(many, "amer").length === SEARCH.LIMITS.cups);
+  check("the cap can be lifted (the side panel walks every matching cup)", SEARCH.rank(many, "amer", { cups: 100 }).length === 12);
+  check("an unknown group comes last, capped at five",
+    groupsOf(SEARCH.rank([...Array.from({ length: 7 }, () => ({ group: "other", name: "amer" })), { group: "screens", name: "amer" }], "amer")) ===
+      "screens,other,other,other,other,other");
+
+  // The pieces are where the code expects them.
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  check("the page holds the side panel, the palette, the shortcuts help and the rail search button",
+    ['id="side-panel"', 'id="modal-cmd"', 'id="cmd-input"', 'id="modal-shortcuts"', 'id="btn-search"'].every(s => html.includes(s)));
+  const sheetSrc = readFileSync(join(ROOT, "js/ui-coffee-sheet.js"), "utf8");
+  check("the coffee sheet opens beside on a wide screen, as a window otherwise",
+    sheetSrc.includes("if (!UI.showInSidePanel(m, coffeeId)) m.showModal();"));
+  check("and its phone back button guard is untouched",
+    sheetSrc.includes('history.pushState({ sheet: coffeeId }, "")') && sheetSrc.includes("if (m.open && historyEntry) { historyEntry = false; m.close(); }"));
+  check("a history row opens the cup through the panel, which falls back to editing", SOURCE_UI.includes("if (rowExt) UI.openCup(rowExt, row);") &&
+    SOURCE_UI.includes("UI.loadExtractionIntoEntry(DATA.state.extractions.find(x => x.id === e.id), false);"));
+  check("the palette reuses the Guide search index", SOURCE_UI.includes("UI.guideSearchIndex()") && SOURCE_UI.includes("function guideSearchIndex()"));
+  const css = readCss();
+  check("the panel only exists from 1,100 px", css.includes(".side-panel { display: none; }") && css.includes("@media (min-width: 1100px) {\n  .side-open { --side-w:"));
+  check("every new animation stops under reduced motion",
+    /prefers-reduced-motion: reduce\) \{\n  \.side-panel\.sp-enter, \.modal-sheet\.as-panel\[open\], \.cmd\[open\] \.cmd-box, \.kbd-chord, \.es-steam \{ animation: none; \}/.test(css));
+  const keys = ["panel_kind_cup", "panel_position", "panel_hint_cup", "panel_compare_added", "hover_redo", "keys_no_cup", "keys_go_journal",
+    "empty_history_title", "empty_history_button", "empty_filtered_title", "empty_filtered_button", "palette_new", "palette_brew_best",
+    "palette_in_history", "palette_nothing", "palette_group_actions", "palette_group_tastes", "palette_hint_taste"];
+  check("the new texts exist in French and in English", keys.every(bilingual), keys.filter(k => !bilingual(k)).join(", "));
+  /* $ returns ONE element, $$ an array: « $("dialog[open]").some » threw on
+     every Ctrl K (a $$ lost in a replacement string, the August 14 bug again). */
+  const singleAsList = SOURCE_UI.match(/(^|[^$])\$\("[^"]*"\)\.(some|forEach|map|filter|find|every)\(/m);
+  check("no single-element lookup is used as a list", !singleAsList, singleAsList && singleAsList[0]);
 }
 
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);

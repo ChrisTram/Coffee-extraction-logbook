@@ -264,7 +264,7 @@ Chart.defaults = hollow();
 const SCRIPTS = ["js/legacy-names.js", "js/tools.js", "js/i18n.en.js", "js/i18n.js", "js/grind.js", "js/recipes.js", "js/demo-data.js",
   "js/sync.js", "js/data-csv.js", "js/data-schema.js", "js/data-store.js", "js/data-calcs.js",
   "js/data-migrations.js", "js/data.js", "js/tuning.js", "js/charts.js",
-  "js/ui-core.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-wheel.js", "js/ui-cup.js", "js/ui-dial.js", "js/ui-rating-dial.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js", "js/ui-history.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/ui-jar.js", "js/ui-moments.js", "js/ui-empty.js", "js/app.js"];
+  "js/ui-core.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-wheel.js", "js/ui-cup.js", "js/ui-dial.js", "js/ui-rating-dial.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js", "js/ui-history.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/ui-jar.js", "js/ui-moments.js", "js/ui-empty.js", "js/search.js", "js/ui-panel.js", "js/ui-palette.js", "js/ui-shortcuts.js", "js/app.js"];
 const source = SCRIPTS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 
 // Intercepted console.error: that is where render errors come out.
@@ -282,7 +282,7 @@ const run = new Function(
   /* UI is returned to the test since the interface was split into seven files:
      it is the surface the screens share, hence the only entry point
      to trigger a screen action without simulating a click. */
-  source + "\nreturn { DATA, I18N, CHARTS, TUNING, GRIND, UI, LEGACY };"
+  source + "\nreturn { DATA, I18N, CHARTS, TUNING, GRIND, UI, LEGACY, SEARCH };"
 );
 
 const api = run(document, window, localStorage, location, history, navigator,
@@ -1430,6 +1430,87 @@ check("the temperature field no longer has a misleading placeholder", !tempField
   ui.renderCoffeeList();
   check("an empty « Mes cafés » offers to add one", document.querySelector("#coffees-list").innerHTML.includes('data-empty-go="coffee-new"'));
   api.DATA.state.coffees = coffees;
+}
+
+/* v9.13: THE DESKTOP LAYER, run for real. The keyboard decision key by key,
+   the palette on the logbook's data, the empty history, and the side panel
+   that must give way to the old behaviour where it has no room (this fake
+   window answers false to every media query, like a phone). */
+{
+  const ui = api.UI;
+  const ctx = o => ({ typing: false, modal: false, panelOpen: false, bubble: false, chord: false, screen: "history", onRow: false, ...o });
+  const key = (k, o) => ({ key: k, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...o });
+  check("N opens a new cup, R redoes, E edits, C compares",
+    ["n", "r", "e", "c"].map(k => ui.shortcutFor(key(k), ctx())).join() === "new,redo,edit,compare");
+  check("a capital letter too (Shift R redoes the last cup)", ui.shortcutFor(key("R", { shiftKey: true }), ctx()) === "redo");
+  check("never while typing in a field", ["n", "r", "j", "g", "?", "Escape"].every(k => ui.shortcutFor(key(k), ctx({ typing: true })) === null));
+  check("never with Ctrl, Cmd or Alt held (AltGr types characters)",
+    ["ctrlKey", "metaKey", "altKey"].every(m => ui.shortcutFor(key("n", { [m]: true }), ctx()) === null));
+  check("never over a window", ["n", "j", "?", "Escape"].every(k => ui.shortcutFor(key(k), ctx({ modal: true })) === null));
+  check("N R E C never on the entry screen, where a stray key would overwrite the form",
+    ["n", "r", "e", "c"].every(k => ui.shortcutFor(key(k), ctx({ screen: "entry" })) === null));
+  check("G and ? still work there", ui.shortcutFor(key("g"), ctx({ screen: "entry" })) === "chord" &&
+    ui.shortcutFor(key("?", { shiftKey: true }), ctx({ screen: "entry" })) === "help");
+  check("G then A H J T G P goes to each screen",
+    ["a", "h", "j", "t", "g", "p"].map(k => ui.shortcutFor(key(k), ctx({ chord: true }))).join() ===
+      "go:dashboard,go:history,go:journal,go:tuning,go:guide,go:settings");
+  check("G then another key gives up", ui.shortcutFor(key("x"), ctx({ chord: true })) === "chord-cancel");
+  check("J and K walk the list", ui.shortcutFor(key("j"), ctx()) === "next" && ui.shortcutFor(key("k"), ctx()) === "prev");
+  check("the arrows walk only the side panel, otherwise they scroll",
+    ui.shortcutFor(key("ArrowDown"), ctx()) === null && ui.shortcutFor(key("ArrowDown"), ctx({ panelOpen: true })) === "next" &&
+    ui.shortcutFor(key("ArrowUp"), ctx({ panelOpen: true })) === "prev");
+  check("Escape closes the panel, but a cup bubble first",
+    ui.shortcutFor(key("Escape"), ctx({ panelOpen: true })) === "close" && ui.shortcutFor(key("Escape"), ctx({ panelOpen: true, bubble: true })) === null &&
+    ui.shortcutFor(key("Escape"), ctx()) === null);
+  check("Enter opens a cup only when the focus is on its row",
+    ui.shortcutFor(key("Enter"), ctx({ onRow: true })) === "open" && ui.shortcutFor(key("Enter"), ctx()) === null);
+  const field = (tagName, type, extra) => ({ tagName, type, getAttribute: () => null, ...extra });
+  check("fields that take letters: text, search, number, textarea, select, contenteditable",
+    [field("INPUT", "text"), field("INPUT", "search"), field("INPUT", "number"), field("TEXTAREA"), field("SELECT"), field("DIV", undefined, { isContentEditable: true })]
+      .every(ui.isTypingTarget));
+  check("and the ones that do not: a button, a checkbox, nothing",
+    ![field("BUTTON"), field("INPUT", "checkbox"), field("INPUT", "radio")].some(ui.isTypingTarget) && !ui.isTypingTarget(null));
+
+  // The palette, on the logbook as it is at this point of the run.
+  const coffee = api.DATA.state.coffees.find(c => c.active !== 0);
+  const word = coffee ? coffee.name.split(" ")[0] : "";
+  const found = ui.paletteResults(word.toLowerCase());
+  check("the palette finds a coffee by its name", found.some(x => x.group === "coffees" && x.title === coffee.name), found.map(x => x.title).join(" | "));
+  check("and offers to brew it, first", found[0] && found[0].group === "actions" && found[0].title.includes(coffee.name), found[0] && found[0].title);
+  check("and ends on the same words in the history search", found[found.length - 1].group === "history");
+  const commented = api.DATA.state.extractions.find(e => /[a-z]{4}/i.test(e.comment || ""));
+  const commentWord = commented ? (commented.comment.match(/[A-Za-zÀ-ÿ]{4,}/) || [""])[0] : "";
+  check("a cup is found by a word of its comment", !commented || ui.paletteResults(commentWord.toUpperCase()).some(x => x.group === "cups"), commentWord);
+  check("a taste is found without its accents", ui.paletteResults("brule").some(x => x.group === "tastes" && x.title === "brûlé"));
+  const none = ui.paletteResults("");
+  check("with nothing typed: a new cup, the last one again, the screens",
+    none.some(x => x.kbd === "N") && none.some(x => x.kbd === "R") && none.filter(x => x.group === "screens").length >= 6);
+  check("a query that matches nothing still offers the history search, and says so", ui.paletteResults("zzqx").map(x => x.group).join() === "history");
+
+  // M6: the empty history, with its way out.
+  document.querySelector("#h-search").value = "zzqx-nothing";
+  ui.renderHistory();
+  check("filters that match nothing: a drawing, a sentence, « Effacer les filtres »",
+    document.querySelector("#h-empty").hidden === false && document.querySelector("#h-empty").innerHTML.includes('data-empty-action="clear"') &&
+    document.querySelector("#h-empty").innerHTML.includes("<svg") && document.querySelector("#h-table").hidden === true);
+  ui.clearFilters();
+  check("clearing the filters brings the cups back", document.querySelector("#h-search").value === "" && document.querySelector("#h-empty").hidden === true &&
+    document.querySelector("#h-table").hidden === false);
+  const saved = api.DATA.state.extractions;
+  api.DATA.state.extractions = [];
+  ui.renderHistory();
+  check("no cup at all: « Nouvelle tasse » instead", document.querySelector("#h-empty").innerHTML.includes('data-empty-action="new"'));
+  api.DATA.state.extractions = saved;
+  ui.renderHistory();
+
+  // O7: no room (narrow screen, phone), the old behaviour.
+  const cup = api.DATA.state.extractions[0];
+  check("without room, the coffee sheet stays a window", ui.showInSidePanel({ show() { throw new Error("not here"); }, classList: { add() {}, remove() {} } }, "x") === false);
+  ui.openCup(cup, null);
+  check("without room, a cup opens in the entry form, as before", ui.nav.screenName === "entry" && ui.entry.editId === cup.id,
+    ui.nav.screenName + " " + ui.entry.editId);
+  check("and the panel has nothing to walk", ui.panelStep(1) === false);
+  ui.resetEntry();
 }
 
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);

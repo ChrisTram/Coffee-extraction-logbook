@@ -320,12 +320,17 @@
     });
     return idx.map(x => ({ ...x, key: stripAccents(x.title + " " + x.detail) }));
   }
+  // Built on demand, also searched by the palette (js/ui-palette.js, v9.13).
+  function guideSearchIndex() {
+    if (!guideIndex) guideIndex = buildIndex();
+    return guideIndex;
+  }
   let matches = [];
   function searchGuide() {
     const q = stripAccents($("#guide-search").value.trim());
     const zone = $("#guide-results");
     if (!q) { zone.innerHTML = ""; return; }
-    if (!guideIndex) guideIndex = buildIndex();
+    guideSearchIndex();
     // Title first: a word found in the title ranks above a word found in the text.
     matches = guideIndex.filter(x => x.key.includes(q))
       .sort((a, b) => Number(!stripAccents(a.title).includes(q)) - Number(!stripAccents(b.title).includes(q))).slice(0, 8);
@@ -335,7 +340,10 @@
       : '<p class="ga-nothing">' + attr(I18N.t("guide_no_result", { q: $("#guide-search").value.trim() })) + "</p>";
   }
   function goToResult(i) {
-    const x = matches[i];
+    goToGuideEntry(matches[i]);
+  }
+  // One entry of the index: the recipe, or the panel holding the card or the heading.
+  function goToGuideEntry(x) {
     if (!x) return;
     if (x.recipe) { showRecipe(x.recipe); return; }
     const panel = x.el.closest(".guide-panel");
@@ -689,7 +697,7 @@
     }));
   }
 
-  Object.assign(UI, { updateVideoAside,
+  Object.assign(UI, { updateVideoAside, guideSearchIndex, goToGuideEntry, brewRecipe, startVideo,
     wireGuide, recipeCard, atHome, grindAdvice, showGuide, showRecipe, recipeProfiles, stepsFor, waterFactor, familySelection, openWalkthrough,
     walkthrough, startWalkthrough, nextWalkthroughStep, walkthroughTick, renderConverter, renderConverterDeferred,
     renderWalkthroughSteps, renderRecipes, renderGrindMarkers, renderRangeTable, renderTetsu,
