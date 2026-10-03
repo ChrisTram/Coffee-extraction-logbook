@@ -27,7 +27,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
    load order, like the browser does. */
 const CSS_SHEETS = ["css/base.css", "css/screens.css", "css/dialogs.css", "css/finishing.css"];
 const readCss = () => CSS_SHEETS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
-const SOURCE_UI = ["js/ui-core.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js",
+const SOURCE_UI = ["js/ui-core.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js",
   "js/ui-history.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/app.js"]
   .map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 /* demo-data.js has not been a script tag since v7.56, but the harness still
@@ -1169,13 +1169,17 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
   check("the rail leads to the six screens, none has become unreachable",
     forgotten.length === 0, forgotten.join(", "));
 
-  /* The bottom bar does not exceed four entries: beyond that it gets cramped
-     and the targets drop below thumb comfort. That is the reason for "Plus",
-     and the replacement of the old three tabs rule. */
+  /* The bottom bar does not exceed five entries: beyond that it gets cramped
+     and the targets drop below thumb comfort. That is the reason for "Plus".
+     Five since v9.13 (M3): the new cup sits in the middle, between two
+     screens on each side, and replaced the floating button. */
   const bar = html.slice(html.indexOf('<nav class="bottom-bar"'));
   const barEnd = bar.indexOf("</nav>");
   const entryCount = (bar.slice(0, barEnd).match(/class="[^"]*bar-entry/g) || []).length;
-  check("four entries at most in the bottom bar", entryCount <= 4, String(entryCount));
+  check("five entries at most in the bottom bar", entryCount <= 5, String(entryCount));
+  const barScreens = [...bar.slice(0, barEnd).matchAll(/data-screen="(\w+)"/g)].map(m => m[1]);
+  check("the bar holds the dashboard, the history, the new cup and the Guide",
+    ["dashboard", "history", "entry", "guide"].every(x => barScreens.includes(x)), barScreens.join(", "));
 
   /* THE THREE TOOLS ARE UNIQUE. app.js addresses them by id: if the rail and the
      sheet were two separate elements, the second button would be mute. That is
@@ -2924,12 +2928,15 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
   check("a day with cups opens that day's history", drawingsSrc.includes('UI.openHistoryOn({ "h-from": b.dataset.day, "h-to": b.dataset.day })'));
 }
 
-/* A9 (v8.88): THE FLOATING BUTTON NO LONGER HIDES ANYTHING. */
+/* A9 (v8.88): NOTHING HIDES THE END OF THE PAGE. The floating button that
+   stepped aside on scroll is gone since v9.13 (M3): its job went to the bottom
+   bar, so nothing floats over the content any more. */
 {
   const css = readCss();
-  check("the floating button fades out when scrolling down", readFileSync(join(ROOT, "js/ui-quick.js"), "utf8").includes('fab.classList.add("fab-hidden")') && css.includes(".fab.fab-hidden {"));
-  check("the page keeps room at the bottom for the bar and the button", css.includes("main { padding-bottom: calc(var(--bottom-bar) + 96px + env(safe-area-inset-bottom, 0px)); }"));
-  check("the four bottom tabs have the same size", css.includes(".bottom-bar .bar-entry { font-size: 0.8rem; }"));
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  check("no floating button over the content any more", !html.includes("fab-quick") && !/\.fab\b/.test(css));
+  check("the page keeps room at the bottom for the bar and its raised button", css.includes("main { padding-bottom: calc(var(--bottom-bar) + var(--bar-rise) + 28px + env(safe-area-inset-bottom, 0px)); }"));
+  check("the bottom tabs have the same size", css.includes(".bottom-bar .bar-entry { font-size: 0.8rem; }"));
 }
 
 /* v8.89: THE STOCK IN THE DASHBOARD CORNER. */
@@ -3343,6 +3350,63 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
       manifest.shortcuts.map(s => s.url).join() === "./#entry,./#redo,./#history", manifest.shortcuts.map(s => s.url).join());
     check("the screens are routed through LEGACY.route", SOURCE_UI.includes("return LEGACY.route(nameKey);"));
   }
+}
+
+/* v9.13: NAVIGATION, SYNC BEAN, CHARTS AND LOADING (Q6, M3, M4, M8). */
+{
+  const html = readFileSync(join(ROOT, "index.html"), "utf8");
+  const css = readCss();
+  const bar = html.slice(html.indexOf('<nav class="bottom-bar"'), html.indexOf("</nav>", html.indexOf('<nav class="bottom-bar"')));
+  const between = (a, b) => html.slice(html.indexOf(a), html.indexOf(b, html.indexOf(a)));
+
+  // M3: the bar, its centre button and the quick entry that replaced the floating button.
+  const centre = (bar.match(/<button[^>]*id="bar-new"[^>]*>/) || [""])[0];
+  check("the bar's centre button is the new cup: it opens the entry form", /class="[^"]*nav-btn[^"]*"/.test(centre) && centre.includes('data-screen="entry"'));
+  check("and it says so to a screen reader", /aria-label="Nouvelle tasse"/.test(centre));
+  check("every tab of the bar draws a line icon", (bar.match(/<button/g) || []).length === (bar.match(/<svg class="ico"/g) || []).length);
+  check("the quick entry is in the Plus sheet", between('<nav class="rail"', "</nav>").includes('id="rail-quick"'));
+  check("and opens on a long press of the centre button", readFileSync(join(ROOT, "js/ui-nav.js"), "utf8").includes("LONG_PRESS_MS") &&
+    readFileSync(join(ROOT, "js/ui-nav.js"), "utf8").includes("UI.toggleQuick(true)"));
+  check("the active tab has a mark that slides, still without reduced motion",
+    bar.includes('class="bar-mark"') && /\.bar-mark\.ready \{[^}]*transition: transform/.test(css) &&
+    /prefers-reduced-motion: reduce\) \{\s*\.bar-mark\.ready, \.bar-disc \{ transition: none; \}/.test(css));
+  check("what sits right above the bar clears its raised button", css.includes("bottom: calc(var(--bottom-bar) + var(--bar-rise) + 8px);"));
+  check("the core moves the mark when the screen changes", SOURCE_UI.includes("if (UI.placeBarMark) UI.placeBarMark(nameKey);"));
+
+  // Q6: a bean wherever the sync state shows.
+  check("the rail's sync line carries the bean", between('class="rail-sync"', "</p>").includes('class="sync-bean"'));
+  check("so does the Data panel's", between('class="sync-row"', "</p>").includes('class="sync-bean"'));
+  check("and the Settings row of the data", between("Données et synchro", "</button>").includes('class="sync-bean"'));
+  check("and the Plus tab, for the phone", bar.includes("sync-bean bar-bean"));
+  check("the old dot is gone", !html.includes("rail-point") && !css.includes(".rail-point"));
+  check("each look of the bean has its colours, in the dark palettes too",
+    ["raw", "roasted", "off", "alert"].every(l => css.includes('.sync-bean[data-look="' + l + '"] {') &&
+      css.includes('html[data-theme="dark"] .sync-bean[data-look="' + l + '"] {')));
+  check("the raw bean turns and the roasted one pops, never with reduced motion",
+    css.includes("@keyframes bean-turn") && css.includes("@keyframes bean-pop") &&
+    css.includes(".sync-bean[data-look] svg, .sync-bean.pop[data-look] svg { animation: none; }"));
+
+  // M4: the thirty days chart and the SVG curves under the finger.
+  const charts = readFileSync(join(ROOT, "js/charts.js"), "utf8");
+  check("the thirty days chart lets a sideways finger read it", charts.includes('canvas.style.touchAction = "pan-y"'));
+  check("with a guide on the day, and its tooltip as a bubble by touch only",
+    charts.includes("plugins: [dayGuide]") && charts.includes("enabled: ctx => !touchedRecently(ctx.chart)") && charts.includes("external: fingerTooltip"));
+  check("still the whole day, whatever the pointer's height", /interaction: \{ mode: "index", intersect: false \}/.test(charts));
+  check("the bubble carries every line of the tooltip",
+    ["tooltip.title", "tooltip.body", "tooltip.afterBody", "tooltip.footer", "labelColors"].every(k => charts.includes(k)));
+  check("the coffee sheet's curve and the progress follow the finger",
+    readFileSync(join(ROOT, "js/ui-coffee-sheet.js"), "utf8").includes('class="sh-svg" viewBox="0 0 \' + L + \' 152" data-scrub') &&
+    /id="drawing-progress"[^>]*data-scrub/.test(html) && readFileSync(join(ROOT, "js/ui-drawings.js"), "utf8").includes('data-scrub-tip="'));
+  check("a curve read by the finger keeps the vertical scroll", css.includes("svg[data-scrub] { touch-action: pan-y; }"));
+
+  // M8: the loading silhouette.
+  const main = html.slice(html.indexOf("<main>"), html.indexOf('<section id="screen-dashboard"'));
+  check("the loading silhouette stands in main, before the screens", main.includes('id="loading"') && main.includes('class="grid-dashboard"'));
+  check("it keeps its sentence for screen readers", /id="loading"[^>]*role="status"/.test(main) && main.includes("Chargement de ton carnet…"));
+  check("the screens wait behind it", css.includes("#loading ~ .screen { display: none; }"));
+  check("it leaves inside the first screen transition, and never stays", SOURCE_UI.includes('const skeleton = $("#loading");') &&
+    SOURCE_UI.includes('setTimeout(() => { const overlay = $("#loading"); if (overlay) overlay.remove(); }, 800);'));
+  check("no shimmer with reduced motion", /prefers-reduced-motion: reduce\) \{\s*\.sk-bone \{ animation: none; \}/.test(css));
 }
 
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);

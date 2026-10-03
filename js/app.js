@@ -31,44 +31,10 @@
     else s = I18N.t("status_browser");
     $("#db-status").textContent = s +
       I18N.t("status_counts", { c: DATA.state.coffees.length, e: DATA.state.extractions.length });
-    updateSyncStatus();
+    UI.updateSyncStatus();
   }
 
-  // A status line for sync between devices. The manual button only appears
-  // where sync makes sense, so not on file:// nor in demo mode.
-  const SYNC_LABELS = {
-    local: "sync_local",
-    demo: "sync_demo",
-    syncing: "sync_in_progress",
-    offline: "sync_offline",
-    "session-expired": "sync_session",
-    "not-configured": "sync_not_configured",
-    "outdated-version": "sync_outdated",
-    error: "sync_error",
-  };
-
-  function updateSyncStatus() {
-    const syncState = DATA.state.syncState;
-    let text;
-    if (syncState === "ok") {
-      text = I18N.t("sync_ok", {
-        h: new Date(DATA.state.syncedAt).toLocaleTimeString(I18N.locale(), { hour: "2-digit", minute: "2-digit" }),
-      });
-    } else {
-      text = I18N.t(SYNC_LABELS[syncState] || "sync_never");
-    }
-    // The server document has a cap: we warn at half, early enough to archive.
-    const { syncSize: size, syncCap: cap } = DATA.state;
-    if (cap > 0 && size / cap >= 0.5) {
-      text += " " + I18N.t("sync_size", { p: Math.round(100 * size / cap) });
-    }
-    $$(".sync-text").forEach(e => { e.textContent = text; });
-    /* The rail dot takes the colour of the state: it is the only place where
-       sync is visible without opening a panel. */
-    const dot = $(".rail-point");
-    if (dot) dot.dataset.state = DATA.state.syncState || "never";
-    $("#db-sync").hidden = !DATA.syncPossible();
-  }
+  /* The sync status line and its bean live in js/ui-sync-bean.js since v9.13. */
 
   async function linkAction(create) {
     if (!DATA.state.fsAvailable) {
@@ -125,6 +91,9 @@
       toggleNavSheet(!$("#rail").classList.contains("expanded"));
     });
     $("#overlay-nav").addEventListener("click", () => toggleNavSheet(false));
+    // The bar's centre button and sliding mark (js/ui-nav.js), the finger on the curves (js/ui-scrub.js).
+    UI.wireNav();
+    UI.wireScrub();
 
     // The rail brand leads back to the dashboard. We keep the href for the
     // keyboard and opening in a tab, but a plain click switches screens.
@@ -299,12 +268,12 @@
     // Data changes refresh the interface.
     DATA.subscribe(kind => {
       // A sync state change alone only redraws its badge (v8.75).
-      if (kind === "sync") { updateBadges(); updateSyncStatus(); return; }
+      if (kind === "sync") { updateBadges(); UI.updateSyncStatus(); return; }
       // Settings may arrive from another device: we reread before rendering.
       loadFallbacks();
       // Always: these two are tiny and reflect the current state.
       updateBadges();
-      updateSyncStatus();
+      UI.updateSyncStatus();
       // The rest is only redone if its table moved (a cup changes neither coffees, nor recipes, nor cups).
       const coffees = DATA.state.coffees, recipes = DATA.state.recipes;
       ifChanged("coffees", coffees, () => { UI.fillCoffeeSelect(); fillRecommendedRecipeSelect(); });
@@ -408,12 +377,14 @@
     /* An old hash (#tableau, #saisie, a bookmark or a PWA shortcut from before
        v9.06) lands on its new screen, and activateScreen rewrites the hash. */
     const h = normalizeScreen(location.hash.slice(1));
-    if (h === "redo") openRedo();
-    else activateScreen(SCREEN_NAMES.includes(h) ? h : "dashboard");
-
-    // The first screen is rendered: the loading overlay has no reason to stay.
-    const overlay = $("#loading");
-    if (overlay) overlay.remove();
+    try {
+      if (h === "redo") openRedo();
+      else activateScreen(SCREEN_NAMES.includes(h) ? h : "dashboard");
+    } finally {
+      /* The loading silhouette gives way inside the screen transition (activateScreen).
+         Here only as a net: a render that threw must not leave the screens hidden behind it. */
+      setTimeout(() => { const overlay = $("#loading"); if (overlay) overlay.remove(); }, 800);
+    }
 
     // The system releases the screen lock when the tab goes to the background.
     // On return, if the stopwatch is still running, we take it back.
@@ -443,7 +414,7 @@
 
   // Made available to the other screens.
   Object.assign(UI, {
-    SYNC_LABELS, VERSION, linkAction, wireApp, startApp, updateBadges, updateDataStatus,
-    updateSyncStatus, refreshLanguage, fillRecommendedRecipeSelect,
+    VERSION, linkAction, wireApp, startApp, updateBadges, updateDataStatus,
+    refreshLanguage, fillRecommendedRecipeSelect, toggleNavSheet,
   });
 })();

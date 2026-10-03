@@ -716,6 +716,12 @@ const UI = (() => {
       if (sec) sec.classList.add("on");
       if (location.hash !== "#" + nameKey) history.replaceState(null, "", "#" + nameKey);
       renderCurrentScreen();
+      /* The loading silhouette (v9.13) leaves in the same transition as the
+         first screen arrives: the shapes fade into the cards, nothing jumps. */
+      const skeleton = $("#loading");
+      if (skeleton) skeleton.remove();
+      // The phone bar's mark slides to its tab (js/ui-nav.js).
+      if (UI.placeBarMark) UI.placeBarMark(nameKey);
     });
     window.scrollTo({ top: 0 });
   }

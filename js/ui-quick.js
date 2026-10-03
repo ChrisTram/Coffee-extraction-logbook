@@ -20,7 +20,6 @@
   function toggleQuick(force) {
     quickOpen = force !== undefined ? force : !quickOpen;
     $("#panel-quick").classList.toggle("open", quickOpen);
-    $("#fab-quick").classList.toggle("open", quickOpen);
     /* The veil is not only there to darken: it gives a screen-sized close
        target, which a 30 px cross does not do for a thumb. */
     $("#overlay-quick").hidden = !quickOpen;
@@ -148,9 +147,10 @@
     toggleQuick(false);
   }
 
-  /* Panel wiring. Called once by app.js, at startup. */
+  /* Panel wiring. Called once by app.js, at startup. Since v9.13 the panel opens
+     from the bottom bar (long press on its central button) and from the "Plus"
+     sheet, both in js/ui-nav.js: the floating button that used to open it is gone. */
   function wireQuick() {
-    $("#fab-quick").addEventListener("click", () => toggleQuick());
     $("#q-close").addEventListener("click", () => toggleQuick(false));
     $("#q-coffee").addEventListener("change", onQuickCoffeeChoice);
     $("#q-recipe").addEventListener("change", updateQuickWarnings);
@@ -164,22 +164,6 @@
     });
     $("#q-save").addEventListener("click", oneAtATime(saveQuick));
     $("#q-full").addEventListener("click", () => { toggleQuick(false); activateScreen("entry"); });
-
-    /* A9 (v8.88): THE BUTTON STEPS ASIDE WHEN YOU SCROLL DOWN. Sitting at the
-       bottom right, it hid the end of the comments and a column of the last
-       cup. It leaves when you scroll down, comes back as soon as you scroll
-       up, and stays put while its panel is open. Eight pixels of slack: a
-       shaky finger does not make it flicker. */
-    const fab = $("#fab-quick");
-    // Two reads and a class: no need to wait for a frame, the work is too light.
-    let lastY = window.scrollY;
-    window.addEventListener("scroll", () => {
-      const y = window.scrollY;
-      if (quickOpen || y < 120) fab.classList.remove("fab-hidden");
-      else if (y > lastY + 8) fab.classList.add("fab-hidden");
-      else if (y < lastY - 8) fab.classList.remove("fab-hidden");
-      if (Math.abs(y - lastY) > 8) lastY = y;
-    }, { passive: true });
   }
 
   // Made available to the other screens.

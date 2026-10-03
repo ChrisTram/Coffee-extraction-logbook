@@ -441,30 +441,9 @@ button.rc-day:focus-visible { outline: 2px solid var(--accent); outline-offset: 
   line-height: 1.5;
 }
 
-/* ---------- Floating quick entry ---------- */
-
-.fab {
-  position: fixed;
-  right: 18px;
-  bottom: 18px;
-  z-index: var(--z-fab);
-  width: 58px;
-  height: 58px;
-  border-radius: 50%;
-  border: none;
-  background: var(--accent);
-  color: var(--on-accent);
-  font-size: 1.5rem;
-  cursor: pointer;
-  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.38);
-  transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1), background var(--transition);
-}
-.fab:hover { transform: scale(1.07); background: var(--accent-strong); }
-/* When open, the sheet turns the button into a CROSS. A rotated cup does not
-   say "close": we swap the drawing, we do not rotate it. */
-.fab .fab-cross { display: none; }
-.fab.open .fab-cup { display: none; }
-.fab.open .fab-cross { display: block; }
+/* ---------- Quick entry ----------
+   Its floating button left in v9.13: the bottom bar's central button opens it
+   on a long press, and so does the "Plus" sheet (finishing.css, js/ui-nav.js). */
 
 /* Quick entry is a SHEET rising from the bottom, no longer a card
    floating at the button's corner. Under the thumb, a sheet puts the fields

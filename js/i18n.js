@@ -746,6 +746,9 @@ const I18N = (() => {
     confirm_delete_recipe: { fr: "Supprimer cette recette personnelle ?" },
     confirm_title: { fr: "Tu confirmes ?" },
     confirm_ok: { fr: "Confirmer" },
+
+    // Navigation, sync bean, charts and loading (v9.13)
+    scrub_rolling: { fr: "{d} · moyenne {n}" },
   };
 
   // ---------- 3. Display maps for data values ----------

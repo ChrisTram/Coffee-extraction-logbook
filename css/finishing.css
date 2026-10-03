@@ -20,7 +20,6 @@
      bottom: 16px set here, AFTER the bar's rule, put the button back
      on top of it. And the closed sheet, set 82 px from the bottom, only went down by its
      own height: its top stuck out by 78 px and hid the bar. */
-  .fab { right: 16px; bottom: calc(var(--bottom-bar) + 16px + env(safe-area-inset-bottom)); width: 54px; height: 54px; }
   .panel-quick { right: 16px; bottom: calc(var(--bottom-bar) + env(safe-area-inset-bottom)); }
   .panel-quick:not(.open) { transform: translateY(calc(101% + var(--bottom-bar) + env(safe-area-inset-bottom))); }
 }
@@ -89,25 +88,8 @@ h1, h2, h3, h4, .ref-title, .card h3 {
   }
 }
 
-/* Loading veil, visible before the first render. Removed by app.js.
-   The bean spins gently rather than blinking: a slow animation is
-   less noticeable and less tiring than a pulse. */
-.loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  min-height: 45vh;
-  color: var(--muted);
-  font-size: 0.95rem;
-}
-.loading-grain {
-  font-size: 1.8rem;
-  animation: loading-spin 1.6s linear infinite;
-}
-@keyframes loading-spin {
-  to { transform: rotate(360deg); }
-}
+/* The loading veil became a silhouette of the cards in v9.13: see the
+   "Navigation, sync bean, charts and loading" block at the end. */
 
 /* ==================================================================
    COMPTOIR REDESIGN, STEP 4: THE ENTRY FORM
@@ -230,7 +212,8 @@ h1, h2, h3, h4, .ref-title, .card h3 {
   /* The action bar stays at hand, above the navigation bar. */
   .entry-actions {
     position: sticky;
-    bottom: calc(var(--bottom-bar) + 8px);
+    /* Clear of the bar's raised central button too (v9.13). */
+    bottom: calc(var(--bottom-bar) + var(--bar-rise) + 8px);
     padding: 12px;
     margin: 0 -12px;
     background: color-mix(in srgb, var(--bg) 92%, transparent);
@@ -718,14 +701,12 @@ h1, h2, h3, h4, .ref-title, .card h3 {
   #g-heatmap rect { stroke: transparent; stroke-width: 4px; }
 }
 
-/* ---------- A9 (v8.88): the floating button no longer hides anything ---------- */
-.fab { transition: transform 200ms ease, opacity 200ms ease; }
-.fab.fab-hidden { transform: translateY(28px) scale(0.6); opacity: 0; pointer-events: none; }
-@media (prefers-reduced-motion: reduce) { .fab { transition: none; } }
+/* ---------- A9 (v8.88): nothing hides the end of the page ---------- */
 @media (max-width: 1023px) {
-  /* The page keeps a bottom margin the height of the bar AND the button: the
-     last line never goes under them. The 860 px rule brought it back to 70 px. */
-  main { padding-bottom: calc(var(--bottom-bar) + 96px + env(safe-area-inset-bottom, 0px)); }
+  /* The page keeps a bottom margin the height of the bar AND of its raised central
+     button (v9.13, the floating button is gone): the last line never goes under
+     them. The 860 px rule brought it back to 70 px. */
+  main { padding-bottom: calc(var(--bottom-bar) + var(--bar-rise) + 28px + env(safe-area-inset-bottom, 0px)); }
   /* The four bottom tabs at the same size: "Plus" was not a
      .nav-btn and stayed at 12 px when the other three went to 14.7. */
   .bottom-bar .bar-entry { font-size: 0.8rem; }
@@ -1065,4 +1046,160 @@ button.sh-to-count { white-space: nowrap; font: inherit; font-size: 0.78rem; fon
   .br-timeline li time { font-size: 0.8em; }
   .br-timeline li.free { grid-template-columns: 0.9em minmax(0, 1fr); }
   .br-ring { width: 76px; }
+}
+
+/* ---------- Navigation, sync bean, charts and loading (v9.13) ---------- */
+
+/* M3: THE BOTTOM BAR AND ITS CENTRAL BUTTON. Five places, the labels on one
+   baseline at the bottom (base.css, .bar-entry). The active tab says itself
+   by its colour and by the mark that slides under it (js/ui-nav.js), no
+   longer by a pill: a pill next to the raised round button made two shapes
+   competing for the eye. */
+.bottom-bar .nav-btn { padding: 0 2px 10px; line-height: 1.2; border-radius: 0; background: none; }
+.bar-entry .ico { flex: none; }
+.bar-mark {
+  position: absolute; left: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 4px);
+  width: 22px; height: 3px; border-radius: 99px; background: var(--accent); pointer-events: none;
+  /* Hidden until js/ui-nav.js has placed it: before, it would sit at the left edge. */
+  opacity: 0;
+}
+.bar-mark.ready { opacity: 1; transition: transform 300ms cubic-bezier(0.3, 0.9, 0.3, 1.15); }
+/* The bar is its own layer in the screen transition: it switches at once,
+   and the mark slides, instead of a ghost of the old mark fading out. */
+.bottom-bar { view-transition-name: bottom-bar; }
+::view-transition-old(bottom-bar) { display: none; }
+::view-transition-new(bottom-bar) { animation: none; }
+/* The new cup, raised by --bar-rise above the bar, always at the same spot. */
+.bar-new { -webkit-touch-callout: none; user-select: none; }
+.bar-disc {
+  display: grid; place-items: center; flex: none;
+  width: 52px; height: 52px; margin-top: calc(-1 * var(--bar-rise));
+  border-radius: 50%; background: var(--accent); color: var(--on-accent);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.42);
+  transition: transform 160ms ease, background var(--transition);
+}
+html[data-theme="light"] .bar-disc { box-shadow: 0 6px 16px rgba(38, 25, 15, 0.24); }
+.bar-new:hover .bar-disc { background: var(--accent-strong); }
+.bar-new.pressing .bar-disc, .bar-new:active .bar-disc { transform: scale(0.92); }
+.bar-new:focus-visible { outline: none; }
+.bar-new:focus-visible .bar-disc { outline: 2px solid var(--accent); outline-offset: 3px; }
+/* The "Plus" icon carries the sync bean, on a disc of the bar's colour. */
+.bar-icon { position: relative; display: grid; place-items: center; }
+.bar-bean {
+  position: absolute; top: -6px; right: -9px; width: 15px; height: 15px; padding: 1.5px;
+  border-radius: 50%; background: var(--rail); --bean-knock: var(--rail);
+}
+.bar-bean[data-look="idle"], .bar-bean:not([data-look]) { display: none; }
+/* The quick entry has its place in the "Plus" sheet, first; the Guide has its
+   own tab, so it leaves the sheet. On desktop the quick entry does not exist. */
+@media (max-width: 1023px) {
+  .rail-entry[data-screen="guide"] { display: none; }
+  .rail-quick { order: -1; }
+  /* Messages rise above the bar and its button: 24 px from the bottom, they covered the new cup. */
+  .toast { bottom: calc(var(--bottom-bar) + var(--bar-rise) + 14px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (min-width: 1024px) {
+  .rail-quick { display: none; }
+}
+/* Five tabs on the narrowest phones: the type floor, so "Dashboard" stays inside its tab. */
+@media (max-width: 359px) {
+  .bottom-bar .nav-btn, .bottom-bar .bar-entry { font-size: 0.75rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bar-mark.ready, .bar-disc { transition: none; }
+}
+
+/* Q6: THE SYNC BEAN (js/ui-sync-bean.js). The drawing carries no colour: each
+   look sets its own, per theme. A raw bean is ivory (never green, the rule of
+   base.css), a roasted one dark brown with a gloss, offline grey and crossed
+   out, a failed sync reddish;
+   "idle" is the neutral of the bars, when nothing syncs here. */
+.sync-bean {
+  display: inline-grid; place-items: center; flex: none; width: 16px; height: 16px; vertical-align: -3px;
+  --bean-rim: color-mix(in srgb, var(--bar-neutral) 78%, #000);
+  --bean-face: var(--bar-neutral);
+  --bean-crease: color-mix(in srgb, var(--bar-neutral) 50%, #000);
+  --bean-gloss: 0.3;
+}
+.sync-bean svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.bean-rim { fill: var(--bean-rim); stroke: var(--bean-line, none); stroke-width: 0.9; }
+.bean-face { fill: var(--bean-face); }
+.bean-crease { fill: none; stroke: var(--bean-crease); stroke-width: 1.5; stroke-linecap: round; }
+.bean-rim, .bean-face, .bean-crease { transition: fill 450ms ease, stroke 450ms ease; }
+.bean-gloss { fill: none; stroke: #fff; stroke-opacity: var(--bean-gloss); stroke-width: 1.3; stroke-linecap: round; }
+.bean-gap, .bean-slash { display: none; fill: none; stroke-linecap: round; }
+.bean-gap { stroke: var(--bean-knock, var(--panel)); stroke-width: 4.6; }
+.bean-slash { stroke: var(--muted); stroke-width: 1.8; }
+.sync-bean[data-look="off"] .bean-gap, .sync-bean[data-look="off"] .bean-slash { display: inline; }
+/* Raw: ivory, with a thin outline so it reads on the light theme's cream. */
+.sync-bean[data-look="raw"] { --bean-rim: #ddcfb2; --bean-face: #f6efdf; --bean-crease: #a8916a; --bean-line: #a38d67; --bean-gloss: 0.7; }
+.sync-bean[data-look="roasted"] { --bean-rim: #4b2a16; --bean-face: #74462a; --bean-crease: #1e0f07; --bean-gloss: 0.55; }
+.sync-bean[data-look="off"] { --bean-rim: #9b958e; --bean-face: #b8b2ab; --bean-crease: #7a746d; --bean-gloss: 0.25; }
+.sync-bean[data-look="alert"] { --bean-rim: #8e3424; --bean-face: #bb5440; --bean-crease: #4f160c; --bean-gloss: 0.4; }
+/* On the dark palettes the roast lightens, or the bean melts into the rail. */
+html[data-theme="dark"] .sync-bean[data-look="raw"] { --bean-rim: #cdbd9c; --bean-face: #efe6d2; --bean-crease: #8d7650; --bean-line: none; --bean-gloss: 0.6; }
+html[data-theme="dark"] .sync-bean[data-look="roasted"] { --bean-rim: #6c4024; --bean-face: #a06639; --bean-crease: #2a150a; --bean-gloss: 0.5; }
+html[data-theme="dark"] .sync-bean[data-look="off"] { --bean-rim: #57534e; --bean-face: #75706a; --bean-crease: #3b3835; --bean-gloss: 0.2; }
+html[data-theme="dark"] .sync-bean[data-look="alert"] { --bean-rim: #a8473a; --bean-face: #dc735e; --bean-crease: #5a1a10; --bean-gloss: 0.4; }
+/* Turning while it talks to the server; popping once when it is all roasted. */
+.sync-bean[data-look="raw"] svg { animation: bean-turn 1.1s linear infinite; }
+.sync-bean.pop svg { animation: bean-pop 520ms cubic-bezier(0.3, 1.7, 0.45, 1); }
+@keyframes bean-turn { to { transform: rotate(360deg); } }
+@keyframes bean-pop { 0% { transform: scale(0.5); } 60% { transform: scale(1.2); } 100% { transform: scale(1); } }
+.rail-sync .sync-bean { align-self: flex-start; margin-top: 1px; --bean-knock: var(--rail); }
+.sync-row .sync-bean { width: 18px; height: 18px; }
+.pi-value .sync-bean { width: 15px; height: 15px; margin-right: 6px; }
+@media (prefers-reduced-motion: reduce) {
+  .sync-bean[data-look] svg, .sync-bean.pop[data-look] svg { animation: none; }
+  .bean-rim, .bean-face, .bean-crease { transition: none; }
+}
+
+/* M4: THE CURVE UNDER THE FINGER (js/ui-scrub.js). A sideways finger reads
+   the curve, an upward one still scrolls the page. The guide and the dot are
+   drawn in the curve, the bubble is the SVG tooltip's. */
+svg[data-scrub] { touch-action: pan-y; }
+svg[data-scrub~="hover"] { cursor: crosshair; }
+.scrub-guide { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; stroke-opacity: 0.8; }
+/* The halo takes the colour of what is behind the curve: the card, or the journal summary. */
+.scrub-halo { stroke: var(--panel); stroke-width: 11; stroke-linecap: round; }
+.jn-summary .scrub-halo { stroke: var(--panel-2); }
+.scrub-dot { stroke: var(--accent); stroke-width: 7; stroke-linecap: round; }
+.scrub-tip { white-space: nowrap; max-width: calc(100vw - 16px); overflow: hidden; text-overflow: ellipsis; }
+/* The thirty days chart's tooltip by touch (js/charts.js): above the canvas, its lines wrapped, never cut. */
+.chart-tip { max-width: min(320px, calc(100vw - 16px)); line-height: 1.45; }
+.chart-tip-title { font-weight: 700; margin-bottom: 2px; }
+.chart-tip-swatch { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 3px; vertical-align: -1px; }
+
+/* M8: THE LOADING SILHOUETTE. In main, with the dashboard's own classes (the
+   same grid, the same cards), so the shapes stand where the cards will be.
+   The screens wait behind it; it leaves inside the first screen transition. */
+.skeleton { max-width: var(--frame); margin-inline: auto; --sk-base: var(--panel-2); --sk-shine: var(--panel-3); }
+html[data-theme="light"] .skeleton { --sk-shine: var(--panel); }
+#loading ~ .screen { display: none; }
+.sk-bone {
+  display: block; border-radius: 8px;
+  background: linear-gradient(100deg, var(--sk-base) 35%, var(--sk-shine) 50%, var(--sk-base) 65%);
+  background-size: 300% 100%;
+  animation: sk-shimmer 1.6s ease-in-out infinite;
+}
+@keyframes sk-shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+.sk-titles { flex: 1 1 260px; }
+.sk-overline { width: 9rem; height: 0.75rem; margin: 3px 0 9px; }
+.sk-title { width: 15rem; max-width: 80%; height: clamp(1.8rem, 3.6vw, 2.5rem); }
+.sk-chips { display: flex; gap: 6px; margin-top: 8px; }
+.sk-chip { width: 7.5rem; height: 30px; border-radius: 99px; }
+.sk-card { gap: 12px; }
+.sk-last { min-height: 260px; }
+.sk-list { min-height: 320px; }
+.sk-h { width: 7rem; height: 0.75rem; margin-bottom: 6px; }
+.sk-name { width: 45%; height: 1.7rem; }
+.sk-text { width: 70%; height: 0.9rem; }
+.sk-text + .sk-text { width: 46%; }
+.sk-block { height: 64px; margin-top: auto; border-radius: 12px; }
+.sk-tall { flex: 1; min-height: 180px; margin-top: 0; }
+.sk-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.sk-tiles .sk-bone { height: 58px; border-radius: 12px; }
+.sk-row { height: 46px; border-radius: 10px; }
+@media (prefers-reduced-motion: reduce) {
+  .sk-bone { animation: none; }
 }

@@ -53,6 +53,112 @@ const CHARTS = (() => {
     Chart.defaults.maintainAspectRatio = false;
   }
 
+  /* M4 (v9.13): THE DAY UNDER THE FINGER.
+
+     The thirty days chart already read a whole day wherever the pointer stood
+     on its column (index mode, intersect false). A finger sliding across it
+     now does the same, with a thin guide on the day being read:
+     - the canvas takes touch-action: pan-y, so a sideways slide reads the
+       chart instead of being taken by the browser, and an upward one still
+       scrolls the page;
+     - by touch the tooltip leaves the canvas for a bubble ABOVE it, centred
+       on the day: on a phone the canvas tooltip was wider than the chart, it
+       covered what the finger was reading and its long lines were cut at the
+       canvas edge. The bubble carries the same lines, with their colours, and
+       wraps them. With a mouse, nothing changes: same tooltip, same place;
+     - the guide is drawn behind the series, dashed, in the muted ink.
+     A touch is remembered for a moment: the browser follows a tap with
+     compatibility mouse events, which must not bring the canvas tooltip back. */
+  const TOUCH_MEMORY_MS = 800;
+  const touchedRecently = chart => Date.now() - (chart.$touchAt || 0) < TOUCH_MEMORY_MS;
+  const dayGuide = {
+    id: "dayGuide",
+    beforeEvent(chart, args) {
+      const native = args.event && args.event.native;
+      if (native && String(native.type).startsWith("touch")) chart.$touchAt = Date.now();
+    },
+    beforeDatasetsDraw(chart) {
+      const active = chart.tooltip && chart.tooltip.getActiveElements ? chart.tooltip.getActiveElements() : [];
+      const area = chart.chartArea;
+      if (!active.length || !area) return;
+      const x = Math.round(active[0].element.x) + 0.5, ctx = chart.ctx;
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(x, area.top);
+      ctx.lineTo(x, area.bottom);
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.strokeStyle = cssVar("--muted");
+      ctx.globalAlpha = 0.7;
+      ctx.stroke();
+      ctx.restore();
+    },
+  };
+
+  /* The bubble, one for the page. It stays while the finger has left, like
+     the canvas tooltip did; scrolling or touching elsewhere takes it away,
+     with the guide: a fixed bubble must not float over a chart gone by. */
+  let fingerTip = null, fingerChart = null;
+  function hideFingerTip(clearChart) {
+    if (fingerTip) fingerTip.hidden = true;
+    const chart = fingerChart;
+    fingerChart = null;
+    if (clearChart && chart && chart.tooltip && chart.canvas && chart.canvas.isConnected) {
+      chart.setActiveElements([]);
+      chart.tooltip.setActiveElements([], { x: 0, y: 0 });
+      chart.update("none");
+    }
+  }
+  function fingerTooltip({ chart, tooltip }) {
+    // The active elements, not opacity nor caretX: those two are still animating when this runs.
+    const active = tooltip.getActiveElements();
+    if (!touchedRecently(chart) || !active.length) {
+      if (fingerChart === chart) hideFingerTip(false);
+      return;
+    }
+    if (!fingerTip) {
+      fingerTip = document.createElement("div");
+      fingerTip.className = "svg-tooltip chart-tip";
+      window.addEventListener("scroll", () => { if (fingerChart) hideFingerTip(true); }, { passive: true });
+      document.addEventListener("pointerdown", ev => { if (fingerChart && ev.target !== fingerChart.canvas) hideFingerTip(true); });
+    }
+    const host = chart.canvas.closest("dialog") || document.body;
+    if (fingerTip.parentNode !== host) host.appendChild(fingerTip);
+    fingerChart = chart;
+    // The tooltip's own lines, in its order: title, one line per series with its colour, then the day's detail.
+    fingerTip.textContent = "";
+    const line = (text, className, color) => {
+      const row = document.createElement("div");
+      if (className) row.className = className;
+      if (color) {
+        const swatch = document.createElement("i");
+        swatch.className = "chart-tip-swatch";
+        swatch.style.background = color;
+        row.appendChild(swatch);
+      }
+      row.appendChild(document.createTextNode(text));
+      fingerTip.appendChild(row);
+    };
+    (tooltip.title || []).forEach(t => line(t, "chart-tip-title"));
+    (tooltip.beforeBody || []).forEach(t => line(t));
+    (tooltip.body || []).forEach((b, i) => {
+      const colors = (tooltip.labelColors || [])[i] || {};
+      (b.before || []).forEach(t => line(t));
+      (b.lines || []).forEach((t, k) => line(t, "", k === 0 ? colors.backgroundColor : ""));
+      (b.after || []).forEach(t => line(t));
+    });
+    (tooltip.afterBody || []).forEach(t => line(t));
+    (tooltip.footer || []).forEach(t => line(t));
+    fingerTip.hidden = false;
+    const box = chart.canvas.getBoundingClientRect();
+    const w = fingerTip.offsetWidth, h = fingerTip.offsetHeight;
+    const x = box.left + active[0].element.x - w / 2;
+    let y = box.top - h - 8;
+    if (y < 8) y = Math.min(box.bottom + 8, window.innerHeight - h - 8);
+    fingerTip.style.left = Math.round(Math.max(8, Math.min(x, window.innerWidth - w - 8))) + "px";
+    fingerTip.style.top = Math.round(Math.max(8, y)) + "px";
+  }
+
   /* LOADING CHART.JS ON DEMAND.
 
      The library weighs 68 KB gzipped, that is 30 % of the site's weight, and
@@ -159,7 +265,11 @@ const CHARTS = (() => {
       backgroundColor: counts.map((_, i) => tint(i, k)), borderColor: borderTint,
       borderWidth: 1.5, borderSkipped: false, borderRadius: 3, maxBarThickness: 16,
     }));
+    // A sideways finger reads the chart, an upward one scrolls the page (M4).
+    const canvas = document.getElementById(idCanvas);
+    if (canvas && canvas.style) canvas.style.touchAction = "pan-y";
     create(idCanvas, {
+      plugins: [dayGuide],
       data: {
         labels,
         datasets: [
@@ -190,6 +300,9 @@ const CHARTS = (() => {
              under the chart by the coffee legend. */
           legend: { labels: { filter: (item, data) => !data.datasets[item.datasetIndex].isTile } },
           tooltip: {
+            // By touch the tooltip leaves the canvas for a bubble above it (M4); with a mouse, unchanged.
+            enabled: ctx => !touchedRecently(ctx.chart),
+            external: fingerTooltip,
             // In the tooltip too: the first block carries the day's total.
             filter: item => !(item.dataset.isTile > 1) && !(item.dataset.isTile === 1 && !Number(counts[item.dataIndex])),
             callbacks: {

@@ -112,6 +112,9 @@
   --height-control: 48px;
   --rail-large: 232px;
   --bottom-bar: 62px;
+  /* How far the bar's central button rises above it (v9.13): what sits right above
+     the bar keeps this much more room, or the button would cover it. */
+  --bar-rise: 20px;
   /* The frame: max width of EVERY screen, centred in main. A single token,
      a single rule (.screen), no screen redefines it. */
   --frame: 1560px;
@@ -133,7 +136,6 @@
      it dims the content, not the navigation. */
   --z-overlay-nav: 148;
   --z-panel-quick: 149;
-  --z-fab: 150;
   --z-bubble: 200;
   /* The "Plus" sheet goes above the floating button, otherwise the cup
      would float over the menu it is supposed to leave alone. */
@@ -488,18 +490,7 @@ button { font-family: inherit; }
   font-size: 0.75rem;
   color: var(--muted);
 }
-/* The status dot. It is the only place where sync shows without opening a
-   panel, so it carries colour rather than a plain grey circle. */
-.rail-point {
-  width: 8px; height: 8px;
-  flex: none;
-  border-radius: 999px;
-  background: var(--bar-neutral);
-}
-.rail-point[data-state="ok"] { background: var(--accent); }
-.rail-point[data-state="syncing"] { background: var(--accent); opacity: 0.55; }
-.rail-point[data-state="error"],
-.rail-point[data-state="session-expired"] { background: var(--danger); }
+/* The status dot became the sync bean in v9.13: finishing.css, js/ui-sync-bean.js. */
 
 .rail-badges { display: flex; flex-wrap: wrap; gap: 6px; }
 .rail-badges:empty { display: none; }
@@ -517,22 +508,28 @@ button { font-family: inherit; }
   border-top: 1px solid var(--lines);
   padding-bottom: env(safe-area-inset-bottom);
 }
+/* Labels on one baseline at the bottom (v9.13): the central button rises
+   above its label, the icons of the others sit above theirs. */
 .bar-entry {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 3px;
+  justify-content: flex-end;
+  gap: 4px;
   min-height: var(--bottom-bar);
+  padding: 0 2px 10px;
+  min-width: 0;
+  -webkit-tap-highlight-color: transparent;
   border: none;
   background: transparent;
   color: var(--muted);
   font: inherit;
   font-size: 0.75rem;
+  line-height: 1.2;
   cursor: pointer;
 }
-.bar-entry.on { color: var(--accent); }
+.bar-entry.on { color: var(--accent-strong); }
 .bar-entry[aria-expanded="true"] { color: var(--ink); }
 
 /* Phone scrim when the sheet is open. */

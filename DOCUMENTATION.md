@@ -43,8 +43,33 @@ fois.
 Toutes les entrées portent `.nav-btn` et `data-ecran` : `activerEcran()` et le
 câblage d'`app.js` les traitent déjà toutes, la navigation n'a rien appris de
 nouveau. Les icônes sont des SVG en trait de 1,8 px, jamais des emoji, et un
-test le vérifie. Le bouton flottant de saisie rapide n'existe QUE sur téléphone :
-sur ordinateur « Nouvelle tasse » ouvre la saisie complète.
+test le vérifie. Sur ordinateur « Nouvelle tasse » ouvre la saisie complète.
+
+LA BARRE DU BAS (M3, v9.13, `js/ui-nav.js`). Cinq places : Tableau, Historique,
+la nouvelle tasse au centre (un `.nav-btn` vers la saisie, relevé de `--bar-rise`
+au dessus de la barre), Guide, Plus. Le bouton flottant de saisie rapide a
+disparu : un appui long sur le bouton central ouvre la saisie rapide, et la
+feuille « Plus » a une entrée « Saisie rapide » (`#rail-quick`, téléphone
+seulement). Le trait sous l'onglet actif glisse (`UI.placeBarMark`, appelé par
+`activateScreen`) ; Mes réglages et Paramètres le mettent sous « Plus ». Ce qui
+se pose juste au dessus de la barre ajoute `--bar-rise` à `--bottom-bar`.
+
+LE GRAIN DE LA SYNCHRO (Q6, v9.13, `js/ui-sync-bean.js`). L'état de synchro est
+un grain de café dessiné partout où il apparaît (`.sync-bean` : rail, icône
+« Plus », panneau Données, ligne Données et synchro des Paramètres) : ivoire et
+qui tourne pendant l'échange, torréfié qui saute une fois à jour, gris barré hors
+ligne, rougeâtre en échec. Jamais vert. La ligne de texte (`updateSyncStatus`) a
+quitté `app.js` avec lui.
+
+LES COURBES AU DOIGT (M4, v9.13). Le graphe 30 jours se lit en glissant le doigt :
+un trait pointillé marque le jour, et au toucher l'infobulle sort du canevas
+pour une bulle au dessus, qui garde toutes ses lignes (`charts.js`). Les courbes
+SVG qui portent `data-scrub` (journal par sachet, fiche café, progression) font
+de même par `js/ui-scrub.js` ; `data-scrub="hover"` suit aussi la souris.
+
+LE CHARGEMENT (M8, v9.13). `#loading` est une silhouette des cartes du tableau de
+bord, dans `main`, avec les classes du tableau de bord ; les écrans attendent
+derrière (`#loading ~ .screen`) et elle part dans la transition du premier écran.
 
 LE CADRE (v8.27). Tout écran est borné et centré par UNE règle, `.ecran
 { max-width: var(--cadre); margin-inline: auto }`, 1560 px. Aucun sélecteur
@@ -111,6 +136,9 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/tuning.js` | meilleurs réglages par café, moyenne glissante, constats : calcul pur |
 | `js/charts.js` | graphiques Chart.js (chargée à la demande), heatmap et réglette en SVG maison |
 | `js/ui-core.js` | outils d'interface partagés, thème, navigation. Définit `UI`. |
+| `js/ui-sync-bean.js` | la ligne de synchro et son grain de café (v9.13) |
+| `js/ui-nav.js` | la barre du bas : bouton central, appui long, trait qui glisse (v9.13) |
+| `js/ui-scrub.js` | les courbes SVG qu'on parcourt au doigt (v9.13) ; le graphe 30 jours le fait dans `charts.js` |
 | `js/ui-findings.js` | les phrases calculées et leur carrousel |
 | `js/ui-last-cup.js` | la carte de la dernière tasse, et ses briques partagées avec la table |
 | `js/ui-dashboard.js` | tableau de bord : calendrier, analyses, dernières extractions |

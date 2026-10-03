@@ -505,6 +505,10 @@
     const d = "M" + series.map(p => x(p.date).toFixed(1) + " " + y(p.value).toFixed(1)).join(" L");
     s += '<path d="' + d + " L" + x(series[series.length - 1].date).toFixed(1) + " 112 L26 112 Z" + '" class="dw-area"></path>' +
       '<path d="' + d + '" class="dw-curve"></path>';
+    // The curve under the finger (M4, v9.13, js/ui-scrub.js): an invisible point per value, with its day.
+    const dayOf = s2 => new Date(s2).toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" });
+    s += series.map(p => '<circle cx="' + x(p.date).toFixed(1) + '" cy="' + y(p.value).toFixed(1) + '" r="0" data-scrub-tip="' +
+      escapeHtml(I18N.t("scrub_rolling", { d: dayOf(p.date), n: fmtRating(p.value) })) + '"></circle>').join("");
     // The milestones, within the curve's period.
     const milestones = [];
     DATA.state.purchases.forEach(a => {

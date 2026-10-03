@@ -673,6 +673,9 @@ const I18N_EN = {
     confirm_delete_recipe: "Delete this custom recipe?",
     confirm_title: "Are you sure?",
     confirm_ok: "Confirm",
+
+    // Navigation, sync bean, charts and loading (v9.13)
+    scrub_rolling: "{d} · average {n}",
   },
 
   UI: {
@@ -1529,6 +1532,10 @@ const I18N_EN = {
       "Un seul versement.": "A single pour.",
       "Deux versements.": "Two pours.",
       "Trois versements. Mon choix.": "Three pours. My choice.",
+
+      // Navigation, sync bean, charts and loading (v9.13)
+      "Tasse": "Cup",
+      "Nouvelle tasse. Appui long : saisie rapide": "New cup. Long press: quick log",
   },
 
   DIAG: {

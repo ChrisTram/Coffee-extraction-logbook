@@ -30,9 +30,9 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
   /* The guide's long texts keep a readable line length. */
   #screen-guide p, #screen-guide li, #screen-settings p { max-width: 78ch; }
   .footer-site { margin-inline-start: var(--rail-large); }
-  /* The floating quick-entry button DISAPPEARS: the rail's "Nouvelle tasse"
-     opens the full entry form, which is what you want on a keyboard. */
-  .fab, .bottom-bar { display: none; }
+  /* No bottom bar: the rail's "Nouvelle tasse" opens the full entry form,
+     which is what you want on a keyboard. */
+  .bottom-bar { display: none; }
 }
 
 /* PHONE: the rail becomes the "Plus" sheet, the bottom bar takes the
@@ -74,8 +74,6 @@ main { max-width: 1180px; margin: 0 auto; padding: 26px 20px 80px; }
   .rail-footer { border-top: none; padding-top: 4px; }
   main { padding-bottom: calc(var(--bottom-bar) + 34px); }
   .footer-site { margin-bottom: calc(var(--bottom-bar) + 16px); }
-  /* The floating button moves up above the bar. */
-  .fab { bottom: calc(var(--bottom-bar) + 16px + env(safe-area-inset-bottom)); }
 }
 
 @media (prefers-reduced-motion: reduce) {

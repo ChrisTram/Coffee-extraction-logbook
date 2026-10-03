@@ -261,7 +261,7 @@ Chart.defaults = hollow();
 const SCRIPTS = ["js/legacy-names.js", "js/tools.js", "js/i18n.en.js", "js/i18n.js", "js/grind.js", "js/recipes.js", "js/demo-data.js",
   "js/sync.js", "js/data-csv.js", "js/data-schema.js", "js/data-store.js", "js/data-calcs.js",
   "js/data-migrations.js", "js/data.js", "js/tuning.js", "js/charts.js",
-  "js/ui-core.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js", "js/ui-history.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/app.js"];
+  "js/ui-core.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js", "js/ui-history.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/app.js"];
 const source = SCRIPTS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 
 // Intercepted console.error: that is where render errors come out.
@@ -1106,6 +1106,62 @@ check("the temperature field no longer has a misleading placeholder", !tempField
   api.UI.clearDraft();
   api.UI.chooseMethod("Brikka");
   api.UI.resetEntry();
+}
+
+/* v9.13: THE NAVIGATION, THE SYNC BEAN AND THE CURVES UNDER THE FINGER.
+   The sync state draws a coffee bean with one look per family of states,
+   wherever a .sync-bean stands; the roasted bean pops once, out of a sync,
+   and only where it shows. The bar's tabs stand for every screen. The quick
+   entry stays reachable without the floating button. The journal's curve
+   carries a point per rated cup for the finger. */
+{
+  const looks = { syncing: "raw", ok: "roasted", offline: "off", error: "alert", "session-expired": "alert",
+    "outdated-version": "alert", local: "idle", demo: "idle", unknown: "idle", "not-configured": "idle" };
+  const wrong = Object.entries(looks).filter(([s, l]) => api.UI.beanLook(s) !== l).map(([s]) => s + " -> " + api.UI.beanLook(s));
+  check("each sync state has its bean look", wrong.length === 0, wrong.join(", "));
+
+  const fakeBean = shown => {
+    const b = { ...makeElement("bean"), innerHTML: "", title: "", dataset: {}, classList: fakeClassList(), offsetWidth: 16 };
+    b.querySelector = sel => (sel === "svg" && b.innerHTML.includes("<svg") ? {} : null);
+    b.getClientRects = () => (shown ? [{}] : []);
+    return b;
+  };
+  const visible = fakeBean(true), hidden = fakeBean(false);
+  const qsa = document.querySelectorAll;
+  document.querySelectorAll = sel => (sel === ".sync-bean" ? [visible, hidden] : qsa(sel));
+  let thrown = null;
+  try {
+    api.UI.paintSyncBeans("syncing", "Synchronisation en cours...");
+    check("the bean is drawn as a bean, with its crease", visible.innerHTML.includes('class="bean-crease"') && hidden.innerHTML.includes("<svg"));
+    check("syncing gives the raw bean, and the sentence as tooltip", visible.dataset.look === "raw" && visible.title === "Synchronisation en cours...",
+      visible.dataset.look + " | " + visible.title);
+    api.UI.paintSyncBeans("ok", "Synchronisé à 10:42.");
+    check("out of a sync the roasted bean pops", visible.dataset.look === "roasted" && visible.classList.contains("pop"));
+    check("but not where it does not show", !hidden.classList.contains("pop"));
+    api.UI.paintSyncBeans("ok", "Synchronisé à 10:42.");
+    check("and only once: the next notification leaves it still", !visible.classList.contains("pop"));
+    api.UI.paintSyncBeans("offline");
+    check("offline gives the crossed bean, and keeps the last sentence", visible.dataset.look === "off" && visible.title === "Synchronisé à 10:42.");
+  } catch (e) { thrown = e; }
+  document.querySelectorAll = qsa;
+  check("painting the beans does not throw", thrown === null, thrown && thrown.message);
+
+  const unplaced = api.UI.SCREEN_NAMES.filter(s => !api.UI.BAR_TABS[s]);
+  check("every screen has its tab in the phone bar, or under Plus", unplaced.length === 0, unplaced.join(", "));
+  check("the sheet's screens light up Plus", api.UI.BAR_TABS.tuning === "plus" && api.UI.BAR_TABS.settings === "plus");
+
+  thrown = null;
+  try { api.UI.toggleQuick(false); api.UI.openQuickEntry(); } catch (e) { thrown = e; }
+  check("the quick entry opens without the floating button", thrown === null && api.UI.isQuickOpen(), thrown && thrown.message);
+  api.UI.toggleQuick(false);
+
+  thrown = null;
+  try { api.UI.renderJournal(api.UI.extsWithCalcs()); } catch (e) { thrown = e; }
+  const journal = document.querySelector("#h-journal").innerHTML;
+  const rated = api.DATA.state.extractions.filter(e => e.score_10 !== "" && !api.UI.isFailed(e)).length;
+  const tips = (journal.match(/data-scrub-tip="/g) || []).length;
+  check("the journal's curve follows the finger and the mouse", thrown === null && journal.includes('data-scrub="hover"'), thrown && thrown.message);
+  check("with one point per rated cup, named by its day and rating", rated >= 2 && tips === rated, tips + " points for " + rated + " cups");
 }
 
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);

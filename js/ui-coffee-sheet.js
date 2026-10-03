@@ -222,7 +222,8 @@
     }
     svg += '<text x="' + G + '" y="' + (B + 16) + '">' + I18N.t("sheet_day", { n: 1 }) + "</text>" +
       '<text x="' + D + '" y="' + (B + 16) + '" text-anchor="end">' + I18N.t("sheet_day", { n: max + 1 }) + "</text>";
-    return html + '<svg class="sh-svg" viewBox="0 0 ' + L + ' 152" role="img" aria-label="' +
+    // data-scrub: under a finger, each cup reads without aiming at its dot (M4, js/ui-scrub.js).
+    return html + '<svg class="sh-svg" viewBox="0 0 ' + L + ' 152" data-scrub data-scrub-top="' + H + '" data-scrub-bottom="' + B + '" role="img" aria-label="' +
       escapeHtml(I18N.t("sheet_curve_aria", { n: points.length })) + '">' + svg + "</svg></section>";
   }
 

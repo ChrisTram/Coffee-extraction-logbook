@@ -7,11 +7,11 @@
 <!-- Site version, single source of truth: the footer reads it, and files
      loaded on demand put it in their URL. Set it with
      node tools/bump_version.mjs X, never by hand. -->
-<meta name="app-version" content="9.12">
-<link rel="stylesheet" href="css/base.css?v=9.12">
-<link rel="stylesheet" href="css/screens.css?v=9.12">
-<link rel="stylesheet" href="css/dialogs.css?v=9.12">
-<link rel="stylesheet" href="css/finishing.css?v=9.12">
+<meta name="app-version" content="9.13">
+<link rel="stylesheet" href="css/base.css?v=9.13">
+<link rel="stylesheet" href="css/screens.css?v=9.13">
+<link rel="stylesheet" href="css/dialogs.css?v=9.13">
+<link rel="stylesheet" href="css/finishing.css?v=9.13">
 <!-- crossorigin use-credentials: without it the browser fetches the manifest
      WITHOUT cookies, the front door redirects it to /login, and it tries to
      parse HTML as JSON. Result: "Manifest: Syntax error" and a PWA that
@@ -52,7 +52,7 @@
      the scripts. bump_version.mjs versions the charts link. -->
 <link rel="preload" href="css/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="css/fonts/instrument-serif-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="js/vendor/chart.umd.js?v=9.12" as="script">
+<link rel="preload" href="js/vendor/chart.umd.js?v=9.13" as="script">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%98%95%3C/text%3E%3C/svg%3E">
 </head>
 <body>
@@ -90,10 +90,14 @@
       <button class="nav-btn rail-entry" data-screen="tuning"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M6 4h12v5a6 6 0 0 1-12 0z"/><path d="M18 5h2.5a2.5 2.5 0 0 1-2.5 4"/><path d="M6 5H3.5A2.5 2.5 0 0 0 6 9"/></svg><span>Mes réglages</span></button>
       <button class="nav-btn rail-entry" data-screen="guide"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v15H5.5A1.5 1.5 0 0 0 4 19.5z"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19"/><path d="M8 7.5h7"/></svg><span>Guide</span></button>
       <button class="nav-btn rail-entry" data-screen="settings"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10"/><path d="M18 7h2"/><path d="M4 17h6"/><path d="M14 17h6"/><circle cx="16" cy="7" r="2"/><circle cx="12" cy="17" r="2"/></svg><span>Paramètres</span></button>
+      <!-- Phone only (v9.13): the quick entry, once the floating button, lives here
+           and under a long press on the bar's central button. Not a screen, so no .nav-btn. -->
+      <button type="button" class="rail-entry rail-quick" id="rail-quick"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 9.5h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M7 3.5v2M11 3.5v2"/></svg><span>Saisie rapide</span></button>
   </div>
 
   <div class="rail-footer">
-    <p class="rail-sync"><span class="rail-point" aria-hidden="true"></span><span class="sync-text"></span></p>
+    <!-- The sync bean (v9.13): js/ui-sync-bean.js draws it and gives it the look of the state. -->
+    <p class="rail-sync"><span class="sync-bean" aria-hidden="true"></span><span class="sync-text" id="rail-sync-text"></span></p>
     <div class="rail-badges">
       <span id="badge-demo" class="badge badge-demo" hidden>Démo</span>
       <span id="badge-file" class="badge badge-file" hidden title="Dossier de données lié"><svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2.5h7A1.5 1.5 0 0 1 19 10v7a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 3 17z"/></svg> <span id="badge-file-name"></span></span>
@@ -106,26 +110,42 @@
   </div>
 </nav>
 
-<!-- Bottom bar, phone only. Four entries: the three daily
-     screens, and "Plus" which opens the rail as a sheet. -->
+<!-- Bottom bar, phone only (M3, v9.13). Five places: two daily screens, the
+     new cup in the middle, raised and always in the same spot, the Guide, and
+     "Plus" which opens the rail as a sheet. The centre button opens the entry
+     form; a long press opens the quick entry (js/ui-nav.js). The mark under
+     the active tab slides from one to the next. -->
 <nav class="bottom-bar" aria-label="Navigation">
-  <button class="nav-btn bar-entry" data-screen="dashboard"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="8" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="11" width="7" height="10" rx="1.5"/></svg><span>Tableau</span></button>
-  <button class="nav-btn bar-entry" data-screen="entry"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h8"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span>Saisie</span></button>
-  <button class="nav-btn bar-entry" data-screen="history"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h13"/><path d="M3 12h13"/><path d="M3 18h9"/><circle cx="19" cy="17" r="3"/><path d="M19 15.6V17l1 .7"/></svg><span>Historique</span></button>
-  <button class="bar-entry" id="btn-plus" aria-expanded="false" aria-controls="rail"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg><span>Plus</span></button>
+  <button class="nav-btn bar-entry" data-screen="dashboard"><svg class="ico" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="8" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="11" width="7" height="10" rx="1.5"/></svg><span>Tableau</span></button>
+  <button class="nav-btn bar-entry" data-screen="history"><svg class="ico" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h13"/><path d="M3 12h13"/><path d="M3 18h9"/><circle cx="19" cy="17" r="3"/><path d="M19 15.6V17l1 .7"/></svg><span>Historique</span></button>
+  <button class="nav-btn bar-entry bar-new" data-screen="entry" id="bar-new" aria-label="Nouvelle tasse" title="Nouvelle tasse. Appui long : saisie rapide"><span class="bar-disc" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg></span><span>Tasse</span></button>
+  <button class="nav-btn bar-entry" data-screen="guide"><svg class="ico" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v15H5.5A1.5 1.5 0 0 0 4 19.5z"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19"/><path d="M8 7.5h7"/></svg><span>Guide</span></button>
+  <!-- The bean on the icon: the sync state at a glance, the sentence is in the sheet. -->
+  <button class="bar-entry" id="btn-plus" aria-expanded="false" aria-controls="rail" aria-describedby="rail-sync-text"><span class="bar-icon"><svg class="ico" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg><span class="sync-bean bar-bean" aria-hidden="true"></span></span><span>Plus</span></button>
+  <span class="bar-mark" aria-hidden="true"></span>
 </nav>
 
 <div id="overlay-nav" class="overlay-nav" hidden></div>
 
-<!-- Removed by app.js as soon as the first screen is rendered. Deliberately in the
-     HTML and not created in JS: it must be visible BEFORE any script
-     runs, that is the whole point. -->
-<div id="loading" class="loading" role="status" aria-live="polite">
-  <span class="loading-grain" aria-hidden="true">☕</span>
-  <span>Chargement de ton carnet…</span>
-</div>
-
 <main>
+
+<!-- M8 (v9.13): THE LOADING SILHOUETTE. The shape of the dashboard cards,
+     shimmering, until the first screen is rendered; the screens wait behind it
+     (finishing.css), then it gives way inside the screen transition (ui-core.js,
+     activateScreen). Deliberately in the HTML and not created in JS: it must be
+     visible BEFORE any script runs, that is the whole point. -->
+<div id="loading" class="skeleton" role="status" aria-live="polite">
+  <span class="offscreen">Chargement de ton carnet…</span>
+  <div class="head-page" aria-hidden="true">
+    <div class="head-titles sk-titles"><i class="sk-bone sk-overline"></i><i class="sk-bone sk-title"></i><span class="sk-chips"><i class="sk-bone sk-chip"></i><i class="sk-bone sk-chip"></i><i class="sk-bone sk-chip"></i></span></div>
+  </div>
+  <div class="grid-dashboard" aria-hidden="true">
+    <div class="card col-2 sk-card sk-last"><i class="sk-bone sk-h"></i><i class="sk-bone sk-name"></i><i class="sk-bone sk-text"></i><i class="sk-bone sk-text"></i><i class="sk-bone sk-block"></i></div>
+    <div class="card sk-card sk-last"><i class="sk-bone sk-h"></i><span class="sk-tiles"><i class="sk-bone"></i><i class="sk-bone"></i><i class="sk-bone"></i><i class="sk-bone"></i></span><i class="sk-bone sk-text"></i><i class="sk-bone sk-text"></i></div>
+    <div class="card col-2 sk-card sk-list"><i class="sk-bone sk-h"></i><i class="sk-bone sk-row"></i><i class="sk-bone sk-row"></i><i class="sk-bone sk-row"></i><i class="sk-bone sk-row"></i></div>
+    <div class="card sk-card sk-list"><i class="sk-bone sk-h"></i><i class="sk-bone sk-block sk-tall"></i></div>
+  </div>
+</div>
 
 <!-- ================= SCREEN 1: DASHBOARD ================= -->
 <section id="screen-dashboard" class="screen on">
@@ -253,7 +273,7 @@
           </section>
           <section class="drawing" data-drawing="progress" data-shortcut="history">
             <header class="drawing-head"><h4>Ta progression</h4><button type="button" class="drawing-link" data-shortcut="history">Historique<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button></header>
-            <svg id="drawing-progress" class="drawing-svg" viewBox="0 0 320 160" role="img" aria-label="Ta moyenne glissante sur cinq tasses, avec les sachets ouverts et les recettes essayées"></svg>
+            <svg id="drawing-progress" class="drawing-svg" viewBox="0 0 320 160" data-scrub data-scrub-top="16" data-scrub-bottom="112" role="img" aria-label="Ta moyenne glissante sur cinq tasses, avec les sachets ouverts et les recettes essayées"></svg>
             <p class="drawing-reading" id="drawing-progress-reading"></p>
           </section>
           <section class="drawing" data-drawing="clock" data-shortcut="history">
@@ -1371,7 +1391,7 @@ Cảm ơn shop.</pre>
       <button type="button" class="pi-row" data-section="ps-kettle"><svg class="pi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10h12l-1 9H6zM17 12h2a2 2 0 0 1 0 4h-2M9 6c0-1 1-2 1-3M13 6c0-1 1-2 1-3"></path></svg><span class="pi-title">Ma bouilloire</span><span class="pi-value" id="piv-kettle"></span></button>
       <button type="button" class="pi-row" data-section="ps-incr"><svg class="pi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h7M8 8l-4 4l4 4M20 12h-7M16 8l4 4l-4 4"></path></svg><span class="pi-title">Pas de correction</span><span class="pi-value" id="piv-incr"></span></button>
       <button type="button" class="pi-row" data-section="ps-device"><svg class="pi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM11 18h2"></path></svg><span class="pi-title">Cet appareil</span><span class="pi-value" id="piv-device"></span></button>
-      <button type="button" class="pi-row" data-opens-db><svg class="pi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18a4 4 0 0 1 0-8a5 5 0 0 1 9.6-1.5A3.5 3.5 0 0 1 17 18z"></path></svg><span class="pi-title">Données et synchro</span><span class="pi-value" id="piv-data"></span></button>
+      <button type="button" class="pi-row" data-opens-db><svg class="pi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18a4 4 0 0 1 0-8a5 5 0 0 1 9.6-1.5A3.5 3.5 0 0 1 17 18z"></path></svg><span class="pi-title">Données et synchro</span><span class="pi-value"><span class="sync-bean" aria-hidden="true"></span><span id="piv-data"></span></span></button>
     </nav>
     <div class="param-pages">
       <button type="button" class="btn btn-subtle btn-small param-back" id="param-back">‹ Paramètres</button>
@@ -1507,7 +1527,7 @@ Cảm ơn shop.</pre>
 <dialog id="modal-data" aria-labelledby="modal-data-title" class="modal">
   <h2 id="modal-data-title">Données</h2>
   <p id="db-status"></p>
-  <p class="sync-row"><span id="sync-status" class="sync-text"></span>
+  <p class="sync-row"><span class="sync-bean" aria-hidden="true"></span><span id="sync-status" class="sync-text"></span>
     <button class="btn btn-small" id="db-sync" hidden>Synchroniser maintenant</button></p>
   <p class="modal-note" id="db-fs-note" hidden>Ton navigateur ne propose pas la liaison directe de fichiers (API File System Access). Elle existe dans Chrome et Edge. Dans Brave, elle s'active dans brave://flags (chercher File System Access API). En attendant, tes données restent dans le navigateur : pense à Exporter en CSV pour les sauvegarder.</p>
   <div class="db-actions">
@@ -1638,8 +1658,9 @@ Cảm ơn shop.</pre>
   <button class="btn btn-subtle modal-close" data-closes="modal-recipes">Fermer</button>
 </dialog>
 
-<!-- ================= FLOATING QUICK ENTRY ================= -->
-<button id="fab-quick" class="fab" title="Saisie rapide" aria-label="Saisie rapide"><svg class="fab-cup" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M17 9.5h1.5a2.5 2.5 0 0 1 0 5H17"/><path d="M7 3.5v2M11 3.5v2"/></svg><svg class="fab-cross" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg></button>
+<!-- ================= QUICK ENTRY =================
+     The floating button left in v9.13: the bar's central button opens the panel
+     on a long press, and the "Plus" sheet has a "Saisie rapide" entry. -->
 <div id="overlay-quick" class="overlay-nav" hidden></div>
 <div id="panel-quick" class="panel-quick" role="dialog" aria-label="Saisie rapide">
   <div class="sheet-handle" aria-hidden="true"></div>
@@ -1798,38 +1819,41 @@ Cảm ơn shop.</pre>
 <!-- ALL defer, and definitely not async: defer preserves order, async does not,
      and data.js would blow up looking for SYNC or GRIND. The download now
      runs in parallel with HTML parsing instead of blocking it. -->
-<script defer src="js/legacy-names.js?v=9.12"></script>
-<script defer src="js/tools.js?v=9.12"></script>
-<script defer src="js/i18n.js?v=9.12"></script>
-<script defer src="js/grind.js?v=9.12"></script>
-<script defer src="js/recipes.js?v=9.12"></script>
+<script defer src="js/legacy-names.js?v=9.13"></script>
+<script defer src="js/tools.js?v=9.13"></script>
+<script defer src="js/i18n.js?v=9.13"></script>
+<script defer src="js/grind.js?v=9.13"></script>
+<script defer src="js/recipes.js?v=9.13"></script>
 <!-- sync.js BEFORE data.js: data.js uses it at load time. -->
-<script defer src="js/sync.js?v=9.12"></script>
-<script defer src="js/data-csv.js?v=9.12"></script>
-<script defer src="js/data-schema.js?v=9.12"></script>
-<script defer src="js/data-store.js?v=9.12"></script>
-<script defer src="js/data-calcs.js?v=9.12"></script>
-<script defer src="js/data-migrations.js?v=9.12"></script>
-<script defer src="js/data.js?v=9.12"></script>
-<script defer src="js/tuning.js?v=9.12"></script>
-<script defer src="js/charts.js?v=9.12"></script>
-<script defer src="js/ui-core.js?v=9.12"></script>
-<script defer src="js/ui-findings.js?v=9.12"></script>
-<script defer src="js/ui-last-cup.js?v=9.12"></script>
-<script defer src="js/ui-dashboard.js?v=9.12"></script>
-<script defer src="js/ui-entry.js?v=9.12"></script>
-<script defer src="js/ui-entry-aside.js?v=9.12"></script>
-<script defer src="js/ui-pills.js?v=9.12"></script>
-<script defer src="js/ui-chrono.js?v=9.12"></script>
-<script defer src="js/ui-draft.js?v=9.12"></script>
-<script defer src="js/ui-quick.js?v=9.12"></script>
-<script defer src="js/ui-history.js?v=9.12"></script>
-<script defer src="js/ui-journal.js?v=9.12"></script>
-<script defer src="js/ui-guide.js?v=9.12"></script>
-<script defer src="js/ui-catalog.js?v=9.12"></script>
-<script defer src="js/ui-coffee-sheet.js?v=9.12"></script>
-<script defer src="js/ui-brew.js?v=9.12"></script>
-<script defer src="js/ui-drawings.js?v=9.12"></script>
-<script defer src="js/app.js?v=9.12"></script>
+<script defer src="js/sync.js?v=9.13"></script>
+<script defer src="js/data-csv.js?v=9.13"></script>
+<script defer src="js/data-schema.js?v=9.13"></script>
+<script defer src="js/data-store.js?v=9.13"></script>
+<script defer src="js/data-calcs.js?v=9.13"></script>
+<script defer src="js/data-migrations.js?v=9.13"></script>
+<script defer src="js/data.js?v=9.13"></script>
+<script defer src="js/tuning.js?v=9.13"></script>
+<script defer src="js/charts.js?v=9.13"></script>
+<script defer src="js/ui-core.js?v=9.13"></script>
+<script defer src="js/ui-sync-bean.js?v=9.13"></script>
+<script defer src="js/ui-nav.js?v=9.13"></script>
+<script defer src="js/ui-scrub.js?v=9.13"></script>
+<script defer src="js/ui-findings.js?v=9.13"></script>
+<script defer src="js/ui-last-cup.js?v=9.13"></script>
+<script defer src="js/ui-dashboard.js?v=9.13"></script>
+<script defer src="js/ui-entry.js?v=9.13"></script>
+<script defer src="js/ui-entry-aside.js?v=9.13"></script>
+<script defer src="js/ui-pills.js?v=9.13"></script>
+<script defer src="js/ui-chrono.js?v=9.13"></script>
+<script defer src="js/ui-draft.js?v=9.13"></script>
+<script defer src="js/ui-quick.js?v=9.13"></script>
+<script defer src="js/ui-history.js?v=9.13"></script>
+<script defer src="js/ui-journal.js?v=9.13"></script>
+<script defer src="js/ui-guide.js?v=9.13"></script>
+<script defer src="js/ui-catalog.js?v=9.13"></script>
+<script defer src="js/ui-coffee-sheet.js?v=9.13"></script>
+<script defer src="js/ui-brew.js?v=9.13"></script>
+<script defer src="js/ui-drawings.js?v=9.13"></script>
+<script defer src="js/app.js?v=9.13"></script>
 </body>
 </html>

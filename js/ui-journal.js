@@ -56,8 +56,12 @@
     const ordered = rated.slice().sort((a, b) => String(a.date_time).localeCompare(String(b.date_time)));
     const W = 240, H = 34, x = i => 4 + i * ((W - 8) / (ordered.length - 1)), y = n => H - 4 - (Math.max(3, Math.min(10, n)) - 3) / 7 * (H - 8);
     const d = "M" + ordered.map((e, i) => x(i).toFixed(1) + " " + y(Number(e.score_10)).toFixed(1)).join(" L");
+    /* Each cup reads under the finger, or the mouse (M4, v9.13, js/ui-scrub.js):
+       an invisible point per cup carries its day, recipe and rating. */
+    const tips = ordered.map((e, i) => '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(Number(e.score_10)).toFixed(1) + '" r="0" data-scrub-tip="' +
+      titleAttr([dayLabel(e.date_time), I18N.tr(e.recipe || ""), fmtRating(Number(e.score_10))].filter(Boolean).join(" · ")) + '"></circle>').join("");
     // Stretched across the full width (v8.95): on desktop, kept at its proportions, it stayed a stroke in the middle.
-    return '<svg class="jn-curve" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" aria-hidden="true"><path d="' + d + '" vector-effect="non-scaling-stroke"></path></svg>';
+    return '<svg class="jn-curve" viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" aria-hidden="true" data-scrub="hover"><path d="' + d + '" vector-effect="non-scaling-stroke"></path>' + tips + "</svg>";
   }
 
   function resume(c) {
