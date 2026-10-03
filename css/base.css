@@ -158,20 +158,30 @@
    Machine colours are lightened one notch: on a near-black background,
    the original Brikka blue fell below 4:1.
 
+   N2, "le comptoir, en plus net" (v9.17): the same palettes, crisper. The
+   background and the rail do not move (they are also the PWA status bar
+   tint, written in the head), the three panels go up one notch so each
+   step reads (Graphite bg/panel 1.06 to 1.10:1, bg/panel-3 1.34 to 1.44:1;
+   Nuit 1.09 to 1.13:1 and 1.39 to 1.52:1), ink, text and muted go up with
+   them so that no text pair loses contrast, cards get a firmer edge
+   (--card-border, the ink at 13 %) and a shadow with a contact line, and
+   a single copper card per screen wears --accent-ring and --accent-glow
+   (finishing.css, "N2" block).
+
    GRAPHITE: near black, a barely warm neutral, a single accent, the crema
    of an espresso. The "modern app" direction. */
 html[data-theme="dark"] {
   --bg: #111113;
   --rail: #141416;
   --bg-gradient: radial-gradient(1100px 520px at 85% -8%, rgba(232, 187, 133, 0.07) 0%, #111113 60%);
-  --panel: #18181b;
-  --panel-2: #212125;
+  --panel: #1b1b1e;
+  --panel-2: #252529;
   /* Hover and pressed-state surface, one step above --panel-2. */
-  --panel-3: #2b2b30;
-  --ink: #f4f1ec;
-  --text: #d2cdc6;
-  /* 5.82:1 on --panel, 4.63:1 on --panel-3, the lightest. */
-  --muted: #99938b;
+  --panel-3: #303035;
+  --ink: #f6f3ee;
+  --text: #d6d1ca;
+  /* 6.47:1 on --panel, 4.94:1 on --panel-3, the lightest. */
+  --muted: #a49e96;
   --accent: #e8bb85;
   --accent-strong: #f4cd9d;
   --accent-bg: rgba(232, 187, 133, 0.12);
@@ -181,15 +191,23 @@ html[data-theme="dark"] {
   --lines: rgba(255, 255, 255, 0.08);
   --lines-soft: rgba(255, 255, 255, 0.05);
   --lines-chart: rgba(255, 255, 255, 0.08);
+  /* A CARD's edge (N2): the ink at 13 %, firmer than --lines, which stays
+     for hairlines inside the cards. */
+  --card-border: rgba(246, 243, 238, 0.13);
   --bar-neutral: #4a4640;
   /* The dark theme's relief: a soft shadow under each card, and a one-pixel
      light hairline on top. The light theme lays its cards flat on a
-     border, so these two tokens are empty there. */
-  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 10px 30px rgba(0, 0, 0, 0.35);
-  --shadow-top: 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+     border, so these two tokens are empty there. N2: a tight contact
+     shadow under the soft one, it is what makes the edge read as crisp. */
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 1px 2px rgba(0, 0, 0, 0.5), 0 14px 34px rgba(0, 0, 0, 0.45);
+  --shadow-top: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
   --shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
-  --tooltip-bg: #f4f1ec;
-  --tooltip-text: #18181b;
+  /* The one copper card of a screen (N2): a one-pixel ring outside its
+     copper border, and a warm glow under it. */
+  --accent-ring: #e8bb85;
+  --accent-glow: rgba(232, 187, 133, 0.16);
+  --tooltip-bg: #f6f3ee;
+  --tooltip-text: #1b1b1e;
   --warn-bg: rgba(232, 187, 133, 0.10);
   --warn-border: rgba(232, 187, 133, 0.40);
   --danger: #ef8a78;
@@ -201,16 +219,16 @@ html[data-theme="dark"] {
   --trend: rgba(232, 187, 133, 0.45);
   /* Background of the dark card (the timer): a secondary card with an accent
      stroke on the left. Its sub-surfaces and muted colour live in --cs-*. */
-  --card-dark-bg: #212125;
-  --cs-panel: #18181b;
-  --cs-panel-2: #2b2b30;
-  --cs-muted: #a29c94;
+  --card-dark-bg: #252529;
+  --cs-panel: #1b1b1e;
+  --cs-panel-2: #303035;
+  --cs-muted: #aca69e;
 
   --brikka: #4f93e6;
   --switch: #ef7440;
   --second: #d58ab3;
 
-  --hm0: #212125;
+  --hm0: #252529;
   --hm1: #3d3326;
   --hm2: #6b5335;
   --hm3: #a67e4f;
@@ -226,13 +244,13 @@ html[data-theme="dark"][data-palette="night"] {
   --bg: #0b1017;
   --rail: #0e141d;
   --bg-gradient: radial-gradient(1100px 520px at 88% -10%, rgba(91, 156, 240, 0.10) 0%, #0b1017 60%);
-  --panel: #121a25;
-  --panel-2: #192331;
-  --panel-3: #212e3f;
-  --ink: #eef2f6;
-  --text: #c7d0db;
-  /* 6.33:1 on --panel, 4.98:1 on --panel-3. */
-  --muted: #8e9db0;
+  --panel: #141d2a;
+  --panel-2: #1c2738;
+  --panel-3: #26344a;
+  --ink: #f0f4f8;
+  --text: #cbd4df;
+  /* 6.84:1 on --panel, 5.06:1 on --panel-3. */
+  --muted: #97a6b9;
   --accent: #e5935a;
   --accent-strong: #f3aa74;
   --accent-bg: rgba(229, 147, 90, 0.13);
@@ -241,25 +259,28 @@ html[data-theme="dark"][data-palette="night"] {
   --lines: rgba(200, 220, 255, 0.09);
   --lines-soft: rgba(200, 220, 255, 0.05);
   --lines-chart: rgba(200, 220, 255, 0.09);
+  --card-border: rgba(240, 244, 248, 0.13);
   --bar-neutral: #3a4a60;
-  --shadow-card: 0 1px 0 rgba(200, 220, 255, 0.05) inset, 0 12px 32px rgba(0, 0, 0, 0.45);
-  --shadow-top: 0 1px 0 rgba(200, 220, 255, 0.05) inset;
+  --shadow-card: 0 1px 0 rgba(200, 220, 255, 0.07) inset, 0 1px 2px rgba(0, 0, 0, 0.6), 0 14px 36px rgba(0, 0, 0, 0.55);
+  --shadow-top: 0 1px 0 rgba(200, 220, 255, 0.07) inset;
   --shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
-  --tooltip-bg: #eef2f6;
-  --tooltip-text: #121a25;
+  --accent-ring: #e5935a;
+  --accent-glow: rgba(229, 147, 90, 0.16);
+  --tooltip-bg: #f0f4f8;
+  --tooltip-text: #141d2a;
   --warn-bg: rgba(229, 147, 90, 0.10);
   --warn-border: rgba(229, 147, 90, 0.40);
   --danger: #f08a7a;
   --ok: #e5935a;
   --trend: rgba(229, 147, 90, 0.45);
-  --card-dark-bg: #192331;
-  --cs-panel: #121a25;
-  --cs-panel-2: #212e3f;
-  --cs-muted: #95a4b6;
+  --card-dark-bg: #1c2738;
+  --cs-panel: #141d2a;
+  --cs-panel-2: #26344a;
+  --cs-muted: #9eadbf;
 
   --brikka: #5b9cf0;
 
-  --hm0: #192331;
+  --hm0: #1c2738;
   --hm1: #3a2e2a;
   --hm2: #6c4630;
   --hm3: #a8683f;
@@ -292,12 +313,19 @@ html[data-theme="light"] {
   --lines: #dccdbb;
   --lines-soft: #ede4d8;
   --lines-chart: rgba(116, 97, 82, 0.18);
+  /* N2: cards stay flat, but their edge firms up one notch, like the dark
+     palettes' (1.49:1 on the background, --lines gave 1.34:1). */
+  --card-border: #d4c2ad;
   --bar-neutral: #cbb8a2;
   /* No shadow on light theme cards: the design lays them flat, on a
      border. --shadow is now only used by the floating button and the sheet. */
   --shadow: 0 10px 30px rgba(38, 25, 15, 0.14);
   --shadow-card: none;
   --shadow-top: none;
+  /* The copper card's ring is softened here: the dark terracotta, doubled
+     on cream paper, read as a heavy frame. */
+  --accent-ring: rgba(146, 77, 26, 0.35);
+  --accent-glow: rgba(146, 77, 26, 0.10);
   --tooltip-bg: #26190f;
   --tooltip-text: #f4ede3;
   --warn-bg: #f2e2d2;

@@ -1882,3 +1882,56 @@ tr.row-hist:focus-visible, tr.last-clickable:focus-visible { outline: 2px solid 
   .roll-in, .method-arrive, .table-latest tr.arrival-play { animation: none; }
   .bw-body, .bw-brikka, .bw-switch { transition: none; }
 }
+
+/* ---------- N2: the counter, sharper (v9.17) ----------
+   Mockup N2, "le comptoir, en plus net": the same colours, fonts and shapes,
+   only crisper. The tokens live in base.css (raised panels, --card-border,
+   a deeper --shadow-card, --accent-ring, --accent-glow); this block only
+   says who wears them.
+
+   1. Every card gets the firmer edge. :where() keeps the specificity of a
+      single class, so hover, "compared" and machine borders still win, and
+      the dark card of the light theme and the Switch callout keep theirs. */
+.card:where(:not(.card-dark, .callout-strong)), .card-recap,
+.entry-block, .h-card, .modal, .cmd-box, .cup-card, .ga-card, .ga-door, .param-index, .br-end {
+  border-color: var(--card-border, var(--lines));
+}
+html[data-theme="dark"] .card-dark { border-color: var(--card-border, var(--lines)); }
+/* The history cards were the only cards without relief. */
+.h-card { box-shadow: var(--shadow-card); }
+
+/* 2. ONE copper card per screen, the one that answers the screen's question.
+   On the dashboard it is the last cup: copper border, a one-pixel ring
+   outside it, a warm glow, and the accent wash in its top corner. The week
+   recap (copper border) and the insights card (copper stroke, dark palettes)
+   give their copper back to it. Elsewhere copper only marks what to do: the
+   primary buttons, the entry's timer, the brew step in progress. */
+.grid-dashboard > .card-last {
+  border-color: var(--accent);
+  background: linear-gradient(160deg, var(--accent-bg), var(--panel) 70%);
+  box-shadow: 0 0 0 1px var(--accent-ring, var(--accent)), 0 12px 30px var(--accent-glow, transparent);
+}
+html[data-theme="dark"] .grid-dashboard > .card-last {
+  box-shadow: 0 0 0 1px var(--accent-ring, var(--accent)), 0 12px 30px var(--accent-glow, transparent), var(--shadow-card);
+}
+/* A record already draws its turning copper border (J6): the still ring
+   would double it, only the glow stays. */
+.grid-dashboard > .card-last.is-record { border-color: transparent; box-shadow: 0 12px 30px var(--accent-glow, transparent); }
+html[data-theme="dark"] .grid-dashboard > .card-last.is-record { box-shadow: 0 12px 30px var(--accent-glow, transparent), var(--shadow-card); }
+/* Its border is copper at rest now, so the hover can no longer be a copper
+   border: the card rises by one pixel instead, like the welcome choices. */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .grid-dashboard > .card-last { transition: transform var(--transition); }
+  .grid-dashboard > .card-last:hover { transform: translateY(-1px); }
+}
+html[data-theme="dark"] .grid-dashboard > .card-dark { box-shadow: var(--shadow-card); }
+
+/* 3. The scores, larger, in the serif (3 rem to 3.5 rem in the mockup:
+   the same 1.17 ratio here). The phone size is restated after the desktop
+   one, otherwise this later rule would beat the media query of screens.css. */
+.big-rating { font-size: 4.55rem; }
+@media (max-width: 560px) { .big-rating { font-size: 3.15rem; } }
+.sh-rating b { font-size: 3.75rem; }
+.sp-rating { font-size: 3.95rem; }
+.jn-avg { font-size: 2.2rem; }
+.h-card-rating { font-size: 1.75rem; line-height: 1; }
