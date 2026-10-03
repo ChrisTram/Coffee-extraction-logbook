@@ -108,8 +108,8 @@
     const windowWeeks = weeks || HEATMAP_WEEKS;
     const s = statsHeatmap(perDay, windowWeeks);
     if (!s.cups) {
-      $("#heatmap-stats").innerHTML =
-        '<p class="card-empty">' + I18N.t("heatmap_summary_empty", { s: windowWeeks }) + "</p>";
+      $("#heatmap-stats").innerHTML = '<div class="card-empty">' + UI.emptyHint({ drawing: "cup",
+        text: I18N.t("heatmap_summary_empty", { s: windowWeeks }), action: I18N.t("empty_go_entry"), go: "entry", primary: false }) + "</div>";
       return;
     }
     const cells = [
@@ -128,12 +128,27 @@
      site. These three cards are the only ones that can stay empty for a long
      time with perfectly valid data, so each one states its real cause
      rather than a generic "no data" that helps nobody. */
+  /* M6 (v9.13): the cause comes with a small drawing and the button that
+     leads to where the card gets filled: a chart waiting for rated cups sends
+     to the entry, a duel with a single brewer to the Guide's recipes, a cloud
+     of pre-ground coffees to « Mes cafés ». */
+  const EMPTY_WAYS = {
+    empty_nothing: ["chart", "empty_go_rate", "entry"],
+    empty_grind_preground: ["chart", "empty_go_coffees", "coffees"],
+    empty_grind: ["chart", "empty_go_entry", "entry"],
+    empty_tastes_none: ["cup", "empty_go_tastes", "entry"],
+    empty_tastes_threshold: ["cup", "empty_go_entry", "entry"],
+    empty_duel_one_machine: ["duel", "empty_go_guide", "guide"],
+    empty_duel: ["duel", "empty_go_entry", "entry"],
+  };
   function updateEmptyCard(id, pointCount, key) {
     const empty = pointCount === 0;
     $("#box-" + id).hidden = empty;
     const msg = $("#empty-" + id);
     msg.hidden = !empty;
-    if (empty) msg.textContent = I18N.t(key);
+    if (!empty) return;
+    const [drawing, action, go] = EMPTY_WAYS[key] || ["chart", "empty_go_entry", "entry"];
+    msg.innerHTML = UI.emptyHint({ drawing: drawing, text: I18N.t(key), action: I18N.t(action), go: go, primary: false });
   }
 
   function emptyGrindCause(rated) {
@@ -310,7 +325,9 @@
     $("#dashboard-empty").hidden = !empty;
     $("#dashboard-content").hidden = empty;
     if (empty) return;
-    renderStockCorner();
+    // Q7 (v9.13): the first opening of the day, the dashboard sets itself up.
+    const morning = UI.morningArrival();
+    renderStockCorner(morning);
 
     const today = localDateKey(new Date());
     const now = new Date();
@@ -373,6 +390,7 @@
       { weekday: "long", day: "numeric", month: "long" });
 
     renderLastCup(exts);
+    UI.playMorning(morning);
 
     renderInsights(analyzable);
 
@@ -602,29 +620,41 @@
       const left = Math.max(0, stock.remaining);
       const latest = ownCups.reduce((m, e) => (String(e.date_time) > m ? String(e.date_time) : m), "");
       if (left <= 0 && latest.slice(0, 10) < cutoff) return null;
-      return { coffee: c, leftover: left, pc: Math.min(100, (left / stock.format) * 100), cups: Math.floor(left / dose) };
+      return { coffee: c, leftover: left, bag: stock.format, pc: Math.min(100, (left / stock.format) * 100), cups: Math.floor(left / dose) };
       // What is left first, lowest to highest; empty bags after.
     }).filter(Boolean).sort((a, b) => (a.leftover <= 0) - (b.leftover <= 0) || a.leftover - b.leftover);
   }
-  function renderStockCorner() {
+  /* Q8 (v9.13): the small glass of each pill is a jar like the others
+     (js/ui-jar.js): when the grams change, its level moves and the grams roll
+     from what this device showed last; the morning arrival (Q7) fills it from
+     empty. Rewritten only when it changed, so a movement is not cut. */
+  let cornerHtml = "";
+  function renderStockCorner(morning) {
     const zone = $("#stock-corner");
     if (!zone) return;
     const all = stockData();
     zone.hidden = !all.length;
     const shown = all.slice(0, STOCK_MAX);
-    zone.innerHTML = shown.map(s => {
+    const html = shown.map(s => {
       const low = s.cups < 3;
       const tooltip = I18N.t(s.leftover <= 0 ? "stock_chip_empty_title" : "stock_chip_title", { c: I18N.tr(s.coffee.name), g: Math.round(s.leftover), n: s.cups, s: s.cups > 1 ? "s" : "" });
       return '<button type="button" class="sc-bag' + (low ? " low" : "") + '" data-sheet="' + s.coffee.id + '" title="' + titleAttr(tooltip) + '" aria-label="' + titleAttr(tooltip) + '">' +
-        '<span class="sc-glass" style="--pc:' + s.pc.toFixed(0) + '%" aria-hidden="true"></span>' +
-        '<b>' + (s.leftover <= 0 ? I18N.t("stock_chip_empty") : Math.round(s.leftover) + " g") + "</b>" +
+        '<span class="sc-glass" style="--pc:' + s.pc.toFixed(0) + '%" aria-hidden="true" data-jar-kind="glass"' +
+          UI.jarData({ coffeeId: s.coffee.id, grams: s.leftover, bag: s.bag, low: low }) + "></span>" +
+        '<b data-jar-grams="' + titleAttr(s.coffee.id) + '">' + (s.leftover <= 0 ? I18N.t("stock_chip_empty") : Math.round(s.leftover) + " g") + "</b>" +
         '<span class="sc-name">' + titleAttr(I18N.tr(s.coffee.name)) + "</span></button>";
     }).join("") + (all.length > STOCK_MAX ? '<span class="sc-plus">+' + (all.length - STOCK_MAX) + "</span>" : "");
+    if (html !== cornerHtml) { zone.innerHTML = html; cornerHtml = html; }
+    // The arrival fills them once; a render during it joins the movement under way.
+    UI.playJars(zone, morning && !morning.jarsFilled ? { from: 0, quiet: true } : undefined);
+    if (morning) morning.jarsFilled = true;
   }
 
   /* Wiring of the dashboard controls. Called once by app.js. */
   function wireDashboard() {
     wireFindings();
+    // The buttons of the empty places (v9.13), wherever they are drawn.
+    UI.wireEmpty();
     const tabs = $(".tabs-analyses");
     tabs.addEventListener("click", ev => {
       const b = ev.target.closest("[role=tab]");

@@ -28,7 +28,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const CSS_SHEETS = ["css/base.css", "css/screens.css", "css/dialogs.css", "css/finishing.css"];
 const readCss = () => CSS_SHEETS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 const SOURCE_UI = ["js/ui-core.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-wheel.js", "js/ui-cup.js", "js/ui-dial.js", "js/ui-rating-dial.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js",
-  "js/ui-history.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/app.js"]
+  "js/ui-history.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/ui-jar.js", "js/ui-moments.js", "js/ui-empty.js", "js/app.js"]
   .map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 /* demo-data.js has not been a script tag since v7.56, but the harness still
    loads it: loadDemo() needs it and there is no network here. */
@@ -1627,7 +1627,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
 
   // And above all: updated_at must not leak into the CSV.
   const csv = DATA.csvSerialize([{ id: "moi", updated_at: 1699999999999, dose_g: 16 }], DATA.SETTINGS_COLS);
-  check("settings.csv header", csv.split("\n")[0] === "id,dose_g,heat_level,grind_dial,schema_version,boil_s,step_clicks,step_degrees,step_heat,step_water_g,step_dose_g,drawings,bubbles_s",
+  check("settings.csv header", csv.split("\n")[0] === "id,dose_g,heat_level,grind_dial,schema_version,boil_s,step_clicks,step_degrees,step_heat,step_water_g,step_dose_g,drawings,bubbles_s,jar_tare_g",
     csv.split("\n")[0]);
   check("updated_at missing from the settings CSV", !csv.includes("1699999999999"));
 }
@@ -2962,7 +2962,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
   const sections = [...html.matchAll(/class="card param-section" id="(ps-[a-z]+)"/g)].map(m => m[1]);
   const rows = [...html.matchAll(/class="pi-row" data-section="(ps-[a-z]+)"/g)].map(m => m[1]);
-  check("every section of the list opens a page that exists", rows.length === 6 && rows.every(id => sections.includes(id)), rows.join(","));
+  check("every section of the list opens a page that exists", rows.length === 7 && rows.every(id => sections.includes(id)), rows.join(","));
   check("the Enregistrer button lives under the pages, only once", (html.match(/id="param-save"/g) || []).length === 1 && html.indexOf('id="param-actions"') > html.indexOf('id="ps-device"'));
   check("on phone the default values table becomes one card per recipe", (readFileSync(join(ROOT, "js/ui-catalog.js"), "utf8").match(/data-l="/g) || []).length === 5);
 }
@@ -3135,7 +3135,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
     check("tombstones preserved under the new table names", JSON.stringify(st.tombstones) === JSON.stringify(NEW_TOMBS),
       JSON.stringify(st.tombstones));
     check("the drawing names follow", st.settings[0].drawings === "shelf,!clock,podium", st.settings[0].drawings);
-    check("the logbook moves to the current schema (22)", st.settings[0].schema_version === 22, String(st.settings[0].schema_version));
+    check("the logbook moves to the current schema (23)", st.settings[0].schema_version === 23, String(st.settings[0].schema_version));
     const keys = [...idb.store.keys()].sort();
     check("the French keys are removed from IndexedDB", Object.keys(LEGACY.TABLES).concat("tombes").every(k => !idb.store.has(k)), keys.join());
     check("and the English ones written", TABLE_NAMES.concat("tombstones").every(k => idb.store.has(k)), keys.join());
@@ -3267,7 +3267,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
       !("note_sur_10" in app.DATA.state.extractions[0]), JSON.stringify(app.DATA.state.extractions[0]).slice(0, 80));
     check("and raw old tombstones", app.DATA.state.tombstones.coffees && app.DATA.state.tombstones.coffees.z === 1);
     check("without restamping the row", app.DATA.state.extractions[0].updated_at === 2001);
-    check("the schema is at 22, step 21 still there", SOURCE_DATA.includes("const CURRENT_SCHEMA = 22;") &&
+    check("the schema is at 23, step 21 still there", SOURCE_DATA.includes("const CURRENT_SCHEMA = 23;") &&
       SOURCE_DATA.includes('{ v: 21, name: "English names", apply: convertLegacyNames }'));
     /* Tetsu 4:6 at 250 g by default (v9.08): the seed says so, and step 22
        moves a stored recipe still at the seeded 225 g, never a retouched one. */
@@ -3470,7 +3470,10 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
   // The CSS: one block, every motion off under reduced motion, fingers get 44 px.
   const css = readFileSync(join(ROOT, "css/finishing.css"), "utf8");
   const header = "/* ---------- Entry, rating, dial and brew cup (v9.13) ---------- */";
-  const block = css.slice(css.indexOf(header));
+  // The block ends where the next block of finishing.css begins (other v9.13 blocks follow it).
+  const blockRest = css.slice(css.indexOf(header));
+  const blockEnd = blockRest.indexOf("/* ---------- ", header.length);
+  const block = blockEnd > 0 ? blockRest.slice(0, blockEnd) : blockRest;
   check("the v9.13 styles live in one block of finishing.css", css.split(header).length === 2 && block.includes(".gd-needle"));
   const reduced = block.slice(block.lastIndexOf("@media (prefers-reduced-motion: reduce)"));
   check("reduced motion stills the needle, the liquid, the stamp, the wave and the steam",
@@ -3487,6 +3490,101 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
   check("M7: quick buttons, and « Reprendre le chrono » for the total and the drawdown",
     wheelSrc.includes("const QUICK = [-5, 5, 15];") && SOURCE_UI.includes('UI.mountTimeWheel("f-total", $("#f-total-wheel"), $("#f-total-quick"), "total");') &&
     SOURCE_UI.includes('UI.mountTimeWheel("f-flow", $("#f-flow-wheel"), $("#f-flow-quick"), "flow");') && bilingual("wheel_chrono"));
+}
+
+/* ---------- Stock and jars (v9.13) ---------- */
+/* Q8: THE JAR TO THE GRAM. The empty jar is a synced setting, empty until
+   Chris weighs his; the weighing takes it off the scale reading, and refuses
+   the two real mistakes. */
+{
+  const n = DATA.normalizeSettings;
+  check("the empty jar is empty by default", n({}).jar_tare_g === "", JSON.stringify(n({}).jar_tare_g));
+  check("it keeps one decimal", n({ jar_tare_g: 301.26 }).jar_tare_g === 301.3, String(n({ jar_tare_g: 301.26 }).jar_tare_g));
+  check("a French comma is read", n({ jar_tare_g: "298,4" }).jar_tare_g === 298.4);
+  check("zero, a negative or a word go back to empty",
+    n({ jar_tare_g: 0 }).jar_tare_g === "" && n({ jar_tare_g: -3 }).jar_tare_g === "" && n({ jar_tare_g: "bocal" }).jar_tare_g === "");
+  check("an absurd weight too", n({ jar_tare_g: 9000 }).jar_tare_g === "");
+  check("the empty jar is a settings column", DATA.SETTINGS_COLS.includes("jar_tare_g"));
+  const csv = DATA.csvSerialize([n({ jar_tare_g: 280.5 })], DATA.SETTINGS_COLS);
+  const back = n(DATA.csvParse(csv)[0]);
+  check("and it survives the CSV round trip", back.jar_tare_g === 280.5, csv);
+  check("nobody's real jar is written in the code", !/jar_tare_g:\s*\d/.test(SOURCE_DATA) && !SOURCE_DATA.includes("322"));
+
+  const w = DATA.weighJar;
+  check("weighing takes the jar off", w("531,7", 280.5, 250).net === 251.2 && w("531,7", 280.5, 250).error === "", JSON.stringify(w("531,7", 280.5, 250)));
+  check("without an empty jar, no weighing", w(500, "", 250).error === "no_tare");
+  check("without a reading, it asks for one", w("", 280.5, 250).error === "no_reading" && w("abc", 280.5, 250).error === "no_reading");
+  check("less than the empty jar: the jar is not all on the scale", w(250, 280.5, 250).error === "below_jar");
+  check("more than a bag and a fifth: something else is on the scale",
+    w(600, 280.5, 250).error === "above_bag" && w(580, 280.5, 250).error === "");
+  check("without a bag size, only the jar check applies", w(1800, 280.5, 0).error === "" && w(1800, 280.5, 0).net === 1519.5);
+  check("an empty jar on the scale is zero grams, not an error", w("280,5", 280.5, 250).net === 0 && w("280,5", 280.5, 250).error === "");
+
+  check("schema 23 is the jar tare, a step that changes no value",
+    SOURCE_DATA.includes('{ v: 23, name: "jar tare", apply: () => false }') && SOURCE_DATA.includes("const CURRENT_SCHEMA = 23;"));
+}
+
+/* Q8: WHAT A JAR DRAWS, and J6: THE RECORD OF THE BAG IN STOCK. */
+{
+  const saved = { coffees: DATA.state.coffees, extractions: DATA.state.extractions, purchases: DATA.state.purchases };
+  const day = k => { const d = new Date(); d.setDate(d.getDate() - k); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+  DATA.state.coffees = [{ id: "j1", name: "Jar", bag_size_g: 250, active: 1 }, { id: "j2", name: "No bag", bag_size_g: "", active: 1 }];
+  DATA.state.purchases = [
+    { id: "p-old", coffee_id: "j1", purchase_date: day(40), opened_date: day(40), bag_size_g: 250, remaining_g: "", remaining_at: "" },
+    { id: "p-new", coffee_id: "j1", purchase_date: day(10), opened_date: day(10), bag_size_g: 250, remaining_g: "", remaining_at: "" },
+  ];
+  const cup = (id, k, score, dose) => ({ id, coffee_id: "j1", date_time: day(k) + "T08:00", dose_g: dose === undefined ? 16 : dose, score_10: score });
+  DATA.state.extractions = [
+    cup("old-best", 30, 9.5),
+    cup("a", 8, 7), cup("b", 6, 8), cup("c", 4, 7.5),
+  ];
+  const g = DATA.bagGauge("j1", 15);
+  check("the jar draws the grams left of the current bag", g && g.grams === 202 && g.bag === 250, JSON.stringify(g));
+  check("with the coffee's usual dose", g && Math.abs(g.dose - 16) < 1e-9 && g.cups === 12, JSON.stringify(g));
+  check("not low above three cups", g && g.low === false);
+  DATA.state.extractions.push(cup("eat", 3, "", 160));
+  const low = DATA.bagGauge("j1", 15);
+  check("low below three cups of the usual dose", low && low.low === true && low.grams === 42, JSON.stringify(low));
+  DATA.state.extractions.push(cup("over", 2, "", 100));
+  const empty = DATA.bagGauge("j1", 15);
+  check("an overdrawn bag draws an empty jar, the raw count kept aside",
+    empty && empty.grams === 0 && empty.empty === true && empty.remaining < 0, JSON.stringify(empty));
+  check("no bag size, no jar", DATA.bagGauge("j2", 15) === null);
+  DATA.state.extractions = DATA.state.extractions.filter(e => e.id !== "eat" && e.id !== "over");
+
+  const latest = cup("d", 0, 8.5);
+  DATA.state.extractions.push(latest);
+  const r = DATA.bagRecord(latest);
+  check("a record on the bag in stock, against its own cups only", r && r.previous === 8 && r.gap === 0.5, JSON.stringify(r));
+  check("it names the day of the previous best", r && r.previousDate === day(6) && r.previousId === "b", JSON.stringify(r));
+  check("the old bag's 9.5 does not count", r && r.earlier === 3);
+  latest.score_10 = 8;
+  check("a tie is not a record", DATA.bagRecord(latest) === null);
+  latest.score_10 = "";
+  check("an unrated cup is not a record", DATA.bagRecord(latest) === null);
+  latest.score_10 = 9;
+  DATA.state.extractions = DATA.state.extractions.filter(e => e.id !== "c" && e.id !== "a");
+  check("it needs two earlier rated cups on the bag", DATA.bagRecord(latest) === null);
+  DATA.state.extractions.push(cup("a2", 7, 6), cup("u", 5, ""));
+  check("unrated cups do not count among them", DATA.bagRecord(latest) !== null && DATA.bagRecord(latest).earlier === 2);
+  const elsewhere = { ...latest, id: "x", coffee_id: "j2" };
+  check("a coffee without a bag has no record", DATA.bagRecord(elsewhere) === null);
+  const onOld = cup("on-old", 35, 10);
+  check("a cup from an earlier bag is not a record of the bag in stock", DATA.bagRecord(onOld) === null);
+
+  Object.assign(DATA.state, saved);
+}
+
+/* EVERY STYLESHEET CLOSES WHAT IT OPENS (v9.15). Two branches appended their
+   blocks after the same closing brace, and the merge kept that brace once: the
+   next block ended up inside an @media (prefers-reduced-motion) rule, so the
+   v9.14 entry styles only applied with reduced motion. Braces are counted
+   outside comments, per file, never below zero. */
+for (const sheet of CSS_SHEETS) {
+  const text = readFileSync(join(ROOT, sheet), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+  let depth = 0, negative = false;
+  for (const ch of text) { if (ch === "{") depth++; if (ch === "}") { depth--; if (depth < 0) negative = true; } }
+  check(sheet + " has balanced braces", depth === 0 && !negative, "depth " + depth);
 }
 
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);

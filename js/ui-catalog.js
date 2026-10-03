@@ -45,6 +45,12 @@
     // Active ones first (original order kept), deactivated always at the end
     // of the list. Each coffee carries an average score badge (over its
     // rated brews) and the date it was added to the system.
+    /* M6 (v9.13): an empty list says what to do, and the button does it. */
+    if (!DATA.state.coffees.length) {
+      $("#coffees-list").innerHTML = UI.emptyHint({ drawing: "jar", title: I18N.t("coffees_empty_title"),
+        text: I18N.t("coffees_empty_text"), action: I18N.t("coffees_empty_go"), go: "coffee-new", wide: true });
+      return;
+    }
     const sorted = [...DATA.state.coffees].sort((a, b) => (a.active === 0 ? 1 : 0) - (b.active === 0 ? 1 : 0));
     $("#coffees-list").innerHTML = sorted.map(c => {
       const notes = DATA.state.extractions
@@ -359,6 +365,9 @@
     $("#param-dial").value = fallbacks.dial;
     UI.writeDuration("param-boil", fallbacks.boil);
     UI.writeDuration("param-bubbles", fallbacks.bubbles);
+    // The empty jar (v9.13): empty until weighed, written with the decimal of the language.
+    const tare = DATA.currentSettings().jar_tare_g;
+    $("#param-jar-tare").value = tare === "" ? "" : fmtDecimal(Number(tare), 1).replace(/\s/g, "");
     STEP_FIELDS.forEach(([id, key]) => { $("#" + id).value = (fallbacks.stepSizes || {})[key]; });
     updateDialDetail();
     $("#param-beeps").checked = $("#chrono-beep").checked;
@@ -379,6 +388,7 @@
       dial: fallbacks.dial + (p ? " · ≈ " + Math.round(p.microns) + " µm" : ""),
       kettle: fallbacks.bubbles ? I18N.t("pivot_bubbles", { t: UI.fmtDuration(fallbacks.bubbles) }) : I18N.t("pivot_to_measure"),
       incr: steps.step_clicks ? I18N.t("pivot_clicks", { n: steps.step_clicks }) : "",
+      jar: DATA.currentSettings().jar_tare_g === "" ? I18N.t("pivot_to_weigh") : fmtDecimal(Number(DATA.currentSettings().jar_tare_g), 1) + " g",
       device: I18N.t($("#chrono-beep").checked ? "pivot_beeps_on" : "pivot_beeps_off"),
       data: ($("#sync-status") || { textContent: "" }).textContent.trim().slice(0, 40),
     };
@@ -429,6 +439,10 @@
     // The first bubbles come BEFORE the rolling boil, otherwise the curve makes no sense.
     const bubblesTime = UI.readDuration("param-bubbles");
     if (bubblesTime === "" || !(bubblesTime >= 10 && bubblesTime < boilTime)) { toast(I18N.t("toast_param_bubbles")); return; }
+    // The empty jar (v9.13): empty stays empty (no weighing), otherwise a real weight.
+    const tareText = $("#param-jar-tare").value.trim().replace(/\s/g, "");
+    const tare = tareText === "" ? "" : Number(tareText.replace(",", "."));
+    if (tare !== "" && !(tare > 0 && tare <= 5000)) { toast(I18N.t("toast_param_jar")); return; }
     fallbacks.dose = dose;
     fallbacks.fire = Math.round(heat);
     fallbacks.dial = dial;
@@ -462,6 +476,9 @@
 
     await saveFallbacks();
     UI.loadFallbacks();
+    const newTare = DATA.normalizeSettings({ jar_tare_g: tare }).jar_tare_g;
+    const tareChanged = newTare !== DATA.currentSettings().jar_tare_g;
+    if (tareChanged) await DATA.updateSettings({ jar_tare_g: newTare });
 
     let touched = 0;
     for (const { r, vals } of edits) {
@@ -481,7 +498,16 @@
     }
     renderParameters();
     UI.fillRecipeSelect();
-    toast(touched ? I18N.t("toast_param_ok", { n: touched }) : I18N.t("toast_param_fallbacks"));
+    toast(touched ? I18N.t("toast_param_ok", { n: touched })
+      : tareChanged ? (newTare === "" ? I18N.t("toast_param_jar_off") : I18N.t("toast_param_jar_ok", { t: fmtDecimal(newTare, 1) }))
+      : I18N.t("toast_param_fallbacks"));
+  }
+
+  /* Opens a page of Settings from elsewhere (v9.13: the coffee sheet sends
+     to « Mon bocal » when the empty jar is not weighed yet). */
+  function openSettingsSection(id) {
+    UI.activateScreen("settings");
+    showSettingsSection(id, true);
   }
 
   // Made available to the other screens.
@@ -532,7 +558,7 @@
     updateFailed,
     saveBag, closeBagForm, readRecipeForm, updateDialDetail, openCoffeeForm,
     openRecipeForm, openBagForm, openCoffeesModal, openRecipesModal,
-    renderCoffeeList, renderRecipeList, renderParameters,
+    renderCoffeeList, renderRecipeList, renderParameters, openSettingsSection,
     restoreCurrentRecipe, deleteCurrentRecipe,
   });
 })();

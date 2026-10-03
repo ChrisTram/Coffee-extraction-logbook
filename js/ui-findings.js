@@ -332,7 +332,9 @@
       '<button type="button" class="btn-square-small" data-insight="-1" aria-label="' + titleAttr(I18N.t("finding_previous")) + '">' + UI.icon("gauche") + "</button>" +
       '<button type="button" class="btn-square-small" data-insight="1" aria-label="' + titleAttr(I18N.t("finding_next")) + '">' + UI.icon("chevron") + "</button>";
     $("#insights").innerHTML = findings.map(c => {
-      if (!c.high) return '<li class="finding finding-empty"><p>' + c.text + "</p></li>";
+      /* M6 (v9.13): the reason comes with a drawing and the way to more cups. */
+      if (!c.high) return '<li class="finding finding-empty">' + UI.emptyHint({ drawing: "chart", text: c.text,
+        action: I18N.t("empty_go_rate"), go: "entry", primary: false }) + "</li>";
       return '<li class="finding"><p>' + c.text + "</p>" +
         '<div class="proof">' + scaleBar(c) +
         '<span class="proof-figures">' + I18N.t("finding_versus", { h: fmtRating(c.high.note), b: fmtRating(c.low.note) }) + "</span>" +

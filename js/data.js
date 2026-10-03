@@ -53,7 +53,7 @@ const DATA = (() => {
 
   /* Read-only helpers and catch-ups, bound to the state above. The functions
      passed as helpers are declarations, so already hoisted at this point. */
-  const { coffeeOf, calcs, bagAtDate, currentBag, bagStock } = DATA_CALCS.forState(state);
+  const { coffeeOf, calcs, bagAtDate, currentBag, bagStock, usualDose, bagGauge, bagRecord } = DATA_CALCS.forState(state);
   const { migrateData, applySchema, CURRENT_SCHEMA } =
     DATA_MIGRATIONS.forState(state, { markDeleted, currentSettings });
 
@@ -803,6 +803,8 @@ const DATA = (() => {
        export path: that is the one that lost heat_level. */
     csvParse, csvSerialize, csvRecipes, COFFEE_COLS, EXT_COLS, RECIPE_COLS, PURCHASE_COLS,
     currentBag, bagStock, addPurchase, deletePurchase, correctStock,
+    // The jar, the record of the bag and the weighing (v9.13), in data-calcs.js.
+    usualDose, bagGauge, bagRecord, weighJar: DATA_CALCS.weighJar,
     calcs, coffeeOf,
     linkFolder, unlinkFolder, reauthorizeFolder, saveFiles,
     importCsvText, analyzeImport, exportAll, exportCoffees, exportExtractions, exportRecipes,

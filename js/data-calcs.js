@@ -80,6 +80,71 @@ const DATA_CALCS = (() => {
       };
     }
 
+    /* THE USUAL DOSE of a coffee (v9.13): the average of its cups that carry
+       one, the fallback dose otherwise. The corner, the sheet and the shelf
+       each computed it on their own; the jar needs the same figure as them. */
+    function usualDose(coffeeId, defaultDose) {
+      const doses = state.extractions.filter(e => e.coffee_id === coffeeId && Number(e.dose_g) > 0)
+        .map(e => Number(e.dose_g));
+      return doses.length ? doses.reduce((a, b) => a + b, 0) / doses.length : Number(defaultDose) || 0;
+    }
+
+    /* WHAT A JAR DRAWS (v9.13, Q8). The grams left in the current bag, never
+       below zero (a negative stock is a count to redo, the jar shows it empty),
+       the bag size the graduations run to, the usual dose, the cups left at
+       that dose, and LOW below three of them: the threshold the corner and the
+       sheet already used. Null when no bag size is known, like bagStock. */
+    const LOW_CUPS = 3;
+    function bagGauge(coffeeId, defaultDose) {
+      const stock = bagStock(coffeeId, defaultDose);
+      if (!stock) return null;
+      const dose = usualDose(coffeeId, defaultDose);
+      const grams = Math.max(0, stock.remaining);
+      return {
+        grams: grams,
+        remaining: stock.remaining,
+        bag: stock.format,
+        dose: dose,
+        cups: dose > 0 ? Math.floor(grams / dose) : 0,
+        low: dose > 0 ? grams < LOW_CUPS * dose : grams <= 0,
+        empty: grams <= 0,
+      };
+    }
+
+    /* THE RECORD OF THE BAG IN STOCK (v9.13, J6). The cup beats every earlier
+       rated cup of the coffee's CURRENT bag, not the whole history: an old bag
+       of the same coffee was another coffee, roasted another day. It needs at
+       least two earlier rated cups on that bag, otherwise the second cup of a
+       bag would be a record half the time, and a record that frequent no
+       longer means anything. A tie is not a record. Returns the previous best
+       and the day it was brewed (the latest cup holding it), or null. */
+    function bagRecord(ext) {
+      if (!ext || ext.score_10 === "" || ext.score_10 === undefined || ext.score_10 === null) return null;
+      const score = Number(ext.score_10);
+      if (!Number.isFinite(score)) return null;
+      const bag = currentBag(ext.coffee_id);
+      const own = bag ? bagAtDate(ext.coffee_id, ext.date_time) : null;
+      if (!own || own.id !== bag.id) return null;
+      const when = String(ext.date_time);
+      const earlier = state.extractions.filter(e => e.id !== ext.id && e.coffee_id === ext.coffee_id &&
+        e.score_10 !== "" && e.score_10 !== undefined && e.score_10 !== null && Number.isFinite(Number(e.score_10)) &&
+        String(e.date_time) < when && (bagAtDate(e.coffee_id, e.date_time) || {}).id === bag.id);
+      if (earlier.length < 2) return null;
+      const previous = Math.max(...earlier.map(e => Number(e.score_10)));
+      if (!(score > previous)) return null;
+      const holder = earlier.filter(e => Number(e.score_10) === previous)
+        .sort((a, b) => String(b.date_time).localeCompare(String(a.date_time)))[0];
+      return {
+        score: score,
+        previous: previous,
+        gap: Math.round((score - previous) * 10) / 10,
+        previousDate: String(holder.date_time).slice(0, 10),
+        previousId: holder.id,
+        earlier: earlier.length,
+        bagId: bag.id,
+      };
+    }
+
     function coffeeOf(ext) {
       return state.coffees.find(c => c.id === ext.coffee_id) || null;
     }
@@ -176,8 +241,28 @@ const DATA_CALCS = (() => {
       };
     }
 
-    return { coffeeOf, calcs, bagAtDate, currentBag, bagStock };
+    return { coffeeOf, calcs, bagAtDate, currentBag, bagStock, usualDose, bagGauge, bagRecord };
   }
 
-  return { forState };
+  /* WEIGHING THE JAR (v9.13, Q8). The scale shows the jar AND the coffee;
+     the empty jar, weighed once in Settings, comes off. Pure, so the sheet and
+     the tests read the same rule. A French comma is accepted. The two checks
+     catch the two real mistakes: the jar not entirely on the scale (less than
+     the empty jar), and something else left on it (more than a bag and a
+     fifth). Without a bag size, only the first one applies. */
+  function weighJar(reading, tare, bagSize) {
+    const read = v => {
+      const s = String(v === undefined || v === null ? "" : v).replace(/\s/g, "").replace(",", ".");
+      return s === "" ? NaN : Number(s);
+    };
+    const total = read(reading), jar = read(tare), bag = Number(bagSize) || 0;
+    if (!(jar > 0)) return { error: "no_tare" };
+    if (!(total > 0)) return { error: "no_reading", tare: jar };
+    const net = Math.round((total - jar) * 10) / 10;
+    if (net < 0) return { error: "below_jar", total: total, tare: jar, net: net };
+    if (bag > 0 && net > bag * 1.2) return { error: "above_bag", total: total, tare: jar, net: net, bag: bag };
+    return { error: "", total: total, tare: jar, net: net };
+  }
+
+  return { forState, weighJar };
 })();

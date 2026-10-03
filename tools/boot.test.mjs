@@ -107,7 +107,10 @@ const PAGE_IDS = new Set([...PAGE_HTML.matchAll(/\bid="([^"]+)"/g)].map(m => m[1
 /* Ids CREATED BY JS, hence legitimately missing from the static HTML.
    Every entry here is a debt: it says "I know this element does not exist
    in the page". Keep it short, and justified. */
-const DYNAMIC_IDS = new Set([]);
+const DYNAMIC_IDS = new Set([
+  // Written by the coffee sheet (ui-coffee-sheet.js, renderSheet) inside #sheet-content.
+  "sheet-wheel-empty",
+]);
 
 const cache = new Map();
 const bySelector = sel => {
@@ -261,7 +264,7 @@ Chart.defaults = hollow();
 const SCRIPTS = ["js/legacy-names.js", "js/tools.js", "js/i18n.en.js", "js/i18n.js", "js/grind.js", "js/recipes.js", "js/demo-data.js",
   "js/sync.js", "js/data-csv.js", "js/data-schema.js", "js/data-store.js", "js/data-calcs.js",
   "js/data-migrations.js", "js/data.js", "js/tuning.js", "js/charts.js",
-  "js/ui-core.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-wheel.js", "js/ui-cup.js", "js/ui-dial.js", "js/ui-rating-dial.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js", "js/ui-history.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/app.js"];
+  "js/ui-core.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-wheel.js", "js/ui-cup.js", "js/ui-dial.js", "js/ui-rating-dial.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js", "js/ui-history.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/ui-jar.js", "js/ui-moments.js", "js/ui-empty.js", "js/app.js"];
 const source = SCRIPTS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 
 // Intercepted console.error: that is where render errors come out.
@@ -1263,6 +1266,170 @@ check("the temperature field no longer has a misleading placeholder", !tempField
     UIx.wheelChronoSeconds("total") + " / " + UIx.wheelChronoSeconds("flow"));
   UIx.resetStopwatch();
   UIx.resetEntry();
+}
+
+/* ---------- Stock and jars (v9.13) ---------- */
+/* Q8: THE JAR TO THE GRAM, drawn and moved by js/ui-jar.js. */
+{
+  const ui = api.UI;
+  const full = ui.jarSvg({ coffeeId: "c1", grams: 190, bag: 250, labels: true });
+  check("the jar has a lid, a heap of beans and a glass",
+    full.includes('class="jar-lid"') && /class="jar-pile" fill="url\(#jar\d+-b\)" d="M/.test(full) && full.includes('class="jar-glass"'));
+  check("a graduation every 50 g up to the bag", (full.match(/class="jar-tick"/g) || []).length === 5);
+  check("each one named on a 250 g bag", ["50", "100", "150", "200", "250"].every(g => full.includes(">" + g + "</text>")));
+  const big = ui.jarSvg({ grams: 600, bag: 1000, labels: true });
+  check("a big bag keeps a tick every 50 g but names fewer",
+    (big.match(/class="jar-tick"/g) || []).length === 20 && !big.includes(">50</text>") && big.includes(">1000</text>"));
+  check("without labels, no figure", !ui.jarSvg({ grams: 190, bag: 250 }).includes("jar-label"));
+  const emptyJar = ui.jarSvg({ grams: 0, bag: 250 });
+  check("an empty jar has no heap, only two beans left at the bottom",
+    /class="jar-pile"[^>]*d=""/.test(emptyJar) && !emptyJar.includes('class="jar-crumbs" visibility="hidden"'));
+  check("the heap's surface is never flat", (ui.jarPile(120, 250).match(/ Q/g) || []).length > 8 &&
+    new Set([...ui.jarPile(120, 250).matchAll(/ Q[\d.]+ ([\d.]+)/g)].map(m => m[1])).size >= 3);
+  check("the level follows the grams", ui.jarLevelY(250, 250) < ui.jarLevelY(100, 250) && ui.jarLevelY(100, 250) < ui.jarLevelY(0, 250));
+  const unknown = ui.jarSvg({ unknown: true });
+  check("a bag of unknown size: a faded heap, no graduation", unknown.includes("jar-pile-unknown") && !unknown.includes("jar-tick"));
+  check("the beans follow the roast", ui.jarRoast({ roast: "Foncée" }) === "dark" && ui.jarRoast({ roast: "Claire" }) === "light" &&
+    ui.jarRoast({ roast: "Medium" }) === "medium" && ui.jarRoast(null) === "medium");
+  check("a jar carries what its movement needs",
+    ui.jarData({ coffeeId: "c9", grams: 42.26, bag: 250, low: true }) === ' data-jar="c9" data-jar-g="42.3" data-jar-bag="250" data-jar-low="1"',
+    ui.jarData({ coffeeId: "c9", grams: 42.26, bag: 250, low: true }));
+
+  /* The movement, on stand-in elements: the first sight is drawn still and
+     remembered, the next value is reached from the remembered one, and the
+     figures end on their true text. */
+  const pile = { d: "", setAttribute(k, v) { if (k === "d") this.d = v; }, classList: { contains: () => false } };
+  const crumbs = { v: "", setAttribute(k, v) { this.v = v; } };
+  const jar = { dataset: { jar: "mv", jarG: "120", jarBag: "250" }, isConnected: true, classList: fakeClassList(), style: { setProperty() {} },
+    querySelector: s => (s === ".jar-pile" ? pile : s === ".jar-crumbs" ? crumbs : null),
+    getBoundingClientRect: () => ({ top: 0, left: 0, width: 0, height: 0 }) };
+  const label = { dataset: { jarGrams: "mv" }, textContent: "120 g", isConnected: true };
+  const root = { querySelectorAll: s => (s === "[data-jar]" ? [jar] : s === "[data-jar-grams]" ? [label] : []) };
+  localStorage.removeItem("jar-grams");
+  ui.playJars(root);
+  check("a jar seen for the first time is drawn still, and remembered",
+    JSON.parse(localStorage.getItem("jar-grams")).mv === 120 && pile.d === ui.jarPile(120, 250));
+  jar.dataset.jarG = "104";
+  jar.dataset.jarLow = "1";
+  label.textContent = "104 g";
+  ui.playJars(root);
+  check("a cup later, it goes down to the new grams", pile.d === ui.jarPile(104, 250) && label.textContent === "104 g", label.textContent);
+  check("this device remembers what it showed", JSON.parse(localStorage.getItem("jar-grams")).mv === 104);
+  check("landing under three cups, it shakes once", jar.classList.contains("jar-shake"));
+  jar.dataset.jarG = "0";
+  label.textContent = "vide";
+  ui.playJars(root);
+  check("an emptied jar shows its two last beans and its word", crumbs.v === "visible" && pile.d === "" && label.textContent === "vide");
+}
+
+/* Q8: THE EMPTY JAR IN SETTINGS, and the jar on the scale in the sheet. */
+{
+  const D = api.DATA, ui = api.UI;
+  const saved = { coffees: D.state.coffees, extractions: D.state.extractions, purchases: D.state.purchases, settings: D.state.settings };
+  const day = k => { const d = new Date(); d.setDate(d.getDate() - k); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+  D.state.settings = [D.normalizeSettings({})];
+  ui.loadFallbacks();
+  ui.renderParameters();
+  check("the empty jar field starts empty, nobody's weight in it", document.querySelector("#param-jar-tare").value === "");
+  check("its line in the list says it is to weigh", document.querySelector("#piv-jar").textContent === api.I18N.t("pivot_to_weigh"));
+  document.querySelector("#param-jar-tare").value = "301,4";
+  await ui.saveParameters();
+  check("saving keeps the weight, with its decimal", D.currentSettings().jar_tare_g === 301.4, String(D.currentSettings().jar_tare_g));
+  check("and shows it back the French way", document.querySelector("#param-jar-tare").value === "301,4", document.querySelector("#param-jar-tare").value);
+  document.querySelector("#param-jar-tare").value = "bocal";
+  await ui.saveParameters();
+  check("a word is refused, the weight stays", D.currentSettings().jar_tare_g === 301.4);
+  document.querySelector("#param-jar-tare").value = "";
+  await ui.saveParameters();
+  check("emptying it turns the weighing off", D.currentSettings().jar_tare_g === "");
+
+  D.state.coffees = [{ id: "s1", name: "Sheet", bag_size_g: 250, active: 1, roast: "Medium", recommended_recipe: "" }];
+  D.state.purchases = [{ id: "sb", coffee_id: "s1", purchase_date: day(5), opened_date: day(5), bag_size_g: 250, price_vnd: "", roast_date: "", remaining_g: "", remaining_at: "" }];
+  D.state.extractions = [];
+  D.notify();
+  ui.openSheet("s1");
+  let sheet = document.querySelector("#sheet-content").innerHTML;
+  check("the sheet draws the real jar, with what its movement needs",
+    sheet.includes('class="jar-svg"') && sheet.includes('data-jar="s1"') && sheet.includes('data-jar-grams="s1"') && sheet.includes("jar-label"));
+  check("the jar still opens the count (v8.96)", /<button type="button" class="sh-jar" data-stock-edit/.test(sheet));
+  check("without an empty jar, the weighing points to Settings",
+    sheet.includes('data-empty-go="settings-jar"') && !sheet.includes('id="sh-weigh-g"'));
+  check("a coffee without a cup says how to brew the first one",
+    sheet.includes('data-empty-go="sheet-brew"') && sheet.includes(api.I18N.t("sheet_first_title", { c: "Sheet" })) && !sheet.includes('class="sh-kpis"'));
+  await D.updateSettings({ jar_tare_g: 290.4 });
+  ui.openSheet("s1");
+  sheet = document.querySelector("#sheet-content").innerHTML;
+  check("with it, the jar on the scale, its empty weight and the bag to check against",
+    sheet.includes('id="sh-weigh-g"') && sheet.includes('data-tare="290.4"') && sheet.includes('data-bag="250"') && sheet.includes("data-weigh"));
+  check("nobody's real jar weight anywhere in the interface", !/322[.,]2/.test(source + PAGE_HTML));
+  Object.assign(D.state, saved);
+  D.notify();
+}
+
+/* J6: THE RECORD THAT SHINES, on the bag in stock. */
+{
+  const D = api.DATA, ui = api.UI;
+  const saved = { coffees: D.state.coffees, extractions: D.state.extractions, purchases: D.state.purchases };
+  const day = k => { const d = new Date(); d.setDate(d.getDate() - k); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+  const cup = (id, k, score) => ({ id, date_time: day(k) + "T08:30", coffee_id: "r1", method: "Switch", recipe: "", dose_g: 15, water_g: 250,
+    grind_dial: "", temperature_c: "", total_time_s: "", flow_time_s: "", yield_ml: "", added_water_ml: "", milk_ml: "", stir_count: "",
+    cup: "", preheated_water: "", score_10: score, diagnostic: "", descriptors: "", comment: "", heat_level: "", failed: "" });
+  D.state.coffees = [{ id: "r1", name: "Record", bag_size_g: 250, active: 1 }];
+  D.state.purchases = [{ id: "rb", coffee_id: "r1", purchase_date: day(9), opened_date: day(9), bag_size_g: 250, price_vnd: "", roast_date: "", remaining_g: "", remaining_at: "" }];
+  D.state.extractions = [cup("r-a", 6, 7), cup("r-b", 4, 8), cup("r-c", 0, 8.5)];
+  localStorage.removeItem("record-rolled");
+  location.hash = "#dashboard";
+  if (window._handlers.hashchange) window._handlers.hashchange();
+  await new Promise(r => setTimeout(r, 60));
+  D.notify();
+  const card = document.querySelector("#card-last");
+  check("the best cup of the bag in stock lights the last cup card", card.classList.contains("is-record"));
+  check("and says by how much, and since when", card.innerHTML.includes('class="last-record"') && card.innerHTML.includes("0,5"), card.innerHTML.slice(0, 300));
+  check("its score rolls once: this device remembers it", localStorage.getItem("record-rolled") === "r-c");
+  D.state.extractions = [cup("r-a", 6, 7), cup("r-b", 4, 8), cup("r-c", 0, 8)];
+  D.notify();
+  check("a tie lights nothing", !card.classList.contains("is-record") && !card.innerHTML.includes('class="last-record"'));
+
+  const cols = ui.odometerColumns(8.5, 9);
+  check("the odometer rolls each figure forward, the last one a full turn",
+    JSON.stringify(cols) === JSON.stringify([{ from: 8, to: 9, lead: false }, { sep: true }, { from: 5, to: 10, lead: false }]), JSON.stringify(cols));
+  const ten = ui.odometerColumns(9.5, 10);
+  check("a figure that appears starts blank", ten.length === 4 && ten[0].lead && ten[0].to === 1 && ten[1].to === 10, JSON.stringify(ten));
+  check("a whole score rolls a whole turn", JSON.stringify(ui.odometerColumns(7, 8)) === JSON.stringify([{ from: 7, to: 18, lead: false }]));
+  const odo = ui.odometerHtml(cols, ",");
+  check("twenty figures per column, the comma of the language", (odo.match(/class="odo-strip"/g) || []).length === 2 &&
+    (odo.match(/<span>\d<\/span>/g) || []).length === 40 && odo.includes(">,</span>"));
+  Object.assign(D.state, saved);
+  D.notify();
+}
+
+/* Q7: THE ARRIVAL OF THE MORNING, once a day per device. M6: the empty places. */
+{
+  const ui = api.UI;
+  check("a new day plays the arrival, the same day never again",
+    ui.morningDue("2026-10-02", "2026-10-03") && !ui.morningDue("2026-10-03", "2026-10-03") && ui.morningDue(null, "2026-10-03"));
+  /* The dashboards drawn above were the first of the day for this harness:
+     the arrival started there and wrote the day. (Its clock never moves, so
+     the arrival is still under way.) */
+  const a = ui.arrivalInProgress();
+  check("the first opening of the day starts it and writes the day",
+    !!a && localStorage.getItem("morning-arrival") === ui.localDateKey(new Date()), localStorage.getItem("morning-arrival"));
+  check("a render within the second resumes the same arrival", ui.morningArrival() === a);
+
+  const hint = ui.emptyHint({ drawing: "jar", title: "Pas de <café>", text: "a & b", action: "Go", go: "coffee-new" });
+  check("an empty place: a drawing, a sentence, a button", hint.includes("<svg") && hint.includes('data-empty-go="coffee-new"') &&
+    hint.includes("Pas de &lt;café&gt;") && hint.includes("a &amp; b"));
+  ui.updateEmptyCard("grind", 0, "empty_nothing");
+  check("an empty chart card leads to the entry", document.querySelector("#empty-grind").innerHTML.includes('data-empty-go="entry"'));
+  ui.renderInsights([]);
+  check("findings with nothing to say lead to rating more cups", document.querySelector("#insights").innerHTML.includes('data-empty-go="entry"'));
+  ui.updateEmptyCard("duel", 0, "empty_duel_one_machine");
+  check("a duel with a single brewer leads to the Guide's recipes", document.querySelector("#empty-duel").innerHTML.includes('data-empty-go="guide"'));
+  const coffees = api.DATA.state.coffees;
+  api.DATA.state.coffees = [];
+  ui.renderCoffeeList();
+  check("an empty « Mes cafés » offers to add one", document.querySelector("#coffees-list").innerHTML.includes('data-empty-go="coffee-new"'));
+  api.DATA.state.coffees = coffees;
 }
 
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);

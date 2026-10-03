@@ -57,7 +57,8 @@
       const f = UI.freshnessWindow(rated, avg).sweetSpot;
       const jc = UI.bagDay(c.id);
       const state = !f || !jc ? "unknown" : jc.day < f.start ? "before" : jc.day > f.end ? "after" : "inside";
-      return { coffee: c, pc: Math.min(100, (left / stock.format) * 100), cups: Math.floor(left / dose), state: state };
+      return { coffee: c, pc: Math.min(100, (left / stock.format) * 100), cups: Math.floor(left / dose), state: state,
+        grams: left, bag: stock.format };
     }).filter(Boolean).sort((a, b) => a.pc - b.pc).slice(0, 6);
   }
 
@@ -69,23 +70,27 @@
   function drawShelf(id) {
     const jars = shelfData();
     if (!jars.length) { showEmpty(id, "drawing_shelf_empty"); return; }
-    const L = 320, step = L / Math.max(jars.length, 4), w = Math.min(46, step - 14);
+    /* Q8 (v9.13): each jar is the real one (js/ui-jar.js), nested at its
+       place on the plank: lid, heap of beans, graduations, and the same
+       movement as the sheet's when the grams change. The rim keeps telling
+       the freshness; the line under it turns red under three cups. */
+    const L = 320, step = L / Math.max(jars.length, 4), w = Math.min(64, step - 12), h = w * 172 / 120, base = 126;
     let s = '<line x1="8" y1="128" x2="' + (L - 8) + '" y2="128" class="dw-plank"></line>';
     jars.forEach((b, i) => {
-      const x = step * i + (step - w) / 2, top = 26, low = 126, level = low - ((low - top - 4) * b.pc) / 100;
+      const x = step * i + (step - w) / 2, low = b.cups < 3;
       s += '<g class="dw-jar dw-' + b.state + '" data-sheet="' + escapeHtml(b.coffee.id) + '" tabindex="0" role="button" aria-label="' +
-        escapeHtml(I18N.t("drawing_jar_aria", { c: b.coffee.name, n: b.cups })) + '"><title>' + escapeHtml(b.coffee.name) + "</title>" +
-        '<rect x="' + x.toFixed(1) + '" y="' + top + '" width="' + w.toFixed(1) + '" height="' + (low - top) + '" rx="7" class="dw-glass"></rect>' +
-        '<rect x="' + (x + 3).toFixed(1) + '" y="' + level.toFixed(1) + '" width="' + (w - 6).toFixed(1) + '" height="' +
-        Math.max(0, low - 3 - level).toFixed(1) + '" rx="4" class="dw-grains" style="fill-opacity:' + (b.cups <= 3 ? 0.45 : 0.85) + '"></rect>' +
-        '<rect x="' + (x + 8).toFixed(1) + '" y="' + (top - 7) + '" width="' + (w - 16).toFixed(1) + '" height="7" rx="2" class="dw-lid"></rect>' +
+        escapeHtml(I18N.t("drawing_jar_aria", { c: b.coffee.name, n: b.cups })) + '"' +
+        UI.jarData({ coffeeId: b.coffee.id, grams: b.grams, bag: b.bag, low: low }) + "><title>" + escapeHtml(b.coffee.name) + "</title>" +
+        '<svg class="jar-svg" x="' + x.toFixed(1) + '" y="' + (base - h).toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + h.toFixed(1) +
+          '" viewBox="0 0 120 172">' + UI.jarInner({ grams: b.grams, bag: b.bag, roast: UI.jarRoast(b.coffee) }) + "</svg>" +
         '<text x="' + (x + w / 2).toFixed(1) + '" y="143" text-anchor="middle" class="dw-strong">' + escapeHtml(brief(b.coffee.name, 11)) + "</text>" +
-        '<text x="' + (x + w / 2).toFixed(1) + '" y="155" text-anchor="middle">' + escapeHtml(b.cups === 0 ? I18N.t("drawing_bag_empty") : I18N.t(b.cups === 1 ? "drawing_one_cup_left" : "drawing_cups_left", { n: b.cups })) + "</text></g>";
+        '<text x="' + (x + w / 2).toFixed(1) + '" y="155" text-anchor="middle" class="dw-cups">' + escapeHtml(b.cups === 0 ? I18N.t("drawing_bag_empty") : I18N.t(b.cups === 1 ? "drawing_one_cup_left" : "drawing_cups_left", { n: b.cups })) + "</text></g>";
     });
     const low = jars.filter(b => b.cups <= 3);
     setDrawing(id, s, low.length
       ? I18N.t("drawing_shelf_rebuy", { c: low.map(b => b.coffee.name).join(", ") })
       : I18N.t("drawing_shelf_ok"));
+    UI.playJars(document.getElementById(id));
   }
 
   // ---------- The clock ----------
@@ -437,6 +442,8 @@
         "</span><em>" + escapeHtml(bestCoffee ? bestCoffee.name : I18N.t("recap_no_coffee")) + "</em><em>" +
         escapeHtml(m.recipe ? I18N.tr(m.recipe) : I18N.t("recap_no_recipe")) + "</em></div>" : "") +
       '<div class="rc-week" aria-label="' + escapeHtml(I18N.t("recap_bars")) + '">' + bars + "</div></div>";
+    // Q7 (v9.13): the first opening of the day, the bars grow from the ground.
+    UI.growRecap(card, UI.arrivalInProgress());
     card.querySelectorAll("[data-day]").forEach(b => b.addEventListener("click", () =>
       UI.openHistoryOn({ "h-from": b.dataset.day, "h-to": b.dataset.day })));
     $("#recap-close").addEventListener("click", () => {

@@ -158,6 +158,9 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/ui-coffee-sheet.js` | la fiche d'un café (v8.46), dialogue `#modale-fiche` |
 | `js/ui-brew.js` | le mode Brassage (v8.47), dialogue plein écran `#modale-brassage` |
 | `js/ui-drawings.js` | les dessins en SVG maison (v8.49) : étagère, horloge, spectre, carte du moulin |
+| `js/ui-jar.js` | le bocal au gramme près (v9.13, Q8) : son dessin, et son mouvement quand les grammes changent |
+| `js/ui-moments.js` | l'arrivée du matin (v9.13, Q7) et le record qui brille (J6) |
+| `js/ui-empty.js` | les écrans vides qui disent quoi faire (v9.13, M6) : dessin, phrase, bouton |
 | `js/app.js` | démarrage, navigation, thème, langue, modales d'accueil et de données, abonnement aux données |
 | `css/fonts/` | les deux polices de la DA, embarquées en woff2, sous OFL (section 10) |
 | `sw.js`, `manifest.json`, `icons/` | PWA et hors ligne (section 10) |
@@ -396,11 +399,15 @@ plus importante :
 ### settings.csv (reglages.csv avant la v9.06)
 
 `id, dose_g, heat_level, grind_dial, schema_version, boil_s, step_clicks,
-step_degrees, step_heat, step_water_g, step_dose_g, drawings, bubbles_s`
+step_degrees, step_heat, step_water_g, step_dose_g, drawings, bubbles_s,
+jar_tare_g`
 
 Une seule ligne, d'id `moi` (valeur stockée, gardée telle quelle). `drawings`
 liste les dessins du tableau de bord dans l'ordre choisi, `!` devant les
-masqués : `shelf,!clock,podium`.
+masqués : `shelf,!clock,podium`. `jar_tare_g` (v9.13, schéma 23) : le bocal vide de
+Chris, couvercle compris, en grammes à une décimale, VIDE par défaut et tant qu'il ne
+l'a pas pesé (Paramètres, « Mon bocal ») ; vide, la pesée de la fiche café est
+éteinte et renvoie vers ce réglage. Aucune valeur n'est écrite dans le code.
 
 ### Les anciens noms (v9.06), et où ils sont encore lus
 
@@ -719,9 +726,15 @@ scénarios (sans version, déjà migré, en retard, rejeu après réglage manuel
 
 Pourquoi une version et pas des drapeaux : `DECISIONS.md`, « Migrations ».
 
-Schéma actuel : 21. Le pas 21 (v9.06, « English names ») ne change aucune valeur :
+Schéma actuel : 23. Le pas 21 (v9.06, « English names ») ne change aucune valeur :
 il fait passer le document aux noms anglais et monte la version, pour que le
 serveur refuse un onglet resté sur les noms français (section 3, « Les anciens noms »).
+Le pas 22 met le Tetsu 4:6 à 250 g. Le pas 23 (v9.13, « jar tare ») ne change
+aucune valeur non plus : il monte la version pour la nouvelle colonne
+`settings.jar_tare_g`, comme le pas 19, afin qu'un onglet plus ancien soit refusé
+par la synchro au lieu d'effacer une colonne qu'il ne connaît pas. Les tests qui
+épinglent le numéro (data, MCP, Worker) suivent ; `tools/logbook-mcp.mjs` le lit
+dans `js/data-migrations.js`.
 
 ## 5. i18n
 
@@ -782,7 +795,29 @@ les autres sur quatre (`.col-2` vaut `span 8`, le défaut `span 4`).
 - **Dernière tasse** : le café en serif, la ligne de contexte (machine, recette,
   dose, temps, température, feu), les goûts, le commentaire, puis un pied avec
   ratio, mouture, écoulement et coût (`piedDerniere`), et la note en gros à
-  droite derrière un filet. Cliquer la carte ouvre l'extraction.
+  droite derrière un filet. Cliquer la carte ouvre l'extraction. LE RECORD QUI BRILLE
+  (v9.13, J6) : quand cette tasse est la meilleure jamais notée sur le sachet EN COURS
+  de son café (`DATA.bagRecord`, au moins deux tasses notées avant elle sur ce sachet,
+  une égalité ne compte pas), la carte prend la classe `is-record` (un liseré cuivré qui
+  tourne, `@property --record-turn`), une phrase « Record sur ce sachet, 0,5 de mieux que
+  ta meilleure du 12 septembre », et sa note roule une fois comme un compteur
+  (`UI.playRecord`, js/ui-moments.js ; localStorage `record-rolled` = la tasse déjà
+  roulée sur cet appareil). La carte n'est réécrite que si son HTML change, pour ne pas
+  couper le compteur, la vapeur ou le décompte.
+- **L'arrivée du matin** (v9.13, Q7, js/ui-moments.js) : la première ouverture du jour
+  du tableau de bord sur un appareil (localStorage `morning-arrival` = la date locale),
+  les pastilles du stock se remplissent depuis vide, la note de la dernière tasse compte
+  jusqu'à sa valeur, les barres du récap poussent, un filet de vapeur monte de la note.
+  Moins d'une seconde, une fois par jour. Chaque mouvement est fonction du temps écoulé
+  depuis son début : un rendu au milieu (la synchro qui répond) le reprend où il en est.
+- **Le stock dans le coin** (v8.89) : ses petits bocaux sont des bocaux de
+  js/ui-jar.js depuis la v9.13 (`data-jar-kind="glass"`) : le niveau bouge et les
+  grammes défilent quand ils changent, rouge et une secousse sous trois tasses.
+- **Les écrans vides** (v9.13, M6, js/ui-empty.js) : `UI.emptyHint()` rend un petit
+  dessin, une phrase et un bouton `data-empty-go` (un écran, ou une action de la page qui
+  l'a dessiné). Les quatre cartes d'analyse qui peuvent rester vides
+  (`updateEmptyCard`, la cause choisit le dessin et le bouton), le calendrier sans
+  tasse, la fiche d'un café sans tasse, « Mes cafés » vide.
 - **Chiffres clés** : quatre tuiles (aujourd'hui, cette semaine, note sur
   7 jours, régularité) plus trois lignes alignées en bas de carte pour le total,
   la note globale et la caféine (`#kpis-secondaires`, un `<ul>`).
@@ -1094,6 +1129,24 @@ chaque notification de données et à la bascule de langue tant qu'il est ouvert
   meilleur réglage, fenêtre de fraîcheur, coût par tasse, goût qui revient.
 - Pied : Brasser ce café (saisie neuve sur ce café, `surChoixCafe`), Modifier le café,
   Fermer.
+- **Le bocal au gramme près** (v9.13, Q8, js/ui-jar.js) : en tête, le vrai bocal du
+  sachet en cours (`DATA.bagGauge`) : couvercle, tas de grains bosselé, une graduation
+  tous les 50 g jusqu'au format, la couleur des grains selon la torréfaction. Il reste un
+  bouton qui ouvre le comptage à la main (v8.96). Ce comptage a une seconde partie,
+  « Peser le bocal » : on tape le poids que montre la balance, bocal compris, le site
+  retire `settings.jar_tare_g` (`DATA.weighJar`, refuse moins que le bocal vide et plus
+  d'un sachet et un cinquième) et passe par le même `correctStock`. Sans poids de bocal,
+  la partie renvoie vers Paramètres, « Mon bocal ».
+- **Le mouvement des bocaux** : chaque appareil retient les derniers grammes qu'il a
+  MONTRÉS par café (localStorage `jar-grams`). Un bocal dessiné avec une autre valeur va
+  de l'ancienne à la nouvelle (`UI.playJars(racine)` après chaque rendu) : une tasse, des
+  grains sautent et le niveau descend ; un sachet neuf, une pluie de grains. Tous les
+  bocaux d'un même café dessinés dans le même passage suivent le même mouvement. Un bocal
+  invisible (page cachée, écran non affiché, sous une fenêtre ouverte) attend d'être vu
+  pour jouer son changement. Mouvement réduit : la valeur finale, tout de suite.
+- **Un café sans tasse** (v9.13, M6) : à la place des quatre chiffres à zéro, un dessin,
+  « Pas encore de tasse de … », l'âge du sachet, la recette conseillée, et « Brasser la
+  première ».
 
 La démo ouvre chaque sachet le jour de son achat (`chargerDemo`) : sans date
 d'ouverture aucune tasse n'avait de jour du sachet.

@@ -7,11 +7,11 @@
 <!-- Site version, single source of truth: the footer reads it, and files
      loaded on demand put it in their URL. Set it with
      node tools/bump_version.mjs X, never by hand. -->
-<meta name="app-version" content="9.14">
-<link rel="stylesheet" href="css/base.css?v=9.14">
-<link rel="stylesheet" href="css/screens.css?v=9.14">
-<link rel="stylesheet" href="css/dialogs.css?v=9.14">
-<link rel="stylesheet" href="css/finishing.css?v=9.14">
+<meta name="app-version" content="9.15">
+<link rel="stylesheet" href="css/base.css?v=9.15">
+<link rel="stylesheet" href="css/screens.css?v=9.15">
+<link rel="stylesheet" href="css/dialogs.css?v=9.15">
+<link rel="stylesheet" href="css/finishing.css?v=9.15">
 <!-- crossorigin use-credentials: without it the browser fetches the manifest
      WITHOUT cookies, the front door redirects it to /login, and it tries to
      parse HTML as JSON. Result: "Manifest: Syntax error" and a PWA that
@@ -52,7 +52,7 @@
      the scripts. bump_version.mjs versions the charts link. -->
 <link rel="preload" href="css/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="css/fonts/instrument-serif-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="js/vendor/chart.umd.js?v=9.14" as="script">
+<link rel="preload" href="js/vendor/chart.umd.js?v=9.15" as="script">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%98%95%3C/text%3E%3C/svg%3E">
 </head>
 <body>
@@ -150,7 +150,8 @@
 <!-- ================= SCREEN 1: DASHBOARD ================= -->
 <section id="screen-dashboard" class="screen on">
   <div id="dashboard-empty" class="empty-state" hidden>
-    <p class="empty-state-icon">☕</p>
+    <!-- M6 (v9.13): a drawing in the site's line, not an emoji. -->
+    <svg class="empty-state-art eh-art" viewBox="0 0 150 110" aria-hidden="true" focusable="false"><path class="eh-fill" d="M32 44 L104 44 L98 90 Q96 98 88 98 L48 98 Q40 98 38 90 Z"></path><path class="eh-line" d="M104 54 Q122 56 120 68 Q118 80 100 80"></path><ellipse class="eh-accent-soft" cx="68" cy="47" rx="34" ry="4.5"></ellipse><path class="eh-accent" d="M54 34 Q49 24 57 16 M70 34 Q65 22 74 12 M86 34 Q81 24 89 16"></path><path class="eh-line" d="M24 104 H112"></path></svg>
     <h2>Aucune extraction pour le moment</h2>
     <p>Enregistre ta première tasse depuis l'écran Saisie, ou charge le jeu de démonstration pour voir le tableau de bord en action.</p>
     <div class="empty-state-actions">
@@ -330,14 +331,14 @@
           <div class="analysis-chart">
             <div class="duel" id="duel-machines"></div>
             <div class="canvas-h200" id="box-duel"><canvas id="g-duel"></canvas></div>
-            <p class="card-empty" id="empty-duel" hidden></p>
+            <div class="card-empty" id="empty-duel" hidden></div>
           </div>
           <p class="analysis-reading" id="reading-machines"></p>
         </div>
         <div class="analysis" role="tabpanel" id="analysis-tastes" aria-labelledby="tab-tastes" aria-hidden="true" inert>
           <div class="analysis-chart">
             <div class="canvas-h240" id="box-tastes"><canvas id="g-tastes"></canvas></div>
-            <p class="card-empty" id="empty-tastes" hidden></p>
+            <div class="card-empty" id="empty-tastes" hidden></div>
           </div>
           <div class="analysis-reading">
             <p id="reading-tastes"></p>
@@ -351,7 +352,7 @@
               <svg id="wheel-aromas" class="wheel" viewBox="0 0 300 300" role="img" aria-label="Roue des arômes : les familles au centre, leurs goûts autour, la teinte selon la note moyenne"></svg>
               <div class="wheel-detail" id="wheel-detail" aria-live="polite"></div>
             </div>
-            <p class="card-empty" id="empty-aromas" hidden></p>
+            <div class="card-empty" id="empty-aromas" hidden></div>
           </div>
           <div class="analysis-reading">
             <p id="reading-aromas"></p>
@@ -365,7 +366,7 @@
         <div class="analysis" role="tabpanel" id="analysis-grind" aria-labelledby="tab-grind" aria-hidden="true" inert>
           <div class="analysis-chart">
             <div class="canvas-h240" id="box-grind"><canvas id="g-grind"></canvas></div>
-            <p class="card-empty" id="empty-grind" hidden></p>
+            <div class="card-empty" id="empty-grind" hidden></div>
           </div>
           <p class="analysis-reading" id="reading-grind"></p>
         </div>
@@ -1419,6 +1420,7 @@ Cảm ơn shop.</pre>
       <button type="button" class="pi-row" data-section="ps-fallback"><svg class="pi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v9M12 17v.5M4 20h16"></path></svg><span class="pi-title">Quand la recette ne dit rien</span><span class="pi-value" id="piv-fallback"></span></button>
       <button type="button" class="pi-row" data-section="ps-dial"><svg class="pi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18zM12 3v5"></path></svg><span class="pi-title">Mon moulin</span><span class="pi-value" id="piv-dial"></span></button>
       <button type="button" class="pi-row" data-section="ps-kettle"><svg class="pi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10h12l-1 9H6zM17 12h2a2 2 0 0 1 0 4h-2M9 6c0-1 1-2 1-3M13 6c0-1 1-2 1-3"></path></svg><span class="pi-title">Ma bouilloire</span><span class="pi-value" id="piv-kettle"></span></button>
+      <button type="button" class="pi-row" data-section="ps-jar"><svg class="pi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8v3H8zM7.5 6h9A1.5 1.5 0 0 1 18 7.5V19a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7.5A1.5 1.5 0 0 1 7.5 6zM6 13h12"></path></svg><span class="pi-title">Mon bocal</span><span class="pi-value" id="piv-jar"></span></button>
       <button type="button" class="pi-row" data-section="ps-incr"><svg class="pi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h7M8 8l-4 4l4 4M20 12h-7M16 8l4 4l-4 4"></path></svg><span class="pi-title">Pas de correction</span><span class="pi-value" id="piv-incr"></span></button>
       <button type="button" class="pi-row" data-section="ps-device"><svg class="pi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM11 18h2"></path></svg><span class="pi-title">Cet appareil</span><span class="pi-value" id="piv-device"></span></button>
       <button type="button" class="pi-row" data-opens-db><svg class="pi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18a4 4 0 0 1 0-8a5 5 0 0 1 9.6-1.5A3.5 3.5 0 0 1 17 18z"></path></svg><span class="pi-title">Données et synchro</span><span class="pi-value"><span class="sync-bean" aria-hidden="true"></span><span id="piv-data"></span></span></button>
@@ -1484,6 +1486,22 @@ Cảm ơn shop.</pre>
           <input type="number" id="param-bubbles-min" step="1" min="0" max="30" inputmode="numeric" placeholder="0" aria-label="Premières bulles qui remontent, minutes"><span>min</span>
           <input type="number" id="param-bubbles-sec" step="1" min="0" max="59" inputmode="numeric" placeholder="00" aria-label="Premières bulles qui remontent, secondes"><span>s</span>
         </div>
+      </div>
+    </div>
+  </article>
+
+  <!-- The empty jar (v9.13): weighed once, it comes off every weighing of the
+       coffee sheet. Synced with the equipment, empty until weighed. -->
+  <article class="card param-section" id="ps-jar">
+    <h3>Mon bocal</h3>
+    <p class="param-help">Pèse une fois ton bocal vide, couvercle compris. Ensuite, dans la fiche d'un café, touche le bocal et tape ce qu'affiche la balance avec le café dedans : le site retire le poids du verre et cale le stock sur le vrai chiffre.</p>
+    <div class="grid-numbers">
+      <div class="field">
+        <label for="param-jar-tare">Mon bocal vide</label>
+        <div class="duration">
+          <input type="text" id="param-jar-tare" class="jar-tare-field" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="à peser"><span>g</span>
+        </div>
+        <span class="field-hint">En grammes, avec la décimale si ta balance la donne. Vide tant qu'il n'est pas pesé : la pesée attend.</span>
       </div>
     </div>
   </article>
@@ -1855,45 +1873,49 @@ Cảm ơn shop.</pre>
 <!-- ALL defer, and definitely not async: defer preserves order, async does not,
      and data.js would blow up looking for SYNC or GRIND. The download now
      runs in parallel with HTML parsing instead of blocking it. -->
-<script defer src="js/legacy-names.js?v=9.14"></script>
-<script defer src="js/tools.js?v=9.14"></script>
-<script defer src="js/i18n.js?v=9.14"></script>
-<script defer src="js/grind.js?v=9.14"></script>
-<script defer src="js/recipes.js?v=9.14"></script>
+<script defer src="js/legacy-names.js?v=9.15"></script>
+<script defer src="js/tools.js?v=9.15"></script>
+<script defer src="js/i18n.js?v=9.15"></script>
+<script defer src="js/grind.js?v=9.15"></script>
+<script defer src="js/recipes.js?v=9.15"></script>
 <!-- sync.js BEFORE data.js: data.js uses it at load time. -->
-<script defer src="js/sync.js?v=9.14"></script>
-<script defer src="js/data-csv.js?v=9.14"></script>
-<script defer src="js/data-schema.js?v=9.14"></script>
-<script defer src="js/data-store.js?v=9.14"></script>
-<script defer src="js/data-calcs.js?v=9.14"></script>
-<script defer src="js/data-migrations.js?v=9.14"></script>
-<script defer src="js/data.js?v=9.14"></script>
-<script defer src="js/tuning.js?v=9.14"></script>
-<script defer src="js/charts.js?v=9.14"></script>
-<script defer src="js/ui-core.js?v=9.14"></script>
-<script defer src="js/ui-sync-bean.js?v=9.14"></script>
-<script defer src="js/ui-nav.js?v=9.14"></script>
-<script defer src="js/ui-scrub.js?v=9.14"></script>
-<script defer src="js/ui-findings.js?v=9.14"></script>
-<script defer src="js/ui-last-cup.js?v=9.14"></script>
-<script defer src="js/ui-dashboard.js?v=9.14"></script>
-<script defer src="js/ui-cup.js?v=9.14"></script>
-<script defer src="js/ui-dial.js?v=9.14"></script>
-<script defer src="js/ui-rating-dial.js?v=9.14"></script>
-<script defer src="js/ui-wheel.js?v=9.14"></script>
-<script defer src="js/ui-entry.js?v=9.14"></script>
-<script defer src="js/ui-entry-aside.js?v=9.14"></script>
-<script defer src="js/ui-pills.js?v=9.14"></script>
-<script defer src="js/ui-chrono.js?v=9.14"></script>
-<script defer src="js/ui-draft.js?v=9.14"></script>
-<script defer src="js/ui-quick.js?v=9.14"></script>
-<script defer src="js/ui-history.js?v=9.14"></script>
-<script defer src="js/ui-journal.js?v=9.14"></script>
-<script defer src="js/ui-guide.js?v=9.14"></script>
-<script defer src="js/ui-catalog.js?v=9.14"></script>
-<script defer src="js/ui-coffee-sheet.js?v=9.14"></script>
-<script defer src="js/ui-brew.js?v=9.14"></script>
-<script defer src="js/ui-drawings.js?v=9.14"></script>
-<script defer src="js/app.js?v=9.14"></script>
+<script defer src="js/sync.js?v=9.15"></script>
+<script defer src="js/data-csv.js?v=9.15"></script>
+<script defer src="js/data-schema.js?v=9.15"></script>
+<script defer src="js/data-store.js?v=9.15"></script>
+<script defer src="js/data-calcs.js?v=9.15"></script>
+<script defer src="js/data-migrations.js?v=9.15"></script>
+<script defer src="js/data.js?v=9.15"></script>
+<script defer src="js/tuning.js?v=9.15"></script>
+<script defer src="js/charts.js?v=9.15"></script>
+<script defer src="js/ui-core.js?v=9.15"></script>
+<script defer src="js/ui-sync-bean.js?v=9.15"></script>
+<script defer src="js/ui-nav.js?v=9.15"></script>
+<script defer src="js/ui-scrub.js?v=9.15"></script>
+<script defer src="js/ui-findings.js?v=9.15"></script>
+<script defer src="js/ui-last-cup.js?v=9.15"></script>
+<script defer src="js/ui-dashboard.js?v=9.15"></script>
+<script defer src="js/ui-cup.js?v=9.15"></script>
+<script defer src="js/ui-dial.js?v=9.15"></script>
+<script defer src="js/ui-rating-dial.js?v=9.15"></script>
+<script defer src="js/ui-wheel.js?v=9.15"></script>
+<script defer src="js/ui-entry.js?v=9.15"></script>
+<script defer src="js/ui-entry-aside.js?v=9.15"></script>
+<script defer src="js/ui-pills.js?v=9.15"></script>
+<script defer src="js/ui-chrono.js?v=9.15"></script>
+<script defer src="js/ui-draft.js?v=9.15"></script>
+<script defer src="js/ui-quick.js?v=9.15"></script>
+<script defer src="js/ui-history.js?v=9.15"></script>
+<script defer src="js/ui-journal.js?v=9.15"></script>
+<script defer src="js/ui-guide.js?v=9.15"></script>
+<script defer src="js/ui-catalog.js?v=9.15"></script>
+<script defer src="js/ui-coffee-sheet.js?v=9.15"></script>
+<script defer src="js/ui-brew.js?v=9.15"></script>
+<script defer src="js/ui-drawings.js?v=9.15"></script>
+<!-- v9.13: the jar to the gram, the moments that move, the empty places. -->
+<script defer src="js/ui-jar.js?v=9.15"></script>
+<script defer src="js/ui-moments.js?v=9.15"></script>
+<script defer src="js/ui-empty.js?v=9.15"></script>
+<script defer src="js/app.js?v=9.15"></script>
 </body>
 </html>

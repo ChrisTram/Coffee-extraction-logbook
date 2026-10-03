@@ -17,11 +17,17 @@
 
      It hides when there is nothing: an empty card announcing "no latest
      cup" teaches nothing to someone who already sees an empty logbook. */
+  let lastHtml = "";
   function renderLastCup(exts) {
     const card = $("#card-last");
     const e = [...exts].sort((a, b) => b.date_time.localeCompare(a.date_time))[0];
     card.hidden = !e;
-    if (!e) return;
+    if (!e) { lastHtml = ""; return; }
+    /* J6 (v9.13): THE RECORD THAT SHINES. When this cup is the best ever
+       brewed on its coffee's bag in stock (DATA.bagRecord), the card gets a
+       copper border that turns, a sentence that says by how much, and its
+       score rolls once like an odometer (js/ui-moments.js). */
+    const record = DATA.bagRecord(e);
 
     const context = [];
     if (e.recipe) context.push(I18N.tr(e.recipe));
@@ -35,7 +41,8 @@
     card.dataset.ext = e.id;
     card.setAttribute("role", "button");
     card.setAttribute("tabindex", "0");
-    card.innerHTML =
+    card.classList.toggle("is-record", !!record);
+    const html =
       '<div class="last-big-body">' +
         '<p class="highlight">' + I18N.t("dash_last_cup", { q: timeSince(e.date_time) }) + "</p>" +
         '<p class="last-big-coffee">' + I18N.tr(e._c.coffee_name) + "</p>" +
@@ -44,6 +51,8 @@
           '<span class="last-big-machine">' + e.method + "</span>" +
           context.map(x => '<span class="sep" aria-hidden="true">|</span><span>' + x + "</span>").join("") +
         "</p>" +
+        (record ? '<p class="last-record">' + titleAttr(I18N.t("record_line", {
+          x: fmtRating(record.gap), d: dayMonth(record.previousDate) })) + "</p>" : "") +
         lastTastes(e) +
         (e.comment ? '<p class="last-big-comment">' + titleAttr(e.comment) + "</p>" : "") +
         rankAmongSiblings(e) +
@@ -60,6 +69,18 @@
           : '<span class="big-rating-none">' + I18N.t("not_rated_yet") + "</span>") +
         (e.diagnostic ? '<span class="dot-diag">' + displayedDiags(e.diagnostic) + "</span>" : "") +
       "</div>";
+    /* Rewritten only when it changed (v9.13): a render in the middle of the
+       odometer, the steam or the count, a sync arriving, would cut them. */
+    if (html === lastHtml) return;
+    lastHtml = html;
+    card.innerHTML = html;
+    UI.playRecord(card, record, e);
+  }
+
+  // « 12 septembre », from a local YYYY-MM-DD.
+  function dayMonth(key) {
+    const [y, m, d] = String(key).split("-").map(Number);
+    return y && m && d ? new Date(y, m - 1, d).toLocaleDateString(I18N.locale(), { day: "numeric", month: "long" }) : "";
   }
 
   /* WHERE THIS CUP RANKS AMONG THOSE OF THE SAME COFFEE (v8.39). The card

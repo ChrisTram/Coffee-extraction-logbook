@@ -24,7 +24,7 @@ const DATA_SCHEMA = (() => {
   const SETTINGS_ID = "moi";
 
   const SETTINGS_COLS = ["id", "dose_g", "heat_level", "grind_dial", "schema_version", "boil_s",
-    "step_clicks", "step_degrees", "step_heat", "step_water_g", "step_dose_g", "drawings", "bubbles_s"];
+    "step_clicks", "step_degrees", "step_heat", "step_water_g", "step_dose_g", "drawings", "bubbles_s", "jar_tare_g"];
 
   const RECIPE_COLS = ["id", "name", "number", "method", "family", "variant", "subtitle", "dose_g", "water_g",
     "temperature_c", "temp_text", "grind_dial", "ratio_text", "total_text", "milk",
@@ -244,7 +244,19 @@ const DATA_SCHEMA = (() => {
          hidden ones: "shelf,!clock,podium". Empty = the original order,
          all visible. An unknown name is ignored on read. */
       drawings: String(r && r.drawings || "").replace(/[^a-z!,]/g, "").slice(0, 200),
+      /* THE EMPTY JAR (v9.13, Q8): what Chris's coffee jar weighs empty, lid
+         included, in grams with one decimal. EMPTY by default and kept empty
+         until he weighs it: an invented weight would turn every weighing into
+         a wrong stock that looks exact. A French comma is read too (a value
+         typed in a spreadsheet). Out of range (0, 5000] goes back to empty. */
+      jar_tare_g: jarTare(r && r.jar_tare_g),
     };
+  }
+
+  function jarTare(v) {
+    const s = String(v === undefined || v === null ? "" : v).trim().replace(",", ".");
+    const n = Number(s);
+    return s !== "" && Number.isFinite(n) && n > 0 && n <= 5000 ? Math.round(n * 10) / 10 : "";
   }
 
   function normalizeRecipe(r) {

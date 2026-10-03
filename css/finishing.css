@@ -801,19 +801,18 @@ h1, h2, h3, h4, .ref-title, .card h3 {
 }
 
 /* ---------- L4 (v8.92): the coffee sheet, a passport ---------- */
-.sh-passport { grid-template-columns: 76px minmax(0, 1fr); gap: 16px; align-items: center; }
-.sh-jar { width: 76px; height: 96px; border-radius: 12px 12px 16px 16px; border: 1px solid var(--lines); position: relative; overflow: hidden;
-  background: linear-gradient(to top, var(--tint) var(--level), var(--panel-2) var(--level)); }
-.sh-jar::before { content: ""; position: absolute; top: 0; left: 16px; right: 16px; height: 8px; border-radius: 0 0 4px 4px; background: var(--panel-3); }
-.sh-jar i { position: absolute; left: 10px; top: 16px; width: 6px; bottom: 12px; border-radius: 3px; background: linear-gradient(to bottom, rgba(255, 255, 255, 0.18), transparent); }
+.sh-passport { grid-template-columns: 120px minmax(0, 1fr); gap: 18px; align-items: center; }
+/* The real jar since v9.13 (js/ui-jar.js): its SVG fills the button, the beans
+   that jump out may leave it. */
+.sh-jar { width: 120px; position: relative; overflow: visible; border: 0; border-radius: 12px; background: none; }
 .sh-identity h2 { margin: 2px 0 8px; }
-/* The jar is a button (v8.96): its bean drawn in the centre, its grams below. */
+/* The jar is a button (v8.96), its grams below. */
 .sh-jar-block { display: grid; justify-items: center; gap: 4px; }
 button.sh-jar { padding: 0; font: inherit; color: var(--ink); cursor: pointer; display: grid; place-items: center; }
-button.sh-jar:hover { border-color: var(--accent); }
-button.sh-jar:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.sh-grain { width: 30px; height: 30px; opacity: 0.55; position: relative; }
-.sh-jar-g { font-size: 0.78rem; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+button.sh-jar:hover .jar-glass { stroke: var(--accent); }
+button.sh-jar:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+/* The grams under the jar, in the figures' serif since v9.13: they roll when the jar moves. */
+.sh-jar-g { font-family: var(--serif); font-size: 1.35rem; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
 button.sh-to-count { white-space: nowrap; font: inherit; font-size: 0.78rem; font-weight: 700; border: 0; background: none; padding: 0; cursor: pointer; color: var(--accent-strong); text-decoration: underline; text-underline-offset: 3px; }
 .sh-stock-editing { display: grid; gap: 6px; padding: 12px 14px; border-radius: var(--radius-small); background: var(--panel-2); border: 1px solid var(--accent); }
 .sh-stock-editing label { font-size: 0.82rem; font-weight: 600; color: var(--ink); }
@@ -834,9 +833,8 @@ button.sh-to-count { white-space: nowrap; font: inherit; font-size: 0.78rem; fon
 .sh-tabs [role="tab"]:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .sh-panel[hidden] { display: none; }
 @media (max-width: 560px) {
-  .sh-passport { grid-template-columns: 58px minmax(0, 1fr); gap: 12px; }
-  .sh-jar { width: 58px; height: 76px; }
-  .sh-grain { width: 24px; height: 24px; }
+  .sh-passport { grid-template-columns: 72px minmax(0, 1fr); gap: 12px; }
+  .sh-jar { width: 72px; }
   .sh-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
@@ -1199,6 +1197,7 @@ html[data-theme="light"] .skeleton { --sk-shine: var(--panel); }
 .sk-row { height: 46px; border-radius: 10px; }
 @media (prefers-reduced-motion: reduce) {
   .sk-bone { animation: none; }
+}
 /* ---------- Entry, rating, dial and brew cup (v9.13) ---------- */
 /* Five drawn controls, each driving the field it sits on (js/ui-cup.js,
    ui-dial.js, ui-rating-dial.js, ui-wheel.js). Every animation below is
@@ -1442,4 +1441,127 @@ html[data-theme="light"] .cup-art { --porcelain-edge: #a8957d; --saucer: #e2d6c5
   .cup-card { animation: none; }
   .cup-pouring .cup-wave { animation: none; }
   .cup-card.cc-stamped .cup-steam path { animation: none; opacity: 0.45; }
+}
+/* ---------- Stock and jars (v9.13) ---------- */
+/* Q8: the real jar, to the gram (js/ui-jar.js). The lid is cork and the beans
+   are coffee: those two keep their colour in every theme. The glass, the
+   graduations and the figures take the tokens. */
+.jar-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.jar-lid { fill: #8a6a4a; stroke: #5e4630; stroke-width: 1.2; }
+.jar-lid-band { fill: #5e4630; opacity: 0.55; }
+.jar-inside { fill: var(--panel-3); opacity: 0.55; }
+.jar-glass { fill: none; stroke: var(--muted); stroke-width: 2; transition: stroke 300ms; }
+.jar-shine { fill: none; stroke: #fff; stroke-opacity: 0.14; stroke-width: 4; stroke-linecap: round; }
+.jar-tick-halo { stroke: var(--panel); stroke-opacity: 0.55; stroke-width: 3; }
+.jar-tick { stroke: var(--ink); stroke-opacity: 0.7; stroke-width: 1; }
+.jar-label { font-family: var(--sans); font-size: 10.5px; font-weight: 600; fill: var(--ink);
+  paint-order: stroke; stroke: var(--panel); stroke-width: 3px; stroke-opacity: 0.7; font-variant-numeric: tabular-nums; }
+.jar-pile-unknown { opacity: 0.35; }
+.sh-jar[data-jar-low] .jar-glass { stroke: var(--danger); }
+.sh-jar-g.low { color: var(--danger); }
+/* The beans that jump out of the heap or rain into it. */
+.jar-bean { position: absolute; z-index: 3; pointer-events: none; border-radius: 50%; background: #7a4a28; box-shadow: inset -2px 0 0 #3b2010; }
+.jar-bean::after { content: ""; position: absolute; left: calc(50% - 0.5px); top: 18%; bottom: 18%; width: 1px; border-radius: 1px; background: #2a150a; }
+/* One shake when the jar lands under three cups. */
+.jar-shake { animation: jar-shake 600ms ease-in-out 1; transform-origin: 50% 92%; }
+g.jar-shake { transform-box: fill-box; }
+@keyframes jar-shake { 25% { transform: rotate(-4deg); } 60% { transform: rotate(3deg); } }
+@media (max-width: 560px) { .sh-jar .jar-label { display: none; } }
+
+/* The pills hold their tiny beans; on a finger, they are a full target. */
+.stock-corner .sc-bag { position: relative; }
+@media (pointer: coarse) { .stock-corner .sc-bag { min-height: 44px; } }
+
+/* The shelf: the jars nest in the drawing, the beans fly above it. */
+.drawing[data-drawing="shelf"] { position: relative; }
+.dw-inside .jar-glass { stroke: var(--accent); }
+.dw-after .jar-glass { stroke: var(--danger); }
+.dw-jar:hover .jar-glass, .dw-jar:focus-visible .jar-glass { stroke-width: 3; }
+.dw-jar[data-jar-low] .dw-cups { fill: var(--danger); }
+
+/* The jar on the scale, in the stock count of the coffee sheet. */
+.sh-weigh { display: grid; gap: 6px; margin-top: 4px; padding-top: 10px; border-top: 1px dashed var(--lines); }
+.sh-weigh-title { margin: 0; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.sh-weigh .sh-stock-row input { width: 120px; font-variant-numeric: tabular-nums; }
+.sh-weigh-out { margin: 0; min-height: 1.35em; font-size: 0.82rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.sh-weigh-out b { color: var(--accent-strong); }
+.sh-weigh-out.sh-weigh-bad { color: var(--danger); }
+/* The sheet's buttons sit at its bottom on phone and tablet too: the sticky
+   rule of the entry's action bar (.entry-actions, under 1024 px) lifted them by
+   the height of a bottom bar that the full-screen sheet covers, and the weighing
+   went under them. */
+.modal-sheet .sh-actions { position: static; margin: 0; border-radius: 0; }
+.modal-sheet .sh-content { flex: 1 1 auto; }
+/* The empty jar in Settings: a weight with one decimal. */
+.duration input.jar-tare-field { width: 7rem; text-align: right; }
+
+/* J6: the record that shines. A copper border turns around the last cup
+   when it is the best of its bag; its score rolls once like an odometer. */
+@property --record-turn { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+.card-last.is-record { position: relative; border-color: transparent; }
+.card-last.is-record::before {
+  content: ""; position: absolute; inset: -1px; z-index: 0; pointer-events: none; padding: 2px; border-radius: inherit;
+  background: conic-gradient(from var(--record-turn), var(--accent-strong), transparent 28%, var(--accent) 50%, transparent 78%, var(--accent-strong));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: record-turn 4.5s linear infinite;
+}
+@keyframes record-turn { to { --record-turn: 360deg; } }
+.last-record { margin: -2px 0 10px; font-size: 0.85rem; font-weight: 600; color: var(--accent-strong); }
+.odo { display: inline-flex; height: 1em; line-height: 1; overflow: hidden; vertical-align: top; }
+.odo-col { display: inline-block; height: 1em; overflow: hidden; }
+.odo-strip { display: flex; flex-direction: column; transform: translateY(calc(var(--from) * -1em)); }
+.odo-strip > span, .odo-sep { display: block; height: 1em; text-align: center; }
+.odo.odo-go .odo-strip { transform: translateY(calc(var(--to) * -1em)); transition: transform 1300ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+
+/* Q7: the arrival of the morning. A wisp of steam over the score, the bars
+   of last week growing from the ground. */
+.card-last .last-big-rating { position: relative; }
+.morning-steam { position: absolute; z-index: 1; width: 40px; height: 34px; pointer-events: none;
+  fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; opacity: 0;
+  animation: morning-steam 1100ms ease-out 1 both; }
+.morning-steam path { stroke-dasharray: 34; }
+@keyframes morning-steam {
+  0% { opacity: 0; transform: translateY(10px); stroke-dashoffset: 34; }
+  35% { opacity: 0.9; }
+  100% { opacity: 0; transform: translateY(-14px); stroke-dashoffset: 0; }
+}
+#card-recap.morning-grow .rc-day i { transform-origin: 50% 100%;
+  animation: morning-bar 650ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--d, 0) * 45ms + var(--morning-shift, 0ms)); }
+@keyframes morning-bar { from { transform: scaleY(0); } }
+
+/* M6: the empty places, a drawing, a sentence and the way to fill them. */
+.empty-hint { display: flex; gap: 14px; align-items: center; }
+.eh-art { flex: none; width: 96px; height: auto; }
+.eh-text { display: grid; gap: 8px; justify-items: start; min-width: 0; }
+.eh-text p { margin: 0; }
+.eh-title { font-family: var(--serif); font-size: 1.35rem; line-height: 1.15; color: var(--ink); }
+.eh-say { font-size: 0.86rem; line-height: 1.5; color: var(--text); }
+.empty-hint-wide { padding: 14px 16px; border-radius: var(--radius-small); background: var(--panel-2); border: 1px dashed var(--lines); }
+.empty-hint-wide .eh-art { width: 120px; }
+.eh-fill { fill: var(--panel-3); stroke: var(--muted); stroke-width: 1.5; stroke-linejoin: round; }
+.eh-line { fill: none; stroke: var(--muted); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.eh-dash { fill: none; stroke: var(--muted); stroke-width: 1.6; stroke-dasharray: 4 4; stroke-linecap: round; }
+.eh-accent { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; }
+.eh-accent-soft { fill: var(--accent); opacity: 0.45; }
+.eh-accent-dot { fill: var(--accent); }
+.eh-bean { fill: #7a4a28; }
+.empty-state-art { display: block; width: 150px; margin: 0 auto 4px; }
+/* Under the calendar, a narrow card: across both columns, the drawing above. */
+.mini-stats > .card-empty { grid-column: 1 / -1; }
+.mini-stats .empty-hint, .insights .empty-hint { flex-direction: column; align-items: flex-start; }
+.mini-stats .eh-art, .insights .eh-art { width: 72px; }
+.insights li.finding-empty { padding-left: 14px; }
+.insights li.finding-empty::before { content: none; }
+@media (max-width: 560px) {
+  .empty-hint { flex-direction: column; align-items: flex-start; }
+  .eh-art, .empty-hint-wide .eh-art { width: 84px; }
+}
+@media (pointer: coarse) { .empty-hint .btn, .sh-weigh .btn, .sh-weigh .sh-correct { min-height: 44px; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .jar-shake, .card-last.is-record::before, .morning-steam, #card-recap.morning-grow .rc-day i { animation: none; }
+  .morning-steam { display: none; }
+  .jar-glass, .odo.odo-go .odo-strip { transition: none; }
 }

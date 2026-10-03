@@ -105,17 +105,31 @@
     return a ? a.getAttribute("href") : null;
   }
 
-  /* The coffee bean in the jar: an ellipse and its slit, in outline. */
-  const BEAN_SVG = '<svg class="sh-grain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" ' +
-    'stroke-linecap="round" aria-hidden="true"><ellipse cx="12" cy="12" rx="6.2" ry="8.8" transform="rotate(32 12 12)"/>' +
-    '<path d="M8.6 6.2c2.6 2.2 1.2 4.6 3.4 6.6s3.2 2.4 3.4 5"/></svg>';
-
   /* MANUAL COUNT (v8.96): one field, prefilled with the computed stock.
      Hidden until the jar or « Corriger » has been clicked. */
-  function stockEditor(stock) {
+  /* AND THE JAR ON THE SCALE (v9.13, Q8): Chris puts his jar on the scale and
+     types what it shows; the empty jar, weighed once in Settings, comes off,
+     and the count goes through the same correctStock. Until that weight
+     exists, the section says where to set it instead of guessing one. */
+  const fmtGrams = n => fmtDecimal(n, 1);
+  function stockEditor(stock, coffee) {
     // A negative stock is wrong: an empty field rather than a 0 to erase, the bag size as a hint.
     const current = stock && stock.remaining > 0 ? Math.round(stock.remaining) : "";
     const hint = stock ? stock.format : 250;
+    const tare = DATA.currentSettings().jar_tare_g;
+    const bag = stock ? stock.format : Number(coffee.bag_size_g) || 0;
+    const weigh = tare !== "" && Number(tare) > 0
+      ? '<div class="sh-weigh"><label class="sh-weigh-title" for="sh-weigh-g">' + I18N.t("weigh_title") + "</label>" +
+        '<div class="sh-stock-row">' +
+          '<input type="text" id="sh-weigh-g" inputmode="decimal" autocomplete="off" enterkeyhint="done" data-tare="' + tare +
+            '" data-bag="' + bag + '" aria-describedby="sh-weigh-out">' +
+          "<span>" + I18N.t("weigh_unit") + "</span>" +
+          '<button type="button" class="btn btn-small btn-primary" data-weigh>' + I18N.t("weigh_button") + "</button>" +
+        "</div>" +
+        '<p class="sh-weigh-out" id="sh-weigh-out" aria-live="polite">' + I18N.t("weigh_ready", { t: fmtGrams(Number(tare)) }) + "</p></div>"
+      : '<div class="sh-weigh"><p class="sh-weigh-title">' + I18N.t("weigh_title") + "</p>" +
+        '<p class="sh-quiet">' + I18N.t("weigh_no_tare") +
+        ' <button type="button" class="sh-correct" data-empty-go="settings-jar">' + I18N.t("weigh_set_tare") + "</button></p></div>";
     return '<form class="sh-stock-editing" id="sh-stock-editing" hidden>' +
       '<label for="sh-stock-g">' + I18N.t("sheet_stock_label") + "</label>" +
       '<div class="sh-stock-row">' +
@@ -125,7 +139,32 @@
         '<button type="submit" class="btn btn-small btn-primary">' + I18N.t("sheet_stock_save") + "</button>" +
         '<button type="button" class="btn btn-small btn-subtle" data-stock-cancel>' + I18N.t("sheet_stock_cancel") + "</button>" +
       "</div>" +
-      '<p class="sh-quiet">' + I18N.t("sheet_stock_help") + "</p></form>";
+      '<p class="sh-quiet">' + I18N.t("sheet_stock_help") + "</p>" + weigh + "</form>";
+  }
+
+  /* What the scale reading gives, said as it is typed: the subtraction, or
+     why it cannot be right. Returns the weighing (DATA.weighJar). */
+  function weighReading() {
+    const field = $("#sh-weigh-g"), out = $("#sh-weigh-out");
+    if (!field || !out) return null;
+    const w = DATA.weighJar(field.value, field.dataset.tare, field.dataset.bag);
+    const typed = String(field.value).trim() !== "";
+    out.classList.toggle("sh-weigh-bad", typed && w.error !== "");
+    out.innerHTML = !typed ? escapeHtml(I18N.t("weigh_ready", { t: fmtGrams(Number(field.dataset.tare)) }))
+      : w.error === "no_reading" ? escapeHtml(I18N.t("weigh_no_reading"))
+      : w.error === "below_jar" ? escapeHtml(I18N.t("weigh_below_jar", { t: fmtGrams(w.tare) }))
+      : w.error === "above_bag" ? escapeHtml(I18N.t("weigh_above_bag", { n: fmtGrams(w.net), f: fmtGrams(w.bag) }))
+      : escapeHtml(I18N.t("weigh_result", { r: fmtGrams(w.total), t: fmtGrams(w.tare) })) + " <b>" +
+        escapeHtml(I18N.t("weigh_net", { n: fmtGrams(w.net) })) + "</b>";
+    return w;
+  }
+
+  async function applyWeighing() {
+    const w = weighReading();
+    if (!w) return;
+    if (w.error) { $("#sh-weigh-g").focus(); return; }
+    await DATA.correctStock(openId, w.net);
+    toast(I18N.t("toast_weighed", { n: fmtGrams(w.net) }));
   }
 
   function bagBlock(coffee, exts, rated, coffeeAvg) {
@@ -264,9 +303,12 @@
        the bag's level, its shade by roast, and four figures. Below, four
        tabs: how you nail it, what it gives you, its bags, its cups. */
     const stock = DATA.bagStock(coffee.id, fallbacks.dose);
-    const level = stock ? Math.max(0, Math.min(100, (stock.remaining / stock.format) * 100)) : 60;
-    const roast = String(coffee.roast || "").toLowerCase();
-    const tint = /clair|light|blond/.test(roast) ? "#c48a4d" : /fonc|dark|brun/.test(roast) ? "#5a3219" : "#8f5a33";
+    /* Q8 (v9.13): the jar is the real one, to the gram (js/ui-jar.js). Its
+       level, its graduations and its red under three cups come from the same
+       gauge as the corner of the dashboard. */
+    const gauge = DATA.bagGauge(coffee.id, fallbacks.dose);
+    const jar = { coffeeId: coffee.id, grams: gauge ? gauge.grams : 0, bag: gauge ? gauge.bag : 0, low: !!(gauge && gauge.low),
+      roast: UI.jarRoast(coffee), labels: true, unknown: !gauge };
     const best = rated.length ? Math.max(...rated.map(e => Number(e.score_10))) : null;
     const doses = exts.filter(e => Number(e.dose_g) > 0).map(e => Number(e.dose_g));
     const cost = UI.costPerCup(coffee, doses.length ? average(doses) : fallbacks.dose);
@@ -298,26 +340,29 @@
            image, and the click opens the manual count just below. */
         '<div class="sh-jar-block">' +
           '<button type="button" class="sh-jar" data-stock-edit aria-label="' +
-            escapeHtml(I18N.t("sheet_stock_aria", { g: stock ? fmtDecimal(Math.max(0, stock.remaining), 0) : "?" })) +
-            '" style="--level:' + level.toFixed(0) + "%;--tint:" + tint + '"><i></i>' + BEAN_SVG + "</button>" +
+            escapeHtml(I18N.t("sheet_stock_aria", { g: stock ? fmtDecimal(Math.max(0, stock.remaining), 0) : "?" })) + '"' +
+            (gauge ? UI.jarData(jar) : "") + ">" + UI.jarSvg(jar) + "</button>" +
           /* Below zero, the computation is necessarily wrong (cups from another bag,
              bag not entered): « à compter » invites a correction, where « 0 g »
              suggested an empty bag. */
           (stock && stock.remaining < 0
             ? '<button type="button" class="sh-jar-g sh-to-count" data-stock-edit>' + I18N.t("sheet_stock_to_count") + "</button>"
-            : '<span class="sh-jar-g">' + (stock ? fmtDecimal(stock.remaining, 0) + " g" : "") + "</span>") +
+            : '<span class="sh-jar-g' + (jar.low ? " low" : "") + '"' + (gauge ? ' data-jar-grams="' + escapeHtml(coffee.id) + '"' : "") + ">" +
+              (stock ? fmtDecimal(stock.remaining, 0) + " g" : "") + "</span>") +
         "</div>" +
         '<div class="sh-identity"><p class="highlight">' + I18N.t("sheet_highlight") + "</p>" +
         '<h2 id="sheet-name">' + escapeHtml(coffee.name) + "</h2>" + '<div class="sh-chips">' + chips + "</div></div>" +
       "</header>" +
-      stockEditor(stock) +
-      '<div class="sh-kpis">' +
+      stockEditor(stock, coffee) +
+      /* M6 (v9.13): a coffee without a cup says what to do, instead of four
+         figures at zero. */
+      (exts.length ? '<div class="sh-kpis">' +
         kpi(exts.length, I18N.t("sheet_kpi_cups")) +
         kpi(rated.length ? fmtRating(coffeeAvg) : "·", I18N.t("sheet_kpi_average")) +
         kpi(best !== null ? fmtRating(best) : "·", I18N.t("sheet_kpi_best")) +
         // Price only: « 7 348 ₫ la tasse de 14,7 g » would repeat the label below.
         kpi(cost ? escapeHtml(String(cost).replace(/^([^₫]*₫).*$/, "$1")) : "·", I18N.t("sheet_kpi_cost")) +
-      "</div>" +
+      "</div>" : firstCupHint(coffee)) +
       '<div class="sh-tabs" role="tablist" aria-label="' + escapeHtml(I18N.t("sheet_tabs")) + '">' +
         TABS.map(([k, key]) => '<button type="button" role="tab" id="sh-o-' + k + '" data-tab="' + k + '" aria-controls="sh-p-' + k +
           '" aria-selected="' + (k === sheetTab) + '" tabindex="' + (k === sheetTab ? 0 : -1) + '">' + I18N.t(key) + "</button>").join("") +
@@ -333,6 +378,24 @@
     const tasteCount = CHARTS.aromaWheel(rated, { svg: "sheet-wheel", detail: "sheet-wheel-detail", reading: "" });
     $("#sheet-wheel-empty").hidden = tasteCount > 0;
     $(".sh-wheel").hidden = tasteCount === 0;
+    // The jar moves from what this device showed last (a cup, a weighing, a new bag).
+    UI.playJars(zone);
+  }
+
+  /* M6 (v9.13): THE COFFEE WITHOUT A CUP. Its bag (opened, or waiting), the
+     recipe its card recommends, and the button that brews the first one. */
+  function firstCupHint(coffee) {
+    const jc = currentBagDay(coffee.id);
+    const bag = DATA.currentBag(coffee.id);
+    const lines = [];
+    if (jc) lines.push(jc.day === 0 ? I18N.t("sheet_first_opened_today") : I18N.t("sheet_first_opened", { n: jc.day, s: jc.day > 1 ? "s" : "" }));
+    else if (bag) lines.push(I18N.t("sheet_first_sleeping"));
+    if (coffee.recommended_recipe) lines.push(I18N.t("sheet_first_recipe", { r: I18N.tr(coffee.recommended_recipe) }));
+    else lines.push(I18N.t("sheet_first_any"));
+    return UI.emptyHint({
+      drawing: "cup", title: I18N.t("sheet_first_title", { c: coffee.name }), text: lines.join(" "),
+      action: I18N.t("sheet_first_go"), go: "sheet-brew", wide: true,
+    });
   }
 
   /* TWO COFFEES SIDE BY SIDE (v8.56). « Comparer avec… » at the foot of the card:
@@ -401,6 +464,8 @@
       try { history.pushState({ sheet: coffeeId }, ""); historyEntry = true; } catch (e) { historyEntry = false; }
       m.showModal();
     }
+    // Now on screen: the jar plays the change since this device last showed it.
+    UI.playJars($("#sheet-content"));
     const scroller = $("#sheet-content");
     if (scroller) scroller.scrollTop = 0;
   }
@@ -460,9 +525,17 @@
       if (!f) return;
       f.hidden = false;
       f.scrollIntoView({ block: "nearest" });
-      const field = $("#sh-stock-g");
+      /* With an empty jar weight set, the jar on the scale is THE gesture
+         (Q8): its field takes the focus. Otherwise the grams, as before. */
+      const field = $("#sh-weigh-g") || $("#sh-stock-g");
       field.focus();
       field.select();
+    });
+    $("#sheet-content").addEventListener("input", ev => {
+      if (ev.target.id === "sh-weigh-g") weighReading();
+    });
+    $("#sheet-content").addEventListener("click", ev => {
+      if (ev.target.closest("[data-weigh]")) applyWeighing();
     });
     $("#sheet-content").addEventListener("keydown", ev => {
       // Escape closes the count, not the whole card.
@@ -474,6 +547,8 @@
     $("#sheet-content").addEventListener("submit", async ev => {
       if (!ev.target.closest("#sh-stock-editing")) return;
       ev.preventDefault();
+      // Enter in the scale field weighs; it does not save the grams field above it.
+      if (document.activeElement && document.activeElement.id === "sh-weigh-g") { applyWeighing(); return; }
       const g = Number(String($("#sh-stock-g").value).replace(",", "."));
       if (!Number.isFinite(g) || g < 0) { $("#sh-stock-g").focus(); return; }
       await DATA.correctStock(openId, g);
@@ -498,6 +573,17 @@
       else toast(I18N.t("sheet_inactive"));
       // No edit in progress (resetEntry just closed it): nothing to abandon.
       UI.activateScreen("entry");
+    });
+    /* The two ways out of an empty or unweighable part of the card (v9.13):
+       brew the first cup, or set the empty jar in Settings. */
+    $("#sheet-content").addEventListener("click", ev => {
+      const b = ev.target.closest("[data-empty-go]");
+      if (!b) return;
+      if (b.dataset.emptyGo === "sheet-brew") { $("#sheet-brew").click(); return; }
+      if (b.dataset.emptyGo !== "settings-jar") return;
+      closingToNavigate = true;
+      $("#modal-sheet").close();
+      UI.openSettingsSection("ps-jar");
     });
     $("#sheet-edit").addEventListener("click", () => {
       const id = openId;
