@@ -51,12 +51,8 @@
     const ratings = analyzableExts().filter(e => e.recipe === r.name && e.score_10 !== "").map(e => Number(e.score_10));
     return ratings.length ? fmtDecimal(average(ratings), 1) : "";
   }
-  function atHome(r) {
-    const ratings = analyzableExts().filter(e => e.recipe === r.name && e.score_10 !== "").map(e => Number(e.score_10));
-    return '<p class="recipe-at-home">' + (ratings.length
-      ? I18N.t("library_at_home", { m: fmtDecimal(average(ratings), 1), n: ratings.length })
-      : I18N.t("library_not_tried")) + "</p>";
-  }
+  // O3 (v9.19): « Chez toi » grew the curve of your scores and your best setting (js/ui-tuning.js).
+  function atHome(r) { return UI.recipeAtHome(r); }
   const filter = { value: "all" };
   try { filter.value = localStorage.getItem("guide-filter") || "all"; } catch (e) { /* without storage, all */ }
   function applyFilter() {
@@ -251,6 +247,7 @@
       '<button class="btn btn-primary btn-small" data-brew="' + r.id + '">' + I18N.t("guide_brew") + "</button>" +
       '<button class="btn btn-small" data-walkthrough="' + r.id + '">' + I18N.t("aside_step_by_step") + "</button>" +
       '<button class="btn btn-small" data-recipe-edit="' + r.id + '">' + I18N.t("btn_edit") + "</button>" +
+      '<button type="button" class="btn btn-small btn-subtle" data-share-recipe="' + r.id + '">' + UI.shareIcon() + I18N.t("share_action") + "</button>" +
       "</div></div></article>";
   }
 

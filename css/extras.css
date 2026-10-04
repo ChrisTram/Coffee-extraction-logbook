@@ -1,0 +1,353 @@
+/* Brew logbook, extras (v9.19): the first opening (O4), the keyboard
+   shortcuts made discoverable, sharing a cup or a recipe (F2), the winning
+   settings by coffee and by recipe (O3). Loaded after finishing.css; only
+   the site's tokens, every movement still under reduced motion. */
+
+/* ---------- The keyboard shortcuts ---------- */
+
+/* The keyboard button of the rail: desktop with a mouse only. */
+@media (max-width: 1023px), (hover: none) {
+  .rail-keys { display: none; }
+}
+
+/* The help, a popover anchored above the rail's foot on desktop. The UA
+   sheet centres a popover in the viewport: we place it and dress it. */
+.keys-pop {
+  inset: auto auto 76px 18px;
+  margin: 0;
+  width: min(880px, calc(100vw - 36px));
+  max-height: min(80vh, 720px);
+  overflow: auto;
+  padding: 18px 22px 16px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  transform-origin: 0 100%;
+}
+.keys-pop:popover-open { animation: kp-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes kp-in { from { opacity: 0; transform: translateY(10px) scale(0.97); } }
+.kp-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.kp-head h2 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 1.5rem; color: var(--ink); }
+.kp-close { min-width: 36px; justify-content: center; font-size: 1.05rem; line-height: 1; }
+.keys-pop .modal-note { margin: 4px 0 8px; }
+.keys-pop .keys-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 26px; margin-top: 4px; }
+.keys-pop .keys-list div { padding: 5px 0; font-size: 0.82rem; }
+.keys-pop .keys-list dd { font-size: 0.75rem; }
+.kp-group { animation: kp-group 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: calc(var(--kp-i, 0) * 40ms); }
+@keyframes kp-group { from { opacity: 0; transform: translateY(5px); } }
+.kp-then { font-size: 0.75rem; color: var(--muted); }
+@media (max-width: 1199px) {
+  .keys-pop .keys-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 1023px) {
+  .keys-pop { inset: 0; margin: auto; transform-origin: 50% 50%; }
+  .keys-pop .keys-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* The one-time hint, just above the keyboard button. */
+.keys-hint {
+  position: fixed; left: 16px; bottom: 70px; z-index: var(--z-toast);
+  display: flex; align-items: center; gap: 2px; width: 200px; padding: 4px 4px 4px 2px;
+  border: 1px solid var(--accent); border-radius: var(--radius-small);
+  background: var(--panel); box-shadow: var(--shadow);
+  animation: kh-in 420ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+/* Its little tail points down to the keyboard button. */
+.keys-hint::after {
+  content: ""; position: absolute; left: var(--kh-tail, 94px); bottom: -6px; width: 10px; height: 10px;
+  background: var(--panel); border-right: 1px solid var(--accent); border-bottom: 1px solid var(--accent);
+  transform: rotate(45deg);
+}
+.keys-hint.kh-leave { animation: kh-out 200ms ease both; }
+@keyframes kh-in { from { opacity: 0; transform: translateY(10px) scale(0.96); } }
+@keyframes kh-out { to { opacity: 0; transform: translateY(6px); } }
+.kh-open {
+  flex: 1; min-width: 0; padding: 6px 8px; border: 0; background: none; color: var(--text);
+  font: inherit; font-size: 0.8rem; line-height: 1.35; text-align: left; cursor: pointer;
+}
+.kh-open kbd {
+  display: inline-flex; justify-content: center; min-width: 1.6em; padding: 0 5px; font: inherit; font-size: 0.75rem; font-weight: 700;
+  color: var(--ink); background: var(--panel-2); border: 1px solid var(--lines); border-bottom-width: 2px; border-radius: 6px;
+}
+.kh-close {
+  flex: none; width: 28px; height: 28px; border: 0; border-radius: 8px; background: none;
+  color: var(--muted); font-size: 1rem; line-height: 1; cursor: pointer;
+}
+.kh-close:hover, .kh-open:hover { color: var(--ink); }
+@media (max-width: 1023px), (hover: none) {
+  .keys-hint { display: none; }
+}
+
+/* ---------- O4: the first opening ---------- */
+
+.modal.welcome { max-width: 1060px; padding: 26px 30px 16px; }
+.welcome .wl-head { text-align: center; margin-bottom: 18px; }
+.welcome .wl-head h2 { margin: 0 0 6px; font-size: 2.5rem; line-height: 1.05; }
+.wl-lead { margin: 0 auto 14px; max-width: 46ch; color: var(--text); }
+.wl-progress { position: relative; height: 3px; max-width: 320px; margin: 0 auto; border-radius: 99px; background: var(--lines); overflow: hidden; }
+.wl-progress-fill {
+  position: absolute; inset: 0; border-radius: inherit; background: var(--accent);
+  transform-origin: 0 50%; transform: scaleX(calc(var(--wl-step, 1) / 3));
+  transition: transform 460ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.welcome[open] { animation: wl-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes wl-in { from { opacity: 0; transform: translateY(14px) scale(0.985); } }
+
+/* Desktop: the three steps side by side, the current one lit. */
+.wl-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
+.wl-step {
+  display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 16px 16px 14px;
+  border: 1px solid var(--card-border); border-radius: var(--radius); background: var(--bg);
+  opacity: 0.72;
+  transition: opacity 260ms ease, border-color 260ms ease, box-shadow 260ms ease, transform 260ms ease;
+}
+.wl-step[aria-current="step"] {
+  opacity: 1; transform: translateY(-3px); border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-ring), 0 14px 34px var(--accent-glow);
+}
+.wl-dots { display: flex; gap: 5px; }
+.wl-dots i { width: 22px; height: 4px; border-radius: 99px; background: var(--lines); }
+.wl-dots i.wl-dot-on { background: var(--accent); }
+.wl-count { margin: 0; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.welcome .wl-q { margin: 0 0 2px; font-family: var(--serif); font-weight: 400; font-size: 1.5rem; letter-spacing: 0; text-transform: none; color: var(--ink); }
+.wl-label { margin: 2px 0 0; font-size: 0.8rem; font-weight: 600; color: var(--muted); }
+
+.wl-options { display: flex; flex-direction: column; gap: 8px; }
+.wl-option, .wl-brewer, .wl-chip {
+  font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--lines); cursor: pointer;
+  transition: border-color var(--transition), background var(--transition), transform 150ms, opacity var(--transition);
+}
+.wl-option {
+  display: flex; flex-direction: column; gap: 2px; min-height: 44px; padding: 12px 14px;
+  border-radius: var(--radius-small); font-size: 0.84rem; text-align: left;
+}
+.wl-option b { color: var(--ink); font-size: 0.95rem; }
+.wl-option:hover, .wl-brewer:hover, .wl-chip:hover { border-color: var(--accent); }
+.wl-option:hover { transform: translateY(-1px); }
+.wl-option[aria-checked="true"], .wl-brewer[aria-pressed="true"], .wl-chip[aria-checked="true"] { border-color: var(--accent); background: var(--accent-bg); }
+.wl-chip[aria-checked="true"] { color: var(--accent-strong); }
+.wl-option:focus-visible, .wl-brewer:focus-visible, .wl-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wl-folder { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.wl-folder-state { flex-basis: 100%; margin: 0; font-size: 0.8rem; color: var(--accent-strong); }
+.wl-folder-state:empty { display: none; }
+.wl-next, .wl-brew { margin-top: auto; align-self: flex-start; }
+
+.wl-gear { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.wl-brewer {
+  position: relative; display: grid; justify-items: center; gap: 1px; min-height: 44px; padding: 10px 8px;
+  border-radius: var(--radius-small); font-size: 0.78rem; color: var(--muted);
+}
+.wl-brewer b { color: var(--ink); font-size: 0.92rem; }
+.wl-brewer[aria-pressed="false"] { opacity: 0.5; }
+.wl-brewer .wl-brewer-art { width: 46px; height: 52px; margin-bottom: 4px; }
+/* A small tick in the corner of a brewer you own. */
+.wl-brewer::after {
+  content: ""; position: absolute; top: 8px; right: 8px; width: 14px; height: 14px; border-radius: 50%;
+  border: 1.5px solid var(--lines); transition: background var(--transition), border-color var(--transition);
+}
+.wl-brewer[aria-pressed="true"]::after {
+  border-color: var(--accent);
+  background: radial-gradient(circle, var(--accent) 0 45%, transparent 50%);
+}
+.wl-brewer.wl-bounce { animation: wl-bounce 440ms cubic-bezier(0.3, 1.6, 0.5, 1); }
+@keyframes wl-bounce { 0% { transform: scale(1); } 30% { transform: scale(0.92); } 65% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+.wl-grinder {
+  display: flex; flex-direction: column; gap: 6px; padding: 12px 14px;
+  border: 1px solid var(--lines); border-radius: var(--radius-small); background: var(--panel);
+}
+.wl-grinder-name { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+.wl-grinder-name b { color: var(--ink); }
+.wl-grinder-name span { font-size: 0.8rem; color: var(--muted); }
+.wl-zero, .wl-kettle { margin: 0; font-size: 0.8rem; line-height: 1.45; }
+.wl-zero { color: var(--text); }
+.wl-zero b { color: var(--accent-strong); font-variant-numeric: tabular-nums; }
+.wl-kettle { color: var(--muted); }
+
+.wl-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.wl-chip { min-height: 34px; padding: 5px 12px; border-radius: var(--radius-dot); font-size: 0.82rem; }
+.wl-coffee { width: 100%; }
+.wl-coffee.wl-shake { animation: wl-shake 360ms ease; }
+@keyframes wl-shake { 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+.wl-start { padding: 10px 14px; border: 1px solid var(--accent); border-radius: var(--radius-small); background: var(--accent-bg); }
+.wl-start:empty { display: none; }
+.wl-start.wl-swap { animation: wl-swap 360ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes wl-swap { from { opacity: 0.35; transform: scale(0.98); } }
+.wl-start p { margin: 0; }
+.wl-start-title { font-weight: 700; color: var(--ink); }
+.wl-start-line { margin-top: 2px; color: var(--text); font-variant-numeric: tabular-nums; }
+.wl-start-why { margin-top: 4px; font-size: 0.75rem; color: var(--muted); }
+
+.wl-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.wl-foot .modal-close { margin-top: 0; }
+.wl-demo { margin-right: auto; }
+@media (min-width: 900px) {
+  .welcome .wl-back { display: none; }
+}
+
+/* Phone: one step at a time, sliding. */
+@media (max-width: 899px) {
+  .modal.welcome { padding: 22px 16px 12px; }
+  .welcome .wl-head { margin-bottom: 14px; }
+  .welcome .wl-head h2 { font-size: 2rem; }
+  /* clip and not hidden: a focus moving into a step must not scroll the track sideways or down. */
+  .wl-viewport { overflow: hidden; overflow: clip; margin: 0 -16px; padding: 4px 16px; transition: height 380ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .wl-steps {
+    display: flex; gap: 32px; align-items: flex-start;
+    transform: translateX(calc((var(--wl-step, 1) - 1) * (-100% - 32px)));
+    transition: transform 440ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .wl-step { flex: 0 0 100%; padding: 2px 0; border: 0; background: none; opacity: 1; transform: none; box-shadow: none; }
+  .wl-step[aria-current="step"] { transform: none; box-shadow: none; }
+  .wl-next, .wl-brew { align-self: stretch; margin-top: 6px; }
+  .wl-foot { justify-content: flex-start; }
+  .wl-demo { order: 3; flex-basis: 100%; margin-right: 0; }
+}
+@media (pointer: coarse) {
+  .wl-chip { min-height: 44px; }
+}
+
+/* ---------- O3: the winning settings ---------- */
+
+.wt-board { grid-column: 1 / -1; display: grid; gap: var(--gap-cards); min-width: 0; }
+/* Sideways only, if ever: the rows rise 8 px as they arrive, no vertical bar for that. */
+.wt-table-card { padding: 6px 10px; overflow-x: auto; overflow-y: hidden; }
+.wt-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.wt-table th {
+  padding: 12px 12px 10px; border-bottom: 1px solid var(--lines); text-align: left; white-space: nowrap;
+  font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+}
+.wt-table td { padding: 12px; border-bottom: 1px solid var(--lines-soft); color: var(--text); vertical-align: middle; }
+.wt-table tbody tr:last-child td { border-bottom: 0; }
+.wt-table .wt-num { text-align: right; }
+.wt-table .wt-act { width: 1%; text-align: right; white-space: nowrap; }
+.wt-mono { white-space: nowrap; }
+.wt-sort {
+  display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: none; cursor: pointer;
+  font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit;
+}
+.wt-sort:hover, th[aria-sort] .wt-sort { color: var(--ink); }
+.wt-sort:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+.wt-arrow { display: inline-block; min-width: 0.8em; color: var(--accent-strong); }
+.wt-name .dot-method { display: inline-block; margin-right: 8px; vertical-align: 2px; }
+.wt-coffee {
+  padding: 0; border: 0; background: none; cursor: pointer; text-align: left;
+  font-family: var(--serif); font-size: 1.15rem; color: var(--ink);
+}
+.wt-coffee:hover { color: var(--accent-strong); text-decoration: underline; text-underline-offset: 3px; }
+.wt-coffee:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.wt-score { font-family: var(--serif); font-weight: 400; font-size: 1.6rem; line-height: 1; color: var(--ink); }
+.wt-top .wt-score { color: var(--accent-strong); }
+.wt-table .wt-top td { background: var(--accent-bg); }
+.wt-table .wt-top td:first-child { border-radius: var(--radius-small) 0 0 var(--radius-small); }
+.wt-table .wt-top td:last-child { border-radius: 0 var(--radius-small) var(--radius-small) 0; }
+.wt-done { opacity: 0.55; }
+.wt-finished { font-size: 0.75rem; color: var(--muted); }
+.wt-row, .wt-card { animation: wt-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: calc(var(--wt-i, 0) * 45ms); }
+@keyframes wt-in { from { opacity: 0; transform: translateY(8px); } }
+
+/* Phone: the same rows as cards. */
+.wt-cards { display: none; gap: 10px; }
+.wt-card { display: grid; gap: 6px; padding: 16px; }
+.wt-card.wt-top { border-color: var(--accent); }
+.wt-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.wt-card-line { margin: 0; font-size: 0.84rem; color: var(--muted); }
+.wt-card-redo { justify-self: start; min-height: 44px; margin-top: 4px; }
+@media (max-width: 759px) {
+  .wt-table-card { display: none; }
+  .wt-cards { display: grid; }
+}
+
+.wt-sides { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: var(--gap-cards); }
+.wt-list { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.wt-list li {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px;
+  padding-bottom: 12px; border-bottom: 1px solid var(--lines-soft);
+}
+.wt-list li:last-child { padding-bottom: 0; border-bottom: 0; }
+.wt-list p { flex: 1 1 220px; margin: 0; color: var(--text); line-height: 1.45; }
+.wt-when, .wt-avg { font-size: 0.78rem; color: var(--muted); }
+.wt-pending .wt-why { flex-basis: 100%; font-size: 0.84rem; color: var(--muted); }
+.wt-safe p { margin: 0; color: var(--text); line-height: 1.5; }
+.wt-safe b { color: var(--accent-strong); }
+.wt-safe .wt-proof, .wt-proof { margin-top: 8px; font-size: 0.8rem; color: var(--muted); }
+.wt-none { margin: 0; color: var(--muted); }
+
+/* D2: « Chez toi » on a Guide recipe card, its curve and its best setting. */
+.rh { display: grid; gap: 4px; margin: 6px 0 4px; }
+.rh .recipe-at-home { margin: 0; }
+.rh-curve {
+  display: block; width: 100%; max-width: 380px; padding: 2px 0; border: 0; border-radius: 8px;
+  background: none; cursor: pointer;
+}
+.rh-curve:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rh-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.rh-mean { fill: none; stroke: var(--muted); stroke-width: 1px; stroke-dasharray: 3 4; vector-effect: non-scaling-stroke; opacity: 0.7; }
+.rh-line {
+  fill: none; stroke: var(--accent); stroke-width: 2px; stroke-linecap: round; stroke-linejoin: round;
+  vector-effect: non-scaling-stroke; stroke-dasharray: 1; stroke-dashoffset: 0;
+}
+.rh-curve:hover .rh-line { stroke: var(--accent-strong); }
+.rh-svg circle { fill: var(--panel); stroke: var(--accent); stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
+/* The curve draws itself when the card opens. */
+.recipe-card:not(.collapsed) .rh-line { animation: rh-draw 600ms cubic-bezier(0.4, 0, 0.2, 1) both; }
+.recipe-card:not(.collapsed) .rh-svg circle { animation: rh-dot 260ms ease both; animation-delay: calc(240ms + var(--rh-i, 0) * 30ms); }
+@keyframes rh-draw { from { stroke-dashoffset: 1; } }
+@keyframes rh-dot { from { opacity: 0; } }
+.rh-best { margin: 0; font-size: 0.84rem; color: var(--text); }
+.rh-best b { color: var(--ink); }
+.rh-redo {
+  display: inline-flex; align-items: center; min-height: 32px; padding: 0 4px; border: 0; background: none; cursor: pointer;
+  font: inherit; font-weight: 700; color: var(--accent-strong); text-decoration: underline; text-underline-offset: 3px;
+}
+@media (pointer: coarse) {
+  .rh-redo { min-height: 44px; }
+}
+
+/* ---------- F2: sharing a cup or a recipe ---------- */
+
+.share-modal { max-width: 560px; }
+.share-stage { display: grid; place-items: center; margin: 2px 0 14px; perspective: 1400px; }
+.share-card {
+  position: relative; width: min(100%, 320px); aspect-ratio: 4 / 5;
+  transform-style: preserve-3d; transition: transform 620ms cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+.share-modal[open] .share-card { animation: share-rise 360ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes share-rise { from { opacity: 0; translate: 0 12px; } }
+/* Once drawn, the card turns over: from the logbook's cover to the image. */
+.share-card.is-shown { transform: rotateY(180deg); }
+.share-face {
+  position: absolute; inset: 0; overflow: hidden; border-radius: var(--radius);
+  backface-visibility: hidden; box-shadow: var(--shadow);
+}
+.share-back {
+  display: grid; place-items: center;
+  background: radial-gradient(420px 260px at 85% -10%, var(--accent-glow), transparent 70%), var(--card-dark-bg);
+  color: color-mix(in srgb, var(--accent) 62%, white);
+}
+.share-card.is-waiting .share-logo { animation: share-pulse 1100ms ease-in-out infinite; }
+@keyframes share-pulse { 50% { opacity: 0.45; transform: scale(0.94); } }
+.share-front { transform: rotateY(180deg); background: var(--card-dark-bg); }
+.share-front img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.share-text {
+  max-height: 168px; overflow: auto; margin: 0 0 12px; padding: 12px 14px; border-radius: var(--radius-small);
+  background: var(--panel-2); color: var(--text); font: inherit; font-size: 0.8rem; line-height: 1.5;
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.share-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.share-actions .modal-close { margin-top: 0; }
+@media (max-width: 599px) {
+  .share-card { width: min(100%, 260px); }
+  .share-actions .btn { flex: 1 1 auto; min-height: 44px; }
+}
+
+/* ---------- Reduced motion: everything lands at once ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .keys-pop:popover-open, .kp-group, .keys-hint, .keys-hint.kh-leave, .welcome[open], .wl-brewer.wl-bounce, .wl-coffee.wl-shake,
+  .wl-start.wl-swap, .wt-row, .wt-card, .recipe-card:not(.collapsed) .rh-line, .recipe-card:not(.collapsed) .rh-svg circle,
+  .share-modal[open] .share-card, .share-card.is-waiting .share-logo { animation: none; }
+  .wl-progress-fill, .wl-viewport, .wl-steps, .wl-step, .wl-option, .wl-brewer, .wl-chip, .share-card { transition: none; }
+}

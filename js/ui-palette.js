@@ -34,6 +34,7 @@
     screen: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/>',
     search: '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>',
     keys: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8"/>',
+    share: '<path d="M12 3v12"/><path d="m7.5 7.5 4.5-4.5 4.5 4.5"/><path d="M5 12v6.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V12"/>',
     taste: '<path d="M12 21c-4.4 0-7-3-7-6.5C5 9 12 3 12 3s7 6 7 11.5c0 3.5-2.6 6.5-7 6.5z"/><path d="M9.5 15.5c.6 1.3 1.6 2 3 2"/>',
   };
   const ico = name => '<svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"' +
@@ -131,6 +132,9 @@
       kbd: "N", icon: "plus", order: 0, run: () => UI.activateScreen("entry") });
     if (latest.length) items.push({ group: "actions", name: I18N.t("palette_redo"), detail: I18N.t("palette_redo_words"),
       title: I18N.t("palette_redo"), sub: cupWhen(latest[0]) + " · " + I18N.tr(latest[0]._c.coffee_name || ""), kbd: "R", icon: "redo", order: 1, run: redoLast });
+    // F2 (v9.19): the last cup, as an image and a text to send (js/ui-share.js).
+    if (latest.length) items.push({ group: "actions", name: I18N.t("palette_share"), detail: I18N.t("palette_share_words"), title: I18N.t("palette_share"),
+      sub: cupWhen(latest[0]) + " · " + I18N.tr(latest[0]._c.coffee_name || ""), icon: "share", order: 1.5, run: () => UI.shareCup(latest[0]) });
     coffees.filter(c => c.active !== 0).forEach((c, i) => {
       const report = TUNING.forCoffee(c.id, analyzable);
       const best = report.best;

@@ -211,6 +211,7 @@
         '<button type="button" class="btn btn-small" data-sp="edit">' + icon("modifier") + I18N.t("btn_edit") + "</button>" +
         '<button type="button" class="btn btn-small' + (compared ? " on" : "") + '" data-sp="compare" aria-pressed="' + compared + '">' +
           icon("comparer") + I18N.t("panel_compare") + "</button>" +
+        '<button type="button" class="btn btn-small" data-share-cup="' + titleAttr(e.id) + '">' + UI.shareIcon() + I18N.t("share_action") + "</button>" +
       "</div>" +
     "</article>";
   }

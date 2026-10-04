@@ -168,7 +168,8 @@
         (diffs.length ? diffs.join(" · ") : I18N.t(target.ground ? "twins_same_preground" : "twins_same")) + '</span><b class="j-rating">' +
         fmtDecimal(Number(e.score_10), 1) + "</b></li>";
     });
-    const avg = list.reduce((s, j) => s + Number(j.ext.score_10), 0) / list.length;
+    // The shared mean (H1, v9.19): at least two twins here, the card is hidden below that.
+    const avg = TOOLS.average(list.map(j => Number(j.ext.score_10)));
     zone.hidden = false;
     zone.innerHTML = '<div class="aside-title"><h4>' + I18N.t("twins_title") + "</h4></div>" +
       '<p class="aside-sub">' + I18N.t(target.ground ? "twins_rule_preground" : "twins_rule", { c: TUNING.TWIN_CLICKS }) +

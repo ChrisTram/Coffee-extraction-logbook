@@ -756,7 +756,8 @@ const CHARTS = (() => {
     rated.forEach(e => String(e.descriptors || "").split("|").filter(Boolean).forEach(t => {
       (byTag[t] = byTag[t] || []).push(Number(e.score_10));
     }));
-    const mean = a => a.reduce((s, x) => s + x, 0) / a.length;
+    // The shared mean (H1, v9.19): a taste is only listed with at least one score.
+    const mean = TOOLS.average;
     const families = DESCRIPTOR_GROUPS.map(g => {
       const tastes = g.tags.filter(t => byTag[t]).map(t => ({ tag: t, n: byTag[t].length, note: mean(byTag[t]) }));
       const n = tastes.reduce((s, x) => s + x.n, 0);

@@ -31,8 +31,9 @@ function rollingAverage(extractions, windowSize) {
     .sort((a, b) => String(a.date_time).localeCompare(String(b.date_time)));
   return sorted.map((e, i) => {
     if (i < n - 1) return { date: e.date_time, value: null };
+    // The window is full here (n cups), so the shared mean is the sum over n (H1, v9.19).
     const f = sorted.slice(i - n + 1, i + 1).map(x => Number(x.score_10));
-    return { date: e.date_time, value: Math.round(f.reduce((s, x) => s + x, 0) / n * 100) / 100 };
+    return { date: e.date_time, value: Math.round(TOOLS.average(f) * 100) / 100 };
   });
 }
 
@@ -80,7 +81,8 @@ function bestLever(cups, minPerGroup, minGap) {
     // explain anything, even if its cups are excellent.
     if (eligible.length < 2) continue;
 
-    const avg = n => n.reduce((s, x) => s + x, 0) / n.length;
+    // The shared mean (H1, v9.19): every list here holds at least minN scores, never an empty one.
+    const avg = TOOLS.average;
     const classes = eligible.map(([v, n]) => ({ value: v, mean: avg(n), n: n.length }))
       .sort((a, b) => b.mean - a.mean);
     // The winner against ALL THE REST pooled, not against the second: with
@@ -245,7 +247,7 @@ function gapAtSameCoffee(cups) {
   });
   let sum = 0, n = 0;
   Object.values(groups).filter(g => g.length >= 2).forEach(g => {
-    const m = g.reduce((a, b) => a + b, 0) / g.length;
+    const m = TOOLS.average(g);
     g.forEach(x => { sum += Math.abs(x - m); n += 1; });
   });
   return n ? sum / n : null;
@@ -360,6 +362,186 @@ const TUNING = (() => {
       });
   }
 
+  /* ---------- O3 (v9.19): the winning settings, as a table ----------
+
+     The best combination of each coffee existed one coffee at a time (its
+     sheet, Ctrl K). Three readings are added, all pure, all on the
+     analysable cups the caller passes:
+     - winningRows: one row per coffee whose best setting is proven by the
+       same rule as above (MIN_CUPS cups on one combination), with its
+       reference cup, the one « Refaire » duplicates; the coffees on their
+       way to it apart, with the reason;
+     - toRetry: a cup scored high ONCE whose setting was never made again,
+       on a coffee still in use: the cup worth a second chance;
+     - safestSettings: per machine, the value of a lever that lifts the cups
+       above their own coffee's average, across coffees. */
+  const RETRY_MIN_SCORE = 8;
+  const SAFE_MIN_CUPS = 4;
+  const rated = e => e.score_10 !== "" && e.score_10 !== undefined && e.score_10 !== null;
+  const num = v => (v === "" || v === undefined || v === null || !Number.isFinite(Number(v)) ? null : Number(v));
+
+  function winningRows(coffees, extractions, minCups) {
+    const rows = [], pending = [];
+    coffees.forEach(c => {
+      const s = forCoffee(c.id, extractions, minCups);
+      if (s.best) {
+        const ref = extractions.find(e => e.id === s.best.referenceId) || null;
+        rows.push({ coffee: c, best: s.best, average: s.average, total: s.total, ref: ref });
+      } else if (s.total > 0 && c.active !== 0) {
+        pending.push({ coffee: c, ...s });
+      }
+    });
+    // The coffees in use first, then the best score, then the most documented.
+    rows.sort((a, b) => (a.coffee.active === 0) - (b.coffee.active === 0) ||
+      b.best.average - a.best.average || b.best.n - a.best.n);
+    pending.sort((a, b) => b.total - a.total);
+    return { rows, pending };
+  }
+
+  function toRetry(coffees, extractions, options) {
+    const o = options || {};
+    const minScore = o.minScore || RETRY_MIN_SCORE;
+    const times = new Map();
+    extractions.forEach(e => {
+      if (!rated(e)) return;
+      const k = e.coffee_id + "#" + signature(e);
+      times.set(k, (times.get(k) || 0) + 1);
+    });
+    const bests = new Map();
+    const found = [];
+    extractions.forEach(e => {
+      if (!rated(e) || !(Number(e.score_10) >= minScore)) return;
+      if (times.get(e.coffee_id + "#" + signature(e)) !== 1) return;
+      const coffee = coffees.find(c => c.id === e.coffee_id);
+      if (!coffee || coffee.active === 0) return;
+      if (!bests.has(coffee.id)) bests.set(coffee.id, forCoffee(coffee.id, extractions, o.minCups).best);
+      // Below the proven best of its coffee, a lucky cup is not worth a retry.
+      const best = bests.get(coffee.id);
+      if (best && Number(e.score_10) <= best.average) return;
+      found.push({ ext: e, coffee: coffee, score: Number(e.score_10) });
+    });
+    found.sort((a, b) => b.score - a.score || String(b.ext.date_time).localeCompare(String(a.ext.date_time)));
+    return found.slice(0, o.limit || 3);
+  }
+
+  /* The levers read across coffees, per machine: the water temperature and
+     the grind at the Switch, the grind and the heat at the Brikka. Each cup
+     counts as its gap to its OWN coffee's average on that machine: a good
+     coffee does not make its temperature look good. */
+  const SAFE_LEVERS = {
+    Switch: [
+      { key: "temperature", value: e => (num(e.temperature_c) === null ? null : String(Math.round(num(e.temperature_c)))) },
+      { key: "grind", value: e => e.grind_dial || null },
+    ],
+    Brikka: [
+      { key: "grind", value: e => e.grind_dial || null },
+      { key: "heat", value: e => (num(e.heat_level) === null ? null : String(num(e.heat_level))) },
+    ],
+  };
+  function safestSettings(extractions, options) {
+    const o = options || {};
+    const minN = o.minCups || SAFE_MIN_CUPS;
+    const minGap = o.minGap === undefined ? 0.2 : o.minGap;
+    const scored = extractions.filter(e => rated(e) && num(e.score_10) !== null);
+    const out = [];
+    ["Switch", "Brikka"].forEach(method => {
+      const cups = scored.filter(e => e.method === method);
+      const perCoffee = new Map();
+      cups.forEach(e => {
+        if (!perCoffee.has(e.coffee_id)) perCoffee.set(e.coffee_id, []);
+        perCoffee.get(e.coffee_id).push(Number(e.score_10));
+      });
+      const means = new Map([...perCoffee.entries()].map(([id, list]) => [id, average(list)]));
+      let best = null;
+      SAFE_LEVERS[method].forEach(lever => {
+        const groups = new Map();
+        cups.forEach(e => {
+          const v = lever.value(e);
+          if (v === null) return;
+          if (!groups.has(v)) groups.set(v, []);
+          groups.get(v).push(e);
+        });
+        // A lever that never moved says nothing: two values at least, each documented.
+        const documented = [...groups.entries()].filter(([, list]) => list.length >= minN);
+        if (documented.length < 2) return;
+        documented.forEach(([v, list]) => {
+          const coffeeCount = new Set(list.map(e => e.coffee_id)).size;
+          if (coffeeCount < 2) return;
+          const gap = average(list.map(e => Number(e.score_10) - means.get(e.coffee_id)));
+          if (gap < minGap) return;
+          if (!best || gap > best.gap) best = { method, lever: lever.key, value: v, gap, n: list.length, coffees: coffeeCount };
+        });
+      });
+      if (best) out.push(best);
+    });
+    return out;
+  }
+
+  /* D2, in O3 (v9.19): « Chez toi » on a Guide recipe card. The rated cups
+     of this recipe in date order (the curve), their average, and the best
+     setting made on it: same coffee, same grind, same water (the degree at
+     the Switch, the heat and the preheating at the Brikka), proven by at
+     least RECIPE_BEST_MIN cups. */
+  const RECIPE_BEST_MIN = 2;
+  function recipeHome(recipeName, extractions) {
+    const cups = extractions.filter(e => e.recipe === recipeName && rated(e) && num(e.score_10) !== null)
+      .slice().sort((a, b) => String(a.date_time).localeCompare(String(b.date_time)));
+    if (!cups.length) return { n: 0, average: null, points: [], best: null };
+    const groups = new Map();
+    cups.forEach(e => {
+      const water = e.method === "Brikka"
+        ? "f" + str(e.heat_level) + (Number(e.preheated_water) === 1 ? "p" : "")
+        : str(num(e.temperature_c) === null ? "" : Math.round(num(e.temperature_c)));
+      const k = [e.coffee_id, str(e.grind_dial), water].join("|");
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(e);
+    });
+    const best = [...groups.values()].filter(list => list.length >= RECIPE_BEST_MIN)
+      .map(list => {
+        const ref = [...list].sort((a, b) => Number(b.score_10) - Number(a.score_10) ||
+          String(b.date_time).localeCompare(String(a.date_time)))[0];
+        return { list, ref, average: average(list.map(e => Number(e.score_10))) };
+      })
+      .sort((a, b) => b.average - a.average || b.list.length - a.list.length ||
+        String(b.ref.date_time).localeCompare(String(a.ref.date_time)))[0];
+    return {
+      n: cups.length,
+      average: average(cups.map(e => Number(e.score_10))),
+      points: cups.map(e => ({ id: e.id, date: e.date_time, score: Number(e.score_10) })),
+      best: best ? {
+        coffeeId: best.ref.coffee_id, method: best.ref.method, grind: best.ref.grind_dial || "",
+        temperature: best.ref.method === "Switch" ? num(best.ref.temperature_c) : null,
+        heat: best.ref.method === "Brikka" ? num(best.ref.heat_level) : null,
+        preheat: Number(best.ref.preheated_water) === 1,
+        average: best.average, n: best.list.length, referenceId: best.ref.id,
+      } : null,
+    };
+  }
+
+  /* O4 (v9.19): THE RECIPE TO START WITH, for a first coffee. The coffee and
+     recipe table of the Guide (COFFEE_RECIPE_MATRIX, recipes.js) picks it
+     from the process and the roast; the brewers ticked in the welcome
+     narrow it: the cell's recipe, else its alternative, else the everyday
+     recipe of the brewer at hand. `temp` is the cell's own text when it
+     has one ("92 °C"), empty otherwise. */
+  function starterRecipe(coffee, gear, recipes) {
+    const has = m => !gear || gear[m] !== false;
+    const live = (recipes || []).filter(r => r.active !== 0);
+    const byId = id => live.find(r => r.id === id);
+    const p = typeof coffeeProfile === "function" ? coffeeProfile(coffee) : { row: null, column: null };
+    const cell = typeof COFFEE_RECIPE_MATRIX !== "undefined" && p.row && p.column
+      ? COFFEE_RECIPE_MATRIX.cells[p.row + "|" + p.column] : null;
+    const tries = cell ? [[cell.recipe, cell.temp], [cell.alternative, ""]] : [];
+    for (const [id, temp] of tries) {
+      const r = id ? byId(id) : null;
+      if (r && has(r.method)) return { recipe: r, temp: temp || "", fromTable: true };
+    }
+    const everyday = has("Switch") ? byId("chronicler") || live.find(r => r.method === "Switch")
+      : byId("brikka-classique") || live.find(r => r.method === "Brikka");
+    return everyday ? { recipe: everyday, temp: "", fromTable: false } : null;
+  }
+
   return { MIN_CUPS, signature, forCoffee, forAllCoffees, rollingAverage, bestLever, findingsByCoffee, LEVERS,
-    TWIN_CLICKS, twins, quantifiedCorrection, gapAtSameCoffee };
+    TWIN_CLICKS, twins, quantifiedCorrection, gapAtSameCoffee,
+    RETRY_MIN_SCORE, SAFE_MIN_CUPS, RECIPE_BEST_MIN, winningRows, toRetry, safestSettings, recipeHome, starterRecipe };
 })();

@@ -386,6 +386,8 @@
     }
     mountCompact($("#r-dial"), { microns: true, method: () => ($("#r-method") || {}).value });
     mountCompact($("#param-dial"), { microns: false });
+    // The first opening asks where the dial stays (O4, v9.19, js/ui-welcome.js).
+    mountCompact($("#welcome-dial"), { microns: true });
   }
 
   // Every dial at once: after a language switch or a data change.

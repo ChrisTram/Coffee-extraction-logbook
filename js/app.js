@@ -195,9 +195,11 @@
     // Every Close button closes its window, even without data-closes (v8.72): the comparison one did nothing.
     $$(".modal-close").forEach(b => b.addEventListener("click", () => (b.dataset.closes ? $("#" + b.dataset.closes) : b.closest("dialog")).close()));
 
-    // Welcome
-    $("#welcome-create").addEventListener("click", () => linkAction(true));
-    $("#welcome-open").addEventListener("click", () => linkAction(false));
+    /* The first opening (O4), the sharing (F2) and the winning settings (O3)
+       wire their own controls (v9.19): js/ui-welcome.js, ui-share.js, ui-tuning.js. */
+    UI.wireWelcome();
+    UI.wireShare();
+    UI.wireTuning();
     // Three buttons load the demo (welcome, Data panel, empty dashboard): one single function.
     const loadDemo = async () => {
       await DATA.loadDemo();
@@ -395,19 +397,10 @@
     // Service worker, and the message when a new version is ready.
     UI.watchForUpdates();
 
-    /* Local data first, sync next (v8.72): the welcome screen and its demo
-       only appear if, after the sync, there is still nothing. */
-    const welcomeIfEmpty = () => {
-      if (DATA.state.coffees.length || DATA.state.extractions.length) return;
-      if (!DATA.state.fsAvailable) {
-        $("#welcome-fs-note").hidden = false;
-        $("#welcome-create").disabled = true;
-        $("#welcome-open").disabled = true;
-      }
-      $("#modal-welcome").showModal();
-    };
-    if (DATA.syncPossible()) DATA.synchronize(false).then(welcomeIfEmpty);
-    else if (!hasData) welcomeIfEmpty();
+    /* Local data first, sync next (v8.72): the first opening only appears if,
+       after the sync, there is still nothing (js/ui-welcome.js decides, O4). */
+    if (DATA.syncPossible()) DATA.synchronize(false).then(() => UI.welcomeAfterStart(true));
+    else UI.welcomeAfterStart(!hasData);
   }
 
   document.addEventListener("DOMContentLoaded", startApp);

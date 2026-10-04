@@ -584,21 +584,7 @@
       I18N.t("setting_redo") + "</button>" + sheetButton(c) + "</div></article>";
   }
 
-  function renderTuning() {
-    /* Advice, so the analysable set: a failed cup describes a missed gesture
-       and would get a correct setting condemned. */
-    const exts = analyzableExts();
-    const summaries = TUNING.forAllCoffees(DATA.state.coffees, exts);
-    $("#tuning-list").innerHTML = summaries.length
-      ? summaries.map(tuningCard).join("")
-      : '<p class="card-empty">' + I18N.t("setting_no_coffee") + "</p>";
-    $$("[data-redo]").forEach(b => b.addEventListener("click", () => {
-      const ext = DATA.state.extractions.find(e => e.id === b.dataset.redo);
-      if (!ext) return;
-      UI.redoCup(ext);
-      toast(I18N.t("setting_prefilled"));
-    }));
-  }
+  // The screen itself (a table since O3, v9.19) lives in js/ui-tuning.js; the card stays for the coffee sheet.
 
   function fillFilters() {
     const selCoffee = $("#h-coffee");
@@ -836,7 +822,7 @@
     actionsExtraction, extractionCard, historyComment, detailContent, asCards,
     updateMethodSegment,
     renderCards,
-    historyTastes, fillFilters, renderHistory, renderHistoryDeferred, renderTuning,
+    historyTastes, fillFilters, renderHistory, renderHistoryDeferred,
     renderSummary, withoutAccents, searchableText, sortState, sortValue,
   });
 })();

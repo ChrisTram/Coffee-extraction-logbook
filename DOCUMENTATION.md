@@ -169,7 +169,12 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/ui-roll.js` | la valeur qui roule (v9.17) : un texte, ou une copie du texte d'un champ au dessus de lui |
 | `js/ui-brewer.js` | la cafetière qui change de forme (v9.17, Q12) : la Brikka fond en Switch, les champs roulent |
 | `js/ui-arrivals.js` | la tasse qui arrive de l'autre appareil (v9.17, Q13) : pastille, glissé, chiffres qui roulent |
-| `js/app.js` | démarrage, navigation, thème, langue, modales d'accueil et de données, abonnement aux données |
+| `js/ui-tuning.js` | Réglages gagnants (v9.19, O3) : le tableau, À retenter, Ce qui gagne partout ; et « Chez toi » des cartes recettes du Guide (D2) |
+| `js/ui-share.js` | partager une tasse ou une recette (v9.19, F2) : l'image en canevas, le texte, le menu de partage |
+| `js/ui-welcome.js` | la première ouverture (v9.19, O4) : trois questions, puis la première tasse |
+| `js/ui-shortcuts.js` | les raccourcis clavier : la table SHORTCUTS, la décision, l'aide générée, l'astuce (v9.13, v9.19) |
+| `js/app.js` | démarrage, navigation, thème, langue, modale de données, abonnement aux données |
+| `css/extras.css` | les styles de la v9.19 (O4, raccourcis, F2, O3), chargés après finishing.css |
 | `css/fonts/` | les deux polices de la DA, embarquées en woff2, sous OFL (section 10) |
 | `sw.js`, `manifest.json`, `icons/` | PWA et hors ligne (section 10) |
 | `worker/index.js`, `worker/sync.js` | porte d'entrée et fusion D1, Cloudflare seulement (section 13) |
@@ -916,7 +921,61 @@ Les recettes ont des filtres (`#biblio-filtres` : machine, cafés lavés, nature
 fermentés, localStorage `guide-filtre`). Le profil d'une recette
 (`UI.profilsRecette`) se lit dans son « Pour qui », la première phrase d'abord ;
 sans profil lisible elle paraît sous les deux. Chaque carte porte « Chez toi » :
-la moyenne des tasses notées de cette recette (`UI.chezToi`).
+la moyenne des tasses notées de cette recette, et depuis la v9.19 (D2, `UI.recipeAtHome`,
+js/ui-tuning.js) la courbe de ses notes dans le temps, qui se dessine à l'ouverture et ouvre
+l'historique cherché sur le nom de la recette (l'historique n'a pas de filtre par recette, sa
+recherche lit la recette), et le meilleur réglage fait sur elle (même café, même molette, même
+eau ou même feu, au moins deux tasses, `TUNING.recipeHome`) avec « Refaire ». Chaque carte a
+aussi « Partager » (F2).
+
+## 6 quater. Réglages gagnants (js/ui-tuning.js, v9.19)
+
+L'écran `tuning` (#tuning-list) est un TABLEAU sur ordinateur et des cartes sous 760 px :
+une ligne par café dont le meilleur réglage est prouvé (la règle de `TUNING.forCoffee`, trois
+tasses à la même combinaison, `TUNING.winningRows`), classée par note, triable par café,
+tasses et note ; les cafés désactivés restent en bas, grisés, sans « Refaire ». Molette, eau
+(Switch) ou feu (Brikka) et dose viennent de la tasse de RÉFÉRENCE, celle que « Refaire »
+duplique (`UI.redoCup`, toast `setting_prefilled`). Dessous : « À retenter »
+(`TUNING.toRetry` : une tasse notée 8 ou plus, seule à sa combinaison, sur un café actif, au
+dessus de son meilleur prouvé), « Ce qui gagne partout » (`TUNING.safestSettings` : par
+machine, la valeur d'un levier, degrés et molette au Switch, molette et feu à la Brikka, qui
+monte les tasses au dessus de la moyenne de LEUR café ; deux valeurs essayées 4 fois chacune
+au moins, sur deux cafés), et les cafés en route avec leur raison (`setting_*`). Tout est
+calculé sur les tasses analysables. La carte `UI.tuningCard` (ui-history.js) reste celle de
+la fiche café.
+
+## 6 quinquies. La première ouverture, les raccourcis, le partage (v9.19)
+
+**La première ouverture** (O4, js/ui-welcome.js, `#modal-welcome`). Trois étapes : où garder
+les tasses (en ligne, rien à faire ; ou un dossier CSV, `DATA.linkFolder` sur le geste de son
+bouton), le matériel (les cafetières cochées restreignent la recette de départ ; la molette du
+C5 écrit `settings.grind_dial`, la même que « Mon moulin » ; le zéro 0.0.2 est un texte), le
+premier café (nom, procédé, torréfaction) et la recette de départ, `TUNING.starterRecipe` sur
+`COFFEE_RECIPE_MATRIX`. « Brasser ma première tasse » crée le café (recette et machine
+recommandées) puis passe par `UI.onCoffeeChoice` comme Ctrl K « Nouvelle tasse de ».
+QUAND : inchangé, `UI.welcomeAfterStart` à la fin de `startApp`, après la synchro s'il y en
+a une, seulement sans café ni tasse. Une page chargée sur `#welcome` et « Revoir la première
+ouverture » (Données) l'ouvrent exprès ; sur des tasses existantes, son bouton démo disparaît.
+Ordinateur : les trois étapes côte à côte (`aria-current="step"` allume la courante) ;
+sous 900 px : une piste qui glisse (`--wl-step`), la hauteur suit l'étape montrée.
+
+**Les raccourcis** (js/ui-shortcuts.js). La table `SHORTCUTS` est la seule liste des touches :
+les accords G (et G N, G C, présents seulement si `#screen-analytics`, `#screen-coffees`
+existent), les lettres N R E C, les touches du rail, et l'aide, `#modal-shortcuts`, une
+bulle en Popover API ouverte par « ? » ou le bouton clavier du rail (`#btn-keys`,
+`popovertarget`), écrite à chaque ouverture. Une touche gérée ailleurs (cadrans, fiche
+recette) y est seulement listée ; Espace et → du mode Brassage sont jouées ici. L'astuce
+« appuie sur ? » : ordinateur à souris seulement, localStorage `keys-hint-done` posé au
+premier raccourci (Ctrl K compris) ou à sa fermeture.
+
+**Le partage** (F2, js/ui-share.js, `#modal-share`). `data-share-cup="<id>"`,
+`data-share-recipe="<id>"` ou `data-action="share"` dans un élément à `data-id` : un seul
+écouteur sur le document. Image 1080 × 1350 en canevas, palette Graphite écrite dans le code
+(un canevas ne lit pas le CSS), polices de la page attendues ; texte en lignes (réglages,
+étapes de la recette mises à l'eau versée par `scalePours`, goûts et note). Envoi :
+`navigator.share` avec le fichier si `navigator.canShare({ files })`, le texte seul sinon,
+le presse-papiers sans menu de partage ; « Enregistrer l'image » quand le fichier ne peut
+pas partir. Ctrl K : « Partager ma dernière tasse ».
 
 ## 7. Graphiques (js/charts.js)
 
@@ -1385,7 +1444,7 @@ En dernier recours, Time Travel de D1 restaure toute la base :
 `init()` ne synchronise plus (v8.72) : il chargeait les données locales puis
 attendait la synchro avant le premier affichage, jusqu'à 15 s d'écran vide en
 réseau faible. `demarrer()` (app.js) affiche d'abord les données locales, lance
-la synchro, et n'ouvre la modale d'accueil que si, APRÈS la synchro, il n'y a
+la synchro, et n'ouvre la première ouverture (`UI.welcomeAfterStart`, js/ui-welcome.js) que si, APRÈS la synchro, il n'y a
 toujours rien : un téléphone neuf reçoit ses données avant qu'on lui propose la
 démo.
 
@@ -1611,7 +1670,7 @@ raccourcis s'affichent sur Android, pas sur iPhone.
 
 ## 12. Tests
 
-Six suites sans navigateur, sans dépendance, à lancer depuis `tracker/`, toutes
+Sept suites sans navigateur, sans dépendance, à lancer depuis `tracker/`, toutes
 en quelques secondes :
 
 ```
@@ -1622,6 +1681,7 @@ node worker/index.test.mjs   porte d'entree, cache des assets, fichiers ignores
 node worker/sync.test.mjs    fusion entre appareils, taille du document
 node tools/logbook-mcp.test.mjs  serveur MCP du catalogue contre le vrai Worker et un faux D1
 node tools/stock.test.mjs    (v9.18) etagere, bocaux de la saisie, fin d'un sachet, prochaine tasse, cadran qui tourne
+node tools/extras.test.mjs   v9.19 : moyennes partagées (H1), réglages gagnants, recette de départ, raccourcis, texte partagé
 ```
 
 Ce que chacune couvre, et le bug qui l'a motivée : `DECISIONS.md`, « Tests ».
