@@ -440,7 +440,7 @@ const I18N_EN = {
     toast_deleted: "Brew deleted",
     toast_duplicated: "Brew duplicated, adjust and save",
     dictate: "Dictate",
-    dictate_listening: "Listening, tap to finish",
+    dictate_listening: "Listening…",
     dictate_refused: "The microphone is blocked: allow it in the browser settings",
     dictate_network: "Dictation needs a connection",
     twins_title: "Your twin cups",
@@ -1199,6 +1199,14 @@ const I18N_EN = {
     home_bag_end: "End of bag",
     home_bag_end_many: "{n} coffees",
     home_bag_end_title: "A bag is finished: My coffees offers to buy it again",
+    // gestures (v9.22)
+    pull_offline: "Offline, the sync will wait",
+    pull_no_sync: "No sync on this device",
+    dictate_stop: "Finish",
+    dictate_info: "You speak, the words write themselves. Recognition goes through the browser's online speech service.",
+    dictate_silence: "I heard nothing. Try again whenever you like.",
+    dictate_no_mic: "No microphone found on this device",
+    dictate_failed: "Dictation stopped, try again",
   },
 
   UI: {

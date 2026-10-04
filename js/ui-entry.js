@@ -879,7 +879,7 @@
      app.js no longer exists. */
 
   function wireEntry() {
-    wireDictation($("#f-dictate"), $("#f-comment"), $("#f-dictate-text"));
+    wireDictation($("#f-dictate"), $("#f-comment"), $("#f-dictate-text"), $("#f-dictate-live"));
     /* Q12 (v9.17): what the fields showed before, so that what the other
        machine changes rolls to its new value (js/ui-brewer.js). The fields
        hold their new values at once: the roll only draws on top of them. */

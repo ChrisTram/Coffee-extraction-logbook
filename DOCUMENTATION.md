@@ -81,6 +81,27 @@ qui tourne pendant l'échange, torréfié qui saute une fois à jour, gris barr�
 ligne, rougeâtre en échec. Jamais vert. La ligne de texte (`updateSyncStatus`) a
 quitté `app.js` avec lui.
 
+TIRER POUR SYNCHRONISER (R6, v9.22, `js/ui-pull.js`). Au téléphone (`pointer: coarse`
+seulement), tirer vers le bas depuis tout en haut de l'accueil, du journal, de Mes
+cafés ou d'Analyses (`PULL_SCREENS`) fait descendre un disque (`.pull-sync`, bâti au
+premier geste) qui porte DEUX grains Q6 superposés, cru dessous, torréfié dessus,
+dont l'opacité est la torréfaction : les couleurs restent celles de finishing.css,
+par thème. Le grain s'étire jusqu'au seuil (`ARM`, 72 px de course après le
+caoutchouc `pullTravel`), puis tourne et grille ; lâché au delà,
+`DATA.synchronize(true)` (la porte du bouton Données ; une synchro déjà en vol
+est attendue), le grain tourne tant qu'elle dure (800 ms au moins), puis prend le
+look du résultat (`pullOutcome` : torréfié, barré hors ligne, neutre sans synchro,
+rougeâtre en échec) et un toast le dit. Les grains du disque portent `data-pull` :
+`paintSyncBeans` les laisse tranquilles, ils disent le geste, pas l'état global.
+Jamais d'un champ, des cadrans, des courbes lues au doigt, du graphe 30 jours, de
+la table du journal, d'une liste qui défile de côté ou d'un défileur intérieur qui
+n'est pas en haut (`blockedFrom`, styles calculés), ni sous une fenêtre, la feuille
+« Plus », la saisie rapide ou la palette. Tous les écouteurs sont passifs. Sur ces
+écrans `html` porte `.pull-on` (suivi par un MutationObserver sur les `.screen`), et
+gestures.css y pose `overscroll-behavior-y: contain` : le geste natif de Chrome ne
+recharge plus la page là, et seulement là. Mouvement réduit : grain immobile, un
+anneau se remplit.
+
 LES COURBES AU DOIGT (M4, v9.13). Le graphe 30 jours se lit en glissant le doigt :
 un trait pointillé marque le jour, et au toucher l'infobulle sort du canevas
 pour une bulle au dessus, qui garde toutes ses lignes (`charts.js`). Les courbes
@@ -160,6 +181,7 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/ui-sync-bean.js` | la ligne de synchro et son grain de café (v9.13) |
 | `js/ui-nav.js` | la barre du bas : bouton central, appui long, trait qui glisse (v9.13) |
 | `js/ui-scrub.js` | les courbes SVG qu'on parcourt au doigt (v9.13) ; le graphe 30 jours le fait dans `charts.js` |
+| `js/ui-pull.js` | tirer pour synchroniser au téléphone (v9.22, R6) : le geste, le disque et ses deux grains, la synchro ; `pullTravel`, `pullPose`, `pullOutcome` purs |
 | `js/ui-findings.js` | les phrases calculées et leur carrousel |
 | `js/ui-last-cup.js` | la carte de la dernière tasse, et ses briques partagées avec la table |
 | `js/ui-dashboard.js` | l'accueil (`renderDashboard` : coin du stock, dernière tasse, dernières tasses), et les graphes qu'il portait, dessinés depuis la v9.21 sur la page Analyses (`renderAnalysesCharts`, `renderCalendar`, `renderChart30`) |
@@ -170,6 +192,7 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/ui-dial.js` | le cadran du moulin (v9.13) : saisie, formulaire de recette, Paramètres |
 | `js/ui-rating-dial.js` | le cadran de note (v9.13), interrupteur `RATING_DIAL_ON` |
 | `js/ui-wheel.js` | les roues des durées (v9.13) : temps total, écoulement, chauffe |
+| `js/ui-dictate.js` | dicter le commentaire, mot à mot (v8.43, R13 en v9.22) : `wireDictation`, et `mergeDictation`, `revealStep` purs. Chargé AVANT ui-entry.js, qui l'emprunte |
 | `js/ui-entry.js` | formulaire, chronomètre |
 | `js/ui-entry-aside.js` | panneau latéral de la saisie, tasses jumelles |
 | `js/ui-pills.js` | pilules des diagnostics et des goûts, repli des familles |
@@ -204,6 +227,7 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `css/extras.css` | les styles de la v9.19 (O4, raccourcis, F2, O3), chargés après finishing.css |
 | `css/journal.css` | les styles du journal v9.20 (table, page de comparaison, scènes), chargée après `extras.css` |
 | `css/home.css` | la navigation N1, l'accueil L1, la page Analyses O1, l'histoire du mois O6 (v9.21), chargée après `journal.css` |
+| `css/gestures.css` | tirer pour synchroniser et la dictée (v9.22), chargée après `home.css` |
 | `css/fonts/` | les deux polices de la DA, embarquées en woff2, sous OFL (section 10) |
 | `sw.js`, `manifest.json`, `icons/` | PWA et hors ligne (section 10) |
 | `worker/index.js`, `worker/sync.js` | porte d'entrée et fusion D1, Cloudflare seulement (section 13) |
@@ -1198,11 +1222,18 @@ Points fixés depuis, chacun expliqué dans `DECISIONS.md` :
   critère de température ni de dose, à la demande de Chris. Chaque ligne dit en quoi
   elle diffère (autre café, molette, température du Switch, feu de la Brikka). Sous
   deux jumelles la carte se cache. Ratées exclues, tasse en cours d'édition aussi.
-- Le commentaire se DICTE (v8.43) : `UI.brancherDictee()` pose la reconnaissance
-  vocale du navigateur (`SpeechRecognition`, préfixée `webkit` sur Chrome et Safari)
-  sur `#f-dicter`. Le bouton n'existe que si l'API est là ET que `navigator.onLine`
-  est vrai, la reconnaissance passant par les serveurs du navigateur ; il se cache
-  hors ligne. Le texte dicté s'ajoute au commentaire et reste modifiable.
+- Le commentaire se DICTE (v8.43, mot à mot depuis la v9.22, R13) : `UI.wireDictation()`
+  (`js/ui-dictate.js`) pose la reconnaissance vocale du navigateur (`SpeechRecognition`,
+  préfixée `webkit` sur Chrome et Safari) sur `#f-dictate`. Le bouton n'existe que si
+  l'API est là ET que `navigator.onLine` est vrai, la reconnaissance passant par les
+  serveurs du navigateur ; il se cache hors ligne, et sa bulle `data-info` (survol,
+  appui long) le dit. Résultats intermédiaires, un seul énoncé (`continuous = false`,
+  une pause l'arrête), langue `I18N.locale()`. Les mots arrivent un par un
+  (`revealStep`, 55 ms) ; `mergeDictation` les ajoute APRÈS le texte tapé, jamais
+  réécrit, avec une espace et une majuscule en début de phrase. Chaque écriture
+  émet `input` (le brouillon suit) ; une touche tapée pendant l'écoute l'arrête. La
+  ligne `#f-dictate-live` dit « J'écoute… » ou une erreur calme (micro refusé,
+  silence, pas de micro, réseau).
 - La saisie rapide enregistre SANS note par défaut, comme le formulaire complet :
   curseur sans pouce à chaque ouverture, même mécanisme (`UI.brancherNote`).
 
@@ -1549,7 +1580,9 @@ sur un appareil vide) : `DATA.lastArrivals()` les rend, en mémoire seulement, j
 ni envoyées (Q13, v9.17). En cas
 d'échec les données locales sont laissées intactes et une relance part après
 5 s, 15 s, 1 min, puis toutes les 5 min ; au retour sur l'appli
-(`visibilitychange`) aussi.
+(`visibilitychange`) aussi. À la main : le bouton du panneau Données, ou au
+téléphone le geste « tirer pour synchroniser » (v9.22, section 1), qui passent tous
+deux par `DATA.synchronize(true)`.
 
 **Garde-fous de la v8.71.**
 - Identifiants : `nouvelId` produit l'heure en base 36 et quatre caractères au
@@ -1822,6 +1855,7 @@ node tools/stock.test.mjs    (v9.18) etagere, bocaux de la saisie, fin d'un sach
 node tools/extras.test.mjs   v9.19 : moyennes partagées (H1), réglages gagnants, recette de départ, raccourcis, texte partagé
 node tools/journal.test.mjs  le journal v9.20 : regles de la comparaison et sa phrase, colonnes de la table, chiffres corriges (pur)
 node tools/home.test.mjs     accueil, Analyses, histoire du mois, carte de l'appli (v9.21) : parties pures et page
+node tools/gestures.test.mjs tirer pour synchroniser et dictée (v9.22) : caoutchouc, seuil, issues, texte dicté (pur), câblage
 ```
 
 Ce que chacune couvre, et le bug qui l'a motivée : `DECISIONS.md`, « Tests ».

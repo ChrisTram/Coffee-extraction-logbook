@@ -91,9 +91,11 @@
       toggleNavSheet(!$("#rail").classList.contains("expanded"));
     });
     $("#overlay-nav").addEventListener("click", () => toggleNavSheet(false));
-    // The bar's centre button and sliding mark (js/ui-nav.js), the finger on the curves (js/ui-scrub.js).
+    // The bar's centre button and sliding mark (js/ui-nav.js), the finger on the curves (js/ui-scrub.js),
+    // pulling a screen down to sync (js/ui-pull.js).
     UI.wireNav();
     UI.wireScrub();
+    UI.wirePull();
 
     // The rail brand leads back to the dashboard. We keep the href for the
     // keyboard and opening in a tab, but a plain click switches screens.

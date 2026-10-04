@@ -1697,6 +1697,33 @@ La démonstration n'avait pas de date d'ouverture : ses sachets naissent de la m
 Aucune de ses tasses n'avait donc de jour du sachet, et la fiche comme la règle « âge du
 paquet » y restaient muettes. Elle ouvre maintenant chaque sachet le jour de l'achat.
 
+### La dictée mot à mot, sans jamais réécrire ce qui est tapé (v9.22, R13)
+
+La v8.43 attendait la fin de la phrase et remplaçait le champ par « avant + dicté »
+à chaque résultat, avec un `before` TRIMÉ : une espace ou un saut de ligne tapé à
+la fin disparaissait. Désormais le texte tapé est gardé au caractère près, et la
+dictée ne fait qu'ajouter après lui (`mergeDictation`, testé). La majuscule ne se
+pose qu'en début de phrase ; au milieu, la casse entendue est gardée, faute de
+savoir reconnaître un nom propre (« comme le Bana Cafe »).
+
+`continuous = false` : un seul énoncé, une pause l'arrête, ce que demandait la
+piste. Le mode continu de Chrome sur Android renvoie des résultats cumulés qui
+répètent la phrase ; un énoncé à la fois, et un second appui pour continuer, est
+plus sûr. Les résultats intermédiaires sont activés et les mots arrivent un par un
+(`revealStep`, 55 ms) : Chrome envoie souvent plusieurs mots d'un coup, et le
+compte-gouttes est ce qui donne le « mot à mot ». Quand la reconnaissance se
+ravise, on recule au dernier mot commun, jamais dans le texte tapé.
+
+Deux garde-fous contre l'écrasement : une touche tapée pendant l'écoute (un
+`input` `isTrusted`) arrête la dictée et garde tout ; et chaque écriture vérifie
+que le champ contient encore ce qu'on y a mis, sinon (formulaire remis à zéro après
+un enregistrement, par exemple) elle s'arrête sans écrire. Les erreurs vont dans la
+ligne sous le champ, pas dans un toast : elles concernent ce champ, et le toast du
+bas est loin du doigt. Le bouton reste caché hors ligne (choix de la v8.43) : la
+reconnaissance de Chrome et de Safari passe par leurs serveurs. La classe de
+reconnaissance est cherchée à chaque départ, pas figée au câblage : c'est ce qui
+permet de vérifier les états dans le navigateur avec un faux objet.
+
 ## Tableau de bord et analyses
 
 ### Insights automatiques du tableau de bord
@@ -2350,6 +2377,38 @@ de sites. `data.js` reste le seul propriétaire de l'état et le seul à appeler
 `persister()` : toute fonction qui écrit ET persiste vit chez lui. La façade
 `DATA` expose les mêmes noms qu'avant, donc aucun écran n'a bougé, et les 374
 tests de la couche de données n'ont eu à changer que leur liste de fichiers.
+
+### Tirer pour synchroniser : deux grains superposés, et le geste natif écarté là seulement (v9.22, R6)
+
+LES COULEURS. Le grain qui torréfie sous le doigt devait reprendre les couleurs du
+grain Q6, qui ne vivent qu'en propriétés posées par look (`.sync-bean[data-look]`),
+deux fois (clair, sombre). Plutôt que de les recopier pour un `color-mix`, le disque
+porte deux vrais grains Q6 l'un sur l'autre, cru dessous, torréfié dessus, et
+l'opacité de celui du dessus est la torréfaction : une superposition à opacité p est
+exactement le mélange sRGB des deux couleurs. Le résultat (barré, rougeâtre, neutre)
+change simplement le look du grain du dessus. `data-pull` les sort de
+`paintSyncBeans`, sinon la prochaine notification de données les aurait repeints à
+l'état global ; le filtre est en JS et pas en `:not()` parce que le test de démarrage
+remplace `querySelectorAll(".sync-bean")` mot pour mot.
+
+LE GESTE NATIF. Chrome recharge la page sur ce même geste. Le site posait déjà
+`overscroll-behavior-y: contain` sur `body`, mais la spécification prend la valeur de
+l'élément RACINE pour la fenêtre : la règle est posée sur `html.pull-on`, seulement
+sur les quatre écrans où notre geste existe et seulement au toucher. La règle de
+`body` n'a pas été retirée : ce n'était pas notre écran à décider.
+
+LE CORPS DE LA PAGE NE DESCEND PAS. Seul le disque bouge : déplacer l'écran par un
+`transform` aurait fait de lui le bloc conteneur de tout ce qui est en position
+fixe dedans, qui se serait mis à glisser avec la page.
+
+LE FIL. Tous les écouteurs sont passifs, rien n'appelle `preventDefault` : le défilement
+n'attend jamais le script. Le dessin se fait dans `touchmove`, pas dans un
+`requestAnimationFrame` : Chrome envoie déjà un `touchmove` par image, on n'écrit que
+des styles, et un rAF gelé (onglet en arrière-plan, volet de prévisualisation) laissait
+le grain figé en haut. Le geste ne part qu'après 10 px nettement vers le bas (à 35
+degrés de la verticale au plus) : un balayage de côté n'est jamais pris. Une synchro
+déjà en vol n'est pas doublée, on attend qu'elle atterrisse. Le grain tourne au moins
+800 ms et s'arrête au bout d'un tour (`animationiteration`), jamais d'un coup sec.
 
 ## Performance et hors ligne
 

@@ -412,4 +412,12 @@ Object.assign(I18N_FR, {
     home_bag_end: { fr: "Fin de sachet" },
     home_bag_end_many: { fr: "{n} cafés" },
     home_bag_end_title: { fr: "Un sachet est fini : Mes cafés propose de le racheter" },
+    // gestures (v9.22)
+    pull_offline: { fr: "Hors ligne, la synchro attendra" },
+    pull_no_sync: { fr: "Pas de synchro sur cet appareil" },
+    dictate_stop: { fr: "Finir" },
+    dictate_info: { fr: "Tu parles, les mots s'écrivent. La reconnaissance passe par le service vocal du navigateur, en ligne." },
+    dictate_silence: { fr: "Je n'ai rien entendu. Réessaie quand tu veux." },
+    dictate_no_mic: { fr: "Aucun micro trouvé sur cet appareil" },
+    dictate_failed: { fr: "La dictée s'est arrêtée, réessaie" },
 });

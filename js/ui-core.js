@@ -325,45 +325,7 @@ const UI = (() => {
     slider.addEventListener("keydown", ev => { if (SLIDER_KEYS.includes(ev.key)) onTouch(); });
   }
 
-  /* DICTATING THE COMMENT (v8.43). Speaking while the cup cools down, hands
-     busy. Chrome's and Safari's speech recognition goes through their
-     servers: the button only exists if the browser knows it AND we are
-     online, and it hides as soon as the connection drops. The dictated text
-     is ADDED to what is already written and stays editable: nothing goes to
-     storage before Save. */
-  function wireDictation(button, field, label) {
-    const Recognition = typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
-    if (!button || !field || !Recognition) return;
-    const visible = () => { button.hidden = typeof navigator !== "undefined" && navigator.onLine === false; };
-    visible();
-    window.addEventListener("online", visible);
-    window.addEventListener("offline", visible);
-    let recognition = null;
-    const setListening = isActive => {
-      button.setAttribute("aria-pressed", String(isActive));
-      if (label) label.textContent = I18N.t(isActive ? "dictate_listening" : "dictate");
-    };
-    button.addEventListener("click", () => {
-      if (recognition) { recognition.stop(); return; }
-      recognition = new Recognition();
-      recognition.lang = I18N.locale();
-      recognition.interimResults = false;
-      recognition.continuous = false;
-      const before = field.value.trim();
-      recognition.onresult = ev => {
-        const spoken = Array.from(ev.results).map(r => r[0].transcript).join(" ").trim();
-        if (!spoken) return;
-        field.value = (before ? before + " " : "") + spoken;
-        field.dispatchEvent(new Event("input", { bubbles: true }));
-      };
-      recognition.onerror = ev => {
-        if (ev.error === "not-allowed" || ev.error === "service-not-allowed") toast(I18N.t("dictate_refused"));
-        else if (ev.error === "network") toast(I18N.t("dictate_network"));
-      };
-      recognition.onend = () => { recognition = null; setListening(false); };
-      try { recognition.start(); setListening(true); } catch (e) { recognition = null; setListening(false); }
-    });
-  }
+  /* Dictating the comment (v8.43) lives in js/ui-dictate.js since R13 (v9.22). */
 
   /* LINE ICONS. Same drawing as the navigation: 1.8 px, round caps, text
      colour. They replace the Unicode glyphs (⇄ ⚠ ⧉ ✎ 🗑) of the action
@@ -749,7 +711,7 @@ const UI = (() => {
     toggleFailed, loadFallbacks, localDateKey, askConfirm, detailRatio, displayedDiags,
     saveFallbacks, isFailed, analyzableExts, includeFailed,
     dayKey, extsWithCalcs, fmtShortDate, fmtDateTime, fmtDecimal, fmtHour, dayLabelOf, fmtDuration, fmtVND, icon,
-    localNow, markRating, wireDictation, wireRating, isRatingEmpty, paintSlider, average, nav, normalizeScreen, forgetSignatures, setHtml, setText,
+    localNow, markRating, wireRating, isRatingEmpty, paintSlider, average, nav, normalizeScreen, forgetSignatures, setHtml, setText,
     recipeWithVariants, recipesForMethod, liveRecipes, renderCurrentScreen, fallbacks,
     migrateLocalFallbacks, ifChanged, signatureTable, signatures,
     deleteExtractionWithUndo, toast, toastAction, findRecipe, oneAtATime, watchForUpdates,

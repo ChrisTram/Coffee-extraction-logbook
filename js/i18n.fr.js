@@ -504,7 +504,7 @@ const I18N_FR = {
     toast_deleted: { fr: "Extraction supprimée" },
     toast_duplicated: { fr: "Extraction dupliquée, ajuste et enregistre" },
     dictate: { fr: "Dicter" },
-    dictate_listening: { fr: "J'écoute, touche pour finir" },
+    dictate_listening: { fr: "J'écoute…" },
     dictate_refused: { fr: "Le micro est refusé : autorise-le dans les réglages du navigateur" },
     dictate_network: { fr: "La dictée a besoin d'une connexion" },
     twins_title: { fr: "Tes tasses jumelles" },

@@ -74,7 +74,9 @@
     const look = beanLook(state);
     const pop = lastLook === "raw" && look === "roasted";
     lastLook = look;
+    // The pulled bean (R6, js/ui-pull.js) says what the pull does, not the global state: data-pull keeps it out.
     $$(".sync-bean").forEach(b => {
+      if ("pull" in b.dataset) return;
       if (!b.querySelector("svg")) b.innerHTML = BEAN_SVG;
       b.dataset.state = state || "never";
       b.dataset.look = look;
@@ -113,5 +115,5 @@
   }
 
   // Made available to the other screens.
-  Object.assign(UI, { SYNC_LABELS, beanLook, paintSyncBeans, updateSyncStatus });
+  Object.assign(UI, { SYNC_LABELS, BEAN_SVG, beanLook, paintSyncBeans, updateSyncStatus });
 })();

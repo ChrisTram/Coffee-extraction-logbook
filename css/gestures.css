@@ -1,0 +1,110 @@
+/* THE GESTURES (v9.22): pulling a screen down to sync on the phone (R6,
+   js/ui-pull.js) and the comment dictated word by word (R13,
+   js/ui-dictate.js). Loaded last, after home.css. Only existing tokens; the
+   accent follows the coffee wherever it is tinted. */
+
+/* ---------- R6: pull to sync ---------- */
+
+/* Chrome's own pull-to-refresh steps aside where ours is active, and only
+   there: html.pull-on, set per screen by js/ui-pull.js. The viewport takes
+   the ROOT's value; the old rule on body stays for the other screens. */
+@media (pointer: coarse) {
+  html.pull-on { overscroll-behavior-y: contain; }
+}
+
+/* The disc that comes down with the finger, the Q6 bean on it. It starts
+   just above the screen; the script moves it, it never takes a touch. */
+.pull-sync {
+  position: fixed; top: env(safe-area-inset-top, 0px); left: 50%; z-index: var(--z-bubble);
+  display: grid; place-items: center;
+  width: 52px; height: 52px; margin-left: -26px; box-sizing: border-box;
+  border-radius: 50%; border: 1px solid var(--card-border); background: var(--panel);
+  box-shadow: var(--shadow);
+  /* The offline slash cuts the bean in the colour of the disc. */
+  --bean-knock: var(--panel);
+  pointer-events: none; will-change: transform, opacity;
+  transition: transform 320ms cubic-bezier(0.3, 1.3, 0.5, 1), opacity 220ms ease,
+    border-color var(--transition), box-shadow var(--transition);
+}
+.pull-sync[hidden] { display: none; }
+/* Under the finger it follows without delay. */
+.pull-sync.pulling { transition: border-color var(--transition), box-shadow var(--transition); }
+/* Past the threshold the disc warms up: the copper edge and its glow. */
+.pull-sync.armed, .pull-sync.syncing { border-color: var(--accent-ring); box-shadow: var(--shadow), 0 0 0 4px var(--accent-glow); }
+/* Going back up: no bounce, it leaves. */
+.pull-sync.leaving { transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1), opacity 260ms ease; }
+
+/* Two wrappers: the pull stretches and turns the outer one, the sync spins
+   the inner one, and neither undoes the other. */
+.pull-shape, .pull-spin { display: grid; place-items: center; width: 30px; height: 30px; }
+.pull-shape { transition: transform 160ms cubic-bezier(0.3, 1.5, 0.5, 1); }
+/* Let go before the threshold: the stretch springs back. */
+.pull-sync.leaving .pull-shape { transition: transform 380ms cubic-bezier(0.3, 1.7, 0.45, 1); }
+/* The raw bean below, the roasted one above: its opacity is the roast. */
+.pull-spin .sync-bean { grid-area: 1 / 1; width: 30px; height: 30px; }
+.pull-spin .sync-bean + .sync-bean { transition: opacity 90ms linear; }
+.pull-sync.syncing .pull-spin .sync-bean + .sync-bean { transition: opacity 2.6s cubic-bezier(0.2, 0.6, 0.3, 1); }
+.pull-sync.done .pull-spin .sync-bean + .sync-bean { transition: opacity 420ms ease; }
+/* A raw Q6 bean turns on its own: here the finger and the sync turn it. */
+.pull-sync .sync-bean svg { animation: none; }
+.pull-spin.spinning { animation: bean-turn 900ms linear infinite; }
+/* The result pops once, like the rail's bean coming out of a sync. */
+.pull-sync.done .pull-spin { animation: bean-pop 520ms cubic-bezier(0.3, 1.7, 0.45, 1); }
+
+/* Reduced motion: a ring fills around a still bean instead. */
+.pull-ring { position: absolute; inset: 0; width: 100%; height: 100%; display: none; transform: rotate(-90deg); }
+.pull-sync.calm .pull-ring { display: block; }
+.pull-ring circle { fill: none; stroke-width: 3; }
+.pull-ring-track { stroke: var(--lines); }
+.pull-ring-fill { stroke: var(--accent); stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; }
+
+/* ---------- R13: the dictated comment ---------- */
+
+.comm-head .dictate { position: relative; transition: color var(--transition), background var(--transition), border-color var(--transition); }
+/* A full target under a finger. */
+@media (pointer: coarse) {
+  .comm-head .dictate { min-height: 44px; padding-inline: 16px; }
+}
+/* The bubble (the shared data-info one) opens toward the field, not off the
+   right edge; a tap on a phone leaves :hover stuck, only the long press opens it there. */
+.comm-head .dictate[data-info]::after { left: auto; right: 0; transform: none; max-width: min(300px, calc(100vw - 40px)); }
+@media (hover: none) {
+  .comm-head .dictate[data-info]:hover:not(.info-expanded)::after { content: none; }
+}
+
+/* Listening: a ring breathes around the button, the microphone with it, and
+   the field the words land in takes the copper edge. */
+.dictate.listening::before {
+  content: ""; position: absolute; inset: -1px; border-radius: inherit;
+  border: 2px solid var(--accent); pointer-events: none;
+  animation: dictate-ring 1.4s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+}
+.dictate.listening .ico { animation: dictate-mic 1.4s ease-in-out infinite; }
+.field:has(.dictate.listening) textarea { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+@keyframes dictate-ring {
+  0% { transform: scale(1); opacity: 0.85; }
+  100% { transform: scale(1.14, 1.5); opacity: 0; }
+}
+@keyframes dictate-mic { 50% { transform: scale(1.14); } }
+
+/* The live line under the field: « J'écoute… » with its dot, or one calm sentence. */
+.dictate-live {
+  display: flex; align-items: center; gap: 8px; margin: 8px 2px 0;
+  font-size: 0.8rem; line-height: 1.4; font-weight: 600; color: var(--accent-strong);
+  animation: dictate-line-in 220ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+.dictate-live[hidden] { display: none; }
+.dictate-live.note { font-weight: 500; color: var(--muted); }
+.dl-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: dictate-dot 700ms ease-in-out infinite alternate; }
+@keyframes dictate-dot { from { transform: scale(0.65); opacity: 0.55; } to { transform: scale(1.1); opacity: 1; } }
+@keyframes dictate-line-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+/* ---------- The calm path ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .pull-sync, .pull-sync.pulling, .pull-sync.leaving, .pull-shape, .pull-sync.leaving .pull-shape { transition: opacity 200ms ease; }
+  .pull-spin.spinning, .pull-sync.done .pull-spin { animation: none; }
+  /* A still ring says it listens. */
+  .dictate.listening::before { animation: none; inset: -3px; opacity: 0.7; }
+  .dictate.listening .ico, .dl-dot, .dictate-live { animation: none; }
+}
