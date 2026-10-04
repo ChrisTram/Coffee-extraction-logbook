@@ -208,7 +208,7 @@ const { BAGS, GRIND } = new Function(SCRIPTS.map(read).join("\n") + "\nreturn { 
 
 // ---------- The words ----------
 {
-  const fr = read("js/i18n.fr.js"), en = read("js/i18n.en.js");
+  const fr = read("js/i18n.fr.js") + read("js/i18n.fr2.js"), en = read("js/i18n.en.js");
   const src = ["js/ui-coffees.js", "js/ui-bag-end.js", "js/ui-coffee-sheet.js"].map(read).join("\n");
   // A key built from a prefix ("nc_why_" + kind) is listed whole below.
   const keys = [...new Set([...src.matchAll(/I18N\.t\("([a-z_]+)"/g)].map(m => m[1]))].filter(k => !k.endsWith("_"));

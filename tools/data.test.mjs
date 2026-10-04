@@ -25,11 +25,11 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
    when we would want them to be watching. */
 /* The styles live in four sheets since v8.78: checks read them end to end, in
    load order, like the browser does. */
-// v9.18: the stock sheet (Mes cafés, the end of a bag, the next cup) after finishing.css.
-const CSS_SHEETS = ["css/base.css", "css/screens.css", "css/dialogs.css", "css/finishing.css", "css/stock.css", "css/extras.css", "css/journal.css"];
+// v9.18: the stock sheet (Mes cafés, the end of a bag, the next cup) after finishing.css; v9.21: the home's last.
+const CSS_SHEETS = ["css/base.css", "css/screens.css", "css/dialogs.css", "css/finishing.css", "css/stock.css", "css/extras.css", "css/journal.css", "css/home.css"];
 const readCss = () => CSS_SHEETS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
-const SOURCE_UI = ["js/ui-core.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-wheel.js", "js/ui-cup.js", "js/ui-dial.js", "js/ui-rating-dial.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js",
-  "js/ui-history.js", "js/ui-journal.js", "js/ui-table.js", "js/ui-compare.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/ui-jar.js", "js/ui-moments.js", "js/ui-roll.js", "js/ui-brewer.js", "js/ui-arrivals.js", "js/ui-scenes.js", "js/ui-empty.js", "js/ui-coffees.js", "js/ui-bag-end.js", "js/ui-panel.js", "js/ui-palette.js", "js/ui-shortcuts.js", "js/ui-tuning.js", "js/ui-share.js", "js/ui-welcome.js", "js/app.js"]
+const SOURCE_UI = ["js/ui-core.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-home.js", "js/ui-wheel.js", "js/ui-cup.js", "js/ui-dial.js", "js/ui-rating-dial.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js",
+  "js/ui-history.js", "js/ui-journal.js", "js/ui-table.js", "js/ui-compare.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/ui-analytics.js", "js/ui-story.js", "js/ui-jar.js", "js/ui-moments.js", "js/ui-roll.js", "js/ui-brewer.js", "js/ui-arrivals.js", "js/ui-scenes.js", "js/ui-empty.js", "js/ui-coffees.js", "js/ui-bag-end.js", "js/ui-panel.js", "js/ui-palette.js", "js/ui-shortcuts.js", "js/ui-tuning.js", "js/ui-share.js", "js/ui-welcome.js", "js/app.js"]
   .map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 /* demo-data.js has not been a script tag since v7.56, but the harness still
    loads it: loadDemo() needs it and there is no network here. */
@@ -60,7 +60,8 @@ let failures = 0;
    English half in js/i18n.en.js, loaded on demand. Forgetting the second one
    would show French in English mode, without any error. */
 // Since v9.18 the French templates sit in js/i18n.fr.js; the rest of i18n stays in js/i18n.js.
-const I18N_FR_SRC = readFileSync(join(ROOT, "js/i18n.fr.js"), "utf8") + readFileSync(join(ROOT, "js/i18n.js"), "utf8");
+// Since v9.21 their second half (the screens of v9.18 and after) sits in js/i18n.fr2.js.
+const I18N_FR_SRC = ["js/i18n.fr.js", "js/i18n.fr2.js", "js/i18n.js"].map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 const I18N_EN_SRC = readFileSync(join(ROOT, "js/i18n.en.js"), "utf8");
 const bilingual = key =>
   new RegExp("^\\s*" + key + ": \\{ fr:", "m").test(I18N_FR_SRC) &&
@@ -1154,7 +1155,9 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
   const app = SOURCE_UI;
   const list = app.slice(app.indexOf("const SCREEN_NAMES = ["), app.indexOf("]", app.indexOf("const SCREEN_NAMES = [")));
   const screens = [...list.matchAll(/"(\w+)"/g)].map(m => m[1]);
-  check("the screen list is readable from the test", screens.length === 7, screens.join(", "));
+  const sections = (html.match(/<section id="screen-[a-z]+" class="screen/g) || []).length;
+  check("the screen list is readable from the test, one name per screen of the page", screens.length >= 7 && screens.length === sections,
+    screens.join(", ") + " for " + sections + " sections");
 
   /* Every navigation target must aim at a screen that exists. A misspelled
      data-screen throws nothing: the click simply does nothing. */
@@ -1163,12 +1166,13 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
   const unknownTargets = [...new Set(targets)].filter(c => !screens.includes(c));
   check("all data-screen targets exist", unknownTargets.length === 0, unknownTargets.join(", "));
 
-  /* The rail carries the SIX screens: it is the full menu, the bottom bar only
-     shows three and sends the rest to the sheet. */
+  /* The rail carries EVERY screen: it is the full menu, the bottom bar only
+     shows the daily ones and sends the rest to the sheet. The entry form is
+     reached by « Nouvelle tasse » (data-go) since « Saisie » left the rail (N1, v9.21). */
   const rail = html.slice(html.indexOf('<nav class="rail"'), html.indexOf("</nav>"));
-  const inRail = [...rail.matchAll(/data-screen="(\w+)"/g)].map(m => m[1]);
+  const inRail = [...rail.matchAll(/data-(?:screen|go)="(\w+)"/g)].map(m => m[1]);
   const forgotten = screens.filter(e => !inRail.includes(e));
-  check("the rail leads to the six screens, none has become unreachable",
+  check("the rail leads to every screen, none has become unreachable",
     forgotten.length === 0, forgotten.join(", "));
 
   /* The bottom bar does not exceed five entries: beyond that it gets cramped
@@ -1180,8 +1184,8 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
   const entryCount = (bar.slice(0, barEnd).match(/class="[^"]*bar-entry/g) || []).length;
   check("five entries at most in the bottom bar", entryCount <= 5, String(entryCount));
   const barScreens = [...bar.slice(0, barEnd).matchAll(/data-screen="(\w+)"/g)].map(m => m[1]);
-  check("the bar holds the dashboard, the history, the new cup and the Guide",
-    ["dashboard", "history", "entry", "guide"].every(x => barScreens.includes(x)), barScreens.join(", "));
+  check("the bar holds the home, the journal, the new cup and Analyses (N1: the Guide went into Plus)",
+    ["dashboard", "history", "entry", "analytics"].every(x => barScreens.includes(x)) && !barScreens.includes("guide"), barScreens.join(", "));
 
   /* THE THREE TOOLS ARE UNIQUE. app.js addresses them by id: if the rail and the
      sheet were two separate elements, the second button would be mute. That is

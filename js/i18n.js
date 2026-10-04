@@ -28,8 +28,9 @@ const I18N = (() => {
 
   // ---------- 2. Templates for dynamic strings ----------
 
-  /* The French templates live in js/i18n.fr.js since v9.18 (size cap). The
-     English bundle adds its halves to this same object, in place. */
+  /* The French templates live in js/i18n.fr.js since v9.18 (size cap), the
+     screens of v9.18 and after in js/i18n.fr2.js since v9.21. The English
+     bundle adds its halves to this same object, in place. */
   const T = I18N_FR;
 
   // ---------- 3. Display maps for data values ----------
@@ -159,7 +160,11 @@ const I18N = (() => {
     "#drawing-etagere,#drawing-horloge,#drawing-spectre,#drawing-moulin," +
     "#drawing-etagere-reading,#drawing-horloge-reading,#drawing-spectre-reading,#drawing-moulin-reading," +
     "#card-recap,#legend-30d,#aside-video,#matrix-recipes,#sheet-comparison,#sheet-duo,#sheet-footprint,#sheet-trajectory,#sheet-grinder," +
-    "#drawings-panel,#bubble-cup,#drawing-frise,#drawing-podium,#drawing-progression,#drawing-frise-reading,#drawing-podium-reading,#drawing-progression-reading";
+    "#drawings-panel,#bubble-cup,#drawing-frise,#drawing-podium,#drawing-progression,#drawing-frise-reading,#drawing-podium-reading,#drawing-progression-reading," +
+    // home (v9.21): the home's and the Analyses page's zones drawn in JS.
+    "#home-week,#home-week-line,#home-bags,#home-finding,#home-brew,#home-band,#kpis-secondary,#an-highlight,#an-story," +
+    "#tile-month-title,#tile-month-meta,#tile-month,#tile-coffees,#tile-podium,#tile-podium-reading,#tile-recipes-list," +
+    "#tile-tastes,#tile-wheel,#tile-wheel-detail,#tile-grinder,#tile-grinder-reading,#heatmap-title,#story-stage,#story-bars";
 
   function scan() {
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {

@@ -11,7 +11,8 @@
  *     one row per recipe;
  *   - the grinder map: each cup at its microns, within its machine's range.
  *
- * Four of them live on the dashboard, in the "Tes cafés en dessins" card,
+ * They live on the Analyses page since v9.21 (the home until then), in the
+ * "Tes cafés en dessins" card,
  * each with its shortcut (Mes cafés, the history, the Diagnostics tab, the
  * Guide's grinder). The coffee sheet reuses the grinder map for a single
  * coffee, and adds the fingerprint and the trajectory to it (v8.50).
@@ -193,11 +194,12 @@
   /* Each cup at its microns, on its machine's range (GRIND.METHODS). The
      golden zone: the three-click window where the rated cups have the best
      average, from three cups up. A pre-ground coffee has no dial and does not
-     appear. coffeeId restricts the map to one coffee (coffee sheet). */
-  function grinderData(coffeeId) {
+     appear. coffeeId restricts the map to one coffee (coffee sheet); `list`,
+     to some cups (the period of the Analyses page, v9.21). */
+  function grinderData(coffeeId, list) {
     return ["Brikka", "Switch"].map(m => {
       const range = GRIND.METHODS.find(x => x.id === m.toLowerCase());
-      const cups = analyzableExts().filter(e => e.method === m && e.score_10 !== "" && (!coffeeId || e.coffee_id === coffeeId))
+      const cups = (list || analyzableExts()).filter(e => e.method === m && e.score_10 !== "" && (!coffeeId || e.coffee_id === coffeeId))
         .map(e => ({ d: GRIND.parseDial(String(e.grind_dial || "")), n: Number(e.score_10), id: e.id })).filter(t => t.d);
       let golden = null;
       cups.forEach(t => {
@@ -210,8 +212,8 @@
     }).filter(r => r.cups.length);
   }
 
-  function drawGrinder(id, coffeeId) {
-    const rows = grinderData(coffeeId);
+  function drawGrinder(id, coffeeId, list) {
+    const rows = grinderData(coffeeId, list);
     if (!rows.length) { showEmpty(id, "drawing_grinder_empty"); return; }
     const x = um => 16 + ((um - 300) / 600) * 290;
     let s = "";
@@ -456,18 +458,19 @@
 
   /* The three recipes with the best average, from three rated cups each: a
      recipe tried once does not get on it. The highest step is in the middle,
-     like a real podium. Tapping a step opens the recipe in the Guide. */
-  function podiumData() {
+     like a real podium. Tapping a step opens the recipe in the Guide. `list`
+     restricts it to some cups (the period of the Analyses page, v9.21). */
+  function podiumData(list) {
     const ratingsByRecipe = {};
-    analyzableExts().filter(e => e.score_10 !== "" && e.recipe)
+    (list || analyzableExts()).filter(e => e.score_10 !== "" && e.recipe)
       .forEach(e => (ratingsByRecipe[e.recipe] = ratingsByRecipe[e.recipe] || []).push(Number(e.score_10)));
     return Object.entries(ratingsByRecipe).filter(([, n]) => n.length >= MIN)
       .map(([name, n]) => ({ name: name, mean: average(n), n: n.length, r: UI.findRecipe(name) }))
       .sort((a, b) => b.mean - a.mean || b.n - a.n).slice(0, 3);
   }
 
-  function drawPodium(id) {
-    const p = podiumData();
+  function drawPodium(id, list) {
+    const p = podiumData(list);
     if (!p.length) { showEmpty(id, "drawing_podium_empty", { n: MIN }); return; }
     // Order of the steps: second, first, third.
     const places = [p[1], p[0], p[2]];
@@ -724,7 +727,7 @@
     return days.map(j => j.map(e => { const c = DATA.coffeeOf(e); return c && rank.has(c.id) ? rank.get(c.id) : -1; }));
   }
 
-  // ---------- The dashboard ----------
+  // ---------- The Analyses page (the dashboard until v9.21) ----------
 
   /* YOUR DRAWINGS, YOUR WAY (v8.57). The order and the hidden ones live in the
      settings row (fallbacks.drawings, "shelf,!clock,…"), so they follow from
@@ -815,7 +818,7 @@
   /* The shortcuts. A drawing sums up a page: tapping it leads there. A jar, for
      its part, carries data-sheet and opens its coffee's sheet (delegated to ui-coffee-sheet.js). */
   const SHORTCUTS = {
-    coffees: () => UI.openCoffeesModal(),
+    coffees: () => UI.openCoffeesPage(),
     history: () => activateScreen("history"),
     guide: () => { activateScreen("guide"); UI.showGuide("ref-recipes"); },
     diagnostics: () => {
@@ -847,7 +850,7 @@
       const m = ev.target.closest("[data-guide-recipe]");
       if (m) { ev.preventDefault(); activateScreen("guide"); UI.showRecipe(m.dataset.guideRecipe); }
     });
-    // No subscription here (v8.75): renderCurrentScreen already redraws the drawings with the dashboard.
+    // No subscription here (v8.75): renderCurrentScreen already redraws the drawings with the Analyses page.
     wirePanel();
 
     // The drawings' points, on the dashboard and in the coffee sheet.
@@ -868,6 +871,7 @@
 
   Object.assign(UI, {
     wireDrawings, drawingOrder, timelineData, podiumData, recapData, drawFingerprint, drawGrinder, drawTrajectory, shelfData, grinderData, spectrumData, positionDiagnostic: position,
+    drawPodium, onPointClick,
     renderDrawings, renderCoffees30d,
   });
 })();

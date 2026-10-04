@@ -21,16 +21,35 @@ ES, ils ne marchent pas en `file://`), tous en `defer`, dans l'ordre de
 `DATA_*`, `DATA`, `SYNC`, `REGLAGES`, `CHARTS`, `UI`) ou des constantes globales
 (`RECETTES_DEPART`, etc.).
 
-SEPT écrans dans une page unique, bascule par nav et hash. La liste fait foi dans
-`SCREEN_NAMES` (`js/ui-core.js`) : dashboard, entry, history, coffees, tuning,
-guide, settings (tableau, saisie, historique, reglages, guide, parametres jusqu'à
-la v9.05 ; « Mes cafés », `#coffees`, est une page depuis la v9.18, section 8
-sexies). Les anciens liens (`#tableau`, `#saisie`..., et `#reference`) restent
-valides grâce à `LEGACY.ROUTES` (js/legacy-names.js).
+HUIT écrans dans une page unique, bascule par nav et hash. La liste fait foi dans
+`SCREEN_NAMES` (`js/ui-core.js`) : dashboard, entry, history, analytics, coffees,
+tuning, guide, settings (tableau, saisie, historique, reglages, guide, parametres
+jusqu'à la v9.05 ; « Mes cafés », `#coffees`, est une page depuis la v9.18, section
+8 sexies ; Analyses, `#analytics`, depuis la v9.21, section 6 bis). Les anciens liens
+(`#tableau`, `#saisie`..., et `#reference`) restent valides grâce à `LEGACY.ROUTES`
+(js/legacy-names.js).
+
+LA CARTE DE L'APPLI (N1, v9.21). Les noms affichés ne sont plus les noms
+internes : dashboard s'affiche « Accueil », history « Journal », tuning
+« Réglages gagnants », et analytics (`#analytics`, nouveau) « Analyses ». Les
+hashes et les `data-screen` ne changent pas, les anciens liens marchent. Le rail
+range : « + Nouvelle tasse », Chercher, Accueil, Journal, Analyses, Mes cafés,
+Réglages gagnants, Guide, Paramètres, puis le pied (Données, EN,
+thème). « Saisie » a quitté le rail : « Nouvelle tasse » (`data-go="entry"`) y
+mène. LA PASTILLE DE BROUILLON : quand la saisie tient une tasse commencée et non
+enregistrée (`UI.draftInForm()`, js/ui-draft.js : un chrono lancé, un temps, un
+volume, une note, un goût, un diagnostic, un commentaire, « ratée » ; jamais en
+modification), « Nouvelle tasse » et le « + » de la barre portent `.has-draft`
+(une pastille cuivrée qui apparaît d'un saut), `aria-describedby="draft-note"`
+(« brouillon en cours ») et, sur le rail, l'infobulle « Reprendre ta tasse en
+cours ». Elle est repeinte à chaque changement d'écran (`placeBarMark`) et à la
+frappe dans le formulaire (js/ui-nav.js). Le repère du rail (`.rail-mark`) glisse
+d'une entrée à l'autre comme celui de la barre ; sur ordinateur le rail est son
+propre calque dans la transition d'écran.
 
 NAVIGATION (refonte Comptoir, v8.1). **Un seul élément `.rail` dans le DOM, deux
 mises en page.** À partir de 1024 px c'est un rail fixe à gauche de 232 px qui
-porte les six écrans, la marque, le bouton « Nouvelle tasse », l'état de synchro,
+porte tous les écrans, la marque, le bouton « Nouvelle tasse », l'état de synchro,
 les bascules langue et thème et le bouton Données. En dessous, le même élément
 devient la feuille « Plus » qui monte du bas, et `.barre-bas` prend les trois
 écrans quotidiens plus l'entrée « Plus ». Le CSS masque alors les entrées en
@@ -46,13 +65,13 @@ câblage d'`app.js` les traitent déjà toutes, la navigation n'a rien appris de
 nouveau. Les icônes sont des SVG en trait de 1,8 px, jamais des emoji, et un
 test le vérifie. Sur ordinateur « Nouvelle tasse » ouvre la saisie complète.
 
-LA BARRE DU BAS (M3, v9.13, `js/ui-nav.js`). Cinq places : Tableau, Historique,
+LA BARRE DU BAS (M3, v9.13, `js/ui-nav.js`). Cinq places : Accueil, Journal,
 la nouvelle tasse au centre (un `.nav-btn` vers la saisie, relevé de `--bar-rise`
-au dessus de la barre), Guide, Plus. Le bouton flottant de saisie rapide a
+au dessus de la barre), Analyses (le Guide jusqu'à la v9.17, il est dans Plus), Plus. Le bouton flottant de saisie rapide a
 disparu : un appui long sur le bouton central ouvre la saisie rapide, et la
 feuille « Plus » a une entrée « Saisie rapide » (`#rail-quick`, téléphone
 seulement). Le trait sous l'onglet actif glisse (`UI.placeBarMark`, appelé par
-`activateScreen`) ; Mes réglages et Paramètres le mettent sous « Plus ». Ce qui
+`activateScreen`) ; Réglages gagnants, Guide et Paramètres le mettent sous « Plus ». Ce qui
 se pose juste au dessus de la barre ajoute `--bar-rise` à `--bottom-bar`.
 
 LE GRAIN DE LA SYNCHRO (Q6, v9.13, `js/ui-sync-bean.js`). L'état de synchro est
@@ -68,8 +87,9 @@ pour une bulle au dessus, qui garde toutes ses lignes (`charts.js`). Les courbes
 SVG qui portent `data-scrub` (journal par sachet, fiche café, progression) font
 de même par `js/ui-scrub.js` ; `data-scrub="hover"` suit aussi la souris.
 
-LE CHARGEMENT (M8, v9.13). `#loading` est une silhouette des cartes du tableau de
-bord, dans `main`, avec les classes du tableau de bord ; les écrans attendent
+LE CHARGEMENT (M8, v9.13). `#loading` est une silhouette des cartes de l'accueil
+(la forme de la v9.21 : dernière tasse et dernières tasses à gauche, sachets à
+droite), dans `main`, avec les classes de l'accueil ; les écrans attendent
 derrière (`#loading ~ .screen`) et elle part dans la transition du premier écran.
 
 LE CADRE (v8.27). Tout écran est borné et centré par UNE règle, `.ecran
@@ -142,7 +162,10 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/ui-scrub.js` | les courbes SVG qu'on parcourt au doigt (v9.13) ; le graphe 30 jours le fait dans `charts.js` |
 | `js/ui-findings.js` | les phrases calculées et leur carrousel |
 | `js/ui-last-cup.js` | la carte de la dernière tasse, et ses briques partagées avec la table |
-| `js/ui-dashboard.js` | tableau de bord : calendrier, analyses, dernières extractions |
+| `js/ui-dashboard.js` | l'accueil (`renderDashboard` : coin du stock, dernière tasse, dernières tasses), et les graphes qu'il portait, dessinés depuis la v9.21 sur la page Analyses (`renderAnalysesCharts`, `renderCalendar`, `renderChart30`) |
+| `js/ui-home.js` | l'accueil en trois questions (v9.21, L1) : la semaine, la colonne des sachets, le constat qui tourne, « À brasser », le bandeau de la dernière tasse, l'arrivée des blocs |
+| `js/ui-analytics.js` | la page Analyses (v9.21, O1) : la période, les tuiles qui s'ouvrent sur place, le mois en barres, cafés, recettes, goûts, chiffres clés ; construite à la première ouverture |
+| `js/ui-story.js` | ton mois en café (v9.21, O6) : le bandeau de la page Analyses et les quatre histoires (`#modal-story`) |
 | `js/ui-cup.js` | la tasse dessinée (v9.13) : carte après l'enregistrement, tasse du mode Brassage |
 | `js/ui-dial.js` | le cadran du moulin (v9.13) : saisie, formulaire de recette, Paramètres |
 | `js/ui-rating-dial.js` | le cadran de note (v9.13), interrupteur `RATING_DIAL_ON` |
@@ -180,6 +203,7 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/app.js` | démarrage, navigation, thème, langue, modale de données, abonnement aux données |
 | `css/extras.css` | les styles de la v9.19 (O4, raccourcis, F2, O3), chargés après finishing.css |
 | `css/journal.css` | les styles du journal v9.20 (table, page de comparaison, scènes), chargée après `extras.css` |
+| `css/home.css` | la navigation N1, l'accueil L1, la page Analyses O1, l'histoire du mois O6 (v9.21), chargée après `journal.css` |
 | `css/fonts/` | les deux polices de la DA, embarquées en woff2, sous OFL (section 10) |
 | `sw.js`, `manifest.json`, `icons/` | PWA et hors ligne (section 10) |
 | `worker/index.js`, `worker/sync.js` | porte d'entrée et fusion D1, Cloudflare seulement (section 13) |
@@ -803,10 +827,74 @@ Dans l'écran Guide, le moulin est un RÉGLAGE, pas un convertisseur : curseur e
 crans, repères cliquables, conseil vivant, bouton qui pose `replis.molette` (la
 même source que l'écran Paramètres). Raisons et pièges : `DECISIONS.md`.
 
-## 6 bis. Tableau de bord (js/ui-dashboard.js)
+## 6 bis. Accueil (js/ui-dashboard.js, js/ui-home.js) et Analyses (js/ui-analytics.js)
 
-Quatre rangées sur une grille de DOUZE colonnes : la carte principale sur huit,
-les autres sur quatre (`.col-2` vaut `span 8`, le défaut `span 4`).
+L'ACCUEIL (L1, v9.21) répond à trois questions, dans l'ordre : ce que tu as bu,
+où en sont tes sachets, comment va ta semaine. `#dashboard-content.home` est une
+boîte de requêtes de conteneur (`container: home`) : sous 860 px de contenu, une
+colonne (la semaine en une ligne `#home-week-line`, pas de colonne des sachets) ;
+au dessus, deux colonnes (`.home-main`, qui garde la classe `.grid-dashboard`
+pour les règles de la carte, et `.home-side` : `#home-bags` puis
+`#home-finding`), la semaine en carte avec ses barres dans l'en-tête
+(`#home-week`). Puis `#home-brew` tout en bas. Le bandeau `#home-band` est HORS
+de `.home` : une boîte de conteneur devient le cadre des `position: fixed`.
+
+- **La dernière tasse** : une rangée de tête (`.lc-head` : nom, contexte, note en
+  grand à droite) puis le corps (record, goûts, commentaire, rang, pied). Sur
+  téléphone, le rang, le pied et le commentaire attendent un écran plus large.
+  En descendant, quand `.lc-head` passe sous le bord, `#home-band` prend
+  `.shown` : nom et note y glissent depuis la carte (`updateBand`, sur le
+  défilement, un rAF). Le toucher remonte en haut.
+- **La semaine** : `UI.weekSummary` (lundi à dimanche, tasses, moyenne des
+  notées, meilleure, jours à venir) ; ses barres poussent à l'arrivée du matin
+  (Q7) et ses chiffres roulent à l'arrivée d'une tasse de l'autre appareil (Q13).
+  Le toucher ouvre Analyses sur 7 jours.
+- **Les sachets** : la liste du coin (`UI.stockData`), cinq bocaux de js/ui-jar.js
+  au plus, avec grammes, tasses et niveau ; ils bougent avec les pastilles du coin
+  (le même vol par café).
+- **Un constat** : `UI.computeInsights`, les seuls qui ont une preuve ; le premier
+  change chaque jour (`findingStart`), « › » ou douze secondes passent au suivant
+  (jamais sous le pointeur, le focus, la page cachée ou moins d'animations).
+- **À brasser, si tu veux** : `UI.brewSuggestion` choisit parmi les sachets
+  ouverts celui à trois tasses ou moins, sinon délaissé depuis trois jours, sinon
+  la meilleure moyenne, avec son réglage gagnant (`TUNING.forCoffee`) ou celui
+  de sa dernière tasse ; « Brasser » passe par `UI.redoCup` (toast
+  `setting_prefilled`). Masqué pour le jour : localStorage `brew-hint-hidden`.
+- **L'arrivée** : quand `#screen-dashboard` reprend `on` (un MutationObserver),
+  `.home-enter` fait monter les blocs l'un après l'autre.
+
+LA PAGE ANALYSES (O1, v9.21, `#screen-analytics`, `#analytics`). Construite par
+`UI.renderAnalytics`, que `renderCurrentScreen` n'appelle que si elle est
+affichée : rien au démarrage. La période (`#an-period`, groupe radio, flèches,
+localStorage `analytics-period`, 30 jours par défaut) filtre les tuiles
+`data-period-aware` : le mois en barres (`UI.timeBars` : par jour sur 7 et 30
+jours, par semaine sur 3 mois, par mois sur tout, trois ans au plus), tes cafés
+(`UI.rankCoffees`), le podium et le classement des recettes, la carte du moulin
+(`drawPodium` et `drawGrinder` acceptent une liste de tasses), tes goûts
+(`UI.tasteCounts` : « nouveau » si coché pour la première fois dans la période ;
+un goût ouvre `openHistoryOn({ "h-search": goût })`), les chiffres clés
+(`UI.keyFigures`, qui roulent d'une période à l'autre) et les analyses en
+onglets. Le calendrier, le graphe des 30 jours, les constats et les dessins
+gardent leur fenêtre et le disent (`.an-fixed`). Une tuile s'ouvre sur toute la
+largeur à sa place (`toggleTile`, FLIP : la grille `dense` se recompose, chaque
+tuile repart de son ancien rectangle, le contenu contre-mis à l'échelle et
+rogné pendant le vol) ; Échap la referme. Le récap de la semaine passée
+(`#card-recap`) et les dessins (`#card-drawings`) y vivent depuis la v9.21.
+
+TON MOIS EN CAFÉ (O6, v9.21, js/ui-story.js). `UI.monthStory(exts, analyzable,
+"AAAA-MM")` : tasses, par machine, jours, moyenne, café du mois (le plus bu),
+découverte (un goût coché pour la première fois ce mois-là, sinon le plus
+coché), meilleure tasse. Les trois premiers jours du mois, la page s'ouvre sur
+l'histoire du mois précédent, une fois par appareil (localStorage `story-seen`) ;
+le bandeau `#an-story` (complet la première semaine, une ligne ensuite) la rejoue.
+`#modal-story` est un `<dialog>` : quatre cartes, une barre de progression
+chacune (6,5 s, pas avec moins d'animations), gauche et droite de la carte,
+flèches, glisser au doigt, glisser vers le bas ou Échap ferme.
+
+Ce qui suit décrit le tableau de bord jusqu'à la v9.17 ; les blocs vivent
+maintenant sur l'accueil (dernière tasse, arrivée du matin, tasse qui arrive,
+stock, écrans vides, dernières tasses) ou sur la page Analyses (chiffres clés,
+graphe 30 jours, constats, calendrier, dessins, récap, analyses).
 
 - **Dernière tasse** : le café en serif, la ligne de contexte (machine, recette,
   dose, temps, température, feu), les goûts, le commentaire, puis un pied avec
@@ -821,9 +909,10 @@ les autres sur quatre (`.col-2` vaut `span 8`, le défaut `span 4`).
   roulée sur cet appareil). La carte n'est réécrite que si son HTML change, pour ne pas
   couper le compteur, la vapeur ou le décompte.
 - **L'arrivée du matin** (v9.13, Q7, js/ui-moments.js) : la première ouverture du jour
-  du tableau de bord sur un appareil (localStorage `morning-arrival` = la date locale),
-  les pastilles du stock se remplissent depuis vide, la note de la dernière tasse compte
-  jusqu'à sa valeur, les barres du récap poussent, un filet de vapeur monte de la note.
+  de l'accueil sur un appareil (localStorage `morning-arrival` = la date locale),
+  les pastilles du stock et les bocaux de la colonne se remplissent depuis vide, la note
+  de la dernière tasse compte jusqu'à sa valeur, les barres de la semaine poussent, un
+  filet de vapeur monte de la note.
   Moins d'une seconde, une fois par jour. Chaque mouvement est fonction du temps écoulé
   depuis son début : un rendu au milieu (la synchro qui répond) le reprend où il en est.
 - **La tasse qui arrive de l'autre appareil** (v9.17, Q13, js/ui-arrivals.js) : quand une
@@ -1732,6 +1821,7 @@ node tools/logbook-mcp.test.mjs  serveur MCP du catalogue contre le vrai Worker 
 node tools/stock.test.mjs    (v9.18) etagere, bocaux de la saisie, fin d'un sachet, prochaine tasse, cadran qui tourne
 node tools/extras.test.mjs   v9.19 : moyennes partagées (H1), réglages gagnants, recette de départ, raccourcis, texte partagé
 node tools/journal.test.mjs  le journal v9.20 : regles de la comparaison et sa phrase, colonnes de la table, chiffres corriges (pur)
+node tools/home.test.mjs     accueil, Analyses, histoire du mois, carte de l'appli (v9.21) : parties pures et page
 ```
 
 Ce que chacune couvre, et le bug qui l'a motivée : `DECISIONS.md`, « Tests ».

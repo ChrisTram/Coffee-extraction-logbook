@@ -642,8 +642,9 @@ const UI = (() => {
 
   // ---------- Navigation ----------
 
-  // "coffees" (v9.18, O2): Mes cafés, a page since its shelf of jars, no longer a window.
-  const SCREEN_NAMES = ["dashboard", "entry", "history", "coffees", "tuning", "guide", "settings"];
+  /* "coffees" (v9.18, O2): Mes cafés, a page since its shelf of jars, no longer a window.
+     "analytics" (O1, v9.21): the analyses, the calendar and the drawings, out of the home screen. */
+  const SCREEN_NAMES = ["dashboard", "entry", "history", "analytics", "coffees", "tuning", "guide", "settings"];
 
   /* Old screen names still present in a bookmark or a PWA shortcut: the
      French hashes of before v9.06 (#tableau, #saisie...) and "reference",
@@ -732,7 +733,8 @@ const UI = (() => {
   }
 
   function renderCurrentScreen(force) {
-    if (nav.screenName === "dashboard") { UI.renderDashboard(); UI.renderDrawings(); }
+    if (nav.screenName === "dashboard") UI.renderDashboard();
+    else if (nav.screenName === "analytics") UI.renderAnalytics(force);
     else if (nav.screenName === "tuning") UI.renderTuning();
     else if (nav.screenName === "history") UI.renderHistory();
     else if (nav.screenName === "coffees") UI.renderCoffeeList();

@@ -1,12 +1,19 @@
-/* Home screen: the activity calendar, the analyses and the latest
- * extractions. The computed sentences live in ui-findings.js and the big
- * card of the last cup in ui-last-cup.js (split out in v8.78). */
+/* The home screen (L1, v9.21), and the charts it used to carry.
+ *
+ * renderDashboard() draws the HOME: the stock corner, the last cup (its card
+ * lives in ui-last-cup.js), the latest cups, then hands over to js/ui-home.js
+ * for the week, the bags column, the one finding, « À brasser » and the band.
+ *
+ * The activity calendar, the 30 days chart and the analyses in tabs stay
+ * written here, but they are drawn on the ANALYSES page since v9.21:
+ * js/ui-analytics.js calls renderAnalysesCharts() with the cups of its
+ * period. The computed sentences live in ui-findings.js (split out in v8.78). */
 "use strict";
 
 (() => {
 
   // Borrowed from the core, loaded before us.
-  const { $, $$, animateCounter, titleAttr, localDateKey, displayedDiags,
+  const { $, $$, titleAttr, localDateKey, displayedDiags,
     dayKey, isFailed, analyzableExts, extsWithCalcs, fmtDecimal, fmtHour, dayLabelOf, average, nav, fallbacks, findRecipe } = UI;
   // And from the two pieces moved out of here in v8.78, loaded just before.
   const { MIN_GAP, MIN_SAMPLE, fmtRating, wireFindings, renderInsights,
@@ -312,101 +319,43 @@
     return machines.size < 2 ? "empty_duel_one_machine" : "empty_duel";
   }
 
-  // The key figures as last written, so an arrival can roll them from there (Q13).
-  const shownKpis = [];
+  /* The caffeine of a cup, estimated from its dose and its coffee. */
+  const caffeineOf = e => {
+    const coffee = DATA.coffeeOf(e);
+    return caffeineMg(e.dose_g || 0, coffee ? coffee.species : "", coffee ? coffee.real_coffee_pct : 100);
+  };
 
+  /* THE HOME (L1, v9.21). Three questions: what did I drink (the last cup),
+     where are my bags (the corner, and the bags column of js/ui-home.js), how
+     is my week (js/ui-home.js); then the latest cups. The key figures, the
+     calendar, the chart and the analyses moved to the Analyses page. */
   function renderDashboard() {
     /* TWO data sets, and knowing which one to take is the only question that
        matters here. exts counts WHAT HAPPENED, analyzable advises WHAT TO DO.
        See analyzableExts() in the core for the rule. */
     const exts = extsWithCalcs();
     const analyzable = analyzableExts();
-    /* The "include failed cups" toggle lives in the Settings screen since
-       v7.91: as a banner here, it took the place of the first figure on every
-       opening for a setting changed once a month. */
     const empty = exts.length === 0;
     $("#dashboard-empty").hidden = !empty;
     $("#dashboard-content").hidden = empty;
-    if (empty) return;
-    // Q7 (v9.13): the first opening of the day, the dashboard sets itself up.
+    if (empty) { UI.renderHome(null); return; }
+    // Q7 (v9.13): the first opening of the day, the home screen sets itself up.
     const morning = UI.morningArrival();
     renderStockCorner(morning);
 
-    const today = localDateKey(new Date());
-    const now = new Date();
-    const monday = new Date(now);
-    monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
-    const mondayKey = localDateKey(monday);
-    const currentMonth = today.slice(0, 7);
-    const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
-
-    const ratings = analyzable.filter(e => e.score_10 !== "").map(e => e.score_10);
-    const ratings7d = analyzable.filter(e => e.score_10 !== "" && new Date(e.date_time) >= weekAgo).map(e => e.score_10);
-
-    // Estimated caffeine per day over the last 7 days.
-    const caffeineOf = e => {
-      const coffee = DATA.coffeeOf(e);
-      return caffeineMg(e.dose_g || 0, coffee ? coffee.species : "", coffee ? coffee.real_coffee_pct : 100);
-    };
-    const caffeine7d = exts.filter(e => new Date(e.date_time) >= weekAgo).reduce((a, e) => a + caffeineOf(e), 0);
-
-    /* FOUR tiles, not seven. Seven aligned figures get COUNTED instead of
-       read: you hunt for the one you wanted. The four that remain are those
-       that move from one day to the next. The other three, total, overall
-       rating and caffeine, have not gone: they move to a line under the grid,
-       where they can be read when looked for without taking the glance. */
-    const kpis = [
-      { value: exts.filter(e => e.date_time.slice(0, 10) === today).length, label: I18N.t("kpi_today"), dec: 0 },
-      { value: exts.filter(e => e.date_time.slice(0, 10) >= mondayKey).length, label: I18N.t("kpi_week"), dec: 0 },
-      { value: average(ratings7d) || 0, label: I18N.t("kpi_score_7d"), dec: 1, outOf10: true },
-      { value: TUNING.gapAtSameCoffee(analyzable) || 0, label: I18N.t("kpi_consistency"), dec: 1, plusMinus: true },
-    ];
-    $("#kpis").innerHTML = kpis.map(k =>
-      '<div class="kpi"><div class="kpi-value"><span class="kpi-number"></span>' +
-      (k.outOf10 ? "<small> / 10</small>" : k.mg ? "<small> mg</small>" : k.plusMinus ? "<small> pt</small>" : "") +
-      '</div><div class="kpi-label">' + k.label + "</div></div>"
-    ).join("");
-    /* An average without cups is not zero (v8.38): "0,0 / 10" read like a
-       week of failed cups. A dash, with no animation or unit. */
-    kpis[2].empty = !ratings7d.length;
-    kpis[3].empty = ratings.length < 2;
-    /* Q13 (v9.17): when a cup just came in from the other device, the
-       figures ROLL from what they showed to their new value instead of
-       counting up from zero again: the eye goes to what moved. */
-    const rollKpis = UI.arrivalsPlaying();
-    $$("#kpis .kpi-number").forEach((el, i) => {
-      if (kpis[i].empty) {
-        el.textContent = "-";
-        el.parentElement.querySelector("small")?.remove();
-        shownKpis[i] = "-";
-        return;
-      }
-      const prefix = kpis[i].plusMinus ? "± " : "";
-      const text = prefix + kpis[i].value.toLocaleString(I18N.locale(),
-        { minimumFractionDigits: kpis[i].dec, maximumFractionDigits: kpis[i].dec });
-      if (rollKpis && shownKpis[i] !== undefined) UI.rollText(el, text, shownKpis[i]);
-      else animateCounter(el, kpis[i].value, kpis[i].dec, "", prefix);
-      shownKpis[i] = text;
-    });
-
-    /* The three figures taken out of the tiles. They stay readable, in plain
-       text, and are no longer in the path of the eye. */
-    const row = (caption, value) =>
-      "<li><span>" + caption + "</span><b>" + value + "</b></li>";
-    $("#kpis-secondary").innerHTML =
-      row(I18N.t("kpi_total"), exts.length) +
-      row(I18N.t("kpi_score"), fmtDecimal(average(ratings) || 0, 1) + " / 10") +
-      row(I18N.t("kpi_caffeine"), "≈ " + Math.round(caffeine7d / 7) + " mg");
-
     /* The page header subline: today's date, as in the mockup. */
-    $("#dashboard-highlight").textContent = now.toLocaleDateString(I18N.locale(),
+    $("#dashboard-highlight").textContent = new Date().toLocaleDateString(I18N.locale(),
       { weekday: "long", day: "numeric", month: "long" });
 
-    renderLastCup(exts);
+    const last = renderLastCup(exts);
     UI.playMorning(morning);
+    renderLatest(exts);
+    UI.renderHome({ exts: exts, analyzable: analyzable, last: last, morning: morning });
+  }
 
-    renderInsights(analyzable);
-
+  /* THE 30 DAYS CHART (on the Analyses page since v9.21, always the last
+     30 days of the whole logbook: its tile says so). */
+  function renderChart30(exts, analyzable) {
     // Last 30 days: bars, rating, grams, caffeine in the tooltip
     const labels = [], counts = [], averages = [], details = [], trend = [];
     /* The trend is computed over the WHOLE rated history, not over the 30 days:
@@ -449,8 +398,11 @@
       trend.push(stale ? null : latest);
     }
     CHARTS.barsAndLine30d("g-30days", labels, counts, averages, details, trend, UI.renderCoffees30d(exts));
+  }
 
-    // Heatmap
+  /* THE CALENDAR (on the Analyses page since v9.21, with its own window: as
+     many weeks as its tile can show, up to HEATMAP_WEEKS). */
+  function renderCalendar(exts, analyzable) {
     const perDay = {}, infoPerDay = {};
     exts.forEach(e => {
       const key = e.date_time.slice(0, 10);
@@ -476,9 +428,19 @@
       heatmapRecounted = true;
       setTimeout(() => {
         heatmapRecounted = false;
-        if (nav.screenName === "dashboard" && visibleWeeks() !== weeks) UI.renderDashboard();
+        if (nav.screenName === "analytics" && visibleWeeks() !== weeks) renderCalendar(exts, analyzable);
       }, 0);
     }
+  }
+
+  /* THE CHARTS OF THE ANALYSES PAGE (moved out of renderDashboard in v9.21).
+     `all` and `allAnalyzable` are the whole logbook: the 30 days chart and
+     the calendar keep their own window. `exts` and `analyzable` are the
+     cups of the chosen period: the analyses in tabs follow it. */
+  function renderAnalysesCharts(o) {
+    const exts = o.exts, analyzable = o.analyzable;
+    renderChart30(o.all, o.allAnalyzable);
+    renderCalendar(o.all, o.allAnalyzable);
 
     // Average rating per coffee
     const byCoffee = {};
@@ -564,8 +526,10 @@
     CHARTS.horizontalBars("g-recipes", recipeItems, recipeColors, I18N.t("axis_average_score"), 10);
     $("#reading-recipes").textContent = readRanking(
       recipeItems.map(i => ({ ...i, label: I18N.tr(i.label), n: byRecipe[i.label].length })), "reading_recipes_two", "reading_recipes");
+  }
 
-    // 5 latest
+  /* THE LATEST CUPS (moved out of renderDashboard in v9.21, unchanged). */
+  function renderLatest(exts) {
     /* EIGHT and not five: the card stretches to the height of its row, and
        five lines left a big blank there. Lines are better than emptiness. */
     const latestCups = [...exts].sort((a, b) => b.date_time.localeCompare(a.date_time))
@@ -651,10 +615,21 @@
   function renderStockCorner(morning) {
     const zone = $("#stock-corner");
     if (!zone) return;
-    const all = stockData();
-    zone.hidden = !all.length;
+    /* Q9 (v9.18, wired by the home in v9.21): a bag at its end leaves the
+       pills. On a wide screen its scene stands in the jars column
+       (js/ui-home.js); a narrow one keeps a single pill, first, that opens
+       « Mes cafés » and its « À racheter » shelf: the corner stays one row. */
+    const ends = typeof UI.bagEndCoffees === "function" ? UI.bagEndCoffees() : [];
+    const all = stockData().filter(s => !ends.includes(s.coffee.id));
+    zone.hidden = !all.length && !ends.length;
     const shown = all.slice(0, STOCK_MAX);
-    const html = shown.map(s => {
+    const endNames = ends.map(id => (DATA.state.coffees.find(c => c.id === id) || {}).name).filter(Boolean).map(n => I18N.tr(n));
+    const endPill = ends.length
+      ? '<button type="button" class="sc-bag sc-ends low" data-home-coffees title="' + titleAttr(I18N.t("home_bag_end_title")) + '">' +
+        '<span class="sc-glass" style="--pc:0%" aria-hidden="true"></span><b>' + I18N.t("home_bag_end") + "</b>" +
+        '<span class="sc-name">' + titleAttr(ends.length === 1 ? endNames[0] : I18N.t("home_bag_end_many", { n: ends.length })) + "</span></button>"
+      : "";
+    const html = endPill + shown.map(s => {
       const low = s.cups < 3;
       const tooltip = I18N.t(s.leftover <= 0 ? "stock_chip_empty_title" : "stock_chip_title", { c: I18N.tr(s.coffee.name), g: Math.round(s.leftover), n: s.cups, s: s.cups > 1 ? "s" : "" });
       return '<button type="button" class="sc-bag' + (low ? " low" : "") + '" data-sheet="' + s.coffee.id + '" title="' + titleAttr(tooltip) + '" aria-label="' + titleAttr(tooltip) + '">' +
@@ -669,9 +644,14 @@
     if (morning) morning.jarsFilled = true;
   }
 
-  /* Wiring of the dashboard controls. Called once by app.js. */
+  /* Wiring of the home controls, and of the analyses in tabs. Called once by
+     app.js; the home's new pieces, the Analyses page and the month story wire
+     their own from here (v9.21), so app.js did not have to change. */
   function wireDashboard() {
     wireFindings();
+    UI.wireHome();
+    UI.wireAnalytics();
+    UI.wireStory();
     // The buttons of the empty places (v9.13), wherever they are drawn.
     UI.wireEmpty();
     const tabs = $(".tabs-analyses");
@@ -716,10 +696,10 @@
 
   // Made available to the other screens.
   Object.assign(UI, {
-    renderHeatmapLegend, renderStockCorner, visibleWeeks,
+    renderHeatmapLegend, renderStockCorner, visibleWeeks, stockData, caffeineOf,
     MIN_TASTE_CUPS, WORST_TASTES, HEATMAP_WEEKS, TOP_TASTES,
     wireDashboard, emptyDuelCause, emptyTastesCause, emptyGrindCause,
     updateEmptyCard, renderTastes, renderHeatmapStats, renderDashboard,
-    statsHeatmap,
+    statsHeatmap, renderAnalysesCharts, renderLatest, renderCalendar, renderChart30,
   });
 })();

@@ -60,7 +60,7 @@
 
   /* The screens a button can lead to from anywhere. The other names are the
      drawing page's business (the coffee sheet wires its own). */
-  const SCREENS = ["dashboard", "entry", "history", "tuning", "guide", "settings"];
+  const SCREENS = ["dashboard", "entry", "history", "analytics", "tuning", "guide", "settings"];
   function wireEmpty() {
     document.addEventListener("click", ev => {
       const b = ev.target.closest && ev.target.closest("[data-empty-go]");
@@ -73,7 +73,7 @@
       } else if (go === "coffee-new") {
         UI.openCoffeeForm(null);
       } else if (go === "coffees") {
-        UI.openCoffeesModal();
+        UI.openCoffeesPage();
       }
     });
   }

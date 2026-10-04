@@ -1,0 +1,525 @@
+/* Brew logbook, sheet 5: the home group of v9.21 (N1 the map of the app,
+   L1 the home in three questions, O1 the Analyses page and O6 the month in
+   coffee). Loaded right after finishing.css, so its rules win where they
+   restate an older one: they say so each time. Only the site's tokens; every
+   movement has its calm path at the end of each block. */
+
+/* ---------- N1: the navigation ---------- */
+
+/* The rail's mark: one block behind the active entry, which slides and
+   resizes to the next one (js/ui-nav.js, placeRailMark). Until it is placed,
+   the active entry keeps its own background, so nothing flickers. */
+.rail-entries { position: relative; }
+.rail-entry { position: relative; z-index: 1; }
+.rail-mark {
+  position: absolute; left: 0; right: 0; top: 0; height: 0; z-index: 0;
+  border-radius: var(--radius-small); background: var(--bg); pointer-events: none; opacity: 0;
+}
+.rail-mark::before {
+  content: ""; position: absolute; left: 0; top: 24%; bottom: 24%; width: 3px;
+  border-radius: 3px; background: var(--accent);
+}
+.rail-entries.has-mark .rail-mark.ready {
+  opacity: 1;
+  transition: transform 360ms cubic-bezier(0.3, 0.9, 0.3, 1.12), height 360ms cubic-bezier(0.3, 0.9, 0.3, 1), opacity 160ms;
+}
+.rail-entries.has-mark:has(.rail-mark.ready) .rail-entry.on { background: transparent; }
+/* On desktop the rail is its own layer in the screen transition, like the
+   bar: it switches at once and the mark slides, instead of a ghost of the
+   old mark fading out. */
+@media (min-width: 1024px) {
+  .rail { view-transition-name: rail; }
+  ::view-transition-old(rail) { display: none; }
+  ::view-transition-new(rail) { animation: none; }
+}
+
+/* The draft dot: a cup in progress in the entry form. On the copper button it
+   sits astride the corner, ringed with the rail's colour, so it reads on
+   copper as well. It pops in once. */
+.rail-new, .bar-disc { position: relative; }
+.draft-dot {
+  position: absolute; top: -4px; right: -4px; width: 12px; height: 12px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 0 3px var(--rail); pointer-events: none;
+  transform: scale(0); opacity: 0;
+}
+.bar-disc .draft-dot { top: 1px; right: 1px; }
+.has-draft .draft-dot { transform: scale(1); opacity: 1; animation: draft-pop 520ms cubic-bezier(0.3, 1.7, 0.45, 1) both; }
+@keyframes draft-pop {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.35); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ---------- L1: the home ---------- */
+
+.home { container: home / inline-size; }
+.home-head { align-items: stretch; }
+.home-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--gap-cards); }
+/* The main column is the old dashboard grid (its card rules still apply,
+   .grid-dashboard > .card-last), laid out as a single column. */
+.home-main.grid-dashboard { display: flex; flex-direction: column; gap: var(--gap-cards); }
+.home-side { display: flex; flex-direction: column; gap: var(--gap-cards); min-width: 0; }
+
+/* THE LAST CUP: its score next to its name, on every width (ui-last-cup.js
+   writes a head row). Restates the row layout of screens.css and the phone
+   rule that dropped the score under the body. */
+.home-main > .card-last { display: block; }
+.lc-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.lc-title { flex: 1; min-width: 0; }
+.home .lc-head .last-big-rating {
+  flex: none; flex-direction: column; align-items: flex-end; justify-content: flex-start; gap: 4px;
+  min-width: 0; padding: 0; border: 0; text-align: right;
+}
+.home .lc-head .big-rating { font-size: clamp(3.1rem, 7cqi, 4.55rem); }
+.home .lc-head .last-big-context { margin-bottom: 0; }
+.home .last-big-body { margin-top: 12px; }
+.home .last-big-body > :first-child { margin-top: 0; }
+.home .card-last .last-big-footer { margin-top: 12px; }
+/* On a phone the card says what the mockup's hero says: the name, the score,
+   one line of settings, the record and the tastes. The rank, the footer and
+   the comment wait for a wider screen (and for the cup itself, a tap away):
+   the first three latest cups must show without scrolling. */
+@container home (max-width: 559px) {
+  .home-main > .card-last { padding: 16px 18px; }
+  .lc-head { gap: 12px; }
+  .home .last-big-coffee { margin-bottom: 2px; font-size: 1.45rem; }
+  .home .lc-head .last-big-context { display: block; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .home .lc-head .last-big-context .dot-method { display: inline-block; margin-right: 5px; vertical-align: 1px; }
+  .home .lc-head .last-big-context .sep { margin: 0 5px; }
+  .home .lc-head .big-rating { font-size: 3.1rem; }
+  .home .lc-head .dot-diag { display: none; }
+  .home .last-big-body { margin-top: 8px; }
+  .home .last-record { margin-bottom: 6px; font-size: 0.8rem; }
+  .home .card-last .last-spot, .home .card-last .last-big-footer, .home .card-last .last-big-comment { display: none; }
+}
+
+/* THE WEEK, in the head on a wide screen: a bar per day, the height counts
+   the cups, the tint says their score. */
+.home-week {
+  flex: 0 1 380px; min-width: 280px; align-self: flex-end; gap: 10px; padding: 14px 18px;
+  font: inherit; color: var(--text); text-align: left; cursor: pointer;
+  transition: border-color var(--transition), transform var(--transition);
+}
+.home-week:hover { border-color: var(--accent); }
+.home-week:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hw-head { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.hw-title { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.hw-figures { font-size: 0.88rem; color: var(--text); line-height: 1.4; }
+.hw-figures b { color: var(--ink); font-weight: 700; }
+.hw-sep { margin: 0 6px; color: var(--muted); }
+.hw-none { color: var(--muted); }
+.hw-bars { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; align-items: end; height: 54px; }
+.hw-day { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 3px; height: 100%; }
+.hw-day i {
+  display: block; width: 100%; max-width: 26px; height: calc((100% - 17px) * var(--h, 0)); min-height: 3px;
+  border-radius: 4px 4px 1px 1px; background: var(--accent); opacity: var(--o, 1); transform-origin: 50% 100%;
+}
+.hw-day.future i { background: none; border: 1px dashed var(--lines); opacity: 1; }
+.hw-day small { font-size: 0.75rem; line-height: 14px; color: var(--muted); text-transform: uppercase; }
+/* Q7: the first opening of the day, the bars grow from the ground. */
+.morning-grow .hw-day i {
+  animation: morning-bar 650ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--d, 0) * 45ms + var(--morning-shift, 0ms));
+}
+
+/* THE WEEK, under the last cup on a narrow screen: its name as an
+   overline, its figures on one line, a few bars on the right when there is room. */
+.home-week-line {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: "label bars chev" "fig bars chev";
+  align-items: center; column-gap: 12px; row-gap: 0; width: 100%; min-height: 48px; padding: 6px 14px;
+  border-radius: var(--radius-small); border: 1px solid var(--card-border, var(--lines)); background: var(--panel);
+  box-shadow: var(--shadow-card); font: inherit; font-size: 0.88rem; color: var(--text); text-align: left; cursor: pointer;
+}
+.home-week-line:hover { border-color: var(--accent); }
+.home-week-line:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.home-week-line .hw-label { grid-area: label; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.home-week-line .hw-figures { grid-area: fig; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.home-week-line .hw-mini { grid-area: bars; }
+.home-week-line .ico { grid-area: chev; color: var(--muted); }
+.hw-mini { width: 70px; height: 26px; gap: 3px; }
+.hw-mini .hw-day small { display: none; }
+.hw-mini .hw-day i { height: calc(100% * var(--h, 0)); max-width: 8px; border-radius: 2px; }
+@container home (max-width: 420px) { .hw-mini { display: none; } }
+
+/* THE LATEST CUPS: the title and the link to the journal on one line. On a
+   narrow card the rows go compact (the tastes and the comment wait for the
+   journal; the pill of a cup that came in from the other device stays). */
+.home-latest .card-head { margin-bottom: 8px; }
+.home-latest .card-head .link-card { margin-top: 0; }
+@container home (max-width: 559px) {
+  .home-latest, .home-finding { padding: 16px 18px; }
+  .home .table-latest .d-tastes:not(:has(.arrival-from)) { display: none; }
+  .home .table-latest .d-tastes .last-tag { display: none; }
+  .home .table-latest tr.last-comment { display: none; }
+  .home .table-latest tr.last-clickable { padding: 8px 2px; }
+  .home .table-latest tr.d-day th { padding-top: 10px; }
+}
+
+/* THE BAGS, in their jars, on a wide screen: the lowest first. */
+.hb-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.hb-bag {
+  width: 100%; display: grid; grid-template-columns: 30px minmax(0, 1fr); align-items: center; gap: 12px;
+  padding: 6px 8px; min-height: 52px; border: 0; border-radius: 10px; background: none;
+  font: inherit; color: var(--text); text-align: left; cursor: pointer; position: relative;
+}
+.hb-bag:hover { background: var(--panel-2); }
+.hb-bag:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.hb-jar { display: block; width: 30px; }
+.hb-jar[data-jar-low] .jar-glass { stroke: var(--danger); }
+.hb-text { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; column-gap: 10px; row-gap: 5px; min-width: 0; }
+.hb-name { font-size: 0.88rem; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hb-figures { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+.hb-figures b { font-variant-numeric: tabular-nums; color: var(--ink); }
+.hb-figures small { font-size: 0.75rem; color: var(--muted); }
+.hb-bag.low .hb-figures b { color: var(--danger); }
+.hb-level { grid-column: 1 / -1; height: 4px; border-radius: 99px; background: var(--panel-3); overflow: hidden; }
+.hb-level i { display: block; height: 100%; width: var(--pc, 0%); border-radius: inherit; background: var(--accent); transition: width 900ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.hb-bag.low .hb-level i { background: var(--danger); }
+.hb-more { margin: 6px 0 0; font-size: 0.78rem; color: var(--muted); }
+/* Q9: the end of a bag stands on top of the column (css/stock.css draws .be-corner). */
+.hb-ends { display: grid; gap: 8px; margin-bottom: 10px; }
+.hb-ends .be-actions { flex-wrap: wrap; }
+/* The corner's « Fin de sachet » pill is for a narrow screen: a wide one shows the scene. */
+.sc-ends { font-weight: 600; }
+
+/* ONE FINDING, that turns: the next one slides in from the right. */
+.home-finding .card-head { margin-bottom: 8px; }
+.hf-next { flex: none; }
+.hf-stage { position: relative; overflow: hidden; }
+.hf-text { margin: 0; font-size: 0.95rem; line-height: 1.5; color: var(--ink); }
+.hf-proof { margin: 6px 0 0; font-size: 0.75rem; letter-spacing: 0.03em; color: var(--muted); }
+.hf-slide.hf-out { position: absolute; left: 0; right: 0; top: 0; animation: hf-out 380ms ease-in forwards; }
+.hf-slide.hf-in { animation: hf-in 480ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes hf-out { to { transform: translateX(-22%); opacity: 0; } }
+@keyframes hf-in { from { transform: translateX(26%); opacity: 0; } }
+.hf-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 12px 0 0; font-size: 0.78rem; color: var(--muted); }
+.hf-foot .link-card { margin: 0; font-size: 0.82rem; }
+@media (pointer: coarse) { .hf-next { width: 40px; height: 40px; } .hf-foot .link-card { min-height: 44px; } }
+
+/* « À BRASSER, SI TU VEUX », small, at the very bottom. */
+.home-brew {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 14px;
+  margin-top: var(--gap-cards); padding: 8px 8px 8px 14px; border: 1px dashed var(--lines); border-radius: var(--radius-small);
+  font-size: 0.85rem; color: var(--muted);
+}
+.hbw-text { margin: 0; min-width: 0; flex: 1 1 260px; line-height: 1.45; }
+.hbw-text b { color: var(--text); font-weight: 700; }
+.hbw-coffee { color: var(--ink); font-weight: 600; }
+.hbw-actions { display: flex; align-items: center; gap: 6px; }
+.hbw-go { margin: 0; font-weight: 700; }
+.hbw-hide { position: relative; }
+.hbw-hide::after, .hf-next::after { content: ""; position: absolute; inset: -8px; }
+@media (pointer: coarse) { .hbw-go { min-height: 44px; } }
+
+/* J4: THE BAND. The last cup, folded, stuck at the top of the screen's
+   column once its card has scrolled away; its name and its score fly in
+   from the card (js/ui-home.js). */
+.home-band {
+  position: fixed; top: 0; z-index: calc(var(--z-header) - 2); pointer-events: none;
+  padding: env(safe-area-inset-top, 0px) clamp(12px, 2.6vw, 40px) 0;
+  visibility: hidden; transition: visibility 0s linear 420ms;
+}
+.home-band.shown { visibility: visible; transition-delay: 0s; }
+.hbd-inner {
+  pointer-events: auto; display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  width: 100%; max-width: var(--frame); margin: 8px auto 0; min-height: 56px; padding: 6px 18px;
+  border-radius: 16px; border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--panel) 90%, transparent); backdrop-filter: blur(12px);
+  box-shadow: 0 0 0 1px var(--accent-ring, var(--accent)), 0 12px 28px var(--accent-glow, transparent), var(--shadow);
+  font: inherit; color: var(--text); text-align: left; cursor: pointer;
+  transform: translateY(-140%); opacity: 0;
+  transition: transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 260ms ease;
+}
+.home-band.shown .hbd-inner { transform: none; opacity: 1; }
+.hbd-inner:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hbd-who { display: flex; flex-direction: column; min-width: 0; }
+.hbd-who small { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.hbd-name { display: flex; align-items: center; gap: 8px; min-width: 0; font-family: var(--serif); font-size: 1.3rem; line-height: 1.15; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transform-origin: 0 0; }
+.hbd-name .dot-method { flex: none; }
+.hbd-score { flex: none; font-family: var(--serif); font-size: 2.2rem; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; transform-origin: 0 0; }
+
+/* The blocks arrive one after the other when the home opens. */
+.home-enter .home-head, .home-enter .card-last, .home-enter .home-week-line, .home-enter .home-latest,
+.home-enter .home-bags, .home-enter .home-finding, .home-enter .home-brew {
+  animation: home-rise 560ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.home-enter .card-last { animation-delay: 60ms; }
+.home-enter .home-week-line, .home-enter .home-bags { animation-delay: 120ms; }
+.home-enter .home-latest { animation-delay: 170ms; }
+.home-enter .home-finding { animation-delay: 230ms; }
+.home-enter .home-brew { animation-delay: 290ms; }
+@keyframes home-rise { from { opacity: 0; transform: translateY(16px); } }
+
+/* THE LAYOUT BY WIDTH, after the blocks it switches: one column on a phone
+   (the week in one line, no bags column, the corner says the grams); from
+   860 px of content, the bags and the finding on the right, the week in the head. */
+.home-head .home-week { display: none; }
+.home-bags { display: none; }
+@container home (min-width: 860px) {
+  .home-layout { grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); align-items: start; }
+  .home-head .home-week { display: grid; }
+  .home-week-line { display: none; }
+  .home-bags { display: block; }
+  .stock-corner .sc-ends { display: none; }
+}
+
+/* M8: the loading silhouette follows the home's new shape. */
+.sk-home { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--gap-cards); }
+.sk-home .grid-dashboard { display: flex; flex-direction: column; gap: var(--gap-cards); }
+.sk-home .sk-last { min-height: 190px; }
+.sk-side { display: none; min-height: 260px; }
+@media (min-width: 1200px) {
+  .sk-home { grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); align-items: start; }
+  .sk-side { display: flex; flex-direction: column; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail-entries.has-mark .rail-mark.ready, .hbd-inner, .hb-level i, .home-band { transition: none; }
+  .has-draft .draft-dot, .morning-grow .hw-day i, .hf-slide.hf-in, .hf-slide.hf-out,
+  .home-enter .home-head, .home-enter .card-last, .home-enter .home-week-line, .home-enter .home-latest,
+  .home-enter .home-bags, .home-enter .home-finding, .home-enter .home-brew { animation: none; }
+}
+
+/* ---------- O1: the Analyses page ---------- */
+
+#an-content { container: analytics / inline-size; }
+#an-content > * + * { margin-top: var(--gap-cards); }
+
+/* The period: a segmented control whose mark slides to the chosen one. */
+.an-period { position: relative; display: inline-flex; gap: 2px; padding: 4px; border-radius: 12px; background: var(--panel-2); }
+.an-period button {
+  position: relative; z-index: 1; min-height: 40px; padding: 8px 14px; border: 0; border-radius: 9px; background: transparent;
+  font: inherit; font-size: 0.85rem; font-weight: 600; color: var(--muted); cursor: pointer; white-space: nowrap;
+  transition: color var(--transition);
+}
+.an-period button:hover { color: var(--ink); }
+.an-period button[aria-checked="true"] { color: var(--ink); }
+.an-period button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.an-period-mark {
+  position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 0; width: 0; border-radius: 9px;
+  background: var(--panel-3); box-shadow: var(--shadow-top); opacity: 0; pointer-events: none;
+}
+.an-period-mark.ready { opacity: 1; transition: transform 340ms cubic-bezier(0.3, 0.9, 0.3, 1.12), width 340ms cubic-bezier(0.3, 0.9, 0.3, 1); }
+/* Before the mark is placed, the chosen one has its own background. */
+.an-period:not(:has(.an-period-mark.ready)) button[aria-checked="true"] { background: var(--panel-3); }
+@media (pointer: coarse) { .an-period button { min-height: 44px; } }
+@media (max-width: 560px) {
+  .an-head .head-actions { width: 100%; }
+  .an-period { width: 100%; }
+  .an-period button { flex: 1; padding-inline: 6px; }
+}
+
+/* O6: the month in coffee, a banner the first week of the month; a single
+   line after, « Revoir l'histoire » still at hand. The copper card of the page. */
+.an-story {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px 18px; padding: 16px 22px;
+  border-color: var(--accent); background: linear-gradient(150deg, var(--accent-bg), var(--panel) 72%);
+  box-shadow: 0 0 0 1px var(--accent-ring, var(--accent)), 0 12px 30px var(--accent-glow, transparent), var(--shadow-card);
+}
+.an-story .highlight { margin: 0 0 4px; color: var(--accent-strong); }
+.as-text { min-width: 0; flex: 1 1 300px; }
+.as-facts { margin: 0; font-size: 0.92rem; color: var(--text); line-height: 1.5; }
+.an-story.slim { padding: 8px 10px 8px 18px; background: var(--panel); box-shadow: var(--shadow-card); border-color: var(--card-border, var(--lines)); }
+.an-story.slim .highlight { margin: 0; }
+@media (pointer: coarse) { .as-replay { min-height: 44px; } }
+
+/* Last week's recap, now on this page: a card like the others. */
+/* The compact look of the head (dialogs.css, .head-recap), at the page's full width. */
+.an-recap { display: flex; flex-direction: column; max-width: none; border-color: var(--card-border, var(--lines)); }
+
+/* THE TILES: three columns, a wide tile on two, an open one on the full
+   width where it stands (the grid backfills the holes). */
+.an-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: row dense; gap: var(--gap-cards); align-items: stretch; }
+.an-tile-wide { grid-column: span 2; }
+.an-tile-full, .an-tile.open { grid-column: 1 / -1; }
+@container analytics (max-width: 940px) {
+  .an-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container analytics (max-width: 600px) {
+  .an-tiles { grid-template-columns: minmax(0, 1fr); }
+  .an-tile-wide { grid-column: auto; }
+}
+.an-tile { display: flex; flex-direction: column; gap: 12px; min-width: 0; cursor: pointer; transition: border-color var(--transition); }
+.an-tile:hover { border-color: color-mix(in srgb, var(--accent) 55%, var(--card-border, var(--lines))); }
+.an-tile.open { cursor: default; border-color: var(--accent); }
+.an-tile-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 10px; row-gap: 2px; align-items: start; }
+.an-tile-head h3 { margin: 0; }
+.an-tile-meta { grid-column: 1; margin: 0; font-size: 0.78rem; color: var(--muted); }
+.an-tile-toggle {
+  grid-column: 2; grid-row: 1 / span 2; position: relative; display: grid; place-items: center; width: 34px; height: 34px; padding: 0;
+  border: 1px solid var(--lines); border-radius: 10px; background: var(--panel-2); color: var(--muted); cursor: pointer;
+  transition: color var(--transition), background var(--transition), transform 300ms cubic-bezier(0.3, 0.9, 0.3, 1.2);
+}
+.an-tile-toggle::after { content: ""; position: absolute; inset: -6px; }
+.an-tile-toggle:hover { color: var(--ink); background: var(--panel-3); }
+.an-tile-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.an-tile.open .an-tile-toggle { transform: rotate(180deg); color: var(--accent-strong); }
+.an-tile-body { min-width: 0; }
+/* While the tiles fly (js/ui-analytics.js, flipTiles), each clips its content. */
+.an-tiles.flipping .an-tile { overflow: clip; }
+/* The small label of what keeps its own window, whatever the period. */
+.an-fixed { justify-self: start; display: inline-block; padding: 1px 9px; border-radius: 99px; background: var(--panel-2); color: var(--muted); }
+.card-head .an-tile-meta { margin-top: 2px; }
+/* What only an open tile shows, and what only a closed one says. */
+.an-tile:not(.open) .an-more, .an-tile:not(.open) .an-more-row { display: none; }
+.an-tile.open .an-less { display: none; }
+.an-tile.open .an-more, .an-tile.open .an-more-row { animation: an-more-in 380ms 140ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes an-more-in { from { opacity: 0; transform: translateY(6px); } }
+.an-refresh .an-tile-body, .an-refresh .an-tile-meta { animation: an-refresh 460ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes an-refresh { from { opacity: 0.25; transform: translateY(4px); } }
+.an-none, .an-hint { margin: 0; font-size: 0.82rem; color: var(--muted); }
+.an-hint { margin-top: 6px; }
+
+/* The period in bars: the height counts the cups, the tint says their score. */
+.an-bars {
+  display: grid; grid-template-columns: repeat(var(--count, 30), minmax(0, 1fr)); gap: clamp(2px, 0.5cqi, 6px);
+  align-items: end; height: 130px; transition: height 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.an-tile.open .an-bars { height: 230px; }
+.an-bar { display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; height: 100%; min-width: 0; }
+.an-bar i {
+  display: block; height: calc((100% - 18px) * var(--h, 0)); min-height: 3px; border-radius: 4px 4px 1px 1px;
+  background: var(--accent); opacity: var(--o, 1); transform-origin: 50% 100%;
+  animation: an-grow 640ms cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: calc(var(--i, 0) * 12ms);
+}
+.an-bar.zero i { background: var(--panel-3); opacity: 1; }
+.an-bar small { height: 14px; font-size: 0.75rem; line-height: 14px; color: var(--muted); text-align: center; white-space: nowrap; overflow: visible; }
+.an-bar small.quiet { visibility: hidden; }
+@keyframes an-grow { from { transform: scaleY(0); } }
+.an-legend { margin: 8px 0 0; font-size: 0.78rem; color: var(--muted); }
+.an-best-line { margin: 6px 0 0; font-size: 0.86rem; color: var(--text); }
+.an-best-line .link-card { margin: 0 0 0 6px; }
+
+/* The coffees and the recipes, ranked: a bar on the score scale. */
+.an-ranks { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.an-rank-row {
+  width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(48px, 32%) 2.6em; grid-template-areas: "name bar value" "sub sub sub";
+  align-items: center; column-gap: 10px; padding: 7px 6px; min-height: 40px; border: 0; border-radius: 8px; background: none;
+  font: inherit; color: var(--text); text-align: left; cursor: pointer;
+}
+.an-rank-row:hover:not(:disabled) { background: var(--panel-2); }
+.an-rank-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.an-rank-row:disabled { cursor: default; }
+.an-rank-name { grid-area: name; font-size: 0.88rem; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.an-rank-bar { grid-area: bar; height: 8px; border-radius: 99px; background: var(--panel-3); overflow: hidden; }
+.an-rank-bar i {
+  display: block; height: 100%; width: var(--w, 0%); border-radius: inherit; background: var(--accent); transform-origin: 0 50%;
+  animation: an-grow-x 680ms cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: calc(var(--i, 0) * 45ms);
+}
+@keyframes an-grow-x { from { transform: scaleX(0); } }
+.an-rank-value { grid-area: value; font-family: var(--serif); font-weight: 400; font-size: 1.2rem; color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
+.an-rank-sub { grid-area: sub; font-size: 0.75rem; color: var(--muted); }
+#tile-recipes-list { margin-top: 10px; }
+/* The drawings keep a reading size when their tile opens to the full width. */
+.an-tile .drawing-svg { max-width: 420px; margin-inline: auto; }
+.an-tile.open[data-tile="grinder"] .drawing-svg { max-width: 680px; }
+.an-tile .drawing-reading { margin-top: 6px; }
+.an-tile.open[data-tile="recipes"] .an-tile-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px 28px; }
+@container analytics (min-width: 760px) {
+  .an-tile.open[data-tile="recipes"] .an-tile-body { grid-template-columns: minmax(0, 380px) minmax(0, 1fr); align-items: start; }
+  .an-tile.open[data-tile="recipes"] #tile-podium, .an-tile.open[data-tile="recipes"] #tile-podium-reading { grid-column: 1; }
+  .an-tile.open[data-tile="recipes"] #tile-recipes-list { grid-column: 2; grid-row: 1 / span 2; margin-top: 0; }
+}
+@media (pointer: coarse) { .an-rank-row { min-height: 44px; } }
+
+/* The tastes: a chip each, the new ones in copper; open, the aroma wheel. */
+.an-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.an-chip {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 4px 12px; border-radius: 99px;
+  border: 1px solid var(--lines); background: var(--panel-2); color: var(--ink); font: inherit; font-size: 0.85rem; cursor: pointer;
+  animation: an-pop 380ms cubic-bezier(0.3, 1.5, 0.5, 1) both; animation-delay: calc(var(--i, 0) * 22ms);
+}
+.an-chip:hover { background: var(--panel-3); }
+.an-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.an-chip small { font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.an-chip.new { border-color: var(--accent); background: var(--accent-bg); }
+.an-chip.new small { color: var(--accent-strong); font-weight: 700; }
+@keyframes an-pop { from { opacity: 0; transform: scale(0.85); } }
+@media (pointer: coarse) { .an-chip { min-height: 44px; } }
+.an-tile .wheel-box { margin-top: 14px; }
+
+/* The key figures, two by two (the old card's look). */
+[data-tile="figures"] .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; margin-bottom: 0; }
+[data-tile="figures"] .kpi-value { font-size: 1.55rem; }
+[data-tile="figures"] .kpi-secondary { margin-top: 12px; }
+.kpi-secondary .an-best-cup { margin: 0; padding: 0; font-family: var(--serif); font-size: 1.05rem; text-decoration: none; }
+@container analytics (min-width: 941px) { .an-tile.open[data-tile="figures"] .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* The 30 days chart and the calendar grow when opened. */
+.an-tile .canvas-30d { transition: height 420ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.an-tile.open .canvas-30d { height: 320px; }
+
+/* Every finding, listed: the carousel of the home screen (screens.css) stops here. */
+.an-findings .insights { grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); }
+.an-findings .insights > li { grid-area: auto; visibility: visible; animation: an-more-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.an-findings .insights > li:nth-child(2) { animation-delay: 50ms; }
+.an-findings .insights > li:nth-child(3) { animation-delay: 100ms; }
+.an-findings .insights > li:nth-child(n+4) { animation-delay: 150ms; }
+.an-findings .insights-nav { display: none; }
+.an-findings .card-head { justify-content: flex-start; }
+.an-findings .an-fixed { background: var(--panel-2); }
+.card-analyses .card-head > div { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  .an-period-mark.ready, .an-tile-toggle, .an-bars, .an-tile .canvas-30d { transition: none; }
+  .an-bar i, .an-rank-bar i, .an-chip, .an-findings .insights > li, .an-refresh .an-tile-body, .an-refresh .an-tile-meta,
+  .an-tile.open .an-more, .an-tile.open .an-more-row { animation: none; }
+}
+
+/* ---------- O6: the story of the month ---------- */
+
+.story {
+  width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 0; border: 0;
+  background: transparent; color: var(--ink); overflow: hidden;
+}
+.story[open] { display: grid; place-items: center; }
+.story::backdrop { background: rgba(12, 9, 6, 0.74); backdrop-filter: blur(6px); }
+.story-frame {
+  position: relative; display: flex; flex-direction: column; gap: 14px;
+  width: min(430px, 100vw); height: min(760px, 100dvh); padding: 18px 22px 30px; border-radius: 24px; overflow: hidden;
+  background: radial-gradient(120% 70% at 85% 0%, var(--accent-bg), transparent 60%), var(--panel);
+  border: 1px solid var(--card-border, var(--lines)); box-shadow: var(--shadow);
+}
+.story[open] .story-frame { animation: st-open 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.story.closing .story-frame { animation: st-close 220ms ease-in both; }
+@keyframes st-open { from { opacity: 0; transform: translateY(24px) scale(0.96); } }
+@keyframes st-close { to { opacity: 0; transform: translateY(18px) scale(0.97); } }
+@media (max-width: 560px) {
+  .story-frame { width: 100vw; height: 100dvh; border-radius: 0; border: 0; padding-top: calc(14px + env(safe-area-inset-top, 0px)); }
+}
+.story-bars { position: relative; z-index: 3; display: flex; gap: 5px; margin-right: 52px; }
+.story-bars .sb { flex: 1; height: 3px; border-radius: 99px; overflow: hidden; background: color-mix(in srgb, var(--ink) 20%, transparent); }
+.story-bars .sb i { display: block; width: 0; height: 100%; background: var(--accent); }
+.story-bars .sb.done i { width: 100%; }
+.story-bars .sb.now i { animation: sb-fill linear forwards; }
+.story.held .story-bars .sb.now i { animation-play-state: paused; }
+@keyframes sb-fill { to { width: 100%; } }
+.story-stage { position: relative; flex: 1; display: grid; align-items: center; min-height: 0; }
+.st-card { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.st-in { animation: st-in 440ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.st-in-back { animation: st-in-back 440ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes st-in { from { opacity: 0; transform: translateX(34px); } }
+@keyframes st-in-back { from { opacity: 0; transform: translateX(-34px); } }
+.st-over { margin: 0; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent-strong); }
+.st-big { margin: 0; font-family: var(--serif); font-size: clamp(5.5rem, 30vw, 9rem); line-height: 0.9; color: var(--ink); font-variant-numeric: tabular-nums; }
+.st-name { margin: 0; font-family: var(--serif); font-size: clamp(2.2rem, 10vw, 3rem); line-height: 1.05; color: var(--ink); }
+.st-line { margin: 0; font-family: var(--serif); font-size: 1.5rem; line-height: 1.2; color: var(--text); }
+.st-small { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--muted); max-width: 34ch; }
+.st-jar { width: 104px; }
+.st-redo { position: relative; z-index: 5; margin-top: 10px; }
+.story-nav { position: absolute; z-index: 2; top: 44px; bottom: 0; padding: 0; border: 0; background: transparent; cursor: pointer; }
+.story-prev { left: 0; width: 33%; }
+.story-next { right: 0; width: 67%; }
+.story-nav:focus-visible { outline: 2px solid var(--accent); outline-offset: -6px; border-radius: 16px; }
+.story-close {
+  position: absolute; z-index: 4; top: 8px; right: 10px; display: grid; place-items: center; width: 44px; height: 44px; padding: 0;
+  border: 0; border-radius: 50%; background: color-mix(in srgb, var(--ink) 10%, transparent); color: var(--ink); cursor: pointer;
+}
+@media (max-width: 560px) { .story-close { top: calc(4px + env(safe-area-inset-top, 0px)); } }
+.story-close:hover { background: color-mix(in srgb, var(--ink) 18%, transparent); }
+.story-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .story[open] .story-frame, .story.closing .story-frame, .st-in, .st-in-back, .story-bars .sb.now i { animation: none; }
+  .story-bars .sb.now i { width: 100%; opacity: 0.5; }
+}

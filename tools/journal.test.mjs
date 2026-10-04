@@ -25,7 +25,7 @@ function check(label, condition, detail) {
 
 // The pure layers, in one scope as the page loads them.
 const { TOOLS, GRIND, COMPARE, I18N_FR, I18N_EN, DESCRIPTOR_GROUPS } = new Function(
-  ["js/tools.js", "js/grind.js", "js/i18n.fr.js", "js/i18n.en.js", "js/recipes.js", "js/compare.js"].map(read).join("\n") +
+  ["js/tools.js", "js/grind.js", "js/i18n.fr.js", "js/i18n.fr2.js", "js/i18n.en.js", "js/recipes.js", "js/compare.js"].map(read).join("\n") +
   "\nreturn { TOOLS, GRIND, COMPARE, I18N_FR, I18N_EN, DESCRIPTOR_GROUPS };")();
 
 // I18N.t in miniature: the French templates, or the English halves.

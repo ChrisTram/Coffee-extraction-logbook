@@ -31,7 +31,7 @@ function check(label, condition, detail) {
 
 const store = new Map();
 const localStorage = { getItem: k => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)), removeItem: k => store.delete(k) };
-const PURE = ["js/tools.js", "js/i18n.fr.js", "js/i18n.js", "js/grind.js", "js/recipes.js", "js/tuning.js"];
+const PURE = ["js/tools.js", "js/i18n.fr.js", "js/i18n.fr2.js", "js/i18n.js", "js/grind.js", "js/recipes.js", "js/tuning.js"];
 /* The interface files need UI: a stand-in with what they borrow. fmtDecimal
    and fmtDuration are the core's own definitions, copied: they decide the
    text that is shared. */
@@ -232,7 +232,7 @@ const { TOOLS, TUNING, I18N, UI, STARTER_RECIPES } = api;
   check("one line per available key of the table", rows === UI.SHORTCUTS.filter(s => !s.needs).length, rows + " lines");
   check("a chord reads « G puis A »", html.includes("<kbd>G</kbd> <span class=\"kp-then\">puis</span> <kbd>A</kbd>"));
   check("a named key in words", html.includes("<kbd>Échap</kbd>") && html.includes("<kbd>Espace</kbd>"));
-  const fr = read("js/i18n.fr.js"), en = read("js/i18n.en.js");
+  const fr = read("js/i18n.fr.js") + read("js/i18n.fr2.js"), en = read("js/i18n.en.js");
   const bilingual = k => new RegExp("^\\s*" + k + ": \\{ fr:", "m").test(fr) && new RegExp("^\\s*" + k + ": ", "m").test(en.slice(0, en.indexOf("\n  UI: {")));
   const labels = UI.SHORTCUTS.filter(s => s.label).map(s => s.label)
     .concat(UI.SHORTCUTS.filter(s => s.screen).map(s => "keys_go_" + s.screen))
@@ -294,7 +294,7 @@ const { TOOLS, TUNING, I18N, UI, STARTER_RECIPES } = api;
 
 /* ---------- The texts, the styles ---------- */
 {
-  const fr = read("js/i18n.fr.js"), en = read("js/i18n.en.js");
+  const fr = read("js/i18n.fr.js") + read("js/i18n.fr2.js"), en = read("js/i18n.en.js");
   const block = fr.slice(fr.indexOf("// extras (v9.19)"));
   const keys = [...block.matchAll(/^ {4}([a-z_0-9]+): \{ fr:/gm)].map(m => m[1]);
   const enT = en.slice(0, en.indexOf("\n  UI: {"));

@@ -146,9 +146,26 @@
     return true;
   }
 
+  /* N1 (v9.21): WHETHER THE FORM HOLDS A CUP IN PROGRESS, for the dot of
+     « Nouvelle tasse ». Read from the form itself, not from the stored draft:
+     the stored one outlives a reset (and is written on every page hide, even
+     untouched). What counts is what only a cup being brewed or tasted fills:
+     a running stopwatch, the times, the volume, the rating, the tastes, the
+     diagnostic, the comment, « ratée ». The coffee, the recipe, the dose and
+     the grind are prefilled, they say nothing. Never while editing a saved cup. */
+  const CUP_FIELDS = ["f-comment", "f-total-min", "f-total-sec", "f-flow-min", "f-flow-sec", "f-volume"];
+  function draftInForm() {
+    if (entry.editId) return false;
+    if (UI.stopwatch && UI.stopwatch.state !== "stopped") return true;
+    const filled = id => { const el = $("#" + id); return !!el && String(el.value || "").trim() !== ""; };
+    const failed = $("#f-failed"), rating = $("#f-rating");
+    return entry.descriptors.size > 0 || entry.diagnostics.size > 0 || !!(rating && !isRatingEmpty(rating)) ||
+      CUP_FIELDS.some(filled) || !!(failed && failed.checked);
+  }
+
   // Made available to the entry screen (wiring, saving) and to app.js (startup).
   Object.assign(UI, {
     DRAFT_MAX_MS, DRAFT_CHECKBOXES, DRAFT_FIELDS, DRAFT_KEY, DRAFT_DATE_MAX_MS,
-    isDraftUseful, saveDraft, clearDraft, scheduleDraft, restoreDraft,
+    isDraftUseful, saveDraft, clearDraft, scheduleDraft, restoreDraft, draftInForm,
   });
 })();

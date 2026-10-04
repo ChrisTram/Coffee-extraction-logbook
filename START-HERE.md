@@ -12,9 +12,9 @@ Un site web 100 pour cent local (HTML, CSS, JS purs, zéro build, zéro serveur)
 que Chris ouvre dans Chrome en double-cliquant `index.html`, et qui tourne aussi
 en PWA privée sur Cloudflare Workers avec synchronisation entre appareils. Il y
 suit ses extractions de café sur deux machines, une Bialetti Brikka 2 tasses et un
-Hario Switch 02, avec un moulin Timemore C5 ESP. Six écrans : Tableau de bord,
-Saisie, Historique, Mes meilleurs réglages, Guide (recettes, moulin, diagnostic,
-boutiques), Paramètres.
+Hario Switch 02, avec un moulin Timemore C5 ESP. Les écrans (v9.21) : Accueil,
+la saisie (« Nouvelle tasse »), Journal, Analyses, Réglages gagnants, Guide
+(recettes, moulin, diagnostic, boutiques), Paramètres.
 
 ## Qui est l'utilisateur
 

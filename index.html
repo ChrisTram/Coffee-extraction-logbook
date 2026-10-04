@@ -7,14 +7,15 @@
 <!-- Site version, single source of truth: the footer reads it, and files
      loaded on demand put it in their URL. Set it with
      node tools/bump_version.mjs X, never by hand. -->
-<meta name="app-version" content="9.20">
-<link rel="stylesheet" href="css/base.css?v=9.20">
-<link rel="stylesheet" href="css/screens.css?v=9.20">
-<link rel="stylesheet" href="css/dialogs.css?v=9.20">
-<link rel="stylesheet" href="css/finishing.css?v=9.20">
-<link rel="stylesheet" href="css/stock.css?v=9.20">
-<link rel="stylesheet" href="css/extras.css?v=9.20">
-<link rel="stylesheet" href="css/journal.css?v=9.20">
+<meta name="app-version" content="9.21">
+<link rel="stylesheet" href="css/base.css?v=9.21">
+<link rel="stylesheet" href="css/screens.css?v=9.21">
+<link rel="stylesheet" href="css/dialogs.css?v=9.21">
+<link rel="stylesheet" href="css/finishing.css?v=9.21">
+<link rel="stylesheet" href="css/stock.css?v=9.21">
+<link rel="stylesheet" href="css/extras.css?v=9.21">
+<link rel="stylesheet" href="css/journal.css?v=9.21">
+<link rel="stylesheet" href="css/home.css?v=9.21">
 <!-- crossorigin use-credentials: without it the browser fetches the manifest
      WITHOUT cookies, the front door redirects it to /login, and it tries to
      parse HTML as JSON. Result: "Manifest: Syntax error" and a PWA that
@@ -50,12 +51,13 @@
   document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute("content", tint));
 })();
 </script>
-<!-- Preloaded (v8.75): the two first-screen fonts and the dashboard charts
-     were discovered late, after the whole stylesheet and
-     the scripts. bump_version.mjs versions the charts link. -->
+<!-- Preloaded (v8.75): the two first-screen fonts and the charts were
+     discovered late, after the whole stylesheet and the scripts. Since v9.21
+     the charts live in Analyses: fetched (never run) at boot, so that page
+     opens at once. bump_version.mjs versions the charts link. -->
 <link rel="preload" href="css/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="css/fonts/instrument-serif-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="js/vendor/chart.umd.js?v=9.20" as="script">
+<link rel="preload" href="js/vendor/chart.umd.js?v=9.21" as="script">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%98%95%3C/text%3E%3C/svg%3E">
 </head>
 <body>
@@ -63,8 +65,8 @@
 <!-- ================= NAVIGATION =================
 
      A SINGLE .rail element in the DOM, two layouts. On desktop it is
-     the left rail and it holds all six screens. Below 1024 px it becomes the
-     "Plus" sheet that slides up from the bottom, and the three daily screens move
+     the left rail and it holds every screen. Below 1024 px it becomes the
+     "Plus" sheet that slides up from the bottom, and the daily screens move
      into the bottom bar: the CSS then hides the duplicate entries.
 
      Duplicating the rail and the sheet would have duplicated #btn-lang, #btn-theme and
@@ -84,19 +86,24 @@
 
   <!-- On desktop, "Nouvelle tasse" opens the FULL entry form: the floating
        quick entry button disappears above 1024 px. -->
-  <button class="btn btn-primary rail-new" data-go="entry"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg><span>Nouvelle tasse</span></button>
+  <button class="btn btn-primary rail-new" data-go="entry"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg><span>Nouvelle tasse</span><span class="draft-dot" aria-hidden="true"></span></button>
 
   <!-- P1 (v9.13): search and act, Ctrl K (js/ui-palette.js). The rail is also
        the phone's "Plus" sheet: there, the same button opens the search full screen. -->
   <button type="button" class="rail-search" id="btn-search" aria-keyshortcuts="Control+K Meta+K"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg><span>Chercher</span><span class="rail-kbd" aria-hidden="true"><kbd data-key-mod>Ctrl</kbd><kbd>K</kbd></span></button>
 
   <div class="rail-entries">
-      <button class="nav-btn rail-entry" data-screen="dashboard"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="8" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="11" width="7" height="10" rx="1.5"/></svg><span>Tableau de bord</span></button>
-      <button class="nav-btn rail-entry" data-screen="entry"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h8"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span>Saisie</span></button>
-      <button class="nav-btn rail-entry" data-screen="history"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h13"/><path d="M3 12h13"/><path d="M3 18h9"/><circle cx="19" cy="17" r="3"/><path d="M19 15.6V17l1 .7"/></svg><span>Historique</span></button>
+      <!-- N1 (v9.21): the same names on desktop and phone. « Saisie » is gone,
+           « Nouvelle tasse » above already opens the entry form (the draft dot
+           says when a cup is in progress there, js/ui-nav.js). The active
+           entry wears a mark that slides from one to the next. -->
+      <span class="rail-mark" aria-hidden="true"></span>
+      <button class="nav-btn rail-entry" data-screen="dashboard"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.2 12 4.5l8 6.7"/><path d="M6 9.6v9.9h12V9.6"/><path d="M10 19.5v-5h4v5"/></svg><span>Accueil</span></button>
+      <button class="nav-btn rail-entry" data-screen="history"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h13"/><path d="M3 12h13"/><path d="M3 18h9"/><circle cx="19" cy="17" r="3"/><path d="M19 15.6V17l1 .7"/></svg><span>Journal</span></button>
+      <button class="nav-btn rail-entry" data-screen="analytics"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 20h17"/><rect x="5" y="11" width="3.4" height="6" rx="1"/><rect x="10.3" y="5.5" width="3.4" height="11.5" rx="1"/><rect x="15.6" y="8.5" width="3.4" height="8.5" rx="1"/></svg><span>Analyses</span></button>
       <!-- O2 (v9.18): Mes cafés, a page now (the shelf of jars), no longer a window. -->
       <button class="nav-btn rail-entry" data-screen="coffees"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="3.5" rx="1"/><path d="M7 6h10a2 2 0 0 1 2 2v11a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 5 19V8a2 2 0 0 1 2-2z"/><path d="M5 13.5c2.3-1.4 4.7-1.4 7 0s4.7 1.4 7 0"/></svg><span>Mes cafés</span></button>
-      <button class="nav-btn rail-entry" data-screen="tuning"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M6 4h12v5a6 6 0 0 1-12 0z"/><path d="M18 5h2.5a2.5 2.5 0 0 1-2.5 4"/><path d="M6 5H3.5A2.5 2.5 0 0 0 6 9"/></svg><span>Mes réglages</span></button>
+      <button class="nav-btn rail-entry" data-screen="tuning"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M6 4h12v5a6 6 0 0 1-12 0z"/><path d="M18 5h2.5a2.5 2.5 0 0 1-2.5 4"/><path d="M6 5H3.5A2.5 2.5 0 0 0 6 9"/></svg><span>Réglages gagnants</span></button>
       <button class="nav-btn rail-entry" data-screen="guide"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v15H5.5A1.5 1.5 0 0 0 4 19.5z"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19"/><path d="M8 7.5h7"/></svg><span>Guide</span></button>
       <button class="nav-btn rail-entry" data-screen="settings"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10"/><path d="M18 7h2"/><path d="M4 17h6"/><path d="M14 17h6"/><circle cx="16" cy="7" r="2"/><circle cx="12" cy="17" r="2"/></svg><span>Paramètres</span></button>
       <!-- Phone only (v9.13): the quick entry, once the floating button, lives here
@@ -121,270 +128,414 @@
   </div>
 </nav>
 
-<!-- Bottom bar, phone only (M3, v9.13). Five places: two daily screens, the
-     new cup in the middle, raised and always in the same spot, the Guide, and
-     "Plus" which opens the rail as a sheet. The centre button opens the entry
-     form; a long press opens the quick entry (js/ui-nav.js). The mark under
-     the active tab slides from one to the next. -->
+<!-- Bottom bar, phone only (M3, v9.13; N1, v9.21). Five places: the two daily
+     screens, the new cup in the middle, raised and always in the same spot,
+     Analyses, and "Plus" which opens the rail as a sheet (the Guide lives
+     there now). The centre button opens the entry form; a long press opens
+     the quick entry (js/ui-nav.js). The mark under the active tab slides from
+     one to the next. -->
 <nav class="bottom-bar" aria-label="Navigation">
-  <button class="nav-btn bar-entry" data-screen="dashboard"><svg class="ico" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="8" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="11" width="7" height="10" rx="1.5"/></svg><span>Tableau</span></button>
-  <button class="nav-btn bar-entry" data-screen="history"><svg class="ico" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h13"/><path d="M3 12h13"/><path d="M3 18h9"/><circle cx="19" cy="17" r="3"/><path d="M19 15.6V17l1 .7"/></svg><span>Historique</span></button>
-  <button class="nav-btn bar-entry bar-new" data-screen="entry" id="bar-new" aria-label="Nouvelle tasse" title="Nouvelle tasse. Appui long : saisie rapide"><span class="bar-disc" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg></span><span>Tasse</span></button>
-  <button class="nav-btn bar-entry" data-screen="guide"><svg class="ico" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v15H5.5A1.5 1.5 0 0 0 4 19.5z"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19"/><path d="M8 7.5h7"/></svg><span>Guide</span></button>
+  <button class="nav-btn bar-entry" data-screen="dashboard"><svg class="ico" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.2 12 4.5l8 6.7"/><path d="M6 9.6v9.9h12V9.6"/><path d="M10 19.5v-5h4v5"/></svg><span>Accueil</span></button>
+  <button class="nav-btn bar-entry" data-screen="history"><svg class="ico" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h13"/><path d="M3 12h13"/><path d="M3 18h9"/><circle cx="19" cy="17" r="3"/><path d="M19 15.6V17l1 .7"/></svg><span>Journal</span></button>
+  <button class="nav-btn bar-entry bar-new" data-screen="entry" id="bar-new" aria-label="Nouvelle tasse" title="Nouvelle tasse. Appui long : saisie rapide"><span class="bar-disc" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg><span class="draft-dot"></span></span><span>Tasse</span></button>
+  <button class="nav-btn bar-entry" data-screen="analytics"><svg class="ico" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 20h17"/><rect x="5" y="11" width="3.4" height="6" rx="1"/><rect x="10.3" y="5.5" width="3.4" height="11.5" rx="1"/><rect x="15.6" y="8.5" width="3.4" height="8.5" rx="1"/></svg><span>Analyses</span></button>
   <!-- The bean on the icon: the sync state at a glance, the sentence is in the sheet. -->
   <button class="bar-entry" id="btn-plus" aria-expanded="false" aria-controls="rail" aria-describedby="rail-sync-text"><span class="bar-icon"><svg class="ico" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg><span class="sync-bean bar-bean" aria-hidden="true"></span></span><span>Plus</span></button>
   <span class="bar-mark" aria-hidden="true"></span>
+  <!-- N1 (v9.21): what the draft dot of « Nouvelle tasse » and of the « + » means,
+       read by a screen reader only while there is a draft (aria-describedby set by js/ui-nav.js). -->
+  <span id="draft-note" hidden>brouillon en cours</span>
 </nav>
 
 <div id="overlay-nav" class="overlay-nav" hidden></div>
 
 <main>
 
-<!-- M8 (v9.13): THE LOADING SILHOUETTE. The shape of the dashboard cards,
-     shimmering, until the first screen is rendered; the screens wait behind it
-     (finishing.css), then it gives way inside the screen transition (ui-core.js,
-     activateScreen). Deliberately in the HTML and not created in JS: it must be
-     visible BEFORE any script runs, that is the whole point. -->
+<!-- M8 (v9.13): THE LOADING SILHOUETTE. The shape of the home cards (L1,
+     v9.21: the last cup and the latest cups on the left, the bags on the
+     right), shimmering, until the first screen is rendered; the screens wait
+     behind it (finishing.css), then it gives way inside the screen transition
+     (ui-core.js, activateScreen). Deliberately in the HTML and not created in
+     JS: it must be visible BEFORE any script runs, that is the whole point. -->
 <div id="loading" class="skeleton" role="status" aria-live="polite">
   <span class="offscreen">Chargement de ton carnet…</span>
   <div class="head-page" aria-hidden="true">
     <div class="head-titles sk-titles"><i class="sk-bone sk-overline"></i><i class="sk-bone sk-title"></i><span class="sk-chips"><i class="sk-bone sk-chip"></i><i class="sk-bone sk-chip"></i><i class="sk-bone sk-chip"></i></span></div>
   </div>
-  <div class="grid-dashboard" aria-hidden="true">
-    <div class="card col-2 sk-card sk-last"><i class="sk-bone sk-h"></i><i class="sk-bone sk-name"></i><i class="sk-bone sk-text"></i><i class="sk-bone sk-text"></i><i class="sk-bone sk-block"></i></div>
-    <div class="card sk-card sk-last"><i class="sk-bone sk-h"></i><span class="sk-tiles"><i class="sk-bone"></i><i class="sk-bone"></i><i class="sk-bone"></i><i class="sk-bone"></i></span><i class="sk-bone sk-text"></i><i class="sk-bone sk-text"></i></div>
-    <div class="card col-2 sk-card sk-list"><i class="sk-bone sk-h"></i><i class="sk-bone sk-row"></i><i class="sk-bone sk-row"></i><i class="sk-bone sk-row"></i><i class="sk-bone sk-row"></i></div>
-    <div class="card sk-card sk-list"><i class="sk-bone sk-h"></i><i class="sk-bone sk-block sk-tall"></i></div>
+  <div class="sk-home" aria-hidden="true">
+    <div class="grid-dashboard">
+      <div class="card sk-card sk-last"><i class="sk-bone sk-h"></i><i class="sk-bone sk-name"></i><i class="sk-bone sk-text"></i><i class="sk-bone sk-text"></i></div>
+      <div class="card sk-card sk-list"><i class="sk-bone sk-h"></i><i class="sk-bone sk-row"></i><i class="sk-bone sk-row"></i><i class="sk-bone sk-row"></i><i class="sk-bone sk-row"></i></div>
+    </div>
+    <div class="card sk-card sk-side"><i class="sk-bone sk-h"></i><i class="sk-bone sk-row"></i><i class="sk-bone sk-row"></i><i class="sk-bone sk-row"></i></div>
   </div>
 </div>
 
-<!-- ================= SCREEN 1: DASHBOARD ================= -->
+<!-- ================= SCREEN 1: HOME (L1, v9.21) =================
+     Three questions, in this order: what did I drink (the last cup, its score
+     next to its name, folding into a band at the top when scrolling), where
+     are my bags (the grams in the corner, and on a wide screen a column with
+     their jars), how is my week (one line). Then the latest cups, ONE finding,
+     and a small « À brasser » at the very bottom. The analyses, the calendar
+     and the drawings have their page: Analyses (O1). The internal name stays
+     "dashboard", for the hash and the old links. -->
 <section id="screen-dashboard" class="screen on">
+  <!-- J4: the last cup, folded into a band stuck at the top once its card
+       has scrolled away (js/ui-home.js); its name and its score fly from the
+       card into the band. Outside .home on purpose: a container query box
+       would become the band's frame instead of the window. -->
+  <div class="home-band" id="home-band" hidden></div>
   <div id="dashboard-empty" class="empty-state" hidden>
     <!-- M6 (v9.13): a drawing in the site's line, not an emoji. -->
     <svg class="empty-state-art eh-art" viewBox="0 0 150 110" aria-hidden="true" focusable="false"><path class="eh-fill" d="M32 44 L104 44 L98 90 Q96 98 88 98 L48 98 Q40 98 38 90 Z"></path><path class="eh-line" d="M104 54 Q122 56 120 68 Q118 80 100 80"></path><ellipse class="eh-accent-soft" cx="68" cy="47" rx="34" ry="4.5"></ellipse><path class="eh-accent" d="M54 34 Q49 24 57 16 M70 34 Q65 22 74 12 M86 34 Q81 24 89 16"></path><path class="eh-line" d="M24 104 H112"></path></svg>
     <h2>Aucune extraction pour le moment</h2>
-    <p>Enregistre ta première tasse depuis l'écran Saisie, ou charge le jeu de démonstration pour voir le tableau de bord en action.</p>
+    <p>Enregistre ta première tasse avec « Nouvelle tasse », ou charge le jeu de démonstration pour voir ton accueil en action.</p>
     <div class="empty-state-actions">
       <button class="btn btn-primary" data-go="entry">Saisir une extraction</button>
       <button class="btn" id="btn-demo-empty">Charger la démonstration</button>
     </div>
   </div>
 
-  <div id="dashboard-content">
+  <div id="dashboard-content" class="home">
 
     <!-- PAGE HEAD. The overline and the title replace the old header:
          the screen now states its own name. -->
-    <div class="head-page">
+    <div class="head-page home-head">
       <div class="head-titles">
         <p class="highlight" id="dashboard-highlight"></p>
-        <h2 class="title-page">Tableau de bord</h2>
+        <h2 class="title-page">Accueil</h2>
         <!-- The stock (v8.89): what is left in each open bag, in grams,
              under the title. Discreet, but readable without scrolling. -->
         <div class="stock-corner" id="stock-corner" role="group" aria-label="Le café qui reste dans tes sachets"></div>
       </div>
-      <!-- Last week's recap (v8.51), rendered by js/ui-drawings.js:
-           shown the following week, until it is dismissed. In the page HEAD
-           since v8.67, right of the title: as a full-width card
-           it pushed the latest brews below the fold. -->
-      <article class="card card-recap head-recap" id="card-recap" hidden></article>
+      <!-- The week (L1), with its bars, on a wide screen: in the head, right
+           of the title. A narrow screen reads it in one line under the last cup. -->
+      <button type="button" class="card home-week" id="home-week" hidden></button>
     </div>
 
-    <div class="grid-dashboard">
+    <div class="home-layout">
+      <div class="grid-dashboard home-main">
+        <article class="card card-last" id="card-last" hidden></article>
+        <button type="button" class="home-week-line" id="home-week-line" hidden></button>
 
-      <!-- ROW 1: the last cup, and the key figures -->
-      <article class="card card-last col-2" id="card-last" hidden></article>
-
-      <article class="card card-figures">
-        <h3>Chiffres clés</h3>
-        <div class="kpis" id="kpis"></div>
-        <!-- Total, overall rating and caffeine no longer have a tile: four figures
-             read at a glance, seven have to be counted. They stay here. -->
-        <ul class="kpi-secondary" id="kpis-secondary"></ul>
-      </article>
-
-      <!-- ROW 2: the last five in a real table, and the calendar. Right
-           under the last cup since v8.67: Chris wants to see them without
-           scrolling, the chart and the insights go below. -->
-      <article class="card col-2">
-        <h3>Les dernières extractions</h3>
-        <div class="table-wrapper">
-          <table class="table-latest">
-            <!-- Widths set per column: the table must fit in its
-                 card, a card does not scroll horizontally. -->
-            <colgroup><col class="c-when"><col class="c-coffee"><col class="c-measures"><col class="c-tastes"><col class="c-rating"></colgroup>
-            <!-- Headers hidden from the eye, read by screen readers: a
-                 table without headers is a grid of unknowns to the ear. -->
-            <thead class="offscreen">
-              <tr><th scope="col">Heure</th><th scope="col">Café</th>
-                <th scope="col">Recette et mesures</th><th scope="col">Goûts</th><th scope="col">Note</th></tr>
-            </thead>
-            <tbody id="latest-list"></tbody>
-          </table>
-        </div>
-        <button type="button" class="link-card" data-go="history">Tout l'historique</button>
-      </article>
-
-      <article class="card">
-        <h3 id="heatmap-title">Les dernières semaines</h3>
-        <div id="g-heatmap" class="heatmap-container"></div>
-        <!-- The scale legend: without it, the calendar is a series of
-             browns nobody knows the meaning of. It had been dropped in the
-             redesign, its style had stayed. -->
-        <div class="legend-heatmap" id="heatmap-legend" aria-hidden="true"></div>
-        <div class="mini-stats" id="heatmap-stats"></div>
-      </article>
-
-      <!-- ROW 3: the 30-day chart and the insights. The chart has a
-           FIXED HEIGHT (v8.39): it stretched to the height of the insights, and
-           every extra insight made it longer. The insights scroll one by one
-           in the neighbouring card, which therefore pushes nothing anymore. -->
-      <article class="card col-2">
-        <h3>Note et tasses, 30 derniers jours</h3>
-        <div class="canvas-30d"><canvas id="g-30days"></canvas></div>
-        <!-- The coffees of the month (v8.61): each block has its coffee's colour, and
-             each name here opens its sheet. Filled by UI.rendreCafes30j. -->
-        <div class="legend-coffees" id="legend-30d" aria-label="Les cafés des 30 derniers jours" hidden></div>
-      </article>
-
-      <article class="card card-dark">
-        <div class="card-head">
-          <h3>Ce que tes données disent</h3>
-          <div class="insights-nav" id="insights-nav" hidden></div>
-        </div>
-        <ul class="insights" id="insights"></ul>
-        <button type="button" class="link-card" data-go="tuning">Voir mes meilleurs réglages</button>
-      </article>
-
-      <!-- ROW 3b: YOUR COFFEES IN DRAWINGS (v8.49), rendered by js/ui-drawings.js.
-           Each drawing is a shortcut to the page it summarises; a jar on
-           the shelf opens its coffee's sheet. -->
-      <article class="card card-drawings col-full" id="card-drawings">
-        <div class="card-head">
-          <div><h3>Tes cafés en dessins</h3><p class="card-sub">Touche un dessin pour ouvrir ce qu'il résume.</p></div>
-          <!-- Arrange (v8.57): which ones to see and in what order, behind a single button. -->
-          <button type="button" class="btn btn-small btn-subtle" id="drawings-arrange" aria-expanded="false" aria-controls="drawings-panel">Arranger</button>
-        </div>
-        <div class="drawings-panel" id="drawings-panel" hidden></div>
-        <p class="card-empty" id="drawings-none" hidden>Aucun dessin affiché. « Arranger » les fait revenir.</p>
-        <div class="drawings-grid">
-          <section class="drawing" data-drawing="shelf" data-shortcut="coffees">
-            <header class="drawing-head"><h4>L'étagère</h4><button type="button" class="drawing-link" data-shortcut="coffees">Mes cafés<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button></header>
-            <svg id="drawing-shelf" class="drawing-svg" viewBox="0 0 320 160" role="img" aria-label="Tes sachets en bocaux, remplis de ce qui reste"></svg>
-            <p class="drawing-reading" id="drawing-shelf-reading"></p>
-          </section>
-          <section class="drawing" data-drawing="ribbon" data-shortcut="coffees">
-            <header class="drawing-head"><h4>La frise des sachets</h4><button type="button" class="drawing-link" data-shortcut="coffees">Mes cafés<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button></header>
-            <svg id="drawing-ribbon" class="drawing-svg" viewBox="0 0 320 150" role="img" aria-label="Tes sachets des trois derniers mois, de leur ouverture à leur fin, teintés par leur note"></svg>
-            <p class="drawing-reading" id="drawing-ribbon-reading"></p>
-          </section>
-          <section class="drawing" data-drawing="podium" data-shortcut="guide">
-            <header class="drawing-head"><h4>Le podium des recettes</h4><button type="button" class="drawing-link" data-shortcut="guide">Le Guide<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button></header>
-            <svg id="drawing-podium" class="drawing-svg" viewBox="0 0 320 150" role="img" aria-label="Tes trois recettes les mieux notées"></svg>
-            <p class="drawing-reading" id="drawing-podium-reading"></p>
-          </section>
-          <section class="drawing" data-drawing="progress" data-shortcut="history">
-            <header class="drawing-head"><h4>Ta progression</h4><button type="button" class="drawing-link" data-shortcut="history">Historique<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button></header>
-            <svg id="drawing-progress" class="drawing-svg" viewBox="0 0 320 160" data-scrub data-scrub-top="16" data-scrub-bottom="112" role="img" aria-label="Ta moyenne glissante sur cinq tasses, avec les sachets ouverts et les recettes essayées"></svg>
-            <p class="drawing-reading" id="drawing-progress-reading"></p>
-          </section>
-          <section class="drawing" data-drawing="clock" data-shortcut="history">
-            <header class="drawing-head"><h4>L'horloge du café</h4><button type="button" class="drawing-link" data-shortcut="history">Historique<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button></header>
-            <svg id="drawing-clock" class="drawing-svg" viewBox="0 0 320 200" role="img" aria-label="Tes tasses des trois derniers mois à leur heure, plus loin du centre quand elles sont mieux notées"></svg>
-            <p class="drawing-reading" id="drawing-clock-reading"></p>
-          </section>
-          <section class="drawing" data-drawing="spectrum" data-shortcut="diagnostics">
-            <header class="drawing-head"><h4>Le spectre d'extraction</h4><button type="button" class="drawing-link" data-shortcut="diagnostics">Diagnostics<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button></header>
-            <svg id="drawing-spectrum" class="drawing-svg" viewBox="0 0 320 160" role="img" aria-label="Tes diagnostics de sous-extrait à sur-extrait, une rangée par recette"></svg>
-            <p class="drawing-reading" id="drawing-spectrum-reading"></p>
-          </section>
-          <section class="drawing" data-drawing="grinder" data-shortcut="grinder">
-            <header class="drawing-head"><h4>Ta carte du moulin</h4><button type="button" class="drawing-link" data-shortcut="grinder">Le moulin<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button></header>
-            <svg id="drawing-grinder" class="drawing-svg" viewBox="0 0 320 126" role="img" aria-label="Tes tasses à leurs microns, dans la plage de chaque machine"></svg>
-            <p class="drawing-reading" id="drawing-grinder-reading"></p>
-          </section>
-        </div>
-      </article>
-
-      <!-- ROW 4: THE ANALYSES, IN TABS (v8.39). Six charts
-           used to stack here in six cards: we scrolled past them without
-           reading. One card, one tab per question, and next to each
-           chart its reading in one sentence. The canvas ids and
-           empty-card messages have not changed: the rendering knows nothing of
-           tabs. -->
-      <article class="card card-analyses col-full">
-        <div class="card-head">
-          <h3>Analyses</h3>
-          <div class="tabs-analyses" role="tablist" aria-label="Analyses">
-            <button type="button" role="tab" id="tab-coffees" aria-controls="analysis-coffees" aria-selected="true" data-analysis="coffees">Cafés</button>
-            <button type="button" role="tab" id="tab-recipes" aria-controls="analysis-recipes" aria-selected="false" tabindex="-1" data-analysis="recipes">Recettes</button>
-            <button type="button" role="tab" id="tab-machines" aria-controls="analysis-machines" aria-selected="false" tabindex="-1" data-analysis="machines">Machines</button>
-            <button type="button" role="tab" id="tab-tastes" aria-controls="analysis-tastes" aria-selected="false" tabindex="-1" data-analysis="tastes">Goûts</button>
-            <button type="button" role="tab" id="tab-aromas" aria-controls="analysis-aromas" aria-selected="false" tabindex="-1" data-analysis="aromas">Arômes</button>
-            <button type="button" role="tab" id="tab-diagnostics" aria-controls="analysis-diagnostics" aria-selected="false" tabindex="-1" data-analysis="diagnostics">Diagnostics</button>
-            <button type="button" role="tab" id="tab-grind" aria-controls="analysis-grind" aria-selected="false" tabindex="-1" data-analysis="grind">Mouture</button>
+        <!-- The latest cups, grouped by day (v8.82), a real table that turns into
+             small cards on a narrow card (finishing.css, A1). The first three
+             are visible without scrolling on a phone. -->
+        <article class="card home-latest">
+          <div class="card-head">
+            <h3>Tes dernières tasses</h3>
+            <button type="button" class="link-card" data-go="history">Tout le journal</button>
           </div>
-        </div>
+          <div class="table-wrapper">
+            <table class="table-latest">
+              <!-- Widths set per column: the table must fit in its
+                   card, a card does not scroll horizontally. -->
+              <colgroup><col class="c-when"><col class="c-coffee"><col class="c-measures"><col class="c-tastes"><col class="c-rating"></colgroup>
+              <!-- Headers hidden from the eye, read by screen readers: a
+                   table without headers is a grid of unknowns to the ear. -->
+              <thead class="offscreen">
+                <tr><th scope="col">Heure</th><th scope="col">Café</th>
+                  <th scope="col">Recette et mesures</th><th scope="col">Goûts</th><th scope="col">Note</th></tr>
+              </thead>
+              <tbody id="latest-list"></tbody>
+            </table>
+          </div>
+        </article>
+      </div>
 
-        <!-- The STACK: the six panels in the same grid cell, only one
-             visible. All stay rendered, so each chart is born at its real
-             size; a panel with display: none gave a 0 x 0 canvas. -->
-        <div class="analyses-stack">
-        <div class="analysis current" role="tabpanel" id="analysis-coffees" aria-labelledby="tab-coffees">
-          <div class="analysis-chart"><div class="canvas-h240"><canvas id="g-coffees"></canvas></div></div>
-          <p class="analysis-reading" id="reading-coffees"></p>
-        </div>
-        <div class="analysis" role="tabpanel" id="analysis-recipes" aria-labelledby="tab-recipes" aria-hidden="true" inert>
-          <div class="analysis-chart"><div class="canvas-h240"><canvas id="g-recipes"></canvas></div></div>
-          <p class="analysis-reading" id="reading-recipes"></p>
-        </div>
-        <div class="analysis" role="tabpanel" id="analysis-machines" aria-labelledby="tab-machines" aria-hidden="true" inert>
-          <div class="analysis-chart">
-            <div class="duel" id="duel-machines"></div>
-            <div class="canvas-h200" id="box-duel"><canvas id="g-duel"></canvas></div>
-            <div class="card-empty" id="empty-duel" hidden></div>
-          </div>
-          <p class="analysis-reading" id="reading-machines"></p>
-        </div>
-        <div class="analysis" role="tabpanel" id="analysis-tastes" aria-labelledby="tab-tastes" aria-hidden="true" inert>
-          <div class="analysis-chart">
-            <div class="canvas-h240" id="box-tastes"><canvas id="g-tastes"></canvas></div>
-            <div class="card-empty" id="empty-tastes" hidden></div>
-          </div>
-          <div class="analysis-reading">
-            <p id="reading-tastes"></p>
-            <p class="card-note" id="rating-tastes"></p>
-          </div>
-        </div>
-        <!-- The aroma wheel (v8.45): hand-made SVG, drawn by CHARTS.roueAromes. -->
-        <div class="analysis" role="tabpanel" id="analysis-aromas" aria-labelledby="tab-aromas" aria-hidden="true" inert>
-          <div class="analysis-chart">
-            <div class="wheel-box" id="box-aromas">
-              <svg id="wheel-aromas" class="wheel" viewBox="0 0 300 300" role="img" aria-label="Roue des arômes : les familles au centre, leurs goûts autour, la teinte selon la note moyenne"></svg>
-              <div class="wheel-detail" id="wheel-detail" aria-live="polite"></div>
-            </div>
-            <div class="card-empty" id="empty-aromas" hidden></div>
-          </div>
-          <div class="analysis-reading">
-            <p id="reading-aromas"></p>
-            <p class="card-note">Arc plus large : goût plus souvent coché. Teinte plus pleine : tasses mieux notées. Touche une famille pour la déplier.</p>
-          </div>
-        </div>
-        <div class="analysis" role="tabpanel" id="analysis-diagnostics" aria-labelledby="tab-diagnostics" aria-hidden="true" inert>
-          <div class="analysis-chart"><div class="canvas-h240"><canvas id="g-diagnostics"></canvas></div></div>
-          <p class="analysis-reading" id="reading-diagnostics"></p>
-        </div>
-        <div class="analysis" role="tabpanel" id="analysis-grind" aria-labelledby="tab-grind" aria-hidden="true" inert>
-          <div class="analysis-chart">
-            <div class="canvas-h240" id="box-grind"><canvas id="g-grind"></canvas></div>
-            <div class="card-empty" id="empty-grind" hidden></div>
-          </div>
-          <p class="analysis-reading" id="reading-grind"></p>
-        </div>
-        </div>
-      </article>
-
+      <aside class="home-side" aria-label="Tes sachets et ce qu'il faut retenir">
+        <!-- Wide screens: the bags in their jars (Q8), the lowest first. -->
+        <article class="card home-bags" id="home-bags" hidden></article>
+        <!-- ONE finding, that turns (1 sur 5); all of them are in Analyses. -->
+        <article class="card home-finding" id="home-finding" hidden></article>
+      </aside>
     </div>
+
+    <!-- I3: a suggestion, small and dismissable for the day. -->
+    <div class="home-brew" id="home-brew" hidden></div>
+  </div>
+</section>
+
+<!-- ================= SCREEN: ANALYSES (O1, v9.21) =================
+     The analyses, the calendar and the drawings left the home screen for a
+     page of their own (js/ui-analytics.js). Built the first time the screen
+     opens, never at boot. The period at the top filters what can be
+     filtered; a tile that keeps its own window says so, in small. Each tile
+     opens large, in place. On the first days of a month, the page opens on
+     the story of the month before (js/ui-story.js). -->
+<section id="screen-analytics" class="screen">
+  <div class="head-page an-head">
+    <div class="head-titles">
+      <p class="highlight" id="an-highlight"></p>
+      <h2 class="title-page">Analyses</h2>
+    </div>
+    <div class="head-actions">
+      <div class="an-period" id="an-period" role="radiogroup" aria-label="Période des analyses">
+        <span class="an-period-mark" aria-hidden="true"></span>
+        <button type="button" role="radio" aria-checked="false" data-period="7">7 jours</button>
+        <button type="button" role="radio" aria-checked="true" data-period="30">30 jours</button>
+        <button type="button" role="radio" aria-checked="false" data-period="90">3 mois</button>
+        <button type="button" role="radio" aria-checked="false" data-period="all">Tout</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="an-empty" class="empty-state" hidden>
+    <svg class="empty-state-art eh-art" viewBox="0 0 150 110" aria-hidden="true" focusable="false"><path class="eh-line" d="M28 14 V96 H130"></path><path class="eh-dash" d="M34 82 Q60 74 74 60 T124 30"></path><circle class="eh-accent-dot" cx="52" cy="76" r="4"></circle><circle class="eh-fill" cx="88" cy="52" r="4"></circle><circle class="eh-fill" cx="116" cy="34" r="4"></circle></svg>
+    <h2>Pas encore d'analyses</h2>
+    <p>Les analyses se dessinent à partir de tes tasses : note la première, elles arrivent toutes seules.</p>
+    <div class="empty-state-actions">
+      <button class="btn btn-primary" data-go="entry">Saisir une extraction</button>
+    </div>
+  </div>
+
+  <div id="an-content">
+    <!-- O6: your month in coffee. A banner the first days of the month, the
+         story itself in #modal-story. -->
+    <article class="card an-story" id="an-story" hidden></article>
+
+    <!-- Last week's recap (v8.51), rendered by js/ui-drawings.js: shown the
+         following week, until it is dismissed. On the home screen until v9.17. -->
+    <article class="card card-recap head-recap an-recap" id="card-recap" hidden></article>
+
+    <div class="an-tiles" id="an-tiles">
+      <section class="card an-tile an-tile-wide" data-tile="month" data-period-aware aria-labelledby="tile-month-title">
+        <header class="an-tile-head">
+          <h3 id="tile-month-title">Le mois</h3>
+          <p class="an-tile-meta" id="tile-month-meta"></p>
+          <button type="button" class="an-tile-toggle" aria-expanded="false" aria-labelledby="tile-month-title"><svg class="ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M10 20H4v-6"/><path d="M20 4l-7 7"/><path d="M4 20l7-7"/></svg></button>
+        </header>
+        <div class="an-tile-body" id="tile-month"></div>
+      </section>
+
+      <section class="card an-tile" data-tile="figures" data-period-aware aria-labelledby="tile-figures-title">
+        <header class="an-tile-head">
+          <h3 id="tile-figures-title">Chiffres clés</h3>
+          <button type="button" class="an-tile-toggle" aria-expanded="false" aria-labelledby="tile-figures-title"><svg class="ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M10 20H4v-6"/><path d="M20 4l-7 7"/><path d="M4 20l7-7"/></svg></button>
+        </header>
+        <div class="an-tile-body">
+          <div class="kpis" id="kpis"></div>
+          <ul class="kpi-secondary" id="kpis-secondary"></ul>
+        </div>
+      </section>
+
+      <section class="card an-tile" data-tile="coffees" data-period-aware aria-labelledby="tile-coffees-title">
+        <header class="an-tile-head">
+          <h3 id="tile-coffees-title">Tes cafés</h3>
+          <p class="an-tile-meta">classés par moyenne</p>
+          <button type="button" class="an-tile-toggle" aria-expanded="false" aria-labelledby="tile-coffees-title"><svg class="ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M10 20H4v-6"/><path d="M20 4l-7 7"/><path d="M4 20l7-7"/></svg></button>
+        </header>
+        <div class="an-tile-body" id="tile-coffees"></div>
+      </section>
+
+      <section class="card an-tile" data-tile="recipes" data-period-aware aria-labelledby="tile-recipes-title">
+        <header class="an-tile-head">
+          <h3 id="tile-recipes-title">Tes recettes</h3>
+          <p class="an-tile-meta">le podium</p>
+          <button type="button" class="an-tile-toggle" aria-expanded="false" aria-labelledby="tile-recipes-title"><svg class="ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M10 20H4v-6"/><path d="M20 4l-7 7"/><path d="M4 20l7-7"/></svg></button>
+        </header>
+        <div class="an-tile-body">
+          <svg id="tile-podium" class="drawing-svg" viewBox="0 0 320 150" role="img" aria-label="Tes trois recettes les mieux notées sur la période"></svg>
+          <p class="drawing-reading" id="tile-podium-reading"></p>
+          <ol class="an-ranks" id="tile-recipes-list"></ol>
+        </div>
+      </section>
+
+      <section class="card an-tile" data-tile="tastes" data-period-aware aria-labelledby="tile-tastes-title">
+        <header class="an-tile-head">
+          <h3 id="tile-tastes-title">Tes goûts</h3>
+          <p class="an-tile-meta">touche un goût, ses tasses</p>
+          <button type="button" class="an-tile-toggle" aria-expanded="false" aria-labelledby="tile-tastes-title"><svg class="ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M10 20H4v-6"/><path d="M20 4l-7 7"/><path d="M4 20l7-7"/></svg></button>
+        </header>
+        <div class="an-tile-body">
+          <div class="an-chips" id="tile-tastes"></div>
+          <div class="an-more wheel-box" id="tile-wheel-box">
+            <svg id="tile-wheel" class="wheel" viewBox="0 0 300 300" role="img" aria-label="Roue des arômes de la période : les familles au centre, leurs goûts autour, la teinte selon la note moyenne"></svg>
+            <div class="wheel-detail" id="tile-wheel-detail" aria-live="polite"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card an-tile an-tile-wide" data-tile="chart30" aria-labelledby="tile-chart30-title">
+        <header class="an-tile-head">
+          <h3 id="tile-chart30-title">Note et tasses, 30 derniers jours</h3>
+          <p class="an-tile-meta an-fixed">toujours 30 jours</p>
+          <button type="button" class="an-tile-toggle" aria-expanded="false" aria-labelledby="tile-chart30-title"><svg class="ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M10 20H4v-6"/><path d="M20 4l-7 7"/><path d="M4 20l7-7"/></svg></button>
+        </header>
+        <div class="an-tile-body">
+          <div class="canvas-30d"><canvas id="g-30days"></canvas></div>
+          <!-- The coffees of the month (v8.61): each block has its coffee's colour, and
+               each name here opens its sheet. Filled by UI.renderCoffees30d. -->
+          <div class="legend-coffees" id="legend-30d" aria-label="Les cafés des 30 derniers jours" hidden></div>
+        </div>
+      </section>
+
+      <section class="card an-tile" data-tile="grinder" data-period-aware aria-labelledby="tile-grinder-title">
+        <header class="an-tile-head">
+          <h3 id="tile-grinder-title">Le moulin</h3>
+          <p class="an-tile-meta">tes tasses à leurs microns</p>
+          <button type="button" class="an-tile-toggle" aria-expanded="false" aria-labelledby="tile-grinder-title"><svg class="ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M10 20H4v-6"/><path d="M20 4l-7 7"/><path d="M4 20l7-7"/></svg></button>
+        </header>
+        <div class="an-tile-body">
+          <svg id="tile-grinder" class="drawing-svg" viewBox="0 0 320 126" role="img" aria-label="Tes tasses de la période à leurs microns, dans la plage de chaque machine"></svg>
+          <p class="drawing-reading" id="tile-grinder-reading"></p>
+        </div>
+      </section>
+
+      <section class="card an-tile an-tile-full" data-tile="calendar" aria-labelledby="heatmap-title">
+        <header class="an-tile-head">
+          <h3 id="heatmap-title">Les dernières semaines</h3>
+          <p class="an-tile-meta an-fixed">sa propre fenêtre, sans la période</p>
+          <button type="button" class="an-tile-toggle" aria-expanded="false" aria-labelledby="heatmap-title"><svg class="ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M10 20H4v-6"/><path d="M20 4l-7 7"/><path d="M4 20l7-7"/></svg></button>
+        </header>
+        <div class="an-tile-body">
+          <div id="g-heatmap" class="heatmap-container"></div>
+          <!-- The scale legend: without it, the calendar is a series of
+               browns nobody knows the meaning of. -->
+          <div class="legend-heatmap" id="heatmap-legend" aria-hidden="true"></div>
+          <div class="mini-stats an-more" id="heatmap-stats"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- EVERY finding, listed (the home screen shows one of them). -->
+    <article class="card card-dark an-findings">
+      <div class="card-head">
+        <h3>Ce que tes données disent</h3>
+        <p class="an-tile-meta an-fixed">sur tout ton carnet</p>
+        <div class="insights-nav" id="insights-nav" hidden></div>
+      </div>
+      <ul class="insights" id="insights"></ul>
+      <button type="button" class="link-card" data-go="tuning">Voir mes réglages gagnants</button>
+    </article>
+
+    <!-- THE ANALYSES IN DETAIL, IN TABS (v8.39; on the home screen until v9.21, now period-aware). Six charts
+         used to stack here in six cards: we scrolled past them without
+         reading. One card, one tab per question, and next to each
+         chart its reading in one sentence. The canvas ids and
+         empty-card messages have not changed: the rendering knows nothing of
+         tabs. -->
+    <article class="card card-analyses col-full">
+      <div class="card-head">
+        <div><h3>En détail</h3><p class="an-tile-meta">suit la période</p></div>
+        <div class="tabs-analyses" role="tablist" aria-label="Analyses en détail">
+          <button type="button" role="tab" id="tab-coffees" aria-controls="analysis-coffees" aria-selected="true" data-analysis="coffees">Cafés</button>
+          <button type="button" role="tab" id="tab-recipes" aria-controls="analysis-recipes" aria-selected="false" tabindex="-1" data-analysis="recipes">Recettes</button>
+          <button type="button" role="tab" id="tab-machines" aria-controls="analysis-machines" aria-selected="false" tabindex="-1" data-analysis="machines">Machines</button>
+          <button type="button" role="tab" id="tab-tastes" aria-controls="analysis-tastes" aria-selected="false" tabindex="-1" data-analysis="tastes">Goûts</button>
+          <button type="button" role="tab" id="tab-aromas" aria-controls="analysis-aromas" aria-selected="false" tabindex="-1" data-analysis="aromas">Arômes</button>
+          <button type="button" role="tab" id="tab-diagnostics" aria-controls="analysis-diagnostics" aria-selected="false" tabindex="-1" data-analysis="diagnostics">Diagnostics</button>
+          <button type="button" role="tab" id="tab-grind" aria-controls="analysis-grind" aria-selected="false" tabindex="-1" data-analysis="grind">Mouture</button>
+        </div>
+      </div>
+
+      <!-- The STACK: the six panels in the same grid cell, only one
+           visible. All stay rendered, so each chart is born at its real
+           size; a panel with display: none gave a 0 x 0 canvas. -->
+      <div class="analyses-stack">
+      <div class="analysis current" role="tabpanel" id="analysis-coffees" aria-labelledby="tab-coffees">
+        <div class="analysis-chart"><div class="canvas-h240"><canvas id="g-coffees"></canvas></div></div>
+        <p class="analysis-reading" id="reading-coffees"></p>
+      </div>
+      <div class="analysis" role="tabpanel" id="analysis-recipes" aria-labelledby="tab-recipes" aria-hidden="true" inert>
+        <div class="analysis-chart"><div class="canvas-h240"><canvas id="g-recipes"></canvas></div></div>
+        <p class="analysis-reading" id="reading-recipes"></p>
+      </div>
+      <div class="analysis" role="tabpanel" id="analysis-machines" aria-labelledby="tab-machines" aria-hidden="true" inert>
+        <div class="analysis-chart">
+          <div class="duel" id="duel-machines"></div>
+          <div class="canvas-h200" id="box-duel"><canvas id="g-duel"></canvas></div>
+          <div class="card-empty" id="empty-duel" hidden></div>
+        </div>
+        <p class="analysis-reading" id="reading-machines"></p>
+      </div>
+      <div class="analysis" role="tabpanel" id="analysis-tastes" aria-labelledby="tab-tastes" aria-hidden="true" inert>
+        <div class="analysis-chart">
+          <div class="canvas-h240" id="box-tastes"><canvas id="g-tastes"></canvas></div>
+          <div class="card-empty" id="empty-tastes" hidden></div>
+        </div>
+        <div class="analysis-reading">
+          <p id="reading-tastes"></p>
+          <p class="card-note" id="rating-tastes"></p>
+        </div>
+      </div>
+      <!-- The aroma wheel (v8.45): hand-made SVG, drawn by CHARTS.roueAromes. -->
+      <div class="analysis" role="tabpanel" id="analysis-aromas" aria-labelledby="tab-aromas" aria-hidden="true" inert>
+        <div class="analysis-chart">
+          <div class="wheel-box" id="box-aromas">
+            <svg id="wheel-aromas" class="wheel" viewBox="0 0 300 300" role="img" aria-label="Roue des arômes : les familles au centre, leurs goûts autour, la teinte selon la note moyenne"></svg>
+            <div class="wheel-detail" id="wheel-detail" aria-live="polite"></div>
+          </div>
+          <div class="card-empty" id="empty-aromas" hidden></div>
+        </div>
+        <div class="analysis-reading">
+          <p id="reading-aromas"></p>
+          <p class="card-note">Arc plus large : goût plus souvent coché. Teinte plus pleine : tasses mieux notées. Touche une famille pour la déplier.</p>
+        </div>
+      </div>
+      <div class="analysis" role="tabpanel" id="analysis-diagnostics" aria-labelledby="tab-diagnostics" aria-hidden="true" inert>
+        <div class="analysis-chart"><div class="canvas-h240"><canvas id="g-diagnostics"></canvas></div></div>
+        <p class="analysis-reading" id="reading-diagnostics"></p>
+      </div>
+      <div class="analysis" role="tabpanel" id="analysis-grind" aria-labelledby="tab-grind" aria-hidden="true" inert>
+        <div class="analysis-chart">
+          <div class="canvas-h240" id="box-grind"><canvas id="g-grind"></canvas></div>
+          <div class="card-empty" id="empty-grind" hidden></div>
+        </div>
+        <p class="analysis-reading" id="reading-grind"></p>
+      </div>
+      </div>
+    </article>
+
+    <!-- YOUR COFFEES IN DRAWINGS (v8.49), rendered by js/ui-drawings.js; on the home screen until v9.21.
+         Each drawing is a shortcut to the page it summarises; a jar on
+         the shelf opens its coffee's sheet. -->
+    <article class="card card-drawings col-full" id="card-drawings">
+      <div class="card-head">
+        <div><h3>Tes cafés en dessins</h3><p class="card-sub">Touche un dessin pour ouvrir ce qu'il résume.</p><p class="an-tile-meta an-fixed">Chaque dessin garde sa propre fenêtre.</p></div>
+        <!-- Arrange (v8.57): which ones to see and in what order, behind a single button. -->
+        <button type="button" class="btn btn-small btn-subtle" id="drawings-arrange" aria-expanded="false" aria-controls="drawings-panel">Arranger</button>
+      </div>
+      <div class="drawings-panel" id="drawings-panel" hidden></div>
+      <p class="card-empty" id="drawings-none" hidden>Aucun dessin affiché. « Arranger » les fait revenir.</p>
+      <div class="drawings-grid">
+        <section class="drawing" data-drawing="shelf" data-shortcut="coffees">
+          <header class="drawing-head"><h4>L'étagère</h4><button type="button" class="drawing-link" data-shortcut="coffees">Mes cafés<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button></header>
+          <svg id="drawing-shelf" class="drawing-svg" viewBox="0 0 320 160" role="img" aria-label="Tes sachets en bocaux, remplis de ce qui reste"></svg>
+          <p class="drawing-reading" id="drawing-shelf-reading"></p>
+        </section>
+        <section class="drawing" data-drawing="ribbon" data-shortcut="coffees">
+          <header class="drawing-head"><h4>La frise des sachets</h4><button type="button" class="drawing-link" data-shortcut="coffees">Mes cafés<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button></header>
+          <svg id="drawing-ribbon" class="drawing-svg" viewBox="0 0 320 150" role="img" aria-label="Tes sachets des trois derniers mois, de leur ouverture à leur fin, teintés par leur note"></svg>
+          <p class="drawing-reading" id="drawing-ribbon-reading"></p>
+        </section>
+        <section class="drawing" data-drawing="podium" data-shortcut="guide">
+          <header class="drawing-head"><h4>Le podium des recettes</h4><button type="button" class="drawing-link" data-shortcut="guide">Le Guide<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button></header>
+          <svg id="drawing-podium" class="drawing-svg" viewBox="0 0 320 150" role="img" aria-label="Tes trois recettes les mieux notées"></svg>
+          <p class="drawing-reading" id="drawing-podium-reading"></p>
+        </section>
+        <section class="drawing" data-drawing="progress" data-shortcut="history">
+          <header class="drawing-head"><h4>Ta progression</h4><button type="button" class="drawing-link" data-shortcut="history">Journal<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button></header>
+          <svg id="drawing-progress" class="drawing-svg" viewBox="0 0 320 160" data-scrub data-scrub-top="16" data-scrub-bottom="112" role="img" aria-label="Ta moyenne glissante sur cinq tasses, avec les sachets ouverts et les recettes essayées"></svg>
+          <p class="drawing-reading" id="drawing-progress-reading"></p>
+        </section>
+        <section class="drawing" data-drawing="clock" data-shortcut="history">
+          <header class="drawing-head"><h4>L'horloge du café</h4><button type="button" class="drawing-link" data-shortcut="history">Journal<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button></header>
+          <svg id="drawing-clock" class="drawing-svg" viewBox="0 0 320 200" role="img" aria-label="Tes tasses des trois derniers mois à leur heure, plus loin du centre quand elles sont mieux notées"></svg>
+          <p class="drawing-reading" id="drawing-clock-reading"></p>
+        </section>
+        <section class="drawing" data-drawing="spectrum" data-shortcut="diagnostics">
+          <header class="drawing-head"><h4>Le spectre d'extraction</h4><button type="button" class="drawing-link" data-shortcut="diagnostics">Diagnostics<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button></header>
+          <svg id="drawing-spectrum" class="drawing-svg" viewBox="0 0 320 160" role="img" aria-label="Tes diagnostics de sous-extrait à sur-extrait, une rangée par recette"></svg>
+          <p class="drawing-reading" id="drawing-spectrum-reading"></p>
+        </section>
+        <section class="drawing" data-drawing="grinder" data-shortcut="grinder">
+          <header class="drawing-head"><h4>Ta carte du moulin</h4><button type="button" class="drawing-link" data-shortcut="grinder">Le moulin<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></button></header>
+          <svg id="drawing-grinder" class="drawing-svg" viewBox="0 0 320 126" role="img" aria-label="Tes tasses à leurs microns, dans la plage de chaque machine"></svg>
+          <p class="drawing-reading" id="drawing-grinder-reading"></p>
+        </section>
+      </div>
+    </article>
   </div>
 </section>
 
@@ -747,7 +898,7 @@
   <div class="head-page">
     <div class="head-titles">
       <p class="highlight" id="h-highlight"></p>
-      <h2 class="title-page">Historique</h2>
+      <h2 class="title-page">Journal</h2>
     </div>
     <div class="head-actions">
       <div class="field field-search">
@@ -963,7 +1114,7 @@
   <div class="head-page">
     <div class="head-titles">
       <p class="highlight">Ce qui marche le mieux</p>
-      <h2 class="title-page">Mes meilleurs réglages</h2>
+      <h2 class="title-page">Réglages gagnants</h2>
     </div>
   </div>
   <p class="screen-intro">Le meilleur réglage de chaque café, prouvé par au moins trois tasses au même réglage, prêt à refaire.</p>
@@ -2002,6 +2153,20 @@ Cảm ơn shop.</pre>
   </div>
 </dialog>
 
+<!-- O6 (v9.21): YOUR MONTH IN COFFEE, four story cards tapped through
+     (js/ui-story.js): the left of the card goes back, the right goes on, a
+     swipe does the same on a phone, Escape closes. -->
+<dialog id="modal-story" class="story" aria-labelledby="story-title">
+  <div class="story-frame">
+    <h2 class="offscreen" id="story-title">Ton mois en café</h2>
+    <div class="story-bars" id="story-bars" aria-hidden="true"></div>
+    <div class="story-stage" id="story-stage" aria-live="polite"></div>
+    <button type="button" class="story-nav story-prev" id="story-prev" aria-label="Histoire précédente"></button>
+    <button type="button" class="story-nav story-next" id="story-next" aria-label="Histoire suivante"></button>
+    <button type="button" class="story-close" id="story-close" aria-label="Fermer l'histoire"><svg class="ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg></button>
+  </div>
+</dialog>
+
 <div id="toast" class="toast" hidden></div>
 <!-- Q2 (v9.13): the cup just saved, filling, for two seconds (js/ui-cup.js). -->
 <div id="cup-card" class="cup-card" role="status" aria-live="polite" hidden></div>
@@ -2013,69 +2178,73 @@ Cảm ơn shop.</pre>
 <!-- ALL defer, and definitely not async: defer preserves order, async does not,
      and data.js would blow up looking for SYNC or GRIND. The download now
      runs in parallel with HTML parsing instead of blocking it. -->
-<script defer src="js/legacy-names.js?v=9.20"></script>
-<script defer src="js/tools.js?v=9.20"></script>
-<script defer src="js/i18n.fr.js?v=9.20"></script>
-<script defer src="js/i18n.js?v=9.20"></script>
-<script defer src="js/grind.js?v=9.20"></script>
-<script defer src="js/recipes.js?v=9.20"></script>
+<script defer src="js/legacy-names.js?v=9.21"></script>
+<script defer src="js/tools.js?v=9.21"></script>
+<script defer src="js/i18n.fr.js?v=9.21"></script>
+<script defer src="js/i18n.fr2.js?v=9.21"></script>
+<script defer src="js/i18n.js?v=9.21"></script>
+<script defer src="js/grind.js?v=9.21"></script>
+<script defer src="js/recipes.js?v=9.21"></script>
 <!-- sync.js BEFORE data.js: data.js uses it at load time. -->
-<script defer src="js/sync.js?v=9.20"></script>
-<script defer src="js/data-csv.js?v=9.20"></script>
-<script defer src="js/data-schema.js?v=9.20"></script>
-<script defer src="js/data-store.js?v=9.20"></script>
-<script defer src="js/data-calcs.js?v=9.20"></script>
-<script defer src="js/data-migrations.js?v=9.20"></script>
-<script defer src="js/data.js?v=9.20"></script>
-<script defer src="js/tuning.js?v=9.20"></script>
+<script defer src="js/sync.js?v=9.21"></script>
+<script defer src="js/data-csv.js?v=9.21"></script>
+<script defer src="js/data-schema.js?v=9.21"></script>
+<script defer src="js/data-store.js?v=9.21"></script>
+<script defer src="js/data-calcs.js?v=9.21"></script>
+<script defer src="js/data-migrations.js?v=9.21"></script>
+<script defer src="js/data.js?v=9.21"></script>
+<script defer src="js/tuning.js?v=9.21"></script>
 <!-- v9.18: the bags without the DOM (shelf rows, the next cup), read by the screens below. -->
-<script defer src="js/bags.js?v=9.20"></script>
-<script defer src="js/search.js?v=9.20"></script>
-<script defer src="js/compare.js?v=9.20"></script>
-<script defer src="js/charts.js?v=9.20"></script>
-<script defer src="js/ui-core.js?v=9.20"></script>
-<script defer src="js/ui-sync-bean.js?v=9.20"></script>
-<script defer src="js/ui-nav.js?v=9.20"></script>
-<script defer src="js/ui-scrub.js?v=9.20"></script>
-<script defer src="js/ui-findings.js?v=9.20"></script>
-<script defer src="js/ui-last-cup.js?v=9.20"></script>
-<script defer src="js/ui-dashboard.js?v=9.20"></script>
-<script defer src="js/ui-cup.js?v=9.20"></script>
-<script defer src="js/ui-dial.js?v=9.20"></script>
-<script defer src="js/ui-rating-dial.js?v=9.20"></script>
-<script defer src="js/ui-wheel.js?v=9.20"></script>
-<script defer src="js/ui-entry.js?v=9.20"></script>
-<script defer src="js/ui-entry-aside.js?v=9.20"></script>
-<script defer src="js/ui-pills.js?v=9.20"></script>
-<script defer src="js/ui-chrono.js?v=9.20"></script>
-<script defer src="js/ui-draft.js?v=9.20"></script>
-<script defer src="js/ui-quick.js?v=9.20"></script>
-<script defer src="js/ui-history.js?v=9.20"></script>
-<script defer src="js/ui-journal.js?v=9.20"></script>
-<script defer src="js/ui-table.js?v=9.20"></script>
-<script defer src="js/ui-compare.js?v=9.20"></script>
-<script defer src="js/ui-guide.js?v=9.20"></script>
-<script defer src="js/ui-catalog.js?v=9.20"></script>
-<script defer src="js/ui-coffee-sheet.js?v=9.20"></script>
-<script defer src="js/ui-brew.js?v=9.20"></script>
-<script defer src="js/ui-drawings.js?v=9.20"></script>
+<script defer src="js/bags.js?v=9.21"></script>
+<script defer src="js/search.js?v=9.21"></script>
+<script defer src="js/compare.js?v=9.21"></script>
+<script defer src="js/charts.js?v=9.21"></script>
+<script defer src="js/ui-core.js?v=9.21"></script>
+<script defer src="js/ui-sync-bean.js?v=9.21"></script>
+<script defer src="js/ui-nav.js?v=9.21"></script>
+<script defer src="js/ui-scrub.js?v=9.21"></script>
+<script defer src="js/ui-findings.js?v=9.21"></script>
+<script defer src="js/ui-last-cup.js?v=9.21"></script>
+<script defer src="js/ui-dashboard.js?v=9.21"></script>
+<script defer src="js/ui-home.js?v=9.21"></script>
+<script defer src="js/ui-cup.js?v=9.21"></script>
+<script defer src="js/ui-dial.js?v=9.21"></script>
+<script defer src="js/ui-rating-dial.js?v=9.21"></script>
+<script defer src="js/ui-wheel.js?v=9.21"></script>
+<script defer src="js/ui-entry.js?v=9.21"></script>
+<script defer src="js/ui-entry-aside.js?v=9.21"></script>
+<script defer src="js/ui-pills.js?v=9.21"></script>
+<script defer src="js/ui-chrono.js?v=9.21"></script>
+<script defer src="js/ui-draft.js?v=9.21"></script>
+<script defer src="js/ui-quick.js?v=9.21"></script>
+<script defer src="js/ui-history.js?v=9.21"></script>
+<script defer src="js/ui-journal.js?v=9.21"></script>
+<script defer src="js/ui-table.js?v=9.21"></script>
+<script defer src="js/ui-compare.js?v=9.21"></script>
+<script defer src="js/ui-guide.js?v=9.21"></script>
+<script defer src="js/ui-catalog.js?v=9.21"></script>
+<script defer src="js/ui-coffee-sheet.js?v=9.21"></script>
+<script defer src="js/ui-brew.js?v=9.21"></script>
+<script defer src="js/ui-drawings.js?v=9.21"></script>
+<script defer src="js/ui-analytics.js?v=9.21"></script>
+<script defer src="js/ui-story.js?v=9.21"></script>
 <!-- v9.13: the jar to the gram, the moments that move, the empty places. -->
-<script defer src="js/ui-jar.js?v=9.20"></script>
-<script defer src="js/ui-moments.js?v=9.20"></script>
-<script defer src="js/ui-roll.js?v=9.20"></script>
-<script defer src="js/ui-brewer.js?v=9.20"></script>
-<script defer src="js/ui-arrivals.js?v=9.20"></script>
-<script defer src="js/ui-scenes.js?v=9.20"></script>
-<script defer src="js/ui-empty.js?v=9.20"></script>
+<script defer src="js/ui-jar.js?v=9.21"></script>
+<script defer src="js/ui-moments.js?v=9.21"></script>
+<script defer src="js/ui-roll.js?v=9.21"></script>
+<script defer src="js/ui-brewer.js?v=9.21"></script>
+<script defer src="js/ui-arrivals.js?v=9.21"></script>
+<script defer src="js/ui-scenes.js?v=9.21"></script>
+<script defer src="js/ui-empty.js?v=9.21"></script>
 <!-- v9.18: Mes cafés as a page with its shelf and the entry jars (O2), the end of a bag (Q9). -->
-<script defer src="js/ui-coffees.js?v=9.20"></script>
-<script defer src="js/ui-bag-end.js?v=9.20"></script>
-<script defer src="js/ui-panel.js?v=9.20"></script>
-<script defer src="js/ui-palette.js?v=9.20"></script>
-<script defer src="js/ui-shortcuts.js?v=9.20"></script>
-<script defer src="js/ui-tuning.js?v=9.20"></script>
-<script defer src="js/ui-share.js?v=9.20"></script>
-<script defer src="js/ui-welcome.js?v=9.20"></script>
-<script defer src="js/app.js?v=9.20"></script>
+<script defer src="js/ui-coffees.js?v=9.21"></script>
+<script defer src="js/ui-bag-end.js?v=9.21"></script>
+<script defer src="js/ui-panel.js?v=9.21"></script>
+<script defer src="js/ui-palette.js?v=9.21"></script>
+<script defer src="js/ui-shortcuts.js?v=9.21"></script>
+<script defer src="js/ui-tuning.js?v=9.21"></script>
+<script defer src="js/ui-share.js?v=9.21"></script>
+<script defer src="js/ui-welcome.js?v=9.21"></script>
+<script defer src="js/app.js?v=9.21"></script>
 </body>
 </html>

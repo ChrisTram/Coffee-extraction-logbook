@@ -46,8 +46,9 @@
   // The screens, their keys, and the words that lead to them in both languages.
   const SCREENS = [
     ["dashboard", "G A", "accueil tableau de bord dashboard home"],
-    ["history", "G H", "historique par date history log"],
+    ["history", "G H", "journal historique par date history log"],
     ["journal", "G J", "journal par sachet bag"],
+    ["analytics", "G N", "analyses statistiques graphiques mois histoire analytics stats charts month story"],
     ["coffees", "G C", "mes cafes sachets bocaux stock etagere racheter coffees bags jars shelf"],
     ["tuning", "G T", "mes reglages gagnants meilleurs tuning best settings"],
     ["guide", "G G", "guide recettes vocabulaire recipes"],
@@ -56,7 +57,9 @@
   ];
   function screenLabel(s) {
     if (s === "journal") return I18N.t("palette_journal");
-    const entry = $('.rail-entry[data-screen="' + s + '"] span');
+    // N1 (v9.21): the journal by date, and the entry form, which lost its rail entry to « Nouvelle tasse ».
+    if (s === "history") return I18N.t("palette_history_date");
+    const entry = $('.rail-entry[data-screen="' + s + '"] span') || $('.rail-new[data-go="' + s + '"] span');
     return entry && entry.textContent ? entry.textContent.trim() : s;
   }
   function goTo(s) {

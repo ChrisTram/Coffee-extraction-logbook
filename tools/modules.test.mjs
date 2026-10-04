@@ -133,8 +133,8 @@ function lexer(src) {
 const OPS = ["...", "===", "!==", "**=", "&&=", "||=", "??=", "=>", "==", "!=", "<=", ">=",
   "&&", "||", "??", "?.", "++", "--", "+=", "-=", "*=", "/=", "%=", "**", "<<", ">>"];
 
-const FILES = ["js/ui-core.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-wheel.js", "js/ui-cup.js", "js/ui-dial.js", "js/ui-rating-dial.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js",
-  "js/ui-history.js", "js/ui-journal.js", "js/ui-table.js", "js/ui-compare.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/ui-jar.js", "js/ui-moments.js", "js/ui-roll.js", "js/ui-brewer.js", "js/ui-arrivals.js", "js/ui-scenes.js", "js/ui-empty.js", "js/ui-coffees.js", "js/ui-bag-end.js", "js/ui-panel.js", "js/ui-palette.js", "js/ui-shortcuts.js", "js/ui-tuning.js", "js/ui-share.js", "js/ui-welcome.js", "js/app.js"];
+const FILES = ["js/ui-core.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-home.js", "js/ui-wheel.js", "js/ui-cup.js", "js/ui-dial.js", "js/ui-rating-dial.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js",
+  "js/ui-history.js", "js/ui-journal.js", "js/ui-table.js", "js/ui-compare.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/ui-analytics.js", "js/ui-story.js", "js/ui-jar.js", "js/ui-moments.js", "js/ui-roll.js", "js/ui-brewer.js", "js/ui-arrivals.js", "js/ui-scenes.js", "js/ui-empty.js", "js/ui-coffees.js", "js/ui-bag-end.js", "js/ui-panel.js", "js/ui-palette.js", "js/ui-shortcuts.js", "js/ui-tuning.js", "js/ui-share.js", "js/ui-welcome.js", "js/app.js"];
 
 const KEYWORDS = new Set(["if","else","for","while","do","return","function","const","let","var",
   "new","typeof","instanceof","in","of","delete","void","this","null","true","false","undefined",
@@ -145,7 +145,7 @@ const KEYWORDS = new Set(["if","else","for","while","do","return","function","co
    listing them here: recipes.js alone publishes some thirty constants, and a
    handwritten list would have drifted at the first addition, turning this test
    into a source of false alarms. Which amounts to disabling it. */
-const OTHER_LAYERS = ["js/legacy-names.js", "js/tools.js", "js/i18n.fr.js", "js/i18n.js", "js/grind.js", "js/recipes.js", "js/sync.js",
+const OTHER_LAYERS = ["js/legacy-names.js", "js/tools.js", "js/i18n.fr.js", "js/i18n.fr2.js", "js/i18n.js", "js/grind.js", "js/recipes.js", "js/sync.js",
   "js/data-csv.js", "js/data-schema.js", "js/data-store.js", "js/data-calcs.js", "js/data-migrations.js",
   "js/data.js", "js/tuning.js", "js/bags.js", "js/search.js", "js/compare.js", "js/charts.js", "js/demo-data.js"];
 const GLOBALS = new Set(["Chart",

@@ -1,4 +1,4 @@
-/* Dashboard: the latest cup, shown large, and the building blocks it shares
+/* Home: the latest cup, shown large, and the building blocks it shares
  * with the table of recent brews (moved out of ui-dashboard.js in v8.78). */
 "use strict";
 
@@ -22,7 +22,7 @@
     const card = $("#card-last");
     const e = [...exts].sort((a, b) => b.date_time.localeCompare(a.date_time))[0];
     card.hidden = !e;
-    if (!e) { lastHtml = ""; return; }
+    if (!e) { lastHtml = ""; return null; }
     /* J6 (v9.13): THE RECORD THAT SHINES. When this cup is the best ever
        brewed on its coffee's bag in stock (DATA.bagRecord), the card gets a
        copper border that turns, a sentence that says by how much, and its
@@ -42,39 +42,49 @@
     card.setAttribute("role", "button");
     card.setAttribute("tabindex", "0");
     card.classList.toggle("is-record", !!record);
+    /* L1 (v9.21): THE SCORE NEXT TO THE NAME. A head row carries the name, its
+       context line and the score, big, on the right, on every width: on a
+       phone the score used to fall under the card body, below the fold. The
+       rest (record, tastes, comment, rank, footer) follows underneath. The
+       head is also what js/ui-home.js watches to fold the card into its band. */
     const html =
+      '<div class="lc-head">' +
+        '<div class="lc-title">' +
+          '<p class="highlight">' + I18N.t("dash_last_cup", { q: timeSince(e.date_time) }) + "</p>" +
+          '<p class="last-big-coffee">' + I18N.tr(e._c.coffee_name) + "</p>" +
+          '<p class="last-big-context">' +
+            '<span class="dot-method ' + e.method.toLowerCase() + '"></span>' +
+            '<span class="last-big-machine">' + e.method + "</span>" +
+            context.map(x => '<span class="sep" aria-hidden="true">|</span><span>' + x + "</span>").join("") +
+          "</p>" +
+        "</div>" +
+        '<div class="last-big-rating">' +
+          (isFailed(e) ? '<span class="badge-failed">' + I18N.t("botched_badge") + "</span>" : "") +
+          /* Without a score, we write "not rated yet" instead of a dash: a dash
+             in a big number reads as a minus, and the project rules forbid
+             the em dash anyway. */
+          (e.score_10 !== ""
+            ? '<span class="big-rating">' + e.score_10 + "</span>" +
+              '<span class="big-rating-scale">' + I18N.t("dash_out_of_10") + "</span>"
+            : '<span class="big-rating-none">' + I18N.t("not_rated_yet") + "</span>") +
+          (e.diagnostic ? '<span class="dot-diag">' + displayedDiags(e.diagnostic) + "</span>" : "") +
+        "</div>" +
+      "</div>" +
       '<div class="last-big-body">' +
-        '<p class="highlight">' + I18N.t("dash_last_cup", { q: timeSince(e.date_time) }) + "</p>" +
-        '<p class="last-big-coffee">' + I18N.tr(e._c.coffee_name) + "</p>" +
-        '<p class="last-big-context">' +
-          '<span class="dot-method ' + e.method.toLowerCase() + '"></span>' +
-          '<span class="last-big-machine">' + e.method + "</span>" +
-          context.map(x => '<span class="sep" aria-hidden="true">|</span><span>' + x + "</span>").join("") +
-        "</p>" +
         (record ? '<p class="last-record">' + titleAttr(I18N.t("record_line", {
           x: fmtRating(record.gap), d: dayMonth(record.previousDate) })) + "</p>" : "") +
         lastTastes(e) +
         (e.comment ? '<p class="last-big-comment">' + titleAttr(e.comment) + "</p>" : "") +
         rankAmongSiblings(e) +
         lastCupFooter(e) +
-      "</div>" +
-      '<div class="last-big-rating">' +
-        (isFailed(e) ? '<span class="badge-failed">' + I18N.t("botched_badge") + "</span>" : "") +
-        /* Without a score, we write "not rated yet" instead of a dash: a dash
-           in a big number reads as a minus, and the project rules forbid
-           the em dash anyway. */
-        (e.score_10 !== ""
-          ? '<span class="big-rating">' + e.score_10 + "</span>" +
-            '<span class="big-rating-scale">' + I18N.t("dash_out_of_10") + "</span>"
-          : '<span class="big-rating-none">' + I18N.t("not_rated_yet") + "</span>") +
-        (e.diagnostic ? '<span class="dot-diag">' + displayedDiags(e.diagnostic) + "</span>" : "") +
       "</div>";
     /* Rewritten only when it changed (v9.13): a render in the middle of the
        odometer, the steam or the count, a sync arriving, would cut them. */
-    if (html === lastHtml) return;
+    if (html === lastHtml) return e;
     lastHtml = html;
     card.innerHTML = html;
     UI.playRecord(card, record, e);
+    return e;
   }
 
   // « 12 septembre », from a local YYYY-MM-DD.
@@ -244,6 +254,6 @@
   }
 
   Object.assign(UI, {
-    LATEST_SHOWN, lastComment, lastTastes, shortMeasures, renderLastCup,
+    LATEST_SHOWN, lastComment, lastTastes, shortMeasures, renderLastCup, timeSince,
   });
 })();

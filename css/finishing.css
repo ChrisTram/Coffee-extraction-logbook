@@ -1085,10 +1085,11 @@ html[data-theme="light"] .bar-disc { box-shadow: 0 6px 16px rgba(38, 25, 15, 0.2
   border-radius: 50%; background: var(--rail); --bean-knock: var(--rail);
 }
 .bar-bean[data-look="idle"], .bar-bean:not([data-look]) { display: none; }
-/* The quick entry has its place in the "Plus" sheet, first; the Guide has its
-   own tab, so it leaves the sheet. On desktop the quick entry does not exist. */
+/* The quick entry has its place in the "Plus" sheet, first; Analyses has its
+   own tab (the Guide until v9.17), so it leaves the sheet. On desktop the quick
+   entry does not exist. */
 @media (max-width: 1023px) {
-  .rail-entry[data-screen="guide"] { display: none; }
+  .rail-entry[data-screen="analytics"] { display: none; }
   .rail-quick { order: -1; }
   /* Messages rise above the bar and its button: 24 px from the bottom, they covered the new cup. */
   .toast { bottom: calc(var(--bottom-bar) + var(--bar-rise) + 14px + env(safe-area-inset-bottom, 0px)); }

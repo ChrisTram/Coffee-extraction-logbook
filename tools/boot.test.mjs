@@ -261,10 +261,10 @@ Chart.defaults = hollow();
 
 /* ---------- Execution ---------- */
 
-const SCRIPTS = ["js/legacy-names.js", "js/tools.js", "js/i18n.en.js", "js/i18n.fr.js", "js/i18n.js", "js/grind.js", "js/recipes.js", "js/demo-data.js",
+const SCRIPTS = ["js/legacy-names.js", "js/tools.js", "js/i18n.en.js", "js/i18n.fr.js", "js/i18n.fr2.js", "js/i18n.js", "js/grind.js", "js/recipes.js", "js/demo-data.js",
   "js/sync.js", "js/data-csv.js", "js/data-schema.js", "js/data-store.js", "js/data-calcs.js",
   "js/data-migrations.js", "js/data.js", "js/tuning.js", "js/bags.js", "js/charts.js",
-  "js/ui-core.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-wheel.js", "js/ui-cup.js", "js/ui-dial.js", "js/ui-rating-dial.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js", "js/ui-history.js", "js/ui-journal.js", "js/ui-table.js", "js/ui-compare.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/ui-jar.js", "js/ui-moments.js", "js/ui-roll.js", "js/ui-brewer.js", "js/ui-arrivals.js", "js/ui-scenes.js", "js/ui-empty.js", "js/ui-coffees.js", "js/ui-bag-end.js", "js/search.js", "js/compare.js", "js/ui-panel.js", "js/ui-palette.js", "js/ui-shortcuts.js", "js/ui-tuning.js", "js/ui-share.js", "js/ui-welcome.js", "js/app.js"];
+  "js/ui-core.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-home.js", "js/ui-wheel.js", "js/ui-cup.js", "js/ui-dial.js", "js/ui-rating-dial.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js", "js/ui-history.js", "js/ui-journal.js", "js/ui-table.js", "js/ui-compare.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/ui-analytics.js", "js/ui-story.js", "js/ui-jar.js", "js/ui-moments.js", "js/ui-roll.js", "js/ui-brewer.js", "js/ui-arrivals.js", "js/ui-scenes.js", "js/ui-empty.js", "js/ui-coffees.js", "js/ui-bag-end.js", "js/search.js", "js/compare.js", "js/ui-panel.js", "js/ui-palette.js", "js/ui-shortcuts.js", "js/ui-tuning.js", "js/ui-share.js", "js/ui-welcome.js", "js/app.js"];
 const source = SCRIPTS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 
 // Intercepted console.error: that is where render errors come out.
@@ -341,7 +341,7 @@ check("an unrated extraction does not skew the averages",
 
 // Each screen, one by one. An exception in one of them would be invisible otherwise,
 // and that is precisely what had happened on the dashboard.
-const SCREENS = ["dashboard", "entry", "history", "coffees", "tuning", "guide", "settings"];
+const SCREENS = ["dashboard", "entry", "history", "analytics", "coffees", "tuning", "guide", "settings"];
 for (const name of SCREENS) {
   location.hash = "#" + name;
   let thrown = null;
@@ -713,7 +713,7 @@ check("the temperature field no longer has a misleading placeholder", !tempField
   const colgroup = htmlPage.slice(tableStart, htmlPage.indexOf("</colgroup>", tableStart));
   const cols = [...colgroup.matchAll(/<col class="(c-[a-z]+)"/g)].map(m => m[1]);
   check("each column has its <col>", cols.length === headerCount, cols.length + " col for " + headerCount + " columns");
-  const cssPage = ["base", "screens", "dialogs", "finishing", "stock", "extras", "journal"].map(f => readFileSync(join(ROOT, "css/" + f + ".css"), "utf8")).join("\n");
+  const cssPage = ["base", "screens", "dialogs", "finishing", "stock", "extras", "journal", "home"].map(f => readFileSync(join(ROOT, "css/" + f + ".css"), "utf8")).join("\n");
   const fixed = cols.filter(c => cssPage.includes(".table-history col." + c + " { width: ") &&
     /\d+px/.test(cssPage.split(".table-history col." + c + " { width: ")[1].split(";")[0]));
   const flexible = cols.filter(c => !fixed.includes(c));
