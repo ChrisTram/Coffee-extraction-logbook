@@ -60,6 +60,7 @@ const PRECACHE_URLS = [
   // First script of the page: it translates the names stored before v9.06.
   "./js/legacy-names.js",
   "./js/tools.js",
+  "./js/i18n.fr.js",
   "./js/i18n.js",
   // Loaded on demand since v7.55, but precached so the language
   // switch also works offline.

@@ -58,7 +58,8 @@ let failures = 0;
 /* A template key now lives in two halves: its French half in js/i18n.js, its
    English half in js/i18n.en.js, loaded on demand. Forgetting the second one
    would show French in English mode, without any error. */
-const I18N_FR_SRC = readFileSync(join(ROOT, "js/i18n.js"), "utf8");
+// Since v9.18 the French templates sit in js/i18n.fr.js; the rest of i18n stays in js/i18n.js.
+const I18N_FR_SRC = readFileSync(join(ROOT, "js/i18n.fr.js"), "utf8") + readFileSync(join(ROOT, "js/i18n.js"), "utf8");
 const I18N_EN_SRC = readFileSync(join(ROOT, "js/i18n.en.js"), "utf8");
 const bilingual = key =>
   new RegExp("^\\s*" + key + ": \\{ fr:", "m").test(I18N_FR_SRC) &&
@@ -1215,7 +1216,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
   check("combinationWarnings no longer returns a block", !rec.includes("bloque = true"));
   check("the cafeInterditSwitch function has gone", !rec.includes("cafeInterditSwitch"));
 
-  const i18n = readFileSync(join(ROOT, "js/i18n.js"), "utf8");
+  const i18n = I18N_FR_SRC;
   check("the refusal key has gone from the dictionary", !i18n.includes("t_bloque"));
   const rangboLine = (i18n.match(/^ *warn_rang_bo:.*$/m) || [""])[0];
   check("the rang bo message no longer forbids, it informs",
@@ -1437,7 +1438,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
   check("no more redundant activateScreen after loading an extraction",
     !/loadExtractionIntoEntry\([^)]*\);\s*\n\s*activateScreen\("entry"\)/.test(app));
 
-  const i18n = readFileSync(join(ROOT, "js/i18n.js"), "utf8");
+  const i18n = I18N_FR_SRC;
   check("the abandonment message exists in FR and EN", bilingual("toast_edit_dropped"));
 }
 
@@ -1672,7 +1673,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
   const app = SOURCE_UI;
   check("the roast based freshness rule has gone", !app.includes("insightFraicheur"));
   check("the bag age rule replaces it", app.includes("insightBagAge"));
-  const i18n = readFileSync(join(ROOT, "js/i18n.js"), "utf8");
+  const i18n = I18N_FR_SRC;
   check("its dead keys left with it", !i18n.includes("ins_frais_tot"));
 }
 
@@ -1779,7 +1780,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
      more expensive per gram of REAL coffee than it looks. The
      real_coffee_pct field was only used for the caffeine calculation. */
   check("the non pure coffee shows its real cost", app.includes("cost_real"));
-  const i18n = readFileSync(join(ROOT, "js/i18n.js"), "utf8");
+  const i18n = I18N_FR_SRC;
   check("both labels exist in FR and EN",
     bilingual("cost_per_cup") && bilingual("cost_real"));
 
@@ -1832,7 +1833,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
   check("it replaces the row if it is already there, otherwise it adds it",
     rest.includes("findIndex") && rest.includes("push(e)"));
 
-  const i18n = readFileSync(join(ROOT, "js/i18n.js"), "utf8");
+  const i18n = I18N_FR_SRC;
   check("the Annuler button exists in FR and EN", bilingual("toast_undo"));
   check("so does the restore message", bilingual("toast_restored"));
 }
@@ -2254,7 +2255,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
 
   /* The engine must really cover the three attributes. A coverage test that checks
      the dictionary without checking who reads it proves nothing. */
-  const i18n = readFileSync(join(ROOT, "js/i18n.js"), "utf8");
+  const i18n = I18N_FR_SRC;
   check("the engine translates the three text attributes",
     /\["placeholder", "title", "aria-label"\]/.test(i18n));
   check("and it ignores the areas the JS regenerates",

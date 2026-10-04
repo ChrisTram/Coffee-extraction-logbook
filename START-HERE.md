@@ -91,7 +91,7 @@ jamais à la main dans les CSV.
 | `index.html` | La page unique, tout le HTML statique, et la version du site (`<meta name="app-version">`) |
 | `css/base.css`, `screens.css`, `dialogs.css`, `finishing.css` | Styles en quatre feuilles chargées dans cet ordre : jetons et thèmes dans socle, les écrasements responsives en dernier |
 | `js/tools.js` | Fonctions pures partagées par toutes les couches |
-| `js/i18n.js`, `js/i18n.en.js` | Traduction FR/EN, à toucher dès qu'un texte change |
+| `js/i18n.fr.js`, `js/i18n.js`, `js/i18n.en.js` | Traduction FR/EN (gabarits français dans i18n.fr.js), à toucher dès qu'un texte change |
 | `js/grind.js` | Moteur du moulin : conversions, plages, validation |
 | `js/recipes.js` | Recettes d'origine, cafés de départ, tasses, règles |
 | `js/data*.js` | Couche de données en six fichiers, façade `DATA` dans `data.js` |

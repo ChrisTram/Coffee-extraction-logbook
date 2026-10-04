@@ -123,7 +123,7 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | Fichier | Rôle |
 | --- | --- |
 | `js/tools.js` | fonctions pures partagées par toutes les couches : `moyenne`, `cleLocale`, version du site. Se charge en premier. |
-| `js/i18n.js`, `js/i18n.en.js` | traduction, moitié française et mécanisme ; paquet anglais chargé à la demande |
+| `js/i18n.fr.js`, `js/i18n.js`, `js/i18n.en.js` | traduction : gabarits français (T), mécanisme et cartes, paquet anglais chargé à la demande |
 | `js/grind.js` | moulin : conversions, plages, validation |
 | `js/recipes.js` | semences : recettes, cafés, tasses, descripteurs, diagnostics, règles d'avertissement |
 | `js/sync.js` | synchronisation entre appareils, côté client : parle au réseau, rien d'autre |
@@ -754,7 +754,7 @@ Trois mécanismes :
    ponctuation) comme clé dans UI. Les fragments coupés par des balises
    (`<b>` au milieu d'une phrase) sont des noeuds séparés : une clé par
    fragment.
-2. `T` : gabarits fr/en avec variables `{x}` pour les chaînes construites en
+2. `T` (moitié française dans `js/i18n.fr.js` depuis la v9.18, pour le plafond de 1 200 lignes) : gabarits fr/en avec variables `{x}` pour les chaînes construites en
    JS (`I18N.t("cle", {x: 1})`). Tout texte généré par app.js, charts.js ou
    grind.js passe par là.
 3. Cartes d'affichage pour les VALEURS DE DONNÉES : `I18N.diag()`,

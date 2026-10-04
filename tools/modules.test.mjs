@@ -145,7 +145,7 @@ const KEYWORDS = new Set(["if","else","for","while","do","return","function","co
    listing them here: recipes.js alone publishes some thirty constants, and a
    handwritten list would have drifted at the first addition, turning this test
    into a source of false alarms. Which amounts to disabling it. */
-const OTHER_LAYERS = ["js/legacy-names.js", "js/tools.js", "js/i18n.js", "js/grind.js", "js/recipes.js", "js/sync.js",
+const OTHER_LAYERS = ["js/legacy-names.js", "js/tools.js", "js/i18n.fr.js", "js/i18n.js", "js/grind.js", "js/recipes.js", "js/sync.js",
   "js/data-csv.js", "js/data-schema.js", "js/data-store.js", "js/data-calcs.js", "js/data-migrations.js",
   "js/data.js", "js/tuning.js", "js/search.js", "js/charts.js", "js/demo-data.js"];
 const GLOBALS = new Set(["Chart",
