@@ -13,6 +13,40 @@ introduit est dans le changelog.
 
 ## Architecture et code
 
+### Mes cafés devient une page, et la fin d'un sachet (v9.18)
+
+« Mes cafés » était une fenêtre ; une étagère de bocaux veut de la place et un
+lien (#coffees), c'est donc un écran. Le nom `UI.openCoffeesModal` reste, alias
+de la page : les dessins et les écrans vides l'appellent encore, et renommer
+chez les autres aurait fait des fusions pour rien.
+
+Un sachet est FINI quand il garde moins d'UNE DOSE (sa dose habituelle), pas à
+zéro : la tasse suivante n'y tient plus, et c'est là qu'on rachète. Sous zéro,
+le calcul est faux (des tasses d'un autre sachet), la scène le dit.
+
+Le sachet neuf n'est enregistré qu'au toucher qui le verse, pas à « Racheter » :
+poser un sachet sur le comptoir puis changer d'avis ne laisse rien. Il passe par
+le même `DATA.addPurchase` que le formulaire. Piège trouvé en route : les
+sachets se comptent PAR JOUR (`bagAtDate`, `bagStock`) ; un sachet ouvert le jour
+de la dernière tasse de l'ancien se voyait retirer cette tasse. Dans ce cas
+seulement, le sachet est aussi compté plein à la minute du versement (les
+colonnes du compte à la main, v8.96, aucun schéma de plus).
+
+La reprise du réglage (« là où le dernier sachet s'est arrêté ») est un
+préremplissage UNIQUE par « Refaire », jamais un réglage par défaut stocké sur
+le café : Chris garde sa mouture, un défaut stocké n'apporterait presque rien et
+se périmerait (décision du lead).
+
+La prochaine tasse (B1) ne devine rien : elle lit l'historique de CE café à la
+machine de la dernière tasse. « Ta moyenne » du verrou est celle de toutes tes
+tasses notées (un café moyen ne verrouille pas sur 6,5) ; au Switch, une autre
+température est un autre réglage.
+
+Les mouvements qui changent de vue (le bocal qui devient la fiche) sont des view
+transitions ; une page qui ne dessine pas (fenêtre réduite, onglet ralenti)
+n'appelle jamais leur mise à jour, la fiche ne s'ouvrait pas. Au bout de 600 ms
+la transition est sautée, ce qui exécute quand même la mise à jour.
+
 ### Le stock se corrige à la main (v8.96)
 
 Chris voyait le bocal de son Là Việt Balanced vide, sachet presque plein. Le

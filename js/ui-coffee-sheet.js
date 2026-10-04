@@ -14,7 +14,13 @@
  * shows the curve without a window, and says so.
  *
  * Opens from « Mes meilleurs réglages » and « Mes cafés », in a dialog on
- * the page. No new data: everything is already entered. */
+ * the page. No new data: everything is already entered.
+ *
+ * v9.18: when the bag is spent, the end of the bag (Q9, js/ui-bag-end.js)
+ * takes the jar's place at the top; the Bags tab offers « Nouveau sachet »;
+ * the Setting tab carries « Prochaine tasse » (B1, nextCupBlock); and from
+ * « Mes cafés » the sheet grows out of its jar and goes back into it
+ * (js/ui-coffees.js). */
 "use strict";
 
 (() => {
@@ -197,7 +203,10 @@
     }
     // Delete the current bag, entered by mistake (v8.77): the function existed without a button.
     const bag = DATA.currentBag(coffee.id);
-    if (bag) html += '<button type="button" class="btn btn-small btn-subtle sh-delete-bag" data-delete-bag="' + escapeHtml(bag.id) + '">' + I18N.t("sheet_delete_bag") + "</button>";
+    /* A bag bought ahead, or of another size (v9.18): the « Nouveau sachet »
+       form of « Mes cafés », the one the old window had on each row. */
+    html += '<div class="sh-bag-actions"><button type="button" class="btn btn-small" data-new-bag="' + escapeHtml(coffee.id) + '">' + I18N.t("btn_new_bag") + "</button>" +
+      (bag ? '<button type="button" class="btn btn-small btn-subtle sh-delete-bag" data-delete-bag="' + escapeHtml(bag.id) + '">' + I18N.t("sheet_delete_bag") + "</button>" : "") + "</div>";
 
     // The freshness ruler: day 1 on the left, the window in accent, today as a line.
     const max = Math.max(28, ...rated.map(e => e._c.days_open === "" ? 0 : e._c.days_open), jc ? jc.day : 0);
@@ -322,7 +331,9 @@
       escapeHtml(I18N.t("sheet_wheel_aria")) + '"></svg><div class="wheel-detail" id="sheet-wheel-detail" aria-live="polite"></div></div>' +
       '<p class="sh-quiet" id="sheet-wheel-empty" hidden>' + I18N.t("sheet_tastes_empty") + "</p></section>";
     const settingBlock = '<section class="sh-block sh-setting"><h3 class="sh-h">' + I18N.t("sheet_setting") + "</h3>" +
-      UI.tuningCard({ coffee: coffee, ...report }) + "</section>";
+      UI.tuningCard({ coffee: coffee, ...report }) + "</section>" + nextCupBlock(coffee);
+    // Q9 (v9.18): a spent bag, or one being replaced, puts its scene where the jar was.
+    const scene = UI.bagEndScene ? UI.bagEndScene(coffee.id, { layout: "card", place: "sheet" }) : "";
     /* The drawings of this coffee (v8.50), rendered by js/ui-drawings.js. */
     const fingerprintBlock = '<section class="sh-block"><h3 class="sh-h">' + I18N.t("sheet_fingerprint") + "</h3>" +
       '<svg id="sheet-footprint" class="sh-drawing" viewBox="0 0 320 210" role="img" aria-label="' + escapeHtml(I18N.t("sheet_fingerprint")) + '"></svg>' +
@@ -334,7 +345,7 @@
       '<svg id="sheet-grinder" class="sh-drawing" viewBox="0 0 320 126" role="img" aria-label="' + escapeHtml(I18N.t("sheet_grinder")) + '"></svg>' +
       '<p class="sh-text" id="sheet-grinder-reading"></p></section>';
     zone.innerHTML =
-      '<header class="sh-head sh-passport">' +
+      '<header class="sh-head sh-passport' + (scene ? " be-on" : "") + '">' +
         /* THE JAR IS CORRECTED WITH ONE CLICK (v8.96): its grams below, a bean
            drawn inside so that an empty bag no longer looks like a missing
            image, and the click opens the manual count just below. */
@@ -352,7 +363,7 @@
         "</div>" +
         '<div class="sh-identity"><p class="highlight">' + I18N.t("sheet_highlight") + "</p>" +
         '<h2 id="sheet-name">' + escapeHtml(coffee.name) + "</h2>" + '<div class="sh-chips">' + chips + "</div></div>" +
-      "</header>" +
+      "</header>" + scene +
       stockEditor(stock, coffee) +
       /* M6 (v9.13): a coffee without a cup says what to do, instead of four
          figures at zero. */
@@ -380,6 +391,44 @@
     $(".sh-wheel").hidden = tasteCount === 0;
     // The jar moves from what this device showed last (a cup, a weighing, a new bag).
     UI.playJars(zone);
+    if (scene) UI.playBagScenes(zone);
+  }
+
+  /* B1 (v9.18): THE NEXT CUP, a small card under the best setting. From the
+     cups of this coffee alone, no guess (BAGS.nextCup): keep what worked,
+     change one thing, the grind first with the correction steps of
+     Settings, then the temperature, then the ratio. « réglage verrouillé »
+     when two cups above Chris's average share one setting. « Brasser avec »
+     prefills the entry, once. */
+  function nextCupFor(coffee) {
+    const all = analyzableExts();
+    const scores = all.filter(e => e.score_10 !== "").map(e => Number(e.score_10));
+    return BAGS.nextCup(all.filter(e => e.coffee_id === coffee.id), {
+      steps: fallbacks.stepSizes, ground: Number(coffee.pre_ground) === 1, threshold: scores.length ? average(scores) : null,
+    });
+  }
+  function nextCupBlock(coffee) {
+    const next = nextCupFor(coffee);
+    if (!next) return "";
+    const target = BAGS.nextCupSettings(next);
+    const ch = next.change;
+    const what = !ch ? I18N.t("nc_what_" + next.kind, { m: fmtRating(Number(next.base.score_10)) })
+      : ch.lever === "grind" ? I18N.t("nc_grind", { from: ch.from, to: ch.to, e: (ch.gap > 0 ? "+" : "") + ch.gap })
+      : I18N.t("correction_" + ch.lever, { from: fmtDecimal(ch.from, 1), to: fmtDecimal(ch.to, 1) });
+    const diag = String(next.base.diagnostic || "").split("|").filter(Boolean).map(d => I18N.diag(d).toLowerCase()).join(", ");
+    const why = I18N.t("nc_why_" + next.kind, { d: diag, m: fmtRating(Number(next.base.score_10)), a: fmtRating(next.threshold) });
+    const kept = [I18N.tr(target.recipe || ""), target.grind_dial || I18N.t("bag_default"),
+      target.method === "Switch" && target.temperature_c !== "" && target.temperature_c !== undefined ? target.temperature_c + " °C"
+        : target.method === "Brikka" && target.heat_level !== "" && target.heat_level !== undefined ? I18N.t("setting_heat", { f: target.heat_level }) : "",
+    ].filter(Boolean).join(" · ");
+    return '<section class="sh-block nc-card" aria-labelledby="nc-h"><div class="nc-head"><h3 class="sh-h" id="nc-h">' + I18N.t("nc_title") + "</h3>" +
+      (next.locked ? '<span class="nc-lock"><svg class="ico" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>' +
+        I18N.t("nc_locked") + "</span>" : "") + "</div>" +
+      '<p class="nc-what">' + escapeHtml(what) + "</p>" +
+      '<p class="nc-kept">' + escapeHtml(kept) + "</p>" +
+      '<p class="nc-why">' + escapeHtml(why) + "</p>" +
+      '<div class="nc-foot"><span class="nc-n">' + I18N.t("nc_over", { n: next.n, s: next.n > 1 ? "s" : "" }) + "</span>" +
+        '<button type="button" class="btn btn-small" data-next-cup="' + escapeHtml(coffee.id) + '">' + I18N.t("nc_brew") + "</button></div></section>";
   }
 
   /* M6 (v9.13): THE COFFEE WITHOUT A CUP. Its bag (opened, or waiting), the
@@ -467,6 +516,8 @@
     }
     // Now on screen: the jar plays the change since this device last showed it.
     UI.playJars($("#sheet-content"));
+    // « Mes cafés » marks the place of this jar, out of the shelf while its sheet is open.
+    if (UI.markShelfJar) UI.markShelfJar(coffeeId);
     const scroller = $("#sheet-content");
     if (scroller) scroller.scrollTop = 0;
   }
@@ -506,7 +557,7 @@
     // Phone back: we close; closing any other way removes the pushed entry.
     window.addEventListener("popstate", () => {
       const m = $("#modal-sheet");
-      if (m.open && historyEntry) { historyEntry = false; m.close(); }
+      if (m.open && historyEntry) { historyEntry = false; if (!UI.closeSheetToShelf || !UI.closeSheetToShelf()) m.close(); }
     });
     $("#modal-sheet").addEventListener("close", () => {
       /* Simply closing removes the entry pushed on opening. Closing to go
@@ -515,6 +566,18 @@
       if (historyEntry && !closingToNavigate) { try { history.back(); } catch (e) { /* nothing to remove */ } }
       historyEntry = false;
       closingToNavigate = false;
+    });
+    /* GOING BACK INTO THE JAR (v9.18): the Close button and Escape, from
+       « Mes cafés », let the sheet shrink into its jar on the shelf
+       (js/ui-coffees.js). Caught before the button's own handler (app.js);
+       anywhere else, the usual close. */
+    $("#modal-sheet").addEventListener("click", ev => {
+      if (!ev.target.closest(".modal-close") || !UI.closeSheetToShelf || !UI.closeSheetToShelf()) return;
+      ev.stopPropagation();
+      ev.preventDefault();
+    }, true);
+    $("#modal-sheet").addEventListener("cancel", ev => {
+      if (UI.closeSheetToShelf && UI.closeSheetToShelf()) ev.preventDefault();
     });
     /* The manual count: open, cancel, save (v8.96). */
     const editor = () => $("#sh-stock-editing");
@@ -608,6 +671,24 @@
       UI.redoCup(ext);
       toast(I18N.t("setting_prefilled"));
     });
+    // « Nouveau sachet » (v9.18): the bag form of « Mes cafés ».
+    $("#sheet-content").addEventListener("click", ev => {
+      const b = ev.target.closest("[data-new-bag]");
+      if (!b) return;
+      closeSheetToNavigate();
+      UI.openBagForm(b.dataset.newBag);
+    });
+    // « Brasser avec » of the next cup (B1): the entry, prefilled once, the dial turning.
+    $("#sheet-content").addEventListener("click", ev => {
+      const b = ev.target.closest("[data-next-cup]");
+      if (!b) return;
+      const coffee = DATA.state.coffees.find(c => c.id === b.dataset.nextCup);
+      const target = coffee ? BAGS.nextCupSettings(nextCupFor(coffee)) : null;
+      if (!target) return;
+      closeSheetToNavigate();
+      UI.redoCup(target);
+      toast(I18N.t("setting_prefilled"));
+    });
     // Delegated on the document: the « Fiche » buttons are born with their lists.
     document.addEventListener("click", ev => {
       const b = ev.target.closest && ev.target.closest("[data-sheet]");
@@ -618,5 +699,15 @@
 
   // Under names that say what they are outside this file: the dashboard shelf uses them.
   const freshnessWindow = learnWindow, bagDay = currentBagDay, BAG_SLICES = BANDS;
-  Object.assign(UI, { wireSheet, freshnessWindow, bagDay, openSheet, renderOpenSheet, BAG_SLICES });
+  // The coffee whose sheet is open, null when it is closed (v9.18, « Mes cafés »).
+  const sheetCoffeeId = () => { const m = $("#modal-sheet"); return m && m.open ? openId : null; };
+  /* Closes the sheet for another screen (the entry, a form of « Mes cafés »):
+     the history entry it pushed becomes that screen's, as for « Brasser ». */
+  function closeSheetToNavigate() {
+    const m = $("#modal-sheet");
+    if (!m || !m.open) return;
+    closingToNavigate = true;
+    m.close();
+  }
+  Object.assign(UI, { wireSheet, freshnessWindow, bagDay, openSheet, renderOpenSheet, BAG_SLICES, sheetCoffeeId, closeSheetToNavigate });
 })();

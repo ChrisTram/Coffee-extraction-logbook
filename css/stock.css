@@ -1,0 +1,267 @@
+/* Brew logbook, the stock sheet (v9.18): « Mes cafés » as a page with its
+   shelf of jars (O2), the jars of the entry form, the end of a bag (Q9), the
+   « Prochaine tasse » card of the coffee sheet (B1) and the grinder dial that
+   turns to a prefilled setting. Loaded after finishing.css; tokens only,
+   never a colour of the theme written here (the bag's kraft is the colour of
+   a bag, like the jar's beans). No green. */
+
+/* ---------- The page head ---------- */
+.cf-head-actions { gap: 10px; }
+.cf-counts { display: inline-flex; gap: 2px; padding: 3px; border-radius: 12px; background: var(--panel-2); }
+.cf-count {
+  font: inherit; font-size: 0.85rem; border: 0; background: none; color: var(--muted); cursor: pointer;
+  min-height: 44px; padding: 6px 12px; border-radius: 9px; display: inline-flex; align-items: center; gap: 6px;
+  transition: background var(--transition), color var(--transition);
+}
+.cf-count b { font-family: var(--serif); font-weight: 400; font-size: 1.2rem; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
+.cf-count:hover:not(:disabled) { background: var(--panel-3); color: var(--ink); }
+.cf-count:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cf-count:disabled { cursor: default; opacity: 0.55; }
+
+/* The forms of the old window, in a card that only shows while one is open. */
+.cf-forms { margin-bottom: 22px; }
+.cf-forms:not(:has(> form:not([hidden]))) { display: none; }
+.cf-forms .form-coffee { border-top: 0; margin-top: 0; padding-top: 0; }
+.cf-forms form:not([hidden]) { animation: cf-form-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes cf-form-in { from { opacity: 0; transform: translateY(-8px); } }
+
+/* ---------- The shelf ---------- */
+.cf-shelves { display: grid; gap: 28px; }
+.cf-row-h {
+  margin: 0 0 10px; display: flex; align-items: center; gap: 8px;
+  font-family: var(--sans); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+}
+.cf-row-n {
+  min-width: 24px; height: 24px; padding: 0 7px; border-radius: 99px; display: inline-grid; place-items: center;
+  background: var(--panel-2); color: var(--ink); letter-spacing: 0; font-variant-numeric: tabular-nums;
+}
+.cf-row-rebuy .cf-row-n { background: color-mix(in srgb, var(--danger) 16%, var(--panel-2)); color: var(--danger); }
+.cf-quiet { margin: 0; font-size: 0.88rem; color: var(--muted); }
+
+/* THE PLANKS: every row of jars stands on one plank across the whole width.
+   The jars all have the height of a row (--cf-row), so the plank is a
+   gradient repeated every row, under the jars, whatever their number. */
+.cf-plank {
+  --cf-row: 236px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); grid-auto-rows: var(--cf-row);
+  background-image: linear-gradient(to top, transparent 0 2px, var(--panel-3) 2px 10px, color-mix(in srgb, var(--ink) 16%, transparent) 10px 11px, transparent 11px);
+  background-size: 100% var(--cf-row);
+}
+.cf-plank-done { --cf-row: 168px; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); }
+.cf-jar {
+  position: relative; isolation: isolate; display: grid; justify-items: center; align-content: end; gap: 5px; min-width: 0;
+  padding: 12px 8px 20px; border: 0; background: none;
+  font: inherit; color: var(--text); text-align: center; cursor: pointer;
+}
+/* The hover and the open sheet light the jar's place, above the plank. */
+.cf-jar::before {
+  content: ""; position: absolute; inset: 4px 2px 11px; z-index: -1; border-radius: 16px 16px 6px 6px;
+  border: 1px solid transparent; transition: background var(--transition), border-color var(--transition);
+}
+.cf-jar:hover::before { background: var(--accent-bg); }
+.cf-jar:focus-visible { outline: none; }
+.cf-jar:focus-visible::before { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.cf-art { position: relative; display: block; width: 90px; transition: transform 220ms cubic-bezier(0.3, 1.4, 0.5, 1); }
+.cf-jar:hover .cf-art { transform: translateY(-3px); }
+.cf-art .jar-svg { transition: opacity 200ms; }
+.cf-name {
+  font-size: 0.86rem; font-weight: 700; line-height: 1.2; color: var(--ink); min-height: 2.4em; max-width: 100%;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere;
+}
+.cf-line { display: flex; justify-content: center; align-items: baseline; gap: 10px; font-variant-numeric: tabular-nums; }
+.cf-g { font-size: 0.82rem; color: var(--muted); white-space: nowrap; }
+.cf-score { font-family: var(--serif); font-size: 1.2rem; line-height: 1; color: var(--ink); }
+
+/* UNDER THREE CUPS THE GLASS BLUSHES: copper red, never green. */
+.cf-jar.is-low .jar-glass, .cj-tile.is-low .jar-glass { stroke: var(--danger); }
+.cf-jar.is-low .jar-inside, .cj-tile.is-low .jar-inside { fill: var(--danger); opacity: 0.16; }
+.cf-jar.is-low .cf-art { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--danger) 32%, transparent)); }
+.cf-jar.is-low .cf-g { color: var(--danger); font-weight: 700; }
+
+/* The finished ones: smaller, quieter. */
+.cf-jar.is-done .cf-art { width: 54px; opacity: 0.72; filter: saturate(0.6); }
+.cf-jar.is-done .cf-name { font-size: 0.8rem; font-weight: 600; min-height: 0; }
+.cf-jar.is-done .cf-g { font-size: 0.75rem; }
+
+/* Its sheet is open: the jar is in the sheet, its place on the shelf is dashed. */
+.cf-jar.is-lifted::before { background: var(--accent-bg); border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
+.cf-jar.is-lifted .cf-art { outline: 1.5px dashed color-mix(in srgb, var(--muted) 70%, transparent); outline-offset: -3px; border-radius: 14px; }
+.cf-jar.is-lifted .cf-art .jar-svg { opacity: 0; }
+.cf-jar.cf-settle .cf-art { animation: cf-settle 420ms cubic-bezier(0.3, 1.6, 0.5, 1); }
+@keyframes cf-settle { from { transform: translateY(-7px) scale(1.05); } }
+
+/* ARRIVING ON THE PAGE: the jars rise one after the other and fill from
+   empty, the heap overshooting a hair before it settles; a low one blushes
+   once it is full. */
+.cf-arrive .cf-jar, .cf-arrive .bag-end { animation: cf-rise 440ms cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: calc(var(--i, 0) * 55ms); }
+.cf-arrive .cf-row-rebuy .bag-end { animation-delay: calc(var(--i, 0) * 55ms + 160ms); }
+.cf-arrive .cf-jar .jar-pile { transform-box: fill-box; animation: cf-fill 780ms cubic-bezier(0.3, 1.25, 0.5, 1) both; animation-delay: calc(var(--i, 0) * 55ms + 140ms); }
+.cf-arrive .cf-jar.is-low .cf-art { animation: cf-blush 900ms ease-out both; animation-delay: calc(var(--i, 0) * 55ms + 620ms); }
+@keyframes cf-rise { from { opacity: 0; transform: translateY(14px); } }
+@keyframes cf-fill { from { transform: translateY(100%); } 72% { transform: translateY(-4%); } }
+@keyframes cf-blush { 45% { filter: drop-shadow(0 0 14px color-mix(in srgb, var(--danger) 60%, transparent)); } }
+
+@media (max-width: 560px) {
+  .cf-head-actions { width: 100%; }
+  .cf-counts { flex: 1 1 100%; }
+  .cf-count { flex: 1 1 0; justify-content: center; padding: 6px 4px; }
+  .cf-plank { --cf-row: 206px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cf-plank-done { --cf-row: 150px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .cf-art { width: 70px; }
+  .cf-jar.is-done .cf-art { width: 44px; }
+}
+
+/* ---------- The jar that grows into its sheet (view transition) ---------- */
+::view-transition-group(cf-sheet) { animation-duration: 440ms; animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1); overflow: clip; border-radius: var(--radius); }
+::view-transition-old(cf-sheet) { animation: cf-vt-out 180ms ease-out both; }
+::view-transition-new(cf-sheet) { animation: cf-vt-in 340ms ease-out 70ms both; }
+::view-transition-group(cf-jar) { animation-duration: 480ms; animation-timing-function: cubic-bezier(0.3, 1.18, 0.45, 1); }
+@keyframes cf-vt-out { to { opacity: 0; } }
+@keyframes cf-vt-in { from { opacity: 0; } }
+/* The side panel's own entrance would play inside the morph: the morph is the entrance. */
+.modal-sheet.cf-morph, .modal-sheet.cf-morph[open], .modal-sheet.as-panel.cf-morph[open] { animation: none; }
+
+/* ---------- The entry's jars ---------- */
+.coffee-jars { margin: 0 0 16px; }
+.cj-h { margin: 0 0 8px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.cj-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.cj-tile {
+  position: relative; display: grid; justify-items: center; align-content: start; gap: 3px; min-width: 0; min-height: 44px;
+  padding: 8px 6px 9px; border: 1px solid var(--lines); border-radius: 14px; background: var(--panel);
+  font: inherit; color: var(--text); text-align: center; cursor: pointer;
+  transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
+}
+.cj-tile:hover { border-color: var(--accent); }
+.cj-tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cj-tile[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-bg); box-shadow: 0 0 0 1px var(--accent); }
+.cj-art { position: relative; display: block; width: 42px; }
+.cj-name {
+  font-size: 0.78rem; font-weight: 700; line-height: 1.15; color: var(--ink); max-width: 100%;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere;
+}
+.cj-sub { font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cj-tile.is-low .cj-sub { color: var(--danger); font-weight: 700; }
+.cj-other-ico { display: grid; place-items: center; width: 42px; height: 42px; margin: 8px 0 10px; border-radius: 50%; border: 1.5px dashed var(--lines); color: var(--muted); }
+.cj-other[aria-pressed="true"] .cj-other-ico { border-color: var(--accent); color: var(--accent-strong); }
+.cj-hop .cj-art { animation: cj-hop 380ms cubic-bezier(0.3, 1.6, 0.5, 1); }
+@keyframes cj-hop { 40% { transform: translateY(-7px) rotate(-5deg); } }
+@media (max-width: 560px) {
+  .cj-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .cj-tile { padding: 7px 4px 8px; }
+}
+
+/* ---------- The end of a bag (Q9) ---------- */
+.bag-end { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px; align-items: center; min-width: 0; }
+.be-stage { position: relative; display: flex; align-items: flex-end; gap: 16px; }
+.be-jar { position: relative; display: block; flex: none; width: 112px; padding: 0; border: 0; background: none; font: inherit; color: inherit; }
+button.be-jar { cursor: pointer; border-radius: 12px; }
+button.be-jar:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.be-art { position: relative; display: block; transform-origin: 50% 88%; }
+.be-spent .be-art .jar-glass { stroke: var(--danger); }
+.be-spent .be-art .jar-inside { fill: var(--danger); opacity: 0.12; }
+.be-step-poured .be-art .jar-glass { stroke: var(--accent); }
+.be-stamp {
+  position: absolute; left: 50%; top: 58%; pointer-events: none; white-space: nowrap;
+  transform: translate(-50%, -50%) rotate(-14deg) scale(1.8); opacity: 0;
+  font-family: var(--sans); font-weight: 800; font-size: 1.05rem; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--danger); border: 2.5px solid var(--danger); border-radius: 8px; padding: 1px 8px;
+  background: color-mix(in srgb, var(--panel) 72%, transparent);
+  transition: transform 320ms cubic-bezier(0.2, 1.5, 0.4, 1), opacity 180ms;
+}
+.be-stamped .be-stamp { opacity: 0.92; transform: translate(-50%, -50%) rotate(-14deg) scale(1); }
+.bag-end:not(.be-spent) .be-stamp { display: none; }
+.be-tilting .be-art { animation: be-tilt 820ms cubic-bezier(0.45, 0, 0.3, 1) both; }
+@keyframes be-tilt { 35%, 62% { transform: translateX(-6px) rotate(-30deg); } }
+
+.be-bag { position: relative; flex: none; width: 96px; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 10px; transform-origin: 50% 40%; }
+.be-bag:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.be-bag-svg { display: block; width: 100%; height: auto; overflow: visible; transition: transform 200ms cubic-bezier(0.3, 1.4, 0.5, 1); }
+.be-bag:hover .be-bag-svg { transform: translateY(-3px) rotate(-3deg); }
+.be-bag-body { fill: #c9a77c; stroke: #7a5a3a; stroke-width: 1.5; }
+.be-bag-top { transform-box: fill-box; transform-origin: 0 100%; }
+.be-bag-top path:first-child { fill: #b8936a; stroke: #7a5a3a; stroke-width: 1.5; }
+.be-bag-seam { fill: none; stroke: #7a5a3a; stroke-width: 1; stroke-dasharray: 3 3; }
+.be-bag-valve { fill: #7a5a3a; opacity: 0.45; }
+.be-bag-label { fill: #f3ead9; }
+/* 16 units on a 96 px bag: about 13 px, the floor of the site's text. Smaller bags keep a blank label. */
+.be-bag-name { font-family: var(--serif); font-size: 16px; fill: #2a1d14; }
+.be-row .be-bag-name, .be-corner .be-bag-name { display: none; }
+.be-bag-in { animation: be-bag-in 460ms cubic-bezier(0.2, 0.9, 0.3, 1.1) both; }
+@keyframes be-bag-in { from { opacity: 0; transform: translate(36px, -20px) rotate(12deg); } }
+
+.be-text { display: grid; gap: 6px; min-width: 0; align-content: center; }
+.be-title { margin: 0; font-family: var(--serif); font-size: 1.45rem; line-height: 1.1; color: var(--ink); overflow-wrap: anywhere; }
+.be-say { margin: 0; font-size: 0.88rem; line-height: 1.45; color: var(--text); }
+.be-resume { margin: 2px 0 0; padding: 9px 12px; border-radius: 10px; background: var(--accent-bg); border: 1px solid var(--accent); font-size: 0.86rem; line-height: 1.45; color: var(--text); }
+.be-resume b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.be-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.be-actions .btn-small { min-height: 44px; }
+
+/* In the sheet: in place of the passport's jar. */
+.be-card { padding: 16px 18px; border-radius: var(--radius-small); background: var(--panel-2); border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--lines)); }
+.be-card.be-spent { border-color: color-mix(in srgb, var(--danger) 38%, var(--lines)); }
+.sh-passport.be-on { grid-template-columns: minmax(0, 1fr); }
+.sh-passport.be-on .sh-jar-block { display: none; }
+
+/* In « Mes cafés », the row « À racheter ». */
+.cf-rebuy { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 430px), 1fr)); gap: 12px; }
+.be-row { padding: 12px 16px; gap: 14px; border-radius: var(--radius-small); background: var(--panel); border: 1px solid var(--lines); box-shadow: var(--shadow-card); }
+.be-row .be-jar { width: 66px; }
+.be-row .be-bag { width: 58px; }
+.be-row .be-stage { gap: 10px; }
+.be-row .be-title { font-family: var(--sans); font-size: 0.98rem; font-weight: 700; }
+.be-row .be-stamp { font-size: 0.78rem; border-width: 2px; padding: 0 5px; letter-spacing: 0.1em; }
+
+/* The home corner (wired by the home screen): one line's worth. */
+.be-corner { gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--panel-2); border: 1px solid color-mix(in srgb, var(--danger) 38%, var(--lines)); }
+.be-corner .be-stage { gap: 6px; }
+.be-corner .be-jar { width: 40px; }
+.be-corner .be-bag { width: 38px; }
+.be-corner .be-title { font-family: var(--sans); font-size: 0.85rem; font-weight: 700; }
+.be-corner .be-say { font-size: 0.78rem; line-height: 1.35; }
+.be-corner .be-stamp { font-size: 0.75rem; letter-spacing: 0.04em; border-width: 1.5px; padding: 0 3px; border-radius: 5px; }
+.be-corner .be-resume { font-size: 0.8rem; padding: 6px 8px; }
+
+@media (max-width: 560px) {
+  .be-card { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; }
+  .be-card .be-actions { justify-content: center; }
+  .be-jar { width: 96px; }
+  .be-row .be-actions .btn-small { flex: 1 1 auto; }
+}
+
+/* ---------- The next cup (B1), small ---------- */
+/* A block like its neighbours, no frame of its own: the lock badge is the only accent. */
+.nc-card { gap: 6px; }
+.nc-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.nc-lock {
+  display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 99px;
+  font-size: 0.75rem; font-weight: 700; color: var(--accent-strong); background: var(--accent-bg); border: 1px solid var(--accent);
+}
+.nc-what { margin: 0; font-family: var(--serif); font-size: 1.3rem; line-height: 1.15; color: var(--ink); overflow-wrap: anywhere; }
+.nc-kept { margin: 0; font-size: 0.82rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.nc-why { margin: 0; font-size: 0.84rem; line-height: 1.45; }
+.nc-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 2px; }
+.nc-n { font-size: 0.78rem; color: var(--muted); }
+.nc-foot .btn-small { min-height: 40px; }
+
+/* The Bags tab: a new bag beside the deletion of the current one. */
+.sh-bag-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.sh-bag-actions .sh-delete-bag { margin-top: 0; }
+
+/* ---------- The grinder dial that turns to a prefill ---------- */
+/* The entry's dial lives in #field-grind, which carries the classes: any ancestor counts. */
+.gd-turning .gd-needle { transition: transform 90ms cubic-bezier(0.3, 1.5, 0.5, 1); }
+.gd-instant .gd-needle { transition: none; }
+.gd-row input.gd-glow { animation: gd-glow 1300ms ease-out; }
+@keyframes gd-glow {
+  0% { border-color: var(--accent); box-shadow: 0 0 0 0 transparent; }
+  25% { border-color: var(--accent); box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 30%, transparent); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* ---------- Reduced motion: everything lands at once ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .cf-arrive .cf-jar, .cf-arrive .bag-end, .cf-arrive .cf-jar .jar-pile, .cf-arrive .cf-jar.is-low .cf-art,
+  .cf-jar.cf-settle .cf-art, .cf-forms form:not([hidden]), .be-tilting .be-art, .be-bag-in, .cj-hop .cj-art, .gd-row input.gd-glow { animation: none; }
+  .cf-art, .cf-art .jar-svg, .be-stamp, .be-bag-svg, .gd-turning .gd-needle { transition: none; }
+}

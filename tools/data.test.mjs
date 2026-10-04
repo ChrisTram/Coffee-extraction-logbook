@@ -25,10 +25,11 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
    when we would want them to be watching. */
 /* The styles live in four sheets since v8.78: checks read them end to end, in
    load order, like the browser does. */
-const CSS_SHEETS = ["css/base.css", "css/screens.css", "css/dialogs.css", "css/finishing.css"];
+// v9.18: the stock sheet (Mes cafés, the end of a bag, the next cup) after finishing.css.
+const CSS_SHEETS = ["css/base.css", "css/screens.css", "css/dialogs.css", "css/finishing.css", "css/stock.css"];
 const readCss = () => CSS_SHEETS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 const SOURCE_UI = ["js/ui-core.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-wheel.js", "js/ui-cup.js", "js/ui-dial.js", "js/ui-rating-dial.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js",
-  "js/ui-history.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/ui-jar.js", "js/ui-moments.js", "js/ui-roll.js", "js/ui-brewer.js", "js/ui-arrivals.js", "js/ui-empty.js", "js/ui-panel.js", "js/ui-palette.js", "js/ui-shortcuts.js", "js/app.js"]
+  "js/ui-history.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/ui-jar.js", "js/ui-moments.js", "js/ui-roll.js", "js/ui-brewer.js", "js/ui-arrivals.js", "js/ui-empty.js", "js/ui-coffees.js", "js/ui-bag-end.js", "js/ui-panel.js", "js/ui-palette.js", "js/ui-shortcuts.js", "js/app.js"]
   .map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 /* demo-data.js has not been a script tag since v7.56, but the harness still
    loads it: loadDemo() needs it and there is no network here. */
@@ -1153,7 +1154,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
   const app = SOURCE_UI;
   const list = app.slice(app.indexOf("const SCREEN_NAMES = ["), app.indexOf("]", app.indexOf("const SCREEN_NAMES = [")));
   const screens = [...list.matchAll(/"(\w+)"/g)].map(m => m[1]);
-  check("the screen list is readable from the test", screens.length === 6, screens.join(", "));
+  check("the screen list is readable from the test", screens.length === 7, screens.join(", "));
 
   /* Every navigation target must aim at a screen that exists. A misspelled
      data-screen throws nothing: the click simply does nothing. */
@@ -1773,8 +1774,10 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
 {
   const app = SOURCE_UI;
   check("the coffee card carries a cost per cup", app.includes("function costPerCup"));
+  /* Since v9.18 « Mes cafés » is a shelf of jars: the cost per cup lives in
+     the coffee sheet, still at the coffee's average dose. */
   check("it uses the coffee's average dose, not the fallback dose",
-    app.includes("cupCost = typicalDose"));
+    app.includes("UI.costPerCup(coffee, doses.length ? average(doses) : fallbacks.dose)"));
 
   /* The second figure, for NON PURE coffees: the Sang Tao is 82 % coffee, so much
      more expensive per gram of REAL coffee than it looks. The
@@ -3634,7 +3637,7 @@ for (const sheet of CSS_SHEETS) {
   check("the coffee sheet opens beside on a wide screen, as a window otherwise",
     sheetSrc.includes("if (!UI.showInSidePanel(m, coffeeId)) m.showModal();"));
   check("and its phone back button guard is untouched",
-    sheetSrc.includes('history.pushState({ sheet: coffeeId }, "")') && sheetSrc.includes("if (m.open && historyEntry) { historyEntry = false; m.close(); }"));
+    sheetSrc.includes('history.pushState({ sheet: coffeeId }, "")') && sheetSrc.includes("if (m.open && historyEntry) { historyEntry = false; if (!UI.closeSheetToShelf || !UI.closeSheetToShelf()) m.close(); }"));
   check("a history row opens the cup through the panel, which falls back to editing", SOURCE_UI.includes("if (rowExt) UI.openCup(rowExt, row);") &&
     SOURCE_UI.includes("UI.loadExtractionIntoEntry(DATA.state.extractions.find(x => x.id === e.id), false);"));
   check("the palette reuses the Guide search index", SOURCE_UI.includes("UI.guideSearchIndex()") && SOURCE_UI.includes("function guideSearchIndex()"));

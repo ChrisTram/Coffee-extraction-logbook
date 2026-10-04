@@ -21,10 +21,11 @@ ES, ils ne marchent pas en `file://`), tous en `defer`, dans l'ordre de
 `DATA_*`, `DATA`, `SYNC`, `REGLAGES`, `CHARTS`, `UI`) ou des constantes globales
 (`RECETTES_DEPART`, etc.).
 
-SIX écrans dans une page unique, bascule par nav et hash. La liste fait foi dans
-`SCREEN_NAMES` (`js/ui-core.js`) : dashboard, entry, history, tuning, guide,
-settings (tableau, saisie, historique, reglages, guide, parametres jusqu'à la
-v9.05). Les anciens liens (`#tableau`, `#saisie`..., et `#reference`) restent
+SEPT écrans dans une page unique, bascule par nav et hash. La liste fait foi dans
+`SCREEN_NAMES` (`js/ui-core.js`) : dashboard, entry, history, coffees, tuning,
+guide, settings (tableau, saisie, historique, reglages, guide, parametres jusqu'à
+la v9.05 ; « Mes cafés », `#coffees`, est une page depuis la v9.18, section 8
+sexies). Les anciens liens (`#tableau`, `#saisie`..., et `#reference`) restent
 valides grâce à `LEGACY.ROUTES` (js/legacy-names.js).
 
 NAVIGATION (refonte Comptoir, v8.1). **Un seul élément `.rail` dans le DOM, deux
@@ -154,7 +155,11 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/ui-quick.js` | panneau de saisie rapide |
 | `js/ui-history.js` | tableau, filtres, tri, comparateur, écran Mes meilleurs réglages |
 | `js/ui-guide.js` | recettes de référence, pas à pas, moulin interactif |
-| `js/ui-catalog.js` | modales cafés, sachets, recettes, écran Paramètres |
+| `js/ui-catalog.js` | formulaires café et sachet (dans « Mes cafés »), fenêtre des recettes, écran Paramètres |
+| `js/bags.js` | les sachets sans le DOM (v9.18) : rangées de l'étagère, bocaux de la saisie, fin d'un sachet, prochaine tasse, crans du cadran qui tourne. Pur, testé par `tools/stock.test.mjs` |
+| `js/ui-coffees.js` | « Mes cafés », la page (v9.18, O2) : l'étagère, le bocal qui devient la fiche, les bocaux de la saisie |
+| `js/ui-bag-end.js` | la fin d'un sachet (v9.18, Q9) : le bocal qui penche, le tampon, le sachet neuf, la reprise |
+| `css/stock.css` | la feuille du stock (v9.18), chargée après finishing.css |
 | `js/ui-coffee-sheet.js` | la fiche d'un café (v8.46), dialogue `#modale-fiche` |
 | `js/ui-brew.js` | le mode Brassage (v8.47), dialogue plein écran `#modale-brassage` |
 | `js/ui-drawings.js` | les dessins en SVG maison (v8.49) : étagère, horloge, spectre, carte du moulin |
@@ -236,13 +241,11 @@ active`
 - `active` 0/1 : un café désactivé n'apparaît PLUS DU TOUT dans le select de
   saisie ni dans la saisie rapide. Exception : à l'édition d'une ancienne
   extraction, remplirSelectCafes(garderId) réinjecte l'option "(inactif)"
-  pour que la valeur reste affichable. Dans la liste "Mes cafés", les
-  désactivés sont toujours triés en fin de liste (tri stable, ordre
-  d'origine conservé au sein de chaque groupe).
-- Liste "Mes cafés" : chaque ligne porte un badge de note moyenne
-  (.badge-note, "★ 7,4", moyenne des extractions notées du café, nombre
-  d'extractions en title) et la date d'ajout dans la ligne méta
-  ("ajouté le 12 août 2026", clé T list_added, format via fmtDateCourte).
+  pour que la valeur reste affichable. Dans « Mes cafés » (une page depuis
+  la v9.18), un café désactivé est sur l'étagère des finis : « Ranger ce
+  café » le désactive, racheter un sachet le réactive.
+- « Mes cafés » : chaque bocal porte ses grammes et la note moyenne des tasses
+  analysables du café ; le coût par tasse, à la dose moyenne, est dans la fiche.
 
 ### extractions.csv
 `id, date_time, coffee_id, method, recipe, dose_g, water_g, grind_dial,
@@ -394,8 +397,8 @@ plus importante :
 - `DATA.ajouterAchat()` recopie format, prix et date de torréfaction sur la fiche
   café, pour que tout ce qui lit encore la fiche reste cohérent avec le sachet en
   cours.
-- Badge dans la liste "Mes cafés" : vert, orange sous 3 tasses restantes, rouge
-  et nom barré quand le sachet est fini.
+- Dans « Mes cafés » (v9.18) : le verre du bocal rougit sous trois tasses, et un
+  sachet qui garde moins d'une dose passe dans « À racheter » (`BAGS.isSpent`).
 - Détection à l'import : `purchase_date` est testé AVANT `coffee_id`, que les deux
   tables possèdent.
 
@@ -1126,6 +1129,22 @@ qu'avant.
   tout est posé d'un coup.
 - Grille des réglages : la température (Switch) et la mouture prennent chacune une
   rangée entière (`.field-wide`), `grid-auto-flow: dense` évite le trou.
+- **Le cadran qui tourne** (v9.18, le dessin de Q11) : tout préremplissage passe par
+  `loadExtractionIntoEntry(ext, true)` (« Refaire », la reprise d'un sachet neuf, le
+  réglage gagnant de Ctrl K ou de Mes réglages, la prochaine tasse B1). Là,
+  `UI.turnGrindDial(avant)` fait tourner l'aiguille cran par cran depuis ce qu'elle
+  montrait (champ vide : le réglage du moulin des Paramètres) jusqu'au nouveau réglage,
+  environ une demi seconde (`BAGS.dialFrames`), le texte du champ roule et le champ
+  s'allume (`gd-glow`). Le champ a déjà sa nouvelle valeur. Le tour attend d'être vu
+  (IntersectionObserver ; six secondes au plus, puis l'aiguille se pose) ; un geste sur
+  le cadran l'arrête ; moins d'animations ou page cachée : l'aiguille saute.
+- **Les bocaux de la saisie** (v9.18, O2 avec M1, `#coffee-jars`, js/ui-coffees.js) :
+  au-dessus du menu des cafés, les sachets ouverts en petits bocaux (niveau, grammes,
+  jour du sachet), le plus avancé d'abord (`BAGS.entryJars`, six au plus), et « Autre
+  café… » qui ouvre le menu. Un toucher écrit `#f-coffee` et rejoue son `change`
+  (machine et recette suivent, le brouillon enregistre) ; `#f-coffee` reste la vérité,
+  et les bocaux le suivent quoi qui l'écrive (sa propriété `value` est surveillée, comme
+  le cadran du moulin).
 
 ## 8 ter. La fiche d'un café (js/ui-coffee-sheet.js)
 
@@ -1179,8 +1198,62 @@ chaque notification de données et à la bascule de langue tant qu'il est ouvert
   « Pas encore de tasse de … », l'âge du sachet, la recette conseillée, et « Brasser la
   première ».
 
+- **La fin du sachet** (v9.18, Q9) : quand le sachet est fini (moins d'une dose,
+  `BAGS.isSpent`), ou pour un café rangé, la scène de js/ui-bag-end.js prend la place
+  du bocal en tête (`.sh-passport.be-on`). L'onglet Sachets offre « Nouveau sachet » (le
+  formulaire de « Mes cafés »).
+- **Prochaine tasse** (v9.18, B1, `nextCupBlock`) : une petite carte sous le meilleur
+  réglage, calculée par `BAGS.nextCup` sur les tasses analysables de ce café, à la
+  machine de la dernière : réglage verrouillé (deux tasses au-dessus de la moyenne de
+  toutes tes tasses au même réglage, température comprise au Switch), sinon une seule
+  chose change sur la dernière (le premier levier de `TUNING.quantifiedCorrection` :
+  mouture, puis chaleur, puis ratio), sinon la même pour confirmer, sinon retour à la
+  meilleure. « sur N tasses ». « Brasser avec » préremplit la saisie, une fois.
+- **Depuis « Mes cafés »**, la fiche sort de son bocal et y retourne (section 8 sexies).
+  Fermer, Échap et le retour du téléphone passent par `UI.closeSheetToShelf()` ;
+  `UI.closeSheetToNavigate()` ferme pour aller ailleurs (l'entrée d'historique devient
+  celle de l'écran suivant).
+
 La démo ouvre chaque sachet le jour de son achat (`chargerDemo`) : sans date
 d'ouverture aucune tasse n'avait de jour du sachet.
+
+## 8 sexies. Mes cafés (js/ui-coffees.js, js/ui-bag-end.js, v9.18)
+
+Une page, `#screen-coffees` (hash `#coffees`), entre Historique et Mes réglages dans
+le rail, sous « Plus » au téléphone. Elle remplace la fenêtre `#modal-coffees` :
+`UI.openCoffeesModal` reste un alias de `UI.openCoffeesPage` pour le code qui l'appelle
+encore (dessins, écrans vides).
+
+- **L'étagère** (`#coffees-list`, rendue par `UI.renderCoffeeList`) : trois rangées
+  (`BAGS.shelves`). Ouverts : le sachet le plus avancé d'abord, une taille inconnue à la
+  fin. À racheter : un café actif dont le sachet garde moins d'une dose, la scène de la
+  fin du sachet en ligne. Finis : les cafés désactivés. Chaque bocal (js/ui-jar.js) porte
+  le nom, les grammes et la moyenne ; sous trois tasses le verre rougit (`--danger`,
+  jamais de vert). Les rangées reposent sur une planche (un dégradé répété à la hauteur
+  d'une rangée, `--cf-row`). En tête, les trois comptes (boutons qui défilent jusqu'à
+  leur rangée) et « Ajouter un café ». Les formulaires café et sachet de l'ancienne
+  fenêtre vivent dans la carte `.cf-forms`, visible seulement quand l'un est ouvert.
+- **L'arrivée** : en arrivant sur la page, les bocaux montent l'un après l'autre et se
+  remplissent depuis vide (`.cf-arrive`, CSS seulement), un bocal bas rougit ensuite.
+- **Le bocal qui devient la fiche** : un toucher lance une view transition (noms
+  `cf-sheet` et `cf-jar`) : la carte se déplie en fenêtre ou en panneau, le bocal vole
+  jusqu'au bocal de la fiche ; sa place sur l'étagère reste en pointillé tant que la
+  fiche est ouverte (`UI.markShelfJar`). Revenir fait l'inverse. Une page qui ne dessine
+  pas (fenêtre réduite) saute la transition au bout de 600 ms, la fiche s'ouvre quand même.
+- **La fin d'un sachet** (Q9, js/ui-bag-end.js) : le bocal penche, ses derniers grains
+  roulent, le tampon « vide » se pose, une fois par sachet et par appareil, la première
+  fois qu'on la voit (localStorage `bag-end-seen`). « Racheter » pose le sachet neuf
+  (rien n'est enregistré) ; le toucher le déchire et le verse, puis `DATA.addPurchase`
+  enregistre le sachet (ouvert aujourd'hui, format et prix du dernier ; « Autre format
+  ou prix ? » ouvre le formulaire). Si une tasse de ce café date déjà d'aujourd'hui, le
+  sachet est aussi compté plein à cette minute (les colonnes du compte à la main), sinon
+  elle se retirerait du sachet neuf. Puis « Reprendre là où le dernier sachet s'est
+  arrêté » préremplit la saisie par « Refaire » avec la dernière tasse d'avant le
+  versement : une fois, rien n'est stocké. « Ranger ce café » le désactive.
+  `UI.bagEndScene(id, { layout })` rend la scène (card, row, corner),
+  `UI.playBagScenes(racine)` la joue, les boutons sont délégués au document.
+- **Le coin du tableau de bord** : pour chaque `UI.bagEndCoffees()`, la page d'accueil
+  insère `UI.bagEndScene(id, { layout: "corner" })` puis appelle `UI.playBagScenes`.
 
 ## 8 bis. Historique (js/ui-history.js)
 
@@ -1548,6 +1621,7 @@ node tools/modules.test.mjs  frontieres entre fichiers : noms libres, UI, cablag
 node worker/index.test.mjs   porte d'entree, cache des assets, fichiers ignores
 node worker/sync.test.mjs    fusion entre appareils, taille du document
 node tools/logbook-mcp.test.mjs  serveur MCP du catalogue contre le vrai Worker et un faux D1
+node tools/stock.test.mjs    (v9.18) etagere, bocaux de la saisie, fin d'un sachet, prochaine tasse, cadran qui tourne
 ```
 
 Ce que chacune couvre, et le bug qui l'a motivée : `DECISIONS.md`, « Tests ».

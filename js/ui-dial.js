@@ -17,7 +17,13 @@
  * buttons), built around their existing field: no markup to keep in sync.
  * The field stays the source of truth everywhere; the dial follows it,
  * whatever writes it (typing, a recipe prefill, the draft, the Guide's
- * "set my grinder" button), see watchValue. */
+ * "set my grinder" button), see watchValue.
+ *
+ * v9.18: A PREFILL TURNS IT. When an action prefills the entry's grind (the
+ * « Refaire » path: a cup redone, the reprise of a new bag, a winning
+ * setting, the next cup of a coffee), the needle goes to the new setting
+ * notch by notch instead of jumping, and the field glows a moment
+ * (turnGrindDial). */
 "use strict";
 
 (() => {
@@ -29,6 +35,9 @@
   let zoneCache = { key: "", rows: [] };
 
   const nextFrame = fn => (typeof requestAnimationFrame === "function" ? requestAnimationFrame(fn) : setTimeout(fn, 16));
+  const calm = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const pageHidden = () => typeof document.visibilityState === "string" && document.visibilityState === "hidden";
+  const needleAt = (inst, deg) => { if (inst.needle) inst.needle.style.transform = "rotate(" + deg.toFixed(1) + "deg)"; };
 
   function vibrate(ms) {
     if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
@@ -123,8 +132,11 @@
         inst.angle += (p.clicks - inst.clicks) * DEG;
       }
       inst.clicks = p.clicks;
-      if (inst.needle) inst.needle.style.transform = "rotate(" + inst.angle.toFixed(1) + "deg)";
-      inst.pips.forEach((c, k) => c.classList.toggle("on", k < p.rotation));
+      // While a prefill turns the dial (turnGrindDial), the needle and the pips are its own.
+      if (!inst.turn) {
+        needleAt(inst, inst.angle);
+        inst.pips.forEach((c, k) => c.classList.toggle("on", k < p.rotation));
+      }
     }
     if (inst.minus) inst.minus.disabled = !!inst.input.disabled || (!!p && p.clicks <= 0);
     if (inst.plus) inst.plus.disabled = !!inst.input.disabled || (!!p && p.clicks >= GRIND.MAX_CLICKS);
@@ -193,6 +205,7 @@
 
   function step(inst, d) {
     if (inst.input.disabled) return;
+    endTurn(inst);
     const next = stepDial(inst.input.value, d, fallbacks.dial);
     if (next === inst.input.value) return;
     inst.input.value = next;
@@ -227,7 +240,7 @@
   function wireInstance(inst) {
     wireButton(inst, inst.minus, -1);
     wireButton(inst, inst.plus, 1);
-    inst.input.addEventListener("input", () => paint(inst));
+    inst.input.addEventListener("input", () => { endTurn(inst); paint(inst); });
     // Up and down move one click while typing; the text field has no arrows of its own.
     inst.input.addEventListener("keydown", ev => {
       const d = { ArrowUp: 1, ArrowDown: -1 }[ev.key];
@@ -256,6 +269,88 @@
     };
     wireInstance(inst);
     return inst;
+  }
+
+  // ---------- A prefill turns the dial (v9.18) ----------
+
+  /* The whole turn fits in about half a second, a notch every 34 ms at most:
+     a few clicks tick by one by one, a long way takes bigger strides
+     (BAGS.dialFrames). It waits to be SEEN: the entry screen may still be in
+     its transition, and on the phone the grind field sits below the fold;
+     until then the needle stays on the old setting, the field already holds
+     the new one (it is the truth). Not seen within six seconds, or a gesture
+     on the dial, or reduced motion: the needle simply lands. */
+  const TURN_MS = 520, TURN_STEP_MS = 34, TURN_WAIT_MS = 6000;
+  let turnWatcher = null;
+
+  function endTurn(inst) {
+    const t = inst.turn;
+    if (!t) return;
+    inst.turn = null;
+    t.timers.forEach(clearTimeout);
+    if (turnWatcher) turnWatcher.unobserve(inst.box);
+    inst.box.classList.remove("gd-turning");
+    paint(inst);
+  }
+
+  function runTurn(inst, t) {
+    if (inst.turn !== t || t.running) return;
+    t.running = true;
+    clearTimeout(t.giveUp);
+    inst.box.classList.add("gd-turning");
+    // The field glows while the needle travels; its text rolls from the old setting.
+    inst.input.classList.remove("gd-glow");
+    void (inst.input.getBoundingClientRect && inst.input.getBoundingClientRect());
+    inst.input.classList.add("gd-glow");
+    t.timers.push(setTimeout(() => inst.input.classList.remove("gd-glow"), 1400));
+    if (UI.rollField) UI.rollField(inst.input, t.fromText);
+    const frames = BAGS.dialFrames(t.from, t.to, TURN_MS, TURN_STEP_MS);
+    const every = Math.min(70, Math.max(TURN_STEP_MS, TURN_MS / frames.length));
+    frames.forEach((c, k) => t.timers.push(setTimeout(() => {
+      if (inst.turn !== t) return;
+      needleAt(inst, t.start + (c - t.from) * DEG);
+      inst.pips.forEach((pip, n) => pip.classList.toggle("on", n < Math.floor(c / 50)));
+      if (k === frames.length - 1) t.timers.push(setTimeout(() => endTurn(inst), 180));
+    }, k * every)));
+  }
+
+  /* The entry's dial goes from `fromDial` (what it showed before the
+     prefill) to what its field now holds. Called by loadExtractionIntoEntry
+     for every prefill, so every caller gets it. */
+  function turnGrindDial(fromDial) {
+    const inst = instances.find(x => x.input && x.input.id === "f-grind");
+    if (!inst) return;
+    endTurn(inst);
+    /* An empty field before (a pre-ground coffee was chosen): the grinder
+       itself still sits on its real setting, Settings' one; it turns from there. */
+    const typed = GRIND.parseDial(String(fromDial || "").trim().replace(/,/g, "."));
+    const from = typed || GRIND.parseDial(String(fallbacks.dial || ""));
+    const to = readDial(inst.input);
+    if (!from || !to || from.clicks === to.clicks || inst.input.disabled || calm() || pageHidden()) return;
+    // The angle keeps accumulating, so the needle turns the short way it is used to.
+    const target = inst.clicks === null ? to.clicks * DEG : inst.angle + (to.clicks - inst.clicks) * DEG;
+    const t = { from: from.clicks, to: to.clicks, start: target - (to.clicks - from.clicks) * DEG,
+      fromText: typed ? String(fromDial).trim() : "", timers: [], running: false, giveUp: null };
+    inst.turn = t;
+    inst.clicks = to.clicks;
+    inst.angle = target;
+    // Back on the old setting at once, without the spring.
+    inst.box.classList.add("gd-instant");
+    needleAt(inst, t.start);
+    inst.pips.forEach((pip, n) => pip.classList.toggle("on", n < from.rotation));
+    nextFrame(() => nextFrame(() => inst.box.classList.remove("gd-instant")));
+    t.giveUp = setTimeout(() => { if (inst.turn === t && !t.running) endTurn(inst); }, TURN_WAIT_MS);
+    if (typeof IntersectionObserver !== "function") { t.timers.push(setTimeout(() => runTurn(inst, t), 200)); return; }
+    if (!turnWatcher) {
+      turnWatcher = new IntersectionObserver(entries => entries.forEach(en => {
+        if (!en.isIntersecting) return;
+        const i = instances.find(x => x.box === en.target);
+        turnWatcher.unobserve(en.target);
+        // A breath after it shows: the screen change may still be fading in.
+        if (i && i.turn) i.turn.timers.push(setTimeout(() => runTurn(i, i.turn), 220));
+      }), { threshold: 0.6 });
+    }
+    turnWatcher.observe(inst.box);
   }
 
   const stepButton = d => '<button type="button" class="gd-step" data-grind-step="' + d + '">' +
@@ -297,6 +392,6 @@
   function paintGrindDials() { instances.forEach(paint); }
 
   Object.assign(UI, {
-    wireGrindDials, paintGrindDials, stepDial, zoneStatus, grindGoldenZone: goldenZone,
+    wireGrindDials, paintGrindDials, stepDial, zoneStatus, grindGoldenZone: goldenZone, turnGrindDial,
   });
 })();

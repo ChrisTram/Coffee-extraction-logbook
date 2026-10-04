@@ -7,11 +7,12 @@
 <!-- Site version, single source of truth: the footer reads it, and files
      loaded on demand put it in their URL. Set it with
      node tools/bump_version.mjs X, never by hand. -->
-<meta name="app-version" content="9.17">
-<link rel="stylesheet" href="css/base.css?v=9.17">
-<link rel="stylesheet" href="css/screens.css?v=9.17">
-<link rel="stylesheet" href="css/dialogs.css?v=9.17">
-<link rel="stylesheet" href="css/finishing.css?v=9.17">
+<meta name="app-version" content="9.18">
+<link rel="stylesheet" href="css/base.css?v=9.18">
+<link rel="stylesheet" href="css/screens.css?v=9.18">
+<link rel="stylesheet" href="css/dialogs.css?v=9.18">
+<link rel="stylesheet" href="css/finishing.css?v=9.18">
+<link rel="stylesheet" href="css/stock.css?v=9.18">
 <!-- crossorigin use-credentials: without it the browser fetches the manifest
      WITHOUT cookies, the front door redirects it to /login, and it tries to
      parse HTML as JSON. Result: "Manifest: Syntax error" and a PWA that
@@ -52,7 +53,7 @@
      the scripts. bump_version.mjs versions the charts link. -->
 <link rel="preload" href="css/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="css/fonts/instrument-serif-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="js/vendor/chart.umd.js?v=9.17" as="script">
+<link rel="preload" href="js/vendor/chart.umd.js?v=9.18" as="script">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%98%95%3C/text%3E%3C/svg%3E">
 </head>
 <body>
@@ -91,6 +92,8 @@
       <button class="nav-btn rail-entry" data-screen="dashboard"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="8" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="11" width="7" height="10" rx="1.5"/></svg><span>Tableau de bord</span></button>
       <button class="nav-btn rail-entry" data-screen="entry"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h8"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span>Saisie</span></button>
       <button class="nav-btn rail-entry" data-screen="history"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h13"/><path d="M3 12h13"/><path d="M3 18h9"/><circle cx="19" cy="17" r="3"/><path d="M19 15.6V17l1 .7"/></svg><span>Historique</span></button>
+      <!-- O2 (v9.18): Mes cafés, a page now (the shelf of jars), no longer a window. -->
+      <button class="nav-btn rail-entry" data-screen="coffees"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="3.5" rx="1"/><path d="M7 6h10a2 2 0 0 1 2 2v11a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 5 19V8a2 2 0 0 1 2-2z"/><path d="M5 13.5c2.3-1.4 4.7-1.4 7 0s4.7 1.4 7 0"/></svg><span>Mes cafés</span></button>
       <button class="nav-btn rail-entry" data-screen="tuning"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M6 4h12v5a6 6 0 0 1-12 0z"/><path d="M18 5h2.5a2.5 2.5 0 0 1-2.5 4"/><path d="M6 5H3.5A2.5 2.5 0 0 0 6 9"/></svg><span>Mes réglages</span></button>
       <button class="nav-btn rail-entry" data-screen="guide"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v15H5.5A1.5 1.5 0 0 0 4 19.5z"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19"/><path d="M8 7.5h7"/></svg><span>Guide</span></button>
       <button class="nav-btn rail-entry" data-screen="settings"><svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10"/><path d="M18 7h2"/><path d="M4 17h6"/><path d="M14 17h6"/><circle cx="16" cy="7" r="2"/><circle cx="12" cy="17" r="2"/></svg><span>Paramètres</span></button>
@@ -481,6 +484,10 @@
          breathing room and Chris no longer knew where to look. -->
     <section class="entry-block">
     <h3 class="entry-block-title"><span class="block-num" aria-hidden="true">1</span>Le café et la recette</h3>
+    <!-- O2 (v9.18): the open bags as small jars, the most advanced first
+         (js/ui-coffees.js). A tap chooses; #f-coffee below stays the truth
+         that saving, the draft and the prefills read, and the jars follow it. -->
+    <div class="coffee-jars" id="coffee-jars" role="group" aria-label="Tes sachets ouverts" hidden></div>
     <div class="entry-head">
     <div class="field">
       <label for="f-coffee">Café</label>
@@ -852,6 +859,88 @@
       <p>Aucune extraction ne correspond à ces filtres.</p>
     </div>
   </div>
+</section>
+
+<!-- ================= SCREEN: MES CAFÉS (v9.18, O2) =================
+     A page now, no longer a window: the coffees as jars on a shelf, in three
+     rows, the open bags, those to buy again and the finished ones
+     (js/ui-coffees.js). A jar grows into its coffee's sheet. The coffee and
+     bag forms of the old window live here, unchanged (js/ui-catalog.js);
+     their card only shows while one of them is open. -->
+<section id="screen-coffees" class="screen">
+  <div class="head-page">
+    <div class="head-titles">
+      <p class="highlight">Tes bocaux</p>
+      <h2 class="title-page">Mes cafés</h2>
+    </div>
+    <div class="head-actions cf-head-actions">
+      <div class="cf-counts" role="group" aria-label="Les rangées de l'étagère">
+        <button type="button" class="cf-count" data-cf-jump="open">Ouverts <b id="cf-n-open">0</b></button>
+        <button type="button" class="cf-count" data-cf-jump="rebuy">À racheter <b id="cf-n-rebuy">0</b></button>
+        <button type="button" class="cf-count" data-cf-jump="done">Finis <b id="cf-n-done">0</b></button>
+      </div>
+      <button type="button" class="btn btn-primary" id="coffee-new"><svg class="ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg><span>Ajouter un café</span></button>
+    </div>
+  </div>
+  <div class="card cf-forms">
+    <form id="form-coffee" class="form-coffee" hidden>
+      <h3 id="form-coffee-title">Nouveau café</h3>
+      <div class="grid-numbers">
+        <div class="field field-double"><label for="c-name">Nom</label><input type="text" id="c-name" enterkeyhint="next" required></div>
+        <div class="field"><label for="c-roaster">Torréfacteur</label><input type="text" id="c-roaster" enterkeyhint="next"></div>
+        <div class="field"><label for="c-origin">Origine</label><input type="text" id="c-origin" enterkeyhint="next"></div>
+        <div class="field"><label for="c-species">Espèce</label><input type="text" id="c-species" enterkeyhint="next" list="list-species"></div>
+        <div class="field"><label for="c-process">Procédé</label><input type="text" id="c-process" enterkeyhint="next" list="list-processes"></div>
+        <div class="field"><label for="c-roasting">Torréfaction</label>
+          <select id="c-roasting"><option value="">Choisir</option><option value="Claire">Claire</option><option value="Medium">Medium</option><option value="Foncée">Foncée</option></select>
+        </div>
+        <div class="field"><label for="c-format">Format (g)</label><input type="number" id="c-format" enterkeyhint="next" min="0" step="1"></div>
+        <div class="field"><label for="c-price">Prix (VND)</label><input type="number" id="c-price" enterkeyhint="next" min="0" step="1"></div>
+        <div class="field"><label for="c-date-roast">Date de torréfaction</label><input type="date" id="c-date-roast"></div>
+        <div class="field"><label for="c-machine">Machine recommandée</label>
+          <select id="c-machine"><option value="">Choisir</option><option value="Brikka">Brikka</option><option value="Switch">Switch</option><option value="Les deux">Les deux</option></select>
+        </div>
+        <div class="field"><label for="c-recipe">Recette recommandée</label><select id="c-recipe"><option value=""></option></select></div>
+        <div class="field field-double"><label for="c-notes">Notes annoncées</label><input type="text" id="c-notes" enterkeyhint="done"></div>
+        <div class="field">
+          <label for="c-pct">Pourcentage de café réel</label>
+          <input type="number" id="c-pct" enterkeyhint="next" min="1" max="100" step="1" value="100">
+          <span class="field-hint">Vérifie la ligne thành phần au dos du paquet.</span>
+        </div>
+        <div class="field field-double"><label class="label-inline"><input type="checkbox" id="c-ground"> Déjà moulu (mouture par défaut du paquet)</label></div>
+        <div class="field"><label class="label-inline"><input type="checkbox" id="c-on" checked> Actif</label></div>
+      </div>
+      <div class="entry-actions">
+        <button type="submit" class="btn btn-primary">Enregistrer le café</button>
+        <button type="button" class="btn btn-subtle" id="coffee-cancel">Annuler</button>
+      </div>
+    </form>
+    <form id="form-bag" class="form-coffee" hidden>
+      <h3 id="form-bag-title">Nouveau sachet</h3>
+      <p class="modal-note">Enregistre un rachat : le stock repart du format plein et la fraîcheur suit la nouvelle date de torréfaction.</p>
+      <div class="grid-numbers">
+        <div class="field"><label for="s-date">Date d'achat</label><input type="date" id="s-date" required></div>
+        <div class="field"><label for="s-format">Format (g)</label><input type="number" id="s-format" enterkeyhint="next" min="1" step="1" required></div>
+        <div class="field"><label for="s-price">Prix (VND)</label><input type="number" id="s-price" enterkeyhint="next" min="0" step="1"></div>
+        <div class="field"><label for="s-opening">Date d'ouverture</label><input type="date" id="s-opening"><span class="field-hint">Le jour où tu as ouvert le sachet. Laisse vide tant qu'il dort.</span></div>
+        <div class="field"><label for="s-roast">Date de torréfaction</label><input type="date" id="s-roast"></div>
+      </div>
+      <div class="entry-actions">
+        <button type="submit" class="btn btn-primary">Enregistrer le sachet</button>
+        <button type="button" class="btn btn-subtle" id="bag-cancel">Annuler</button>
+      </div>
+    </form>
+    <datalist id="list-species">
+      <option value="Arabica"></option><option value="Robusta"></option><option value="Fine Robusta"></option>
+      <option value="Liberica"></option><option value="Excelsa"></option><option value="Blend arabica et robusta"></option>
+    </datalist>
+    <datalist id="list-processes">
+      <option value="Lavé"></option><option value="Honey"></option><option value="Natural"></option>
+      <option value="Anaerobic natural"></option><option value="Carbonic maceration"></option><option value="Mosto"></option>
+      <option value="Wet hulled"></option><option value="Rang bơ"></option><option value="Rang mộc"></option><option value="Classique"></option>
+    </datalist>
+  </div>
+  <div id="coffees-list" class="cf-shelves"></div>
 </section>
 
 <!-- ================= SCREEN: MY SETTINGS ================= -->
@@ -1601,70 +1690,6 @@ Cảm ơn shop.</pre>
   <button class="btn btn-subtle modal-close" data-closes="modal-data">Fermer</button>
 </dialog>
 
-<!-- ================= COFFEES MODAL ================= -->
-<dialog id="modal-coffees" aria-labelledby="modal-coffees-title" class="modal modal-large">
-  <h2 id="modal-coffees-title">Mes cafés</h2>
-  <div class="coffees-list" id="coffees-list"></div>
-  <button class="btn btn-primary" id="coffee-new">Ajouter un café</button>
-  <form id="form-coffee" class="form-coffee" hidden>
-    <h3 id="form-coffee-title">Nouveau café</h3>
-    <div class="grid-numbers">
-      <div class="field field-double"><label for="c-name">Nom</label><input type="text" id="c-name" enterkeyhint="next" required></div>
-      <div class="field"><label for="c-roaster">Torréfacteur</label><input type="text" id="c-roaster" enterkeyhint="next"></div>
-      <div class="field"><label for="c-origin">Origine</label><input type="text" id="c-origin" enterkeyhint="next"></div>
-      <div class="field"><label for="c-species">Espèce</label><input type="text" id="c-species" enterkeyhint="next" list="list-species"></div>
-      <div class="field"><label for="c-process">Procédé</label><input type="text" id="c-process" enterkeyhint="next" list="list-processes"></div>
-      <div class="field"><label for="c-roasting">Torréfaction</label>
-        <select id="c-roasting"><option value="">Choisir</option><option value="Claire">Claire</option><option value="Medium">Medium</option><option value="Foncée">Foncée</option></select>
-      </div>
-      <div class="field"><label for="c-format">Format (g)</label><input type="number" id="c-format" enterkeyhint="next" min="0" step="1"></div>
-      <div class="field"><label for="c-price">Prix (VND)</label><input type="number" id="c-price" enterkeyhint="next" min="0" step="1"></div>
-      <div class="field"><label for="c-date-roast">Date de torréfaction</label><input type="date" id="c-date-roast"></div>
-      <div class="field"><label for="c-machine">Machine recommandée</label>
-        <select id="c-machine"><option value="">Choisir</option><option value="Brikka">Brikka</option><option value="Switch">Switch</option><option value="Les deux">Les deux</option></select>
-      </div>
-      <div class="field"><label for="c-recipe">Recette recommandée</label><select id="c-recipe"><option value=""></option></select></div>
-      <div class="field field-double"><label for="c-notes">Notes annoncées</label><input type="text" id="c-notes" enterkeyhint="done"></div>
-      <div class="field">
-        <label for="c-pct">Pourcentage de café réel</label>
-        <input type="number" id="c-pct" enterkeyhint="next" min="1" max="100" step="1" value="100">
-        <span class="field-hint">Vérifie la ligne thành phần au dos du paquet.</span>
-      </div>
-      <div class="field field-double"><label class="label-inline"><input type="checkbox" id="c-ground"> Déjà moulu (mouture par défaut du paquet)</label></div>
-      <div class="field"><label class="label-inline"><input type="checkbox" id="c-on" checked> Actif</label></div>
-    </div>
-    <div class="entry-actions">
-      <button type="submit" class="btn btn-primary">Enregistrer le café</button>
-      <button type="button" class="btn btn-subtle" id="coffee-cancel">Annuler</button>
-    </div>
-  </form>
-  <form id="form-bag" class="form-coffee" hidden>
-    <h3 id="form-bag-title">Nouveau sachet</h3>
-    <p class="modal-note">Enregistre un rachat : le stock repart du format plein et la fraîcheur suit la nouvelle date de torréfaction.</p>
-    <div class="grid-numbers">
-      <div class="field"><label for="s-date">Date d'achat</label><input type="date" id="s-date" required></div>
-      <div class="field"><label for="s-format">Format (g)</label><input type="number" id="s-format" enterkeyhint="next" min="1" step="1" required></div>
-      <div class="field"><label for="s-price">Prix (VND)</label><input type="number" id="s-price" enterkeyhint="next" min="0" step="1"></div>
-      <div class="field"><label for="s-opening">Date d'ouverture</label><input type="date" id="s-opening"><span class="field-hint">Le jour où tu as ouvert le sachet. Laisse vide tant qu'il dort.</span></div>
-      <div class="field"><label for="s-roast">Date de torréfaction</label><input type="date" id="s-roast"></div>
-    </div>
-    <div class="entry-actions">
-      <button type="submit" class="btn btn-primary">Enregistrer le sachet</button>
-      <button type="button" class="btn btn-subtle" id="bag-cancel">Annuler</button>
-    </div>
-  </form>
-  <datalist id="list-species">
-    <option value="Arabica"></option><option value="Robusta"></option><option value="Fine Robusta"></option>
-    <option value="Liberica"></option><option value="Excelsa"></option><option value="Blend arabica et robusta"></option>
-  </datalist>
-  <datalist id="list-processes">
-    <option value="Lavé"></option><option value="Honey"></option><option value="Natural"></option>
-    <option value="Anaerobic natural"></option><option value="Carbonic maceration"></option><option value="Mosto"></option>
-    <option value="Wet hulled"></option><option value="Rang bơ"></option><option value="Rang mộc"></option><option value="Classique"></option>
-  </datalist>
-  <button class="btn btn-subtle modal-close" data-closes="modal-coffees">Fermer</button>
-</dialog>
-
 <!-- ================= RECIPES MODAL ================= -->
 
 
@@ -1953,57 +1978,62 @@ Cảm ơn shop.</pre>
 <!-- ALL defer, and definitely not async: defer preserves order, async does not,
      and data.js would blow up looking for SYNC or GRIND. The download now
      runs in parallel with HTML parsing instead of blocking it. -->
-<script defer src="js/legacy-names.js?v=9.17"></script>
-<script defer src="js/tools.js?v=9.17"></script>
-<script defer src="js/i18n.fr.js?v=9.17"></script>
-<script defer src="js/i18n.js?v=9.17"></script>
-<script defer src="js/grind.js?v=9.17"></script>
-<script defer src="js/recipes.js?v=9.17"></script>
+<script defer src="js/legacy-names.js?v=9.18"></script>
+<script defer src="js/tools.js?v=9.18"></script>
+<script defer src="js/i18n.fr.js?v=9.18"></script>
+<script defer src="js/i18n.js?v=9.18"></script>
+<script defer src="js/grind.js?v=9.18"></script>
+<script defer src="js/recipes.js?v=9.18"></script>
 <!-- sync.js BEFORE data.js: data.js uses it at load time. -->
-<script defer src="js/sync.js?v=9.17"></script>
-<script defer src="js/data-csv.js?v=9.17"></script>
-<script defer src="js/data-schema.js?v=9.17"></script>
-<script defer src="js/data-store.js?v=9.17"></script>
-<script defer src="js/data-calcs.js?v=9.17"></script>
-<script defer src="js/data-migrations.js?v=9.17"></script>
-<script defer src="js/data.js?v=9.17"></script>
-<script defer src="js/tuning.js?v=9.17"></script>
-<script defer src="js/search.js?v=9.17"></script>
-<script defer src="js/charts.js?v=9.17"></script>
-<script defer src="js/ui-core.js?v=9.17"></script>
-<script defer src="js/ui-sync-bean.js?v=9.17"></script>
-<script defer src="js/ui-nav.js?v=9.17"></script>
-<script defer src="js/ui-scrub.js?v=9.17"></script>
-<script defer src="js/ui-findings.js?v=9.17"></script>
-<script defer src="js/ui-last-cup.js?v=9.17"></script>
-<script defer src="js/ui-dashboard.js?v=9.17"></script>
-<script defer src="js/ui-cup.js?v=9.17"></script>
-<script defer src="js/ui-dial.js?v=9.17"></script>
-<script defer src="js/ui-rating-dial.js?v=9.17"></script>
-<script defer src="js/ui-wheel.js?v=9.17"></script>
-<script defer src="js/ui-entry.js?v=9.17"></script>
-<script defer src="js/ui-entry-aside.js?v=9.17"></script>
-<script defer src="js/ui-pills.js?v=9.17"></script>
-<script defer src="js/ui-chrono.js?v=9.17"></script>
-<script defer src="js/ui-draft.js?v=9.17"></script>
-<script defer src="js/ui-quick.js?v=9.17"></script>
-<script defer src="js/ui-history.js?v=9.17"></script>
-<script defer src="js/ui-journal.js?v=9.17"></script>
-<script defer src="js/ui-guide.js?v=9.17"></script>
-<script defer src="js/ui-catalog.js?v=9.17"></script>
-<script defer src="js/ui-coffee-sheet.js?v=9.17"></script>
-<script defer src="js/ui-brew.js?v=9.17"></script>
-<script defer src="js/ui-drawings.js?v=9.17"></script>
+<script defer src="js/sync.js?v=9.18"></script>
+<script defer src="js/data-csv.js?v=9.18"></script>
+<script defer src="js/data-schema.js?v=9.18"></script>
+<script defer src="js/data-store.js?v=9.18"></script>
+<script defer src="js/data-calcs.js?v=9.18"></script>
+<script defer src="js/data-migrations.js?v=9.18"></script>
+<script defer src="js/data.js?v=9.18"></script>
+<script defer src="js/tuning.js?v=9.18"></script>
+<!-- v9.18: the bags without the DOM (shelf rows, the next cup), read by the screens below. -->
+<script defer src="js/bags.js?v=9.18"></script>
+<script defer src="js/search.js?v=9.18"></script>
+<script defer src="js/charts.js?v=9.18"></script>
+<script defer src="js/ui-core.js?v=9.18"></script>
+<script defer src="js/ui-sync-bean.js?v=9.18"></script>
+<script defer src="js/ui-nav.js?v=9.18"></script>
+<script defer src="js/ui-scrub.js?v=9.18"></script>
+<script defer src="js/ui-findings.js?v=9.18"></script>
+<script defer src="js/ui-last-cup.js?v=9.18"></script>
+<script defer src="js/ui-dashboard.js?v=9.18"></script>
+<script defer src="js/ui-cup.js?v=9.18"></script>
+<script defer src="js/ui-dial.js?v=9.18"></script>
+<script defer src="js/ui-rating-dial.js?v=9.18"></script>
+<script defer src="js/ui-wheel.js?v=9.18"></script>
+<script defer src="js/ui-entry.js?v=9.18"></script>
+<script defer src="js/ui-entry-aside.js?v=9.18"></script>
+<script defer src="js/ui-pills.js?v=9.18"></script>
+<script defer src="js/ui-chrono.js?v=9.18"></script>
+<script defer src="js/ui-draft.js?v=9.18"></script>
+<script defer src="js/ui-quick.js?v=9.18"></script>
+<script defer src="js/ui-history.js?v=9.18"></script>
+<script defer src="js/ui-journal.js?v=9.18"></script>
+<script defer src="js/ui-guide.js?v=9.18"></script>
+<script defer src="js/ui-catalog.js?v=9.18"></script>
+<script defer src="js/ui-coffee-sheet.js?v=9.18"></script>
+<script defer src="js/ui-brew.js?v=9.18"></script>
+<script defer src="js/ui-drawings.js?v=9.18"></script>
 <!-- v9.13: the jar to the gram, the moments that move, the empty places. -->
-<script defer src="js/ui-jar.js?v=9.17"></script>
-<script defer src="js/ui-moments.js?v=9.17"></script>
-<script defer src="js/ui-roll.js?v=9.17"></script>
-<script defer src="js/ui-brewer.js?v=9.17"></script>
-<script defer src="js/ui-arrivals.js?v=9.17"></script>
-<script defer src="js/ui-empty.js?v=9.17"></script>
-<script defer src="js/ui-panel.js?v=9.17"></script>
-<script defer src="js/ui-palette.js?v=9.17"></script>
-<script defer src="js/ui-shortcuts.js?v=9.17"></script>
-<script defer src="js/app.js?v=9.17"></script>
+<script defer src="js/ui-jar.js?v=9.18"></script>
+<script defer src="js/ui-moments.js?v=9.18"></script>
+<script defer src="js/ui-roll.js?v=9.18"></script>
+<script defer src="js/ui-brewer.js?v=9.18"></script>
+<script defer src="js/ui-arrivals.js?v=9.18"></script>
+<script defer src="js/ui-empty.js?v=9.18"></script>
+<!-- v9.18: Mes cafés as a page with its shelf and the entry jars (O2), the end of a bag (Q9). -->
+<script defer src="js/ui-coffees.js?v=9.18"></script>
+<script defer src="js/ui-bag-end.js?v=9.18"></script>
+<script defer src="js/ui-panel.js?v=9.18"></script>
+<script defer src="js/ui-palette.js?v=9.18"></script>
+<script defer src="js/ui-shortcuts.js?v=9.18"></script>
+<script defer src="js/app.js?v=9.18"></script>
 </body>
 </html>

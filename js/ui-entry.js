@@ -76,6 +76,8 @@
       selectableCoffees().map(c => '<option value="' + titleAttr(c.id) + '">' + titleAttr(c.name) + "</option>").join("") +
       (keptInactive ? '<option value="' + titleAttr(keptInactive.id) + '">' + titleAttr(keptInactive.name) + " " + I18N.t("inactive_suffix") + "</option>" : "");
     if (value) sel.value = value;
+    // O2 (v9.18): the open bags as jars above the menu, which they drive and follow (js/ui-coffees.js).
+    UI.renderCoffeeJars();
   }
 
   function fillRecipeSelect() {
@@ -726,6 +728,8 @@
   }
 
   function loadExtractionIntoEntry(ext, isDuplicate) {
+    // What the dial showed before a prefill: it turns from there (v9.18).
+    const grindBefore = $("#f-grind").value;
     fillCoffeeSelect(ext.coffee_id);
     entry.editId = isDuplicate ? null : ext.id;
     $("#f-date").value = isDuplicate ? localNow() : ext.date_time;
@@ -776,6 +780,12 @@
     // The second argument tells the Entry screen that this switch IS the opening
     // of an edit, so it must not abandon it on arrival.
     activateScreen("entry", true);
+    /* A PREFILL TURNS THE DIAL (v9.18): « Refaire », the reprise of a new bag,
+       the winning setting of Ctrl K or of Mes réglages, the next cup of a
+       coffee all come through here. The grinder dial turns notch by notch
+       from what it showed to the new setting, and the field glows. An edit
+       opens as it is. */
+    if (isDuplicate) UI.turnGrindDial(grindBefore);
   }
 
   /* REMAKING A CUP means taking its SETTINGS, not its result (v8.41).
@@ -943,7 +953,8 @@
       if (document.visibilityState === "hidden") UI.saveDraft();
     });
     $("#btn-cancel-editing").addEventListener("click", () => { resetEntry(); activateScreen("history"); });
-    $("#btn-manage-coffees").addEventListener("click", () => UI.openCoffeesModal());
+    // « Mes cafés » is a page since v9.18.
+    $("#btn-manage-coffees").addEventListener("click", () => UI.openCoffeesPage());
     $("#volume-estimate").addEventListener("click", () => {
       const v = $("#volume-estimate").dataset.value;
       if (v !== undefined) { $("#f-volume").value = v; updateLive(); }

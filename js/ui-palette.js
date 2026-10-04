@@ -47,6 +47,7 @@
     ["dashboard", "G A", "accueil tableau de bord dashboard home"],
     ["history", "G H", "historique par date history log"],
     ["journal", "G J", "journal par sachet bag"],
+    ["coffees", "G C", "mes cafes sachets bocaux stock etagere racheter coffees bags jars shelf"],
     ["tuning", "G T", "mes reglages gagnants meilleurs tuning best settings"],
     ["guide", "G G", "guide recettes vocabulaire recipes"],
     ["settings", "G P", "parametres reglages settings preferences"],

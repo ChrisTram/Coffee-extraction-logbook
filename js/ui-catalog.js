@@ -1,6 +1,9 @@
-/* The management modals: coffees, bags, recipes, and the Settings screen.
+/* The management forms: coffees, bags, recipes, and the Settings screen.
  *
- * They share one rule: each modal owns ITS editing state and does not
+ * Since v9.18 the coffee and bag forms live in the « Mes cafés » page
+ * (js/ui-coffees.js draws its shelf), the recipes keep their window.
+ *
+ * They share one rule: each form owns ITS editing state and does not
  * publish it. The wiring says "restore the current recipe", it does not read
  * the id to hand it back to the data layer. */
 "use strict";
@@ -9,20 +12,12 @@
 
   // Borrowed from the core, loaded before us.
   const { $, $$, titleAttr, toggleFailed, askConfirm, saveFallbacks, analyzableExts, extsWithCalcs,
-    fmtShortDate, fmtDecimal, fmtVND, includeFailed, localNow, average, recipesForMethod,
+    fmtDecimal, fmtVND, includeFailed, localNow, recipesForMethod,
     fallbacks, toast } = UI;
 
   // ---------- Coffee management ----------
 
   let editingCoffeeId = null;
-
-  function openCoffeesModal() {
-    renderCoffeeList();
-    $("#form-coffee").hidden = true;
-    $("#form-bag").hidden = true;
-    const m = $("#modal-coffees");
-    if (!m.open) m.showModal();
-  }
 
   /* Cost of a cup of this coffee, at the given dose. Silent if the price or
      the bag size is missing: an invented cost would be worse than no cost.
@@ -41,80 +36,6 @@
     return base + " " + I18N.t("cost_real", { v: fmtVND(perGram / (pct / 100) * dose) });
   }
 
-  function renderCoffeeList() {
-    // Active ones first (original order kept), deactivated always at the end
-    // of the list. Each coffee carries an average score badge (over its
-    // rated brews) and the date it was added to the system.
-    /* M6 (v9.13): an empty list says what to do, and the button does it. */
-    if (!DATA.state.coffees.length) {
-      $("#coffees-list").innerHTML = UI.emptyHint({ drawing: "jar", title: I18N.t("coffees_empty_title"),
-        text: I18N.t("coffees_empty_text"), action: I18N.t("coffees_empty_go"), go: "coffee-new", wide: true });
-      return;
-    }
-    const sorted = [...DATA.state.coffees].sort((a, b) => (a.active === 0 ? 1 : 0) - (b.active === 0 ? 1 : 0));
-    $("#coffees-list").innerHTML = sorted.map(c => {
-      const notes = DATA.state.extractions
-        .filter(e => e.coffee_id === c.id && e.score_10 !== "")
-        .map(e => Number(e.score_10));
-      const scoreBadge = notes.length
-        ? ' <span class="badge-rating" title="' + I18N.t("count_brews", { n: notes.length }) + '">★ ' +
-          fmtDecimal(average(notes), 1) + "</span>"
-        : "";
-      // Stock of the current bag. A missing dose counts as the default dose,
-      // otherwise a forgotten entry would make the bag look untouched.
-      const stock = DATA.bagStock(c.id, fallbacks.dose);
-      let stockBadge = "";
-      // Dose used for the cost, the same as for the cups left.
-      let cupCost = fallbacks.dose;
-      if (stock) {
-        /* What is left is counted with this coffee's AVERAGE dose, not the
-           fallback dose: Chris doses 16 g on the G4 and 14 on another, a single
-           figure would overestimate the cups left by almost 10 %. Falls back
-           on the default dose while the coffee has no brew. */
-        const doses = DATA.state.extractions
-          .filter(e => e.coffee_id === c.id && Number(e.dose_g) > 0)
-          .map(e => Number(e.dose_g));
-        const typicalDose = doses.length ? average(doses) : fallbacks.dose;
-        cupCost = typicalDose;
-        const cupsLeft = Math.max(0, Math.floor(stock.remaining / typicalDose));
-        const level = stock.remaining <= 0 ? "empty" : cupsLeft <= 3 ? "low" : "ok";
-        const label = stock.remaining <= 0
-          ? I18N.t("stock_empty")
-          : I18N.t("stock_left", { g: fmtDecimal(stock.remaining, 0), n: cupsLeft });
-        stockBadge = ' <span class="badge-stock badge-stock-' + level + '" title="' +
-          I18N.t("stock_title", {
-            f: stock.format,
-            c: fmtDecimal(stock.consumed, 0),
-            r: fmtDecimal(Math.max(0, stock.remaining), 0),
-            d: fmtDecimal(typicalDose, 1),
-            src: I18N.t(doses.length ? "stock_dose_average" : "stock_dose_fallback"),
-          }) + '">' + label + "</span>";
-      }
-      return '<div class="coffee-row' + (c.active === 0 ? " inactive" : "") +
-      (stock && stock.remaining <= 0 ? " depleted" : "") + '">' +
-      "<div><b>" + c.name + "</b>" + scoreBadge + stockBadge +
-      (Number(c.real_coffee_pct) < 100 ? ' <span class="badge-nonpure">' + c.real_coffee_pct + " % " + I18N.t("percent_coffee") + "</span>" : "") +
-      ((c.tag || "").includes("référence") ? ' <span class="badge-reference">' + I18N.t("badge_benchmark") + "</span>" : "") +
-      "<div class=\"coffee-meta\">" +
-      [c.roaster, c.species, c.process,
-        c.recommended_method ? I18N.t("list_machine", { m: I18N.machine(c.recommended_method) }) : "",
-        c.price_vnd ? fmtVND(c.price_vnd) + " / " + c.bag_size_g + " g" : "",
-        /* Cost of ONE cup, at this coffee's average dose. It is the only price
-           figure that compares from one bag to another: the bag price depends
-           on the size, the price per gram says nothing until you know how
-           much you use. */
-        costPerCup(c, cupCost),
-        c.added_date ? I18N.t("list_added", { d: fmtShortDate(c.added_date) }) : ""].filter(Boolean).join(" · ") +
-      "</div></div>" +
-      '<span class="coffee-meta">' + (c.active === 0 ? I18N.t("list_inactive") : "") + "</span>" +
-      '<button class="btn btn-small" data-sheet="' + c.id + '">' + I18N.t("sheet_view") + "</button>" +
-      '<button class="btn btn-small" data-coffee-bag="' + c.id + '">' + I18N.t("btn_new_bag") + "</button>" +
-      '<button class="btn btn-small" data-coffee-edit="' + c.id + '">' + I18N.t("btn_edit") + "</button></div>";
-    }).join("");
-    $$("[data-coffee-edit]").forEach(b => b.addEventListener("click", () => openCoffeeForm(b.dataset.coffeeEdit)));
-    $$("[data-coffee-bag]").forEach(b => b.addEventListener("click", () => openBagForm(b.dataset.coffeeBag)));
-  }
-
   // ---------- New bag ----------
   // Saving a repurchase resets the stock counter AND gives the coffee an
   // up-to-date roast date. That second effect fixes a real lie of the old
@@ -125,6 +46,8 @@
   function openBagForm(coffeeId) {
     const c = DATA.state.coffees.find(x => x.id === coffeeId);
     if (!c) return;
+    // The form lives in « Mes cafés » (v9.18): from anywhere else, the page comes first.
+    UI.showCoffeesPage();
     bagCoffeeId = coffeeId;
     $("#form-bag-title").textContent = I18N.t("bag_title", { n: c.name });
     $("#s-date").value = localNow().slice(0, 10);
@@ -134,8 +57,9 @@
     // clear the field if the bag goes into the cupboard.
     $("#s-opening").value = localNow().slice(0, 10);
     $("#s-roast").value = "";
+    $("#form-coffee").hidden = true;
     $("#form-bag").hidden = false;
-    $("#s-date").focus();
+    UI.revealCoffeeForm($("#form-bag"), $("#s-date"));
   }
 
   // Closing the form also means forgetting the target coffee: the two already
@@ -158,11 +82,12 @@
     });
     $("#form-bag").hidden = true;
     bagCoffeeId = null;
-    renderCoffeeList();
+    UI.renderCoffeeList();
     toast(I18N.t("toast_bag"));
   }
 
   function openCoffeeForm(id) {
+    UI.showCoffeesPage();
     editingCoffeeId = id || null;
     const c = id ? DATA.state.coffees.find(x => x.id === id) : null;
     $("#form-coffee-title").textContent = c ? I18N.t("form_edit", { n: c.name }) : I18N.t("form_new_coffee");
@@ -181,8 +106,9 @@
     $("#c-pct").value = c ? (c.real_coffee_pct === "" || c.real_coffee_pct === undefined ? 100 : c.real_coffee_pct) : 100;
     $("#c-ground").checked = c ? Number(c.pre_ground) === 1 : false;
     $("#c-on").checked = c ? c.active !== 0 : true;
+    $("#form-bag").hidden = true;
     $("#form-coffee").hidden = false;
-    $("#c-name").focus();
+    UI.revealCoffeeForm($("#form-coffee"), $("#c-name"));
   }
 
   async function saveCoffee(ev) {
@@ -209,7 +135,7 @@
     if (editingCoffeeId) await DATA.editCoffee(editingCoffeeId, coffee);
     else await DATA.addCoffee(coffee);
     $("#form-coffee").hidden = true;
-    renderCoffeeList();
+    UI.renderCoffeeList();
     UI.fillCoffeeSelect();
     UI.fillFilters();
     toast(I18N.t("toast_coffee"));
@@ -511,8 +437,9 @@
   }
 
   // Made available to the other screens.
-  /* Wiring of the coffee, bag and recipe modals and of the Settings screen.
-     Called once by app.js. */
+  /* Wiring of the coffee and bag forms, the recipe window and the Settings
+     screen. Called once by app.js; it wires « Mes cafés » too (v9.18,
+     js/ui-coffees.js), app.js being at its line cap. */
   function wireCatalog() {
     /* The two header shortcuts disappeared along with the header (Comptoir
        redesign, step 2). The modals stay reachable where they are needed:
@@ -525,6 +452,7 @@
     $("#form-coffee").addEventListener("submit", saveCoffee);
     $("#form-bag").addEventListener("submit", saveBag);
     $("#bag-cancel").addEventListener("click", closeBagForm);
+    UI.wireCoffees();
 
     // Recipes: form
     $("#recipe-new").addEventListener("click", () => openRecipeForm(null));
@@ -557,8 +485,8 @@
     wireCatalog, costPerCup, saveCoffee, saveParameters, saveRecipe,
     updateFailed,
     saveBag, closeBagForm, readRecipeForm, updateDialDetail, openCoffeeForm,
-    openRecipeForm, openBagForm, openCoffeesModal, openRecipesModal,
-    renderCoffeeList, renderRecipeList, renderParameters, openSettingsSection,
+    openRecipeForm, openBagForm, openRecipesModal,
+    renderRecipeList, renderParameters, openSettingsSection,
     restoreCurrentRecipe, deleteCurrentRecipe,
   });
 })();

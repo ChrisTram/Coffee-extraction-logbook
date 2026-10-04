@@ -21,7 +21,7 @@
   const { $, nav, LONG_PRESS_MS } = UI;
 
   // The tab standing for each screen. The sheet's screens are under "Plus".
-  const BAR_TABS = { dashboard: "dashboard", history: "history", entry: "entry", guide: "guide", tuning: "plus", settings: "plus" };
+  const BAR_TABS = { dashboard: "dashboard", history: "history", entry: "entry", guide: "guide", coffees: "plus", tuning: "plus", settings: "plus" };
   const tabOf = screen => {
     const key = BAR_TABS[screen];
     if (!key) return null;
