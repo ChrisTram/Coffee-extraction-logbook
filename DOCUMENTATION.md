@@ -214,6 +214,8 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/ui-drawings.js` | les dessins en SVG maison (v8.49) : étagère, horloge, spectre, carte du moulin |
 | `js/ui-jar.js` | le bocal au gramme près (v9.13, Q8) : son dessin, et son mouvement quand les grammes changent |
 | `js/ui-moments.js` | l'arrivée du matin (v9.13, Q7) et le record qui brille (J6) |
+| `js/milestones.js` | les séries et les paliers (v9.23, R9), calcul pur : série en cours et meilleure, paliers atteints, ce qu'un enregistrement franchit. Global `MILESTONES`, testé par `tools/moments.test.mjs` |
+| `js/ui-celebrate.js` | la vapeur d'une tasse encore chaude (v9.23, R4), la série sur la ligne de la semaine, la gerbe de grains après « Enregistrer », la tuile « Séries et paliers » d'Analyses (R9) |
 | `js/ui-empty.js` | les écrans vides qui disent quoi faire (v9.13, M6) : dessin, phrase, bouton |
 | `js/ui-roll.js` | la valeur qui roule (v9.17) : un texte, ou une copie du texte d'un champ au dessus de lui |
 | `js/ui-brewer.js` | la cafetière qui change de forme (v9.17, Q12) : la Brikka fond en Switch, les champs roulent |
@@ -228,6 +230,7 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `css/journal.css` | les styles du journal v9.20 (table, page de comparaison, scènes), chargée après `extras.css` |
 | `css/home.css` | la navigation N1, l'accueil L1, la page Analyses O1, l'histoire du mois O6 (v9.21), chargée après `journal.css` |
 | `css/gestures.css` | tirer pour synchroniser et la dictée (v9.22), chargée après `home.css` |
+| `css/moments.css` | la vapeur, la série, la phrase du palier et sa gerbe, la tuile des paliers (v9.23), chargée en dernier, après `gestures.css` |
 | `css/fonts/` | les deux polices de la DA, embarquées en woff2, sous OFL (section 10) |
 | `sw.js`, `manifest.json`, `icons/` | PWA et hors ligne (section 10) |
 | `worker/index.js`, `worker/sync.js` | porte d'entrée et fusion D1, Cloudflare seulement (section 13) |
@@ -868,7 +871,10 @@ de `.home` : une boîte de conteneur devient le cadre des `position: fixed`.
   téléphone, le rang, le pied et le commentaire attendent un écran plus large.
   En descendant, quand `.lc-head` passe sous le bord, `#home-band` prend
   `.shown` : nom et note y glissent depuis la carte (`updateBand`, sur le
-  défilement, un rAF). Le toucher remonte en haut.
+  défilement, un rAF). Le toucher remonte en haut. Le bandeau est placé par ses
+  deux bords (`left` et `right` d'après `main`, `placeBand`), jamais par une
+  largeur : pendant l'arrivée d'un écran, sa transformation fait de l'écran le
+  bloc conteneur du bandeau fixe (v9.23).
 - **La semaine** : `UI.weekSummary` (lundi à dimanche, tasses, moyenne des
   notées, meilleure, jours à venir) ; ses barres poussent à l'arrivée du matin
   (Q7) et ses chiffres roulent à l'arrivée d'une tasse de l'autre appareil (Q13).
@@ -886,6 +892,19 @@ de `.home` : une boîte de conteneur devient le cadre des `position: fixed`.
   `setting_prefilled`). Masqué pour le jour : localStorage `brew-hint-hidden`.
 - **L'arrivée** : quand `#screen-dashboard` reprend `on` (un MutationObserver),
   `.home-enter` fait monter les blocs l'un après l'autre.
+- **La vapeur** (R4, v9.23, js/ui-celebrate.js) : pendant 15 minutes après le
+  `date_time` de la dernière tasse (`UI.steamState`, une minute d'avance tolérée),
+  quatre volutes `.lc-steam` montent de sa note (centrées sur le chiffre mesuré,
+  `--steam-cx`), avec « encore chaude » (`.lc-warm`, après le surtitre sur une carte
+  large, sous la note sur une étroite) ; le bandeau en a trois plus petites à côté de
+  sa note. Chaque volute s'éclaircit sur sa propre horloge (`--life`, départ
+  négatif `--age`). `UI.renderMoments`, appelé à la fin de `renderHome`, les pose
+  sans les recréer ; une seule minuterie les retire ; page cachée, `html.steam-still`
+  les arrête, au retour elles repartent de l'âge réel.
+- **La série** (R9) : `MILESTONES.streaks` (jusqu'à hier tant qu'aujourd'hui n'a pas
+  de tasse), « 6 jours d'affilée » et sa tasse à flamme (`.hw-streak`, `.pending` et
+  éteinte avant la tasse du jour), sous les chiffres de `#home-week` et après « Ta
+  semaine » sur `#home-week-line` ; rien sous deux jours.
 
 LA PAGE ANALYSES (O1, v9.21, `#screen-analytics`, `#analytics`). Construite par
 `UI.renderAnalytics`, que `renderCurrentScreen` n'appelle que si elle est
@@ -904,6 +923,12 @@ largeur à sa place (`toggleTile`, FLIP : la grille `dense` se recompose, chaque
 tuile repart de son ancien rectangle, le contenu contre-mis à l'échelle et
 rogné pendant le vol) ; Échap la referme. Le récap de la semaine passée
 (`#card-recap`) et les dessins (`#card-drawings`) y vivent depuis la v9.21.
+SÉRIES ET PALIERS (R9, v9.23, `data-tile="milestones"`, `#tile-milestones`, toute
+la largeur, sa propre fenêtre) : la série en cours et la meilleure avec ses dates, les
+paliers de `MILESTONES.compute` sur une ligne (en colonne sur une page étroite), les
+quatre derniers fermée, tous ouverte, chacun ouvre sa tasse (`data-cup`, la bulle des
+dessins), et le prochain palier de tasses (`UI.renderMilestoneTile`, appelé par
+`renderAnalytics`).
 
 TON MOIS EN CAFÉ (O6, v9.21, js/ui-story.js). `UI.monthStory(exts, analyzable,
 "AAAA-MM")` : tasses, par machine, jours, moyenne, café du mois (le plus bu),
@@ -1281,6 +1306,17 @@ qu'avant.
   de ce café sur cette recette avec l'effectif (tasses analysables), écart de cette
   tasse, grammes restants (`DATA.bagStock`). Aucun pourcentage de remplissage, à la
   demande de Chris. Pas de carte à la modification d'une tasse.
+  Les deux enregistrements passent par `UI.showSavedCup` (js/ui-celebrate.js, v9.23) :
+  une tasse qui franchit un palier (`MILESTONES.forSave` : 10e, 50e, 100e, 250e, 500e,
+  1000e tasse ; 5e, 10e, 25e café différent ; premier 9 ; premier 10 ; série record dès
+  7 jours ; nouvelle recette) garde la carte 1,9 s de plus (`showCupCard(ext, { hold })`),
+  y ajoute une phrase `.cc-milestone` (« 100e tasse ! », deux choses au plus, le record
+  du sachet de J6 s'il tombe avec) et, quand la note se pose (`cc-stamped`), une gerbe
+  de grains sur un canevas `.bean-burst` (1,25 s, gravité, cuivre de `--accent` et
+  bruns, jamais avec moins d'animations ni page cachée). Une fois par appareil :
+  localStorage `milestones-seen` ; à la première lecture, tout ce qui est atteint est
+  vu. Une synchro ou un import ne fêtent rien : seul un enregistrement compare avant et
+  après lui-même.
 - **Le cadran du moulin** (Q4 et M2, js/ui-dial.js) : 50 crans par tour, chiffres
   0 à 9, aiguille à ressort, trois pastilles pour les tours. Boutons − et + d'un
   clic (maintenus, ils répètent), flèches haut et bas dans le champ. En saisie, le
@@ -1703,6 +1739,14 @@ raccourcis s'affichent sur Android, pas sur iPhone.
 
 ## 11. Pièges connus
 
+- UNE ZONE DE TOUCHER ÉLARGIE (`::after` en `position: absolute; inset: -8px`)
+  exige un hôte positionné. Sans lui, celle du constat suivant (`.hf-next`, v9.21)
+  prenait toute la fenêtre, avalait chaque toucher de l'accueil et faisait défiler
+  la page de 8 px de côté (corrigé en v9.23, testé par `tools/moments.test.mjs`).
+- UNE TRANSITION D'ÉCRAN SANS IMAGE : un document visible qui ne reçoit pas
+  d'image (fenêtre derrière une autre, volet d'aperçu) ne rappelait jamais
+  `startViewTransition` : l'écran restait l'ancien, dans la langue où il avait été
+  dessiné. `withTransition` (ui-core.js) bascule sans animation après 500 ms (v9.23).
 - ATTRIBUT HIDDEN : la règle globale `[hidden] { display: none !important; }`
   existe parce que `display: flex` sur .champ battait l'attribut. Ne pas la
   retirer.
@@ -1856,6 +1900,7 @@ node tools/extras.test.mjs   v9.19 : moyennes partagées (H1), réglages gagnant
 node tools/journal.test.mjs  le journal v9.20 : regles de la comparaison et sa phrase, colonnes de la table, chiffres corriges (pur)
 node tools/home.test.mjs     accueil, Analyses, histoire du mois, carte de l'appli (v9.21) : parties pures et page
 node tools/gestures.test.mjs tirer pour synchroniser et dictée (v9.22) : caoutchouc, seuil, issues, texte dicté (pur), câblage
+node tools/moments.test.mjs  vapeur, séries et paliers (v9.23) : règles pures, ce qu'un enregistrement fête, crochets et page
 ```
 
 Ce que chacune couvre, et le bug qui l'a motivée : `DECISIONS.md`, « Tests ».

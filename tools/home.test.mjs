@@ -231,7 +231,8 @@ const before = (from, k) => { const d = new Date(from); d.setDate(d.getDate() - 
   check("every latest cup row keeps its cup id (the journal group's hook)", dash.includes('\'" data-ext="\' + e.id + \'"') && dash.includes("last-clickable"));
   const tiles = [...analytics.matchAll(/<section class="card an-tile[^"]*" data-tile="(\w+)"( data-period-aware)?/g)];
   const fixed = tiles.filter(t => !t[2]).map(t => t[1]);
-  check("the tiles that keep their own window say so", fixed.length === 2 &&
+  // The calendar, the 30 days chart, and since v9.23 the streaks and milestones.
+  check("the tiles that keep their own window say so", fixed.length === 3 &&
     fixed.every(name => new RegExp('data-tile="' + name + '"[\\s\\S]*?an-fixed').test(analytics)), fixed.join());
   check("the period is a radio group of four", (analytics.match(/role="radio"/g) || []).length === 4 && analytics.includes('role="radiogroup"'));
   check("the story is a dialog: the focus stays inside, Escape is native", /<dialog id="modal-story"/.test(html) && read("js/ui-story.js").includes('addEventListener("cancel"'));

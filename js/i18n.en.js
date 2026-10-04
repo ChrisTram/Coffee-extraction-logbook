@@ -1207,6 +1207,26 @@ const I18N_EN = {
     dictate_silence: "I heard nothing. Try again whenever you like.",
     dictate_no_mic: "No microphone found on this device",
     dictate_failed: "Dictation stopped, try again",
+    // moments (v9.23)
+    steam_label: "still hot",
+    streak_days: "{n} days in a row",
+    streak_title: "Your streak: {n} days in a row with a coffee",
+    streak_pending: "{n} days in a row: a cup today keeps it going",
+    ms_cups: "{n}th cup",
+    ms_coffees: "{n}th different coffee",
+    ms_score: "your first {s}",
+    ms_streak: "record streak, {n} days",
+    ms_recipe: "new recipe, {r}",
+    ms_recipe_caption: "new recipe, {d}",
+    ms_record: "a record on this bag",
+    ms_and: "{a} and {b}",
+    ms_line: "{x}!",
+    ms_now: "day{s} in a row",
+    ms_best: "your best streak",
+    ms_best_range: "{a} to {b}",
+    ms_item_aria: "{m}, on {d}. See the cup.",
+    ms_none: "No milestone yet.",
+    ms_next: "Next milestone: your {n}th cup, {k} to go",
   },
 
   UI: {
@@ -2191,6 +2211,8 @@ const I18N_EN = {
       "Histoire suivante": "Next story",
       "Fermer l'histoire": "Close the story",
       "Journal, par date": "Journal, by date",
+      // moments (v9.23)
+      "Séries et paliers": "Streaks and milestones",
   },
 
   DIAG: {

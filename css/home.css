@@ -184,7 +184,10 @@
 
 /* ONE FINDING, that turns: the next one slides in from the right. */
 .home-finding .card-head { margin-bottom: 8px; }
-.hf-next { flex: none; }
+/* Positioned (v9.23): its wider hit area (::after, below) is absolute, and
+   without this it took the whole window as its box, swallowed every tap on
+   the home and pushed the page 8 px sideways. */
+.hf-next { flex: none; position: relative; }
 .hf-stage { position: relative; overflow: hidden; }
 .hf-text { margin: 0; font-size: 0.95rem; line-height: 1.5; color: var(--ink); }
 .hf-proof { margin: 6px 0 0; font-size: 0.75rem; letter-spacing: 0.03em; color: var(--muted); }

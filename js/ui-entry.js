@@ -868,8 +868,9 @@
       }
       resetEntry(true);
       activateScreen("dashboard");
-      // Q2 (v9.13): the cup fills on top of the dashboard, without blocking it.
-      UI.showCupCard(saved);
+      /* Q2 (v9.13): the cup fills on top of the dashboard, without blocking it;
+         R9 (v9.23): with its beans and its line when it crosses a milestone. */
+      UI.showSavedCup(saved);
     }
   }
 

@@ -448,6 +448,8 @@
     paintPeriod();
     renderPeriodTiles();
     UI.renderInsights(analyzableExts());
+    // R9 (v9.23): the streaks and the milestones, over the whole logbook (js/ui-celebrate.js).
+    UI.renderMilestoneTile();
     UI.renderDrawings();
     UI.renderStoryBanner();
     UI.maybeOpenStory();

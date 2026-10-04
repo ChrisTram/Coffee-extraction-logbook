@@ -172,8 +172,9 @@ const { I18N_FR, I18N_EN } = new Function(read("js/i18n.fr.js") + "\n" + read("j
   check("the live line says « J'écoute… »", I18N_FR.dictate_listening.fr === "J'écoute…");
   check("the bubble says where the voice goes", /service vocal du navigateur/.test(I18N_FR.dictate_info.fr) && /speech service/.test(I18N_EN.T.dictate_info));
   const fr2 = read("js/i18n.fr2.js"), en = read("js/i18n.en.js");
+  // At the end, or followed only by the blocks of the groups merged after it (v9.23: moments).
   check("the new keys sit at the end of each dictionary, under the group's comment",
-    /\/\/ gestures \(v9\.\d+\)\n(\s+\w+: \{ fr: "[^"]*" \},\n)+\}\);\s*$/.test(fr2) && en.indexOf("// gestures (v9.") > 0 &&
+    /\/\/ gestures \(v9\.\d+\)\n(\s+\w+: \{ fr: "[^"]*" \},\n)+(\s*\/\/ [a-z]+ \(v9\.\d+\)\n(\s+\w+: \{ fr: "[^"]*" \},\n)+)*\}\);\s*$/.test(fr2) && en.indexOf("// gestures (v9.") > 0 &&
     en.indexOf("// gestures (v9.") < en.indexOf("\n  UI: {"));
 }
 

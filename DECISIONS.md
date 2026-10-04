@@ -2121,6 +2121,31 @@ saisie. Les vraies recommandations viennent des insights, calculés sur les note
 réelles. Les avertissements de MACHINE (`warn_brikka_recommended`, `warn_switch_recommended`) et les
 blocages (café non pur en Switch) restent, eux : ce sont des faits, pas des goûts.
 
+### Les paliers : rares, et fêtés par l'enregistrement seul (v9.23)
+
+Ce qu'on fête, c'est ce qu'un ENREGISTREMENT franchit : `MILESTONES.forSave` calcule
+les paliers sans la tasse puis avec, et ne garde que la différence. C'est ce qui
+règle d'un coup la synchro et l'import : ils ne passent jamais par là, donc une 100e
+tasse arrivée de l'autre appareil ne fait jamais jaillir de grains ici. La mémoire de
+l'appareil (`milestones-seen`) ne sert qu'à ne pas fêter deux fois le même palier
+(une tasse supprimée puis ressaisie) ; la première fois, tout ce qui est déjà atteint
+y entre.
+
+Pour rester rares : la série record ne compte qu'à partir d'une semaine, et une fois
+par série (le jour où elle dépasse toutes les précédentes) ; sinon chaque matin d'une
+longue série serait un « nouveau record ». Une série qui ne fait que s'allonger (une
+tasse oubliée qui comble un trou) n'en est pas une nouvelle. La première tasse du
+carnet n'est pas une « nouvelle recette » (elle le serait toujours). Une tasse ratée
+ne fait pas un premier 9. Plusieurs paliers sur la même tasse font UNE phrase, deux
+choses au plus, et le record du sachet (J6) qui tombe en même temps la rejoint au
+lieu de faire un second moment.
+
+La vapeur suit l'heure de la tasse (`date_time`), pas celle de la saisie : une tasse
+notée après coup n'est plus chaude. Elle ne coûte rien : des animations CSS, une
+seule minuterie pour la retirer, et chaque volute s'éclaircit sur une horloge qui
+démarre dans le passé (délai négatif = l'âge de la tasse), ce qui évite de
+recalculer quoi que ce soit pendant les quinze minutes.
+
 ## Historique
 
 ### Tableau de l'historique, largeurs figées

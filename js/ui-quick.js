@@ -155,8 +155,8 @@
     const rating = quickRating();
     toast(rating === "" ? I18N.t("toast_quick_unrated", { r: r.name }) : I18N.t("toast_quick", { r: r.name, n: rating }));
     toggleQuick(false);
-    // Q2 (v9.13): the cup fills, the same card as the full entry.
-    UI.showCupCard(saved);
+    // Q2 (v9.13): the cup fills, the same card as the full entry (and its milestone, R9).
+    UI.showSavedCup(saved);
   }
 
   /* Panel wiring. Called once by app.js, at startup. Since v9.13 the panel opens

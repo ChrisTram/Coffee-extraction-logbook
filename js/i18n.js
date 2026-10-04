@@ -164,7 +164,9 @@ const I18N = (() => {
     // home (v9.21): the home's and the Analyses page's zones drawn in JS.
     "#home-week,#home-week-line,#home-bags,#home-finding,#home-brew,#home-band,#kpis-secondary,#an-highlight,#an-story," +
     "#tile-month-title,#tile-month-meta,#tile-month,#tile-coffees,#tile-podium,#tile-podium-reading,#tile-recipes-list," +
-    "#tile-tastes,#tile-wheel,#tile-wheel-detail,#tile-grinder,#tile-grinder-reading,#heatmap-title,#story-stage,#story-bars";
+    "#tile-tastes,#tile-wheel,#tile-wheel-detail,#tile-grinder,#tile-grinder-reading,#heatmap-title,#story-stage,#story-bars," +
+    // moments (v9.23): the milestones tile of Analyses.
+    "#tile-milestones";
 
   function scan() {
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {

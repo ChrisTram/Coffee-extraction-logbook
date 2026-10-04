@@ -375,14 +375,20 @@
     placeBand();
   }
 
-  // The band covers the screen's column, beside the rail and the side panel.
+  /* The band covers the screen's column, beside the rail and the side panel.
+     By its two edges, never by a width (v9.23): while the screen arrives, its
+     transform makes it the band's containing block, and a left plus a width
+     pushed the hidden band past the window's right edge, so the page scrolled
+     sideways. Two edges keep it inside whatever holds it. */
   function placeBand() {
     const el = $("#home-band"), main = $("main");
     if (!el || !main || typeof main.getBoundingClientRect !== "function") return;
     const r = main.getBoundingClientRect();
-    if (!r.width) return;
+    const view = document.documentElement && document.documentElement.clientWidth;
+    if (!r.width || !view) return;
     el.style.left = Math.round(r.left) + "px";
-    el.style.width = Math.round(r.width) + "px";
+    el.style.right = Math.max(0, Math.round(view - r.right)) + "px";
+    el.style.width = "";
   }
 
   /* Shown once the card's head (name and score) has gone under the top edge;
@@ -438,12 +444,14 @@
   /* Called by renderDashboard with what it already computed, or with null
      when the logbook is empty. */
   function renderHome(o) {
-    if (!o) { renderWeek(null); renderBand(null); return; }
+    if (!o) { renderWeek(null); renderBand(null); UI.renderMoments(null); return; }
     renderWeek(weekSummary(o.exts, o.analyzable, new Date()), o.morning);
     renderBags(o.morning);
     renderFinding(o.analyzable);
     renderBrew(o.exts, o.analyzable);
     renderBand(o.last);
+    // R4 and R9 (v9.23): the steam of a cup still hot, the streak on the week (js/ui-celebrate.js).
+    UI.renderMoments(o);
     if (nav.screenName === "dashboard") onScroll();
   }
 

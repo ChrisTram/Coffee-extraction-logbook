@@ -636,7 +636,19 @@ const UI = (() => {
        animation: nobody is watching it. */
     const cache = typeof document.visibilityState === "string" && document.visibilityState === "hidden";
     if (reducedMotion || cache || !document.startViewTransition) { fn(); return; }
-    const transition = document.startViewTransition(fn);
+    /* A document that says it is visible but gets no frame (a window behind
+       another, a preview pane) never calls the update back: the screen
+       stayed the old one, still in the language it was drawn in. Past half a
+       second, the switch happens without its animation (v9.23); the guard
+       keeps it from happening twice. */
+    let done = false;
+    const run = () => { if (done) return; done = true; fn(); };
+    const transition = document.startViewTransition(run);
+    setTimeout(() => {
+      if (done) return;
+      if (transition && typeof transition.skipTransition === "function") transition.skipTransition();
+      run();
+    }, 500);
     /* A transition interrupted by the next one, or skipped, rejects its
        promises: that is normal, and without this catch every quick screen
        switch left an "Uncaught (in promise)" in the console. */

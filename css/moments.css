@@ -1,0 +1,185 @@
+/* Brew logbook, sheet 6: the moments of v9.23 (R4 the steam of a cup still
+   hot, R9 the streaks and the milestones). Loaded last, after home.css. Only
+   the site's tokens, so the copper follows the accent of the coffee; every
+   movement has its calm path at the end of its block, and nothing here runs
+   while the page is hidden. */
+
+/* ---------- R4: the steam ---------- */
+
+/* Over the score of the last cup card: the wisps rise from the top of the
+   figure (js/ui-celebrate.js measures its centre into --steam-cx), past the
+   card's edge, and fade before they reach the head of the page. */
+.card-last.is-steaming .last-big-rating { position: relative; }
+.lc-steam {
+  position: absolute; z-index: 1; bottom: calc(100% - 6px); right: calc(var(--steam-cx, 40px) - 40px);
+  width: 80px; height: 66px; pointer-events: none; color: var(--muted);
+}
+.lc-w {
+  position: absolute; bottom: 0; left: calc(50% + var(--x, 0px) - 11px); width: 22px; height: 50px;
+  /* Its own clock over the fifteen minutes, started in the past by the cup's age. */
+  animation: lc-thin var(--life, 900s) linear calc(var(--age, 0s) * -1) 1 forwards;
+}
+.lc-w svg {
+  display: block; width: 100%; height: 100%; overflow: visible; transform-origin: 50% 100%; opacity: 0;
+  fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round;
+  animation: lc-drift var(--t, 3.8s) ease-in-out var(--d, 0s) infinite;
+}
+@keyframes lc-drift {
+  0% { opacity: 0; transform: translate(0, 12px) scale(0.8, 0.7); }
+  30% { opacity: 0.95; }
+  65% { opacity: 0.6; }
+  100% { opacity: 0; transform: translate(var(--sway, 4px), -22px) scale(1.2, 1.25); }
+}
+@keyframes lc-thin { to { opacity: var(--end, 0); } }
+/* The dark palettes: the steam is lighter than the card, as it should be. */
+html[data-theme="dark"] .lc-steam { color: color-mix(in srgb, var(--ink) 72%, transparent); }
+
+/* « encore chaude », after « Dernière tasse, il y a 3 min ». */
+.lc-warm {
+  display: inline-block; margin-left: 8px; padding: 0 8px; border-radius: 99px; vertical-align: 1px;
+  background: var(--accent-bg); color: var(--accent-strong);
+  font-size: 0.75rem; font-weight: 600; line-height: 1.6; letter-spacing: 0.02em; text-transform: none;
+  animation: lc-warm-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes lc-warm-in { from { opacity: 0; transform: translateY(3px); } }
+/* A narrow card has no room after the overline: the label goes under the
+   score (where the diagnosis pill is hidden), and the wisps rise shorter, so
+   they fade before the stock pills above the card. */
+.lc-warm-narrow { display: none; margin: 2px 0 0; }
+@container home (max-width: 559px) {
+  .lc-warm-wide { display: none; }
+  .lc-warm-narrow { display: inline-block; }
+  .lc-steam:not(.mini) { height: 52px; }
+  .lc-steam:not(.mini) .lc-w { height: 40px; }
+}
+
+/* The folded band, smaller: three short wisps beside its score, inside the
+   band (there is no room above it, at the top of the window). */
+.home-band .hbd-score { position: relative; }
+.lc-steam.mini { right: calc(100% + 2px); bottom: 6%; width: 34px; height: 38px; }
+.lc-steam.mini .lc-w { left: calc(50% + var(--x, 0px) * 0.5 - 6px); width: 12px; height: 28px; }
+.lc-steam.mini svg { stroke-width: 2.6; }
+.hbd-warm { text-transform: none; letter-spacing: 0.02em; color: var(--accent-strong); }
+.hbd-warm::before { content: " · "; color: var(--muted); }
+
+/* Hidden, everything stops (js/ui-celebrate.js starts it again from the real age). */
+html.steam-still .lc-w, html.steam-still .lc-w svg { animation-play-state: paused; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* A still, faint wisp and its label. */
+  .lc-w { animation: none; }
+  .lc-w:not(:first-child) { display: none; }
+  .lc-w svg { animation: none; opacity: 0.45; transform: none; }
+  .lc-warm { animation: none; }
+}
+
+/* ---------- R9: the streak on the week line ---------- */
+
+/* A small cup and its flame, lit once today has its cup, dimmed before. */
+.hw-streak {
+  display: inline-flex; align-items: center; gap: 5px; margin-left: 10px; vertical-align: -2px;
+  color: var(--accent-strong); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.02em; text-transform: none; white-space: nowrap;
+}
+.hw-head .hw-streak { margin: 4px 0 0; align-self: flex-start; }
+.hw-flame { flex: none; width: 15px; height: 15px; overflow: visible; }
+.hw-flame-cup { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.hw-flame-fire {
+  fill: currentColor; stroke: currentColor; stroke-width: 0.8; stroke-linejoin: round; transform-box: fill-box; transform-origin: 50% 100%;
+  animation: hw-flicker 1.3s ease-in-out 2;
+}
+@keyframes hw-flicker {
+  0%, 100% { transform: none; }
+  30% { transform: scale(0.88, 1.1) rotate(-4deg); }
+  60% { transform: scale(1.06, 0.94) rotate(3deg); }
+}
+.hw-streak.pending { color: var(--muted); }
+.hw-streak.pending .hw-flame-fire { fill: none; animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hw-flame-fire { animation: none; }
+}
+
+/* ---------- R9: the moment after « Enregistrer » ---------- */
+
+/* The line sits in the saved cup's card from the start (so the card does not
+   jump) and shows with the stamp, while the beans fly out of the cup. */
+.cup-card.cc-has-milestone { grid-template-areas: "art head" "mile mile" "facts facts"; }
+.cc-milestone {
+  grid-area: mile; display: flex; align-items: center; gap: 9px; margin: 0; padding: 8px 12px;
+  border-radius: var(--radius-small); background: var(--accent-bg); color: var(--accent-strong);
+  font-family: var(--serif); font-size: 1.25rem; line-height: 1.2; text-wrap: balance;
+  opacity: 0; transform: translateY(6px) scale(0.96); transform-origin: 30% 50%;
+}
+.cc-milestone.on { opacity: 1; transform: none; transition: opacity 320ms ease, transform 560ms cubic-bezier(0.2, 1.5, 0.4, 1); }
+.cc-ms-icon { flex: none; width: 22px; height: 22px; overflow: visible; }
+
+/* The burst: a canvas over the whole page that lets every tap through. */
+.bean-burst { position: fixed; inset: 0; width: 100%; height: 100%; z-index: calc(var(--z-toast) + 1); pointer-events: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* Just the line, with a gentle fade. */
+  .cc-milestone { transform: none; }
+  .cc-milestone.on { transition: opacity 500ms ease; }
+}
+
+/* ---------- R9: the tile of Analyses ---------- */
+
+/* The streaks on the left, the milestones on a line on the right; one
+   column on a narrow page. */
+.ms-tile .an-tile-body { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px 32px; align-items: start; }
+@container analytics (max-width: 600px) {
+  .ms-tile .an-tile-body { grid-template-columns: minmax(0, 1fr); }
+}
+.ms-streaks { display: flex; gap: 26px; }
+.ms-figure { min-width: 0; }
+.ms-num { display: flex; align-items: center; gap: 6px; margin: 0; }
+.ms-num b { font-family: var(--serif); font-weight: 400; font-size: 2.5rem; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
+.ms-cap { display: grid; margin: 4px 0 0; font-size: 0.78rem; color: var(--muted); line-height: 1.35; }
+.ms-cap small { font-size: 0.75rem; }
+.ms-icon { flex: none; width: 22px; height: 22px; overflow: visible; color: var(--muted); }
+.ms-figure.lit .ms-icon { color: var(--accent-strong); }
+.ms-figure:not(.lit) .ms-icon .hw-flame-fire { fill: none; animation: none; }
+
+/* The milestones on a line, the dots joined; the older ones wait for the
+   tile to open (an-more-row), the line starting at the edge says there are more. */
+.ms-list { min-width: 0; }
+.ms-track { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); row-gap: 6px; }
+.ms-track li { position: relative; min-width: 0; }
+.ms-track li::before { content: ""; position: absolute; left: 0; right: 0; top: 12px; height: 2px; background: var(--lines); }
+.ms-track li:first-child::before { left: 6px; }
+.ms-track li:last-child::before { right: calc(100% - 12px); }
+.ms-item {
+  position: relative; display: grid; justify-items: start; gap: 2px; width: 100%; min-height: 44px; padding: 6px 10px 6px 0;
+  border: 0; border-radius: 8px; background: none; font: inherit; color: var(--text); text-align: left;
+  animation: ms-pop 420ms cubic-bezier(0.3, 1.4, 0.5, 1) both; animation-delay: calc(var(--i, 0) * 60ms);
+}
+button.ms-item { cursor: pointer; }
+.ms-dot {
+  position: relative; z-index: 1; width: 13px; height: 13px; margin-bottom: 5px; border-radius: 50%;
+  background: var(--panel); border: 2px solid var(--accent);
+}
+.ms-cups .ms-dot, .ms-streak .ms-dot, .ms-score10 .ms-dot { background: var(--accent); }
+.ms-item b { font-size: 0.86rem; font-weight: 600; line-height: 1.25; color: var(--ink); overflow-wrap: anywhere; }
+.ms-item small { font-size: 0.75rem; color: var(--muted); }
+button.ms-item:hover b { color: var(--accent-strong); }
+button.ms-item:hover .ms-dot { transform: scale(1.2); }
+.ms-dot { transition: transform var(--transition); }
+.ms-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@keyframes ms-pop { from { opacity: 0; transform: translateY(6px) scale(0.94); } }
+.ms-next { margin: 8px 0 0; font-size: 0.82rem; color: var(--muted); }
+/* A narrow page: the line goes down, a milestone per row, the dot on the left. */
+@container analytics (max-width: 600px) {
+  .ms-track { grid-template-columns: minmax(0, 1fr); row-gap: 0; }
+  .ms-track li::before { left: 5.5px; right: auto; top: 0; bottom: 0; width: 2px; height: auto; }
+  .ms-track li:first-child::before { left: 5.5px; top: 18px; }
+  .ms-track li:last-child::before { right: auto; bottom: calc(100% - 18px); }
+  .ms-item { grid-template-columns: 13px minmax(0, 1fr); grid-template-areas: "dot name" "dot when"; column-gap: 12px; row-gap: 1px; align-items: start; padding: 6px 0; }
+  .ms-dot { grid-area: dot; margin: 5px 0 0; }
+  .ms-item b { grid-area: name; }
+  .ms-item small { grid-area: when; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ms-item { animation: none; }
+  .ms-dot { transition: none; }
+}

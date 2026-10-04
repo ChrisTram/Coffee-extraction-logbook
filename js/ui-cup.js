@@ -218,14 +218,16 @@
 
   /* Shows the card for a cup just saved. The fill, the steam and the stamp
      are classes set one after the other; reduced motion gets the final
-     picture at once. */
-  function showCupCard(ext) {
+     picture at once. opts.hold keeps it longer (R9, v9.23: a milestone's
+     line, js/ui-celebrate.js). */
+  function showCupCard(ext, opts) {
     const host = $("#cup-card");
     if (!host || !ext) return;
     wireCard(host);
     clearTimers();
     const s = cupSummary(ext);
-    host.classList.remove("cc-out", "cc-filled", "cc-stamped");
+    const hold = opts && opts.hold > 0 ? opts.hold : 0;
+    host.classList.remove("cc-out", "cc-filled", "cc-stamped", "cc-has-milestone");
     host.innerHTML = cardMarkup(s);
     host.setAttribute("aria-label", I18N.t("cup_saved"));
     host.hidden = false;
@@ -238,14 +240,14 @@
     if (reducedMotion()) {
       fill();
       host.classList.add("cc-stamped");
-      scheduleHide(SHOWN_MS + 900);
+      scheduleHide(SHOWN_MS + 900 + hold);
       return;
     }
     // One layout read so the empty cup is painted before it starts filling.
     host.getBoundingClientRect();
     card.timers.push(setTimeout(fill, 120));
     card.timers.push(setTimeout(() => host.classList.add("cc-stamped"), 900));
-    card.timers.push(setTimeout(hideCupCard, 900 + SHOWN_MS));
+    card.timers.push(setTimeout(hideCupCard, 900 + SHOWN_MS + hold));
   }
 
   // ---------- J2: the cup of the brew mode ----------
