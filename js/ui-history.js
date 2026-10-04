@@ -64,9 +64,13 @@
     /* Empty numeric columns must end up at the BOTTOM whatever the direction,
        hence -1 rather than "": an empty string would compare as text and
        rise to the top in ascending order. */
-    if (col === "dose_g" || col === "total_time_s" || col === "temperature_c" || col === "heat_level") {
+    if (col === "dose_g" || col === "total_time_s" || col === "temperature_c" || col === "heat_level" ||
+      col === "flow_time_s" || col === "yield_ml") {
       return e[col] === "" || e[col] === undefined ? -1 : Number(e[col]);
     }
+    // The table's columns read in the calculations (v9.20).
+    if (col === "days_open") return e._c.days_open === "" ? -1 : e._c.days_open;
+    if (col === "cost") return e._c.cup_cost_vnd === "" ? -1 : e._c.cup_cost_vnd;
     if (col === "ratio") return e._c.ratio === "" ? -1 : e._c.ratio;
     if (col === "grind") return e._c.clicks === "" ? -1 : e._c.clicks;
     if (col === "score_10") return e.score_10 === "" ? -1 : e.score_10;
@@ -148,31 +152,55 @@
     /* L3 (v8.93): BY BAG, the journal replaces the table and the cards. The
        filters, the summary and the count above stay the same. */
     UI.updateViews();
-    const byBag = UI.historyView() === "bag" && list.length > 0;
+    const view = UI.historyView();
+    const byBag = view === "bag" && list.length > 0;
+    // O5 (v9.20): the table where cups are ticked, a computer view (js/ui-table.js).
+    const asTable = view === "table" && list.length > 0 && !asCards();
     $("#h-journal").hidden = !byBag;
-    $("#screen-history .table-container").hidden = byBag;
-    if (byBag) {
-      $("#h-body").innerHTML = "";
-      $("#h-cards").innerHTML = "";
-      UI.renderJournal(list);
-      updateComparisonBar();
-      return;
-    }
-    $("#h-journal").innerHTML = "";
+    $("#screen-history .table-container").hidden = byBag || asTable;
+    const grid = $("#h-grid-wrap");
+    if (grid) grid.hidden = !asTable;
     const visible = list.slice(0, historyLimit);
     const leftover = list.length - visible.length;
+    if (byBag || asTable) {
+      $("#h-body").innerHTML = "";
+      $("#h-cards").innerHTML = "";
+      if (byBag) { clearGrid(); UI.renderJournal(list); }
+      else { $("#h-journal").innerHTML = ""; UI.renderTable(visible, list, moreButton(leftover)); wireMore(); }
+      afterRender();
+      return;
+    }
+    clearGrid();
+    $("#h-journal").innerHTML = "";
     if (asCards()) {
       $("#h-body").innerHTML = "";
       $("#h-cards").innerHTML = renderCards(visible) + moreButton(leftover);
       wireMore();
-      updateComparisonBar();
+      afterRender();
       return;
     }
     $("#h-cards").innerHTML = "";
     $("#h-body").innerHTML = visible.map(e => historyRow(e)).join("") +
       (leftover > 0 ? '<tr class="h-row-plus"><td colspan="10">' + moreButton(leftover) + "</td></tr>" : "");
     wireMore();
+    afterRender();
+  }
+
+  // The table empties when another view shows: its « plus » button would double #h-plus.
+  function clearGrid() {
+    if (!$("#h-grid-wrap")) return;
+    $("#h-grid").innerHTML = "";
+    $("#h-grid-more").innerHTML = "";
+  }
+
+  /* After every render, whatever the view: the comparison bar, the cups
+     corrected since they were last drawn (Q3, js/ui-scenes.js, played as
+     soon as their row is seen), and the comparison page, which follows the
+     data and the language (js/ui-compare.js). */
+  function afterRender() {
     updateComparisonBar();
+    if (UI.playCupEdits) UI.playCupEdits($("#screen-history"));
+    if (UI.refreshCompare) UI.refreshCompare();
   }
 
   /* THE CARDS: the same list, each card carries its full date. */
@@ -389,19 +417,33 @@
   /* THE FIVE ACTIONS, written ONCE and rendered by the row as by the card.
      That is what guarantees that a gesture possible on desktop is also
      possible on the phone: two separate lists diverge at the first addition.
-     The click is delegated on data-action, so nothing else needs to know. */
+     The click is delegated on data-action, so nothing else needs to know.
+
+     A LIST since v9.20: one entry per action, in the order of the « ⋯ »
+     menu. One more action is one more entry, here or pushed from its own
+     file (UI.CUP_ACTIONS); an entry with `run(ext, button)` is run by the
+     click handler, the others are handled there by name. `svg` (a function,
+     read at render) replaces the line icon of `icon` when the core has none.
+
+     « Partager » (v9.19, js/ui-share.js) is such an entry. Its action is not
+     named « share »: ui-share.js also answers a data-action="share" from the
+     whole document, and the same click would open the sheet twice. */
+  const CUP_ACTIONS = [
+    { action: "comparer", icon: "comparer", title: () => I18N.t("history_compare"), state: e => (comparison.has(e.id) ? " on" : "") },
+    /* The failed toggle, FIRST among the write actions: it is the one
+       clicked most often after the fact, and its state shows without hover. */
+    { action: "failed", icon: "failed", pressed: e => isFailed(e), state: e => (isFailed(e) ? " on-failed" : ""),
+      title: e => I18N.t(isFailed(e) ? "history_unmark_botched" : "history_mark_botched") },
+    { action: "dupliquer", icon: "dupliquer", title: () => "Dupliquer pour refaire la même" },
+    { action: "modifier", icon: "modifier", title: () => "Modifier" },
+    { action: "partager", svg: () => (UI.shareIcon ? UI.shareIcon() : icon("dupliquer")), title: () => I18N.t("share_action"),
+      run: ext => UI.shareCup(ext) },
+    { action: "supprimer", icon: "supprimer", title: () => "Supprimer", state: () => " danger" },
+  ];
   function actionsExtraction(e) {
-    const compare = comparison.has(e.id);
-    return '<div class="actions-row">' +
-      '<button class="btn-row' + (compare ? " on" : "") + '" data-action="comparer" title="' +
-      titleAttr(I18N.t("history_compare")) + '">' + icon("comparer") + "</button>" +
-      /* The failed toggle, FIRST among the write actions: it is the one
-         clicked most often after the fact, and its state shows without hover. */
-      '<button class="btn-row' + (isFailed(e) ? " on-failed" : "") + '" data-action="failed" aria-pressed="' +
-      isFailed(e) + '" title="' + titleAttr(I18N.t(isFailed(e) ? "history_unmark_botched" : "history_mark_botched")) + '">' + icon("failed") + "</button>" +
-      '<button class="btn-row" data-action="dupliquer" title="Dupliquer pour refaire la même">' + icon("dupliquer") + "</button>" +
-      '<button class="btn-row" data-action="modifier" title="Modifier">' + icon("modifier") + "</button>" +
-      '<button class="btn-row danger" data-action="supprimer" title="Supprimer">' + icon("supprimer") + "</button>" +
+    return '<div class="actions-row">' + CUP_ACTIONS.map(a =>
+      '<button class="btn-row' + (a.state ? a.state(e) : "") + '" data-action="' + a.action + '"' +
+      (a.pressed ? ' aria-pressed="' + a.pressed(e) + '"' : "") + ' title="' + titleAttr(a.title(e)) + '">' + (a.svg ? a.svg() : icon(a.icon)) + "</button>").join("") +
       "</div>";
   }
 
@@ -479,55 +521,12 @@
     $("#comparison-open").disabled = comparison.size !== 2;
   }
 
-  // Rows of the comparison table. Each entry knows how to read its displayable value.
-  function comparisonFields() {
-    return [
-      { key: "detail_coffee", read: e => I18N.tr(e._c.coffee_name) },
-      { key: "detail_method", read: e => e.method },
-      { key: "detail_recipe", read: e => e.recipe },
-      { key: "detail_dose", read: e => e.dose_g !== "" ? e.dose_g + " g" : "" },
-      { key: "detail_water", read: e => e.water_g !== "" ? e.water_g + " g" : "" },
-      { key: "detail_ratio", read: e => e._c.ratioText },
-      { key: "detail_days_open", read: e => e._c.days_open === "" ? "" : e._c.days_open },
-      { key: "detail_grind", read: e => e.grind_dial || (e._c.ground ? I18N.t("bag_default") : "") },
-      { key: "detail_temp", read: e => e.temperature_c !== "" ? e.temperature_c + " °C" : "" },
-      { key: "detail_heat_power", read: e => e.heat_level !== "" ? e.heat_level + " / 10" : "" },
-      { key: "detail_preheated", read: e => Number(e.preheated_water) === 1 ? I18N.t("yes") : I18N.t("no") },
-      { key: "detail_total", read: e => e.total_time_s !== "" ? fmtDuration(e.total_time_s) : "" },
-      { key: "detail_drawdown", read: e => e.flow_time_s !== "" ? fmtDuration(e.flow_time_s) : "" },
-      { key: "detail_volume", read: e => e.yield_ml !== "" ? e.yield_ml + " ml" : "" },
-      { key: "detail_cup", read: e => e.cup },
-      { key: "detail_score", read: e => e.score_10 !== "" ? fmtDecimal(Number(e.score_10), 1) + " / 10" : "" },
-      { key: "detail_diagnosis", read: e => e.diagnostic ? displayedDiags(e.diagnostic) : "" },
-      { key: "detail_descriptors", read: e => (e.descriptors || "").split("|").filter(Boolean).map(t => I18N.tag(t)).join(", ") },
-      { key: "detail_comment", read: e => e.comment },
-    ];
-  }
-
+  /* O5 (v9.20): the two cups open the comparison PAGE (js/ui-compare.js),
+     the same one the table's « Comparer » opens, on a phone as on a computer.
+     The window of two columns to read yourself is gone. */
   function openComparison() {
     const ids = [...comparison];
-    const exts = extsWithCalcs().filter(e => ids.includes(e.id))
-      .sort((x, y) => String(x.date_time).localeCompare(String(y.date_time)));
-    if (exts.length !== 2) return;
-    const [a, b] = exts;
-
-    $("#comparison-titles").innerHTML = "<th></th><th>" + fmtDateTime(a.date_time) +
-      "</th><th>" + fmtDateTime(b.date_time) + "</th>";
-    $("#comparison-body").innerHTML = comparisonFields().map(c => {
-      const va = String(c.read(a) || ""), vb = String(c.read(b) || "");
-      if (!va && !vb) return "";
-      // Highlight ONLY what differs: that is where the explanation of the
-      // rating gap lies, the rest is visual noise.
-      const deferred = va !== vb;
-      return '<tr' + (deferred ? ' class="deferred"' : "") + "><th>" + I18N.t(c.key) + "</th>" +
-        "<td>" + va + "</td><td>" + vb + "</td></tr>";
-    }).join("");
-
-    const gap = a.score_10 !== "" && b.score_10 !== ""
-      ? I18N.t("compare_gap", { x: fmtDecimal(Math.abs(a.score_10 - b.score_10), 1) })
-      : I18N.t("compare_no_score");
-    $("#comparison-summary").textContent = gap;
-    $("#modal-comparison").showModal();
+    if (ids.length === 2) UI.openCompare(ids[0], ids[1]);
   }
 
   /* ---------- My best settings ----------
@@ -618,7 +617,7 @@
      ends on the keys that act on the hovered cup (R, E, C, see
      js/ui-shortcuts.js). The hovered cup is known even before the sheet
      shows: the keys work as soon as the mouse is on the row. */
-  const HOVER_ZONES = ["#h-body", "#h-cards", "#h-journal", "#latest-list"];
+  const HOVER_ZONES = ["#h-body", "#h-cards", "#h-journal", "#h-grid", "#latest-list"];
   const HOVER_ROWS = "tr.row-hist, tr.row-comment, .h-card, tr.last-clickable, tr.last-comment";
   const hover = { id: null, hide: null };
   function hoverKeys() {
@@ -668,7 +667,7 @@
       zone.addEventListener("mousemove", ev => {
         mouseX = ev.clientX;
         let row = ev.target.closest(HOVER_ROWS);
-        const onAction = ev.target.closest(".actions-row, .btn-menu-card, .h-card-footer, button");
+        const onAction = ev.target.closest(".actions-row, .btn-menu-card, .h-card-footer, button, .tc-check");
         // A comment line belongs to the cup above it.
         if (row && (row.classList.contains("row-comment") || row.classList.contains("last-comment"))) row = row.previousElementSibling;
         const id = row && !onAction ? row.getAttribute("data-id") || row.getAttribute("data-ext") : null;
@@ -734,6 +733,8 @@
        renders. Attached to #h-body alone, it left the six card actions
        rendered but dead. */
     const onHistoryClick = async ev => {
+      // The table's boxes and headers are its own (js/ui-table.js), not a click on a cup.
+      if (ev.target.closest(".tc-check, thead")) return;
       const btn = ev.target.closest("[data-action]");
       if (!btn) {
         /* Clicking the ROW opens the extraction for editing, like the last
@@ -751,14 +752,17 @@
         if (rowExt) UI.openCup(rowExt, row);
         return;
       }
-      const id = btn.closest("[data-id]").dataset.id;
+      const row = btn.closest("[data-id]");
+      const id = row.dataset.id;
       const ext = DATA.state.extractions.find(e => e.id === id);
       if (!ext) return;
+      const extra = CUP_ACTIONS.find(a => a.action === btn.dataset.action && typeof a.run === "function");
+      if (extra) { await extra.run(ext, btn); return; }
       if (btn.dataset.action === "supprimer") {
         // No more native confirm(): the undo replaces the question. A system
         // box on the phone breaks the app feel, and it does not go through
-        // the i18n layer.
-        await deleteExtractionWithUndo(ext);
+        // the i18n layer. Q5 (v9.20): the row goes to the grounds bin.
+        await deleteExtractionWithUndo(ext, row);
       } else if (btn.dataset.action === "modifier") {
         UI.loadExtractionIntoEntry(ext, false);
       } else if (btn.dataset.action === "dupliquer") {
@@ -782,8 +786,12 @@
         toast(I18N.t(Number(ext.failed) === 1 ? "toast_unbotched" : "toast_botched"));
       }
     };
-    [$("#h-body"), $("#h-cards"), $("#h-journal")].forEach(z => z.addEventListener("click", onHistoryClick));
+    [$("#h-body"), $("#h-cards"), $("#h-journal"), $("#h-grid")].filter(Boolean).forEach(z => z.addEventListener("click", onHistoryClick));
     UI.wireJournal(renderHistory);
+    // O5, Q3 and Q5 (v9.20): the table, the comparison page, the scenes.
+    UI.wireTable();
+    UI.wireCompare();
+    UI.wireScenes();
     wireHoverSheet();
     // M6: the empty state button, rendered with the list.
     $("#h-empty").addEventListener("click", ev => {
@@ -816,8 +824,8 @@
   }
 
   Object.assign(UI, {
-    openHistoryOn, clearFilters, hoveredCupId, forgetHover,
-    FILTERS, toggleComparison, wireHistory, tuningCard, comparisonFields, comparison, openDetails,
+    openHistoryOn, clearFilters, hoveredCupId, forgetHover, CUP_ACTIONS,
+    FILTERS, toggleComparison, wireHistory, tuningCard, comparison, openDetails,
     filterHistory, historyRow, updateComparisonBar, openComparison,
     actionsExtraction, extractionCard, historyComment, detailContent, asCards,
     updateMethodSegment,

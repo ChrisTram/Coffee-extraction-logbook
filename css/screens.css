@@ -1696,7 +1696,10 @@ input[type="range"]::-moz-range-thumb {
 .table-history col.c-grind { width: 104px; }
 .table-history col.c-ratio { width: 94px; }
 .table-history col.c-rating { width: 60px; }
-.table-history col.c-actions { width: 150px; }
+/* Six actions since « Partager » (v9.20): six buttons, five gaps of 2 and the
+   cell's padding of 2 on each side. At 150 px they shrank to 23 px wide;
+   at 172 they keep 26, without taking more from the coffee and the recipe. */
+.table-history col.c-actions { width: 172px; }
 /* Coffee and recipe WRAP instead of truncating: a coffee name
    cut to "Trung Nguyên Sáng…" no longer says which of the two it is. The
    numeric columns, on the other hand, never wrap. */

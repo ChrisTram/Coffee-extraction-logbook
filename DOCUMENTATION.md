@@ -153,7 +153,10 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/ui-chrono.js` | chronomètre de la saisie : paliers, bips, verrou d’écran, widget repliable |
 | `js/ui-draft.js` | brouillon de saisie en localStorage, chargé après ui-entry.js |
 | `js/ui-quick.js` | panneau de saisie rapide |
-| `js/ui-history.js` | tableau, filtres, tri, comparateur, écran Mes meilleurs réglages |
+| `js/ui-history.js` | tableau, filtres, tri, comparateur, écran Mes meilleurs réglages ; les actions d'une tasse sont une liste, `UI.CUP_ACTIONS` (v9.20) |
+| `js/ui-table.js` | la vue Table du journal (v9.20, O5 et P2) : cases à cocher, barre d'actions, colonnes choisies |
+| `js/compare.js` | ce qui sépare deux tasses (v9.20, O5), calcul pur : faits, fenêtre de temps de la recette, phrase. Global `COMPARE`, testé par `tools/journal.test.mjs` |
+| `js/ui-compare.js` | la page de comparaison `#history/compare` (v9.20, O5) |
 | `js/ui-guide.js` | recettes de référence, pas à pas, moulin interactif |
 | `js/ui-catalog.js` | formulaires café et sachet (dans « Mes cafés »), fenêtre des recettes, écran Paramètres |
 | `js/bags.js` | les sachets sans le DOM (v9.18) : rangées de l'étagère, bocaux de la saisie, fin d'un sachet, prochaine tasse, crans du cadran qui tourne. Pur, testé par `tools/stock.test.mjs` |
@@ -169,12 +172,14 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/ui-roll.js` | la valeur qui roule (v9.17) : un texte, ou une copie du texte d'un champ au dessus de lui |
 | `js/ui-brewer.js` | la cafetière qui change de forme (v9.17, Q12) : la Brikka fond en Switch, les champs roulent |
 | `js/ui-arrivals.js` | la tasse qui arrive de l'autre appareil (v9.17, Q13) : pastille, glissé, chiffres qui roulent |
+| `js/ui-scenes.js` | les petites scènes (v9.20) : les chiffres corrigés qui roulent (Q3), la tasse qui part au marc et revient (Q5), `UI.discardScene` |
 | `js/ui-tuning.js` | Réglages gagnants (v9.19, O3) : le tableau, À retenter, Ce qui gagne partout ; et « Chez toi » des cartes recettes du Guide (D2) |
 | `js/ui-share.js` | partager une tasse ou une recette (v9.19, F2) : l'image en canevas, le texte, le menu de partage |
 | `js/ui-welcome.js` | la première ouverture (v9.19, O4) : trois questions, puis la première tasse |
 | `js/ui-shortcuts.js` | les raccourcis clavier : la table SHORTCUTS, la décision, l'aide générée, l'astuce (v9.13, v9.19) |
 | `js/app.js` | démarrage, navigation, thème, langue, modale de données, abonnement aux données |
 | `css/extras.css` | les styles de la v9.19 (O4, raccourcis, F2, O3), chargés après finishing.css |
+| `css/journal.css` | les styles du journal v9.20 (table, page de comparaison, scènes), chargée après `extras.css` |
 | `css/fonts/` | les deux polices de la DA, embarquées en woff2, sous OFL (section 10) |
 | `sw.js`, `manifest.json`, `icons/` | PWA et hors ligne (section 10) |
 | `worker/index.js`, `worker/sync.js` | porte d'entrée et fusion D1, Cloudflare seulement (section 13) |
@@ -1341,6 +1346,50 @@ conteneurs (`#h-corps` et `#h-cartes`).
 Au dessus : une tete de page (total et depuis quand, recherche, export), les
 filtres en pastilles (des `<select>` natifs habilles), et un bandeau resume du
 filtre courant en quatre chiffres. Les cinq actions sont des icones en trait (`UI.icone`), avec les memes `data-action` qu'avant.
+Depuis la v9.20 elles sont SIX, « Partager » (js/ui-share.js) en plus, dans UNE liste, `CUP_ACTIONS` (`UI.CUP_ACTIONS`) : une action de plus est une entrée de plus,
+et une entrée qui porte `run(ext, bouton)` est exécutée par le clic délégué.
+
+**Trois vues** (localStorage `history-view`, v9.20) : par sachet (le journal, js/ui-journal.js), par date (la table
+de dix colonnes ou les cartes), et **Table** (js/ui-table.js), sur ordinateur seulement : sous 1024 px elle se lit par date.
+La Table coche : une case par tasse (Maj coche une plage, la case de l'en-tête coche tout le filtre), et la barre au
+dessus de la table (`#h-grid-tools`, collante, qui ne décale rien) devient « 2 tasses choisies » avec Comparer (deux
+tasses), Exporter (`DATA.exportExtractions` sur la sélection) et Marquer ratées (ou l'inverse si elles le sont toutes).
+Les colonnes se trient avec le même `sortState` que la table par date et se choisissent dans « Colonnes ▾ »
+(localStorage `history-columns`, la date ne se masque pas) ; leurs largeurs vivent dans `COLUMNS` (js/ui-table.js),
+pixels pour les chiffres, le reste partagé par les mots, et la table défile dans sa carte plutôt que de les écraser.
+Ses lignes portent `tr.row-hist` et `data-id` comme la table par date : fiche au survol, panneau de côté, raccourcis
+et scènes les traitent pareil.
+
+**La page de comparaison** (js/ui-compare.js, `#history/compare`, v9.20) remplace la fenêtre à deux colonnes.
+Elle vit dans `#h-compare`, DANS l'écran Historique : pendant qu'elle s'affiche, le reste de l'écran est masqué
+(`#screen-history.comparing`), jamais redessiné, et Retour le rend tel quel avec son défilement. Elle pousse UNE entrée
+d'historique (`pushState`) : le retour du navigateur ou du téléphone la ferme, comme son bouton Retour et Échap ;
+changer d'écran la ferme aussi. Ouverte depuis un autre écran (le panneau de côté), elle attend que l'écran Historique
+soit affiché avant de pousser son entrée, sinon le `replaceState` d'`activateScreen` l'écraserait. A est toujours la
+tasse la plus ancienne. Les faits et la phrase viennent de `COMPARE` (js/compare.js) : mouture en crans du C5 et en
+microns, eau, feu, ratio, dose, agitation, temps total lu dans la fenêtre de la recette (« total 2:00 à 2:30 »,
+« environ 3:30 » vaut un quart de minute de chaque côté) ou écoulement de la Brikka (« écoulement de 20 à 45
+secondes »), défauts du diagnostic partis ou venus, goûts gagnés, note, sachet plus vieux. « Brasser avec le réglage
+de B » (ou de A s'il est meilleur) passe par `UI.redoCup` : un préremplissage unique, rien n'est retenu. Sur téléphone
+la même page s'empile en tableau, les différences surlignées dans la colonne B.
+
+**Les chiffres corrigés qui roulent** (Q3, js/ui-scenes.js, v9.20). À chaque notification, les chiffres de chaque tasse
+(`FIGURES` : dose, eau, mouture, degrés, feu, temps, volume, note) sont comparés à ce que la page en savait (mémoire
+seulement). Une tasse corrigée attend, avec ses anciennes valeurs, qu'une ligne portant son id (`data-id` ou
+`data-ext`) soit dessinée ET vue (IntersectionObserver) : alors seuls ses chiffres changés roulent (`UI.rollText`) sur
+un fond cuivré qui s'efface en deux secondes, une fois. Une correction venue de la synchro passe par le même chemin.
+Les listes sont surveillées par un MutationObserver (`ZONES` : #h-body, #h-cards, #h-journal, #h-grid,
+#latest-list, #sheet-content) ; une autre liste se branche par `UI.watchCupRows(conteneur)`. Une tasse nouvelle n'est
+pas une correction, une correction non vue en dix minutes est oubliée.
+
+**La tasse qui part au marc** (Q5, js/ui-scenes.js, v9.20). `UI.deleteExtractionWithUndo(ext, ligne)` (js/ui-core.js)
+passe par `UI.discardCup` : la ligne, ou celle retrouvée par l'id, se compresse en galette qui vole dans la poubelle
+du message « Extraction supprimée » ; « Annuler » porte un cercle qui se vide en cinq secondes, et la galette en ressort
+pour se déplier à la place de la tasse rétablie. La suppression elle même ne change pas (tout de suite, synchro
+comprise). `UI.discardScene(élément, { label })` joue la même scène pour tout autre geste qui jette : une tasse de la
+liste de la saisie, une recette supprimée, une modification abandonnée ; une poubelle monte alors au dessus de la place
+des messages. Dans une fenêtre ouverte, la scène se dessine dans la fenêtre. Mouvement réduit ou page cachée : le geste
+se fait, rien ne vole, le cercle reste plein.
 
 ## 9. Synchronisation entre appareils
 
@@ -1682,6 +1731,7 @@ node worker/sync.test.mjs    fusion entre appareils, taille du document
 node tools/logbook-mcp.test.mjs  serveur MCP du catalogue contre le vrai Worker et un faux D1
 node tools/stock.test.mjs    (v9.18) etagere, bocaux de la saisie, fin d'un sachet, prochaine tasse, cadran qui tourne
 node tools/extras.test.mjs   v9.19 : moyennes partagées (H1), réglages gagnants, recette de départ, raccourcis, texte partagé
+node tools/journal.test.mjs  le journal v9.20 : regles de la comparaison et sa phrase, colonnes de la table, chiffres corriges (pur)
 ```
 
 Ce que chacune couvre, et le bug qui l'a motivée : `DECISIONS.md`, « Tests ».

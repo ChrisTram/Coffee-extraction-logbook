@@ -2228,6 +2228,37 @@ elle ne passe pas par la couche i18n donc elle reste en français en mode anglai
 Il en reste quatre, sur des gestes rares et vraiment destructeurs (vider les
 données, charger la démo, rétablir ou supprimer une recette).
 
+### Le journal v9.20 : une table à part, une page dans l'écran, des corrections devinées par les chiffres
+
+**Une table à part pour cocher.** La vue Table (O5, P2) n'ajoute pas une colonne de cases à `#h-table` : cette table
+a ses largeurs dans un `<colgroup>` de l'HTML vérifié par un test, et le panneau de côté masque ses colonnes 3, 6, 7
+et 10 par position (`nth-child`). Une case en tête aurait tout décalé d'un cran sans rien signaler. `#h-grid` est donc
+une table de plus, rendue par js/ui-table.js, ses largeurs écrites avec ses colonnes (`COLUMNS`), et la vue Par date
+reste ce que Chris connaît.
+
+**Une page DANS l'écran Historique, pas un septième écran.** `#history/compare` n'est pas dans `SCREEN_NAMES` : un
+écran de plus touchait la barre du bas, le rail, `app.js` (à son plafond de lignes) et les raccourcis, pour une page
+qu'on ouvre depuis le journal et qu'on referme vers lui. Elle masque le journal au lieu de le remplacer, ce qui rend
+le Retour exact (chapitres ouverts, défilement) sans rien mémoriser. Elle pousse une entrée d'historique, la seule
+de l'appli (les écrans se remplacent) : c'est ce qui donne au bouton retour du téléphone le sens attendu.
+
+**Le verdict est une règle, pas un avis.** La phrase de la comparaison ne dit que ce que les données disent : les
+crans du C5, les degrés, la fenêtre de temps écrite dans la recette, les défauts que le diagnostic nomme. Pas de
+pondération secrète ni de causalité inventée : « l'amertume de A a disparu » est un constat, pas un « parce que ».
+« Brasser avec le réglage de B » prépare UNE saisie (le chemin de « Refaire ») : décision du lead, un réglage
+retenu par défaut se serait mis à préremplir toutes les tasses suivantes sans qu'on s'en souvienne.
+
+**Une correction se reconnaît à ses chiffres, pas à l'endroit d'où elle vient.** Q3 ne s'accroche pas à
+l'enregistrement de la saisie : il compare, à chaque notification, les chiffres de chaque tasse à ce que la page en
+savait. Le même chemin couvre la saisie, une correction arrivée par la synchro, un import, et toute liste qui dessine
+une ligne avec l'id de la tasse, y compris celles d'un autre fichier (le tableau de bord, la fiche café) qu'un
+MutationObserver surveille sans qu'elles aient à le savoir. Seuls les CHIFFRES comptent : un commentaire ou la
+marque « ratée » ne font rien rouler.
+
+**La scène se capture avant la suppression.** La copie qui part au marc est prise sur la ligne AVANT
+`DATA.deleteExtraction`, qui redessine la liste aussitôt. La suppression reste immédiate et synchronisée (section
+précédente) : la scène habille le geste, elle ne le retarde pas.
+
 ## Données et synchronisation
 
 ### Pourquoi D1, pourquoi un document, pourquoi des pierres tombales

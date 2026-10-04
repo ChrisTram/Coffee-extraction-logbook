@@ -244,6 +244,8 @@
       '<button type="button" class="btn-row danger" data-cup-delete="' + t.id + '" title="' + I18N.t("btn_delete") + '">' + icon("croix") + "</button></div>"
     ).join("");
     $$("[data-cup-delete]").forEach(b => b.addEventListener("click", async () => {
+      // Q5 (v9.20): the cup of the list goes to the grounds bin.
+      UI.discardScene(b.closest(".cup-row"));
       await DATA.deleteCup(b.dataset.cupDelete);
       renderCupEditor();
       fillCupSelect();
@@ -952,7 +954,12 @@
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") UI.saveDraft();
     });
-    $("#btn-cancel-editing").addEventListener("click", () => { resetEntry(); activateScreen("history"); });
+    // Q5 (v9.20): the edit given up goes to the grounds bin, as a sheet with its name.
+    $("#btn-cancel-editing").addEventListener("click", () => {
+      UI.discardScene($("#form-entry"), { label: I18N.t("scene_edit_dropped") });
+      resetEntry();
+      activateScreen("history");
+    });
     // « Mes cafés » is a page since v9.18.
     $("#btn-manage-coffees").addEventListener("click", () => UI.openCoffeesPage());
     $("#volume-estimate").addEventListener("click", () => {

@@ -134,6 +134,8 @@
     ["history", "#h-body", "tr.row-hist"],
     ["history", "#h-cards", ".h-card"],
     ["history", "#h-journal", ".h-card"],
+    // The journal's table (v9.20, js/ui-table.js): J and K walk its rows too.
+    ["history", "#h-grid", "tr.row-hist"],
   ];
   const ROW_SELECTOR = "tr.last-clickable[data-ext], tr.row-hist[data-id], .h-card[data-id]";
   const rowId = row => (row ? row.getAttribute("data-id") || row.getAttribute("data-ext") : null);

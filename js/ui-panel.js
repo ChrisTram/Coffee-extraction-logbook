@@ -55,6 +55,8 @@
     { root: "#h-cards", rows: ".h-card", attr: "data-id" },
     { root: "#h-journal", rows: ".h-card", attr: "data-id" },
     { root: "#latest-list", rows: "tr.last-clickable", attr: "data-ext" },
+    // The journal's table (v9.20, js/ui-table.js); last, CUP_LISTS[3] is read by index below.
+    { root: "#h-grid", rows: "tr.row-hist", attr: "data-id" },
   ];
   function cupListFrom(el) {
     if (!el || !el.closest) return null;

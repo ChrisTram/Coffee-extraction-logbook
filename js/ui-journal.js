@@ -29,11 +29,17 @@
     return date.toLocaleDateString(I18N.locale(), { day: "numeric", month: "short", year: y === new Date().getFullYear() ? undefined : "numeric" });
   }
 
+  /* Three views since v9.20: by bag, by date, and the table where cups are
+     ticked (js/ui-table.js). The table is a computer view: below 1024 px it
+     reads as by date, and the choice comes back on the wide screen. */
   function historyView() {
-    try { return localStorage.getItem(VIEW_KEY) === "date" ? "date" : "bag"; } catch (e) { return "bag"; }
+    let v = "bag";
+    try { v = localStorage.getItem(VIEW_KEY) || "bag"; } catch (e) { return "bag"; }
+    if (v === "table") return UI.asCards() ? "date" : "table";
+    return v === "date" ? "date" : "bag";
   }
   function setView(v) {
-    try { localStorage.setItem(VIEW_KEY, v); } catch (e) { /* without storage, the view goes back to by-bag */ }
+    try { localStorage.setItem(VIEW_KEY, v === "table" || v === "date" ? v : "bag"); } catch (e) { /* without storage, the view goes back to by-bag */ }
   }
 
   // Cups sorted by bag; a cup without a recorded bag goes into its coffee's chapter.
@@ -147,7 +153,7 @@
   /* The history in a given view, by bag or by date: the G J and G H
      shortcuts and the palette (v9.13). activateScreen renders it. */
   function openHistoryView(v) {
-    setView(v === "date" ? "date" : "bag");
+    setView(v);
     if (UI.nav.screenName === "history") UI.renderHistory();
     else UI.activateScreen("history");
   }

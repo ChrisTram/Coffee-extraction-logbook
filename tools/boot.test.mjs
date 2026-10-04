@@ -264,7 +264,7 @@ Chart.defaults = hollow();
 const SCRIPTS = ["js/legacy-names.js", "js/tools.js", "js/i18n.en.js", "js/i18n.fr.js", "js/i18n.js", "js/grind.js", "js/recipes.js", "js/demo-data.js",
   "js/sync.js", "js/data-csv.js", "js/data-schema.js", "js/data-store.js", "js/data-calcs.js",
   "js/data-migrations.js", "js/data.js", "js/tuning.js", "js/bags.js", "js/charts.js",
-  "js/ui-core.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-wheel.js", "js/ui-cup.js", "js/ui-dial.js", "js/ui-rating-dial.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js", "js/ui-history.js", "js/ui-journal.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/ui-jar.js", "js/ui-moments.js", "js/ui-roll.js", "js/ui-brewer.js", "js/ui-arrivals.js", "js/ui-empty.js", "js/ui-coffees.js", "js/ui-bag-end.js", "js/search.js", "js/ui-panel.js", "js/ui-palette.js", "js/ui-shortcuts.js", "js/ui-tuning.js", "js/ui-share.js", "js/ui-welcome.js", "js/app.js"];
+  "js/ui-core.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-wheel.js", "js/ui-cup.js", "js/ui-dial.js", "js/ui-rating-dial.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js", "js/ui-history.js", "js/ui-journal.js", "js/ui-table.js", "js/ui-compare.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/ui-jar.js", "js/ui-moments.js", "js/ui-roll.js", "js/ui-brewer.js", "js/ui-arrivals.js", "js/ui-scenes.js", "js/ui-empty.js", "js/ui-coffees.js", "js/ui-bag-end.js", "js/search.js", "js/compare.js", "js/ui-panel.js", "js/ui-palette.js", "js/ui-shortcuts.js", "js/ui-tuning.js", "js/ui-share.js", "js/ui-welcome.js", "js/app.js"];
 const source = SCRIPTS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 
 // Intercepted console.error: that is where render errors come out.
@@ -713,7 +713,7 @@ check("the temperature field no longer has a misleading placeholder", !tempField
   const colgroup = htmlPage.slice(tableStart, htmlPage.indexOf("</colgroup>", tableStart));
   const cols = [...colgroup.matchAll(/<col class="(c-[a-z]+)"/g)].map(m => m[1]);
   check("each column has its <col>", cols.length === headerCount, cols.length + " col for " + headerCount + " columns");
-  const cssPage = ["base", "screens", "dialogs", "finishing"].map(f => readFileSync(join(ROOT, "css/" + f + ".css"), "utf8")).join("\n");
+  const cssPage = ["base", "screens", "dialogs", "finishing", "stock", "extras", "journal"].map(f => readFileSync(join(ROOT, "css/" + f + ".css"), "utf8")).join("\n");
   const fixed = cols.filter(c => cssPage.includes(".table-history col." + c + " { width: ") &&
     /\d+px/.test(cssPage.split(".table-history col." + c + " { width: ")[1].split(";")[0]));
   const flexible = cols.filter(c => !fixed.includes(c));
@@ -966,13 +966,16 @@ check("the temperature field no longer has a misleading placeholder", !tempField
   const rowActions = actions(row), cardActions = actions(card);
   /* The row no longer expands (v8.33): its detail comes as a hover
      sheet. The card, with no hover under a finger, keeps its own on top. */
-  check("the table row offers the five actions",
-    rowActions.length === 5 && !rowActions.includes("deplier"), rowActions.join(", "));
+  /* v9.20: six since « Partager » (v9.19) joined the list UI.CUP_ACTIONS. It
+     is not named « share »: ui-share.js answers that one from the whole
+     document, and the click would open the sheet twice. */
+  check("the table row offers the six actions, sharing included",
+    rowActions.length === 6 && rowActions.includes("partager") && !rowActions.includes("share") && !rowActions.includes("deplier"), rowActions.join(", "));
   /* A3 (v8.82): closed, the card only shows « ⋯ »; open, its footer carries
-     the same five actions as the row, built by actionsExtraction(). */
+     the same six actions as the row, built by actionsExtraction(). */
   check("the closed card only carries its « ⋯ » button", cardActions.join(",") === "menu", cardActions.join(", "));
   const historySrc = readFileSync(join(ROOT, "js/ui-history.js"), "utf8");
-  check("and its open menu offers expanding and the same five actions",
+  check("and its open menu offers expanding and the same six actions",
     /h-card-footer[\s\S]{0,400}data-action="deplier"[\s\S]{0,400}actionsExtraction\(e\)/.test(historySrc));
 
   /* And both carry the id: the click handler is delegated, it

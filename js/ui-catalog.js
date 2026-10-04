@@ -239,6 +239,8 @@
   async function deleteCurrentRecipe() {
     if (!editingRecipeId) return;
     if (!await askConfirm(I18N.t("confirm_delete_recipe"), { danger: true })) return;
+    // Q5 (v9.20): the recipe form goes to the grounds bin before it closes.
+    UI.discardScene($("#form-recipe"));
     await DATA.deleteRecipe(editingRecipeId);
     $("#form-recipe").hidden = true;
     renderRecipeList();

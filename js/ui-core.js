@@ -250,8 +250,12 @@ const UI = (() => {
      have CANCELLED a deletion Chris believed done. Here the row goes right
      away, goes to the sync right away, and the undo re-inserts it as a new
      write, which the merge knows how to handle: it is later than the
-     tombstone, so it wins. */
-  async function deleteExtractionWithUndo(ext) {
+     tombstone, so it wins.
+     Q5 (v9.20): the same, with its scene (the row goes to the grounds bin,
+     js/ui-scenes.js) whenever that file is loaded; `row` is the clicked row,
+     otherwise it is found by the cup's id. */
+  async function deleteExtractionWithUndo(ext, row) {
+    if (UI.discardCup) return UI.discardCup(ext, row);
     const copied = { ...ext };
     delete copied._c;
     await DATA.deleteExtraction(ext.id);

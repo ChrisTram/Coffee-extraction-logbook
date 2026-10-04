@@ -7,13 +7,14 @@
 <!-- Site version, single source of truth: the footer reads it, and files
      loaded on demand put it in their URL. Set it with
      node tools/bump_version.mjs X, never by hand. -->
-<meta name="app-version" content="9.19">
-<link rel="stylesheet" href="css/base.css?v=9.19">
-<link rel="stylesheet" href="css/screens.css?v=9.19">
-<link rel="stylesheet" href="css/dialogs.css?v=9.19">
-<link rel="stylesheet" href="css/finishing.css?v=9.19">
-<link rel="stylesheet" href="css/stock.css?v=9.19">
-<link rel="stylesheet" href="css/extras.css?v=9.19">
+<meta name="app-version" content="9.20">
+<link rel="stylesheet" href="css/base.css?v=9.20">
+<link rel="stylesheet" href="css/screens.css?v=9.20">
+<link rel="stylesheet" href="css/dialogs.css?v=9.20">
+<link rel="stylesheet" href="css/finishing.css?v=9.20">
+<link rel="stylesheet" href="css/stock.css?v=9.20">
+<link rel="stylesheet" href="css/extras.css?v=9.20">
+<link rel="stylesheet" href="css/journal.css?v=9.20">
 <!-- crossorigin use-credentials: without it the browser fetches the manifest
      WITHOUT cookies, the front door redirects it to /login, and it tries to
      parse HTML as JSON. Result: "Manifest: Syntax error" and a PWA that
@@ -54,7 +55,7 @@
      the scripts. bump_version.mjs versions the charts link. -->
 <link rel="preload" href="css/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="css/fonts/instrument-serif-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="js/vendor/chart.umd.js?v=9.19" as="script">
+<link rel="preload" href="js/vendor/chart.umd.js?v=9.20" as="script">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%98%95%3C/text%3E%3C/svg%3E">
 </head>
 <body>
@@ -820,6 +821,7 @@
   <div class="h-views" role="group" aria-label="Ranger l'historique">
     <button type="button" data-view="bag" aria-pressed="true">Par sachet</button>
     <button type="button" data-view="date" aria-pressed="false">Par date</button>
+    <button type="button" data-view="table" aria-pressed="false">Table</button>
   </div>
   <div class="h-journal" id="h-journal" hidden></div>
   <div class="bar-comparison" id="bar-comparison" hidden>
@@ -862,6 +864,16 @@
       <p>Aucune extraction ne correspond à ces filtres.</p>
     </div>
   </div>
+  <!-- O5 (v9.20): the table where cups are ticked, a computer view
+       (js/ui-table.js). Its bar of actions and its columns menu above. -->
+  <div class="h-grid-wrap" id="h-grid-wrap" hidden>
+    <div class="grid-tools" id="h-grid-tools"></div>
+    <div class="grid-card card"><table class="table-grid" id="h-grid"></table></div>
+    <div class="grid-more" id="h-grid-more"></div>
+  </div>
+  <!-- O5 (v9.20): the comparison page, #history/compare (js/ui-compare.js).
+       While it shows, the journal above is hidden, not redrawn. -->
+  <div class="h-compare" id="h-compare" hidden></div>
 </section>
 
 <!-- ================= SCREEN: MES CAFÉS (v9.18, O2) =================
@@ -1903,20 +1915,6 @@ Cảm ơn shop.</pre>
   </div>
 </dialog>
 
-<dialog id="modal-comparison" aria-labelledby="modal-comparison-title" class="modal modal-large">
-  <h2 id="modal-comparison-title">Comparer deux extractions</h2>
-  <p class="modal-note" id="comparison-summary"></p>
-  <div class="table-container">
-    <table class="table-comparison">
-      <thead><tr id="comparison-titles"></tr></thead>
-      <tbody id="comparison-body"></tbody>
-    </table>
-  </div>
-  <div class="entry-actions">
-    <button type="button" class="btn btn-subtle modal-close" data-closes="modal-comparison">Fermer</button>
-  </div>
-</dialog>
-
 <dialog id="modal-walkthrough" aria-labelledby="wt-title" class="modal modal-walkthrough">
   <div class="wt-header">
     <h2 id="wt-title">Recette</h2>
@@ -2015,65 +2013,69 @@ Cảm ơn shop.</pre>
 <!-- ALL defer, and definitely not async: defer preserves order, async does not,
      and data.js would blow up looking for SYNC or GRIND. The download now
      runs in parallel with HTML parsing instead of blocking it. -->
-<script defer src="js/legacy-names.js?v=9.19"></script>
-<script defer src="js/tools.js?v=9.19"></script>
-<script defer src="js/i18n.fr.js?v=9.19"></script>
-<script defer src="js/i18n.js?v=9.19"></script>
-<script defer src="js/grind.js?v=9.19"></script>
-<script defer src="js/recipes.js?v=9.19"></script>
+<script defer src="js/legacy-names.js?v=9.20"></script>
+<script defer src="js/tools.js?v=9.20"></script>
+<script defer src="js/i18n.fr.js?v=9.20"></script>
+<script defer src="js/i18n.js?v=9.20"></script>
+<script defer src="js/grind.js?v=9.20"></script>
+<script defer src="js/recipes.js?v=9.20"></script>
 <!-- sync.js BEFORE data.js: data.js uses it at load time. -->
-<script defer src="js/sync.js?v=9.19"></script>
-<script defer src="js/data-csv.js?v=9.19"></script>
-<script defer src="js/data-schema.js?v=9.19"></script>
-<script defer src="js/data-store.js?v=9.19"></script>
-<script defer src="js/data-calcs.js?v=9.19"></script>
-<script defer src="js/data-migrations.js?v=9.19"></script>
-<script defer src="js/data.js?v=9.19"></script>
-<script defer src="js/tuning.js?v=9.19"></script>
+<script defer src="js/sync.js?v=9.20"></script>
+<script defer src="js/data-csv.js?v=9.20"></script>
+<script defer src="js/data-schema.js?v=9.20"></script>
+<script defer src="js/data-store.js?v=9.20"></script>
+<script defer src="js/data-calcs.js?v=9.20"></script>
+<script defer src="js/data-migrations.js?v=9.20"></script>
+<script defer src="js/data.js?v=9.20"></script>
+<script defer src="js/tuning.js?v=9.20"></script>
 <!-- v9.18: the bags without the DOM (shelf rows, the next cup), read by the screens below. -->
-<script defer src="js/bags.js?v=9.19"></script>
-<script defer src="js/search.js?v=9.19"></script>
-<script defer src="js/charts.js?v=9.19"></script>
-<script defer src="js/ui-core.js?v=9.19"></script>
-<script defer src="js/ui-sync-bean.js?v=9.19"></script>
-<script defer src="js/ui-nav.js?v=9.19"></script>
-<script defer src="js/ui-scrub.js?v=9.19"></script>
-<script defer src="js/ui-findings.js?v=9.19"></script>
-<script defer src="js/ui-last-cup.js?v=9.19"></script>
-<script defer src="js/ui-dashboard.js?v=9.19"></script>
-<script defer src="js/ui-cup.js?v=9.19"></script>
-<script defer src="js/ui-dial.js?v=9.19"></script>
-<script defer src="js/ui-rating-dial.js?v=9.19"></script>
-<script defer src="js/ui-wheel.js?v=9.19"></script>
-<script defer src="js/ui-entry.js?v=9.19"></script>
-<script defer src="js/ui-entry-aside.js?v=9.19"></script>
-<script defer src="js/ui-pills.js?v=9.19"></script>
-<script defer src="js/ui-chrono.js?v=9.19"></script>
-<script defer src="js/ui-draft.js?v=9.19"></script>
-<script defer src="js/ui-quick.js?v=9.19"></script>
-<script defer src="js/ui-history.js?v=9.19"></script>
-<script defer src="js/ui-journal.js?v=9.19"></script>
-<script defer src="js/ui-guide.js?v=9.19"></script>
-<script defer src="js/ui-catalog.js?v=9.19"></script>
-<script defer src="js/ui-coffee-sheet.js?v=9.19"></script>
-<script defer src="js/ui-brew.js?v=9.19"></script>
-<script defer src="js/ui-drawings.js?v=9.19"></script>
+<script defer src="js/bags.js?v=9.20"></script>
+<script defer src="js/search.js?v=9.20"></script>
+<script defer src="js/compare.js?v=9.20"></script>
+<script defer src="js/charts.js?v=9.20"></script>
+<script defer src="js/ui-core.js?v=9.20"></script>
+<script defer src="js/ui-sync-bean.js?v=9.20"></script>
+<script defer src="js/ui-nav.js?v=9.20"></script>
+<script defer src="js/ui-scrub.js?v=9.20"></script>
+<script defer src="js/ui-findings.js?v=9.20"></script>
+<script defer src="js/ui-last-cup.js?v=9.20"></script>
+<script defer src="js/ui-dashboard.js?v=9.20"></script>
+<script defer src="js/ui-cup.js?v=9.20"></script>
+<script defer src="js/ui-dial.js?v=9.20"></script>
+<script defer src="js/ui-rating-dial.js?v=9.20"></script>
+<script defer src="js/ui-wheel.js?v=9.20"></script>
+<script defer src="js/ui-entry.js?v=9.20"></script>
+<script defer src="js/ui-entry-aside.js?v=9.20"></script>
+<script defer src="js/ui-pills.js?v=9.20"></script>
+<script defer src="js/ui-chrono.js?v=9.20"></script>
+<script defer src="js/ui-draft.js?v=9.20"></script>
+<script defer src="js/ui-quick.js?v=9.20"></script>
+<script defer src="js/ui-history.js?v=9.20"></script>
+<script defer src="js/ui-journal.js?v=9.20"></script>
+<script defer src="js/ui-table.js?v=9.20"></script>
+<script defer src="js/ui-compare.js?v=9.20"></script>
+<script defer src="js/ui-guide.js?v=9.20"></script>
+<script defer src="js/ui-catalog.js?v=9.20"></script>
+<script defer src="js/ui-coffee-sheet.js?v=9.20"></script>
+<script defer src="js/ui-brew.js?v=9.20"></script>
+<script defer src="js/ui-drawings.js?v=9.20"></script>
 <!-- v9.13: the jar to the gram, the moments that move, the empty places. -->
-<script defer src="js/ui-jar.js?v=9.19"></script>
-<script defer src="js/ui-moments.js?v=9.19"></script>
-<script defer src="js/ui-roll.js?v=9.19"></script>
-<script defer src="js/ui-brewer.js?v=9.19"></script>
-<script defer src="js/ui-arrivals.js?v=9.19"></script>
-<script defer src="js/ui-empty.js?v=9.19"></script>
+<script defer src="js/ui-jar.js?v=9.20"></script>
+<script defer src="js/ui-moments.js?v=9.20"></script>
+<script defer src="js/ui-roll.js?v=9.20"></script>
+<script defer src="js/ui-brewer.js?v=9.20"></script>
+<script defer src="js/ui-arrivals.js?v=9.20"></script>
+<script defer src="js/ui-scenes.js?v=9.20"></script>
+<script defer src="js/ui-empty.js?v=9.20"></script>
 <!-- v9.18: Mes cafés as a page with its shelf and the entry jars (O2), the end of a bag (Q9). -->
-<script defer src="js/ui-coffees.js?v=9.19"></script>
-<script defer src="js/ui-bag-end.js?v=9.19"></script>
-<script defer src="js/ui-panel.js?v=9.19"></script>
-<script defer src="js/ui-palette.js?v=9.19"></script>
-<script defer src="js/ui-shortcuts.js?v=9.19"></script>
-<script defer src="js/ui-tuning.js?v=9.19"></script>
-<script defer src="js/ui-share.js?v=9.19"></script>
-<script defer src="js/ui-welcome.js?v=9.19"></script>
-<script defer src="js/app.js?v=9.19"></script>
+<script defer src="js/ui-coffees.js?v=9.20"></script>
+<script defer src="js/ui-bag-end.js?v=9.20"></script>
+<script defer src="js/ui-panel.js?v=9.20"></script>
+<script defer src="js/ui-palette.js?v=9.20"></script>
+<script defer src="js/ui-shortcuts.js?v=9.20"></script>
+<script defer src="js/ui-tuning.js?v=9.20"></script>
+<script defer src="js/ui-share.js?v=9.20"></script>
+<script defer src="js/ui-welcome.js?v=9.20"></script>
+<script defer src="js/app.js?v=9.20"></script>
 </body>
 </html>

@@ -278,8 +278,10 @@
   function latestBlock(exts) {
     const latest = exts.slice().sort((a, b) => String(b.date_time).localeCompare(String(a.date_time))).slice(0, 5);
     return '<section class="sh-block sh-latest"><h3 class="sh-h">' + I18N.t("sheet_latest") + "</h3>" +
+      /* data-id (v9.20): a cup corrected since it was last drawn rolls its
+         changed figures here too (Q3, js/ui-scenes.js watches #sheet-content). */
       '<ol class="sh-list">' + latest.map(e =>
-        '<li><span class="sh-date">' + shortDay(e.date_time) + '</span><span class="sh-what">' +
+        '<li data-id="' + escapeHtml(e.id) + '"><span class="sh-date">' + shortDay(e.date_time) + '</span><span class="sh-what">' +
         '<span class="dot-method ' + String(e.method || "").toLowerCase() + '"></span>' + escapeHtml(I18N.tr(e.recipe || "")) +
         (e.grind_dial ? " · " + escapeHtml(e.grind_dial) : "") + "</span><b>" +
         (e.score_10 === "" ? "·" : fmtRating(Number(e.score_10))) + "</b></li>").join("") + "</ol></section>";
@@ -623,6 +625,8 @@
       if (!b) return;
       const a = DATA.state.purchases.find(x => x.id === b.dataset.deleteBag);
       if (!a || !await UI.askConfirm(I18N.t("confirm_delete_bag", { d: a.purchase_date || "?" }), { danger: true })) return;
+      // Q5 (v9.20): the bag's block goes to the grounds bin before the sheet redraws.
+      UI.discardScene(b.closest(".sh-bag") || b);
       await DATA.deletePurchase(a.id);
       UI.toast(I18N.t("toast_bag_deleted"));
     });
