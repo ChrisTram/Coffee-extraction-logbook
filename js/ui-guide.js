@@ -253,7 +253,11 @@
 
   /* L5 (v8.94): BREW A RECIPE from the Guide. The entry form opens with the
      chosen brewer and recipe, and its values already filled in. */
-  function brewRecipe(id) {
+  /* R15 (v9.26): from a recipe CARD (the Guide's, the side panel's), the
+     brew mode opens straight away, over the page: the card grows into it
+     (js/ui-morph.js) and folds back into it on « Fermer ». The entry is
+     filled the same way behind it; « Compléter la saisie » goes there. */
+  function brewRecipe(id, card) {
     const r = DATA.state.recipes.find(x => x.id === id);
     if (!r) return;
     UI.resetEntry(true);
@@ -261,7 +265,10 @@
     const sel = $("#f-recipe");
     sel.value = r.name;
     sel.dispatchEvent(new Event("change", { bubbles: true }));
-    UI.activateScreen("entry");
+    if (!card || !UI.openBrew) { UI.activateScreen("entry"); return; }
+    const find = () => $(".screen.on .recipe-card[data-recipe=\"" + id + "\"], #side-panel:not([hidden]) .recipe-card[data-recipe=\"" + id + "\"]");
+    if (UI.morphOpen) UI.morphOpen(card, UI.openBrew, "#modal-brew", { id, find });
+    else UI.openBrew();
   }
 
   /* THE GUIDE HOME (L5). The doors: one per section of the table of contents,
@@ -391,7 +398,7 @@
       b.setAttribute("aria-expanded", String(expand));
       toggleRecipe(b.dataset.toggle, expand);
     }));
-    $$("[data-brew]").forEach(b => b.addEventListener("click", () => brewRecipe(b.dataset.brew)));
+    $$("[data-brew]").forEach(b => b.addEventListener("click", () => brewRecipe(b.dataset.brew, b.closest(".recipe-card"))));
     $$("[data-walkthrough]").forEach(b => b.addEventListener("click", () => openWalkthrough(b.dataset.walkthrough)));
     $$("#grid-recipes [data-video]").forEach(b => b.addEventListener("click", () => startVideo(b)));
     $$("[data-recipe-edit]").forEach(b => b.addEventListener("click", () => {

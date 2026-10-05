@@ -321,7 +321,8 @@
   function run(action) {
     markShortcutsKnown();
     if (action === "help") { toggleShortcutsHelp(); return; }
-    if (action === "close") { UI.closePanel(); return; }
+    // R15 (v9.26): Escape folds the panel back into its row, like its Close button.
+    if (action === "close") { UI.closePanel(true); return; }
     if (action === "brew-go" || action === "brew-next") {
       const target = $(action === "brew-go" ? "#br-go" : ".br-scene");
       if (target && !target.hidden && !target.disabled) target.click();

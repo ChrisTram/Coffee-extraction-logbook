@@ -13,6 +13,41 @@ introduit est dans le changelog.
 
 ## Architecture et code
 
+### Tout se transforme : un fantôme, pas une view transition (v9.26, R15)
+
+LE MOYEN. Le bocal qui devient sa fiche (v9.18) est une view transition. Pour une
+règle générale, elle a trois défauts : pendant qu'elle joue, la page n'est qu'une
+image et aucun toucher ne passe ; une page qui ne reçoit pas d'image (volet
+d'aperçu, fenêtre derrière une autre) ne rappelle jamais sa mise à jour ; et on ne
+peut pas l'arrêter au milieu pour le toucher suivant. Le morphing de R15 est donc
+en WAAPI, comme la démo du carnet : la mise à jour se fait tout de suite (l'écran est
+toujours juste), puis un fantôme sans toucher voyage de la ligne au détail. Un
+second toucher finit le trajet sur place, deux minuteries le finissent sans image.
+Le bocal garde sa view transition, qui marche.
+
+LES COUCHES. Le fantôme doit passer SOUS le contenu du détail et AU DESSUS du reste.
+Un détail dans la couche du haut (une fenêtre modale) : le fantôme est sous elle
+d'office, la fenêtre devient transparente et son voile n'arrive qu'à mi-trajet. Un
+détail qui a sa couche (le panneau, z 147) : le fantôme juste en dessous. Une ligne
+ou un écran : soulevé le temps du trajet au dessus du fantôme. Un fantôme à z -1
+sous tout le contenu marchait pour l'écran de saisie, mais au retour il passait sous
+les autres cartes de la liste et disparaissait avant d'arriver.
+
+LES TEXTES COUPÉS. Le nom qui glisse dans la saisie était invisible : la carte du
+chrono coupe ce qui déborde (`overflow: hidden`). Une boîte que le vol quitte laisse
+donc déborder le temps du trajet ; un bloc garde son contexte de formatage
+(`display: flow-root`), sinon les marges de ses enfants auraient bougé.
+
+LES COULEURS. L'accent est enregistré (v9.24) : une lecture vivante après un
+changement de classe rend déjà la nouvelle valeur. Les couleurs de la source et du
+détail sont copiées avant toute classe.
+
+BRASSER. « Brasser » d'une carte de recette menait à la saisie remplie ; la carte doit
+devenir le mode Brassage, et s'y replier : le mode s'ouvre donc par dessus le Guide,
+la saisie remplie derrière, et « Compléter la saisie » y mène. Au téléphone, une
+tasse s'ouvre toujours dans la saisie ; l'abandon de la modification a déjà sa
+scène (le marc, Q5), on ne la replie pas dans sa ligne.
+
 ### L'accent de ton café, et les cartes dont le texte ne penche pas (v9.24)
 
 QUEL CAFÉ. La dernière tasse notée dit ce que Chris boit en ce moment, c'est

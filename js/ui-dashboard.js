@@ -679,7 +679,8 @@
       if (!li) return;
       const ext = DATA.state.extractions.find(x => x.id === li.dataset.ext);
       if (!ext) return;
-      UI.loadExtractionIntoEntry(ext, false);
+      // R15 (v9.26): through openCup, so the row (or the big card) grows into the cup.
+      UI.openCup(ext, li);
     };
     /* The table AND the big card open the extraction. Delegating on both
        rather than on document: a global handler would catch clicks from the

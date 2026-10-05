@@ -1,0 +1,32 @@
+/* Brew logbook: R15 (v9.26), everything transforms (js/ui-morph.js).
+   What you touch becomes the next screen: a ghost card travels from the
+   touched row to the detail's box while the detail, see-through for the
+   trip, lets its shared texts glide and its other pieces arrive. Linked
+   last: the see-through detail must win over every sheet's own paint. */
+
+/* The ghost: a plain card, placed and sized by its animation, in viewport
+   pixels. It never takes a tap. Its layer is set by the script, under the
+   detail it flies to. */
+.morph-ghost {
+  position: fixed; left: 0; top: 0; width: 0; height: 0; margin: 0; padding: 0;
+  box-sizing: border-box; border: 1px solid transparent; border-radius: var(--radius);
+  background: var(--panel); box-shadow: var(--shadow);
+  pointer-events: none;
+}
+
+/* The detail during the trip: its own paint is the ghost's for now. Its
+   entrance (the panel's slide, a window's rise) gives way to the morph. */
+.morph-dest, .morph-dest > td, .morph-dest > th {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+.morph-dest { background-image: none !important; }
+/* A card leaning under the mouse paints its skin on a pseudo-element (v9.24): hidden too. */
+.morph-dest.feel-skin-after::after, .morph-dest.feel-skin-before::before { opacity: 0 !important; }
+
+/* No movement asked: no ghost, ever (the script does not make one either). */
+@media (prefers-reduced-motion: reduce) {
+  .morph-ghost { display: none; }
+}

@@ -25,7 +25,7 @@
  *    logout stop working.
  */
 
-const VERSION = "9.25";
+const VERSION = "9.26";
 const CACHE_NAME = "carnet-extraction";
 
 const versioned = url => url + "?v=" + VERSION;
@@ -58,6 +58,8 @@ const PRECACHE_URLS = [
   "./css/moments.css",
   // v9.24: the feel (the accent of the coffee, the little springs).
   "./css/feel.css",
+  // v9.26: everything transforms (R15).
+  "./css/morph.css",
   /* The fonts. Without them in the precache, the first offline open
      shows the fallback then jumps to the real font once the network returns.
      Their URL carries no version: a font file never changes
@@ -100,6 +102,7 @@ const PRECACHE_URLS = [
   "./js/ui-core.js",
   "./js/ui-accent.js",
   "./js/ui-feel.js",
+  "./js/ui-morph.js",
   "./js/ui-sync-bean.js",
   "./js/ui-nav.js",
   "./js/ui-scrub.js",

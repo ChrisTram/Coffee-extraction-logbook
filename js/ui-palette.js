@@ -339,8 +339,12 @@
     const it = state.results[i];
     if (!it) return;
     // Closed BEFORE running: the side panel refuses to open under a modal window.
-    closePalette();
-    it.run();
+    const go = () => { closePalette(); it.run(); };
+    /* R15 (v9.26): a coffee or a cup, the result's row grows into the sheet or
+       the panel that opens (js/ui-morph.js). */
+    const row = $('#cmd-results .cmd-item[data-i="' + i + '"]');
+    if (row && UI.morphOpen && (it.group === "coffees" || it.group === "cups")) UI.morphOpen(row, go, UI.morphDetail);
+    else go();
   }
 
   function wirePalette() {

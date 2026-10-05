@@ -195,6 +195,30 @@ remettent la carte à plat (`UI.flattenTilt`). La vapeur de la dernière tasse (
 n'est pas un pseudo-élément : elle reste à plat au dessus de la peau, jamais coupée. Mouvement réduit :
 rien ne s'écrase, ne roule, ne penche ni ne glisse.
 
+TOUT SE TRANSFORME (R15, v9.26, `js/ui-morph.js`, `css/morph.css`). Passer d'une liste à
+son détail est un morphing : une carte fantôme (`.morph-ghost`, fixe, sans toucher)
+part de la ligne touchée (cachée le temps du trajet) et va prendre la place, la taille,
+les coins et la couleur du détail ; le détail, transparent pendant le trajet
+(`.morph-dest`), fait glisser ses textes partagés (FLIP) depuis leur place dans la
+ligne, puis ses autres morceaux arrivent un par un. Une seule aide :
+`UI.morphOpen(source, update, cible, { id, find })`, où `update` ouvre le détail
+(toujours exécutée, une fois) et `cible` est lue APRÈS ; `UI.morphBack(détail, update,
+{ id, find, fade })` referme dans la source si elle est encore à l'écran, sinon en
+fondu (`fade`) ou d'un coup. Les textes partagés : `data-morph-key` ou les
+sélecteurs de `KEYS` (nom, recette, chiffres de la recette, note), et seulement
+quand ils disent la même chose (`sameText`). Les branchements : une tasse du journal
+(trois vues) et des dernières tasses ou de la grande carte de l'accueil vers le
+panneau de côté (`UI.openCup`), vers la saisie au téléphone ; Fermer et Échap du
+panneau (`closePanel(true)`) la replient dans sa ligne ; un résultat café ou tasse de
+Ctrl K vers la fiche ou le panneau ; « Brasser » d'une carte de recette (Guide,
+panneau) ouvre le mode Brassage PAR DESSUS la page (la saisie est remplie derrière),
+« Fermer » ou Échap le replient dans la carte ou le fondent, « Compléter la saisie »
+mène à la saisie. Un même tempo pour tous (`UI.MOTION` : 440 ms, 380 au retour, la
+courbe des tuiles d'Analyses, qui le lisent). Un second toucher ou une touche finit le
+trajet sur place ; deux minuteries le finissent sans image ; pendant la mise à jour,
+`withTransition` ne lance pas de view transition (`UI.morphing()`). Mouvement réduit,
+page cachée, source hors de l'écran : le comportement d'avant, d'un coup.
+
 LA FEUILLE DE STYLE ne définit chaque sélecteur de premier niveau qu'UNE fois
 (v8.31). Les blocs « refonte, étape n » qui redéfinissaient ce qui précédait ont
 été fusionnés dans la première définition. La vérification s'est faite par
@@ -225,6 +249,7 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/ui-core.js` | outils d'interface partagés, thème, navigation. Définit `UI`. |
 | `js/ui-accent.js` | l'accent de ton café (v9.24, R3) : quel café, quelle torréfaction, quels jetons, le réglage de l'appareil |
 | `js/ui-feel.js` | les cartes qui penchent sous la souris et leur reflet (v9.24, R8) |
+| `js/ui-morph.js` | tout se transforme (v9.26, R15) : la ligne touchée devient le détail, `UI.morphOpen`, `UI.morphBack`, `UI.MOTION` |
 | `js/ui-sync-bean.js` | la ligne de synchro et son grain de café (v9.13) |
 | `js/ui-nav.js` | la barre du bas : bouton central, appui long, trait qui glisse (v9.13) |
 | `js/ui-scrub.js` | les courbes SVG qu'on parcourt au doigt (v9.13) ; le graphe 30 jours le fait dans `charts.js` |
@@ -278,7 +303,8 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `css/home.css` | la navigation N1, l'accueil L1, la page Analyses O1, l'histoire du mois O6 (v9.21), chargée après `journal.css` |
 | `css/gestures.css` | tirer pour synchroniser et la dictée (v9.22), chargée après `home.css` |
 | `css/moments.css` | la vapeur, la série, la phrase du palier et sa gerbe, la tuile des paliers (v9.23), chargée après `gestures.css` |
-| `css/feel.css` | l'accent qui glisse (R3) et les petits ressorts (R8) (v9.24), chargée en dernier, après `moments.css` |
+| `css/feel.css` | l'accent qui glisse (R3) et les petits ressorts (R8) (v9.24), chargée après `moments.css` |
+| `css/morph.css` | le fantôme et le détail transparent des morphings (v9.26, R15), chargée en dernier, après `feel.css` |
 | `css/fonts/` | les deux polices de la DA, embarquées en woff2, sous OFL (section 10) |
 | `sw.js`, `manifest.json`, `icons/` | PWA et hors ligne (section 10) |
 | `worker/index.js`, `worker/sync.js` | porte d'entrée et fusion D1, Cloudflare seulement (section 13) |
@@ -1335,6 +1361,13 @@ chrono. PAS un second chrono : il lit `UI.chrono` et appelle `chronoPrincipal`,
 du chrono. Fermer le mode laisse le chrono tourner. Un minuteur de 250 ms repeint tant
 qu'il est ouvert.
 
+Depuis la v9.26 (R15), « Brasser » d'une carte de recette (Guide, panneau de côté)
+l'ouvre directement, par dessus la page : `UI.brewRecipe(id, carte)` remplit la saisie
+derrière sans changer d'écran, la carte grandit jusqu'au mode, « Fermer » ou Échap
+(`cancel`) l'y replient (`closeBrew()`), « Enregistrer » et « Compléter la saisie »
+ferment d'un coup (`closeBrew(true)`), le second mène à la saisie. Sans carte
+(`brewRecipe(id)`), la saisie s'ouvre comme avant.
+
 - La cible du palier courant est le volume CUMULÉ lu dans le texte de l'étape
   (`UI.cibleVersement` : « jusqu'à N g », « à N g », sinon le premier « N g »),
   affiché en g par défaut depuis la v8.74 (Chris a une balance), en ml par la bascule `.br-unite`, retenue
@@ -1825,6 +1858,12 @@ raccourcis s'affichent sur Android, pas sur iPhone.
   d'image (fenêtre derrière une autre, volet d'aperçu) ne rappelait jamais
   `startViewTransition` : l'écran restait l'ancien, dans la langue où il avait été
   dessiné. `withTransition` (ui-core.js) bascule sans animation après 500 ms (v9.23).
+- UN MORPHING NE S'APPUIE SUR AUCUNE IMAGE (v9.26) : sa mise à jour est faite tout
+  de suite, le fantôme n'est qu'un décor. Un volet d'aperçu qui ne dessine pas laisse
+  donc l'écran juste ; pour voir une image du milieu du trajet, mettre en pause les
+  `Animation` de `document.getAnimations()` et régler `currentTime` (et neutraliser
+  les deux minuteries de fin). Le volet rapporte aussi `visibilityState` « hidden » :
+  rien ne bouge alors, c'est voulu.
 - LA FAMILLE DE L'ACCENT EST ENREGISTRÉE (v9.24, `@property` dans css/feel.css) :
   `getComputedStyle(...).getPropertyValue("--accent")` rend `rgb(...)`, plus du
   `#hex`, et une `var(--accent, repli)` ne retombe jamais sur son repli. Une

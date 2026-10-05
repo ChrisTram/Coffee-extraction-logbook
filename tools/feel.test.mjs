@@ -267,9 +267,12 @@ const hsl = c => {
   for (const ch of noComments) { if (ch === "{") depth++; if (ch === "}") { depth--; if (depth < 0) negative = true; } }
   check("feel.css closes what it opens", depth === 0 && !negative, String(depth));
   /* LAST of all the sheets, whoever comes in between: its button
-     transitions restate the sheets' own and must win at equal specificity. */
+     transitions restate the sheets' own and must win at equal specificity.
+     Only morph.css (R15, v9.26) comes after: it touches no button, only the
+     see-through detail of a trip, which must win over every sheet. */
   const sheets = [...html.matchAll(/<link rel="stylesheet" href="css\/([\w-]+)\.css\?v=/g)].map(m => m[1]);
-  check("the sheet is loaded last of all, and precached", sheets[sheets.length - 1] === "feel" && sheets.includes("home") &&
+  const afterFeel = sheets.slice(sheets.indexOf("feel") + 1);
+  check("the sheet is loaded last of all, and precached", sheets.includes("feel") && afterFeel.every(s => s === "morph") && sheets.includes("home") &&
     sw.includes('"./css/feel.css"'), sheets.join(", "));
   check("the two files load right after the core, and are precached",
     /ui-core\.js\?v=[\d.]+"><\/script>\n<script defer src="js\/ui-accent\.js\?v=[\d.]+"><\/script>\n<script defer src="js\/ui-feel\.js/.test(html) &&

@@ -407,7 +407,9 @@
     // The spans follow the new heights before the Last positions are read.
     packTiles();
     if (still) return;
-    const easing = "cubic-bezier(0.2, 0.8, 0.2, 1)", duration = 460;
+    // R15 (v9.26): the timing of every morph (js/ui-morph.js), so the tiles move like the rest.
+    const motion = UI.MOTION || { ease: "cubic-bezier(0.2, 0.8, 0.2, 1)", duration: 440 };
+    const easing = motion.ease, duration = motion.duration;
     clearTimeout(flipTiles.timer);
     flipTiles.timer = setTimeout(() => grid.classList.remove("flipping"), duration + 40);
     tiles.forEach(t => {

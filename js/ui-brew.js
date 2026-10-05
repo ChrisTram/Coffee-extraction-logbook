@@ -238,17 +238,25 @@
     timer = setInterval(paint, 250);
   }
 
-  function closeBrew() {
+  /* R15 (v9.26): « Fermer » and Escape fold the mode back into the recipe card
+     it grew from, when that card is still on screen, or fade it out
+     (js/ui-morph.js). plain === true: saving or completing the entry, which
+     changes screen, closes at once. */
+  function closeBrew(plain) {
     clearInterval(timer);
     timer = null;
     const m = $("#modal-brew");
-    if (m.open) m.close();
+    if (!m.open) return;
+    if (plain !== true && UI.morphBack) UI.morphBack(m, () => { if (m.open) m.close(); }, { fade: true });
+    else m.close();
   }
 
   function wireBrew() {
     $("#btn-brew").addEventListener("click", openBrew);
-    $("#br-close").addEventListener("click", closeBrew);
+    $("#br-close").addEventListener("click", () => closeBrew());
     $("#modal-brew").addEventListener("close", () => { clearInterval(timer); timer = null; });
+    // Escape closes the same way as « Fermer », not natively at once.
+    $("#modal-brew").addEventListener("cancel", ev => { ev.preventDefault(); closeBrew(); });
     $("#br-go").addEventListener("click", () => {
       // "Start again" after a stop: we restart from zero, not from the old time.
       if (UI.stopwatch.state === "stopped" && elapsed() > 0) UI.resetStopwatch();
@@ -295,10 +303,14 @@
     // J1 (v9.13): the same rating dial as the entry, larger, read from afar.
     UI.mountRatingDial($("#br-rating"), $("#br-rating-dial"));
     $("#br-save").addEventListener("click", () => {
-      closeBrew();
+      closeBrew(true);
       $("#form-entry").requestSubmit();
     });
-    $("#br-complete").addEventListener("click", closeBrew);
+    // Opened from the Guide (R15), the entry is not behind: completing it goes there.
+    $("#br-complete").addEventListener("click", () => {
+      closeBrew(true);
+      if (UI.nav.screenName !== "entry") UI.activateScreen("entry");
+    });
   }
 
   function updateBrewNote() {

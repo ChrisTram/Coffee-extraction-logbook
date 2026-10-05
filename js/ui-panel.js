@@ -162,7 +162,15 @@
     markCurrent();
   }
 
-  function closePanel() {
+  /* fold: the user closes (the button, Escape). R15 (v9.26): the panel folds
+     back into the row it came from, when that row is still on screen
+     (js/ui-morph.js). The other closings (another screen, Edit, Refaire)
+     are instant: the row is about to go. */
+  function closePanel(fold) {
+    if (fold === true && UI.morphBack && asideOpen() && panel.kind) {
+      UI.morphBack($("#side-panel"), () => closePanel(), { id: panel.id, find: currentRow });
+      return;
+    }
     if (asideOpen()) $("#side-panel").hidden = true;
     if (sheetAsPanel()) sheetDialog().close();
     panel.kind = null; panel.id = null; panel.list = null;
@@ -224,14 +232,21 @@
   function openCup(ext, origin) {
     const e = ext && extsWithCalcs().find(x => x.id === ext.id);
     if (!e) return;
+    /* R15 (v9.26): a touched row grows into what opens (js/ui-morph.js); the
+       arrows and the palette pass a list, not a row, and open in place. */
+    const touched = origin && origin.nodeType === 1 && UI.morphOpen ? origin : null;
     if (!panelWanted()) {
-      UI.loadExtractionIntoEntry(DATA.state.extractions.find(x => x.id === e.id), false);
+      const load = () => UI.loadExtractionIntoEntry(DATA.state.extractions.find(x => x.id === e.id), false);
+      if (touched) UI.morphOpen(touched, load, "#screen-entry", { id: e.id }); else load();
       return;
     }
     const list = origin && (origin.root || origin.ids) ? origin : cupListFrom(origin) || (panel.kind === "cup" ? panel.list : null);
-    showAside("cup", e.id, list, cupHtml(e), I18N.t("panel_kind_cup"));
-    const row = currentRow();
-    if (row && row.scrollIntoView) row.scrollIntoView({ block: "nearest" });
+    const show = () => {
+      showAside("cup", e.id, list, cupHtml(e), I18N.t("panel_kind_cup"));
+      const row = currentRow();
+      if (row && row.scrollIntoView) row.scrollIntoView({ block: "nearest" });
+    };
+    if (touched) UI.morphOpen(touched, show, "#side-panel", { id: e.id, find: currentRow }); else show();
   }
 
   // ---------- A recipe ----------
@@ -343,13 +358,14 @@
     if (d.spVideo) { UI.startVideo(b); return; }
     if (d.spWalkthrough) { UI.openWalkthrough(d.spWalkthrough); return; }
     if (d.spRecipeEdit) { UI.openRecipesModal(); UI.openRecipeForm(d.spRecipeEdit); return; }
-    if (d.spBrew) { closePanel(); UI.brewRecipe(d.spBrew); }
+    // R15 (v9.26): the card grows into the brew mode, over the panel, and folds back into it.
+    if (d.spBrew) UI.brewRecipe(d.spBrew, b.closest(".recipe-card"));
   }
 
   function onPanelClick(ev) {
     const stepper = ev.target.closest("[data-panel-step]");
     if (stepper) { step(Number(stepper.dataset.panelStep)); return; }
-    if (ev.target.closest("#side-panel-close")) { closePanel(); return; }
+    if (ev.target.closest("#side-panel-close")) { closePanel(true); return; }
     const inCard = ev.target.closest(".sp-recipe [data-sp-brew], .sp-recipe [data-sp-walkthrough], .sp-recipe [data-sp-recipe-edit]," +
       " .sp-recipe [data-sp-video], .sp-recipe [data-sp-toggle], .sp-recipe [data-sp-var-id]");
     if (inCard) { onRecipeCardClick(inCard); return; }

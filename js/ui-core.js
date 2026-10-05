@@ -635,7 +635,10 @@ const UI = (() => {
        the screen would only switch on return. We switch right away, without
        animation: nobody is watching it. */
     const cache = typeof document.visibilityState === "string" && document.visibilityState === "hidden";
-    if (reducedMotion || cache || !document.startViewTransition) { fn(); return; }
+    /* R15 (v9.26): a morph is opening this screen (js/ui-morph.js). Its ghost
+       IS the movement; a view transition would freeze the page over it. */
+    const morphing = typeof UI === "object" && UI && typeof UI.morphing === "function" && UI.morphing();
+    if (reducedMotion || cache || morphing || !document.startViewTransition) { fn(); return; }
     /* A document that says it is visible but gets no frame (a window behind
        another, a preview pane) never calls the update back: the screen
        stayed the old one, still in the language it was drawn in. Past half a
