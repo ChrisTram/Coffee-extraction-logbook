@@ -361,6 +361,7 @@
     // Storage that fails to open no longer blocks the loading screen (v8.72): the logbook runs in memory.
     let hasData = false;
     try { hasData = await DATA.init(); } catch (e) { console.error(e); toast(I18N.t("toast_storage_failed")); }
+    UI.refreshAccent();   // R3: the copper takes the coffee in progress (js/ui-accent.js)
     updateBadges();
     UI.fillCoffeeSelect();
     UI.fillFilters();

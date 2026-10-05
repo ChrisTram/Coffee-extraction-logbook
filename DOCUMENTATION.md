@@ -150,6 +150,51 @@ connexion de `worker/index.js` (ces deux derniers en Graphite). Les icônes en
 trait des boutons d'action viennent de `UI.icone(nom)`, la piste des curseurs
 de `UI.peindreCurseur(curseur)` (à appeler après toute écriture de `.value`).
 
+L'ACCENT DE TON CAFÉ (R3, v9.24, `js/ui-accent.js`). Le cuivre suit le café en
+cours : celui de la dernière tasse notée tant qu'il est sur l'étagère (pas
+archivé), sinon le sachet ouvert le plus récemment (date d'ouverture, à défaut
+d'achat) parmi les cafés actifs ; rien, le cuivre du thème. Torréfaction
+(`roastLevel` : Claire, Medium, Foncée, et les mots d'un import) vers jetons
+(`accentTokens(niveau, palette)`) : clair plus doré, foncé plus brun, medium ou
+inconnu = le cuivre de base.css, jamais recopié. Seule la famille de l'accent
+bouge (`--accent`, `-strong`, `-bg`, `-ring`, `-glow`, et en clair le cuivre de
+la carte sombre, `--card-dark-accent*`), écrite en ligne sur `<html>` ;
+`css/feel.css` l'enregistre (`@property`, donc `getComputedStyle` rend du
+`rgb()`) et la fait glisser une seconde (`html.accent-glide`) quand le café
+change ; un changement de thème réécrit les valeurs de la nouvelle palette sans
+glisser (MutationObserver sur `data-theme`/`data-palette`). Le niveau est gardé
+par appareil (`accent-roast`) et repeint dès le chargement du fichier, juste
+après ui-core.js ; le script du thème en ligne n'est PAS touché. Réglage
+« L'accent suit ton café » dans Paramètres › Cet appareil (`accent-follows`,
+localStorage, actif par défaut). Tous les contrastes (texte d'accent sur fond,
+rail, trois panneaux et son lavis ; texte des boutons sur l'accent et son
+survol) tiennent 4,5:1 dans les trois palettes : `tools/feel.test.mjs` les
+calcule. En clair, la carte sombre écrit son texte sur cuivre à l'encre espresso
+(`--on-accent`), le crème n'y donnait que 1,5:1.
+
+LES PETITS RESSORTS (R8, v9.24, `css/feel.css`, `js/ui-feel.js`). Les boutons
+(`.btn` et variantes, `.btn-icon`, `.btn-row`, `.btn-method`, `.btn-square-small`, et le micro du commentaire `.comm-head .dictate`)
+s'écrasent au clic par la propriété `scale` (pas `transform`, elle se compose avec
+leurs transformations), avec un ressort `linear()` (`--spring`) ; chaque liste de
+transitions y est recopiée de sa feuille, le ressort ajouté à la fin. Les
+interrupteurs `.toggle` ont un grain pour pouce, cru quand c'est éteint,
+torréfié quand c'est allumé, qui roule d'un demi-tour (::before et ::after de
+`.toggle i`). Les cases à cocher (toutes, sauf celles d'un `.toggle`) restent
+natives mais dessinées en tasse : `appearance: none`, le cuivre monte du fond
+(`background-size`), la coche (::before) suit, une anse (::after) ; la case
+« mélangée » de la table est une demi tasse. Sur ordinateur seulement
+(`(hover: hover) and (pointer: fine)`, souris), les petites cartes (`TARGETS` de
+ui-feel.js) s'inclinent sous la souris, 3 degrés au plus, moins pour les grandes,
+jamais au delà de 700 × 560 px, jamais avec un champ, un canevas ou un `[data-scrub]`
+dedans, et un reflet cuivre suit le pointeur. LE TEXTE NE PENCHE JAMAIS : c'est la
+PEAU de la carte (fond, bordure, ombre, recopiés en propriétés `--skin-*` sur un
+pseudo-élément libre, ::after sinon ::before) qui penche derrière le contenu ;
+pour un bocal, c'est son dessin (`.cf-art`). Un rAF au plus par mouvement, rien
+au repos ; un appui, un défilement, un nouvel accent ou un changement de thème
+remettent la carte à plat (`UI.flattenTilt`). La vapeur de la dernière tasse (R4)
+n'est pas un pseudo-élément : elle reste à plat au dessus de la peau, jamais coupée. Mouvement réduit :
+rien ne s'écrase, ne roule, ne penche ni ne glisse.
+
 LA FEUILLE DE STYLE ne définit chaque sélecteur de premier niveau qu'UNE fois
 (v8.31). Les blocs « refonte, étape n » qui redéfinissaient ce qui précédait ont
 été fusionnés dans la première définition. La vérification s'est faite par
@@ -178,6 +223,8 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/tuning.js` | meilleurs réglages par café, moyenne glissante, constats : calcul pur |
 | `js/charts.js` | graphiques Chart.js (chargée à la demande), heatmap et réglette en SVG maison |
 | `js/ui-core.js` | outils d'interface partagés, thème, navigation. Définit `UI`. |
+| `js/ui-accent.js` | l'accent de ton café (v9.24, R3) : quel café, quelle torréfaction, quels jetons, le réglage de l'appareil |
+| `js/ui-feel.js` | les cartes qui penchent sous la souris et leur reflet (v9.24, R8) |
 | `js/ui-sync-bean.js` | la ligne de synchro et son grain de café (v9.13) |
 | `js/ui-nav.js` | la barre du bas : bouton central, appui long, trait qui glisse (v9.13) |
 | `js/ui-scrub.js` | les courbes SVG qu'on parcourt au doigt (v9.13) ; le graphe 30 jours le fait dans `charts.js` |
@@ -230,7 +277,8 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `css/journal.css` | les styles du journal v9.20 (table, page de comparaison, scènes), chargée après `extras.css` |
 | `css/home.css` | la navigation N1, l'accueil L1, la page Analyses O1, l'histoire du mois O6 (v9.21), chargée après `journal.css` |
 | `css/gestures.css` | tirer pour synchroniser et la dictée (v9.22), chargée après `home.css` |
-| `css/moments.css` | la vapeur, la série, la phrase du palier et sa gerbe, la tuile des paliers (v9.23), chargée en dernier, après `gestures.css` |
+| `css/moments.css` | la vapeur, la série, la phrase du palier et sa gerbe, la tuile des paliers (v9.23), chargée après `gestures.css` |
+| `css/feel.css` | l'accent qui glisse (R3) et les petits ressorts (R8) (v9.24), chargée en dernier, après `moments.css` |
 | `css/fonts/` | les deux polices de la DA, embarquées en woff2, sous OFL (section 10) |
 | `sw.js`, `manifest.json`, `icons/` | PWA et hors ligne (section 10) |
 | `worker/index.js`, `worker/sync.js` | porte d'entrée et fusion D1, Cloudflare seulement (section 13) |
@@ -1747,6 +1795,14 @@ raccourcis s'affichent sur Android, pas sur iPhone.
   d'image (fenêtre derrière une autre, volet d'aperçu) ne rappelait jamais
   `startViewTransition` : l'écran restait l'ancien, dans la langue où il avait été
   dessiné. `withTransition` (ui-core.js) bascule sans animation après 500 ms (v9.23).
+- LA FAMILLE DE L'ACCENT EST ENREGISTRÉE (v9.24, `@property` dans css/feel.css) :
+  `getComputedStyle(...).getPropertyValue("--accent")` rend `rgb(...)`, plus du
+  `#hex`, et une `var(--accent, repli)` ne retombe jamais sur son repli. Une
+  nouvelle couleur d'accent par thème se met dans base.css ET, pour un café clair
+  ou foncé, dans `ACCENTS` de js/ui-accent.js (le test calcule ses contrastes).
+- PAS DE TRANSFORM 3D SUR UN BLOC DE TEXTE : il est dessiné comme une image
+  projetée, le texte devient flou. ui-feel.js fait pencher la peau de la carte,
+  jamais la carte.
 - ATTRIBUT HIDDEN : la règle globale `[hidden] { display: none !important; }`
   existe parce que `display: flex` sur .champ battait l'attribut. Ne pas la
   retirer.
@@ -1901,6 +1957,7 @@ node tools/journal.test.mjs  le journal v9.20 : regles de la comparaison et sa p
 node tools/home.test.mjs     accueil, Analyses, histoire du mois, carte de l'appli (v9.21) : parties pures et page
 node tools/gestures.test.mjs tirer pour synchroniser et dictée (v9.22) : caoutchouc, seuil, issues, texte dicté (pur), câblage
 node tools/moments.test.mjs  vapeur, séries et paliers (v9.23) : règles pures, ce qu'un enregistrement fête, crochets et page
+node tools/feel.test.mjs     l'accent du café et les petits ressorts (v9.24) : café, torréfaction, jetons et leurs contrastes, inclinaison, page
 ```
 
 Ce que chacune couvre, et le bug qui l'a motivée : `DECISIONS.md`, « Tests ».

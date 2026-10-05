@@ -13,6 +13,45 @@ introduit est dans le changelog.
 
 ## Architecture et code
 
+### L'accent de ton café, et les cartes dont le texte ne penche pas (v9.24)
+
+QUEL CAFÉ. La dernière tasse notée dit ce que Chris boit en ce moment, c'est
+le café que la carte « dernière tasse » montre déjà : l'accent suit celui-là.
+Le sachet ouvert ne sert que si ce café est rangé (archivé) ou s'il n'y a pas
+encore de tasse : un sachet acheté d'avance et pas encore ouvert ne doit pas
+recolorer l'appli. Le café choisi dans la saisie, avant d'enregistrer, ne
+compte pas : une tasse abandonnée aurait recoloré l'interface pour rien.
+
+QUELLES COULEURS. En clair, l'accent est un texte foncé sur papier ET le fond
+du texte crème des boutons : il ne peut pas s'éclaircir sans passer sous
+4,5:1 sur `--panel-3`. Une torréfaction claire y devient donc plus DORÉE à la
+même profondeur (teinte 36 au lieu de 26), une foncée plus brune et plus
+sombre. En sombre, c'est l'inverse : l'accent est clair sur presque noir, une
+claire monte vers l'or, une foncée descend vers le caramel sans passer sous
+4,5:1 sur `--panel-3`. Medium n'a pas de valeur à lui : c'est le cuivre de
+base.css, jamais recopié, pour qu'il n'y ait qu'une vérité. Les contrastes sont
+calculés dans `tools/feel.test.mjs` sur les vraies surfaces lues dans base.css,
+pas affirmés en commentaire.
+
+LE GLISSEMENT. Une propriété personnalisée non enregistrée saute ; enregistrée
+(`@property`, `<color>`), elle s'interpole. La transition n'est posée que pendant
+la seconde du changement (`html.accent-glide`) : sinon un changement de thème
+aurait laissé le cuivre traîner une seconde derrière le fond, qui change net.
+Le script du thème en ligne, dont le serveur épingle l'empreinte, n'est pas
+touché : le dernier niveau est repeint par js/ui-accent.js, chargé juste après
+le noyau.
+
+LE TEXTE NE PENCHE PAS. Première version : la carte entière en `perspective()
+rotateX() rotateY()`. Le navigateur dessine alors la carte comme une image puis
+la projette : à 2 degrés, le texte était visiblement plus mou tant que la
+souris restait dessus. La carte garde donc son contenu à plat ; c'est sa peau
+(fond, bordure, ombre, recopiés sur un pseudo-élément derrière le contenu) qui
+penche, avec le reflet. À 3 degrés au plus, l'œil lit l'inclinaison sur les
+bords et l'ombre, pas sur le texte. Le pseudo-élément n'est pris que s'il est
+libre (`content: none`), puisqu'une autre fonction peut déjà dessiner dans
+::before ou ::after (le record de la dernière tasse le fait). Un bocal n'a pas
+de texte dans son dessin : c'est le dessin qui penche.
+
 ### Mes cafés devient une page, et la fin d'un sachet (v9.18)
 
 « Mes cafés » était une fenêtre ; une étagère de bocaux veut de la place et un

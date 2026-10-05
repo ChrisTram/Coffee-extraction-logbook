@@ -2213,6 +2213,9 @@ const I18N_EN = {
       "Journal, par date": "Journal, by date",
       // moments (v9.23)
       "Séries et paliers": "Streaks and milestones",
+      // feel (v9.24)
+      "L'accent suit ton café": "The accent follows your coffee",
+      "Le cuivre des boutons prend la couleur de ton café en cours : plus doré pour une torréfaction claire, plus brun pour une foncée.": "The copper of the buttons takes the colour of the coffee you are on: more golden for a light roast, browner for a dark one.",
   },
 
   DIAG: {

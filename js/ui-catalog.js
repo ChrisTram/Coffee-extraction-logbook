@@ -470,6 +470,9 @@
     $(".param-index [data-opens-db]").addEventListener("click", () => $("#btn-data").click());
     $("#param-back").addEventListener("click", () => $("#param-body").classList.remove("expanded"));
     $("#param-dial").addEventListener("input", updateDialDetail);
+    // This device's feel (v9.24): the accent of the coffee (its switch is here), the cards that tilt.
+    UI.wireAccent();
+    UI.wireFeel();
     // The Settings checkbox and the stopwatch one drive the same setting.
     $("#param-beeps").addEventListener("change", () => {
       $("#chrono-beep").checked = $("#param-beeps").checked;
