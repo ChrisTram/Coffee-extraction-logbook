@@ -61,6 +61,29 @@
     };
   }
 
+  /* v9.25: YOUR MONTH, at the foot of the side column. The last 30 days as
+     Analyses counts them (UI.timeBars, a bar per day), the cups, the rated
+     average, and the next cup milestone with how far along the way to it
+     the logbook is (from the milestone before, or from zero). */
+  function monthSummary(exts, analyzable, now) {
+    const t = UI.timeBars(exts, analyzable, "30", now);
+    const from = t.bars[0].from, to = t.bars[t.bars.length - 1].to;
+    const notes = analyzable.filter(e => e.score_10 !== "" && e.score_10 !== undefined &&
+      dayOf(e.date_time) >= from && dayOf(e.date_time) <= to).map(e => Number(e.score_10));
+    const ms = typeof MILESTONES === "object" && MILESTONES ? MILESTONES : null;
+    const next = ms ? ms.nextCups(exts) : null;
+    let progress = null;
+    if (next) {
+      const done = next.n - next.left;
+      const prev = ms.CUPS.filter(k => k <= done).pop() || 0;
+      progress = Math.max(0, Math.min(1, (done - prev) / (next.n - prev)));
+    }
+    return {
+      bars: t.bars, cups: t.bars.reduce((sum, b) => sum + b.n, 0),
+      mean: notes.length ? average(notes) : null, next: next, progress: progress,
+    };
+  }
+
   // « aujourd'hui », « hier », or the weekday: the best cup of the week is in it.
   function weekDayWord(dt, now) {
     const d = new Date(String(dt).slice(0, 10) + "T12:00"), t = new Date(now || new Date());
@@ -193,6 +216,47 @@
     [...el.querySelectorAll(".hw-day i")].forEach((bar, i) => bar.style.setProperty("--d", String(i)));
     el.classList.add("morning-grow");
     setTimeout(() => el.classList.remove("morning-grow"), Math.max(0, 1150 - elapsed));
+  }
+
+  /* The month's card: its figures, a thin bar per day, the milestone ring. */
+  function renderMonthCard(m) {
+    const card = $("#home-month");
+    if (!card) return;
+    if (!m || !m.cups) { card.hidden = true; put(card, ""); return; }
+    const cupsText = I18N.t("home_week_cups", { n: m.cups, s: m.cups > 1 ? "s" : "" });
+    const avgText = m.mean !== null ? I18N.t("home_week_avg", { m: fmtRating(m.mean) }) : I18N.t("home_week_unrated");
+    const max = Math.max(1, ...m.bars.map(b => b.n));
+    const bars = m.bars.map((b, i) => "<i" + (b.n ? "" : ' class="zero"') + ' style="--h:' + (b.n ? Math.max(0.12, b.n / max) : 0.05).toFixed(2) +
+      ";--o:" + tint(b.mean).toFixed(2) + ";--i:" + i + '"></i>').join("");
+    const day = b => b.date.toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" });
+    const nextText = m.next ? I18N.t("ms_next", { n: m.next.n, k: m.next.left }) : "";
+    const ring = m.next ? '<svg class="hm-ring" viewBox="0 0 36 36" aria-hidden="true" style="--p:' + Math.round(m.progress * 100) + '">' +
+      '<circle class="hm-ring-bg" cx="18" cy="18" r="15.9"></circle><circle class="hm-ring-on" cx="18" cy="18" r="15.9" pathLength="100"></circle></svg>' : "";
+    card.hidden = false;
+    card.setAttribute("aria-label", I18N.t("home_month_title") + ". " + cupsText + ", " + avgText + ". " +
+      (nextText ? nextText + ". " : "") + I18N.t("home_month_aria"));
+    put(card, '<span class="hm-head"><span class="hw-title">' + escapeHtml(I18N.t("home_month_title")) + "</span>" +
+      '<span class="hw-figures"><b>' + escapeHtml(cupsText) + '</b><span class="hw-sep" aria-hidden="true">·</span>' + escapeHtml(avgText) + "</span>" +
+      UI.icon("chevron") + "</span>" +
+      '<span class="hm-bars" aria-hidden="true" style="--count:' + m.bars.length + '">' + bars + "</span>" +
+      '<span class="hm-axis" aria-hidden="true"><span>' + escapeHtml(day(m.bars[0])) + "</span><span>" +
+      escapeHtml(I18N.t("date_today").toLowerCase()) + "</span></span>" +
+      (nextText ? '<span class="hm-next">' + ring + "<span>" + escapeHtml(nextText) + "</span></span>" : ""));
+  }
+
+  /* v9.25: the side column follows the scroll on a wide screen (sticky,
+     css/home.css). Under the band of the last cup when it fits the window;
+     taller than the window, a negative top: it scrolls down to its foot
+     first, then stays. Only a value: the phone's single column ignores it. */
+  const SIDE_TOP = 84, SIDE_FOOT = 18;
+  function sideTop(height, view) {
+    if (!(height > 0) || !(view > 0)) return SIDE_TOP;
+    return height + SIDE_TOP + SIDE_FOOT <= view ? SIDE_TOP : Math.round(view - height - SIDE_FOOT);
+  }
+  function placeSide() {
+    const side = $("#home-side");
+    if (!side || !side.style || typeof window.innerHeight !== "number") return;
+    side.style.setProperty("--home-side-top", sideTop(side.offsetHeight, window.innerHeight) + "px");
   }
 
   // ---------- The bags, in their jars ----------
@@ -444,20 +508,28 @@
   /* Called by renderDashboard with what it already computed, or with null
      when the logbook is empty. */
   function renderHome(o) {
-    if (!o) { renderWeek(null); renderBand(null); UI.renderMoments(null); return; }
+    if (!o) { renderWeek(null); renderMonthCard(null); renderBand(null); UI.renderMoments(null); return; }
     renderWeek(weekSummary(o.exts, o.analyzable, new Date()), o.morning);
     renderBags(o.morning);
     renderFinding(o.analyzable);
     renderBrew(o.exts, o.analyzable);
+    renderMonthCard(monthSummary(o.exts, o.analyzable, new Date()));
     renderBand(o.last);
     // R4 and R9 (v9.23): the steam of a cup still hot, the streak on the week (js/ui-celebrate.js).
     UI.renderMoments(o);
     if (nav.screenName === "dashboard") onScroll();
+    placeSide();
   }
 
   function wireHome() {
     const go = screen => { if (UI.showAnalyticsPeriod && screen === "analytics") UI.showAnalyticsPeriod("7"); UI.activateScreen(screen); };
     [$("#home-week"), $("#home-week-line")].forEach(b => { if (b) b.addEventListener("click", () => go("analytics")); });
+    // v9.25: the month opens Analyses on its 30 days.
+    const month = $("#home-month");
+    if (month) month.addEventListener("click", () => { if (UI.showAnalyticsPeriod) UI.showAnalyticsPeriod("30"); UI.activateScreen("analytics"); });
+    // The side column's sticky top follows its height (a finding turning, a bag ending).
+    const side = $("#home-side");
+    if (side && typeof ResizeObserver === "function") new ResizeObserver(() => placeSide()).observe(side);
     // The corner's « Fin de sachet » pill (a phone): « Mes cafés » and its « À racheter » shelf.
     const corner = $("#stock-corner");
     if (corner) corner.addEventListener("click", ev => {
@@ -487,7 +559,7 @@
       window.scrollTo({ top: 0, behavior: calm() ? "auto" : "smooth" });
     });
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", () => { placeBand(); onScroll(); });
+    window.addEventListener("resize", () => { placeBand(); placeSide(); onScroll(); });
     /* The entrance plays when the home screen gets its "on" class, which
        activateScreen gives it (at boot too, behind the loading silhouette). */
     const screen = $("#screen-dashboard");
@@ -505,6 +577,6 @@
   }
 
   Object.assign(UI, {
-    weekSummary, brewSuggestion, findingStart, weekDayWord, renderHome, wireHome, nextFinding,
+    weekSummary, brewSuggestion, findingStart, weekDayWord, renderHome, wireHome, nextFinding, monthSummary, sideTop,
   });
 })();

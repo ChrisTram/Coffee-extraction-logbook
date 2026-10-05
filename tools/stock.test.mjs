@@ -62,10 +62,10 @@ const { BAGS, GRIND } = new Function(SCRIPTS.map(read).join("\n") + "\nreturn { 
   check("every coffee lands on exactly one row", r.open.length + r.rebuy.length + r.done.length === items.length);
 
   const jars = BAGS.entryJars(items, 6);
-  check("the entry's jars: active coffees with beans left only", ids(jars) === "emptyB,tie-old,tie-new,half,full",
+  check("the entry's jars: active coffees with beans left only", ids(jars) === "tie-old,tie-new,half,full",
     ids(jars));
-  check("a bag under one dose is still offered (a smaller cup is a cup), an empty one is not",
-    jars.some(it => it.coffee.id === "emptyB") && !jars.some(it => it.coffee.id === "emptyA"));
+  check("a spent bag (under one dose, v9.25) is no longer offered, an empty one neither",
+    !jars.some(it => it.coffee.id === "emptyB") && !jars.some(it => it.coffee.id === "emptyA"));
   check("the entry's jars are capped", BAGS.entryJars(items, 2).length === 2);
 }
 

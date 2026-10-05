@@ -440,4 +440,11 @@ Object.assign(I18N_FR, {
     ms_item_aria: { fr: "{m}, le {d}. Voir la tasse." },
     ms_none: { fr: "Pas encore de palier." },
     ms_next: { fr: "Prochain palier : ta {n}e tasse, encore {k}" },
+    // polish (v9.25)
+    home_month_title: { fr: "Ton mois" },
+    home_month_aria: { fr: "Le mois en détail, dans Analyses" },
+    entry_spent_group: { fr: "Sachets finis" },
+    entry_spent_suffix: { fr: "(sachet fini)" },
+    cf_done_more: { fr: "Voir les {n} autres" },
+    cf_done_less: { fr: "Replier" },
 });

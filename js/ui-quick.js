@@ -30,8 +30,8 @@
     const coffeeSelect = $("#q-coffee");
     const v = coffeeSelect.value;
     const coffees = UI.selectableCoffees();
-    coffeeSelect.innerHTML = '<option value="">' + I18N.t("pick_coffee") + "</option>" +
-      coffees.map(c => '<option value="' + TOOLS.escapeHtml(c.id) + '">' + TOOLS.escapeHtml(c.name) + "</option>").join("");
+    // v9.25: the form's options, the spent bags at the end and marked.
+    coffeeSelect.innerHTML = '<option value="">' + I18N.t("pick_coffee") + "</option>" + UI.coffeeOptions();
     if (v && coffees.some(c => c.id === v)) coffeeSelect.value = v;
     /* Same default as the full form: the quick panel REFUSES to save without
        a coffee, so opening it on an empty field guaranteed a round trip. We

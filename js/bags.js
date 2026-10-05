@@ -8,6 +8,7 @@
  *     finished) and their order;
  *   - entryJars: the open bags offered at the top of the entry form, the most
  *     advanced first;
+ *   - entryChoices: the entry's menu, the spent bags set apart at its end;
  *   - isSpent: less than one dose left, the moment a bag ends;
  *   - resumeCup: the cup a new bag picks up from (the last one of the bag
  *     before);
@@ -65,13 +66,27 @@ const BAGS = (() => {
     return rows;
   }
 
-  /* THE ENTRY'S JARS (M1 in O2). The open bags, those with beans left, of
-     the coffees the entry form offers (active ones), the most advanced
-     first: that is the bag to finish. A bag below one dose is still offered,
-     a smaller cup is a cup. At most `max`. */
+  /* THE ENTRY'S JARS (M1 in O2). The open bags of the coffees the entry
+     form offers (active ones), the most advanced first: that is the bag to
+     finish. Since v9.25 a spent bag (below one dose) is no longer offered:
+     it is on the « À racheter » shelf, and the menu keeps it at its end,
+     marked (entryChoices). At most `max`. */
   function entryJars(items, max) {
-    return (items || []).filter(it => it.coffee && Number(it.coffee.active) !== 0 && it.gauge && it.gauge.grams > 0)
+    return (items || []).filter(it => it.coffee && Number(it.coffee.active) !== 0 && it.gauge && it.gauge.grams > 0 && !isSpent(it.gauge))
       .sort(byAdvance).slice(0, max || 6);
+  }
+
+  /* THE ENTRY'S MENU (v9.25). The active coffees in their own order, those
+     whose bag is spent set apart at the end: still reachable (the very last
+     cup of a bag is logged after it), never offered first. A coffee whose
+     bag size nobody knows is not spent. */
+  function entryChoices(items) {
+    const live = [], spent = [];
+    (items || []).forEach(it => {
+      if (!it || !it.coffee || Number(it.coffee.active) === 0) return;
+      (isSpent(it.gauge) ? spent : live).push(it.coffee);
+    });
+    return { live: live, spent: spent };
   }
 
   /* WHERE THE LAST BAG STOPPED (Q9): the most recent cup of the coffee that
@@ -171,5 +186,5 @@ const BAGS = (() => {
     return frames;
   }
 
-  return { isSpent, shelfOf, shelves, entryJars, resumeCup, bagCups, lockKey, nextCup, nextCupSettings, dialFrames };
+  return { isSpent, shelfOf, shelves, entryJars, entryChoices, resumeCup, bagCups, lockKey, nextCup, nextCupSettings, dialFrames };
 })();

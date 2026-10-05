@@ -111,6 +111,33 @@
   .cf-jar.is-done .cf-art { width: 44px; }
 }
 
+/* v9.25: THE FINISHED ONES, ONE PLANK. The jars past the first row wait
+   behind « Voir les N autres » (js/ui-coffees.js, fitDone), on its line. */
+.cf-row-done { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 12px; }
+.cf-row-done > .cf-row-h { margin: 0 0 10px; }
+.cf-row-done > .cf-plank { grid-column: 1 / -1; }
+.cf-done-more { margin: 0 0 10px; font-size: 0.82rem; }
+.cf-done-more[hidden], .cf-jar[hidden] { display: none; }
+@media (pointer: coarse) { .cf-done-more { min-height: 44px; } }
+
+/* v9.25: ON A WIDE SCREEN, THE SHELF IN TWO COLUMNS. The open jars on the
+   left, « À racheter » and the finished ones stacked on the right: the
+   whole page fits a 1280 by 800 window without scrolling. The open row
+   spans both rows of the grid, the second of which is flexible, so its
+   height never pushes the finished ones down. Without a rebuy row, the
+   finished ones go up; with neither, the open jars take the full width. */
+.cf-frame { container: shelves / inline-size; }
+@container shelves (min-width: 820px) {
+  .cf-shelves { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 32px; row-gap: 24px; align-items: start; }
+  .cf-shelves > .cf-row-open { grid-column: 1; grid-row: 1 / span 2; }
+  .cf-shelves > .cf-row-rebuy { grid-column: 2; grid-row: 1; }
+  .cf-shelves > .cf-row-done { grid-column: 2; grid-row: 2; }
+  .cf-shelves:not(:has(> .cf-row-rebuy)) > .cf-row-done { grid-row: 1; }
+  .cf-shelves:not(:has(> .cf-row-rebuy, > .cf-row-done)) > .cf-row-open, .cf-shelves > :only-child { grid-column: 1 / -1; }
+  .cf-rebuy { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .cf-plank-done { --cf-row: 160px; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
+}
+
 /* ---------- The jar that grows into its sheet (view transition) ---------- */
 ::view-transition-group(cf-sheet) { animation-duration: 440ms; animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1); overflow: clip; border-radius: var(--radius); }
 ::view-transition-old(cf-sheet) { animation: cf-vt-out 180ms ease-out both; }

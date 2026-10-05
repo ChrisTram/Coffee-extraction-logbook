@@ -165,6 +165,8 @@ const I18N = (() => {
     "#home-week,#home-week-line,#home-bags,#home-finding,#home-brew,#home-band,#kpis-secondary,#an-highlight,#an-story," +
     "#tile-month-title,#tile-month-meta,#tile-month,#tile-coffees,#tile-podium,#tile-podium-reading,#tile-recipes-list," +
     "#tile-tastes,#tile-wheel,#tile-wheel-detail,#tile-grinder,#tile-grinder-reading,#heatmap-title,#story-stage,#story-bars," +
+    // polish (v9.25): the home's month card.
+    "#home-month," +
     // moments (v9.23): the milestones tile of Analyses.
     "#tile-milestones";
 

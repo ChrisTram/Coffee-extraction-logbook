@@ -1227,6 +1227,13 @@ const I18N_EN = {
     ms_item_aria: "{m}, on {d}. See the cup.",
     ms_none: "No milestone yet.",
     ms_next: "Next milestone: your {n}th cup, {k} to go",
+    // polish (v9.25)
+    home_month_title: "Your month",
+    home_month_aria: "The month in detail, in Analytics",
+    entry_spent_group: "Finished bags",
+    entry_spent_suffix: "(bag finished)",
+    cf_done_more: "Show the {n} others",
+    cf_done_less: "Fold",
   },
 
   UI: {

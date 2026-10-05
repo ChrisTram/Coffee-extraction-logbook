@@ -31,7 +31,7 @@
 
 (() => {
 
-  const TARGETS = "#home-week, #card-last, #home-finding, .home-week-line, .an-tile, .cf-jar, .wt-side";
+  const TARGETS = "#home-week, #card-last, #home-finding, #home-month, .home-week-line, .an-tile, .cf-jar, .wt-side";
   const MAX_DEG = 3;
   const CALM_SIZE = 380;          // up to this side, the full 3 degrees; beyond, less
   const MAX_W = 700, MAX_H = 560;

@@ -2185,6 +2185,32 @@ seule minuterie pour la retirer, et chaque volute s'éclaircit sur une horloge q
 démarre dans le passé (délai négatif = l'âge de la tasse), ce qui évite de
 recalculer quoi que ce soit pendant les quinze minutes.
 
+### Deux colonnes qui courent seules, et des tuiles à leur hauteur (v9.25)
+
+L'accueil avait la semaine dans l'en-tête, à droite du titre : la rangée de l'en-tête
+prenait la hauteur de la carte, et la dernière tasse descendait d'autant (la bande vide
+des captures de Chris). La semaine est montée en tête de la colonne de droite, et
+l'en-tête, les deux colonnes et « À brasser » sont devenus les enfants d'UNE grille.
+Le piège : une colonne qui couvre plusieurs rangées `auto` répartit sa hauteur sur
+toutes, et l'en-tête aurait grandi de nouveau. La dernière rangée est donc flexible
+(`auto auto auto 1fr`) : un élément qui traverse une piste flexible ne grandit que
+celle-là. La colonne collante prend un haut négatif quand elle dépasse la fenêtre,
+calculé en JS (le CSS ne connaît pas la hauteur d'un élément) : elle défile d'abord
+jusqu'à son pied, puis reste.
+
+Analyses : `grid-template-rows: masonry` n'existe pas dans Chrome sans drapeau. La
+maçonnerie est faite avec la grille elle-même, des rangées de 4 px et un span par
+tuile mesuré sur `offsetHeight` (pas le rectangle à l'écran : une tuile en vol est
+mise à l'échelle). Un span ne change la hauteur d'aucune tuile, donc le
+ResizeObserver ne boucle jamais. La classe `.an-packed` est posée AVANT la mesure,
+sinon on mesure la hauteur étirée de la rangée. Pendant l'ouverture d'une tuile, les
+transitions de hauteur des graphes sont coupées : le span serait mesuré à leur départ.
+
+Saisie : un sachet fini n'est plus proposé en premier, mais reste dans le menu (la
+dernière tasse d'un sachet se note souvent après qu'il a été vidé). Le menu ne se
+remplissait qu'au changement d'un café ; une tasse qui vide un sachet n'en change
+aucun, d'où `refreshCoffeeSelect`, qui compare les groupes avant de reconstruire.
+
 ## Historique
 
 ### Tableau de l'historique, largeurs figées

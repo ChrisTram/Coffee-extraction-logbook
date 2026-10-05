@@ -124,10 +124,11 @@
         r.rebuy.map((it, i) => UI.bagEndScene(it.coffee.id, { layout: "row", index: i, force: true })).join("") + "</div>");
     }
     if (r.done.length) {
-      html += row("done", '<div class="cf-plank cf-plank-done" id="cf-done">' +
-        r.done.map((it, i) => jarCard(it, i, avgs, true)).join("") + "</div>");
+      html += row("done", '<button type="button" class="link-card cf-done-more" id="cf-done-more" data-cf-done-more aria-controls="cf-done" hidden></button>' +
+        '<div class="cf-plank cf-plank-done" id="cf-done">' + r.done.map((it, i) => jarCard(it, i, avgs, true)).join("") + "</div>");
     }
     if (html !== shelfHtml) { zone.innerHTML = html; shelfHtml = html; }
+    fitDone();
     writeCounts(r);
     markShelfJar(UI.sheetCoffeeId ? UI.sheetCoffeeId() : null);
     if (arriving && !calm() && !hidden()) {
@@ -141,6 +142,24 @@
     arriving = false;
     UI.playJars(zone);
     UI.playBagScenes(zone);
+  }
+
+  /* v9.25: THE FINISHED ONES, ONE PLANK. Only as many jars as the plank
+     holds in a row (its columns, read from the grid), the others behind
+     « Voir les N autres »: the page fits the window without scrolling. */
+  let doneAll = false;
+  function fitDone() {
+    const plank = $("#cf-done"), more = $("#cf-done-more");
+    if (!plank || !more || typeof getComputedStyle !== "function" || typeof plank.querySelectorAll !== "function") return;
+    // A hidden page has no columns to count: it counts when it shows (wireCoffees).
+    if (!plank.offsetWidth) return;
+    const jars = [...plank.querySelectorAll(".cf-jar")];
+    const cols = Math.max(1, String(getComputedStyle(plank).gridTemplateColumns || "").split(" ").filter(Boolean).length);
+    const extra = Math.max(0, jars.length - cols);
+    jars.forEach((j, i) => { j.hidden = !doneAll && i >= cols; });
+    more.hidden = !extra;
+    more.textContent = I18N.t(doneAll ? "cf_done_less" : "cf_done_more", { n: extra });
+    more.setAttribute("aria-expanded", String(doneAll));
   }
 
   // The counts of the header, rolling when they change.
@@ -385,6 +404,16 @@
     const list = $("#coffees-list");
     if (list) {
       list.addEventListener("click", ev => {
+        if (ev.target.closest("[data-cf-done-more]")) {
+          doneAll = !doneAll;
+          fitDone();
+          // The jars that come out rise one after the other, like arriving on the page.
+          if (doneAll && !calm()) $$("#cf-done .cf-jar").forEach((j, i) => {
+            if (typeof j.animate === "function") j.animate([{ opacity: 0, transform: "translateY(10px)" }, { opacity: 1, transform: "none" }],
+              { duration: 360, delay: i * 35, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", fill: "backwards" });
+          });
+          return;
+        }
         const card = ev.target.closest(".cf-jar[data-sheet], .be-jar[data-sheet]");
         if (!card) return;
         // Ours: the sheet's own handler on the document would open it a second time.
@@ -406,13 +435,15 @@
        the screen goes away, played by the next render. */
     const page = $("#screen-coffees");
     if (page && typeof MutationObserver === "function") {
-      new MutationObserver(() => { if (!page.classList.contains("on")) arriving = true; })
+      new MutationObserver(() => { if (!page.classList.contains("on")) arriving = true; else requestAnimationFrame(fitDone); })
         .observe(page, { attributes: true, attributeFilter: ["class"] });
     }
     // The end of a bag's buttons, wherever its scene is drawn (js/ui-bag-end.js).
     UI.wireBagEnd();
     DATA.subscribe(kind => { if (kind !== "sync") renderCoffeeJars(); });
     I18N.subscribe(() => { jarsHtml = ""; shelfHtml = ""; renderCoffeeJars(); });
+    // The finished ones' plank counts its columns again at a new width.
+    window.addEventListener("resize", UI.debounce(fitDone, 150));
   }
 
   // Under the old window's name too: the drawings and the empty places call it.

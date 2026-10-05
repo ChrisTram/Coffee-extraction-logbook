@@ -909,9 +909,16 @@ où en sont tes sachets, comment va ta semaine. `#dashboard-content.home` est un
 boîte de requêtes de conteneur (`container: home`) : sous 860 px de contenu, une
 colonne (la semaine en une ligne `#home-week-line`, pas de colonne des sachets) ;
 au dessus, deux colonnes (`.home-main`, qui garde la classe `.grid-dashboard`
-pour les règles de la carte, et `.home-side` : `#home-bags` puis
-`#home-finding`), la semaine en carte avec ses barres dans l'en-tête
-(`#home-week`). Puis `#home-brew` tout en bas. Le bandeau `#home-band` est HORS
+pour les règles de la carte, et `.home-side` : la semaine en carte avec ses
+barres `#home-week`, `#home-bags`, `#home-finding` puis `#home-month`).
+Depuis la v9.25, l'en-tête, les deux colonnes et `#home-brew` sont les enfants
+d'une même grille `.home-layout` : la colonne de droite couvre toutes les
+rangées, la dernière flexible (`auto auto auto 1fr`), donc les deux colonnes
+courent chacune de leur côté et la dernière tasse vient juste sous le titre. La
+colonne de droite est collante (`position: sticky`) ; `placeSide` (js/ui-home.js,
+au rendu, au redimensionnement, ResizeObserver) lui donne `--home-side-top` :
+84 px sous le bandeau quand elle tient dans la fenêtre, sinon un haut négatif
+(`UI.sideTop`) pour qu'elle défile jusqu'à son pied puis reste. Le bandeau `#home-band` est HORS
 de `.home` : une boîte de conteneur devient le cadre des `position: fixed`.
 
 - **La dernière tasse** : une rangée de tête (`.lc-head` : nom, contexte, note en
@@ -927,6 +934,11 @@ de `.home` : une boîte de conteneur devient le cadre des `position: fixed`.
   notées, meilleure, jours à venir) ; ses barres poussent à l'arrivée du matin
   (Q7) et ses chiffres roulent à l'arrivée d'une tasse de l'autre appareil (Q13).
   Le toucher ouvre Analyses sur 7 jours.
+- **Ton mois** (v9.25, `#home-month`, écran large seulement) : `UI.monthSummary`
+  reprend les 30 derniers jours d'Analyses (`UI.timeBars`), une barre fine par jour
+  teintée par la note, les tasses, la moyenne des notées, et le prochain palier
+  (`MILESTONES.nextCups`) avec un anneau qui dit le chemin fait depuis le palier
+  d'avant. Le toucher ouvre Analyses sur 30 jours.
 - **Les sachets** : la liste du coin (`UI.stockData`), cinq bocaux de js/ui-jar.js
   au plus, avec grammes, tasses et niveau ; ils bougent avec les pastilles du coin
   (le même vol par café).
@@ -969,7 +981,12 @@ onglets. Le calendrier, le graphe des 30 jours, les constats et les dessins
 gardent leur fenêtre et le disent (`.an-fixed`). Une tuile s'ouvre sur toute la
 largeur à sa place (`toggleTile`, FLIP : la grille `dense` se recompose, chaque
 tuile repart de son ancien rectangle, le contenu contre-mis à l'échelle et
-rogné pendant le vol) ; Échap la referme. Le récap de la semaine passée
+rogné pendant le vol) ; Échap la referme. Chaque tuile a sa propre hauteur
+(v9.25) : `packTiles` donne à chacune un `grid-row-end: span N` de rangées de
+4 px (`UI.tileSpan`, sa hauteur plus l'écart), `.an-packed` arrête l'étirement,
+et le flux `dense` range une tuile dans le trou sous une plus courte (une
+maçonnerie). Un ResizeObserver sur les tuiles repacke à chaque changement de
+taille ; `flipTiles` repacke avant de lire les positions d'arrivée. Le récap de la semaine passée
 (`#card-recap`) et les dessins (`#card-drawings`) y vivent depuis la v9.21.
 SÉRIES ET PALIERS (R9, v9.23, `data-tile="milestones"`, `#tile-milestones`, toute
 la largeur, sa propre fenêtre) : la série en cours et la meilleure avec ses dates, les
@@ -1409,7 +1426,13 @@ qu'avant.
 - **Les bocaux de la saisie** (v9.18, O2 avec M1, `#coffee-jars`, js/ui-coffees.js) :
   au-dessus du menu des cafés, les sachets ouverts en petits bocaux (niveau, grammes,
   jour du sachet), le plus avancé d'abord (`BAGS.entryJars`, six au plus), et « Autre
-  café… » qui ouvre le menu. Un toucher écrit `#f-coffee` et rejoue son `change`
+  café… » qui ouvre le menu. Depuis la v9.25, un sachet fini (moins d'une dose,
+  `BAGS.isSpent`) n'a plus de bocal ici, et le menu (`BAGS.entryChoices`,
+  `UI.coffeeOptions`, le même dans la saisie rapide) le met à la fin, dans un groupe
+  « Sachets finis », marqué « (sachet fini) » : il reste là pour noter la toute
+  dernière tasse. Le premier café d'un formulaire neuf est le premier avec des
+  grains. Une tasse qui vide un sachet ne change aucun café : `refreshCoffeeSelect`
+  (abonné à DATA) remplit le menu à nouveau seulement si un café a changé de groupe. Un toucher écrit `#f-coffee` et rejoue son `change`
   (machine et recette suivent, le brouillon enregistre) ; `#f-coffee` reste la vérité,
   et les bocaux le suivent quoi qui l'écrive (sa propriété `value` est surveillée, comme
   le cadran du moulin).
@@ -1501,6 +1524,11 @@ encore (dessins, écrans vides).
   d'une rangée, `--cf-row`). En tête, les trois comptes (boutons qui défilent jusqu'à
   leur rangée) et « Ajouter un café ». Les formulaires café et sachet de l'ancienne
   fenêtre vivent dans la carte `.cf-forms`, visible seulement quand l'un est ouvert.
+  Sur un écran large (v9.25, `.cf-frame`, conteneur `shelves` à 820 px et plus),
+  l'étagère est en deux colonnes : les ouverts à gauche, « À racheter » puis les finis
+  à droite, et la page tient dans 1280 par 800 sans défiler. Les finis tiennent sur une
+  planche : `fitDone` compte les colonnes de la grille et cache les autres bocaux
+  derrière « Voir les N autres » (« Replier »), sur ordinateur comme sur téléphone.
 - **L'arrivée** : en arrivant sur la page, les bocaux montent l'un après l'autre et se
   remplissent depuis vide (`.cf-arrive`, CSS seulement), un bocal bas rougit ensuite.
 - **Le bocal qui devient la fiche** : un toucher lance une view transition (noms
@@ -1549,7 +1577,9 @@ conteneurs (`#h-corps` et `#h-cartes`).
 
 Au dessus : une tete de page (total et depuis quand, recherche, export), les
 filtres en pastilles (des `<select>` natifs habilles), et un bandeau resume du
-filtre courant en quatre chiffres. Les cinq actions sont des icones en trait (`UI.icone`), avec les memes `data-action` qu'avant.
+filtre courant en quatre chiffres. Depuis la v9.25 chaque pastille a la largeur de
+ce qu'elle montre (`field-sizing: content`) et les deux dates n'en font qu'une
+(`.h-dates`, « Du … au … ») : une rangée à 1600 px, deux à 1280 px. Les cinq actions sont des icones en trait (`UI.icone`), avec les memes `data-action` qu'avant.
 Depuis la v9.20 elles sont SIX, « Partager » (js/ui-share.js) en plus, dans UNE liste, `CUP_ACTIONS` (`UI.CUP_ACTIONS`) : une action de plus est une entrée de plus,
 et une entrée qui porte `run(ext, bouton)` est exécutée par le clic délégué.
 

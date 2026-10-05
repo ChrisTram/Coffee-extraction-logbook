@@ -56,9 +56,28 @@
     dateTouched: false,
   };
 
-  function selectableCoffees() {
-    return DATA.state.coffees.filter(c => c.active !== 0);
+  /* v9.25: the active coffees, those whose bag is spent (less than one dose
+     left) set apart (BAGS.entryChoices). They are no longer offered first:
+     the default coffee of a fresh form is the first one with beans. */
+  function coffeeChoices() {
+    return BAGS.entryChoices(DATA.state.coffees.filter(c => c.active !== 0)
+      .map(c => ({ coffee: c, gauge: DATA.bagGauge(c.id, fallbacks.dose) })));
   }
+  function selectableCoffees() {
+    const c = coffeeChoices();
+    return c.live.concat(c.spent);
+  }
+  /* The options of a coffee menu (the form's and the quick panel's): the
+     spent ones at the end, in a group of their own, each marked. */
+  function coffeeOptions(choices) {
+    const c = choices || coffeeChoices();
+    const opt = (x, mark) => '<option value="' + titleAttr(x.id) + '">' + titleAttr(x.name) + (mark ? " " + titleAttr(mark) : "") + "</option>";
+    return c.live.map(x => opt(x)).join("") + (c.spent.length
+      ? '<optgroup label="' + titleAttr(I18N.t("entry_spent_group")) + '">' + c.spent.map(x => opt(x, I18N.t("entry_spent_suffix"))).join("") + "</optgroup>"
+      : "");
+  }
+  const choicesKey = c => c.live.map(x => x.id + "\u0001" + x.name).join("\u0002") + "|" + c.spent.map(x => x.id + "\u0001" + x.name).join("\u0002");
+  let shownChoices = "";
 
   function currentCoffeeGround() {
     const c = DATA.state.coffees.find(x => x.id === $("#f-coffee").value);
@@ -72,12 +91,18 @@
     const sel = $("#f-coffee");
     const value = keepId || sel.value;
     const keptInactive = DATA.state.coffees.find(c => c.id === value && c.active === 0);
-    sel.innerHTML = '<option value="">' + I18N.t("pick_coffee") + "</option>" +
-      selectableCoffees().map(c => '<option value="' + titleAttr(c.id) + '">' + titleAttr(c.name) + "</option>").join("") +
+    const choices = coffeeChoices();
+    shownChoices = choicesKey(choices);
+    sel.innerHTML = '<option value="">' + I18N.t("pick_coffee") + "</option>" + coffeeOptions(choices) +
       (keptInactive ? '<option value="' + titleAttr(keptInactive.id) + '">' + titleAttr(keptInactive.name) + " " + I18N.t("inactive_suffix") + "</option>" : "");
     if (value) sel.value = value;
     // O2 (v9.18): the open bags as jars above the menu, which they drive and follow (js/ui-coffees.js).
     UI.renderCoffeeJars();
+  }
+  /* A cup that empties a bag changes no coffee, so app.js does not refill
+     the menu: this does, only when a bag went to the end of it or came back. */
+  function refreshCoffeeSelect() {
+    if (choicesKey(coffeeChoices()) !== shownChoices) fillCoffeeSelect();
   }
 
   function fillRecipeSelect() {
@@ -881,6 +906,8 @@
 
   function wireEntry() {
     wireDictation($("#f-dictate"), $("#f-comment"), $("#f-dictate-text"), $("#f-dictate-live"));
+    // v9.25: a bag that ends (or a new one) moves its coffee in the menu.
+    DATA.subscribe(kind => { if (kind !== "sync") refreshCoffeeSelect(); });
     /* Q12 (v9.17): what the fields showed before, so that what the other
        machine changes rolls to its new value (js/ui-brewer.js). The fields
        hold their new values at once: the roll only draws on top of them. */
@@ -1008,7 +1035,7 @@
     updateWarnings, updatePreheatField, updateDiagnosticCorrection,
     updateSliders, updateMilk, updateLive, updateTempHint, markDateTouched,
     entryRating, prefillFromRecipe, refreshEntryDate, resetEntry,
-    fillCoffeeSelect, fillRecipeSelect, fillCupSelect, renderCupEditor,
+    fillCoffeeSelect, refreshCoffeeSelect, coffeeOptions, fillRecipeSelect, fillCupSelect, renderCupEditor,
     entry, onHeatInput, onCoffeeChoice, onPreheat, estimatedVolume,
   });
 })();

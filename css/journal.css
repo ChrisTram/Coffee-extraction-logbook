@@ -303,6 +303,45 @@
   .discard-bin-float { bottom: calc(var(--bottom-bar) + var(--bar-rise) + 74px + env(safe-area-inset-bottom, 0px)); }
 }
 
+/* ---------- v9.25: the filters, tidy ----------
+   Each filter is as wide as what it shows: a menu sizes to its chosen option
+   (field-sizing), no longer to its longest one, so « Café · Tous » is a
+   small pill and not a 160 px block. The two dates are one pill, « Du … au »,
+   split by a hairline. On a computer they hold on one row, two at most, the
+   reset at the end of the last; the search and the export sit in the head,
+   on the title's baseline. Below 1024 px the « Filtrer » fold of A3 stays. */
+.history-filters { gap: 8px; row-gap: 8px; }
+.history-filters .field { flex: none; padding: 0 12px; gap: 6px; }
+.history-filters .field select, .history-filters .field input { field-sizing: content; }
+.history-filters .field select { min-width: 2.6rem; max-width: 13rem; padding-right: 20px; text-overflow: ellipsis; }
+.history-filters .field input[type="date"] { min-width: 0; width: auto; }
+.history-filters .field input[type="number"] { width: auto; min-width: 1.8rem; max-width: 3.2rem; }
+.h-dates { display: flex; flex: none; min-width: 0; }
+.h-dates .field:first-child { border-top-right-radius: 0; border-bottom-right-radius: 0; padding-right: 8px; }
+.h-dates .field + .field {
+  margin-left: -1px; border-top-left-radius: 0; border-bottom-left-radius: 0; padding-left: 8px;
+}
+.h-dates .field + .field label { text-transform: lowercase; }
+.h-dates .field:hover, .h-dates .field:focus-within { position: relative; z-index: 1; }
+.history-filters .filter-method { flex: none; }
+.history-filters-actions { flex: none; }
+#screen-history > .head-page { align-items: flex-end; }
+#screen-history > .head-page .head-actions { flex-wrap: nowrap; }
+#h-export { flex: none; }
+@media (min-width: 1024px) {
+  .history-filters { flex-wrap: wrap; }
+}
+@media (max-width: 1023px) {
+  /* The fold open, the pills wrap two by two; the method takes its row. */
+  #screen-history:not(.filters-open) .history-filters > .h-dates { display: none; }
+  #screen-history.filters-open .history-filters > .field, #screen-history.filters-open .h-dates { flex: 1 1 auto; }
+  #screen-history.filters-open .h-dates .field { flex: 1 1 0; min-width: 0; }
+  #screen-history.filters-open .history-filters .field select { max-width: none; flex: 1; }
+  #screen-history.filters-open .h-dates input[type="date"] { flex: 1; min-width: 0; }
+  #screen-history > .head-page .head-actions { flex-wrap: wrap; width: 100%; }
+  #screen-history .field-search { flex: 1 1 200px; width: auto; }
+}
+
 /* ---------- Calm: reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
   .gt-bar.open, .gt-menu, .cmp-page.entering, .cmp-page.entering .cmp-diff, .cmp-page.entering .cmp-verdict,

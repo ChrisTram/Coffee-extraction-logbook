@@ -361,6 +361,31 @@
     });
   }
 
+  // ---------- v9.25: each tile at its own height ----------
+
+  /* A masonry made of the grid itself. The rows are thin (ROW px, no row
+     gap); each tile spans as many as its content needs, plus the gap, and
+     the grid's dense flow sets it in the first hole it fits. A closed tile
+     is as tall as what it holds, never stretched to its tallest neighbour
+     with an empty half; the next tile slides up under a short one. Measured
+     again whenever a tile changes size (a ResizeObserver, wireAnalytics):
+     a span changes no tile's own height, so it never loops. */
+  const ROW = 4;
+  function tileSpan(height, gap) {
+    return Math.max(1, Math.ceil((Math.max(0, Number(height) || 0) + Math.max(0, Number(gap) || 0)) / ROW));
+  }
+  function packTiles() {
+    const grid = $("#an-tiles");
+    if (!grid || typeof grid.querySelectorAll !== "function" || typeof getComputedStyle !== "function" || !grid.offsetWidth) return;
+    const gap = parseFloat(getComputedStyle(grid).columnGap) || 18;
+    // Packed first: the rows no longer stretch the tiles, so each one measures its content.
+    grid.classList.add("an-packed");
+    // offsetHeight, not the box on screen: a tile in flight is scaled.
+    const tiles = [...grid.querySelectorAll(".an-tile")];
+    const heights = tiles.map(t => t.offsetHeight);
+    tiles.forEach((t, i) => { t.style.gridRowEnd = "span " + tileSpan(heights[i], gap); });
+  }
+
   // ---------- Opening a tile in place (FLIP) ----------
 
   /* The tile grows to the grid's full width where it stands, the others
@@ -373,12 +398,16 @@
     const tiles = [...grid.querySelectorAll(".an-tile")];
     const still = calm() || hidden() || typeof grid.animate !== "function";
     const first = still ? null : new Map(tiles.map(t => [t, t.getBoundingClientRect()]));
+    /* While they fly, the tiles clip what they hold: the counter-scaled
+       content of a growing tile is revealed by it, and never widens the page.
+       Set before the change (v9.25): a chart that grows by a transition would
+       be measured at its start, the tiles are packed at its end. */
+    if (!still) grid.classList.add("flipping");
     change();
+    // The spans follow the new heights before the Last positions are read.
+    packTiles();
     if (still) return;
     const easing = "cubic-bezier(0.2, 0.8, 0.2, 1)", duration = 460;
-    /* While they fly, the tiles clip what they hold: the counter-scaled
-       content of a growing tile is revealed by it, and never widens the page. */
-    grid.classList.add("flipping");
     clearTimeout(flipTiles.timer);
     flipTiles.timer = setTimeout(() => grid.classList.remove("flipping"), duration + 40);
     tiles.forEach(t => {
@@ -453,6 +482,7 @@
     UI.renderDrawings();
     UI.renderStoryBanner();
     UI.maybeOpenStory();
+    packTiles();
     requestAnimationFrame(() => placePeriodMark(true));
   }
 
@@ -506,6 +536,11 @@
         if (step && step.tagName !== "BUTTON") { ev.preventDefault(); UI.openRecipe(step.getAttribute("data-guide-recipe"), step); }
       });
     }
+    // v9.25: the tiles are packed again whenever one changes size (content, width, the page showing).
+    if (grid && typeof ResizeObserver === "function") {
+      const ro = new ResizeObserver(() => packTiles());
+      grid.querySelectorAll(".an-tile").forEach(t => ro.observe(t));
+    }
     // Escape folds the open tile back, when nothing else is open over it.
     document.addEventListener("keydown", ev => {
       if (ev.key !== "Escape" || nav.screenName !== "analytics" || !state.open) return;
@@ -522,7 +557,7 @@
   }
 
   Object.assign(UI, {
-    periodStart, inPeriod, timeBars, rankCoffees, tasteCounts, keyFigures,
+    periodStart, inPeriod, timeBars, rankCoffees, tasteCounts, keyFigures, tileSpan, packTiles,
     renderAnalytics, wireAnalytics, showAnalyticsPeriod, setAnalyticsPeriod: setPeriod, toggleTile,
   });
 })();
