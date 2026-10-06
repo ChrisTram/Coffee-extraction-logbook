@@ -401,7 +401,7 @@
       (e._c.drinkRatio ? '<small class="sub">' + I18N.t("ratio_drink_short") + " " + e._c.drinkRatio + "</small>" : "") + "</td>" +
       '<td class="rating-cell">' + (isFailed(e)
         ? '<span class="badge-failed" title="' + titleAttr(I18N.t("botched_badge_title")) + '">' + I18N.t("botched_badge") + "</span>"
-        : "") + (e.score_10 !== "" ? fmtDecimal(Number(e.score_10), 1) : "") + "</td>" +
+        : "") + (e.score_10 !== "" ? fmtDecimal(Number(e.score_10), 1) : UI.rateMark(e)) + "</td>" +
       /* TASTES AND DIAGNOSIS in the same cell, not in two columns: one more
          column asks for four coordinated edits (see DECISIONS, "The trap of
          frozen widths") and shifts silently if one of them is
@@ -469,7 +469,8 @@
       '<div class="h-card-head">' +
         '<span class="h-card-hour">' + fmtDateTime(e.date_time) + "</span>" +
         '<span class="chip-method ' + e.method.toLowerCase() + '">' + e.method + "</span>" +
-        '<span class="h-card-rating">' + (e.score_10 !== "" ? fmtDecimal(Number(e.score_10), 1) : "") + "</span>" +
+        // v9.27: « à noter » on a cup without a score (js/ui-rate-sheet.js).
+        '<span class="h-card-rating">' + (e.score_10 !== "" ? fmtDecimal(Number(e.score_10), 1) : UI.rateMark(e)) + "</span>" +
         '<button type="button" class="btn-menu-card" data-action="menu" aria-expanded="' + menu + '" aria-label="' +
           titleAttr(I18N.t("history_actions")) + '">⋯</button>' +
       "</div>" +

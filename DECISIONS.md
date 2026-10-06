@@ -2220,6 +2220,22 @@ seule minuterie pour la retirer, et chaque volute s'éclaircit sur une horloge q
 démarre dans le passé (délai négatif = l'âge de la tasse), ce qui évite de
 recalculer quoi que ce soit pendant les quinze minutes.
 
+### Une note donnée après coup peut fêter, mais seulement une note (v9.27)
+
+Noter plus tard est devenu le geste normal (le panneau de côté, la feuille du
+téléphone) : un premier 10 donné le lendemain est un vrai premier 10, il a son
+moment. Mais `forSave` ne convient pas : il compare « sans la tasse » et « avec », et
+une tasse déjà comptée ferait croire à une 10e tasse ou à une série. `MILESTONES.forEdit`
+compare la tasse D'AVANT et la tasse D'APRÈS, et ne garde que les paliers de note
+(premier 9, premier 10) : rien d'autre ne bouge avec une note. Même mémoire
+`milestones-seen`, donc une fois par appareil, même après « Annuler ». UN moment : la
+phrase prend la place de « Note enregistrée » là où la note a été donnée, les grains
+partent du cadran ; le record du sachet seul dit sa phrase sans grains (la grande
+carte de l'accueil le fait déjà briller). Les écritures du panneau passent par le
+même chemin que la saisie (`DATA.editExtraction` sur la ligne stockée), regroupées à
+quelques centaines de millisecondes : une note tournée demi-point par demi-point ne
+fait pas dix écritures ni dix synchros.
+
 ### Deux colonnes qui courent seules, et des tuiles à leur hauteur (v9.25)
 
 L'accueil avait la semaine dans l'en-tête, à droite du titre : la rangée de l'en-tête

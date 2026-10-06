@@ -197,7 +197,8 @@
       if (at < text.length) frag.appendChild(document.createTextNode(text.slice(at)));
       parent.replaceChild(frag, node);
       spans.forEach(([span, h]) => {
-        if (!still && shift < UI.ROLL_MS) UI.rollText(span, h.to, h.from);
+        // v9.27: a figure given late (a cup rated afterwards) rolls in from a dot.
+        if (!still && shift < UI.ROLL_MS) UI.rollText(span, h.to, h.from === "" ? "·" : h.from);
         // The copper goes once it has faded; under reduced motion it simply stays its two seconds.
         setTimeout(() => span.classList.remove("edit-fig", "still"), Math.max(0, FLASH_MS - shift) + 60);
       });

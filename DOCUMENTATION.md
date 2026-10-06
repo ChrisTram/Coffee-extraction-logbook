@@ -219,6 +219,45 @@ trajet sur place ; deux minuteries le finissent sans image ; pendant la mise à 
 `withTransition` ne lance pas de view transition (`UI.morphing()`). Mouvement réduit,
 page cachée, source hors de l'écran : le comportement d'avant, d'un coup.
 
+LA TASSE QU'ON ÉCRIT DANS LE PANNEAU (v9.27, `js/ui-panel-edit.js`). Sur ordinateur, la
+tasse ouverte à côté (`js/ui-panel.js`) se modifie sur place : la note d'abord (le
+cadran J1 sur son propre curseur `#pe-rating`, demi-points, « Tasse ratée », Effacer),
+puis la mouture, l'eau ou le feu, le temps total, la dose et l'eau (lus et écrits
+comme la saisie : `GRIND.parseDial`, m:ss, virgule), les goûts (ses habituels d'abord,
+ceux du café comptant triple, et une recherche), le diagnostic, le commentaire et son
+micro (R13). Sous eux, en lecture : les autres mesures, la place face à la moyenne du
+café (la réglette de la dernière tasse, `UI.rankAmongSiblings`), les tasses jumelles
+(`TUNING.twins`), la recette avec sa cible et ses étapes à l'eau de la tasse, la
+prochaine tasse (B1, `UI.nextCupBlock`). UN chemin d'écriture, celui de la saisie :
+la ligne stockée, les champs changés par dessus, `DATA.editExtraction` ; ce qui change
+à quelques instants d'intervalle part en une écriture (`queue`, `flush` au départ
+du panneau). L'ÉDITEUR EST CONSTRUIT UNE FOIS : le panneau le déplace de tasse en
+tasse (`UI.mountPanelCup`), un changement de données le remplit sur place
+(`UI.refreshPanelCup`, jamais le champ en cours de frappe), `UI.releasePanelCup` le
+retire. Une tasse sans note s'ouvre cadran allumé et focalisé ; ← → notent (aussi
+depuis la page, `panelRate`), ↓ ↑ passent à la suivante, le focus restant sur le
+cadran. « Note enregistrée » et « Annuler » six secondes ; un premier 9 ou 10 donné
+après coup a son moment là (`UI.editMoment`, `MILESTONES.forEdit` : seuls les paliers
+de note peuvent bouger, une fois par appareil), le record du sachet seul a sa phrase
+sans grains.
+
+NOTER PLUS TARD (v9.27, `js/ui-rate-sheet.js`). Une tasse sans note (pas ratée)
+porte « à noter » dans le journal (cartes, table, chapitres) et les dernières tasses
+de l'accueil (`UI.rateMark`), la grande carte « Noter » (`UI.rateAction`). Un seul
+écouteur en capture (`[data-rate-cup]`) : sur ordinateur le panneau s'ouvre sur la
+note, plus étroit une feuille monte (la `.panel-quick` de la saisie rapide, son
+cadran `#rs-rating`), « Enregistrer la note » écrit par le même chemin et le message
+offre « Annuler ». Une valeur donnée après coup roule depuis un point dans les
+listes (Q3, `js/ui-scenes.js`).
+
+LA COLONNE DE L'ACCUEIL (v9.27, `js/ui-home-widgets.js`). La moyenne du café à côté
+de ses grammes, dans les lignes des sachets et les pastilles du coin (pas les
+pastilles d'un téléphone) : `UI.bagAverageHtml`, sur les tasses analysables notées.
+Sous « Ton mois », sur ordinateur, trois petites cartes (`#home-widgets`) : la roue des
+arômes, le podium et la carte du moulin du mois, dessinés par leurs fonctions ; une
+carte ouvre sa tuile d'Analyses en grand. `fitWidgets` cache les dernières tant que
+la colonne dépasse la colonne principale.
+
 LA FEUILLE DE STYLE ne définit chaque sélecteur de premier niveau qu'UNE fois
 (v8.31). Les blocs « refonte, étape n » qui redéfinissaient ce qui précédait ont
 été fusionnés dans la première définition. La vérification s'est faite par
@@ -296,6 +335,9 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/ui-tuning.js` | Réglages gagnants (v9.19, O3) : le tableau, À retenter, Ce qui gagne partout ; et « Chez toi » des cartes recettes du Guide (D2) |
 | `js/ui-share.js` | partager une tasse ou une recette (v9.19, F2) : l'image en canevas, le texte, le menu de partage |
 | `js/ui-welcome.js` | la première ouverture (v9.19, O4) : trois questions, puis la première tasse |
+| `js/ui-panel-edit.js` | la tasse du panneau de côté qu'on écrit (v9.27) : la note d'abord, les modifications rapides, le contexte ; parties pures dans `UI.panelEditMath` |
+| `js/ui-rate-sheet.js` | noter plus tard (v9.27) : « à noter » des listes, « Noter » de l'accueil, la feuille de note du téléphone |
+| `js/ui-home-widgets.js` | la moyenne à côté des grammes et les petites cartes sous « Ton mois » (v9.27) |
 | `js/ui-shortcuts.js` | les raccourcis clavier : la table SHORTCUTS, la décision, l'aide générée, l'astuce (v9.13, v9.19) |
 | `js/app.js` | démarrage, navigation, thème, langue, modale de données, abonnement aux données |
 | `css/extras.css` | les styles de la v9.19 (O4, raccourcis, F2, O3), chargés après finishing.css |
@@ -304,6 +346,7 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `css/gestures.css` | tirer pour synchroniser et la dictée (v9.22), chargée après `home.css` |
 | `css/moments.css` | la vapeur, la série, la phrase du palier et sa gerbe, la tuile des paliers (v9.23), chargée après `gestures.css` |
 | `css/feel.css` | l'accent qui glisse (R3) et les petits ressorts (R8) (v9.24), chargée après `moments.css` |
+| `css/panel.css` | le panneau qu'on écrit, « à noter », la feuille de note, la moyenne des sachets, les petites cartes de l'accueil (v9.27), chargée avant `feel.css` |
 | `css/morph.css` | le fantôme et le détail transparent des morphings (v9.26, R15), chargée en dernier, après `feel.css` |
 | `css/fonts/` | les deux polices de la DA, embarquées en woff2, sous OFL (section 10) |
 | `sw.js`, `manifest.json`, `icons/` | PWA et hors ligne (section 10) |
@@ -2027,6 +2070,7 @@ node tools/home.test.mjs     accueil, Analyses, histoire du mois, carte de l'app
 node tools/gestures.test.mjs tirer pour synchroniser et dictée (v9.22) : caoutchouc, seuil, issues, texte dicté (pur), câblage
 node tools/moments.test.mjs  vapeur, séries et paliers (v9.23) : règles pures, ce qu'un enregistrement fête, crochets et page
 node tools/feel.test.mjs     l'accent du café et les petits ressorts (v9.24) : café, torréfaction, jetons et leurs contrastes, inclinaison, page
+node tools/panel.test.mjs    le panneau qu'on écrit, noter plus tard, la colonne de l'accueil (v9.27) : champs lus et écrits, ce qui change, la note, paliers, moyenne, touches
 ```
 
 Ce que chacune couvre, et le bug qui l'a motivée : `DECISIONS.md`, « Tests ».

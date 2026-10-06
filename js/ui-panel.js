@@ -20,7 +20,7 @@
 
 (() => {
 
-  const { $, $$, titleAttr, isFailed, displayedDiags, extsWithCalcs, fmtDecimal, dayLabelOf, fmtHour, icon, toast } = UI;
+  const { $, $$, extsWithCalcs, toast } = UI;
 
   const WIDE = "(min-width: 1100px)";
   const isWide = () => typeof matchMedia === "function" && matchMedia(WIDE).matches;
@@ -131,14 +131,19 @@
   }
 
   // refreshing: the same item redrawn (new data, new language), the reading position stays.
-  function showAside(kind, id, list, html, title, refreshing) {
+  function showAside(kind, id, list, html, title, refreshing, mount) {
     const aside = $("#side-panel");
     if (!aside) return;
     // A coffee shown beside gives its place: one panel at a time.
     if (sheetAsPanel()) { panel.kind = null; sheetDialog().close(); }
+    // v9.27: the cup's editor leaves with what it held, and comes back in its slot (js/ui-panel-edit.js).
+    if (kind !== "cup" && UI.releasePanelCup) UI.releasePanelCup();
     panel.kind = kind; panel.id = id; panel.list = list; panel.screen = UI.nav.screenName;
     $("#side-panel-kind").textContent = title;
-    $("#side-panel-body").innerHTML = html;
+    const body = $("#side-panel-body"), keep = body.scrollTop;
+    body.innerHTML = html;
+    if (mount) mount(body);
+    if (refreshing) body.scrollTop = keep;
     const ids = idsOf(list, kind), i = ids.indexOf(id);
     $("#side-panel-pos").textContent = i >= 0 && ids.length > 1 ? I18N.t("panel_position", { i: i + 1, n: ids.length }) : "";
     $$("#side-panel [data-panel-step]").forEach(b => {
@@ -171,6 +176,7 @@
       UI.morphBack($("#side-panel"), () => closePanel(), { id: panel.id, find: currentRow });
       return;
     }
+    if (UI.releasePanelCup) UI.releasePanelCup();
     if (asideOpen()) $("#side-panel").hidden = true;
     if (sheetAsPanel()) sheetDialog().close();
     panel.kind = null; panel.id = null; panel.list = null;
@@ -180,56 +186,14 @@
 
   // ---------- A cup ----------
 
-  function cupHtml(e) {
-    const coffee = DATA.coffeeOf(e);
-    const coffeeName = I18N.tr(coffee ? coffee.name : e._c.coffee_name || "") || I18N.t("journal_unknown_coffee");
-    const recipe = e.recipe ? UI.findRecipe(e.recipe) : null;
-    const kpi = (v, l) => (v === "" || v === undefined || v === null ? ""
-      : '<div class="sp-kpi"><b>' + v + "</b><span>" + l + "</span></div>");
-    const dial = e.grind_dial
-      ? titleAttr(e.grind_dial) + (e._c.microns ? "<small>" + e._c.microns + " µm</small>" : "")
-      : e._c.ground ? I18N.t("bag_default") : "";
-    const kpis = [
-      kpi(e.dose_g !== "" ? e.dose_g + " g" : "", I18N.t("panel_dose")),
-      kpi(e.water_g !== "" ? e.water_g + " g" : "", I18N.t("panel_water")),
-      kpi(dial, I18N.t("panel_dial")),
-      kpi(e._c.ratioText || "", I18N.t("detail_ratio")),
-    ].join("");
-    const compared = !!(UI.comparison && UI.comparison.has(e.id));
-    const rating = e.score_10 !== ""
-      ? '<b class="sp-rating">' + fmtDecimal(Number(e.score_10), 1) + "</b><span>" + I18N.t("dash_out_of_10") + "</span>"
-      : '<span class="sp-unrated">' + I18N.t("not_rated_yet") + "</span>";
-    const link = (kind, id, text, title) => '<button type="button" class="sp-link" data-sp="' + kind + '" data-sp-id="' + titleAttr(id) + '"' +
-      (title ? ' title="' + titleAttr(title) + '"' : "") + ">" + titleAttr(text) + "</button>";
-    return '<article class="sp-cup' + (isFailed(e) ? " failed" : "") + '">' +
-      '<header class="sp-head">' +
-        '<div class="sp-titles">' +
-          '<p class="sp-eyebrow">' + titleAttr(dayLabelOf(e.date_time) + " " + fmtHour(e.date_time)) + "</p>" +
-          '<h2 class="sp-title">' + (coffee ? link("coffee", coffee.id, coffeeName, I18N.t("sheet_view")) : titleAttr(coffeeName)) + "</h2>" +
-          '<p class="sp-sub"><span class="dot-method ' + String(e.method || "").toLowerCase() + '"></span>' +
-            titleAttr(I18N.machine(e.method || "")) +
-            (e.recipe ? '<span class="sp-dot" aria-hidden="true">·</span>' +
-              (recipe ? link("recipe", recipe.id, I18N.tr(e.recipe), "") : titleAttr(I18N.tr(e.recipe))) : "") + "</p>" +
-        "</div>" +
-        '<div class="sp-score">' + (isFailed(e) ? '<span class="badge-failed">' + I18N.t("botched_badge") + "</span>" : "") + rating + "</div>" +
-      "</header>" +
-      (kpis ? '<div class="sp-kpis">' + kpis + "</div>" : "") +
-      (e.diagnostic ? '<p class="sp-diag">' + titleAttr(displayedDiags(e.diagnostic)) + "</p>" : "") +
-      '<div class="sp-detail">' + UI.detailContent(e) + "</div>" +
-      '<div class="sp-actions">' +
-        '<button type="button" class="btn btn-primary btn-small" data-sp="redo">' + icon("dupliquer") + I18N.t("bubble_redo") + "</button>" +
-        '<button type="button" class="btn btn-small" data-sp="edit">' + icon("modifier") + I18N.t("btn_edit") + "</button>" +
-        '<button type="button" class="btn btn-small' + (compared ? " on" : "") + '" data-sp="compare" aria-pressed="' + compared + '">' +
-          icon("comparer") + I18N.t("panel_compare") + "</button>" +
-        '<button type="button" class="btn btn-small" data-share-cup="' + titleAttr(e.id) + '">' + UI.shareIcon() + I18N.t("share_action") + "</button>" +
-      "</div>" +
-    "</article>";
-  }
+  /* v9.27: the cup is drawn, and written in, by js/ui-panel-edit.js: the
+     score first, the quick edits, then its context. */
+  const cupHtml = e => UI.panelCupHtml(e);
 
   /* Opens a cup: beside on a wide screen, in the entry form otherwise (the
      behaviour of every cup click until v9.12). `origin` is the clicked row,
-     or a list. */
-  function openCup(ext, origin) {
+     or a list. `opts.focus` (v9.27, « Noter »): the score takes the focus. */
+  function openCup(ext, origin, opts) {
     const e = ext && extsWithCalcs().find(x => x.id === ext.id);
     if (!e) return;
     /* R15 (v9.26): a touched row grows into what opens (js/ui-morph.js); the
@@ -242,7 +206,8 @@
     }
     const list = origin && (origin.root || origin.ids) ? origin : cupListFrom(origin) || (panel.kind === "cup" ? panel.list : null);
     const show = () => {
-      showAside("cup", e.id, list, cupHtml(e), I18N.t("panel_kind_cup"));
+      showAside("cup", e.id, list, cupHtml(e), I18N.t("panel_kind_cup"), false,
+        body => UI.mountPanelCup(body, e, { focus: !!(opts && opts.focus), quiet: !!(opts && opts.quiet) }));
       const row = currentRow();
       if (row && row.scrollIntoView) row.scrollIntoView({ block: "nearest" });
     };
@@ -283,7 +248,7 @@
     if (!dialog) return false;
     // The close event that removes the class comes on the next frame: a quick reopening as a window must not keep it.
     if (!panelWanted()) { dialog.classList.remove("as-panel"); return false; }
-    if (asideOpen()) $("#side-panel").hidden = true;
+    if (asideOpen()) { if (UI.releasePanelCup) UI.releasePanelCup(); $("#side-panel").hidden = true; }
     dialog.classList.add("as-panel");
     try { dialog.show(); } catch (e) { dialog.classList.remove("as-panel"); return false; }
     panel.kind = "coffee";
@@ -337,7 +302,9 @@
     if (panel.kind === "cup") {
       const e = extsWithCalcs().find(x => x.id === panel.id);
       if (!e) { closePanel(); return; }
-      showAside("cup", e.id, panel.list, cupHtml(e), I18N.t("panel_kind_cup"), true);
+      // v9.27: the same cup again, its editor refilled in place (the focus and the caret stay).
+      if (UI.refreshPanelCup($("#side-panel-body"), e)) { markCurrent(); return; }
+      showAside("cup", e.id, panel.list, cupHtml(e), I18N.t("panel_kind_cup"), true, body => UI.mountPanelCup(body, e, { quiet: true }));
     } else if (panel.kind === "recipe") {
       const r = DATA.state.recipes.find(x => x.id === panel.id);
       if (!r) { closePanel(); return; }
@@ -369,6 +336,8 @@
     const inCard = ev.target.closest(".sp-recipe [data-sp-brew], .sp-recipe [data-sp-walkthrough], .sp-recipe [data-sp-recipe-edit]," +
       " .sp-recipe [data-sp-video], .sp-recipe [data-sp-toggle], .sp-recipe [data-sp-var-id]");
     if (inCard) { onRecipeCardClick(inCard); return; }
+    // v9.27: a twin cup, « Brasser avec » of the next cup (js/ui-panel-edit.js).
+    if (UI.onPanelMoreClick(ev)) return;
     const a = ev.target.closest("[data-sp]");
     if (!a) return;
     const action = a.dataset.sp;
@@ -383,6 +352,7 @@
     }
     const ext = DATA.state.extractions.find(x => x.id === panel.id);
     if (!ext) return;
+    if (UI.flushPanelEdits) UI.flushPanelEdits();
     if (action === "redo") { closePanel(); UI.redoCup(ext); toast(I18N.t("toast_duplicated")); }
     else if (action === "edit") { closePanel(); UI.loadExtractionIntoEntry(ext, false); }
     else if (action === "compare") compareCup(ext.id);
@@ -475,6 +445,8 @@
     }
     DATA.subscribe(kind => { if (kind !== "sync") refresh(); });
     I18N.subscribe(refresh);
+    // v9.27: « Noter » and « à noter », wherever a cup waits for its score (js/ui-rate-sheet.js).
+    UI.wireRateSheet();
   }
 
   // Under the names the other files read.

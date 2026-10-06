@@ -796,7 +796,7 @@ const I18N_FR = {
     panel_kind_cup: { fr: "Tasse" },
     panel_kind_recipe: { fr: "Recette" },
     panel_position: { fr: "{i} sur {n}" },
-    panel_hint_cup: { fr: "↑ ↓ ou J K : tasse suivante · Échap : fermer" },
+    panel_hint_cup: { fr: "↑ ↓ ou J K : tasse suivante · ← → : la note · Échap : fermer" },
     panel_hint: { fr: "↑ ↓ ou J K : suivante · Échap : fermer" },
     panel_dose: { fr: "café" },
     panel_water: { fr: "eau" },

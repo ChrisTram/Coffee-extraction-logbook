@@ -1,0 +1,211 @@
+/* v9.27: THE CUP PANEL YOU WRITE IN, RATING LATER, THE HOME'S SMALL CARDS.
+   js/ui-panel-edit.js (the side panel's cup: the score first, the quick
+   edits, the context), js/ui-rate-sheet.js (« à noter », « Noter », the
+   phone's rating sheet), js/ui-home-widgets.js (the average beside the
+   grams, the cards under « Ton mois »). Only the site's tokens: light,
+   Graphite and Nuit follow by themselves. Every movement has its calm path
+   at the end. */
+
+/* ---------- The panel's cup ---------- */
+
+.pe-cup { display: grid; gap: 14px; }
+.pe-head { grid-template-columns: minmax(0, 1fr); }
+.pe-ratio { font-variant-numeric: tabular-nums; color: var(--muted); }
+.pe { display: grid; gap: 14px; min-width: 0; }
+
+/* The score, first: the J1 dial on the left, its words on the right. */
+.pe-rate {
+  position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: center;
+  padding: 10px 14px 10px 8px; border: 1px solid var(--lines); border-radius: 18px; background: var(--panel-2);
+  transition: border-color var(--transition), background var(--transition);
+}
+.pe-rate.pe-unrated { border-color: var(--accent); background: var(--accent-bg); }
+.pe-dial-wrap { position: relative; display: grid; place-items: center; }
+.pe-dial { padding-top: 0; }
+.pe-dial .rd-svg { width: 148px; }
+.pe-dial .rd-score, .pe-dial .rd-word { display: none; }
+/* The score over the dial's centre, in HTML: the morph of R15 glides the row's score into it. */
+.pe-score.sp-rating {
+  position: absolute; left: 50%; top: 52%; transform: translate(-50%, -50%);
+  font-family: var(--serif); font-weight: 400; font-size: 2.9rem; line-height: 1; color: var(--ink);
+  font-variant-numeric: tabular-nums; pointer-events: none;
+}
+.pe-score[hidden] { display: none; }
+.pe-rate-side { display: grid; gap: 4px; min-width: 0; }
+.pe-rate-title { margin: 0; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.pe-word { margin: 0; font-family: var(--serif); font-size: 1.45rem; line-height: 1.1; color: var(--accent-strong); }
+.pe-rate-help { margin: 0; font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
+.pe-rate-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: 2px; }
+.pe-failed { display: inline-flex; align-items: center; gap: 7px; min-height: 32px; font-size: 0.85rem; color: var(--text); cursor: pointer; }
+.pe-clear { font-size: 0.78rem; }
+.pe-status {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 4px 0 0;
+  font-size: 0.82rem; font-weight: 600; color: var(--accent-strong);
+}
+.pe-status.pe-moment .pe-status-text { font-family: var(--serif); font-weight: 400; font-size: 1.05rem; color: var(--ink); }
+.pe-status.pe-in { animation: pe-status-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.pe-undo {
+  border: 0; background: none; padding: 2px 0; font: inherit; font-weight: 700; color: var(--accent-strong); cursor: pointer;
+  text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+}
+.pe-undo:hover, .pe-undo:focus-visible { text-decoration-color: currentColor; }
+.pe-undo[hidden] { display: none; }
+@keyframes pe-status-in { from { opacity: 0; transform: translateY(6px); } }
+/* A cup not rated yet, or « Noter »: the block glows twice around the dial. */
+.pe-rate.pe-call { animation: pe-call 1.2s ease-out 2; }
+@keyframes pe-call {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); }
+  100% { box-shadow: 0 0 0 14px color-mix(in srgb, var(--accent) 0%, transparent); }
+}
+
+/* The blocks under it: a small heading, the content. */
+.pe-block { position: relative; display: grid; gap: 8px; min-width: 0; }
+.pe-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.pe-h h3 { margin: 0; font-family: var(--sans); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.pe-h small { font-size: 0.75rem; color: var(--muted); }
+.pe-h .sp-link { font-size: 0.85rem; }
+
+/* The figures, inline: a label and a field that reads like the value. */
+.pe-fig-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px 12px; }
+.pe-fig { position: relative; display: grid; gap: 2px; min-width: 0; }
+.pe-fig-label { font-size: 0.75rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pe-fig input {
+  width: 100%; min-width: 0; padding: 4px 2px 5px; border: 0; border-bottom: 1px solid var(--lines); border-radius: 0;
+  background: transparent; color: var(--ink); font-family: var(--serif); font-size: 1.35rem; line-height: 1.15;
+  font-variant-numeric: tabular-nums; transition: border-color var(--transition);
+}
+.pe-fig input:hover { border-bottom-color: var(--muted); }
+.pe-fig input:focus { outline: none; border-bottom-color: var(--accent); box-shadow: 0 1px 0 0 var(--accent); }
+.pe-fig input[aria-invalid="true"] { border-bottom-color: var(--danger); box-shadow: 0 1px 0 0 var(--danger); }
+.pe-fig input::placeholder { color: var(--muted); opacity: 0.6; }
+.pe-msg { margin: 0; font-size: 0.8rem; color: var(--danger); }
+
+/* « enregistré », a moment, on what was just saved. */
+.pe-saved::after {
+  content: attr(data-saved-word); position: absolute; top: 0; right: 0;
+  font-size: 0.75rem; font-weight: 600; color: var(--accent-strong);
+  animation: pe-saved 1.6s ease both; pointer-events: none;
+}
+.pe-fig.pe-saved input { border-bottom-color: var(--accent); }
+@keyframes pe-saved { 0% { opacity: 0; transform: translateY(3px); } 15%, 70% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+
+/* The tastes and the diagnostic: the entry's chips, a little smaller. */
+.pe-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.pe-chips[hidden] { display: none; }
+.pe-chip { min-height: 32px; font-size: 0.8rem; }
+.pe-search {
+  width: 100%; min-height: 36px; padding: 6px 12px; border: 1px solid var(--lines); border-radius: 999px;
+  background: var(--panel); color: var(--text); font: inherit; font-size: 0.85rem;
+}
+.pe-search:focus { outline: none; border-color: var(--accent); }
+.pe-none { margin: 0; font-size: 0.8rem; color: var(--muted); }
+.pe-diag-groups { display: grid; gap: 8px; }
+.pe-diag-group { display: grid; gap: 4px; }
+.pe-diag-name { font-size: 0.75rem; color: var(--muted); }
+.pe-comment textarea {
+  width: 100%; min-height: 4.6em; resize: vertical; padding: 8px 10px; border: 1px solid var(--lines); border-radius: 12px;
+  background: var(--panel); color: var(--text); font: inherit; font-size: 0.92rem; line-height: 1.45;
+}
+.pe-comment textarea:focus { outline: none; border-color: var(--accent); }
+.pe-comment .comm-head { align-items: center; }
+
+/* The context: read only, compact. */
+.pe-more { display: grid; gap: 16px; padding-top: 14px; border-top: 1px solid var(--lines); }
+.pe-more:empty { display: none; }
+.pe-other .detail-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+.pe-avg .last-spot { margin: 0; }
+.pe-avg-line { margin: 0; font-size: 0.88rem; color: var(--text); }
+.pe-twins .twins { margin: 0; }
+.pe-twins .twins li { display: block; padding: 0; }
+.pe-twin {
+  display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 10px; align-items: baseline; width: 100%;
+  padding: 7px 4px; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; border-radius: 8px;
+}
+.pe-twin:hover, .pe-twin:focus-visible { background: var(--panel-2); }
+.pe-twins .j-average { margin: 0; font-size: 0.8rem; color: var(--muted); }
+.pe-window { margin: 0; font-size: 0.88rem; color: var(--text); }
+.pe-recipe .recipe-params { margin: 0; }
+.pe-recipe .recipe-steps { margin: 0; padding-left: 0; }
+.pe-recipe .step-time { min-width: 34px; }
+.pe-more .nc-card { margin: 0; }
+
+/* ---------- « à noter », « Noter » ---------- */
+
+.rate-mark {
+  position: relative; display: inline-flex; align-items: center; padding: 2px 9px; border: 1px dashed var(--accent);
+  border-radius: 999px; background: transparent; color: var(--accent-strong); font: inherit; font-size: 0.75rem; font-weight: 700;
+  line-height: 1.4; white-space: nowrap; cursor: pointer; vertical-align: middle;
+  transition: background var(--transition), border-color var(--transition);
+}
+/* A 44 px target without a 44 px pill. */
+.rate-mark::before { content: ""; position: absolute; inset: -10px -4px; }
+.rate-mark:hover, .rate-mark:focus-visible { background: var(--accent-bg); border-style: solid; }
+.rate-mark:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.h-card-rating .rate-mark, td .rate-mark { font-family: var(--sans); }
+.rate-action { margin-top: 8px; }
+.last-big-rating .rate-action { align-self: end; }
+
+/* ---------- The phone's rating sheet ---------- */
+
+.rate-sheet .rs-sub { margin: 4px 0 0; font-size: 0.85rem; color: var(--text); }
+.rate-sheet .rs-dial .rd-svg { width: min(220px, 60vw); }
+.rate-sheet .rs-failed { display: flex; justify-content: center; min-height: 44px; margin: 4px 0 10px; }
+.rate-sheet .quick-actions .btn { min-height: 44px; }
+.rate-sheet .rs-close { min-width: 44px; min-height: 44px; justify-content: center; }
+.rate-sheet .rs-save:disabled { opacity: 0.5; cursor: default; }
+/* The quick entry's sheet sits 16 px off the right edge on a phone; this one spans the width. */
+@media (max-width: 860px) { .panel-quick.rate-sheet { right: 0; } }
+.pe-rate.pe-unrated .rd-track { stroke: color-mix(in srgb, var(--accent) 30%, var(--panel-3)); }
+
+/* ---------- The average beside the grams ---------- */
+
+.bag-avg { display: inline-flex; align-items: baseline; gap: 5px; white-space: nowrap; }
+.bag-avg b { font-family: var(--serif); font-weight: 400; font-size: 1rem; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
+.bag-avg-sep { color: var(--muted); }
+.hb-figures .hb-avg b { font-size: 1.05rem; }
+.sc-avg { margin-left: 2px; }
+.sc-avg b { font-size: 0.95rem; }
+/* A phone keeps its corner one short row: the rows have the average, the chips do not. */
+@media (max-width: 700px) { .sc-avg { display: none; } }
+
+/* ---------- The small cards under « Ton mois » ---------- */
+
+.home-widgets { display: none; flex-direction: column; gap: var(--gap-cards); }
+.home-widgets[hidden] { display: none; }
+@container home (min-width: 860px) { .home-widgets { display: flex; } }
+.home-widget {
+  display: grid; gap: 8px; width: 100%; padding: 14px 18px;
+  font: inherit; color: var(--text); text-align: left; cursor: pointer;
+  transition: border-color var(--transition);
+}
+.home-widget[hidden] { display: none; }
+.home-widget:hover { border-color: var(--accent); }
+.home-widget:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hwg-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.hwg-head .ico { color: var(--muted); flex: none; }
+.home-widget .hwg-art { width: 100%; height: auto; display: block; margin-inline: auto; }
+.home-widget .hwg-art, .home-widget .hwg-art * { pointer-events: none; }
+.hwg-wheel .hwg-art { max-width: 190px; }
+.hwg-podium .hwg-art, .hwg-grinder .hwg-art { max-width: 340px; }
+.hwg-reading {
+  font-size: 0.78rem; line-height: 1.4; color: var(--muted);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.hwg-reading:empty { display: none; }
+.home-enter .home-widget { animation: home-rise 560ms cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: calc(310ms + var(--hwg-i, 0) * 70ms); }
+
+/* ---------- Touch ---------- */
+
+@media (pointer: coarse) {
+  .pe-chip, .pe-failed, .pe-search { min-height: 44px; }
+  .pe-fig input { min-height: 44px; }
+  .pe-undo { min-height: 44px; }
+}
+
+/* ---------- Calm ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .pe-rate, .pe-fig input, .rate-mark, .home-widget { transition: none; }
+  .pe-rate.pe-call, .pe-status.pe-in, .home-enter .home-widget { animation: none; }
+  .pe-saved::after { animation: none; opacity: 1; }
+}

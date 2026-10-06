@@ -713,5 +713,5 @@
     closingToNavigate = true;
     m.close();
   }
-  Object.assign(UI, { wireSheet, freshnessWindow, bagDay, openSheet, renderOpenSheet, BAG_SLICES, sheetCoffeeId, closeSheetToNavigate });
+  Object.assign(UI, { wireSheet, freshnessWindow, bagDay, openSheet, renderOpenSheet, BAG_SLICES, sheetCoffeeId, closeSheetToNavigate, nextCupFor, nextCupBlock });
 })();

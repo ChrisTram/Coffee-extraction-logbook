@@ -25,7 +25,7 @@
  *    logout stop working.
  */
 
-const VERSION = "9.26";
+const VERSION = "9.27";
 const CACHE_NAME = "carnet-extraction";
 
 const versioned = url => url + "?v=" + VERSION;
@@ -56,6 +56,8 @@ const PRECACHE_URLS = [
   "./css/gestures.css",
   // v9.23: the steam, the streaks and the milestones.
   "./css/moments.css",
+  // v9.27: the cup panel you write in, rating later, the home's small cards.
+  "./css/panel.css",
   // v9.24: the feel (the accent of the coffee, the little springs).
   "./css/feel.css",
   // v9.26: everything transforms (R15).
@@ -111,6 +113,7 @@ const PRECACHE_URLS = [
   "./js/ui-last-cup.js",
   "./js/ui-dashboard.js",
   "./js/ui-home.js",
+  "./js/ui-home-widgets.js",
   "./js/ui-cup.js",
   "./js/ui-dial.js",
   "./js/ui-rating-dial.js",
@@ -144,6 +147,8 @@ const PRECACHE_URLS = [
   "./js/ui-coffees.js",
   "./js/ui-bag-end.js",
   "./js/ui-panel.js",
+  "./js/ui-panel-edit.js",
+  "./js/ui-rate-sheet.js",
   "./js/ui-palette.js",
   "./js/ui-shortcuts.js",
   "./js/ui-tuning.js",

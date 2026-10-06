@@ -108,7 +108,7 @@
     days: e => e._c.days_open === "" ? "" : escapeHtml(I18N.t("tbl_day", { n: Number(e._c.days_open) + 1 })),
     cost: e => e._c.cup_cost_vnd !== "" ? fmtVND(e._c.cup_cost_vnd) : "",
     score: e => (isFailed(e) ? '<span class="badge-failed" title="' + titleAttr(I18N.t("botched_badge_title")) + '">' + I18N.t("botched_badge") + "</span>" : "") +
-      (e.score_10 !== "" ? fmtDecimal(Number(e.score_10), 1) : ""),
+      (e.score_10 !== "" ? fmtDecimal(Number(e.score_10), 1) : UI.rateMark(e)),
     actions: e => UI.actionsExtraction(e),
   };
   const colOf = key => COLUMNS.find(c => c.key === key);

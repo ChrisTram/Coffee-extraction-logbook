@@ -571,7 +571,7 @@
         (e.diagnostic ? '<span class="d-diag">' + displayedDiags(e.diagnostic) + "</span>" : "") +
       "</td>" +
       '<td class="d-tastes">' + lastTastes(e, came ? UI.arrivalPill() : "") + "</td>" +
-      '<td class="d-rating">' + (e.score_10 !== "" ? fmtDecimal(Number(e.score_10), 1) : "") + "</td></tr>" +
+      '<td class="d-rating">' + (e.score_10 !== "" ? fmtDecimal(Number(e.score_10), 1) : UI.rateMark(e)) + "</td></tr>" +
       lastComment(e);
     }).join("");
     UI.playArrivals($("#latest-list"));
@@ -636,7 +636,9 @@
         '<span class="sc-glass" style="--pc:' + s.pc.toFixed(0) + '%" aria-hidden="true" data-jar-kind="glass"' +
           UI.jarData({ coffeeId: s.coffee.id, grams: s.leftover, bag: s.bag, low: low }) + "></span>" +
         '<b data-jar-grams="' + titleAttr(s.coffee.id) + '">' + (s.leftover <= 0 ? I18N.t("stock_chip_empty") : Math.round(s.leftover) + " g") + "</b>" +
-        '<span class="sc-name">' + titleAttr(I18N.tr(s.coffee.name)) + "</span></button>";
+        '<span class="sc-name">' + titleAttr(I18N.tr(s.coffee.name)) + "</span>" +
+        // v9.27: the coffee's average, after its name (hidden on a phone, css/panel.css).
+        UI.bagAverageHtml(s.coffee.id, "sc-avg") + "</button>";
     }).join("") + (all.length > STOCK_MAX ? '<span class="sc-plus">+' + (all.length - STOCK_MAX) + "</span>" : "");
     if (html !== cornerHtml) { zone.innerHTML = html; cornerHtml = html; }
     // The arrival fills them once; a render during it joins the movement under way.

@@ -7,6 +7,7 @@
  *   J  K                      next, previous in the list (↓ ↑ in the side panel)
  *   Enter                     open the chosen cup      ?  the help
  *   Escape                    closes the side panel (the windows close themselves)
+ *   ← →                       the score of the cup in the side panel (v9.27)
  * Ctrl K (⌘ K) belongs to js/ui-palette.js.
  *
  * Never while typing: an input, a textarea, a select, anything contenteditable
@@ -48,6 +49,8 @@
     { group: "actions", keys: ["?"], label: "keys_help_help" },
     { group: "cups", keys: ["J", "K"], label: "keys_help_walk" },
     { group: "cups", keys: ["↓", "↑"], label: "keys_help_panel_walk" },
+    // v9.27: the score of the cup beside, half a point at a time (js/ui-panel-edit.js).
+    { group: "cups", keys: ["←", "→"], label: "keys_help_panel_rate" },
     { group: "cups", keys: ["Enter"], label: "keys_help_open" },
     { group: "cups", keys: ["E"], run: "edit", label: "keys_help_edit" },
     { group: "cups", keys: ["C"], run: "compare", label: "keys_help_compare" },
@@ -111,6 +114,7 @@
     }
     if (key === "?") return "help";
     if (ctx.panelOpen && (key === "ArrowDown" || key === "ArrowUp")) return key === "ArrowDown" ? "next" : "prev";
+    if (ctx.panelCup && (key === "ArrowLeft" || key === "ArrowRight")) return key === "ArrowRight" ? "rate-up" : "rate-down";
     if (k === "j") return "next";
     if (k === "k") return "prev";
     if (k === "g") return "chord";
@@ -123,6 +127,7 @@
 
   function modalOpen() {
     if (UI.isQuickOpen && UI.isQuickOpen()) return true;
+    if (UI.isRateSheetOpen && UI.isRateSheetOpen()) return true;
     const rail = $("#rail");
     if (rail && rail.classList.contains("expanded")) return true;
     return $$("dialog[open]").some(d => !d.classList.contains("as-panel"));
@@ -153,6 +158,7 @@
       modal: modalOpen(),
       brew: !!(brew && brew.open),
       panelOpen: !!(UI.panelIsOpen && UI.panelIsOpen()),
+      panelCup: !!(UI.panelCupId && UI.panelCupId()),
       bubble: !!(bubble && !bubble.hidden),
       chord: kb.chord,
       screen: UI.nav.screenName,
@@ -334,6 +340,7 @@
       else moveCursor(delta);
       return;
     }
+    if (action === "rate-up" || action === "rate-down") { UI.panelRate(action === "rate-up" ? 0.5 : -0.5); return; }
     if (action === "chord") { showChord(true); return; }
     if (action === "chord-cancel") { showChord(false); return; }
     if (action.startsWith("go:")) {
@@ -368,7 +375,7 @@
     const action = shortcutFor(ev, context(ev));
     if (!action) return;
     // N, R... auto-repeated while held: once is enough. J and K may repeat to scroll a list.
-    if (ev.repeat && !["next", "prev"].includes(action)) { ev.preventDefault(); return; }
+    if (ev.repeat && !["next", "prev", "rate-up", "rate-down"].includes(action)) { ev.preventDefault(); return; }
     ev.preventDefault();
     /* Space in the brew mode: a focused button there would take the key on
        its release and click itself too. It lets go of the focus first. */

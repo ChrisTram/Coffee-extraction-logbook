@@ -234,6 +234,20 @@
     return { items: r.celebrate, record: record, line: momentLine(r.celebrate, record) };
   }
 
+  /* v9.27: a LATE RATING (the side panel, the phone's rating sheet). Only a
+     first 9 or a first 10 can be crossed by a score given afterwards
+     (MILESTONES.forEdit); a record on the bag alone says its line, without
+     beans. One moment: the caller shows the line where the rating was given. */
+  function editMoment(saved, before) {
+    if (!saved || !saved.id) return null;
+    const r = MILESTONES.forEdit(DATA.state.extractions, saved.id, before, readSeen());
+    writeSeen(r.seen);
+    const record = typeof DATA.bagRecord === "function" ? !!DATA.bagRecord(saved) : false;
+    if (!r.celebrate.length && !record) return null;
+    const line = r.celebrate.length ? momentLine(r.celebrate, record) : I18N.t("ms_line", { x: capital(I18N.t("ms_record")) });
+    return { items: r.celebrate, record: record, line: line };
+  }
+
   /* The bean, drawn on the canvas: a brown oval with its crease, that
      tumbles (its width follows the cosine of its turn: we see its face, then
      its edge, then its back, which has no crease). */
@@ -364,6 +378,9 @@
     return moment;
   }
 
+  // The burst, for a late rating given in the side panel or the phone's sheet (v9.27).
+  const beanBurst = burst;
+
   // ---------- R9: the tile of Analyses ----------
 
   const TILE_SHOWN = 4;
@@ -437,5 +454,6 @@
 
   Object.assign(UI, {
     steamState, streakHtml, milestoneLabel, momentLine, saveMoment, showSavedCup, renderMoments, renderMilestoneTile,
+    editMoment, beanBurst,
   });
 })();

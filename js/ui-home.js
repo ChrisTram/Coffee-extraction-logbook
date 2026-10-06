@@ -287,7 +287,9 @@
           '<span class="hb-text"><span class="hb-name">' + escapeHtml(I18N.tr(s.coffee.name)) + "</span>" +
             '<span class="hb-figures"><b' + (empty ? "" : ' data-jar-grams="' + titleAttr(s.coffee.id) + '"') + ">" +
               escapeHtml(empty ? I18N.t("stock_chip_empty") : Math.round(s.leftover) + " g") + "</b>" +
-              (empty ? "" : "<small>" + escapeHtml(I18N.t("home_bag_cups", { n: s.cups, s: s.cups > 1 ? "s" : "" })) + "</small>") + "</span>" +
+              (empty ? "" : "<small>" + escapeHtml(I18N.t("home_bag_cups", { n: s.cups, s: s.cups > 1 ? "s" : "" })) + "</small>") +
+              // v9.27: the coffee's average beside its grams (js/ui-home-widgets.js).
+              UI.bagAverageHtml(s.coffee.id, "hb-avg") + "</span>" +
             '<span class="hb-level" aria-hidden="true"><i style="--pc:' + s.pc.toFixed(0) + '%"></i></span></span>' +
           "</button></li>";
       }).join("") + "</ul>" +
@@ -518,6 +520,8 @@
     // R4 and R9 (v9.23): the steam of a cup still hot, the streak on the week (js/ui-celebrate.js).
     UI.renderMoments(o);
     if (nav.screenName === "dashboard") onScroll();
+    // v9.27: the small cards under the month, as far down as the main column goes (js/ui-home-widgets.js).
+    UI.renderHomeWidgets();
     placeSide();
   }
 
@@ -574,6 +578,7 @@
       }).observe(screen, { attributes: true, attributeFilter: ["class"], attributeOldValue: true });
     }
     startRotation();
+    UI.wireHomeWidgets();
   }
 
   Object.assign(UI, {

@@ -66,7 +66,7 @@
           (e.score_10 !== ""
             ? '<span class="big-rating">' + e.score_10 + "</span>" +
               '<span class="big-rating-scale">' + I18N.t("dash_out_of_10") + "</span>"
-            : '<span class="big-rating-none">' + I18N.t("not_rated_yet") + "</span>") +
+            : '<span class="big-rating-none">' + I18N.t("not_rated_yet") + "</span>" + UI.rateAction(e)) +
           (e.diagnostic ? '<span class="dot-diag">' + displayedDiags(e.diagnostic) + "</span>" : "") +
         "</div>" +
       "</div>" +
@@ -254,6 +254,6 @@
   }
 
   Object.assign(UI, {
-    LATEST_SHOWN, lastComment, lastTastes, shortMeasures, renderLastCup, timeSince,
+    LATEST_SHOWN, lastComment, lastTastes, shortMeasures, renderLastCup, timeSince, rankAmongSiblings,
   });
 })();

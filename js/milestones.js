@@ -148,6 +148,21 @@ const MILESTONES = (() => {
     return { celebrate: celebrate, seen: [...known] };
   }
 
+  /* What a LATE RATING crosses (v9.27): the cup was saved before, its score or
+     its « ratée » mark changes afterwards (the side panel, the phone's rating
+     sheet). Only the score milestones can move with a score: the first 9, the
+     first 10. `before` is the cup as it was; the rest is forSave's rule. */
+  function forEdit(exts, editedId, before, seen) {
+    const all = exts || [];
+    const old = before ? all.map(e => (e.id === editedId ? before : e)) : all;
+    const was = compute(old);
+    const after = compute(all);
+    const known = new Set(Array.isArray(seen) ? seen : was.map(m => m.id));
+    const celebrate = lead(crossed(was, after).filter(m => (m.kind === "score9" || m.kind === "score10") && !known.has(m.id)));
+    after.forEach(m => known.add(m.id));
+    return { celebrate: celebrate, seen: [...known] };
+  }
+
   // The next cup milestone, and how many cups are left to it; null past the last.
   function nextCups(exts) {
     const n = chronological(exts).length;
@@ -155,5 +170,5 @@ const MILESTONES = (() => {
     return next ? { n: next, left: next - n } : null;
   }
 
-  return { CUPS, COFFEES, STREAK_MIN, streaks, compute, crossed, lead, forSave, nextCups, runsOf, shiftDay };
+  return { CUPS, COFFEES, STREAK_MIN, streaks, compute, crossed, lead, forSave, forEdit, nextCups, runsOf, shiftDay };
 })();
