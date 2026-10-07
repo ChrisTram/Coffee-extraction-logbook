@@ -142,6 +142,10 @@
 .rate-mark:hover, .rate-mark:focus-visible { background: var(--accent-bg); border-style: solid; }
 .rate-mark:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .h-card-rating .rate-mark, td .rate-mark { font-family: var(--sans); }
+/* The score columns were sized for a figure (52 and 60 px): the pill overflowed the card. Wide
+   enough for « à noter » now, and the pill a little tighter inside a table cell. */
+.table-latest col.c-rating, .table-history col.c-rating { width: 84px; }
+td .rate-mark { padding: 2px 7px; }
 .rate-action { margin-top: 8px; }
 .last-big-rating .rate-action { align-self: end; }
 
