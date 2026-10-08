@@ -437,6 +437,110 @@ function temperatureForCoffee(recipe, coffee) {
   return (coffee && table[coffee.roast]) || recipe.temp;
 }
 
+/* WHAT THE AUTHOR RECOMMENDS (v9.29). The recipe as stored is Chris's: he
+   edits it (Settings, « Mes réglages par défaut », wrote 15 g / 250 g on all
+   of them). This table keeps, next to it, the figures as their author
+   published them, so the entry can say « source : 15 g / 225 g, 1:15 » next
+   to « toi : 15 g / 250 g ». ONLY figures written in this file with their
+   origin; a recipe without one has no entry and the screens say « source non
+   précisée ». Never fill a gap here by guessing.
+   - Chronicler and its Sweet: Chris's source document, « 15 g / 240 g, ratio
+     1:16, 92 degrés » (DECISIONS.md, « La Chronicler porte 240 g »), 600 to
+     700 microns from the source (note).
+   - Better 1 Cup: James Hoffmann, November 2022, 15 g / 250 g, 95 to 100 °C.
+   - One and Done: Lance Hedrick, 15 g / 225 g, 90 to 93 °C, 2:00 to 2:30.
+   - Tetsu 4:6: « Sa version : 20 g, 300 g », Philocoffea's 93, 88, 83 °C.
+   - Sherrycipe: Shih Yuan Hsu, 15 g / 225 g; the source gives no temperature.
+   - Neo Brew: Tetsu Kasuya, May 2026, 20 g / 300 g, 95 or 96 °C.
+   - Tetsu Devil: Tetsu Kasuya, February 2023, 20 g / 280 g, 90 then 70 °C,
+     figures from the summaries, not checked in the video (`unchecked`).
+   Brikka (all three) and Le Costaud (both): Chris's own, no author.
+   `temp` is what « Essayer la source » writes in the form (the roast table
+   above wins when the coffee's roast is known); `range` is what the source
+   tolerates, a temperature inside it is not a gap; `tempText`, `total` and
+   `grind` are shown as written (French, translated by I18N.tr). */
+const RECIPE_SOURCES = {
+  "chronicler":    { by: "The Coffee Chronicler", dose: 15, water: 240, temp: 92, total: "2:45 à 3:15", grind: "600 à 700 µm" },
+  "sweet":         { by: "The Coffee Chronicler", dose: 15, water: 240, temp: 92, total: "2:45 à 3:15", grind: "600 à 700 µm" },
+  "hoffmann-1cup": { by: "James Hoffmann", dose: 15, water: 250, temp: 95, range: [95, 100], tempText: "95 à 100 °C", total: "2:45 à 3:15", grind: "medium fine" },
+  "one-and-done":  { by: "Lance Hedrick", dose: 15, water: 225, temp: 92, range: [90, 93], tempText: "90 à 93 °C", total: "2:00 à 2:30" },
+  "tetsu-devil":   { by: "Tetsu Kasuya, Philocoffea", dose: 20, water: 300, temp: 93, range: [83, 93], tempText: "93, 88 ou 83 °C", total: "3:30", grind: "medium coarse" },
+  "sherrycipe":    { by: "Shih Yuan Hsu", dose: 15, water: 225, temp: null, grind: "800 à 1000 µm" },
+  "neo-brew":      { by: "Tetsu Kasuya", dose: 20, water: 300, temp: 96, range: [95, 96], tempText: "95 à 96 °C", grind: "extra gros" },
+  "devil-switch":  { by: "Tetsu Kasuya", dose: 20, water: 280, temp: 90, tempText: "90 puis 70 °C", grind: "gros", unchecked: true },
+};
+
+// The source of a recipe (or of its id), null when none is written.
+function recipeSource(recipe) {
+  const id = recipe && typeof recipe === "object" ? recipe.id : recipe;
+  return Object.prototype.hasOwnProperty.call(RECIPE_SOURCES, id) ? RECIPE_SOURCES[id] : null;
+}
+
+// Water over dose, to one decimal, as a number; "" when one is missing.
+function ratioOf(dose, water) {
+  const d = Number(dose), w = Number(water);
+  if (!(d > 0) || !(w > 0)) return "";
+  return Math.round(w / d * 10) / 10;
+}
+
+/* The temperature the source gives for this coffee: the roast table when the
+   coffee's roast is in it, else its single figure, else "" (none given). */
+function sourceTemperature(recipe, coffee) {
+  const s = recipeSource(recipe);
+  if (!s || s.temp === null || s.temp === undefined) return "";
+  const id = typeof recipe === "object" ? recipe.id : recipe;
+  const table = TEMP_BY_ROAST[id];
+  return (coffee && table && table[coffee.roast]) || s.temp;
+}
+
+/* WHERE CHRIS'S VALUES LEAVE THE SOURCE. `mine` is {dose, water, temp}: the
+   recipe as stored, or the form. A figure missing on either side is never a
+   gap. The temperature is a gap only outside what the source tolerates: one
+   degree around the roast table's figure when the coffee's roast is in it
+   (the table picks a figure inside the author's range), else the author's
+   range, else his single figure. */
+function sourceGaps(recipe, mine, coffee) {
+  const s = recipeSource(recipe);
+  const out = { dose: false, water: false, ratio: false, temp: false, any: false };
+  if (!s || !mine) return out;
+  const num = v => (v === "" || v === null || v === undefined || !Number.isFinite(Number(v)) ? null : Number(v));
+  const dose = num(mine.dose), water = num(mine.water), temp = num(mine.temp);
+  out.dose = dose !== null && dose !== s.dose;
+  out.water = water !== null && water !== s.water;
+  const r = ratioOf(dose, water);
+  out.ratio = r !== "" && r !== ratioOf(s.dose, s.water);
+  const st = sourceTemperature(recipe, coffee);
+  if (temp !== null && st !== "") {
+    const table = TEMP_BY_ROAST[typeof recipe === "object" ? recipe.id : recipe];
+    const [lo, hi] = coffee && table && table[coffee.roast] ? [st - 1, st + 1] : s.range || [st, st];
+    out.temp = temp < lo || temp > hi;
+  }
+  out.any = out.dose || out.water || out.ratio || out.temp;
+  return out;
+}
+
+/* THE WATER THE STEPS ARE WRITTEN FOR (v9.29). A step says « jusqu'à 225 g »
+   for the recipe's water; scaling it to the cup divides by THAT water. But
+   Settings, « Mes réglages par défaut », changes the recipe's water without
+   touching its steps: an original recipe set to 250 g still carried its
+   225 g steps, and the cup at 250 g scaled them by 1, so the card kept
+   asking for 225. When the steps are still the original's, word for word,
+   they are written for the original's water. */
+function stepsWater(recipe) {
+  if (!recipe) return 0;
+  const seed = STARTER_RECIPES.find(d => d.id === recipe.id);
+  const text = list => (list || []).map(e => String(e.t) + " " + e.text).join("\n");
+  if (seed && Number(seed.water) > 0 && (recipe.steps || []).length && text(recipe.steps) === text(seed.steps)) return Number(seed.water);
+  return Number(recipe.water) || 0;
+}
+
+// The factor that takes the recipe's steps to `water` grams; 1 when nothing is to scale.
+function pourFactor(recipe, water) {
+  const base = stepsWater(recipe), w = Number(water);
+  if (!(base > 0) || !(w > 0)) return 1;
+  return w / base;
+}
+
 // Conversion of steps to and from the editable text:
 // one step per line, "m:ss text" for a timed step, "- text" otherwise.
 function stepsToText(steps) {

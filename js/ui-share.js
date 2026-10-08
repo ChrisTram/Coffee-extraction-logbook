@@ -38,7 +38,7 @@
      poured (the same rule as the Guide and the brew mode, scalePours). */
   function stepLines(recipe, water) {
     if (!recipe || !Array.isArray(recipe.steps) || !recipe.steps.length) return [];
-    const f = Number(water) > 0 && Number(recipe.water) > 0 && !recipe.has_variants ? Number(water) / Number(recipe.water) : 1;
+    const f = !recipe.has_variants && typeof pourFactor === "function" ? pourFactor(recipe, water) : 1;
     return recipe.steps.map(s => {
       const text = typeof scalePours === "function" ? scalePours(I18N.tr(s.text), f) : I18N.tr(s.text);
       return (s.t === null || s.t === undefined || s.t === "" ? "· " : fmtDuration(s.t) + " ") + text;

@@ -237,6 +237,8 @@
       pills +
       '<p class="recipe-sub">' + attr(I18N.tr(r.subtitle)) + "</p>" +
       '<div class="recipe-params">' + params + "</div>" +
+      // v9.29: what its author recommends, a gap from these figures tinted.
+      UI.sourceLineHtml(r, null) +
       videoBlock(r) +
       atHome(r) +
       steps + tetsuBlock +
@@ -448,10 +450,12 @@
   /* The computation lives in recipes.js, without DOM, so it is testable
      without a browser. Here we only read the field. 1 means "nothing to
      scale", and the texts then stay intact down to the character. */
+  /* Over the water the steps are WRITTEN for (stepsWater, v9.29), which is
+     not always the recipe's: Settings changes the one, not the others. */
   function waterFactor(recipe) {
     const targetWater = parseFloat($("#f-water").value);
-    if (!recipe || !(recipe.water > 0) || !(targetWater > 0)) return 1;
-    return targetWater / recipe.water;
+    if (!recipe || !(targetWater > 0)) return 1;
+    return pourFactor(recipe, targetWater);
   }
 
   function stepsFor(recipe) {

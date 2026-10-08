@@ -672,7 +672,7 @@
       r.ratioText ? I18N.tr(r.ratioText) : "", r.tempText ? I18N.tr(r.tempText) : "",
       r.dial ? I18N.t("dial") + " " + r.dial : "",
     ].filter(Boolean).map(c => '<span class="param-chip">' + escapeHtml(c) + "</span>").join("");
-    const factor = Number(r.water) > 0 && Number(e.water_g) > 0 ? Number(e.water_g) / Number(r.water) : 1;
+    const factor = typeof pourFactor === "function" ? pourFactor(r, e.water_g) : 1;
     const steps = r.has_variants ? [] : (r.steps || []).map(s => {
       const text = I18N.tr(s.text);
       return { t: s.t, text: factor !== 1 && typeof scalePours === "function" ? scalePours(text, factor) : text };
@@ -681,6 +681,7 @@
         link("recipe", r.id, I18N.tr(r.name), "") + "</div>" +
       (r.totalText ? '<p class="pe-window">' + escapeHtml(I18N.t("pe_recipe_window", { t: I18N.tr(r.totalText) })) + "</p>" : "") +
       (chips ? '<div class="recipe-params">' + chips + "</div>" : "") +
+      (typeof UI.sourceLineHtml === "function" ? UI.sourceLineHtml(r, DATA.coffeeOf(e)) : "") +
       (steps.length ? '<ol class="recipe-steps">' + steps.map(s => '<li><span class="step-time">' + (s.t === null || s.t === undefined ? "·" : fmtDuration(s.t)) +
         "</span><span>" + escapeHtml(s.text) + "</span></li>").join("") + "</ol>" : "") + "</section>";
   }

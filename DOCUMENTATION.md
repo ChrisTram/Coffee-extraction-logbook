@@ -306,6 +306,7 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/ui-dictate.js` | dicter le commentaire, mot à mot (v8.43, R13 en v9.22) : `wireDictation`, et `mergeDictation`, `revealStep` purs. Chargé AVANT ui-entry.js, qui l'emprunte |
 | `js/ui-entry.js` | formulaire, chronomètre |
 | `js/ui-entry-aside.js` | panneau latéral de la saisie, tasses jumelles |
+| `js/ui-recipe-source.js` | la fiche recette face à sa source (v9.29) : tableau tasse, recette, source, « Essayer la source », « Garder pour cette recette », ligne « Source » du Guide et du panneau, et `UI.patchHtml` (les chiffres `data-live` roulent au lieu de redessiner) |
 | `js/ui-pills.js` | pilules des diagnostics et des goûts, repli des familles |
 | `js/ui-chrono.js` | chronomètre de la saisie : paliers, bips, verrou d’écran, widget repliable |
 | `js/ui-draft.js` | brouillon de saisie en localStorage, chargé après ui-entry.js |
@@ -347,6 +348,7 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `css/moments.css` | la vapeur, la série, la phrase du palier et sa gerbe, la tuile des paliers (v9.23), chargée après `gestures.css` |
 | `css/feel.css` | l'accent qui glisse (R3) et les petits ressorts (R8) (v9.24), chargée après `moments.css` |
 | `css/panel.css` | le panneau qu'on écrit, « à noter », la feuille de note, la moyenne des sachets, les petites cartes de l'accueil (v9.27), chargée avant `feel.css` |
+| `css/aside.css` | le tableau recette et source de la saisie, la ligne « Source » (v9.29), après `panel.css`, avant `feel.css` |
 | `css/morph.css` | le fantôme et le détail transparent des morphings (v9.26, R15), chargée en dernier, après `feel.css` |
 | `css/fonts/` | les deux polices de la DA, embarquées en woff2, sous OFL (section 10) |
 | `sw.js`, `manifest.json`, `icons/` | PWA et hors ligne (section 10) |
@@ -1327,7 +1329,18 @@ Points fixés depuis, chacun expliqué dans `DECISIONS.md` :
 - Pas d'estimation de volume extrait sur la Brikka ; le Switch garde
   `water - 2,1 x dose`.
 - Les paliers d'une recette suivent l'eau réellement saisie
-  (`echelleVersements`, seuil 30 g).
+  (`echelleVersements`, seuil 30 g), divisée par l'eau pour laquelle les étapes
+  sont ÉCRITES (`stepsWater`, v9.29) : celle de la recette d'origine tant que ses
+  étapes n'ont pas bougé, même si « Mes réglages par défaut » a changé l'eau.
+- LA RECETTE FACE À SA SOURCE (v9.29, `js/ui-recipe-source.js`) : la fiche de la
+  saisie aligne « Cette tasse » (le formulaire), « Ta recette » (stockée) et
+  « Source » (`RECIPE_SOURCES` dans `recipes.js`, chiffres de l'auteur, cités ;
+  pas d'entrée = « source non précisée »). Les chiffres de la tasse et les grammes
+  des étapes portent `data-live` et roulent (`UI.patchHtml`, `UI.rollText`) quand
+  seul un chiffre change. Écart avec la source : `sourceGaps` (tolérance : un degré
+  autour de la table par torréfaction, sinon la plage de l'auteur). « Essayer la
+  source » remplit dose, eau, degrés (événements `input`, annulable) ; « Garder pour
+  cette recette » passe par `DATA.editRecipe`, étapes réécrites pour la nouvelle eau.
 - Cinq champs portent un curseur qui PILOTE le champ nombre, lequel reste la
   source de vérité.
 - Le brouillon vit en `localStorage`, 24 h (2 h pour la date), écrit sur

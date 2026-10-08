@@ -1311,6 +1311,32 @@ décision : "Le Costaud (Immersion)" est en réalité la recette 3 "L'Adoucisseu
 dont le rôle explicite est de rattraper les cafés trop acides, et le Tetsu y est
 donné pour 20 g / 300 g au lieu de 15 / 225.
 
+### La source à côté de la recette, et l'eau des étapes (v9.29)
+
+Chris : « Là il y a 15 g / 250 g pour tous, mais je ne sais pas quel est le
+recommandé de base. » Il avait passé ses recettes à 250 g dans « Mes réglages par
+défaut ». La recette stockée est donc SA recette ; la graine (`STARTER_RECIPES`)
+est la version vérifiée du site, déjà adaptée à une tasse (le 4:6 à 15 g / 250 g,
+la Neo Brew à 16 g / 240 g). Ni l'une ni l'autre n'est « ce que dit l'auteur ».
+D'où une troisième source de vérité, `RECIPE_SOURCES`, qui ne contient QUE des
+chiffres déjà écrits avec leur origine dans `recipes.js` ou ici (« Sa version :
+20 g, 300 g »). Rien n'est deviné : les Brikka et Le Costaud sont des recettes de
+Chris, elles disent « source non précisée ». Un test vérifie qu'une source qui
+s'écarte de la graine est citée dans sa note.
+
+Le piège trouvé en route : « Mes réglages par défaut » change l'eau d'une recette
+sans toucher ses étapes. Les étapes se mettaient à l'échelle depuis `recipe.water`
+(250), alors qu'elles étaient écrites pour 225 : à 250 g en tasse, facteur 1, la
+fiche réclamait toujours 225 g. `stepsWater` rend l'eau de la graine tant que les
+étapes sont mot pour mot celles de la graine, sinon l'eau de la recette. Le Guide,
+le panneau, le partage et le chrono passent tous par `pourFactor`.
+
+La fiche ne se redessine plus à chaque touche : `UI.patchHtml` compare le
+squelette (le HTML sans le texte ni la classe des éléments `data-live`) et, s'il
+est le même, fait rouler les seuls chiffres qui changent. Un bouton qui apparaît
+(« Essayer la source ») change le squelette : la fiche est alors réécrite, c'est
+voulu.
+
 ### Le carnet ne refuse jamais une saisie
 
 Il y avait un BLOCAGE : `avertissementsCombinaison` renvoyait un drapeau
