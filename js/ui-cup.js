@@ -270,7 +270,16 @@
     host.classList.toggle("cup-pouring", !!o.running && o.fraction < 1 && !reducedMotion());
   }
 
+  /* The cup a saved cup was drunk from, filled, without steam of its own: the
+     home's last cup card draws it when the cup is still hot (R4, v9.30), and
+     puts its own wisps over it, the ones that thin out over fifteen minutes. */
+  function cupArt(ext) {
+    const r = findRecipe(ext.recipe);
+    const milk = Number(ext.milk_ml) > 0 || !!(r && r.milk);
+    return cupSvg(cupOf(ext.cup, ext.method), drinkOf(ext.method, milk), { fraction: CARD_LEVEL });
+  }
+
   Object.assign(UI, {
-    cupOf, cupSummary, showCupCard, hideCupCard, paintBrewCup,
+    cupArt, cupOf, cupSummary, showCupCard, hideCupCard, paintBrewCup,
   });
 })();

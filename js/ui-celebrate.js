@@ -76,7 +76,7 @@
     if (card && card.classList) card.classList.remove("is-steaming");
     [$("#card-last"), $("#home-band")].forEach(root => {
       if (!root || typeof root.querySelectorAll !== "function") return;
-      [...root.querySelectorAll(".lc-steam, .lc-warm, .hbd-warm")].forEach(el => el.remove());
+      [...root.querySelectorAll(".lc-cup, .lc-steam, .lc-warm, .hbd-warm")].forEach(el => el.remove());
     });
   }
 
@@ -95,9 +95,13 @@
     // One timer, when the fifteen minutes are up: no polling.
     steam.timer = setTimeout(removeSteam, st.left + 50);
     card.classList.add("is-steaming");
+    /* v9.30: the steam rises from the cup itself, the one this cup was drunk
+       from, drawn between the name and the score (Chris: « plutôt que faire
+       fumer la note »). */
     const score = card.querySelector(".lc-head .last-big-rating");
-    if (score && !score.querySelector(".lc-steam")) score.insertAdjacentHTML("beforeend", steamHtml(st.age, false));
-    centreSteam(card);
+    if (score && !card.querySelector(".lc-cup") && typeof UI.cupArt === "function") {
+      score.insertAdjacentHTML("beforebegin", '<span class="lc-cup" aria-hidden="true">' + UI.cupArt(e) + steamHtml(st.age, false) + "</span>");
+    }
     /* « encore chaude »: after « Dernière tasse » on a wide card, under the
        score on a narrow one, where the head has room for it (css/moments.css
        shows one of the two). */
@@ -114,19 +118,6 @@
     if (bandLabel && !bandLabel.querySelector(".hbd-warm")) bandLabel.insertAdjacentHTML("beforeend", '<span class="hbd-warm">' + escapeHtml(I18N.t("steam_label")) + "</span>");
   }
 
-  /* The wisps rise from the middle of the figure, which stands on the right
-     of its box (a « 10 » is wider than a « 9 »): its centre, measured from the
-     box's right edge. A card not laid out yet keeps the default of the sheet. */
-  function centreSteam(card) {
-    const box = card.querySelector(".lc-head .last-big-rating");
-    const fig = box ? box.querySelector(".big-rating, .big-rating-none") : null;
-    if (!fig || typeof box.getBoundingClientRect !== "function" || typeof box.style.setProperty !== "function") return;
-    const b = box.getBoundingClientRect(), f = fig.getBoundingClientRect();
-    if (!b.width || !f.width) return;
-    const cx = b.left + b.width - (f.left + f.width / 2);
-    if (Number.isFinite(cx)) box.style.setProperty("--steam-cx", Math.max(0, cx).toFixed(1) + "px");
-  }
-
   /* Hidden, the wisps stop; back on screen, they start again from the cup's
      real age (the thinning clock was stopped with them). */
   function onVisibility() {
@@ -135,7 +126,7 @@
     if (root && root.classList) root.classList.toggle("steam-still", hidden());
     if (hidden() || !steam.cupId || !card || typeof card.querySelectorAll !== "function") return;
     const cup = (DATA.state.extractions || []).find(x => x.id === steam.cupId);
-    [card, $("#home-band")].forEach(r => { if (r && r.querySelectorAll) [...r.querySelectorAll(".lc-steam")].forEach(el => el.remove()); });
+    [card, $("#home-band")].forEach(r => { if (r && r.querySelectorAll) [...r.querySelectorAll(".lc-cup, .lc-steam")].forEach(el => el.remove()); });
     if (cup) placeSteam(cup); else removeSteam();
   }
 
@@ -446,11 +437,6 @@
   }
 
   if (typeof document.addEventListener === "function") document.addEventListener("visibilitychange", onVisibility);
-  // The figure's width follows the page's: the wisps follow its centre.
-  if (typeof window.addEventListener === "function") window.addEventListener("resize", UI.debounce(() => {
-    const card = $("#card-last");
-    if (steam.cupId && card && typeof card.querySelector === "function") centreSteam(card);
-  }, 150));
 
   Object.assign(UI, {
     steamState, streakHtml, milestoneLabel, momentLine, saveMoment, showSavedCup, renderMoments, renderMilestoneTile,
