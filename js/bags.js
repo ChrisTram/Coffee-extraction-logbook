@@ -15,6 +15,8 @@
  *   - nextCup: B1, the next setting from the cups of a coffee: keep what
  *     worked, change one thing;
  *   - dialFrames: the notches a turning dial goes through.
+ *   - daysBetween, cupsLeft, pace, finishDay, stockTotals, monthSpend,
+ *     cupCost (v9.31): the figures around the jars of « Mes cafés ».
  *
  * Nothing is stored and nothing new is computed about a bag: the grams come
  * from DATA.bagGauge, the correction steps from TUNING.quantifiedCorrection. */
@@ -186,5 +188,83 @@ const BAGS = (() => {
     return frames;
   }
 
-  return { isSpent, shelfOf, shelves, entryJars, entryChoices, resumeCup, bagCups, lockKey, nextCup, nextCupSettings, dialFrames };
+  /* ---------- The shelf's figures (v9.31) ---------- */
+
+  /* Days count on the calendar, not in hours: « 2026-10-09T23:50 » and
+     « 2026-10-10T00:10 » are one day apart. A day is "YYYY-MM-DD", or the
+     start of a date_time. */
+  const DAY_MS = 86400000;
+  function dayNumber(s) {
+    const [y, m, d] = String(s || "").slice(0, 10).split("-").map(Number);
+    return y && m && d ? Math.round(Date.UTC(y, m - 1, d) / DAY_MS) : null;
+  }
+  const dayString = n => new Date(n * DAY_MS).toISOString().slice(0, 10);
+  // From day a to day b, in whole days (negative when b comes first); null when one is unknown.
+  function daysBetween(a, b) {
+    const x = dayNumber(a), y = dayNumber(b);
+    return x === null || y === null ? null : y - x;
+  }
+
+  // The cups still in the jar at the usual dose, rounded down: a half cup is not a cup.
+  function cupsLeft(grams, dose) {
+    const g = num(grams), d = num(dose);
+    return g !== null && d !== null && d > 0 && g > 0 ? Math.floor(g / d + 1e-9) : 0;
+  }
+
+  /* THE PACE OF A BAG: the grams it gives per day, over its last `windowDays`
+     days (21 by default), or since its opening when that is closer. `cups`:
+     { date_time, grams } of this bag. At least two cups in the window,
+     otherwise there is no pace yet, only a cup. Returns { perDay, cups,
+     days } or null; a bag left aside for weeks has none either. */
+  function pace(cups, since, today, windowDays) {
+    const t = dayNumber(today);
+    if (t === null) return null;
+    const s = dayNumber(since);
+    const from = Math.max(s === null ? -Infinity : s, t - (windowDays || 21) + 1);
+    const inside = (cups || []).filter(c => { const d = dayNumber(c && c.date_time); return d !== null && d >= from && d <= t; });
+    if (inside.length < 2) return null;
+    const start = Number.isFinite(from) ? from : Math.min(...inside.map(c => dayNumber(c.date_time)));
+    const days = t - start + 1;
+    const grams = inside.reduce((a, c) => a + (num(c.grams) || 0), 0);
+    return grams > 0 ? { perDay: grams / days, cups: inside.length, days: days } : null;
+  }
+
+  /* When the jar will be empty at that pace: the day, "YYYY-MM-DD". Today
+     when it already is; null without a pace. */
+  function finishDay(grams, perDay, today) {
+    const t = dayNumber(today), g = num(grams), p = num(perDay);
+    if (t === null || p === null || !(p > 0)) return null;
+    return dayString(t + (g === null || g <= 0 ? 0 : Math.ceil(g / p - 1e-9)));
+  }
+
+  /* What is in the cupboard: the grams of every bag known to the gram and
+     the cups they make, each at its coffee's usual dose. `items`: the
+     shelf's items ({ gauge }). */
+  function stockTotals(items) {
+    return (items || []).reduce((t, it) => {
+      const g = it && it.gauge;
+      if (!g) return t;
+      return { grams: t.grams + Math.max(0, num(g.grams) || 0), cups: t.cups + cupsLeft(g.grams, g.dose), bags: t.bags + 1 };
+    }, { grams: 0, cups: 0, bags: 0 });
+  }
+
+  /* The month's coffee money: the bags bought in the month of `today`, those
+     with a price summed. Returns { total, bags, priced }. */
+  function monthSpend(purchases, today) {
+    const month = String(today || "").slice(0, 7);
+    const mine = (purchases || []).filter(p => month.length === 7 && String(p.purchase_date || "").slice(0, 7) === month);
+    const priced = mine.filter(p => num(p.price_vnd) > 0);
+    return { total: priced.reduce((a, p) => a + num(p.price_vnd), 0), bags: mine.length, priced: priced.length };
+  }
+
+  /* THE PRICE OF A CUP, on average: each cup at the price per gram of its
+     own bag times its dose. `cups`: { grams, price, size }; a cup whose bag
+     has no price or size is left out, never counted free. Null without any. */
+  function cupCost(cups) {
+    const known = (cups || []).filter(c => num(c.grams) > 0 && num(c.price) > 0 && num(c.size) > 0);
+    return known.length ? known.reduce((a, c) => a + num(c.price) / num(c.size) * num(c.grams), 0) / known.length : null;
+  }
+
+  return { isSpent, shelfOf, shelves, entryJars, entryChoices, resumeCup, bagCups, lockKey, nextCup, nextCupSettings, dialFrames,
+    daysBetween, cupsLeft, pace, finishDay, stockTotals, monthSpend, cupCost };
 })();

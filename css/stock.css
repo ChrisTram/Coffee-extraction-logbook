@@ -38,16 +38,74 @@
 .cf-row-rebuy .cf-row-n { background: color-mix(in srgb, var(--danger) 16%, var(--panel-2)); color: var(--danger); }
 .cf-quiet { margin: 0; font-size: 0.88rem; color: var(--muted); }
 
-/* THE PLANKS: every row of jars stands on one plank across the whole width.
-   The jars all have the height of a row (--cf-row), so the plank is a
-   gradient repeated every row, under the jars, whatever their number. */
+/* v9.31: THE STRIP AT THE TOP. The stock in four figures beside « la frise
+   des sachets »; side by side when there is room, one under the other on a
+   narrow screen. Without a bag to draw, the four figures share one row. */
+.cf-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr)); gap: 14px; }
+.cf-sum { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.cf-top-alone .cf-sum { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.cf-sum-tile, .cf-frise, .cf-card {
+  min-width: 0; border-radius: var(--radius-small); background: var(--panel); border: 1px solid var(--lines); box-shadow: var(--shadow-card);
+}
+.cf-sum-tile { display: grid; align-content: start; gap: 5px; padding: 13px 16px; }
+.cf-sum-label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.cf-sum-value {
+  font-family: var(--serif); font-weight: 400; font-size: 2rem; line-height: 1; color: var(--ink);
+  font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cf-sum-sub { font-size: 0.78rem; color: var(--muted); }
+.cf-frise { padding: 13px 16px 8px; display: grid; align-content: start; }
+.cf-frise .cf-row-h { margin-bottom: 8px; }
+.cf-frise-svg { overflow: visible; }
+/* One unit per pixel (js/ui-shelf.js): 12 units are 0.75rem, the site's floor. */
+.cf-frise-svg text { font-size: 12px; }
+.cf-frise-today { stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 3 3; }
+
+/* v9.31: THE OPEN BAGS, ONE CARD EACH. The jar at the left on its bit of
+   plank, its grams under it; at the right its name and average, the days
+   of the bag, three figures, the best setting and the last cup. */
+.cf-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr)); gap: 14px; }
+.cf-card { position: relative; display: grid; grid-template-columns: 124px minmax(0, 1fr); gap: 0 16px; padding: 10px 18px 12px 8px; border-radius: var(--radius); }
+.cf-card.is-low { border-color: color-mix(in srgb, var(--danger) 38%, var(--lines)); }
+.cf-card .cf-jar {
+  align-self: stretch; padding: 8px 4px 20px;
+  background: linear-gradient(to top, transparent 0 2px, var(--panel-3) 2px 10px, color-mix(in srgb, var(--ink) 16%, transparent) 10px 11px, transparent 11px) bottom / 100% 11px no-repeat;
+}
+.cf-info { display: grid; align-content: start; gap: 9px; min-width: 0; padding-top: 6px; }
+.cf-info-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.cf-card-name { margin: 0; min-width: 0; font-family: var(--serif); font-weight: 400; font-size: 1.5rem; line-height: 1.1; }
+.cf-card-open {
+  font: inherit; color: var(--ink); background: none; border: 0; padding: 0; text-align: left; cursor: pointer; max-width: 100%;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere;
+}
+.cf-card-open:hover { color: var(--accent-strong); }
+.cf-card-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.cf-avg { flex: none; display: grid; justify-items: end; gap: 3px; text-align: right; }
+.cf-avg b { font-family: var(--serif); font-weight: 400; font-size: 2rem; line-height: 0.9; color: var(--ink); font-variant-numeric: tabular-nums; }
+.cf-avg small { font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
+.cf-when { margin: -3px 0 0; font-size: 0.8rem; color: var(--muted); }
+.cf-facts { margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 9px 12px; border-radius: 10px; background: var(--panel-2); }
+.cf-fact { min-width: 0; display: grid; gap: 2px; }
+.cf-fact dt { font-size: 0.75rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cf-fact dd { margin: 0; font-size: 0.92rem; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cf-fact.is-low dd { color: var(--danger); }
+.cf-best { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "label act" "what act"; column-gap: 12px; align-items: center; }
+.cf-best-label { grid-area: label; font-size: 0.75rem; color: var(--muted); }
+.cf-best-what { grid-area: what; font-size: 0.86rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cf-best-what b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.cf-redo { grid-area: act; min-height: 44px; }
+.cf-last { margin: 0; font-size: 0.8rem; color: var(--text); font-variant-numeric: tabular-nums; }
+.cf-last span { color: var(--muted); }
+
+/* THE PLANK OF THE FINISHED ONES: the tiles all have the height of a row
+   (--cf-row), so the plank is a gradient repeated every row, under the
+   tiles, whatever their number. */
 .cf-plank {
-  --cf-row: 236px;
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); grid-auto-rows: var(--cf-row);
+  --cf-row: 96px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); grid-auto-rows: var(--cf-row); column-gap: 8px;
   background-image: linear-gradient(to top, transparent 0 2px, var(--panel-3) 2px 10px, color-mix(in srgb, var(--ink) 16%, transparent) 10px 11px, transparent 11px);
   background-size: 100% var(--cf-row);
 }
-.cf-plank-done { --cf-row: 168px; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); }
 .cf-jar {
   position: relative; isolation: isolate; display: grid; justify-items: center; align-content: end; gap: 5px; min-width: 0;
   padding: 12px 8px 20px; border: 0; background: none;
@@ -65,7 +123,7 @@
 .cf-jar:hover .cf-art { transform: translateY(-3px); }
 .cf-art .jar-svg { transition: opacity 200ms; }
 .cf-name {
-  font-size: 0.86rem; font-weight: 700; line-height: 1.2; color: var(--ink); min-height: 2.4em; max-width: 100%;
+  font-size: 0.86rem; font-weight: 700; line-height: 1.2; color: var(--ink); max-width: 100%;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere;
 }
 .cf-line { display: flex; justify-content: center; align-items: baseline; gap: 10px; font-variant-numeric: tabular-nums; }
@@ -78,10 +136,13 @@
 .cf-jar.is-low .cf-art { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--danger) 32%, transparent)); }
 .cf-jar.is-low .cf-g { color: var(--danger); font-weight: 700; }
 
-/* The finished ones: smaller, quieter. */
-.cf-jar.is-done .cf-art { width: 54px; opacity: 0.72; filter: saturate(0.6); }
-.cf-jar.is-done .cf-name { font-size: 0.8rem; font-weight: 600; min-height: 0; }
-.cf-jar.is-done .cf-g { font-size: 0.75rem; }
+/* The finished ones: a small jar beside its name, its average and its
+   dates, quieter. */
+.cf-jar.is-done { grid-template-columns: 44px minmax(0, 1fr); justify-items: start; align-items: end; gap: 12px; padding: 10px 10px 16px; text-align: left; }
+.cf-jar.is-done .cf-art { width: 44px; opacity: 0.72; filter: saturate(0.6); }
+.cf-done-text { display: grid; gap: 2px; min-width: 0; align-self: center; }
+.cf-done-avg, .cf-done-span { font-size: 0.75rem; color: var(--muted); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.cf-done-avg { color: var(--text); }
 
 /* Its sheet is open: the jar is in the sheet, its place on the shelf is dashed. */
 .cf-jar.is-lifted::before { background: var(--accent-bg); border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
@@ -90,52 +151,64 @@
 .cf-jar.cf-settle .cf-art { animation: cf-settle 420ms cubic-bezier(0.3, 1.6, 0.5, 1); }
 @keyframes cf-settle { from { transform: translateY(-7px) scale(1.05); } }
 
-/* ARRIVING ON THE PAGE: the jars rise one after the other and fill from
-   empty, the heap overshooting a hair before it settles; a low one blushes
-   once it is full. */
-.cf-arrive .cf-jar, .cf-arrive .bag-end { animation: cf-rise 440ms cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: calc(var(--i, 0) * 55ms); }
-.cf-arrive .cf-row-rebuy .bag-end { animation-delay: calc(var(--i, 0) * 55ms + 160ms); }
-.cf-arrive .cf-jar .jar-pile { transform-box: fill-box; animation: cf-fill 780ms cubic-bezier(0.3, 1.25, 0.5, 1) both; animation-delay: calc(var(--i, 0) * 55ms + 140ms); }
-.cf-arrive .cf-jar.is-low .cf-art { animation: cf-blush 900ms ease-out both; animation-delay: calc(var(--i, 0) * 55ms + 620ms); }
+/* ARRIVING ON THE PAGE: the figures, the cards and the jars rise one after
+   the other, the jars fill from empty, the heap overshooting a hair before
+   it settles, a low one blushes once it is full; the frise's ribbons run
+   from their opening to their end. */
+.cf-arrive .cf-sum-tile, .cf-arrive .cf-frise, .cf-arrive .cf-card, .cf-arrive .cf-jar.is-done, .cf-arrive .bag-end {
+  animation: cf-rise 440ms cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: calc(var(--i, 0) * 55ms);
+}
+.cf-arrive .cf-frise { animation-delay: 160ms; }
+.cf-arrive .cf-card { animation-delay: calc(var(--i, 0) * 70ms + 120ms); }
+.cf-arrive .cf-row-rebuy .bag-end { animation-delay: calc(var(--i, 0) * 55ms + 220ms); }
+.cf-arrive .cf-jar .jar-pile { transform-box: fill-box; animation: cf-fill 780ms cubic-bezier(0.3, 1.25, 0.5, 1) both; animation-delay: calc(var(--i, 0) * 70ms + 260ms); }
+.cf-arrive .cf-jar.is-low .cf-art { animation: cf-blush 900ms ease-out both; animation-delay: calc(var(--i, 0) * 70ms + 760ms); }
+.cf-arrive .cf-frise .dw-ribbon-block { transform-box: fill-box; transform-origin: 0 50%; animation: cf-run 620ms cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: calc(var(--i, 0) * 45ms + 260ms); }
 @keyframes cf-rise { from { opacity: 0; transform: translateY(14px); } }
 @keyframes cf-fill { from { transform: translateY(100%); } 72% { transform: translateY(-4%); } }
 @keyframes cf-blush { 45% { filter: drop-shadow(0 0 14px color-mix(in srgb, var(--danger) 60%, transparent)); } }
+@keyframes cf-run { from { transform: scaleX(0.04); } }
 
-@media (max-width: 560px) {
-  .cf-head-actions { width: 100%; }
-  .cf-counts { flex: 1 1 100%; }
-  .cf-count { flex: 1 1 0; justify-content: center; padding: 6px 4px; }
-  .cf-plank { --cf-row: 206px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .cf-plank-done { --cf-row: 150px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .cf-art { width: 70px; }
-  .cf-jar.is-done .cf-art { width: 44px; }
-}
-
-/* v9.25: THE FINISHED ONES, ONE PLANK. The jars past the first row wait
+/* THE FINISHED ONES, ONE PLANK (v9.25). The tiles past the first row wait
    behind « Voir les N autres » (js/ui-coffees.js, fitDone), on its line. */
 .cf-row-done { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 12px; }
 .cf-row-done > .cf-row-h { margin: 0 0 10px; }
 .cf-row-done > .cf-plank { grid-column: 1 / -1; }
 .cf-done-more { margin: 0 0 10px; font-size: 0.82rem; }
 .cf-done-more[hidden], .cf-jar[hidden] { display: none; }
-@media (pointer: coarse) { .cf-done-more { min-height: 44px; } }
+@media (pointer: coarse) { .cf-done-more, .cf-card-open { min-height: 44px; } }
 
-/* v9.25: ON A WIDE SCREEN, THE SHELF IN TWO COLUMNS. The open jars on the
-   left, « À racheter » and the finished ones stacked on the right: the
-   whole page fits a 1280 by 800 window without scrolling. The open row
-   spans both rows of the grid, the second of which is flexible, so its
-   height never pushes the finished ones down. Without a rebuy row, the
-   finished ones go up; with neither, the open jars take the full width. */
-.cf-frame { container: shelves / inline-size; }
-@container shelves (min-width: 820px) {
-  .cf-shelves { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 32px; row-gap: 24px; align-items: start; }
-  .cf-shelves > .cf-row-open { grid-column: 1; grid-row: 1 / span 2; }
-  .cf-shelves > .cf-row-rebuy { grid-column: 2; grid-row: 1; }
-  .cf-shelves > .cf-row-done { grid-column: 2; grid-row: 2; }
-  .cf-shelves:not(:has(> .cf-row-rebuy)) > .cf-row-done { grid-row: 1; }
-  .cf-shelves:not(:has(> .cf-row-rebuy, > .cf-row-done)) > .cf-row-open, .cf-shelves > :only-child { grid-column: 1 / -1; }
-  .cf-rebuy { grid-template-columns: minmax(0, 1fr); gap: 10px; }
-  .cf-plank-done { --cf-row: 160px; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
+@media (max-width: 560px) {
+  .cf-head-actions { width: 100%; }
+  .cf-counts { flex: 1 1 100%; }
+  .cf-count { flex: 1 1 0; justify-content: center; padding: 6px 4px; }
+  /* The jars come first on a phone: the frise goes to the foot of the page. */
+  .cf-top { display: contents; }
+  .cf-frise { order: 9; }
+  .cf-sum { gap: 8px; }
+  .cf-sum-tile { padding: 11px 12px; }
+  .cf-sum-value { font-size: 1.6rem; }
+  .cf-frise { padding: 11px 12px 6px; }
+  /* The card on a phone: the jar beside the name and the days, the rest
+     across the whole card underneath. */
+  .cf-card {
+    grid-template-columns: 84px minmax(0, 1fr); grid-template-rows: auto 1fr auto auto auto;
+    grid-template-areas: "jar head" "jar when" "facts facts" "best best" "last last"; gap: 0 12px; padding: 8px 12px 12px 4px;
+  }
+  .cf-card .cf-jar { grid-area: jar; padding: 6px 2px 18px; }
+  .cf-card .cf-art { width: 64px; }
+  .cf-info { display: contents; }
+  .cf-info-head { grid-area: head; padding-top: 8px; }
+  .cf-when { grid-area: when; margin: 4px 0 0; align-self: start; }
+  .cf-facts { grid-area: facts; margin-top: 10px; padding: 8px 10px; gap: 6px; }
+  .cf-best { grid-area: best; margin: 8px 0 0 8px; }
+  .cf-last { grid-area: last; margin: 6px 0 0 8px; }
+  .cf-card-name { font-size: 1.25rem; }
+  .cf-avg b { font-size: 1.6rem; }
+  .cf-fact dd { font-size: 0.86rem; }
+  .cf-plank { --cf-row: 92px; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 4px; }
+  .cf-jar.is-done { grid-template-columns: 34px minmax(0, 1fr); gap: 8px; padding: 10px 6px 16px; }
+  .cf-jar.is-done .cf-art { width: 34px; }
 }
 
 /* ---------- The jar that grows into its sheet (view transition) ---------- */
@@ -237,6 +310,7 @@ button.be-jar:focus-visible { outline: 2px solid var(--accent); outline-offset: 
 .be-row .be-bag { width: 58px; }
 .be-row .be-stage { gap: 10px; }
 .be-row .be-title { font-family: var(--sans); font-size: 0.98rem; font-weight: 700; }
+.be-meta { margin: 0; font-size: 0.8rem; color: var(--muted); overflow-wrap: anywhere; }
 .be-row .be-stamp { font-size: 0.78rem; border-width: 2px; padding: 0 5px; letter-spacing: 0.1em; }
 
 /* The home corner (wired by the home screen): one line's worth. */
@@ -288,7 +362,8 @@ button.be-jar:focus-visible { outline: 2px solid var(--accent); outline-offset: 
 
 /* ---------- Reduced motion: everything lands at once ---------- */
 @media (prefers-reduced-motion: reduce) {
-  .cf-arrive .cf-jar, .cf-arrive .bag-end, .cf-arrive .cf-jar .jar-pile, .cf-arrive .cf-jar.is-low .cf-art,
+  .cf-arrive .cf-sum-tile, .cf-arrive .cf-frise, .cf-arrive .cf-card, .cf-arrive .cf-jar.is-done, .cf-arrive .bag-end,
+  .cf-arrive .cf-jar .jar-pile, .cf-arrive .cf-jar.is-low .cf-art, .cf-arrive .cf-frise .dw-ribbon-block,
   .cf-jar.cf-settle .cf-art, .cf-forms form:not([hidden]), .be-tilting .be-art, .be-bag-in, .cj-hop .cj-art, .gd-row input.gd-glow { animation: none; }
   .cf-art, .cf-art .jar-svg, .be-stamp, .be-bag-svg, .gd-turning .gd-needle { transition: none; }
 }

@@ -11,7 +11,9 @@
  *     blushes, never green. A jar GROWS into its coffee's sheet (a view
  *     transition: the jar flies to the sheet's jar while the card unfolds
  *     into the window or the side panel), and going back sets it down on the
- *     shelf, where its place stayed marked;
+ *     shelf, where its place stayed marked. Since v9.31 the rows stand one
+ *     under the other at every width, under a strip of figures and the frise
+ *     of the bags, each open jar at the left of its card (js/ui-shelf.js);
  *   - the entry form: a row of the open bags as small jars above the coffee
  *     menu. A tap chooses; #f-coffee stays the truth that saving, the draft,
  *     the quick entry and the prefills read, and the jars follow it.
@@ -44,15 +46,16 @@
     return { coffee: c, gauge: DATA.bagGauge(c.id, fallbacks.dose), day: jc ? jc.day : null, lastCup };
   }
 
-  // The average of each coffee over its analysable rated cups: advice, so no botched cup.
-  function averages() {
+  /* The average of each coffee over its analysable rated cups, and their
+     number: advice, so no botched cup. { avg, n } by coffee id. */
+  function ratings() {
     const per = new Map();
     analyzableExts().forEach(e => {
       if (e.score_10 === "") return;
       if (!per.has(e.coffee_id)) per.set(e.coffee_id, []);
       per.get(e.coffee_id).push(Number(e.score_10));
     });
-    return new Map([...per].map(([id, list]) => [id, average(list)]));
+    return new Map([...per].map(([id, list]) => [id, { avg: average(list), n: list.length }]));
   }
 
   // The day a date_time falls on, short: « 12 sept. ».
@@ -63,24 +66,30 @@
 
   /* A jar of the shelf. The art carries the jar's data attributes, so a
      change of grams since this device last showed it plays (UI.playJars):
-     the level drops after a cup, beans rain in after a new bag. */
-  function jarCard(it, i, avgs, done) {
+     the level drops after a cup, beans rain in after a new bag.
+
+     v9.31: an open jar stands at the left of its card (js/ui-shelf.js), on
+     its bit of plank, its grams under it; its name and average head the
+     card. A finished one is a small tile: the jar, its name on two lines,
+     its final average and its dates. */
+  function jarCard(it, i, rates, done) {
     const c = it.coffee, g = it.gauge;
     const low = !!(g && g.low);
     const jar = { coffeeId: c.id, grams: g ? g.grams : 0, bag: g ? g.bag : 0, low, roast: UI.jarRoast(c), unknown: !g };
-    const avg = avgs.get(c.id);
-    const score = avg === null || avg === undefined ? "·" : fmtDecimal(avg, 1);
+    const stats = rates.get(c.id) || { avg: null, n: 0 };
+    const score = stats.avg === null ? "·" : fmtDecimal(stats.avg, 1);
     const grams = g ? fmtDecimal(g.grams, 0) + " g" : I18N.t("cf_to_count");
-    const sub = done
-      ? (it.lastCup ? I18N.t("cf_done_on", { d: shortDay(it.lastCup) }) : I18N.t("cf_done"))
-      : grams;
     const label = I18N.t(done ? "cf_jar_done_aria" : "cf_jar_aria", { c: c.name, g: grams, m: score, d: shortDay(it.lastCup) });
-    return '<button type="button" class="cf-jar' + (low && !done ? " is-low" : "") + (done ? " is-done" : "") + '" data-sheet="' +
+    const open = '<button type="button" class="cf-jar' + (low && !done ? " is-low" : "") + (done ? " is-done" : "") + '" data-sheet="' +
       escapeHtml(c.id) + '" style="--i:' + i + '" aria-label="' + escapeHtml(label) + '">' +
-      '<span class="cf-art"' + (g && !done ? UI.jarData(jar) : "") + ">" + UI.jarSvg(jar) + "</span>" +
-      '<b class="cf-name">' + escapeHtml(c.name) + "</b>" +
-      '<span class="cf-line"><span class="cf-g"' + (g && !done ? ' data-jar-grams="' + escapeHtml(c.id) + '"' : "") + ">" + escapeHtml(sub) + "</span>" +
-      (done ? "" : '<span class="cf-score" aria-hidden="true">' + score + "</span>") + "</span></button>";
+      '<span class="cf-art"' + (g && !done ? UI.jarData(jar) : "") + ">" + UI.jarSvg(jar) + "</span>";
+    if (done) {
+      const d = UI.shelfDoneLines(c, stats);
+      return open + '<span class="cf-done-text"><b class="cf-name">' + escapeHtml(c.name) + '</b><span class="cf-done-avg">' + escapeHtml(d.top) + "</span>" +
+        (d.span ? '<span class="cf-done-span">' + escapeHtml(d.span) + "</span>" : "") + "</span></button>";
+    }
+    return UI.shelfOpenCard(it, i, stats, open +
+      '<span class="cf-line"><span class="cf-g"' + (g ? ' data-jar-grams="' + escapeHtml(c.id) + '"' : "") + ">" + escapeHtml(grams) + "</span></span></button>");
   }
 
   // ---------- The shelf ----------
@@ -113,21 +122,27 @@
       writeCounts({ open: [], rebuy: [], done: [] });
       return;
     }
-    const r = rows(), avgs = averages();
+    const r = rows(), rates = ratings();
     const row = (key, inner) => '<section class="cf-row cf-row-' + key + '" id="cf-row-' + key + '" aria-labelledby="cf-h-' + key + '">' +
       '<h3 class="cf-row-h" id="cf-h-' + key + '">' + escapeHtml(I18N.t("cf_row_" + key)) + ' <span class="cf-row-n">' + r[key].length + "</span></h3>" + inner + "</section>";
-    let html = row("open", r.open.length
-      ? '<div class="cf-plank" id="cf-open">' + r.open.map((it, i) => jarCard(it, i, avgs, false)).join("") + "</div>"
+    /* v9.31: the strip at the top (the stock in figures, the bags over
+       time), then the three rows one under the other, full width. */
+    const frise = UI.shelfFrise();
+    let html = '<div class="cf-top' + (frise ? "" : " cf-top-alone") + '">' + UI.shelfSummary(r) + frise + "</div>";
+    html += row("open", r.open.length
+      ? '<div class="cf-cards" id="cf-open">' + r.open.map((it, i) => jarCard(it, i, rates, false)).join("") + "</div>"
       : '<p class="cf-quiet">' + escapeHtml(I18N.t(r.rebuy.length ? "cf_open_none_rebuy" : "cf_open_none")) + "</p>");
     if (r.rebuy.length) {
       html += row("rebuy", '<div class="cf-rebuy" id="cf-rebuy">' +
-        r.rebuy.map((it, i) => UI.bagEndScene(it.coffee.id, { layout: "row", index: i, force: true })).join("") + "</div>");
+        r.rebuy.map((it, i) => UI.bagEndScene(it.coffee.id, { layout: "row", index: i, force: true, meta: UI.shelfRebuyMeta(it.coffee.id) })).join("") + "</div>");
     }
     if (r.done.length) {
       html += row("done", '<button type="button" class="link-card cf-done-more" id="cf-done-more" data-cf-done-more aria-controls="cf-done" hidden></button>' +
-        '<div class="cf-plank cf-plank-done" id="cf-done">' + r.done.map((it, i) => jarCard(it, i, avgs, true)).join("") + "</div>");
+        '<div class="cf-plank cf-plank-done" id="cf-done">' + r.done.map((it, i) => jarCard(it, i, rates, true)).join("") + "</div>");
     }
-    if (html !== shelfHtml) { zone.innerHTML = html; shelfHtml = html; }
+    const fresh = html !== shelfHtml;
+    if (fresh) { zone.innerHTML = html; shelfHtml = html; }
+    UI.drawShelfFrise(fresh);
     fitDone();
     writeCounts(r);
     markShelfJar(UI.sheetCoffeeId ? UI.sheetCoffeeId() : null);
@@ -136,6 +151,7 @@
       zone.classList.remove("cf-arrive");
       void zone.offsetWidth;
       zone.classList.add("cf-arrive");
+      UI.shelfCountUp(zone);
       clearTimeout(renderCoffeeList.arriveTimer);
       renderCoffeeList.arriveTimer = setTimeout(() => zone.classList.remove("cf-arrive"), 1600);
     }
@@ -144,9 +160,10 @@
     UI.playBagScenes(zone);
   }
 
-  /* v9.25: THE FINISHED ONES, ONE PLANK. Only as many jars as the plank
-     holds in a row (its columns, read from the grid), the others behind
-     « Voir les N autres »: the page fits the window without scrolling. */
+  /* THE FINISHED ONES, ONE PLANK (v9.25). Only as many tiles as the plank
+     holds in a row (its columns, read from the grid; two rows of two on a
+     phone), the others behind
+     « Voir les N autres », which only shows when there are others. */
   let doneAll = false;
   function fitDone() {
     const plank = $("#cf-done"), more = $("#cf-done-more");
@@ -155,8 +172,10 @@
     if (!plank.offsetWidth) return;
     const jars = [...plank.querySelectorAll(".cf-jar")];
     const cols = Math.max(1, String(getComputedStyle(plank).gridTemplateColumns || "").split(" ").filter(Boolean).length);
-    const extra = Math.max(0, jars.length - cols);
-    jars.forEach((j, i) => { j.hidden = !doneAll && i >= cols; });
+    // Two rows on a phone, where a row holds only two tiles.
+    const keep = cols * (cols <= 2 ? 2 : 1);
+    const extra = Math.max(0, jars.length - keep);
+    jars.forEach((j, i) => { j.hidden = !doneAll && i >= keep; });
     more.hidden = !extra;
     more.textContent = I18N.t(doneAll ? "cf_done_less" : "cf_done_more", { n: extra });
     more.setAttribute("aria-expanded", String(doneAll));
@@ -211,19 +230,25 @@
     done.catch(() => {}).then(cleanup);
   }
 
+  /* What unfolds and what flies: an open jar's whole card (v9.31) and its
+     jar, or the jar's own place and its drawing. */
+  const surfaceOf = el => (el.closest && el.closest(".cf-card")) || el;
+  const artOf = box => box.querySelector(".cf-art, .be-art") || box;
+
   /* A jar of the page opens its sheet: the card unfolds into the window (or
      the side panel on a wide screen) and the jar flies to the sheet's jar. */
-  function openFromJar(card) {
-    const id = card.dataset.sheet;
-    if (!canMorph() || !inView(card)) { UI.openCoffee(id, card); return; }
-    const art = card.querySelector(".cf-art, .be-art") || card;
+  function openFromJar(el) {
+    const id = el.dataset.sheet;
+    const card = surfaceOf(el);
+    if (!canMorph() || !inView(card)) { UI.openCoffee(id, el); return; }
+    const art = artOf(card);
     vtName(card, "cf-sheet");
     if (art !== card) vtName(art, "cf-jar");
     const d = $("#modal-sheet");
     let target = null;
     transition(() => {
       vtName(card, ""); vtName(art, "");
-      UI.openCoffee(id, card);
+      UI.openCoffee(id, el);
       if (!d.open) return;
       d.classList.add("cf-morph");
       vtName(d, "cf-sheet");
@@ -244,8 +269,10 @@
     const d = $("#modal-sheet");
     const id = UI.sheetCoffeeId ? UI.sheetCoffeeId() : null;
     if (!d || !d.open || !canMorph() || nav.screenName !== "coffees" || !safeId(id)) return false;
-    const card = $('#coffees-list [data-sheet="' + id + '"]');
-    if (!card) return false;
+    const jarSel = '#coffees-list .cf-jar[data-sheet="' + id + '"], #coffees-list .be-jar[data-sheet="' + id + '"]';
+    const jar = $(jarSel);
+    if (!jar) return false;
+    const card = surfaceOf(jar);
     const r = card.getBoundingClientRect();
     if (!(r.height > 0) || r.bottom < 0 || r.top > (window.innerHeight || 0)) return false;
     const from = sheetJar();
@@ -257,16 +284,18 @@
       vtName(d, ""); vtName(from, "");
       d.classList.remove("cf-morph");
       d.close();
-      landed = $('#coffees-list [data-sheet="' + id + '"]');
-      if (!landed) return;
-      landed.classList.remove("is-lifted");
-      landed.classList.add("cf-settle");
-      art = landed.querySelector(".cf-art, .be-art");
+      const back = $(jarSel);
+      if (!back) return;
+      back.classList.remove("is-lifted");
+      back.classList.add("cf-settle");
+      landed = surfaceOf(back);
+      art = artOf(landed);
       vtName(landed, "cf-sheet");
-      if (art) vtName(art, "cf-jar");
+      if (art !== landed) vtName(art, "cf-jar");
     }, () => {
       vtName(landed, ""); vtName(art, "");
-      if (landed) setTimeout(() => landed.classList.remove("cf-settle"), 400);
+      const back = $(jarSel);
+      if (back) setTimeout(() => back.classList.remove("cf-settle"), 400);
     });
     return true;
   }
@@ -414,7 +443,8 @@
           });
           return;
         }
-        const card = ev.target.closest(".cf-jar[data-sheet], .be-jar[data-sheet]");
+        if (UI.onShelfClick(ev)) return;
+        const card = ev.target.closest(".cf-jar[data-sheet], .be-jar[data-sheet], .cf-card [data-sheet]");
         if (!card) return;
         // Ours: the sheet's own handler on the document would open it a second time.
         ev.stopPropagation();
@@ -435,15 +465,15 @@
        the screen goes away, played by the next render. */
     const page = $("#screen-coffees");
     if (page && typeof MutationObserver === "function") {
-      new MutationObserver(() => { if (!page.classList.contains("on")) arriving = true; else requestAnimationFrame(fitDone); })
+      new MutationObserver(() => { if (!page.classList.contains("on")) arriving = true; else requestAnimationFrame(() => { fitDone(); UI.drawShelfFrise(false); }); })
         .observe(page, { attributes: true, attributeFilter: ["class"] });
     }
     // The end of a bag's buttons, wherever its scene is drawn (js/ui-bag-end.js).
     UI.wireBagEnd();
     DATA.subscribe(kind => { if (kind !== "sync") renderCoffeeJars(); });
     I18N.subscribe(() => { jarsHtml = ""; shelfHtml = ""; renderCoffeeJars(); });
-    // The finished ones' plank counts its columns again at a new width.
-    window.addEventListener("resize", UI.debounce(fitDone, 150));
+    // The finished ones' plank counts its columns again at a new width, the frise redraws at it.
+    window.addEventListener("resize", UI.debounce(() => { fitDone(); UI.drawShelfFrise(false); }, 150));
   }
 
   // Under the old window's name too: the drawings and the empty places call it.

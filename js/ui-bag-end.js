@@ -138,7 +138,8 @@
      opts.layout: "card" (the sheet), "row" (« Mes cafés »), "corner" (home);
      opts.place: "sheet" lets an archived coffee show its scene;
      opts.force: draw it even when the bag is not spent (the shelf already
-     decided); opts.index: the stagger of a list.
+     decided); opts.index: the stagger of a list; opts.meta: HTML under the
+     title (v9.31, « Mes cafés »: where the bag came from, what it cost).
 
      FOR THE HOME SCREEN (the stock corner): for each id of
      UI.bagEndCoffees(), insert UI.bagEndScene(id, { layout: "corner" }), then
@@ -207,7 +208,7 @@
       '" data-bag-end="' + escapeHtml(id) + '"' + (fresh ? ' data-be-fresh="' + escapeHtml(key) + '"' : "") +
       ' style="--i:' + (o.index || 0) + '">' +
       '<div class="be-stage">' + jarHtml + newBag + "</div>" +
-      '<div class="be-text"><p class="be-title">' + escapeHtml(title) + '</p><p class="be-say">' + escapeHtml(say) + "</p>" + resume +
+      '<div class="be-text"><p class="be-title">' + escapeHtml(title) + '</p>' + (o.meta || "") + '<p class="be-say">' + escapeHtml(say) + "</p>" + resume +
       '<div class="be-actions">' + actions + "</div></div></div>";
   }
 

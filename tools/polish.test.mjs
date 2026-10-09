@@ -121,13 +121,11 @@ const homeCss = read("css/home.css"), stockCss = read("css/stock.css"), journalC
   check("the quick panel shows the same menu", read("js/ui-quick.js").includes("UI.coffeeOptions()"));
 }
 
-/* ---------- 3. Mes cafés, in columns ---------- */
+/* ---------- 3. Mes cafés ---------- */
+/* The two columns of v9.25 were taken back in v9.31 (the rows one under the
+   other again): tools/shelf.test.mjs checks the page now. The fold of the
+   finished ones stays. */
 {
-  check("the shelf has a frame to query", html.includes('<div class="cf-frame"><div id="coffees-list" class="cf-shelves"></div></div>') &&
-    /\.cf-frame \{ container: shelves \/ inline-size; \}/.test(stockCss));
-  check("wide, the open jars on the left, to buy again and finished on the right",
-    /@container shelves \(min-width: 820px\)[\s\S]*\.cf-shelves > \.cf-row-open \{ grid-column: 1; grid-row: 1 \/ span 2; \}[\s\S]*\.cf-shelves > \.cf-row-rebuy \{ grid-column: 2;/.test(stockCss));
-  check("without a rebuy row, the finished ones go up", /\.cf-shelves:not\(:has\(> \.cf-row-rebuy\)\) > \.cf-row-done \{ grid-row: 1; \}/.test(stockCss));
   check("a hidden finished jar is really hidden", /\.cf-done-more\[hidden\], \.cf-jar\[hidden\] \{ display: none; \}/.test(stockCss));
   const cf = read("js/ui-coffees.js");
   check("the finished ones fold to one row, « Voir les N autres »", cf.includes("function fitDone") && cf.includes("cf_done_more") && cf.includes("data-cf-done-more"));

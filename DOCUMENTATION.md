@@ -317,8 +317,9 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/ui-compare.js` | la page de comparaison `#history/compare` (v9.20, O5) |
 | `js/ui-guide.js` | recettes de référence, pas à pas, moulin interactif |
 | `js/ui-catalog.js` | formulaires café et sachet (dans « Mes cafés »), fenêtre des recettes, écran Paramètres |
-| `js/bags.js` | les sachets sans le DOM (v9.18) : rangées de l'étagère, bocaux de la saisie, fin d'un sachet, prochaine tasse, crans du cadran qui tourne. Pur, testé par `tools/stock.test.mjs` |
+| `js/bags.js` | les sachets sans le DOM (v9.18) : rangées de l'étagère, bocaux de la saisie, fin d'un sachet, prochaine tasse, crans du cadran qui tourne. Pur, testé par `tools/stock.test.mjs` (les chiffres de « Mes cafés » depuis la v9.31 : `tools/shelf.test.mjs`) |
 | `js/ui-coffees.js` | « Mes cafés », la page (v9.18, O2) : l'étagère, le bocal qui devient la fiche, les bocaux de la saisie |
+| `js/ui-shelf.js` | « Mes cafés », ce qui entoure les bocaux (v9.31) : le bandeau du stock, la frise des sachets, la carte de chaque sachet ouvert, l'origine d'un sachet à racheter, les tuiles des finis |
 | `js/ui-bag-end.js` | la fin d'un sachet (v9.18, Q9) : le bocal qui penche, le tampon, le sachet neuf, la reprise |
 | `css/stock.css` | la feuille du stock (v9.18), chargée après finishing.css |
 | `js/ui-coffee-sheet.js` | la fiche d'un café (v8.46), dialogue `#modale-fiche` |
@@ -1613,13 +1614,31 @@ encore (dessins, écrans vides).
   d'une rangée, `--cf-row`). En tête, les trois comptes (boutons qui défilent jusqu'à
   leur rangée) et « Ajouter un café ». Les formulaires café et sachet de l'ancienne
   fenêtre vivent dans la carte `.cf-forms`, visible seulement quand l'un est ouvert.
-  Sur un écran large (v9.25, `.cf-frame`, conteneur `shelves` à 820 px et plus),
-  l'étagère est en deux colonnes : les ouverts à gauche, « À racheter » puis les finis
-  à droite, et la page tient dans 1280 par 800 sans défiler. Les finis tiennent sur une
-  planche : `fitDone` compte les colonnes de la grille et cache les autres bocaux
-  derrière « Voir les N autres » (« Replier »), sur ordinateur comme sur téléphone.
-- **L'arrivée** : en arrivant sur la page, les bocaux montent l'un après l'autre et se
-  remplissent depuis vide (`.cf-arrive`, CSS seulement), un bocal bas rougit ensuite.
+  Depuis la v9.31, les trois rangées sont l'une sous l'autre à toutes les largeurs (les
+  deux colonnes de la v9.25 sont retirées). Les finis tiennent sur une planche :
+  `fitDone` compte les colonnes de la grille (deux rangées de deux au téléphone) et
+  cache les autres tuiles derrière « Voir les N autres » (« Replier »), bouton absent
+  quand tout tient.
+- **Ce qui entoure les bocaux** (v9.31, js/ui-shelf.js, chiffres purs dans js/bags.js) :
+  en tête, le bandeau `.cf-top` : quatre chiffres (grammes en stock et sachets, tasses
+  restantes à la dose habituelle, argent des sachets achetés ce mois, prix moyen d'une
+  tasse sur 30 jours, chaque tasse au prix au gramme de son sachet) à côté de « la
+  frise des sachets » (`UI.timelineData` du dessin d'Analyses, redessinée à sa largeur
+  réelle, une unité par pixel, par un ResizeObserver ; au téléphone elle passe en bas
+  de page). Chaque sachet ouvert est une carte `.cf-card` : le bocal à gauche sur son
+  bout de planche (toujours `.cf-jar`, donc le morph, l'inclinaison et les grammes qui
+  roulent), à droite le nom et la moyenne, les jours depuis l'ouverture et depuis la
+  torréfaction, « Il reste ≈ N tasses », « Ton rythme » (grammes par jour sur les trois
+  dernières semaines du sachet, `BAGS.pace`, au moins deux tasses), « Fini vers le »
+  (`BAGS.finishDay`), le meilleur réglage (`TUNING.forCoffee`, sinon la meilleure
+  tasse) avec « Refaire », et la dernière tasse. Toute la carte se déplie en fiche.
+  Sous « À racheter », le torréfacteur, le format, le prix et la date du dernier sachet
+  (`opts.meta` de `UI.bagEndScene`). Les finis sont des tuiles : bocal, nom sur deux
+  lignes, moyenne finale et nombre de tasses, première et dernière tasse.
+- **L'arrivée** : en arrivant sur la page, les chiffres, les cartes et les tuiles montent l'un
+  après l'autre, les bocaux se remplissent depuis vide (`.cf-arrive`), un bocal bas rougit
+  ensuite, les rubans de la frise courent de leur ouverture à leur fin et les grammes et
+  les tasses du bandeau comptent depuis zéro (v9.31).
 - **Le bocal qui devient la fiche** : un toucher lance une view transition (noms
   `cf-sheet` et `cf-jar`) : la carte se déplie en fenêtre ou en panneau, le bocal vole
   jusqu'au bocal de la fiche ; sa place sur l'étagère reste en pointillé tant que la
@@ -2084,6 +2103,7 @@ node tools/gestures.test.mjs tirer pour synchroniser et dictée (v9.22) : caoutc
 node tools/moments.test.mjs  vapeur, séries et paliers (v9.23) : règles pures, ce qu'un enregistrement fête, crochets et page
 node tools/feel.test.mjs     l'accent du café et les petits ressorts (v9.24) : café, torréfaction, jetons et leurs contrastes, inclinaison, page
 node tools/panel.test.mjs    le panneau qu'on écrit, noter plus tard, la colonne de l'accueil (v9.27) : champs lus et écrits, ce qui change, la note, paliers, moyenne, touches
+node tools/shelf.test.mjs    « Mes cafés » en rangées (v9.31) : jours, tasses restantes, rythme, fin du sachet, stock, argent du mois, prix d'une tasse (pur), page
 ```
 
 Ce que chacune couvre, et le bug qui l'a motivée : `DECISIONS.md`, « Tests ».
