@@ -99,8 +99,14 @@
        from, drawn between the name and the score (Chris: « plutôt que faire
        fumer la note »). */
     const score = card.querySelector(".lc-head .last-big-rating");
+    /* The drawing says which cup and which drink: when the cup is changed
+       afterwards (the side panel, v9.32), it is drawn again, wisps included,
+       their clock still started at the cup's real age. */
+    const key = [e.cup || "", e.method || "", e.recipe || "", e.milk_ml || ""].join("|");
+    const drawn = card.querySelector(".lc-cup");
+    if (drawn && drawn.dataset.cupKey !== key) drawn.remove();
     if (score && !card.querySelector(".lc-cup") && typeof UI.cupArt === "function") {
-      score.insertAdjacentHTML("beforebegin", '<span class="lc-cup" aria-hidden="true">' + UI.cupArt(e) + steamHtml(st.age, false) + "</span>");
+      score.insertAdjacentHTML("beforebegin", '<span class="lc-cup" aria-hidden="true" data-cup-key="' + escapeHtml(key) + '">' + UI.cupArt(e) + steamHtml(st.age, false) + "</span>");
     }
     /* « encore chaude »: after « Dernière tasse » on a wide card, under the
        score on a narrow one, where the head has room for it (css/moments.css
