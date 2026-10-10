@@ -302,7 +302,6 @@ const I18N_EN = {
     kpi_consistency: "consistency, same coffee and recipe",
     dash_last_cup: "Last cup, {q}",
     dash_out_of_10: "out of 10",
-    quick_now: "now, {h}",
     history_highlight: "{n} cup{s} since {d}",
     history_summary_cups: "cups",
     history_summary_average: "average",
@@ -2291,6 +2290,7 @@ const I18N_EN = {
       "Enregistrer l'image": "Save the image",
       // journal (v9.20)
       "Table": "Table",
+      "Heure de la tasse": "Time of the cup",
       // home (v9.21)
       "Journal": "Journal",
       "Réglages gagnants": "Winning settings",

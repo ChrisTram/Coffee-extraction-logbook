@@ -58,6 +58,10 @@
            state (v8.40). Without the state, a rating given before the page
            was unloaded came back unrated. */
         ratingEmpty: isRatingEmpty($("#f-rating")),
+        /* v9.34: whether the date was set by hand. A blank form's date is
+           only the time it was opened (often right after the previous cup was
+           saved): restored as if chosen, it put that old time on the next cup. */
+        dateTouched: !!entry.dateTouched,
         values,
       }));
     } catch (e) { /* storage full or refused, never mind */ }
@@ -78,7 +82,8 @@
      every opening, which would be absurd. */
   function isDraftUseful(b) {
     const v = b.values || {};
-    return Boolean(v["f-coffee"] || (v["f-comment"] || "").trim() ||
+    // The coffee alone says nothing: a blank form always has one (v9.34).
+    return Boolean((v["f-comment"] || "").trim() ||
       b.diagnostics.length || b.descriptors.length || b.ratingEmpty === false ||
       v["f-total-min"] || v["f-total-sec"] || v["f-volume"] || v["f-water"]);
   }
@@ -102,13 +107,13 @@
     const freshDate = Date.now() - (b.savedAt || 0) <= DRAFT_DATE_MAX_MS;
     Object.entries(b.values).forEach(([id, value]) => {
       // A stale date does not replace the current time.
-      if (id === "f-date" && !freshDate) return;
+      if (id === "f-date" && !(freshDate && b.dateTouched)) return;
       const el = $("#" + id);
       if (el && value !== undefined && value !== null) el.value = value;
     });
     /* A date restored from a fresh draft comes from Chris, not from a default:
        arriving on the screen must therefore not replace it. */
-    if (freshDate && b.values["f-date"]) entry.dateTouched = true;
+    if (freshDate && b.dateTouched && b.values["f-date"]) entry.dateTouched = true;
     DRAFT_CHECKBOXES.forEach(id => { const el = $("#" + id); if (el) el.checked = !!b.values[id]; });
 
     /* NEVER an empty coffee or recipe after a restore: a draft can keep a

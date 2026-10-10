@@ -484,7 +484,14 @@ button.rc-day:focus-visible { outline: 2px solid var(--accent); outline-offset: 
   color: var(--ink);
   text-transform: none;
 }
-.quick-when { margin: 0; font-size: 0.78rem; color: var(--muted); }
+.quick-when { margin: 2px 0 0; font-size: 0.78rem; color: var(--muted); }
+/* v9.34: the cup's time, editable, as quiet as the line it replaces. */
+.quick-date {
+  font: inherit; font-size: 0.8rem; color: var(--muted); background: transparent; border: 0;
+  border-bottom: 1px dashed var(--lines); padding: 2px 0; min-height: 32px; cursor: pointer;
+}
+.quick-date:hover, .quick-date:focus { color: var(--ink); border-bottom-color: var(--accent); outline: none; }
+@media (pointer: coarse) { .quick-date { min-height: 44px; } }
 .quick-resumed {
   display: flex;
   align-items: center;

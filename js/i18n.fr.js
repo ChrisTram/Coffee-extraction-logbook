@@ -353,7 +353,6 @@ const I18N_FR = {
     /* The three figures taken out of the tiles: they read inline. */
     dash_last_cup: { fr: "Dernière tasse, {q}" },
     dash_out_of_10: { fr: "sur 10" },
-    quick_now: { fr: "maintenant, {h}" },
     history_highlight: { fr: "{n} tasse{s} depuis le {d}" },
     history_summary_cups: { fr: "tasses" },
     history_summary_average: { fr: "moyenne" },

@@ -41,11 +41,11 @@
     // Every opening starts WITHOUT a rating: you rate after drinking.
     $("#q-rating").value = 5;
     markRating($("#q-rating"), true);
-    /* The save time, shown because it cannot be edited here: the sheet saves
-       NOW, might as well say so. */
-    $("#q-when").textContent = I18N.t("quick_now", {
-      h: new Date().toLocaleTimeString(I18N.locale(), { hour: "2-digit", minute: "2-digit" }),
-    });
+    /* The cup's time (v9.34): now by default, editable for a cup logged
+       late. Untouched, the save takes the time of the save itself. */
+    const when = $("#q-date");
+    when.value = localNow();
+    when.dataset.touched = "";
     updateQuickRatingDisplay();
     updateQuickRecipes();
     updateQuickRepeat();
@@ -135,7 +135,7 @@
     // setting to save: the recipe's value would be made up.
     const quickCoffee = DATA.state.coffees.find(c => c.id === coffeeId);
     const saved = await DATA.addExtraction({
-      date_time: localNow(),
+      date_time: ($("#q-date").dataset.touched === "1" && $("#q-date").value) || localNow(),
       coffee_id: coffeeId,
       method: r.method,
       recipe: r.name,
@@ -176,6 +176,7 @@
       updateQuickRatingDisplay();
       UI.focusRating($("#q-rating"));
     });
+    ["input", "change"].forEach(ev => $("#q-date").addEventListener(ev, () => { $("#q-date").dataset.touched = "1"; }));
     $("#q-save").addEventListener("click", oneAtATime(saveQuick));
     $("#q-full").addEventListener("click", () => { toggleQuick(false); activateScreen("entry"); });
   }
