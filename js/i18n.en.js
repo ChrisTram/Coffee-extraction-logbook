@@ -1250,6 +1250,8 @@ const I18N_EN = {
     pe_fig_heat: "Heat, out of 10",
     pe_fig_time: "Total time",
     pe_fig_dose: "Coffee, g",
+    pe_fig_cup: "Cup",
+    pe_cup_none: "none",
     pe_fig_water: "Water, g",
     pe_err_grind: "Grind as rotation.number.click, for example 1.5.0",
     pe_err_time: "A time in minutes and seconds, for example 3:45",

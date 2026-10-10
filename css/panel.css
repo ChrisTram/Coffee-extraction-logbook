@@ -75,6 +75,14 @@
   font-variant-numeric: tabular-nums; transition: border-color var(--transition);
 }
 .pe-fig input:hover { border-bottom-color: var(--muted); }
+/* v9.32: the cup menu, under the figures, in the same quiet underline style. */
+.pe-cupsel { margin-top: 10px; max-width: 320px; }
+.pe-cupsel select {
+  width: 100%; min-height: 34px; padding: 4px 2px; border: 0; border-bottom: 1px solid var(--lines); border-radius: 0;
+  background: transparent; color: var(--ink); font: inherit; font-size: 0.95rem; cursor: pointer;
+}
+.pe-cupsel select:hover { border-bottom-color: var(--muted); }
+.pe-cupsel select:focus { outline: none; border-bottom-color: var(--accent); box-shadow: 0 1px 0 0 var(--accent); }
 .pe-fig input:focus { outline: none; border-bottom-color: var(--accent); box-shadow: 0 1px 0 0 var(--accent); }
 .pe-fig input[aria-invalid="true"] { border-bottom-color: var(--danger); box-shadow: 0 1px 0 0 var(--danger); }
 .pe-fig input::placeholder { color: var(--muted); opacity: 0.6; }
@@ -202,7 +210,7 @@ td .rate-mark { padding: 2px 7px; }
 
 @media (pointer: coarse) {
   .pe-chip, .pe-failed, .pe-search { min-height: 44px; }
-  .pe-fig input { min-height: 44px; }
+  .pe-fig input, .pe-cupsel select { min-height: 44px; }
   .pe-undo { min-height: 44px; }
 }
 

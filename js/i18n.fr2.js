@@ -463,6 +463,8 @@ Object.assign(I18N_FR, {
     pe_fig_heat: { fr: "Feu, sur 10" },
     pe_fig_time: { fr: "Temps total" },
     pe_fig_dose: { fr: "Café, g" },
+    pe_fig_cup: { fr: "Tasse" },
+    pe_cup_none: { fr: "aucune" },
     pe_fig_water: { fr: "Eau, g" },
     pe_err_grind: { fr: "Mouture au format rotation.numéro.cran, par exemple 1.5.0" },
     pe_err_time: { fr: "Un temps en minutes et secondes, par exemple 3:45" },

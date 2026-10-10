@@ -257,7 +257,10 @@
           '<p class="pe-status" aria-live="polite" hidden><span class="pe-status-text"></span><button type="button" class="pe-undo"></button></p>' +
         "</div>" +
       "</section>" +
-      '<section class="pe-block pe-figs"><div class="pe-fig-grid"></div><p class="pe-msg" aria-live="polite" hidden></p></section>' +
+      '<section class="pe-block pe-figs"><div class="pe-fig-grid"></div>' +
+        // v9.32: the cup it was drunk from, a menu of Chris's cups (Paramètres), saved on change.
+        '<label class="pe-fig pe-cupsel"><span class="pe-fig-label"></span><select class="pe-cup-select"></select></label>' +
+        '<p class="pe-msg" aria-live="polite" hidden></p></section>' +
       '<section class="pe-block pe-tastes"><div class="pe-h"><h3></h3><small class="pe-h-note"></small></div>' +
         '<div class="pe-chips" role="group"></div>' +
         '<input type="search" class="pe-search" enterkeyhint="done" autocomplete="off">' +
@@ -271,7 +274,7 @@
     ed = {
       root, slider: q("#pe-rating"), host: q("#pe-rating-dial"), score: q(".pe-score"), word: q(".pe-word"),
       failed: q("#pe-failed"), clear: q(".pe-clear"), status: q(".pe-status"), statusText: q(".pe-status-text"), undoBtn: q(".pe-undo"),
-      figs: q(".pe-fig-grid"), msg: q(".pe-msg"), chips: q(".pe-tastes .pe-chips"), search: q(".pe-search"), found: q(".pe-found"),
+      figs: q(".pe-fig-grid"), cup: q(".pe-cup-select"), msg: q(".pe-msg"), chips: q(".pe-tastes .pe-chips"), search: q(".pe-search"), found: q(".pe-found"),
       diags: q(".pe-diag-groups"), comment: q("#pe-comment"), ratingDirty: false, undo: null, statusTimer: 0,
     };
     UI.mountRatingDial(ed.slider, ed.host);
@@ -294,6 +297,7 @@
     set(".pe-tastes h3", I18N.t("pe_tastes"));
     set(".pe-tastes .pe-h-note", I18N.t("pe_tastes_usual"));
     set(".pe-diag h3", I18N.t("pe_diag"));
+    set(".pe-cupsel .pe-fig-label", I18N.t("pe_fig_cup"));
     set(".pe-comment label", I18N.t("detail_comment"));
     ed.search.placeholder = I18N.t("pe_tastes_search");
     ed.search.setAttribute("aria-label", I18N.t("pe_tastes_search"));
@@ -395,6 +399,23 @@
     });
   }
 
+  /* The cup menu: Chris's cups, plus the cup stored on this one if it has
+     left the list since, and « aucune » for a cup logged without one. Rebuilt
+     only when the list changes; the value follows the cup shown, except while
+     the menu has the focus. */
+  function renderCup(e) {
+    const names = (DATA.state.cups || []).map(c => c.name).filter(Boolean);
+    const current = e.cup || "";
+    if (current && !names.includes(current)) names.push(current);
+    const sig = names.join("|") + "|" + I18N.locale();
+    if (ed.cup.dataset.sig !== sig) {
+      ed.cup.dataset.sig = sig;
+      ed.cup.innerHTML = '<option value="">' + escapeHtml(I18N.t("pe_cup_none")) + "</option>" +
+        names.map(n => '<option value="' + escapeHtml(n) + '">' + escapeHtml(n) + "</option>").join("");
+    }
+    if (document.activeElement !== ed.cup) ed.cup.value = current;
+  }
+
   function commitFigure(input) {
     if (!shown || !input) return;
     const key = input.dataset.figInput, f = figureOf(key);
@@ -417,6 +438,7 @@
     if (!ed || shown !== id) return;
     const f = FIGURES.find(x => x.field === field);
     const box = f ? ed.figs.querySelector('[data-fig="' + f.key + '"]')
+      : field === "cup" ? ed.root.querySelector(".pe-cupsel")
       : field === "comment" ? ed.root.querySelector(".pe-comment")
         : field === "descriptors" ? ed.root.querySelector(".pe-tastes")
           : field === "diagnostic" ? ed.root.querySelector(".pe-diag") : null;
@@ -522,6 +544,8 @@
       const i = ev.target.closest("[data-fig-input]");
       if (i && i.dataset.dirty === "1") commitFigure(i);
     });
+    // The cup: saved as soon as it is picked.
+    ed.cup.addEventListener("change", () => { if (shown) queue(shown, { cup: ed.cup.value }, 0); });
     // The tastes and the diagnostic: one tap toggles, saved together a moment later.
     r.addEventListener("click", ev => {
       const t = ev.target.closest("[data-pe-tag]");
@@ -581,6 +605,7 @@
     }
     paintRating();
     renderFigures(e);
+    renderCup(e);
     renderTastes(e);
     renderDiags(e);
     if (fresh || (document.activeElement !== ed.comment && ed.comment.dataset.dirty !== "1")) ed.comment.value = e.comment || "";
