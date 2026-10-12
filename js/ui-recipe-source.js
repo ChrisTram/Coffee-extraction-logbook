@@ -163,7 +163,6 @@
       c.dispatchEvent(new Event("input", { bubbles: true }));
       UI.rollField(c, old, n++ * 70);
     });
-    if (before.temp !== undefined && typeof UI.updateTempHint === "function") UI.updateTempHint();
     return before;
   }
 

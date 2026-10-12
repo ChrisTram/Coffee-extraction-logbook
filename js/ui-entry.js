@@ -135,9 +135,6 @@
        the boiler, there is nothing to measure beforehand: the only question is
        the "preheated water" box, and it has its own field. */
     $("#field-temp").hidden = m !== "Switch";
-    if ($("#row-heat")) $("#row-heat").hidden = m !== "Switch";
-    UI.syncTimeWheel("f-heat");
-    updateTempHint();
     // Default cup: Flat White Egg for the Brikka, Classic Mug for the Switch.
     const defaultCups = { "Brikka": "Loveramics Flat White Egg", "Switch": "Classic Mug" };
     const currentCup = $("#f-cup").value;
@@ -295,10 +292,6 @@
     // From the chosen coffee's roast when the source gives one per roast level (v9.00).
     const targetTemp = temperatureForCoffee(r, DATA.state.coffees.find(c => c.id === $("#f-coffee").value));
     $("#f-temp").value = targetTemp === "" || targetTemp === undefined ? "" : targetTemp;
-    // A new recipe starts with no heating time: it is a measurement of the
-    // current cup, not a recipe value. The hint says how long to aim for.
-    writeDuration("f-heat", "");
-    updateTempHint();
     // The grinder SETTING, not the recipe's target: see FACTORY_DIAL.
     $("#f-grind").value = currentCoffeeGround() ? "" : wantedDial(r) ? r.dial : fallbacks.dial;
     if (r.method === "Brikka") $("#f-power").value = r.heat_level || fallbacks.fire;
@@ -330,49 +323,16 @@
       // Same recipe, other coffee: the temperature follows its roast (v9.00).
       const r = findRecipe($("#f-recipe").value);
       const t = r && TEMP_BY_ROAST[r.id] ? temperatureForCoffee(r, coffee) : "";
-      if (t !== "" && t !== undefined) { $("#f-temp").value = t; updateTempHint(); }
+      if (t !== "" && t !== undefined) $("#f-temp").value = t;
     }
     if (entry.method !== before.method) UI.playMethodChange(before);
     updateWarnings();
     updateLive();
   }
 
-  /* TEMPERATURE FROM HEATING TIME, Switch only. Chris types how long the
-     kettle spent on the stove; the degree is derived from it (model in
-     recipes.js, boiling time in Settings) and written into the temperature
-     field, which stays editable by hand and remains the stored value.
-     With no time entered but a recipe target, the hint says how long to
-     aim for. The Brikka sees none of this: its row is hidden. */
-  function onHeatInput() {
-    const s = readDuration("f-heat");
-    if (s !== "") {
-      const t = temperatureFromHeating(s, fallbacks.boil, fallbacks.bubbles);
-      if (t !== "") $("#f-temp").value = t;
-    }
-    updateTempHint();
-    updateWarnings();
-  }
-
-  function updateTempHint() {
-    const hint = $("#temp-hint");
-    if (!hint) return;
-    if (entry.method !== "Switch") { setText(hint, ""); return; }
-    const e = fallbacks.boil;
-    const s = readDuration("f-heat");
-    const t = $("#f-temp").value;
-    /* Without a boiling time there is nothing to say: the factory fallback sets
-       one, and Settings lets you correct it. The old paragraph asking you to
-       go and time your kettle distorted the layout for a setting you make
-       once. */
-    if (!(e > 0)) { setText(hint, ""); return; }
-    if (s !== "") {
-      setText(hint, I18N.t("temp_estimate", { d: fmtDuration(s), t: temperatureFromHeating(s, e, fallbacks.bubbles) }));
-    } else if (t !== "") {
-      setText(hint, I18N.t("temp_advice", { t, d: fmtDuration(heatTimeForTemperature(t, e, fallbacks.bubbles)) }));
-    } else {
-      setText(hint, "");
-    }
-  }
+  /* TEMPERATURE (v9.35): Chris has a thermometer. The degree is typed as
+     measured; the old estimate from the kettle's time on the stove (and its
+     hint) is gone. A cup saved before keeps its heating_s, see saveEntry. */
 
   /* The rating is optional. As long as the slider has not been touched, it
      has no thumb (isRatingEmpty, in the core): we save "" and the extraction
@@ -730,7 +690,7 @@
     $("#f-volume").value = "";
     $("#f-water").value = "";
     $("#f-temp").value = "";
-    writeDuration("f-heat", "");
+    entry.keptHeating = "";
     $("#f-power").value = fallbacks.fire;
     $("#f-preheat").checked = false;
     $("#f-failed").checked = false;
@@ -769,8 +729,8 @@
     $("#f-dose").value = ext.dose_g;
     $("#f-water").value = ext.water_g;
     $("#f-temp").value = ext.temperature_c;
-    writeDuration("f-heat", ext.heating_s === undefined ? "" : ext.heating_s);
-    updateTempHint();
+    // An old cup keeps its kettle time on save; a copy (Refaire) starts without.
+    entry.keptHeating = isDuplicate || ext.heating_s === undefined ? "" : ext.heating_s;
     $("#f-grind").value = ext.grind_dial;
     $("#f-volume").value = ext.yield_ml;
     $("#f-add-water-yes").checked = ext.added_water_ml !== "" && ext.added_water_ml !== undefined;
@@ -851,9 +811,10 @@
       dose_g: $("#f-dose").value,
       water_g: $("#f-water").value,
       grind_dial: $("#f-grind").value.trim().replace(/,/g, "."),
-      // Brikka: neither temperature nor heating time, the water heats in the boiler.
+      // Brikka: no temperature, the water heats in the boiler.
       temperature_c: entry.method === "Switch" ? $("#f-temp").value : "",
-      heating_s: entry.method === "Switch" ? readDuration("f-heat") : "",
+      // No kettle time any more (v9.35); an edited old cup keeps its own.
+      heating_s: entry.method === "Switch" && entry.editId ? (entry.keptHeating ?? "") : "",
       total_time_s: readDuration("f-total"),
       flow_time_s: readDuration("f-flow"),
       yield_ml: $("#f-volume").value,
@@ -935,10 +896,7 @@
     $("#f-water").addEventListener("input", () => UI.updateStopwatchSteps(false));
     // The extracted volume drives the milk prefill, it must refresh it.
     $("#f-volume").addEventListener("input", updateMilk);
-    ["f-heat-min", "f-heat-sec"].forEach(id => $("#" + id).addEventListener("input", onHeatInput));
     $("#f-preheat").addEventListener("change", onPreheat);
-    // A manual entry of the degree always has the final word; the hint follows.
-    $("#f-temp").addEventListener("input", updateTempHint);
     wireRating($("#f-rating"), updateRatingDisplay);
     $("#f-rating-clear").addEventListener("click", () => {
       $("#f-rating").value = 5;
@@ -967,7 +925,6 @@
     UI.mountRatingDial($("#f-rating"), $("#f-rating-dial"));
     UI.mountTimeWheel("f-total", $("#f-total-wheel"), $("#f-total-quick"), "total");
     UI.mountTimeWheel("f-flow", $("#f-flow-wheel"), $("#f-flow-quick"), "flow");
-    UI.mountTimeWheel("f-heat", $("#row-heat"), $("#f-heat-quick"), null);
     enableLongPress($("#f-diagnostic"));
     enableLongPress($("#f-descriptors"));
     $("#tastes-plus").addEventListener("click", () => UI.toggleFamilies());
@@ -1033,9 +990,9 @@
     selectableCoffees, loadExtractionIntoEntry, chooseMethod, UNEVEN_DIAG, UNDER_EXTRACTED_DIAGS, OVER_EXTRACTED_DIAGS, writeDuration, saveEntry,
     readDuration, updateRatingDisplay, redoLast, redoCup, updateBagAge, updateAgitationFromRecipe,
     updateWarnings, updatePreheatField, updateDiagnosticCorrection,
-    updateSliders, updateMilk, updateLive, updateTempHint, markDateTouched,
+    updateSliders, updateMilk, updateLive, markDateTouched,
     entryRating, prefillFromRecipe, refreshEntryDate, resetEntry,
     fillCoffeeSelect, refreshCoffeeSelect, coffeeOptions, fillRecipeSelect, fillCupSelect, renderCupEditor,
-    entry, onHeatInput, onCoffeeChoice, onPreheat, estimatedVolume,
+    entry, onCoffeeChoice, onPreheat, estimatedVolume,
   });
 })();

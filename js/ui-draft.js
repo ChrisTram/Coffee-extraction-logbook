@@ -31,7 +31,6 @@
   const DRAFT_DATE_MAX_MS = 2 * 60 * 60 * 1000;
   const DRAFT_FIELDS = [
     "f-date", "f-coffee", "f-recipe", "f-dose", "f-water", "f-grind", "f-temp",
-    "f-heat-min", "f-heat-sec",
     "f-volume", "f-water-added", "f-milk", "f-agitation", "f-cup", "f-rating",
     "f-comment", "f-total-min", "f-total-sec", "f-flow-min", "f-flow-sec",
     "f-power",

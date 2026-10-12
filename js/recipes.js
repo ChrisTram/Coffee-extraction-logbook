@@ -893,7 +893,6 @@ function coffeeProfile(coffee) {
    message, warn_brikka_profile, instead of the butter one. */
 const NEVER_SWITCH_NAMES = [
   "Fine Robusta Honey",
-  "Midnight Chocolate",
   "Proud of Việt Nam",
   "Robusta Honey",
   "Signature Blend",

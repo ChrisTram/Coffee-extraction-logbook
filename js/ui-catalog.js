@@ -291,8 +291,6 @@
     $("#param-dose-default").value = fallbacks.dose;
     $("#param-fire-default").value = fallbacks.fire;
     $("#param-dial").value = fallbacks.dial;
-    UI.writeDuration("param-boil", fallbacks.boil);
-    UI.writeDuration("param-bubbles", fallbacks.bubbles);
     // The empty jar (v9.13): empty until weighed, written with the decimal of the language.
     const tare = DATA.currentSettings().jar_tare_g;
     $("#param-jar-tare").value = tare === "" ? "" : fmtDecimal(Number(tare), 1).replace(/\s/g, "");
@@ -314,7 +312,6 @@
       recipes: I18N.t("pivot_recipes", { n }),
       fallback: fallbacks.dose + " g · " + I18N.t("pivot_heat", { f: fallbacks.fire }),
       dial: fallbacks.dial + (p ? " · ≈ " + Math.round(p.microns) + " µm" : ""),
-      kettle: fallbacks.bubbles ? I18N.t("pivot_bubbles", { t: UI.fmtDuration(fallbacks.bubbles) }) : I18N.t("pivot_to_measure"),
       incr: steps.step_clicks ? I18N.t("pivot_clicks", { n: steps.step_clicks }) : "",
       jar: DATA.currentSettings().jar_tare_g === "" ? I18N.t("pivot_to_weigh") : fmtDecimal(Number(DATA.currentSettings().jar_tare_g), 1) + " g",
       device: I18N.t($("#chrono-beep").checked ? "pivot_beeps_on" : "pivot_beeps_off"),
@@ -362,11 +359,6 @@
     if (!(dose > 0)) { toast(I18N.t("toast_param_dose")); return; }
     if (!(heat >= 1 && heat <= 10)) { toast(I18N.t("toast_param_heat")); return; }
     if (!GRIND.parseDial(dial)) { toast(I18N.t("toast_grind_invalid")); return; }
-    const boilTime = UI.readDuration("param-boil");
-    if (boilTime === "" || !(boilTime >= 30 && boilTime <= 1800)) { toast(I18N.t("toast_param_boil")); return; }
-    // The first bubbles come BEFORE the rolling boil, otherwise the curve makes no sense.
-    const bubblesTime = UI.readDuration("param-bubbles");
-    if (bubblesTime === "" || !(bubblesTime >= 10 && bubblesTime < boilTime)) { toast(I18N.t("toast_param_bubbles")); return; }
     // The empty jar (v9.13): empty stays empty (no weighing), otherwise a real weight.
     const tareText = $("#param-jar-tare").value.trim().replace(/\s/g, "");
     const tare = tareText === "" ? "" : Number(tareText.replace(",", "."));
@@ -374,8 +366,6 @@
     fallbacks.dose = dose;
     fallbacks.fire = Math.round(heat);
     fallbacks.dial = dial;
-    fallbacks.boil = boilTime;
-    fallbacks.bubbles = bubblesTime;
     /* Correction steps: an out-of-range value is not refused, normalisation
        brings it back to the default, as for a recipe's heat. */
     fallbacks.stepSizes = Object.fromEntries(STEP_FIELDS.map(([id, key]) => [key, Number($("#" + id).value)]));

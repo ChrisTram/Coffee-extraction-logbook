@@ -7,21 +7,21 @@
 <!-- Site version, single source of truth: the footer reads it, and files
      loaded on demand put it in their URL. Set it with
      node tools/bump_version.mjs X, never by hand. -->
-<meta name="app-version" content="9.34">
-<link rel="stylesheet" href="css/base.css?v=9.34">
-<link rel="stylesheet" href="css/screens.css?v=9.34">
-<link rel="stylesheet" href="css/dialogs.css?v=9.34">
-<link rel="stylesheet" href="css/finishing.css?v=9.34">
-<link rel="stylesheet" href="css/stock.css?v=9.34">
-<link rel="stylesheet" href="css/extras.css?v=9.34">
-<link rel="stylesheet" href="css/journal.css?v=9.34">
-<link rel="stylesheet" href="css/home.css?v=9.34">
-<link rel="stylesheet" href="css/gestures.css?v=9.34">
-<link rel="stylesheet" href="css/moments.css?v=9.34">
-<link rel="stylesheet" href="css/panel.css?v=9.34">
-<link rel="stylesheet" href="css/aside.css?v=9.34">
-<link rel="stylesheet" href="css/feel.css?v=9.34">
-<link rel="stylesheet" href="css/morph.css?v=9.34">
+<meta name="app-version" content="9.35">
+<link rel="stylesheet" href="css/base.css?v=9.35">
+<link rel="stylesheet" href="css/screens.css?v=9.35">
+<link rel="stylesheet" href="css/dialogs.css?v=9.35">
+<link rel="stylesheet" href="css/finishing.css?v=9.35">
+<link rel="stylesheet" href="css/stock.css?v=9.35">
+<link rel="stylesheet" href="css/extras.css?v=9.35">
+<link rel="stylesheet" href="css/journal.css?v=9.35">
+<link rel="stylesheet" href="css/home.css?v=9.35">
+<link rel="stylesheet" href="css/gestures.css?v=9.35">
+<link rel="stylesheet" href="css/moments.css?v=9.35">
+<link rel="stylesheet" href="css/panel.css?v=9.35">
+<link rel="stylesheet" href="css/aside.css?v=9.35">
+<link rel="stylesheet" href="css/feel.css?v=9.35">
+<link rel="stylesheet" href="css/morph.css?v=9.35">
 <!-- crossorigin use-credentials: without it the browser fetches the manifest
      WITHOUT cookies, the front door redirects it to /login, and it tries to
      parse HTML as JSON. Result: "Manifest: Syntax error" and a PWA that
@@ -63,7 +63,7 @@
      opens at once. bump_version.mjs versions the charts link. -->
 <link rel="preload" href="css/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="css/fonts/instrument-serif-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="js/vendor/chart.umd.js?v=9.34" as="script">
+<link rel="preload" href="js/vendor/chart.umd.js?v=9.35" as="script">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%98%95%3C/text%3E%3C/svg%3E">
 </head>
 <body>
@@ -725,36 +725,16 @@
            is no temperature to enter, only the preheated water checkbox. -->
       <div class="field field-wide" id="field-temp">
         <label for="f-temp">Température (°C)</label>
-        <!-- Switch: the temperature is derived from the TIME the kettle spends
-             on the stove. Same kettle and same burner every time, so a
-             reproducible measure, where "small bubbles" was a judgement by eye.
-             The time is stored (chauffe_s) AND the estimated degree, editable by
-             hand, remains the brew temperature. The Brikka is not
-             concerned, it starts with cold water: the line is hidden. -->
-        <!-- Time and degree fit on ONE line: stacked, the Temperature cell
-             became twice as tall as its neighbours and dug a hole in the
-             middle of the grid. -->
-        <!-- v9.13: a full row, the heating time on wheels (M7), its quick
-             buttons, then the degree it gives. -->
+        <!-- v9.35: the degree as measured with the thermometer, nothing else. -->
         <div class="row-temp">
-          <span class="tw-caption" aria-hidden="true">Bouilloire sur le feu</span>
-          <div class="duration tw" id="row-heat">
-            <div class="tw-col"><div class="tw-scroll" aria-hidden="true"></div><input type="number" id="f-heat-min" step="1" min="0" max="30" inputmode="numeric" placeholder="0" aria-label="Bouilloire sur le feu, minutes"><span class="tw-unit">min</span></div>
-            <span class="tw-sep" aria-hidden="true">:</span>
-            <div class="tw-col"><div class="tw-scroll" aria-hidden="true"></div><input type="number" id="f-heat-sec" step="1" min="0" max="59" inputmode="numeric" placeholder="00" aria-label="Bouilloire sur le feu, secondes"><span class="tw-unit">s</span></div>
-          </div>
-          <div class="tw-quick" id="f-heat-quick"></div>
-          <!-- The browser's arrows do not appear below a certain
-               width, and this field is 66 px wide: we draw them. See .field-incr. -->
           <div class="field-incr">
-            <input type="number" id="f-temp" enterkeyhint="next" step="1" min="60" max="100" inputmode="decimal" aria-label="Température estimée ou mesurée (°C)">
+            <input type="number" id="f-temp" enterkeyhint="next" step="1" min="60" max="100" inputmode="decimal">
             <span class="incr">
               <button type="button" data-incr="1" data-incr-field="f-temp" tabindex="-1" aria-label="Un degré de plus"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg></button>
               <button type="button" data-incr="-1" data-incr-field="f-temp" tabindex="-1" aria-label="Un degré de moins"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
             </span>
           </div>
         </div>
-        <span class="field-hint" id="temp-hint"></span>
       </div>
       <!-- Q4 and M2 (v9.13): the C5's dial, a click per button, the slider as
            the machine's range with the coffee's golden zone (js/ui-dial.js).
@@ -1639,7 +1619,7 @@
     <h3>Les filtres du Switch</h3>
     <p>Le Switch SSD-200-B prend les papiers coniques <b>V60 taille 02</b>, Hario ou compatibles (CAFEC, Timemore). C'est le format le plus répandu du Vietnam. Sur Shopee, taper <code>giấy lọc V60 02</code>, ou <code>Hario VCF-02</code> pour la boîte officielle de 100 (VCF-02-100W en blanc). Le blanc est plus neutre au goût que le brun, mais rincer le papier dans les deux cas. <a href="https://shopee.vn/search?keyword=gi%E1%BA%A5y%20l%E1%BB%8Dc%20v60%2002" target="_blank" rel="noopener">Lancer la recherche sur Shopee ↗</a></p>
     <h3>Bouilloire</h3>
-    <p>Ma bouilloire va sur le feu : la température se déduit du temps de chauffe, sur une courbe calée dans Paramètres (premières bulles vers 88 °C, gros bouillon à 100). Avec les repères d'origine, 1:00 donne environ 73 °C, 1:30 donne 88, 1:40 donne 92 et 2:00 donne 100. En saisie, l'aide sous le champ température dit combien de temps viser pour la cible de la recette. Au-dessus de 1000 m d'altitude, l'eau bout sous 100 °C (vers 95 à Đà Lạt).</p>
+    <p>J'ai un thermomètre : la température se mesure, et se note telle quelle dans la saisie. Au-dessus de 1000 m d'altitude, l'eau bout sous 100 °C (vers 95 à Đà Lạt).</p>
   </div>
   </div>
 
@@ -1715,7 +1695,6 @@ Cảm ơn shop.</pre>
       <button type="button" class="pi-row" data-section="ps-recipes"><svg class="pi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h9"></path></svg><span class="pi-title">Machines et recettes</span><span class="pi-value" id="piv-recipes"></span></button>
       <button type="button" class="pi-row" data-section="ps-fallback"><svg class="pi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v9M12 17v.5M4 20h16"></path></svg><span class="pi-title">Quand la recette ne dit rien</span><span class="pi-value" id="piv-fallback"></span></button>
       <button type="button" class="pi-row" data-section="ps-dial"><svg class="pi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18zM12 3v5"></path></svg><span class="pi-title">Mon moulin</span><span class="pi-value" id="piv-dial"></span></button>
-      <button type="button" class="pi-row" data-section="ps-kettle"><svg class="pi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10h12l-1 9H6zM17 12h2a2 2 0 0 1 0 4h-2M9 6c0-1 1-2 1-3M13 6c0-1 1-2 1-3"></path></svg><span class="pi-title">Ma bouilloire</span><span class="pi-value" id="piv-kettle"></span></button>
       <button type="button" class="pi-row" data-section="ps-jar"><svg class="pi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8v3H8zM7.5 6h9A1.5 1.5 0 0 1 18 7.5V19a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7.5A1.5 1.5 0 0 1 7.5 6zM6 13h12"></path></svg><span class="pi-title">Mon bocal</span><span class="pi-value" id="piv-jar"></span></button>
       <button type="button" class="pi-row" data-section="ps-incr"><svg class="pi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h7M8 8l-4 4l4 4M20 12h-7M16 8l4 4l-4 4"></path></svg><span class="pi-title">Pas de correction</span><span class="pi-value" id="piv-incr"></span></button>
       <button type="button" class="pi-row" data-section="ps-device"><svg class="pi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM11 18h2"></path></svg><span class="pi-title">Cet appareil</span><span class="pi-value" id="piv-device"></span></button>
@@ -1761,27 +1740,6 @@ Cảm ơn shop.</pre>
         <label for="param-dial">Molette (rotation.numéro.cran)</label>
         <input type="text" id="param-dial" enterkeyhint="done" pattern="[0-3][.,][0-9][.,][0-4]" inputmode="decimal" placeholder="1.5.0">
         <span class="field-hint" id="param-dial-detail"></span>
-      </div>
-    </div>
-  </article>
-
-  <article class="card param-section" id="ps-kettle">
-    <h3>Ma bouilloire</h3>
-    <p class="param-help">Deux repères à chronométrer une fois, sur le feu habituel, depuis ton eau à température ambiante. Les premières bulles : beaucoup de petites bulles au fond et quelques-unes qui remontent, vers 88 degrés. Le gros bouillon : toute la surface roule, 100 degrés. En saisie Switch, le temps passé sur le feu donne la température estimée, sur une courbe qui passe par ces deux repères : la montée ralentit en approchant de l'ébullition. Une estimation, pas une mesure : le degré reste modifiable.</p>
-    <div class="grid-numbers">
-      <div class="field">
-        <label for="param-boil-min">Temps pour bouillir</label>
-        <div class="duration">
-          <input type="number" id="param-boil-min" step="1" min="0" max="30" inputmode="numeric" placeholder="0" aria-label="Temps pour bouillir, minutes"><span>min</span>
-          <input type="number" id="param-boil-sec" step="1" min="0" max="59" inputmode="numeric" placeholder="00" aria-label="Temps pour bouillir, secondes"><span>s</span>
-        </div>
-      </div>
-      <div class="field">
-        <label for="param-bubbles-min">Premières bulles qui remontent</label>
-        <div class="duration">
-          <input type="number" id="param-bubbles-min" step="1" min="0" max="30" inputmode="numeric" placeholder="0" aria-label="Premières bulles qui remontent, minutes"><span>min</span>
-          <input type="number" id="param-bubbles-sec" step="1" min="0" max="59" inputmode="numeric" placeholder="00" aria-label="Premières bulles qui remontent, secondes"><span>s</span>
-        </div>
       </div>
     </div>
   </article>
@@ -1892,7 +1850,6 @@ Cảm ơn shop.</pre>
           <input type="text" id="welcome-dial" class="wl-dial" inputmode="decimal" enterkeyhint="done" autocomplete="off" pattern="[0-3][.,][0-9][.,][0-4]">
           <p class="wl-zero">Le zéro de ton moulin : les meules se touchent à <b>0.0.2</b></p>
         </div>
-        <p class="wl-kettle">Ta bouilloire : tu pourras la chronométrer dans Paramètres.</p>
         <button type="button" class="btn btn-primary wl-next" data-welcome-go="3">Continuer</button>
       </section>
       <section class="wl-step" data-step="3" aria-labelledby="welcome-q3">
@@ -2216,85 +2173,85 @@ Cảm ơn shop.</pre>
 <!-- ALL defer, and definitely not async: defer preserves order, async does not,
      and data.js would blow up looking for SYNC or GRIND. The download now
      runs in parallel with HTML parsing instead of blocking it. -->
-<script defer src="js/legacy-names.js?v=9.34"></script>
-<script defer src="js/tools.js?v=9.34"></script>
-<script defer src="js/i18n.fr.js?v=9.34"></script>
-<script defer src="js/i18n.fr2.js?v=9.34"></script>
-<script defer src="js/i18n.js?v=9.34"></script>
-<script defer src="js/grind.js?v=9.34"></script>
-<script defer src="js/recipes.js?v=9.34"></script>
+<script defer src="js/legacy-names.js?v=9.35"></script>
+<script defer src="js/tools.js?v=9.35"></script>
+<script defer src="js/i18n.fr.js?v=9.35"></script>
+<script defer src="js/i18n.fr2.js?v=9.35"></script>
+<script defer src="js/i18n.js?v=9.35"></script>
+<script defer src="js/grind.js?v=9.35"></script>
+<script defer src="js/recipes.js?v=9.35"></script>
 <!-- sync.js BEFORE data.js: data.js uses it at load time. -->
-<script defer src="js/sync.js?v=9.34"></script>
-<script defer src="js/data-csv.js?v=9.34"></script>
-<script defer src="js/data-schema.js?v=9.34"></script>
-<script defer src="js/data-store.js?v=9.34"></script>
-<script defer src="js/data-calcs.js?v=9.34"></script>
-<script defer src="js/data-migrations.js?v=9.34"></script>
-<script defer src="js/data.js?v=9.34"></script>
-<script defer src="js/tuning.js?v=9.34"></script>
+<script defer src="js/sync.js?v=9.35"></script>
+<script defer src="js/data-csv.js?v=9.35"></script>
+<script defer src="js/data-schema.js?v=9.35"></script>
+<script defer src="js/data-store.js?v=9.35"></script>
+<script defer src="js/data-calcs.js?v=9.35"></script>
+<script defer src="js/data-migrations.js?v=9.35"></script>
+<script defer src="js/data.js?v=9.35"></script>
+<script defer src="js/tuning.js?v=9.35"></script>
 <!-- v9.18: the bags without the DOM (shelf rows, the next cup), read by the screens below. -->
-<script defer src="js/bags.js?v=9.34"></script>
-<script defer src="js/search.js?v=9.34"></script>
-<script defer src="js/compare.js?v=9.34"></script>
-<script defer src="js/milestones.js?v=9.34"></script>
-<script defer src="js/charts.js?v=9.34"></script>
-<script defer src="js/ui-core.js?v=9.34"></script>
-<script defer src="js/ui-accent.js?v=9.34"></script>
-<script defer src="js/ui-feel.js?v=9.34"></script>
-<script defer src="js/ui-morph.js?v=9.34"></script>
-<script defer src="js/ui-sync-bean.js?v=9.34"></script>
-<script defer src="js/ui-nav.js?v=9.34"></script>
-<script defer src="js/ui-scrub.js?v=9.34"></script>
-<script defer src="js/ui-pull.js?v=9.34"></script>
-<script defer src="js/ui-findings.js?v=9.34"></script>
-<script defer src="js/ui-last-cup.js?v=9.34"></script>
-<script defer src="js/ui-dashboard.js?v=9.34"></script>
-<script defer src="js/ui-home.js?v=9.34"></script>
-<script defer src="js/ui-home-widgets.js?v=9.34"></script>
-<script defer src="js/ui-cup.js?v=9.34"></script>
-<script defer src="js/ui-dial.js?v=9.34"></script>
-<script defer src="js/ui-rating-dial.js?v=9.34"></script>
-<script defer src="js/ui-dictate.js?v=9.34"></script>
-<script defer src="js/ui-wheel.js?v=9.34"></script>
-<script defer src="js/ui-entry.js?v=9.34"></script>
-<script defer src="js/ui-entry-aside.js?v=9.34"></script>
-<script defer src="js/ui-recipe-source.js?v=9.34"></script>
-<script defer src="js/ui-pills.js?v=9.34"></script>
-<script defer src="js/ui-chrono.js?v=9.34"></script>
-<script defer src="js/ui-draft.js?v=9.34"></script>
-<script defer src="js/ui-quick.js?v=9.34"></script>
-<script defer src="js/ui-history.js?v=9.34"></script>
-<script defer src="js/ui-journal.js?v=9.34"></script>
-<script defer src="js/ui-table.js?v=9.34"></script>
-<script defer src="js/ui-compare.js?v=9.34"></script>
-<script defer src="js/ui-guide.js?v=9.34"></script>
-<script defer src="js/ui-catalog.js?v=9.34"></script>
-<script defer src="js/ui-coffee-sheet.js?v=9.34"></script>
-<script defer src="js/ui-brew.js?v=9.34"></script>
-<script defer src="js/ui-drawings.js?v=9.34"></script>
-<script defer src="js/ui-analytics.js?v=9.34"></script>
-<script defer src="js/ui-story.js?v=9.34"></script>
+<script defer src="js/bags.js?v=9.35"></script>
+<script defer src="js/search.js?v=9.35"></script>
+<script defer src="js/compare.js?v=9.35"></script>
+<script defer src="js/milestones.js?v=9.35"></script>
+<script defer src="js/charts.js?v=9.35"></script>
+<script defer src="js/ui-core.js?v=9.35"></script>
+<script defer src="js/ui-accent.js?v=9.35"></script>
+<script defer src="js/ui-feel.js?v=9.35"></script>
+<script defer src="js/ui-morph.js?v=9.35"></script>
+<script defer src="js/ui-sync-bean.js?v=9.35"></script>
+<script defer src="js/ui-nav.js?v=9.35"></script>
+<script defer src="js/ui-scrub.js?v=9.35"></script>
+<script defer src="js/ui-pull.js?v=9.35"></script>
+<script defer src="js/ui-findings.js?v=9.35"></script>
+<script defer src="js/ui-last-cup.js?v=9.35"></script>
+<script defer src="js/ui-dashboard.js?v=9.35"></script>
+<script defer src="js/ui-home.js?v=9.35"></script>
+<script defer src="js/ui-home-widgets.js?v=9.35"></script>
+<script defer src="js/ui-cup.js?v=9.35"></script>
+<script defer src="js/ui-dial.js?v=9.35"></script>
+<script defer src="js/ui-rating-dial.js?v=9.35"></script>
+<script defer src="js/ui-dictate.js?v=9.35"></script>
+<script defer src="js/ui-wheel.js?v=9.35"></script>
+<script defer src="js/ui-entry.js?v=9.35"></script>
+<script defer src="js/ui-entry-aside.js?v=9.35"></script>
+<script defer src="js/ui-recipe-source.js?v=9.35"></script>
+<script defer src="js/ui-pills.js?v=9.35"></script>
+<script defer src="js/ui-chrono.js?v=9.35"></script>
+<script defer src="js/ui-draft.js?v=9.35"></script>
+<script defer src="js/ui-quick.js?v=9.35"></script>
+<script defer src="js/ui-history.js?v=9.35"></script>
+<script defer src="js/ui-journal.js?v=9.35"></script>
+<script defer src="js/ui-table.js?v=9.35"></script>
+<script defer src="js/ui-compare.js?v=9.35"></script>
+<script defer src="js/ui-guide.js?v=9.35"></script>
+<script defer src="js/ui-catalog.js?v=9.35"></script>
+<script defer src="js/ui-coffee-sheet.js?v=9.35"></script>
+<script defer src="js/ui-brew.js?v=9.35"></script>
+<script defer src="js/ui-drawings.js?v=9.35"></script>
+<script defer src="js/ui-analytics.js?v=9.35"></script>
+<script defer src="js/ui-story.js?v=9.35"></script>
 <!-- v9.13: the jar to the gram, the moments that move, the empty places. -->
-<script defer src="js/ui-jar.js?v=9.34"></script>
-<script defer src="js/ui-moments.js?v=9.34"></script>
-<script defer src="js/ui-celebrate.js?v=9.34"></script>
-<script defer src="js/ui-roll.js?v=9.34"></script>
-<script defer src="js/ui-brewer.js?v=9.34"></script>
-<script defer src="js/ui-arrivals.js?v=9.34"></script>
-<script defer src="js/ui-scenes.js?v=9.34"></script>
-<script defer src="js/ui-empty.js?v=9.34"></script>
+<script defer src="js/ui-jar.js?v=9.35"></script>
+<script defer src="js/ui-moments.js?v=9.35"></script>
+<script defer src="js/ui-celebrate.js?v=9.35"></script>
+<script defer src="js/ui-roll.js?v=9.35"></script>
+<script defer src="js/ui-brewer.js?v=9.35"></script>
+<script defer src="js/ui-arrivals.js?v=9.35"></script>
+<script defer src="js/ui-scenes.js?v=9.35"></script>
+<script defer src="js/ui-empty.js?v=9.35"></script>
 <!-- v9.18: Mes cafés as a page with its shelf and the entry jars (O2), the end of a bag (Q9). -->
-<script defer src="js/ui-coffees.js?v=9.34"></script>
-<script defer src="js/ui-shelf.js?v=9.34"></script>
-<script defer src="js/ui-bag-end.js?v=9.34"></script>
-<script defer src="js/ui-panel.js?v=9.34"></script>
-<script defer src="js/ui-panel-edit.js?v=9.34"></script>
-<script defer src="js/ui-rate-sheet.js?v=9.34"></script>
-<script defer src="js/ui-palette.js?v=9.34"></script>
-<script defer src="js/ui-shortcuts.js?v=9.34"></script>
-<script defer src="js/ui-tuning.js?v=9.34"></script>
-<script defer src="js/ui-share.js?v=9.34"></script>
-<script defer src="js/ui-welcome.js?v=9.34"></script>
-<script defer src="js/app.js?v=9.34"></script>
+<script defer src="js/ui-coffees.js?v=9.35"></script>
+<script defer src="js/ui-shelf.js?v=9.35"></script>
+<script defer src="js/ui-bag-end.js?v=9.35"></script>
+<script defer src="js/ui-panel.js?v=9.35"></script>
+<script defer src="js/ui-panel-edit.js?v=9.35"></script>
+<script defer src="js/ui-rate-sheet.js?v=9.35"></script>
+<script defer src="js/ui-palette.js?v=9.35"></script>
+<script defer src="js/ui-shortcuts.js?v=9.35"></script>
+<script defer src="js/ui-tuning.js?v=9.35"></script>
+<script defer src="js/ui-share.js?v=9.35"></script>
+<script defer src="js/ui-welcome.js?v=9.35"></script>
+<script defer src="js/app.js?v=9.35"></script>
 </body>
 </html>

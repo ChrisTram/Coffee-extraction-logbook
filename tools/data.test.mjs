@@ -1241,8 +1241,12 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
   check("the heating method select has gone", !html.includes('id="f-temp-preset"'));
-  check("the heating time is entered in minutes and seconds",
-    html.includes('id="f-heat-min"') && html.includes('id="f-heat-sec"'));
+  /* v9.35: Chris has a thermometer. The degree is typed as measured; the
+     kettle time, its wheels and its settings are gone from the page. The
+     model below stays: old cups keep their heating_s, the migrations use it. */
+  check("no more kettle time in the entry", !html.includes('id="f-heat-min"') && !html.includes('id="row-heat"'));
+  check("the temperature stays a plain field", html.includes('id="f-temp"'));
+  check("no more kettle section in Paramètres", !html.includes('id="ps-kettle"'));
   check("heating_s is a column, at the end of the row, after failed",
     DATA.EXT_COLS.indexOf("heating_s") === DATA.EXT_COLS.length - 1 && DATA.EXT_COLS.includes("temperature_c"));
   check("the kettle boiling time is a synced setting",
@@ -1288,23 +1292,18 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
   check("100 degrees is the full boiling time", heatTimeForTemperature(100, 120, 90) === 120);
   check("the bubbles marker is a synced setting, 1:30 by default",
     DATA.SETTINGS_COLS.includes("bubbles_s") && DATA.normalizeSettings({}).bubbles_s === 90);
-  check("and Parametres enters it in minutes and seconds",
-    html.includes('id="param-bubbles-min"') && html.includes('id="param-bubbles-sec"'));
   const entryJs = readFileSync(join(ROOT, "js/ui-entry.js"), "utf8");
-  check("every estimate in the entry passes the bubbles marker",
-    (entryJs.match(/(temperatureFromHeating|heatTimeForTemperature)\(/g) || []).length ===
-    (entryJs.match(/(temperatureFromHeating|heatTimeForTemperature)\([^)]*fallbacks\.bubbles\)/g) || []).length);
+  check("the entry no longer estimates a degree from the kettle",
+    !/(temperatureFromHeating|heatTimeForTemperature)\(/.test(entryJs));
 
   // A normalised extraction keeps the time, and a Brikka never has one.
   const n = DATA.normalizeExtraction({ heating_s: "215.4" });
   check("the heating time is rounded to the second and kept", n.heating_s === 215);
   check("empty stays empty, never zero", DATA.normalizeExtraction({}).heating_s === "");
   const app = SOURCE_UI;
-  check("the entry only saves a heating time on the Switch",
-    /heating_s: entry\.method === "Switch" \? readDuration\("f-heat"\) : ""/.test(app));
-  check("the heating row is hidden on the Brikka", /row-heat"\)\.hidden = m !== "Switch"/.test(app));
-  check("the help texts are bilingual",
-    bilingual("temp_estimate") && bilingual("temp_advice") && bilingual("temp_no_kettle") && bilingual("detail_kettle") && bilingual("toast_param_boil"));
+  check("a new cup saves no kettle time, an edited old one keeps its own",
+    app.includes('heating_s: entry.method === "Switch" && entry.editId ? (entry.keptHeating ?? "") : ""'));
+  check("the old cups' kettle time is still shown, bilingual", bilingual("detail_kettle"));
 }
 
 /* Scaling the pours. A recipe writes its pour steps in ABSOLUTE grams, so
@@ -2210,8 +2209,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
      Legitimate pairs (minutes and seconds, value and preset) are listed: they
      form a single control in the user's eyes, and so rightly share a label.
      */
-  const PAIRS = ["f-heat-min", "f-heat-sec", "f-total-sec", "f-flow-sec",
-    "param-boil-sec", "param-bubbles-sec"];
+  const PAIRS = ["f-total-sec", "f-flow-sec"];
   /* A slider named "X-curseur" drives the field "X": it is the SAME value shown
      twice, so a legitimate pair by construction. The rule is better than a list
      to extend with every added slider, since it is the naming that guarantees
@@ -2970,7 +2968,8 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
   const sections = [...html.matchAll(/class="card param-section" id="(ps-[a-z]+)"/g)].map(m => m[1]);
   const rows = [...html.matchAll(/class="pi-row" data-section="(ps-[a-z]+)"/g)].map(m => m[1]);
-  check("every section of the list opens a page that exists", rows.length === 7 && rows.every(id => sections.includes(id)), rows.join(","));
+  // Six since v9.35: « Ma bouilloire » left with the thermometer.
+  check("every section of the list opens a page that exists", rows.length === 6 && rows.every(id => sections.includes(id)), rows.join(","));
   check("the Enregistrer button lives under the pages, only once", (html.match(/id="param-save"/g) || []).length === 1 && html.indexOf('id="param-actions"') > html.indexOf('id="ps-device"'));
   check("on phone the default values table becomes one card per recipe", (readFileSync(join(ROOT, "js/ui-catalog.js"), "utf8").match(/data-l="/g) || []).length === 5);
 }

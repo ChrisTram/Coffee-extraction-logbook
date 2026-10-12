@@ -161,10 +161,9 @@
 .wl-grinder-name { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
 .wl-grinder-name b { color: var(--ink); }
 .wl-grinder-name span { font-size: 0.8rem; color: var(--muted); }
-.wl-zero, .wl-kettle { margin: 0; font-size: 0.8rem; line-height: 1.45; }
+.wl-zero { margin: 0; font-size: 0.8rem; line-height: 1.45; }
 .wl-zero { color: var(--text); }
 .wl-zero b { color: var(--accent-strong); font-variant-numeric: tabular-nums; }
-.wl-kettle { color: var(--muted); }
 
 .wl-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .wl-chip { min-height: 34px; padding: 5px 12px; border-radius: var(--radius-dot); font-size: 0.82rem; }
