@@ -2974,6 +2974,21 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
   check("on phone the default values table becomes one card per recipe", (readFileSync(join(ROOT, "js/ui-catalog.js"), "utf8").match(/data-l="/g) || []).length === 5);
 }
 
+/* v9.36: the kettle estimates before the thermometer are ignored when read. */
+{
+  const rows = [
+    { id: "a", date_time: "2026-10-11T08:00", temperature_c: 92 },
+    { id: "b", date_time: "2026-10-12T10:16", temperature_c: 92 },
+    { id: "c", date_time: "2026-10-12T15:00", temperature_c: 89 },
+    { id: "d", date_time: "2026-09-01T08:00", temperature_c: "" },
+  ];
+  const out = DATA.dropEstimatedTemps(rows);
+  check("an estimate before the thermometer is blanked", out[0].temperature_c === "" && out[1].temperature_c === "");
+  check("a measured temperature is kept", out[2].temperature_c === 89);
+  check("the stored rows are not touched", rows[0].temperature_c === 92);
+  check("the cut-off is the morning of 12 October", DATA.THERMOMETER_FROM === "2026-10-12T12:00");
+}
+
 /* L4 (v8.92): THE COFFEE CARD, A PASSPORT IN FOUR TABS. */
 {
   const sheet = readFileSync(join(ROOT, "js/ui-coffee-sheet.js"), "utf8");
@@ -3056,7 +3071,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
         real_coffee_pct: 82, bag_size_g: 340, price_vnd: 87000, added_date: "2026-08-03", active: 0 }),
     ],
     extractions: [
-      DATA.normalizeExtraction({ id: "e1", updated_at: 2001, date_time: "2026-09-01T07:30", coffee_id: "cA", method: "Switch",
+      DATA.normalizeExtraction({ id: "e1", updated_at: 2001, date_time: "2026-10-20T07:30", coffee_id: "cA", method: "Switch",
         recipe: "Tetsu 4:6", dose_g: 15, water_g: 240, grind_dial: "2.0.0", temperature_c: 93, total_time_s: 200,
         flow_time_s: 40, yield_ml: 210, added_water_ml: 20, milk_ml: "", stir_count: 2, cup: "Classic Mug",
         preheated_water: "", score_10: 8.5, diagnostic: "Équilibré", descriptors: "noisette|caramel", comment: "rond",

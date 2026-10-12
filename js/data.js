@@ -494,10 +494,21 @@ const DATA = (() => {
     };
   }
 
+  /* THE THERMOMETER (v9.36). Until the morning of 12 October 2026 the Switch
+     temperatures were estimates from the kettle's time on the stove, and
+     Chris found them off the mark: he asked to ignore them. They are blanked
+     when the data is READ (local load and sync), never deleted from the
+     stored document: removing this rule brings them back. A cup that is
+     edited afterwards is saved without its estimate. The demo keeps its own. */
+  const THERMOMETER_FROM = "2026-10-12T12:00";
+  function dropEstimatedTemps(list) {
+    return list.map(x => x.temperature_c !== "" && String(x.date_time || "") < THERMOMETER_FROM ? { ...x, temperature_c: "" } : x);
+  }
+
   // Adopts merged, normalised tables, with the starter recipes and cups as a fallback.
   function adoptTables(merged) {
     state.coffees = (merged.tables.coffees || []).map(normalizeCoffee);
-    state.extractions = (merged.tables.extractions || []).map(normalizeExtraction);
+    state.extractions = dropEstimatedTemps((merged.tables.extractions || []).map(normalizeExtraction));
     state.recipes = (merged.tables.recipes || []).map(normalizeRecipe);
     state.cups = (merged.tables.cups || []).map(normalizeCup);
     state.purchases = (merged.tables.purchases || []).map(normalizePurchase);
@@ -796,7 +807,10 @@ const DATA = (() => {
     const { coffees, extractions, recipes, cups, purchases, settings: settingsRows } = doc.tables;
     const demoActive = await kvGet("demoActive");
     if (Array.isArray(coffees)) state.coffees = coffees.map(normalizeCoffee);
-    if (Array.isArray(extractions)) state.extractions = extractions.map(normalizeExtraction);
+    if (Array.isArray(extractions)) {
+      const rows = extractions.map(normalizeExtraction);
+      state.extractions = demoActive ? rows : dropEstimatedTemps(rows);
+    }
     if (Array.isArray(recipes) && recipes.length) state.recipes = recipes.map(normalizeRecipe);
     else state.recipes = defaultRecipes();
     if (Array.isArray(cups) && cups.length) state.cups = cups.map(normalizeCup);
@@ -845,7 +859,7 @@ const DATA = (() => {
     addRecipe, editRecipe, resetRecipe, deleteRecipe, isOriginalRecipe,
     // Exposed for the tests: it decides that an empty temperature stays
     // empty instead of dropping to 0, and that a heat level survives.
-    bagAtDate,
+    bagAtDate, dropEstimatedTemps, THERMOMETER_FROM,
     normalizeRecipe, normalizeSettings, normalizeExtraction,
     currentSettings, updateSettings, SETTINGS_COLS, SETTINGS_ID,
     // Exposed for the tests: it catches up the STORED recipes when the

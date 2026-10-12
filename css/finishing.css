@@ -1936,3 +1936,14 @@ html[data-theme="dark"] .grid-dashboard > .card-dark { box-shadow: var(--shadow-
 .sp-rating { font-size: 3.95rem; }
 .jn-avg { font-size: 2.2rem; }
 .h-card-rating { font-size: 1.75rem; line-height: 1; }
+
+/* ---------- v9.36: the thermometer's degree, big, beside the dose and the water ----------
+   It takes the third cell of the first row (the volume goes under the
+   grinder) and reads like a measure, in the serif of the figures. */
+#field-temp.field-temp-big .row-temp { display: flex; }
+#field-temp.field-temp-big .row-temp > .field-incr { flex: 1 1 auto; }
+#field-temp.field-temp-big #f-temp {
+  height: 52px; font-family: var(--serif); font-size: 1.75rem; line-height: 1; text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+#field-temp.field-temp-big .incr button { width: 36px; }
