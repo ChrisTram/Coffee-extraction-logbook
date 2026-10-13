@@ -216,7 +216,7 @@ const BAGS = (() => {
      { date_time, grams } of this bag. At least two cups in the window,
      otherwise there is no pace yet, only a cup. Returns { perDay, cups,
      days } or null; a bag left aside for weeks has none either. */
-  function pace(cups, since, today, windowDays) {
+  function pace(cups, since, today, windowDays, away) {
     const t = dayNumber(today);
     if (t === null) return null;
     const s = dayNumber(since);
@@ -224,7 +224,10 @@ const BAGS = (() => {
     const inside = (cups || []).filter(c => { const d = dayNumber(c && c.date_time); return d !== null && d >= from && d <= t; });
     if (inside.length < 2) return null;
     const start = Number.isFinite(from) ? from : Math.min(...inside.map(c => dayNumber(c.date_time)));
-    const days = t - start + 1;
+    // Away days (v9.37) are no consumption time.
+    const offDays = away && away.length && typeof TOOLS === "object" && TOOLS.awayDaysBetween
+      ? TOOLS.awayDaysBetween(away, dayString(start), dayString(t)) : 0;
+    const days = Math.max(1, t - start + 1 - offDays);
     const grams = inside.reduce((a, c) => a + (num(c.grams) || 0), 0);
     return grams > 0 ? { perDay: grams / days, cups: inside.length, days: days } : null;
   }

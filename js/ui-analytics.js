@@ -99,6 +99,9 @@
       if (b) b.notes.push(Number(e.score_10));
     });
     buckets.forEach(b => { b.mean = b.notes.length ? average(b.notes) : null; delete b.notes; });
+    // A day bar of a trip without a cup (v9.37) says so.
+    const away = UI.awayPeriods ? UI.awayPeriods() : [];
+    if (unit === "day") buckets.forEach(b => { b.away = !b.n && TOOLS.isAway(away, b.from); });
     return { unit: unit, bars: buckets };
   }
 
@@ -147,7 +150,9 @@
     const today = new Date(now || new Date()); today.setHours(12, 0, 0, 0);
     const firstDay = start ? new Date(localDateKey(start) + "T12:00")
       : exts.length ? new Date(exts.reduce((m, e) => (dayOf(e.date_time) < m ? dayOf(e.date_time) : m), "9999") + "T12:00") : today;
-    const span = Math.max(1, Math.round((today - firstDay) / 86400000) + 1);
+    // The trips (v9.37) are not days without coffee: they leave the count.
+    const awayN = TOOLS.awayDaysBetween(UI.awayPeriods ? UI.awayPeriods() : [], localDateKey(firstDay), localDateKey(today));
+    const span = Math.max(1, Math.round((today - firstDay) / 86400000) + 1 - awayN);
     const rated = analyzable.filter(e => e.score_10 !== "" && e.score_10 !== undefined);
     const best = rated.slice().sort((a, b) => Number(b.score_10) - Number(a.score_10) || String(b.date_time).localeCompare(String(a.date_time)))[0];
     return {
@@ -211,8 +216,8 @@
     const every = t.bars.length > 16 ? Math.ceil(t.bars.length / 10) : 1;
     const bars = t.bars.map((b, i) => {
       const title = b.n ? I18N.t(b.mean !== null ? "an_bar_rated" : "an_bar", { d: bucketLabel(b, t.unit), n: b.n, s: plural(b.n), m: b.mean !== null ? fmtRating(b.mean) : "" })
-        : bucketLabel(b, t.unit) + " : 0";
-      return '<span class="an-bar' + (b.n ? "" : " zero") + '" title="' + titleAttr(title) + '" style="--h:' +
+        : bucketLabel(b, t.unit) + " : " + (b.away ? I18N.t("away_day") : "0");
+      return '<span class="an-bar' + (b.n ? "" : " zero") + (b.away ? " away" : "") + '" title="' + titleAttr(title) + '" style="--h:' +
         (b.n ? Math.max(0.08, b.n / max) : 0.03).toFixed(3) + ";--o:" + tint(b.mean).toFixed(2) + ";--i:" + i + '">' +
         '<i></i><small' + (i % every === 0 || i === t.bars.length - 1 ? "" : ' class="quiet"') + ">" +
         escapeHtml(axisLabel(b, t.unit, t.bars.length)) + "</small></span>";

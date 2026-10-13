@@ -282,5 +282,24 @@ const ids = list => list.map(m => m.id);
   check("the English line reads", enObj.T.ms_line === "{x}!" && enObj.T.ms_cups === "{n}th cup");
 }
 
+/* v9.37: time away. A trip is read from one settings text, and a streak
+   jumps over it instead of breaking. */
+{
+  const away = TOOLS.awayParse("2026-10-14/2026-10-28; bad/2026-01-01;2026-11-05/2026-11-01");
+  check("a trip is read, junk and reversed periods are dropped",
+    away.length === 1 && away[0].from === "2026-10-14" && away[0].to === "2026-10-28");
+  check("and written back the same way", TOOLS.awaySerialize(away) === "2026-10-14/2026-10-28");
+  check("a day inside is away, the day after is not", TOOLS.isAway(away, "2026-10-20") && !TOOLS.isAway(away, "2026-10-29"));
+  check("the away days are counted inside a window", TOOLS.awayDaysBetween(away, "2026-10-01", "2026-10-31") === 15 &&
+    TOOLS.awayDaysBetween(away, "2026-10-20", "2026-10-21") === 2);
+  const cup = (id, d) => ({ id, date_time: d + "T08:00" });
+  const before = [cup("a", "2026-10-11"), cup("b", "2026-10-12"), cup("c", "2026-10-13")];
+  const during = MILESTONES.streaks(before, new Date("2026-10-20T10:00"), away);
+  check("during the trip the streak stays alive", during.current === 3, String(during.current));
+  check("without the trip it would be broken", MILESTONES.streaks(before, new Date("2026-10-20T10:00")).current === 0);
+  const after = MILESTONES.streaks(before.concat([cup("d", "2026-10-29")]), new Date("2026-10-29T10:00"), away);
+  check("the first cup back carries the streak on, trip days not counted", after.current === 4, String(after.current));
+}
+
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);
 process.exit(failures === 0 ? 0 : 1);

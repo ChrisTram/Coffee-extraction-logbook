@@ -65,5 +65,33 @@ const TOOLS = (() => {
       .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
-  return { average, localDateKey, versionSite, versionedUrl, escapeHtml };
+  /* AWAY (v9.37): the periods Chris is away (a trip), days with no cup on
+     purpose. Stored as one settings text, "2026-10-14/2026-10-28;...", each
+     period from and to included. The streak jumps over them, the calendar and
+     the day bars draw them apart, the daily averages and a bag's pace leave
+     them out. Pure, like everything here. */
+  const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+  function awayParse(text) {
+    return String(text || "").split(";").map(p => p.trim().split("/").map(x => x.trim()))
+      .filter(([a, b]) => DAY_RE.test(a || "") && DAY_RE.test(b || "") && a <= b)
+      .map(([from, to]) => ({ from, to }))
+      .sort((x, y) => x.from.localeCompare(y.from)).slice(0, 60);
+  }
+  function awaySerialize(list) {
+    return (list || []).map(r => r.from + "/" + r.to).join(";");
+  }
+  function isAway(list, key) {
+    return !!key && (list || []).some(r => key >= r.from && key <= r.to);
+  }
+  // How many away days between two day keys, both included.
+  function awayDaysBetween(list, fromKey, toKey) {
+    let n = 0;
+    (list || []).forEach(r => {
+      const a = r.from > fromKey ? r.from : fromKey, b = r.to < toKey ? r.to : toKey;
+      if (a <= b) n += Math.round((new Date(b + "T12:00") - new Date(a + "T12:00")) / 86400000) + 1;
+    });
+    return n;
+  }
+
+  return { average, localDateKey, versionSite, versionedUrl, escapeHtml, awayParse, awaySerialize, isAway, awayDaysBetween };
 })();

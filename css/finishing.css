@@ -1947,3 +1947,17 @@ html[data-theme="dark"] .grid-dashboard > .card-dark { box-shadow: var(--shadow-
   font-variant-numeric: tabular-nums;
 }
 #field-temp.field-temp-big .incr button { width: 36px; }
+
+/* ---------- v9.37: time away ---------- */
+.away-list { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 6px; }
+.away-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 6px 6px 12px;
+  border: 1px dashed var(--lines); border-radius: var(--radius-small); }
+.away-add { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.away-add input[type="date"] { min-height: 44px; }
+/* A trip, without a cup, on the calendar and the day bars: drawn apart, dashed. */
+.hm-cell.hm-away { fill: transparent; stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 2; }
+.an-bar.away i, .hm-bars i.away, .home-month i.away {
+  background: repeating-linear-gradient(135deg, var(--muted) 0 2px, transparent 2px 5px); opacity: 0.45;
+}
+#ps-away .away-add > label { display: inline; width: auto; margin: 0; }
+#ps-away .away-add input[type="date"] { width: auto; flex: 0 1 180px; }

@@ -37,7 +37,7 @@ const DATA_MIGRATIONS = (() => {
 
        Each step touches ONLY the previously seeded value. A step that
        overwrote a deliberately chosen setting would be a bug, not a migration. */
-    const CURRENT_SCHEMA = 23;
+    const CURRENT_SCHEMA = 24;
 
     /* THE ENGLISH NAMES (v9.06). Every row is translated on its way in
        (normalize*, see js/legacy-names.js), so a state that went through the
@@ -458,6 +458,9 @@ const DATA_MIGRATIONS = (() => {
        on the old one is refused by the sync instead of erasing a column it
        does not know. */
     { v: 23, name: "jar tare", apply: () => false },
+    /* One settings column, away (v9.37): the trips. Empty, it changes
+       nothing; the step bumps the version so an older tab cannot erase it. */
+    { v: 24, name: "away periods", apply: () => false },
     ];
 
     /* Applies the missing steps and writes the new version. Returns true if

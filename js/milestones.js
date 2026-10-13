@@ -52,11 +52,19 @@ const MILESTONES = (() => {
   }
 
   // The runs of consecutive days, oldest first: { from, to, len }.
-  function runsOf(list) {
+  /* Whether every day strictly between two day keys is an away day (v9.37):
+     a trip leaves a gap that does not break a streak. */
+  const isAwayDay = (away, k) => typeof TOOLS === "object" && TOOLS && TOOLS.isAway ? TOOLS.isAway(away, k) : false;
+  function bridged(a, b, away) {
+    if (!away || !away.length) return false;
+    for (let d = shiftDay(a, 1); d < b; d = shiftDay(d, 1)) if (!isAwayDay(away, d)) return false;
+    return true;
+  }
+  function runsOf(list, away) {
     const runs = [];
     [...new Set(list.map(e => dayOf(e.date_time)))].sort().forEach(k => {
       const last = runs[runs.length - 1];
-      if (last && shiftDay(last.to, 1) === k) { last.to = k; last.len += 1; }
+      if (last && (shiftDay(last.to, 1) === k || bridged(last.to, k, away))) { last.to = k; last.len += 1; }
       else runs.push({ from: k, to: k, len: 1 });
     });
     return runs;
@@ -65,11 +73,12 @@ const MILESTONES = (() => {
   /* The current streak and the best one. A cup dated after today has not
      happened yet: it counts for neither. `today` says whether today already
      has its cup (the week line dims the streak until it does). */
-  function streaks(exts, now) {
+  function streaks(exts, now, away) {
     const today = keyOf(now ? new Date(now) : new Date());
-    const runs = runsOf(chronological(exts).filter(e => dayOf(e.date_time) <= today));
+    const runs = runsOf(chronological(exts).filter(e => dayOf(e.date_time) <= today), away);
     const last = runs[runs.length - 1];
-    const alive = last && (last.to === today || last.to === shiftDay(today, -1)) ? last : null;
+    // Away days between the last cup and today keep the streak alive (v9.37).
+    const alive = last && (last.to === today || last.to === shiftDay(today, -1) || bridged(last.to, today, away)) ? last : null;
     // On a tie, the latest run is the best one: the one you remember.
     const best = runs.reduce((m, r) => (!m || r.len >= m.len ? r : m), null);
     return {

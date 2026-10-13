@@ -1632,7 +1632,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
 
   // And above all: updated_at must not leak into the CSV.
   const csv = DATA.csvSerialize([{ id: "moi", updated_at: 1699999999999, dose_g: 16 }], DATA.SETTINGS_COLS);
-  check("settings.csv header", csv.split("\n")[0] === "id,dose_g,heat_level,grind_dial,schema_version,boil_s,step_clicks,step_degrees,step_heat,step_water_g,step_dose_g,drawings,bubbles_s,jar_tare_g",
+  check("settings.csv header", csv.split("\n")[0] === "id,dose_g,heat_level,grind_dial,schema_version,boil_s,step_clicks,step_degrees,step_heat,step_water_g,step_dose_g,drawings,bubbles_s,jar_tare_g,away",
     csv.split("\n")[0]);
   check("updated_at missing from the settings CSV", !csv.includes("1699999999999"));
 }
@@ -2969,7 +2969,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
   const sections = [...html.matchAll(/class="card param-section" id="(ps-[a-z]+)"/g)].map(m => m[1]);
   const rows = [...html.matchAll(/class="pi-row" data-section="(ps-[a-z]+)"/g)].map(m => m[1]);
   // Six since v9.35: « Ma bouilloire » left with the thermometer.
-  check("every section of the list opens a page that exists", rows.length === 6 && rows.every(id => sections.includes(id)), rows.join(","));
+  check("every section of the list opens a page that exists", rows.length === 7 && rows.every(id => sections.includes(id)), rows.join(","));
   check("the Enregistrer button lives under the pages, only once", (html.match(/id="param-save"/g) || []).length === 1 && html.indexOf('id="param-actions"') > html.indexOf('id="ps-device"'));
   check("on phone the default values table becomes one card per recipe", (readFileSync(join(ROOT, "js/ui-catalog.js"), "utf8").match(/data-l="/g) || []).length === 5);
 }
@@ -3157,7 +3157,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
     check("tombstones preserved under the new table names", JSON.stringify(st.tombstones) === JSON.stringify(NEW_TOMBS),
       JSON.stringify(st.tombstones));
     check("the drawing names follow", st.settings[0].drawings === "shelf,!clock,podium", st.settings[0].drawings);
-    check("the logbook moves to the current schema (23)", st.settings[0].schema_version === 23, String(st.settings[0].schema_version));
+    check("the logbook moves to the current schema (24)", st.settings[0].schema_version === 24, String(st.settings[0].schema_version));
     const keys = [...idb.store.keys()].sort();
     check("the French keys are removed from IndexedDB", Object.keys(LEGACY.TABLES).concat("tombes").every(k => !idb.store.has(k)), keys.join());
     check("and the English ones written", TABLE_NAMES.concat("tombstones").every(k => idb.store.has(k)), keys.join());
@@ -3289,7 +3289,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
       !("note_sur_10" in app.DATA.state.extractions[0]), JSON.stringify(app.DATA.state.extractions[0]).slice(0, 80));
     check("and raw old tombstones", app.DATA.state.tombstones.coffees && app.DATA.state.tombstones.coffees.z === 1);
     check("without restamping the row", app.DATA.state.extractions[0].updated_at === 2001);
-    check("the schema is at 23, step 21 still there", SOURCE_DATA.includes("const CURRENT_SCHEMA = 23;") &&
+    check("the schema is at 24, step 21 still there", SOURCE_DATA.includes("const CURRENT_SCHEMA = 24;") &&
       SOURCE_DATA.includes('{ v: 21, name: "English names", apply: convertLegacyNames }'));
     /* Tetsu 4:6 at 250 g by default (v9.08): the seed says so, and step 22
        moves a stored recipe still at the seeded 225 g, never a retouched one. */
@@ -3543,7 +3543,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
   check("an empty jar on the scale is zero grams, not an error", w("280,5", 280.5, 250).net === 0 && w("280,5", 280.5, 250).error === "");
 
   check("schema 23 is the jar tare, a step that changes no value",
-    SOURCE_DATA.includes('{ v: 23, name: "jar tare", apply: () => false }') && SOURCE_DATA.includes("const CURRENT_SCHEMA = 23;"));
+    SOURCE_DATA.includes('{ v: 23, name: "jar tare", apply: () => false }') && SOURCE_DATA.includes('{ v: 24, name: "away periods", apply: () => false }'));
 }
 
 /* Q8: WHAT A JAR DRAWS, and J6: THE RECORD OF THE BAG IN STOCK. */
@@ -3696,7 +3696,7 @@ for (const sheet of CSS_SHEETS) {
   const saveLocalSrc = SOURCE_DATA.slice(SOURCE_DATA.indexOf("async function saveLocal()"), SOURCE_DATA.indexOf("// ---------- File System Access"));
   const payloadSrc = SOURCE_DATA.slice(SOURCE_DATA.indexOf("function localPayload()"), SOURCE_DATA.indexOf("function adoptTables("));
   check("the arrivals are neither stored nor synced, and the data schema is untouched",
-    !/arriv/i.test(saveLocalSrc) && !/arriv/i.test(payloadSrc) && !("arrivals" in DATA.state) && SOURCE_DATA.includes("const CURRENT_SCHEMA = 23;"));
+    !/arriv/i.test(saveLocalSrc) && !/arriv/i.test(payloadSrc) && !("arrivals" in DATA.state) && !SOURCE_DATA.includes("arrivals_"));
 
   // The three new modules are loaded by the page, the offline cache and the three harnesses.
   const html = readFileSync(join(ROOT, "index.html"), "utf8"), sw = readFileSync(join(ROOT, "sw.js"), "utf8");

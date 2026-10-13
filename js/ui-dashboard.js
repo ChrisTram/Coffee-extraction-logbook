@@ -64,13 +64,17 @@
 
     const days = [];
     const day = new Date(start);
+    const away = UI.awayPeriods();
     while (day <= end) {
-      days.push(perDay[localDateKey(day)] || 0);
+      const k = localDateKey(day);
+      // An away day with no cup (v9.37) is skipped: it neither counts nor breaks.
+      days.push(perDay[k] || (TOOLS.isAway(away, k) ? null : 0));
       day.setDate(day.getDate() + 1);
     }
 
     let cups = 0, activeDays = 0, streak = 0, bestStreak = 0;
     days.forEach(n => {
+      if (n === null) return;
       if (n > 0) {
         cups += n;
         activeDays += 1;
@@ -85,14 +89,15 @@
     // empty (last index = today).
     let currentStreak = 0;
     let i = days.length - 1;
+    while (i >= 0 && days[i] === null) i -= 1; // away days at the end
     if (days[i] === 0) i -= 1; // today not started yet, start from yesterday
-    while (i >= 0 && days[i] > 0) { currentStreak += 1; i -= 1; }
+    while (i >= 0 && (days[i] > 0 || days[i] === null)) { if (days[i]) currentStreak += 1; i -= 1; }
 
     // Weekly average relative to the time ACTUALLY covered: dividing by
     // 18 weeks when the first coffee is 15 days old would give a wrong and
     // discouraging number.
     const firstActive = days.findIndex(n => n > 0);
-    const coveredDays = firstActive === -1 ? 0 : days.length - firstActive;
+    const coveredDays = firstActive === -1 ? 0 : days.slice(firstActive).filter(n => n !== null).length;
     const perWeek = coveredDays > 0 ? cups / (coveredDays / 7) : 0;
 
     return { cups: cups, activeDays: activeDays, currentStreak: currentStreak, bestStreak: bestStreak, perWeek: perWeek };
@@ -415,7 +420,7 @@
        goes to the five figures below: the grid and its summary describe the
        same window. */
     const weeks = visibleWeeks();
-    CHARTS.heatmap("g-heatmap", perDay, infoPerDay, weeks);
+    CHARTS.heatmap("g-heatmap", perDay, infoPerDay, weeks, UI.awayPeriods());
     $("#heatmap-title").textContent = I18N.t("heatmap_title", { n: weeks });
     renderHeatmapStats(perDay, weeks);
     renderHeatmapLegend();

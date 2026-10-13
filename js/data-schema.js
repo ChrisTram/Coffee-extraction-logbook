@@ -24,7 +24,7 @@ const DATA_SCHEMA = (() => {
   const SETTINGS_ID = "moi";
 
   const SETTINGS_COLS = ["id", "dose_g", "heat_level", "grind_dial", "schema_version", "boil_s",
-    "step_clicks", "step_degrees", "step_heat", "step_water_g", "step_dose_g", "drawings", "bubbles_s", "jar_tare_g"];
+    "step_clicks", "step_degrees", "step_heat", "step_water_g", "step_dose_g", "drawings", "bubbles_s", "jar_tare_g", "away"];
 
   const RECIPE_COLS = ["id", "name", "number", "method", "family", "variant", "subtitle", "dose_g", "water_g",
     "temperature_c", "temp_text", "grind_dial", "ratio_text", "total_text", "milk",
@@ -250,6 +250,9 @@ const DATA_SCHEMA = (() => {
          a wrong stock that looks exact. A French comma is read too (a value
          typed in a spreadsheet). Out of range (0, 5000] goes back to empty. */
       jar_tare_g: jarTare(r && r.jar_tare_g),
+      /* AWAY (v9.37): the trips, "from/to;from/to", cleaned on read
+         (TOOLS.awayParse). Empty by default. */
+      away: TOOLS.awaySerialize(TOOLS.awayParse(r && r.away)),
     };
   }
 

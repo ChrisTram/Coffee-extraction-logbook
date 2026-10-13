@@ -156,7 +156,7 @@
      wide screen, next to « Ta semaine » on the line of a narrow one; and its
      words join the button's label. */
   function placeStreak(exts) {
-    const s = MILESTONES.streaks(exts, new Date());
+    const s = MILESTONES.streaks(exts, new Date(), UI.awayPeriods());
     const html = streakHtml(s);
     const words = html ? I18N.t("streak_days", { n: s.current }) : "";
     [["#home-week", ".hw-head"], ["#home-week-line", ".hw-label"]].forEach(([id, sel]) => {
@@ -397,7 +397,7 @@
     const body = $("#tile-milestones");
     if (!body) return;
     const exts = DATA.state.extractions || [];
-    const s = MILESTONES.streaks(exts, new Date());
+    const s = MILESTONES.streaks(exts, new Date(), UI.awayPeriods());
     const list = MILESTONES.compute(exts);
     const next = MILESTONES.nextCups(exts);
     const year = String(new Date().getFullYear());

@@ -226,7 +226,7 @@
     const cupsText = I18N.t("home_week_cups", { n: m.cups, s: m.cups > 1 ? "s" : "" });
     const avgText = m.mean !== null ? I18N.t("home_week_avg", { m: fmtRating(m.mean) }) : I18N.t("home_week_unrated");
     const max = Math.max(1, ...m.bars.map(b => b.n));
-    const bars = m.bars.map((b, i) => "<i" + (b.n ? "" : ' class="zero"') + ' style="--h:' + (b.n ? Math.max(0.12, b.n / max) : 0.05).toFixed(2) +
+    const bars = m.bars.map((b, i) => "<i" + (b.n ? "" : b.away ? ' class="zero away"' : ' class="zero"') + ' style="--h:' + (b.n ? Math.max(0.12, b.n / max) : 0.05).toFixed(2) +
       ";--o:" + tint(b.mean).toFixed(2) + ";--i:" + i + '"></i>').join("");
     const day = b => b.date.toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" });
     const nextText = m.next ? I18N.t("ms_next", { n: m.next.n, k: m.next.left }) : "";

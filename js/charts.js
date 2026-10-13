@@ -467,7 +467,7 @@ const CHARTS = (() => {
   // Date key in local time, defined only once in tools.js.
   const localDateKey = TOOLS.localDateKey;
 
-  function heatmap(container, perDay, infoByDay, weekCount) {
+  function heatmap(container, perDay, infoByDay, weekCount, away) {
     const el = typeof container === "string" ? document.getElementById(container) : container;
     if (!el) return;
     const weeks = weekCount || 16;
@@ -516,12 +516,14 @@ const CHARTS = (() => {
         }
         const info = infoByDay[key] || "";
         const localDate = d.toLocaleDateString(I18N.locale(), { weekday: "long", day: "numeric", month: "long" });
-        const count = v === 0 ? I18N.t("heatmap_none") : I18N.t(v > 1 ? "heatmap_many" : "heatmap_one", { n: v });
+        // An away day without a cup (v9.37): drawn dashed, « en voyage ».
+        const off = v === 0 && TOOLS.isAway(away, key);
+        const count = off ? I18N.t("away_day") : v === 0 ? I18N.t("heatmap_none") : I18N.t(v > 1 ? "heatmap_many" : "heatmap_one", { n: v });
         // The current day is circled: without a landmark, finding your way in
         // a grid of more than a hundred cells means counting the columns.
         const isToday = key === todayKey;
         svg += '<rect x="' + x + '" y="' + y + '" width="' + cell + '" height="' + cell +
-          '" rx="3" class="hm-cell hm-n' + level + (isToday ? " hm-today" : "") +
+          '" rx="3" class="hm-cell hm-n' + level + (off ? " hm-away" : "") + (isToday ? " hm-today" : "") +
           '" tabindex="0" data-tip="' +
           localDate + " : " + count + (info ? ", " + info : "") + '"></rect>';
         d.setDate(d.getDate() + 1);

@@ -46,7 +46,7 @@ const seed = {
     ],
     cups: [],
     purchases: [],
-    settings: [{ id: "moi", updated_at: T, dose_g: 15, schema_version: 23 }],
+    settings: [{ id: "moi", updated_at: T, dose_g: 15, schema_version: 24 }],
   },
   tombstones: { coffees: { gone: T - 1000 }, extractions: { e0: T - 2000 }, recipes: {}, cups: {}, purchases: {}, settings: {} },
 };
@@ -128,7 +128,7 @@ const server = makeServer({ db, token: TOKEN });
   check("every tool has a description and an object schema",
     list.result.tools.every(t => t.description && t.inputSchema && t.inputSchema.type === "object"));
   check("add_coffee requires the name", JSON.stringify(TOOLS.find(t => t.name === "add_coffee").inputSchema.required) === '["name"]');
-  check("the server sends the app's schema", server.schema === 23);
+  check("the server sends the app's schema", server.schema === 24);
 }
 
 // 2. Reading
@@ -138,7 +138,7 @@ const server = makeServer({ db, token: TOKEN });
   check("list_coffees lists the active coffees", !r.isError && r.text.includes("Ethiopia Guji") && r.text.includes("Ethiopia Sidamo"), r.text);
   check("but not the archived one by default", !r.text.includes("Kenya AA"));
   check("a read is one POST with an empty payload at the app schema",
-    requests.length === 1 && requests[0].method === "POST" && requests[0].body.schema === 23 &&
+    requests.length === 1 && requests[0].method === "POST" && requests[0].body.schema === 24 &&
     Object.keys(requests[0].body.tables).length === 0 && Object.keys(requests[0].body.tombstones).length === 0);
   check("the call goes to the tools endpoint", requests[0].url === "https://site.test/api/tools/sync");
   const all = await call(server, "list_coffees", { include_archived: true });
@@ -302,7 +302,7 @@ let newId = "";
   const w = await call(wrong, "list_coffees", {});
   check("a wrong token: the site refuses, said plainly", w.isError && w.text.includes("refuse le jeton"), w.text);
   check("without ever repeating that token", !w.text.includes(OTHER) && !outputs.join("").includes(OTHER));
-  const newer = makeDb({ ...seed, schema: 24 });
+  const newer = makeDb({ ...seed, schema: 25 });
   const ahead = makeServer({ db: newer, token: TOKEN });
   const a = await call(ahead, "add_coffee", { name: "Y" });
   check("a document newer than the tool: refused, nothing written", a.isError && a.text.includes("plus récente") &&

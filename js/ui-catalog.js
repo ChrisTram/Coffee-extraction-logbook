@@ -314,10 +314,12 @@
       dial: fallbacks.dial + (p ? " · ≈ " + Math.round(p.microns) + " µm" : ""),
       incr: steps.step_clicks ? I18N.t("pivot_clicks", { n: steps.step_clicks }) : "",
       jar: DATA.currentSettings().jar_tare_g === "" ? I18N.t("pivot_to_weigh") : fmtDecimal(Number(DATA.currentSettings().jar_tare_g), 1) + " g",
+      away: awayPivot(),
       device: I18N.t($("#chrono-beep").checked ? "pivot_beeps_on" : "pivot_beeps_off"),
       data: ($("#sync-status") || { textContent: "" }).textContent.trim().slice(0, 40),
     };
     Object.entries(values).forEach(([k, v]) => { const el = $("#piv-" + k); if (el) el.textContent = v; });
+    renderAway();
     showSettingsSection(currentSection, false);
   }
   function showSettingsSection(id, open) {
@@ -432,7 +434,53 @@
   /* Wiring of the coffee and bag forms, the recipe window and the Settings
      screen. Called once by app.js; it wires « Mes cafés » too (v9.18,
      js/ui-coffees.js), app.js being at its line cap. */
+  // ---------- My time away (v9.37) ----------
+
+  const awayDate = k => new Date(k + "T12:00").toLocaleDateString(I18N.locale(), { day: "numeric", month: "short", year: "numeric" });
+  const awayText = r => I18N.t("away_range", { a: awayDate(r.from), b: awayDate(r.to) });
+  // The next or current trip in the settings list, else the count.
+  function awayPivot() {
+    const list = UI.awayPeriods(), today = TOOLS.localDateKey(new Date());
+    if (!list.length) return I18N.t("away_none");
+    const next = list.find(r => r.to >= today);
+    return next ? awayText(next) : String(list.length);
+  }
+  function renderAway() {
+    const ul = $("#away-list");
+    if (!ul) return;
+    const list = UI.awayPeriods();
+    ul.innerHTML = list.map((r, i) => '<li><span>' + TOOLS.escapeHtml(awayText(r)) + '</span><button type="button" class="btn-icon" data-away-del="' + i +
+      '" aria-label="' + titleAttr(I18N.t("away_remove")) + '" title="' + titleAttr(I18N.t("away_remove")) + '">×</button></li>').join("");
+    ul.hidden = !list.length;
+  }
+  async function saveAway(list, message) {
+    await DATA.updateSettings({ away: TOOLS.awaySerialize(list) });
+    renderAway();
+    const el = $("#piv-away");
+    if (el) el.textContent = awayPivot();
+    toast(message);
+  }
+  function wireAway() {
+    const add = $("#away-add");
+    if (!add) return;
+    add.addEventListener("click", () => {
+      const from = $("#away-from").value, to = $("#away-to").value;
+      if (!from || !to || to < from) { toast(I18N.t("away_bad")); return; }
+      const list = TOOLS.awayParse(TOOLS.awaySerialize(UI.awayPeriods().concat([{ from, to }])));
+      $("#away-from").value = ""; $("#away-to").value = "";
+      saveAway(list, I18N.t("away_added", { r: awayText({ from, to }) }));
+    });
+    $("#away-list").addEventListener("click", ev => {
+      const b = ev.target.closest("[data-away-del]");
+      if (!b) return;
+      const list = UI.awayPeriods();
+      list.splice(Number(b.getAttribute("data-away-del")), 1);
+      saveAway(list, I18N.t("away_removed"));
+    });
+  }
+
   function wireCatalog() {
+    wireAway();
     /* The two header shortcuts disappeared along with the header (Comptoir
        redesign, step 2). The modals stay reachable where they are needed:
        #btn-manage-coffees on the Entry screen, #btn-manage-recipes in the Guide.

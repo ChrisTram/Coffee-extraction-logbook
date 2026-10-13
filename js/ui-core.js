@@ -668,6 +668,12 @@ const UI = (() => {
 
      As a parameter, there is no state left to get stuck: the information
      belongs to the call, it lives as long as the call. */
+  /* The away periods (v9.37), parsed from the settings each time: cheap, and
+     never stale after a sync. */
+  function awayPeriods() {
+    try { return TOOLS.awayParse(DATA.currentSettings().away); } catch (e) { return []; }
+  }
+
   function activateScreen(nameKey, forEditing) {
     /* Arriving on Entry through the navigation means "I want to log a cup",
        never "resume the edit from ten minutes ago". So we abandon the edit in
@@ -721,7 +727,7 @@ const UI = (() => {
 
   return {
     $, $$, $f, LONG_PRESS_MS, FALLBACKS_KEY, FACTORY_DOSE, FACTORY_BOIL_S, SCREEN_NAMES, RENAMED_SCREENS,
-    FACTORY_FIRE, FACTORY_DIAL, enableLongPress, activateScreen, animateCounter,
+    FACTORY_FIRE, FACTORY_DIAL, enableLongPress, activateScreen, awayPeriods, animateCounter,
     debounce, applyTheme, titleAttr, withTransition, setPressed, fieldCache,
     toggleFailed, loadFallbacks, localDateKey, askConfirm, detailRatio, displayedDiags,
     saveFallbacks, isFailed, analyzableExts, includeFailed,
