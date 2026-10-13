@@ -29,7 +29,9 @@ const { BAGS, GRIND } = new Function(SCRIPTS.map(read).join("\n") + "\nreturn { 
 // ---------- The end of a bag ----------
 {
   const g = (grams, dose, bag) => ({ grams, dose, bag: bag || 250, remaining: grams });
-  check("a bag with less than one dose is spent", BAGS.isSpent(g(14, 15)) && BAGS.isSpent(g(0, 15)));
+  // v9.38: a last cup a little short still counts; under three quarters of a dose, the bag is over.
+  check("a bag without even a short cup is spent", BAGS.isSpent(g(11, 15)) && BAGS.isSpent(g(0, 15)));
+  check("14 g with a usual 14.5 g is one more cup", !BAGS.isSpent(g(14, 14.5)) && !BAGS.isSpent(g(12, 15)));
   check("one dose left is still a cup", !BAGS.isSpent(g(15, 15)) && !BAGS.isSpent(g(120, 15)));
   check("without a usual dose, only an empty bag is spent", BAGS.isSpent(g(0, 0)) && !BAGS.isSpent(g(3, 0)));
   check("no gauge (no bag size known), nothing to end", BAGS.isSpent(null) === false);

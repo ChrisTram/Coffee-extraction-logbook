@@ -29,12 +29,15 @@ const BAGS = (() => {
   const failed = e => Number(e && e.failed) === 1;
   const newestFirst = (a, b) => String(b.date_time || "").localeCompare(String(a.date_time || ""));
 
-  /* LESS THAN ONE DOSE LEFT: the next cup does not fit in this bag, so the
-     bag is over. Without a usual dose, only an empty bag is. `gauge` is
-     DATA.bagGauge. */
+  /* NOT EVEN A SHORT CUP LEFT: the bag is over. A last cup a little short
+     of the usual dose is still a cup (v9.38: 14 g left with a usual 14.5 g
+     was called empty while Chris had one more cup in it), so the line is
+     three quarters of a dose. Without a usual dose, only an empty bag is.
+     `gauge` is DATA.bagGauge. */
+  const LAST_CUP_SHARE = 0.75;
   function isSpent(gauge) {
     if (!gauge) return false;
-    return gauge.dose > 0 ? gauge.grams < gauge.dose : gauge.grams <= 0;
+    return gauge.dose > 0 ? gauge.grams < gauge.dose * LAST_CUP_SHARE : gauge.grams <= 0;
   }
 
   /* Where a coffee stands on the shelf. Archived: finished, whatever its
