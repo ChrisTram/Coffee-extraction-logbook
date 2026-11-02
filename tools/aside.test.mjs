@@ -98,7 +98,7 @@ const coffee = roast => ({ id: "c", roast });
     scalePours(set.steps[2].text, pourFactor(set, 250)).includes("jusqu'à 250 g") && pourFactor(set, 250) !== 1);
   const own = { ...set, steps: set.steps.map(e => ({ ...e, text: e.text.replace("225 g", "250 g") })) };
   check("steps rewritten by hand are written for the recipe's water", stepsWater(own) === 250 && pourFactor(own, 250) === 1);
-  check("a recipe without steps (the 4:6) scales on its water", stepsWater(seed("tetsu-devil")) === 250 && pourFactor(seed("tetsu-devil"), 300) === 1.2);
+  check("a recipe without steps (the 4:6) scales on its water", stepsWater(seed("tetsu-devil")) === 225 && pourFactor(seed("tetsu-devil"), 270) === 1.2);
   check("a personal recipe scales on its water", stepsWater({ id: "r3", water: 200, steps: [{ t: 0, text: "Verser 100 g" }] }) === 200);
   check("no water typed, nothing scales", pourFactor(oad, "") === 1 && pourFactor(oad, 0) === 1 && pourFactor(null, 250) === 1);
   const h = seed("hoffmann-1cup");

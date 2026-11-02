@@ -1961,3 +1961,24 @@ html[data-theme="dark"] .grid-dashboard > .card-dark { box-shadow: var(--shadow-
 }
 #ps-away .away-add > label { display: inline; width: auto; margin: 0; }
 #ps-away .away-add input[type="date"] { width: auto; flex: 0 1 180px; }
+
+/* ---------- v9.39: the last cup among its coffee's, over time ---------- */
+.last-spot .ls-time text { font-size: 13px; }
+.last-spot .ls-grid { stroke: var(--lines); stroke-width: 1; }
+.last-spot .ls-avg { stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 4 4; }
+.last-spot .ls-avg-label { fill: var(--muted); }
+.last-spot .ls-area { fill: var(--accent); opacity: 0.08; stroke: none; }
+.last-spot .ls-line {
+  fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; opacity: 0.75;
+  stroke-dasharray: 1; stroke-dashoffset: 1; animation: ls-draw 900ms cubic-bezier(0.2, 0.8, 0.2, 1) 120ms forwards;
+}
+.last-spot .ls-dot { fill: var(--text); opacity: 0.6; transform-box: fill-box; transform-origin: center;
+  animation: ls-pop 320ms ease-out both; animation-delay: calc(140ms + var(--i, 0) * 45ms); }
+.last-spot .ls-me { fill: var(--accent); stroke: var(--panel-2); stroke-width: 2.5; transform-box: fill-box; transform-origin: center;
+  animation: ls-pop 420ms cubic-bezier(0.2, 0.8, 0.2, 1.4) 700ms both; }
+@keyframes ls-draw { to { stroke-dashoffset: 0; } }
+@keyframes ls-pop { from { transform: scale(0); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .last-spot .ls-line { animation: none; stroke-dashoffset: 0; }
+  .last-spot .ls-dot, .last-spot .ls-me { animation: none; }
+}

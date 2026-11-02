@@ -37,7 +37,7 @@ const DATA_MIGRATIONS = (() => {
 
        Each step touches ONLY the previously seeded value. A step that
        overwrote a deliberately chosen setting would be a bug, not a migration. */
-    const CURRENT_SCHEMA = 24;
+    const CURRENT_SCHEMA = 25;
 
     /* THE ENGLISH NAMES (v9.06). Every row is translated on its way in
        (normalize*, see js/legacy-names.js), so a state that went through the
@@ -441,17 +441,10 @@ const DATA_MIGRATIONS = (() => {
     /* Tetsu 4:6 at 250 g of water by default (v9.08, Chris's request): the
        pours follow (40 percent is 33 then 67 g, then 3 x 50 g). Targeted at
        the seeded values: water retouched by hand is left alone. */
-    { v: 22, name: "Tetsu 4:6 at 250 g", apply: () => {
-      let changed = false;
-      state.recipes.forEach(rec => {
-        if (rec.id !== "tetsu-devil" || Number(rec.water) !== 225) return;
-        rec.water = 250;
-        if (rec.ratioText === "ratio 1:15, environ 195 ml en tasse") rec.ratioText = "ratio 1:16,7, environ 220 ml en tasse";
-        stampRow(rec);
-        changed = true;
-      });
-      return changed;
-    } },
+    /* v9.39: superseded by step 25 (the source's ratio, 225 g for 15 g).
+       Kept as a no-op so the numbering stays: a 225 g recipe moved to 250 here
+       would only be moved back, with a needless stamp. */
+    { v: 22, name: "Tetsu 4:6 at 250 g", apply: () => false },
     /* One settings column, jar_tare_g (v9.13): the empty jar Chris weighs his
        coffee in. Nothing to catch up: empty, it keeps the weighing off. Like
        step 19, the step only exists to bump the version, so that a tab still
@@ -461,6 +454,35 @@ const DATA_MIGRATIONS = (() => {
     /* One settings column, away (v9.37): the trips. Empty, it changes
        nothing; the step bumps the version so an older tab cannot erase it. */
     { v: 24, name: "away periods", apply: () => false },
+    /* THE SOURCE'S RATIO AT 15 G (v9.39, Chris's request): each Switch recipe
+       that has a source (RECIPE_SOURCES, js/recipes.js) gets 15 g of coffee
+       and the water that keeps the author's ratio, rounded to 5 g: Tetsu 4:6
+       and Neo Brew 225 g (20 for 300), One and Done and Sherrycipe 225,
+       Chronicler 240, Hoffmann 250, Tetsu Devil 210 (20 for 280). The steps
+       follow by themselves (pourFactor scales them to the water). The ratio
+       line is rewritten only while it is still the generated one. */
+    { v: 25, name: "source ratio at 15 g", apply: () => {
+      if (typeof RECIPE_SOURCES !== "object" || !RECIPE_SOURCES) return false;
+      const frRatio = r => (Math.round(r * 10) / 10).toString().replace(".", ",");
+      let changed = false;
+      state.recipes.forEach(rec => {
+        const s = RECIPE_SOURCES[rec.id];
+        if (!s || rec.method !== "Switch" || !(s.dose > 0) || !(s.water > 0)) return;
+        const water = Math.round((15 * s.water / s.dose) / 5) * 5;
+        if (Number(rec.dose) === 15 && Number(rec.water) === water) return;
+        // Already at the source's ratio, around 15 g (Neo Brew, 16 for 240): left alone.
+        const d = Number(rec.dose), w = Number(rec.water);
+        if (d >= 14 && d <= 16 && w > 0 && Math.abs(w / d - s.water / s.dose) < 0.05) return;
+        rec.dose = 15;
+        rec.water = water;
+        if (/^ratio 1:[\d,]+, environ \d+ ml en tasse$/.test(String(rec.ratioText || ""))) {
+          rec.ratioText = "ratio 1:" + frRatio(water / 15) + ", environ " + (water - 30) + " ml en tasse";
+        }
+        stampRow(rec);
+        changed = true;
+      });
+      return changed;
+    } },
     ];
 
     /* Applies the missing steps and writes the new version. Returns true if

@@ -117,33 +117,55 @@
     const position = Math.abs(gap) < 0.2 ? I18N.t("rank_on_average")
       : I18N.t(gap > 0 ? "rank_above" : "rank_below", { x: fmtRating(Math.abs(gap)) });
 
-    // The scale: from the whole score below the lowest one up to 10.
-    const low = Math.max(0, Math.floor(Math.min(...notes)) - 1);
-    const L = 12, R = 588, base = 34, step = 6.5;
-    const x = n => L + ((n - low) / (10 - low)) * (R - L);
-    let svg = '<line x1="' + L + '" y1="' + (base + 8) + '" x2="' + R + '" y2="' + (base + 8) + '" stroke="var(--lines)"></line>';
-    for (let n = Math.ceil(low); n <= 10; n += (10 - low > 6 ? 2 : 1)) {
-      svg += '<text x="' + x(n) + '" y="' + (base + 19) + '" text-anchor="middle">' + n + "</text>";
+    /* v9.39: OVER TIME. Chris found the strip of dots on a score axis hard to
+       read: the cups now run along the dates, the score going up, joined by a
+       thin line, the coffee's average as a dashed level, this cup large and
+       copper. The line draws itself (css/finishing.css). */
+    const list = siblings.slice().sort((p, q) => String(p.date_time).localeCompare(String(q.date_time)));
+    const time = x => new Date(String(x.date_time).slice(0, 16)).getTime();
+    const t0 = time(list[0]), t1 = time(list[list.length - 1]);
+    const low = Math.max(0, Math.floor(Math.min(...notes)) - 1), high = 10;
+    const L = 30, R = 586, T = 30, B = 118;
+    // Spread by date, never two cups on the same pixel: a minimum gap, then rescaled.
+    let xs = list.map(x => (t1 > t0 ? (time(x) - t0) / (t1 - t0) : list.length > 1 ? list.indexOf(x) / (list.length - 1) : 0.5));
+    const minGap = list.length > 1 ? Math.min(0.6 / (list.length - 1), 0.04) : 0;
+    for (let i = 1; i < xs.length; i++) if (xs[i] - xs[i - 1] < minGap) xs[i] = xs[i - 1] + minGap;
+    const span = xs[xs.length - 1] > 1 ? xs[xs.length - 1] : 1;
+    xs = xs.map(v => L + (v / span) * (R - L));
+    const y = n => B - ((n - low) / (high - low)) * (B - T);
+    let svg = "";
+    const stepY = high - low > 6 ? 2 : 1;
+    for (let n = Math.ceil(low); n <= high; n += stepY) {
+      svg += '<line class="ls-grid" x1="' + L + '" y1="' + y(n).toFixed(1) + '" x2="' + R + '" y2="' + y(n).toFixed(1) + '"></line>' +
+        '<text x="' + (L - 8) + '" y="' + (y(n) + 4).toFixed(1) + '" text-anchor="end">' + n + "</text>";
     }
-    const xm = x(avg);
-    svg += '<line x1="' + xm + '" y1="12" x2="' + xm + '" y2="' + (base + 8) + '" stroke="var(--muted)" stroke-dasharray="3 3"></line>' +
-      '<text x="' + (xm > R * 0.7 ? xm - 5 : xm + 5) + '" y="10" text-anchor="' + (xm > R * 0.7 ? "end" : "start") + '">' +
-      I18N.t("rank_average", { m: fmtRating(avg) }) + "</text>";
-    // The other cups, stacked when they share the same score.
-    const stacks = {};
-    siblings.forEach(s => {
-      if (s.id === e.id) return;
-      const n = Number(s.score_10);
-      const k = (stacks[n] = (stacks[n] || 0) + 1) - 1;
-      svg += '<circle cx="' + x(n) + '" cy="' + (base - Math.min(k, 3) * step) + '" r="2.6" fill="var(--text)" opacity="0.55"></circle>';
+    const ym = y(avg);
+    svg += '<line class="ls-avg" x1="' + L + '" y1="' + ym.toFixed(1) + '" x2="' + R + '" y2="' + ym.toFixed(1) + '"></line>' +
+      // The average's name as a small legend above the plot, never over a dot.
+      '<line class="ls-avg" x1="' + (R - 150) + '" y1="10" x2="' + (R - 126) + '" y2="10"></line>' +
+      '<text class="ls-avg-label" x="' + R + '" y="14" text-anchor="end">' + I18N.t("rank_average", { m: fmtRating(avg) }) + "</text>";
+    const pts = list.map((x, i) => [xs[i], y(Number(x.score_10))]);
+    const path = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+    svg += '<path class="ls-area" d="' + path + " L" + pts[pts.length - 1][0].toFixed(1) + " " + B + " L" + pts[0][0].toFixed(1) + " " + B + ' Z"></path>' +
+      '<path class="ls-line" pathLength="1" d="' + path + '"></path>';
+    list.forEach((x, i) => {
+      if (x.id === e.id) return;
+      svg += '<circle class="ls-dot" style="--i:' + i + '" cx="' + pts[i][0].toFixed(1) + '" cy="' + pts[i][1].toFixed(1) + '" r="3.2"></circle>';
     });
-    // This one, on top, ringed with the panel colour so it stands out.
-    svg += '<circle cx="' + x(rating) + '" cy="' + (base - 3) + '" r="6.5" fill="var(--accent)" stroke="var(--panel-2)" stroke-width="2"></circle>';
+    const me = list.findIndex(x => x.id === e.id);
+    if (me >= 0) svg += '<circle class="ls-me" cx="' + pts[me][0].toFixed(1) + '" cy="' + pts[me][1].toFixed(1) + '" r="7"></circle>';
+    // The dates: the first, the last, and the middle one when there is room.
+    const label = x => new Date(String(x.date_time).slice(0, 10) + "T12:00").toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" });
+    const marks = [0, list.length - 1];
+    if (list.length >= 5) marks.splice(1, 0, Math.floor((list.length - 1) / 2));
+    marks.forEach((i, k) => {
+      svg += '<text x="' + pts[i][0].toFixed(1) + '" y="' + (B + 18) + '" text-anchor="' + (k === 0 ? "start" : k === marks.length - 1 ? "end" : "middle") + '">' + label(list[i]) + "</text>";
+    });
     return '<div class="last-spot" role="img" aria-label="' + titleAttr(I18N.t("rank_aria", {
       n: notes.length, coffee: I18N.tr(e._c.coffee_name), score: fmtRating(rating), m: fmtRating(avg) })) + '">' +
       '<p class="last-spot-head"><span>' + I18N.t("rank_among", { n: notes.length, coffee: I18N.tr(e._c.coffee_name) }) + "</span>" +
       "<span><b>" + rankText + "</b>, " + position + "</span></p>" +
-      '<svg viewBox="0 0 600 ' + (base + 22) + '" aria-hidden="true">' + svg + "</svg></div>";
+      '<svg class="ls-time" viewBox="0 0 600 ' + (B + 24) + '" aria-hidden="true">' + svg + "</svg></div>";
   }
 
   /* The TARGET of a footer figure: what the recipe aimed for, otherwise your
