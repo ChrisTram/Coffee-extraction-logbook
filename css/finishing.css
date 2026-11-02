@@ -1982,3 +1982,19 @@ html[data-theme="dark"] .grid-dashboard > .card-dark { box-shadow: var(--shadow-
   .last-spot .ls-line { animation: none; stroke-dashoffset: 0; }
   .last-spot .ls-dot, .last-spot .ls-me { animation: none; }
 }
+
+/* ---------- v9.40: one dot per cup, a colour per recipe ---------- */
+.last-spot .ls-line, .last-spot .ls-area { display: none; }
+.last-spot .ls-tick { stroke: var(--lines); }
+.last-spot .ls-cup { cursor: pointer; }
+.last-spot .ls-hit { fill: transparent; }
+.last-spot .ls-cup .ls-dot { fill: var(--c); opacity: 0.9; stroke: var(--panel-2); stroke-width: 1.5;
+  transform-box: fill-box; transform-origin: center; transition: transform 160ms ease;
+  animation: ls-pop 320ms ease-out both; animation-delay: calc(80ms + var(--i, 0) * 35ms); }
+.last-spot .ls-cup:hover .ls-dot { transform: scale(1.35); opacity: 1; }
+.last-spot .ls-cup.ls-me .ls-dot { opacity: 1; stroke: var(--accent); stroke-width: 3; }
+.last-spot .ls-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 6px 0 0; font-size: 0.75rem; color: var(--muted); }
+.last-spot .ls-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.last-spot .ls-legend i { width: 9px; height: 9px; border-radius: 50%; background: var(--c); }
+.last-spot .ls-legend small { font-size: 0.75rem; opacity: 0.7; }
+@media (prefers-reduced-motion: reduce) { .last-spot .ls-cup .ls-dot { animation: none; transition: none; } }

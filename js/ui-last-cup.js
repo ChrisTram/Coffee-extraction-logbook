@@ -93,6 +93,29 @@
     return y && m && d ? new Date(y, m - 1, d).toLocaleDateString(I18N.locale(), { day: "numeric", month: "long" }) : "";
   }
 
+  /* The recipes' colours on the chart of a coffee's cups (v9.40): distinct,
+     warm and cool, never green. */
+  const SPOT_COLOURS = ["#c8813f", "#4f93e6", "#d58ab3", "#e0b04a", "#9b7ad8", "#c45a4a", "#8a9bb0", "#b8865b"];
+
+  /* A click on a dot opens that cup in the side panel (or wherever a cup
+     opens on this screen). Delegated once on the document: the card is
+     rewritten at each render. The card itself is clickable: the dot's click
+     stays the dot's. */
+  let spotWired = false;
+  function wireSpot() {
+    if (spotWired || typeof document.addEventListener !== "function") return;
+    spotWired = true;
+    document.addEventListener("click", ev => {
+      const g = ev.target && ev.target.closest ? ev.target.closest("[data-spot-cup]") : null;
+      if (!g) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      const ext = (DATA.state.extractions || []).find(x => x.id === g.getAttribute("data-spot-cup"));
+      if (ext && typeof UI.openCup === "function") UI.openCup(ext, g);
+    }, true);
+  }
+  wireSpot();
+
   /* WHERE THIS CUP RANKS AMONG THOSE OF THE SAME COFFEE (v8.39). The card
      takes the height of the key figures and left an empty band of about 85 px
      between the tastes and the footer. It now answers the question you ask in
@@ -117,22 +140,27 @@
     const position = Math.abs(gap) < 0.2 ? I18N.t("rank_on_average")
       : I18N.t(gap > 0 ? "rank_above" : "rank_below", { x: fmtRating(Math.abs(gap)) });
 
-    /* v9.39: OVER TIME. Chris found the strip of dots on a score axis hard to
-       read: the cups now run along the dates, the score going up, joined by a
-       thin line, the coffee's average as a dashed level, this cup large and
-       copper. The line draws itself (css/finishing.css). */
+    /* v9.40: ONE DOT PER CUP, OVER TIME. The dates run along, the score goes
+       up, each cup is its own dot in the colour of its recipe (legend under the
+       chart), the coffee's average a dashed level, this cup large. A click on
+       a dot opens that cup in the side panel (wireSpot); its title says which
+       cup it is. No line between the dots: each cup stays a cup. */
     const list = siblings.slice().sort((p, q) => String(p.date_time).localeCompare(String(q.date_time)));
     const time = x => new Date(String(x.date_time).slice(0, 16)).getTime();
     const t0 = time(list[0]), t1 = time(list[list.length - 1]);
     const low = Math.max(0, Math.floor(Math.min(...notes)) - 1), high = 10;
-    const L = 30, R = 586, T = 30, B = 118;
-    // Spread by date, never two cups on the same pixel: a minimum gap, then rescaled.
+    const L = 30, R = 586, T = 26, B = 118;
     let xs = list.map(x => (t1 > t0 ? (time(x) - t0) / (t1 - t0) : list.length > 1 ? list.indexOf(x) / (list.length - 1) : 0.5));
-    const minGap = list.length > 1 ? Math.min(0.6 / (list.length - 1), 0.04) : 0;
+    const minGap = list.length > 1 ? Math.min(0.6 / (list.length - 1), 0.025) : 0;
     for (let i = 1; i < xs.length; i++) if (xs[i] - xs[i - 1] < minGap) xs[i] = xs[i - 1] + minGap;
     const span = xs[xs.length - 1] > 1 ? xs[xs.length - 1] : 1;
-    xs = xs.map(v => L + (v / span) * (R - L));
+    xs = xs.map(v => L + 8 + (v / span) * (R - L - 16));
     const y = n => B - ((n - low) / (high - low)) * (B - T);
+    // The recipes of this coffee, the most brewed first, each its colour.
+    const count = {};
+    list.forEach(x => { const k = x.recipe || x.method || "?"; count[k] = (count[k] || 0) + 1; });
+    const recipes = Object.keys(count).sort((p, q) => count[q] - count[p]);
+    const colour = k => SPOT_COLOURS[recipes.indexOf(k) % SPOT_COLOURS.length];
     let svg = "";
     const stepY = high - low > 6 ? 2 : 1;
     for (let n = Math.ceil(low); n <= high; n += stepY) {
@@ -141,31 +169,34 @@
     }
     const ym = y(avg);
     svg += '<line class="ls-avg" x1="' + L + '" y1="' + ym.toFixed(1) + '" x2="' + R + '" y2="' + ym.toFixed(1) + '"></line>' +
-      // The average's name as a small legend above the plot, never over a dot.
       '<line class="ls-avg" x1="' + (R - 150) + '" y1="10" x2="' + (R - 126) + '" y2="10"></line>' +
       '<text class="ls-avg-label" x="' + R + '" y="14" text-anchor="end">' + I18N.t("rank_average", { m: fmtRating(avg) }) + "</text>";
-    const pts = list.map((x, i) => [xs[i], y(Number(x.score_10))]);
-    const path = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
-    svg += '<path class="ls-area" d="' + path + " L" + pts[pts.length - 1][0].toFixed(1) + " " + B + " L" + pts[0][0].toFixed(1) + " " + B + ' Z"></path>' +
-      '<path class="ls-line" pathLength="1" d="' + path + '"></path>';
+    // The dates: up to six, evenly spread over the time the coffee covers.
+    const dayLabel = t => new Date(t).toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" });
+    const ticks = t1 > t0 ? Math.min(6, Math.max(2, list.length)) : 1;
+    for (let k = 0; k < ticks; k++) {
+      const f2 = ticks === 1 ? 0.5 : k / (ticks - 1);
+      const xt = L + 8 + f2 * (R - L - 16);
+      svg += '<line class="ls-tick" x1="' + xt.toFixed(1) + '" y1="' + B + '" x2="' + xt.toFixed(1) + '" y2="' + (B + 4) + '"></line>' +
+        '<text x="' + xt.toFixed(1) + '" y="' + (B + 19) + '" text-anchor="' + (ticks > 1 && k === 0 ? "start" : ticks > 1 && k === ticks - 1 ? "end" : "middle") + '">' +
+        dayLabel(t1 > t0 ? t0 + f2 * (t1 - t0) : t0) + "</text>";
+    }
+    const tip = x => dayLabel(time(x)) + " · " + (x.recipe || x.method || "") + " · " + fmtRating(Number(x.score_10));
     list.forEach((x, i) => {
-      if (x.id === e.id) return;
-      svg += '<circle class="ls-dot" style="--i:' + i + '" cx="' + pts[i][0].toFixed(1) + '" cy="' + pts[i][1].toFixed(1) + '" r="3.2"></circle>';
+      const me = x.id === e.id;
+      const cx = xs[i].toFixed(1), cy = y(Number(x.score_10)).toFixed(1);
+      svg += '<g class="ls-cup' + (me ? " ls-me" : "") + '" data-spot-cup="' + titleAttr(x.id) + '" style="--i:' + i + ";--c:" + colour(x.recipe || x.method || "?") + '">' +
+        "<title>" + TOOLS.escapeHtml(tip(x)) + "</title>" +
+        '<circle class="ls-hit" cx="' + cx + '" cy="' + cy + '" r="11"></circle>' +
+        '<circle class="ls-dot" cx="' + cx + '" cy="' + cy + '" r="' + (me ? 7.5 : 4.6) + '"></circle></g>';
     });
-    const me = list.findIndex(x => x.id === e.id);
-    if (me >= 0) svg += '<circle class="ls-me" cx="' + pts[me][0].toFixed(1) + '" cy="' + pts[me][1].toFixed(1) + '" r="7"></circle>';
-    // The dates: the first, the last, and the middle one when there is room.
-    const label = x => new Date(String(x.date_time).slice(0, 10) + "T12:00").toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" });
-    const marks = [0, list.length - 1];
-    if (list.length >= 5) marks.splice(1, 0, Math.floor((list.length - 1) / 2));
-    marks.forEach((i, k) => {
-      svg += '<text x="' + pts[i][0].toFixed(1) + '" y="' + (B + 18) + '" text-anchor="' + (k === 0 ? "start" : k === marks.length - 1 ? "end" : "middle") + '">' + label(list[i]) + "</text>";
-    });
+    const legend = '<p class="ls-legend">' + recipes.map(k => '<span><i style="--c:' + colour(k) + '"></i>' +
+      TOOLS.escapeHtml(I18N.tr(k)) + " <small>" + count[k] + "</small></span>").join("") + "</p>";
     return '<div class="last-spot" role="img" aria-label="' + titleAttr(I18N.t("rank_aria", {
       n: notes.length, coffee: I18N.tr(e._c.coffee_name), score: fmtRating(rating), m: fmtRating(avg) })) + '">' +
       '<p class="last-spot-head"><span>' + I18N.t("rank_among", { n: notes.length, coffee: I18N.tr(e._c.coffee_name) }) + "</span>" +
       "<span><b>" + rankText + "</b>, " + position + "</span></p>" +
-      '<svg class="ls-time" viewBox="0 0 600 ' + (B + 24) + '" aria-hidden="true">' + svg + "</svg></div>";
+      '<svg class="ls-time" viewBox="0 0 600 ' + (B + 26) + '">' + svg + "</svg>" + legend + "</div>";
   }
 
   /* The TARGET of a footer figure: what the recipe aimed for, otherwise your
