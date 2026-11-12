@@ -12,15 +12,17 @@ Un site web 100 pour cent local (HTML, CSS, JS purs, zéro build, zéro serveur)
 que Chris ouvre dans Chrome en double-cliquant `index.html`, et qui tourne aussi
 en PWA privée sur Cloudflare Workers avec synchronisation entre appareils. Il y
 suit ses extractions de café sur deux machines, une Bialetti Brikka 2 tasses et un
-Hario Switch 02, avec un moulin Timemore C5 ESP. Les écrans (v9.21) : Accueil,
-la saisie (« Nouvelle tasse »), Journal, Analyses, Réglages gagnants, Guide
-(recettes, moulin, diagnostic, boutiques), Paramètres.
+Hario Switch 02, avec un moulin Timemore C5 ESP. Les écrans : Accueil (tes cafés
+ouverts d'abord, v9.41), la saisie (« Nouvelle tasse »), Journal, Analyses, Mes
+cafés, Réglages gagnants, Guide (recettes, moulin, diagnostic, boutiques),
+Paramètres.
 
 ## Qui est l'utilisateur
 
 Chris, français, vit au Vietnam. Café noir sans sucre. Aime : chocolat noir,
 caramel, corps rond, faible acidité, profils tropicaux fermentés. Déteste :
-l'amertume brûlée et l'acidité citron. Pas encore de balance de précision.
+l'amertume brûlée et l'acidité citron. Il a une balance (son bocal pèse 322,2 g à vide), un thermomètre, et brasse à
+l'eau en bouteille.
 Il tutoie et veut qu'on le tutoie. Il édite ses données via l'interface,
 jamais à la main dans les CSV.
 
@@ -52,8 +54,9 @@ jamais à la main dans les CSV.
 - Ouvre `index.html` dans un Chrome ou Chromium pour voir le site. Tout
   marche en `file://`, y compris la liaison de dossier (API File System
   Access, Chrome et Edge seulement).
-- Après CHAQUE modification : lance les cinq suites de tests (commandes dans
-  DOCUMENTATION.md, section Tests, moins de deux secondes en tout), le scan
+- Après CHAQUE modification : lance TOUTES les suites de tests
+  (`tools/*.test.mjs` et `worker/*.test.mjs`, 18 en v9.42, liste dans
+  DOCUMENTATION.md, section Tests, quelques secondes en tout), le scan
   anti-tirets, et vérifie la bascule EN si tu as ajouté du texte.
 - Monter de version : `node tools/bump_version.mjs 7.90`, puis une ligne en
   tête de `CHANGELOG.md`. Jamais de version à la main : elle vit à trois
@@ -67,13 +70,14 @@ jamais à la main dans les CSV.
   `python3 tools/gen_demo.py` (seed fixe, sortie déterministe). Python n'est
   pas installé sur la machine de Chris.
 - `README.md` est en ANGLAIS, et doit le rester : le depot est public. C’est la
-  seule exception, `DOCUMENTATION.md`, `DECISIONS.md`, `CHANGELOG.md`, les
-  commentaires et l’interface restent en francais.
+  seule exception, `DOCUMENTATION.md`, `DECISIONS.md`, `CHANGELOG.md`,
+  `AUDIT.md` et l’interface restent en francais.
 - Commits en ANGLAIS, clairs, un sujet par commit, une version par commit.
-  Idem pour les noms de variables et de fonctions du code NOUVEAU (`worker/`
-  par exemple). Le code applicatif existant est nommé en français, on ne le
-  renomme pas en masse. La doc, les commentaires et l'interface restent en
-  français.
+  TOUT LE CODE est en anglais depuis la v9.06 : noms de variables, de
+  fonctions et de fichiers, commentaires, ids, classes CSS, clés i18n, tables
+  et colonnes des données. Les anciens noms français ne sont lus que par
+  `js/legacy-names.js` (et sa copie du Worker) : ne jamais en réintroduire
+  ailleurs. La doc et l'interface restent en français.
 - Le site se déploie sur Cloudflare Workers (fichiers statiques, AUCUN
   build), derrière une porte d'entrée à mot de passe unique. Procédure
   complète, secrets à définir et pièges dans DOCUMENTATION.md, section "Git et

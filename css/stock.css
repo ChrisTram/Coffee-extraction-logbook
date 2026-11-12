@@ -91,7 +91,8 @@
 .cf-fact.is-low dd { color: var(--danger); }
 .cf-best { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "label act" "what act"; column-gap: 12px; align-items: center; }
 .cf-best-label { grid-area: label; font-size: 0.75rem; color: var(--muted); }
-.cf-best-what { grid-area: what; font-size: 0.86rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* v9.42: the best setting on two lines when it needs them, its score always in sight. */
+.cf-best-what { grid-area: what; font-size: 0.86rem; line-height: 1.35; color: var(--text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .cf-best-what b { color: var(--ink); font-variant-numeric: tabular-nums; }
 .cf-redo { grid-area: act; min-height: 44px; }
 .cf-last { margin: 0; font-size: 0.8rem; color: var(--text); font-variant-numeric: tabular-nums; }
@@ -128,7 +129,6 @@
 }
 .cf-line { display: flex; justify-content: center; align-items: baseline; gap: 10px; font-variant-numeric: tabular-nums; }
 .cf-g { font-size: 0.82rem; color: var(--muted); white-space: nowrap; }
-.cf-score { font-family: var(--serif); font-size: 1.2rem; line-height: 1; color: var(--ink); }
 
 /* UNDER THREE CUPS THE GLASS BLUSHES: copper red, never green. */
 .cf-jar.is-low .jar-glass, .cj-tile.is-low .jar-glass { stroke: var(--danger); }
@@ -142,6 +142,8 @@
 .cf-jar.is-done .cf-art { width: 44px; opacity: 0.72; filter: saturate(0.6); }
 .cf-done-text { display: grid; gap: 2px; min-width: 0; align-self: center; }
 .cf-done-avg, .cf-done-span { font-size: 0.75rem; color: var(--muted); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+/* v9.42: the final average wraps on a narrow tile instead of being cut. */
+.cf-done-avg { white-space: normal; }
 .cf-done-avg { color: var(--text); }
 
 /* Its sheet is open: the jar is in the sheet, its place on the shelf is dashed. */

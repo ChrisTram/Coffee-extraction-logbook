@@ -45,14 +45,16 @@ tracking, no network needed. Your data stays in CSV files on your own disk.
 - **Work everywhere, offline.** Installable as an app on the phone, usable with
   no connection, and syncable between devices if you host it yourself.
 
-## The six screens
+## The screens
 
 | Screen | What you do there |
 |---|---|
-| **Dashboard** | The last cup in full, the key figures, the 30-day chart, the activity calendar, and what your data says |
-| **New brew** | The form and the timer, with the recipe and the coffee card beside them |
-| **History** | Every cup, filterable and sortable, with a detail card on hover, a comparator and a CSV export |
-| **My best settings** | The best combination found for each coffee, and what is still missing to conclude |
+| **Home** | Your open coffees first: grams left, average, trend and scores cup by cup, with a Brew button; then the last cup, your week, the latest cups and one finding |
+| **New cup** | The form and the timer, with the recipe and the coffee card beside them |
+| **Journal** | Every cup, by bag, by date or as a table, filterable and sortable, with a side panel to rate and edit, a comparison page and a CSV export |
+| **Analytics** | The key figures, the month in bars, the calendar, your coffees and recipes ranked, your tastes, the grinder map, and what your data says, over 7 days, 30 days, 3 months or everything |
+| **My coffees** | Your bags as jars, to the gram: open, to buy again, finished, with the pace and the end date of each open bag |
+| **Winning settings** | The best combination found for each coffee, and what is still missing to conclude |
 | **Guide** | Recipes, grinder converter, taste diagnosis, vocabulary, shops and buying list |
 | **Settings** | Defaults, language, data, and everything else |
 

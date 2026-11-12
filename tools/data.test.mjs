@@ -1893,9 +1893,10 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
    it: the heatmap and the grinder ruler are home-made SVG. */
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
-  // A preload (v8.75) executes nothing: only a script tag would.
+  // A prefetch executes nothing: only a script tag would.
   check("Chart.js is no longer a script tag", !/<script[^>]*chart.umd.js/.test(html));
-  check("but it is preloaded for the dashboard", html.includes('<link rel="preload" href="js/vendor/chart.umd.js?v='));
+  check("it is fetched at idle priority for Analyses, never preloaded against the first screen (v9.42)",
+    html.includes('<link rel="prefetch" href="js/vendor/chart.umd.js?v=') && !/rel="preload"[^>]*chart.umd/.test(html));
 
   const sw = readFileSync(join(ROOT, "sw.js"), "utf8");
   /* Still PRECACHED: deferred loading must work offline, it then reads the cache

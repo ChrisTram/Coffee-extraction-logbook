@@ -680,17 +680,6 @@ button { font-family: inherit; }
 
 /* Comparison table: only rows that DIFFER are highlighted,
    that is where the explanation of the rating gap lies. */
-.table-comparison { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-.table-comparison th, .table-comparison td {
-  padding: 8px 12px; border-bottom: 1px solid var(--lines);
-  text-align: left; vertical-align: top;
-}
-.table-comparison thead th { color: var(--muted); font-size: 0.78rem; }
-.table-comparison tbody th {
-  color: var(--muted); font-weight: 600; font-size: 0.78rem;
-  text-transform: uppercase; letter-spacing: 0.04em; width: 30%;
-}
-.table-comparison tr.deferred td { background: var(--accent-bg); color: var(--ink); font-weight: 600; }
 
 /* Duration in minutes and seconds: two narrow fields on one line. */
 .duration { display: flex; align-items: center; gap: 6px; }
@@ -710,17 +699,6 @@ button { font-family: inherit; }
 .duration span { font-size: 0.8rem; color: var(--muted); }
 
 /* Stock of the current bag, in the coffee list. */
-.badge-stock {
-  font-size: 0.75rem;
-  padding: 2px 7px;
-  border-radius: 999px;
-  white-space: nowrap;
-  border: 1px solid transparent;
-}
-.badge-stock-ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); background: color-mix(in srgb, var(--ok) 12%, transparent); }
-.badge-stock-low { color: var(--accent-strong); border-color: var(--warn-border); background: var(--warn-bg); }
-.badge-stock-empty { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, transparent); background: color-mix(in srgb, var(--danger) 12%, transparent); }
-.coffee-row.depleted b { text-decoration: line-through; text-decoration-thickness: 1px; }
 
 /* Mini stats, under the activity calendar: the number on the left, the
    label on the right, in TWO columns. As one column of five rows they

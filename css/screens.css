@@ -440,14 +440,6 @@ html[data-theme="dark"] .card-dark {
 .mention-failed { margin-left: 7px; color: var(--danger); font-size: 0.76rem; }
 
 /* ---------- Key figures: two by two ---------- */
-.card-figures .kpis {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin-bottom: 0;
-  /* Tightened (v8.67): it sets the row height along with the last
-     cup, and that row pushed the latest brews below the screen. */
-  gap: 8px 12px;
-}
-.card-figures .kpi-value { font-size: 1.5rem; }
 /* Total, overall rating and caffeine: three aligned lines under a hairline, at
    the bottom of the card. As one sentence, they read like a footnote;
    as lines, the figure is found at first glance. */
@@ -715,19 +707,6 @@ div.analysis-reading p + p { margin-top: 8px; }
    they line up from one row to the next, and separators in flex rather than
    text so that wrapping on phone does not leave an orphan middle
    dot at the start of a line. */
-.last-measures {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 2px 7px;
-  margin-top: 2px;
-  font-size: 0.82rem;
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
-}
-.last-measures b { color: var(--ink); font-weight: 600; }
-.last-measures small { color: var(--muted); }
-.last-measures > span { color: var(--lines-chart); }
 
 /* ---------- Empty states ---------- */
 
@@ -736,7 +715,6 @@ div.analysis-reading p + p { margin-top: 8px; }
   padding: 60px 24px;
   color: var(--muted);
 }
-.empty-state-icon { font-size: 3rem; margin: 0; }
 .empty-state h2 { color: var(--ink); }
 .empty-state p { max-width: 460px; margin: 10px auto; }
 .empty-state-actions { display: flex; gap: 10px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
@@ -1290,16 +1268,6 @@ input:focus, select:focus, textarea:focus {
   background: color-mix(in srgb, var(--second) 15%, var(--panel));
   color: var(--second);
   border: 1px solid color-mix(in srgb, var(--second) 45%, transparent);
-  border-radius: 999px;
-  padding: 2px 8px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-.badge-rating {
-  font-size: 0.75rem;
-  background: color-mix(in srgb, var(--accent) 15%, var(--panel));
-  color: var(--accent-strong);
-  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
   border-radius: 999px;
   padding: 2px 8px;
   font-weight: 700;

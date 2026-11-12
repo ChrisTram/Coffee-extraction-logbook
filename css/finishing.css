@@ -1175,10 +1175,6 @@ html[data-theme="light"] .skeleton { --sk-shine: var(--panel); }
 .sk-name { width: 45%; height: 1.7rem; }
 .sk-text { width: 70%; height: 0.9rem; }
 .sk-text + .sk-text { width: 46%; }
-.sk-block { height: 64px; margin-top: auto; border-radius: 12px; }
-.sk-tall { flex: 1; min-height: 180px; margin-top: 0; }
-.sk-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.sk-tiles .sk-bone { height: 58px; border-radius: 12px; }
 .sk-row { height: 46px; border-radius: 10px; }
 @media (prefers-reduced-motion: reduce) {
   .sk-bone { animation: none; }
@@ -1319,7 +1315,6 @@ html[data-theme="light"] .skeleton { --sk-shine: var(--panel); }
   opacity: 0; pointer-events: none; box-shadow: 0 0 0 2px var(--accent);
 }
 .tw.tw-on .tw-col input:focus { opacity: 1; pointer-events: auto; }
-.tw-caption { flex: 0 0 100%; font-size: 0.78rem; color: var(--muted); }
 .tw-quick { display: flex; flex-wrap: wrap; gap: 6px; }
 .tw-quick:empty { display: none; }
 .tw-q {
@@ -1626,21 +1621,7 @@ g.jar-shake { transform-box: fill-box; }
 }
 .sp-link:hover, .sp-link:focus-visible { color: var(--accent-strong); text-decoration-color: currentColor; }
 .sp-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
-.sp-score { display: grid; justify-items: end; gap: 2px; text-align: right; }
 .sp-rating { font-family: var(--serif); font-weight: 400; font-size: 3.4rem; line-height: 0.95; color: var(--accent-strong); font-variant-numeric: tabular-nums; }
-.sp-score span { font-size: 0.78rem; color: var(--muted); }
-.sp-unrated { font-size: 0.85rem; color: var(--muted); }
-.sp-kpis {
-  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 14px;
-  padding: 14px 16px; border-radius: var(--radius-small); background: var(--panel-2);
-}
-.sp-kpi { display: grid; gap: 2px; min-width: 0; }
-.sp-kpi b { font-family: var(--serif); font-weight: 400; font-size: 1.5rem; line-height: 1.1; color: var(--ink); font-variant-numeric: tabular-nums; }
-.sp-kpi b small { margin-left: 6px; font-family: var(--sans); font-size: 0.75rem; color: var(--muted); }
-.sp-kpi span { font-size: 0.75rem; color: var(--muted); }
-.sp-diag { margin: 0; font-size: 0.88rem; font-weight: 600; color: var(--accent-strong); }
-.sp-detail .detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.sp-detail .detail-comment { font-size: 0.95rem; line-height: 1.5; }
 .sp-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .sp-actions .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-strong); background: var(--accent-bg); }
 .sp-recipe .recipe-card { border-left: 0; border-right: 0; border-bottom: 0; border-radius: 0; box-shadow: none; padding: 14px 0 0; background: transparent; }
@@ -1913,7 +1894,6 @@ html[data-theme="dark"] .grid-dashboard > .card-dark { box-shadow: var(--shadow-
    one, otherwise this later rule would beat the media query of screens.css. */
 .big-rating { font-size: 4.55rem; }
 @media (max-width: 560px) { .big-rating { font-size: 3.15rem; } }
-.sh-rating b { font-size: 3.75rem; }
 .sp-rating { font-size: 3.95rem; }
 .jn-avg { font-size: 2.2rem; }
 .h-card-rating { font-size: 1.75rem; line-height: 1; }
@@ -1948,24 +1928,16 @@ html[data-theme="dark"] .grid-dashboard > .card-dark { box-shadow: var(--shadow-
 .last-spot .ls-grid { stroke: var(--lines); stroke-width: 1; }
 .last-spot .ls-avg { stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 4 4; }
 .last-spot .ls-avg-label { fill: var(--muted); }
-.last-spot .ls-area { fill: var(--accent); opacity: 0.08; stroke: none; }
-.last-spot .ls-line {
-  fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; opacity: 0.75;
-  stroke-dasharray: 1; stroke-dashoffset: 1; animation: ls-draw 900ms cubic-bezier(0.2, 0.8, 0.2, 1) 120ms forwards;
-}
 .last-spot .ls-dot { fill: var(--text); opacity: 0.6; transform-box: fill-box; transform-origin: center;
   animation: ls-pop 320ms ease-out both; animation-delay: calc(140ms + var(--i, 0) * 45ms); }
 .last-spot .ls-me { fill: var(--accent); stroke: var(--panel-2); stroke-width: 2.5; transform-box: fill-box; transform-origin: center;
   animation: ls-pop 420ms cubic-bezier(0.2, 0.8, 0.2, 1.4) 700ms both; }
-@keyframes ls-draw { to { stroke-dashoffset: 0; } }
 @keyframes ls-pop { from { transform: scale(0); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
-  .last-spot .ls-line { animation: none; stroke-dashoffset: 0; }
   .last-spot .ls-dot, .last-spot .ls-me { animation: none; }
 }
 
 /* ---------- v9.40: one dot per cup, a colour per recipe ---------- */
-.last-spot .ls-line, .last-spot .ls-area { display: none; }
 .last-spot .ls-tick { stroke: var(--lines); }
 .last-spot .ls-cup { cursor: pointer; }
 .last-spot .ls-hit { fill: transparent; }

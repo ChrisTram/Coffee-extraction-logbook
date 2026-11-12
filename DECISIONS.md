@@ -2636,6 +2636,28 @@ projet) ; charger les écrans à la demande (10 pour cent du chemin critique pou
 une contrainte d'ordre fragile) ; remplacer Chart.js par du SVG (70 Ko gzip déjà
 chargés à part et mis en cache).
 
+### v9.42 : Chart.js en prefetch, pas en preload
+
+Le `<link rel="preload">` de la v8.75 datait du temps où le tableau de bord
+dessinait le graphe des 30 jours dès l'ouverture. Depuis la v9.21 l'accueil ne
+dessine plus rien avec Chart.js, mais le lien était resté « pour qu'Analyses
+s'ouvre d'un coup » : un préchargement est une requête de priorité HAUTE, qui
+faisait la course avec les 78 scripts du premier écran pour 205 Ko que la
+plupart des ouvertures n'utilisent pas. `prefetch` demande la même chose à
+priorité basse, une fois le reste servi. Le service worker le garde de toute
+façon en cache pour le hors ligne. Mesure à refaire sur le site déployé
+(`AUDIT.md`, « Ce qui reste », 3) avant d'aller plus loin sur le poids du JS.
+
+### v9.42 : trouver le code mort sans se tromper
+
+Un balayage par script (classes CSS jamais produites, noms exportés jamais
+appelés, clés de texte jamais demandées) a trouvé peu, et s'est trompé une
+fois : six clés de `js/compare.js` sont construites en deux morceaux
+(`"cmp_coarser" + "_little"`, `"cmp_time_back" + flow`) et paraissaient mortes.
+`tools/journal.test.mjs` l'a attrapé. Règle : une clé n'est morte que si aucun
+littéral du code n'en est un préfixe complété par un autre littéral ; et on
+relance les suites avant de croire un balayage.
+
 ## Tests
 
 ### Ce que chaque suite couvre, et le bug qui l'a motivée

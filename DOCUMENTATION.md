@@ -2164,9 +2164,9 @@ tourne AVANT le service des fichiers, ce qui permet une porte d'entrée.
   repo. Si un jour ce dossier se retrouve dans l'arborescence, l'ajouter au
   `.gitignore`. Les CSV de `demo/` sont eux des livrables (démo générée).
 - Commits en ANGLAIS, un sujet par commit. Branche de production : `main`.
-  Les noms de variables et de fonctions du code nouveau sont en anglais eux
-  aussi. Le code applicatif existant reste nommé en français, on ne renomme
-  pas en masse. Doc, commentaires et interface restent en français.
+  Tout le code est en anglais depuis la v9.06 (noms, commentaires, ids,
+  classes, clés i18n, données) ; les anciens noms français ne sont lus que par
+  `js/legacy-names.js`. La doc et l'interface restent en français.
 - Le dépôt est PUBLIC. Aucun identifiant, aucun mot de passe, aucun token
   dedans, jamais. Les secrets vivent dans Cloudflare (voir plus bas).
 - Remote : `https://github.com/ChrisTram/Coffee-extraction-logbook.git`.

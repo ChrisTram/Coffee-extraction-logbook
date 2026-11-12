@@ -10,7 +10,6 @@
 const I18N_FR = {
     doc_title: { fr: "Carnet d'extraction : Brikka et Switch" },
 
-    kpi_today: { fr: "aujourd'hui" },
     date_today: { fr: "Aujourd'hui" },
     history_actions: { fr: "Actions sur cette tasse" },
     brew_view_recipe: { fr: "La recette" },
@@ -75,22 +74,13 @@ const I18N_FR = {
     history_filter_until: { fr: "Jusqu'au {d}" },
     history_filter_remove: { fr: "Retirer le filtre {f}" },
     date_yesterday: { fr: "Hier" },
-    kpi_week: { fr: "cette semaine" },
-    kpi_total: { fr: "au total" },
-    kpi_score: { fr: "note moyenne globale" },
-    kpi_score_7d: { fr: "note moyenne 7 jours" },
-    kpi_caffeine: { fr: "caféine par jour, 7 jours (estimation)" },
 
     chart_trend: { fr: "Tendance, moyenne des 5 dernières tasses" },
     chart_daily_score: { fr: "Note moyenne du jour" },
-    chart_coffee_grams: { fr: "Café consommé (g)" },
     tip_coffee_grams: { fr: "{g} g de café" },
-    chart_brews: { fr: "Extractions" },
     axis_score: { fr: "Note sur 10" },
     axis_average_score: { fr: "Note moyenne" },
     axis_grind: { fr: "Mouture (microns)" },
-    axis_coffee_age: { fr: "Âge du café (jours après torréfaction)" },
-    unit_days: { fr: "jours" },
     tip_caffeine: { fr: "Caféine : environ {mg} mg" },
     count_brews: { fr: "{n} extractions" },
 
@@ -223,7 +213,6 @@ const I18N_FR = {
     heatmap_none: { fr: "aucune extraction" },
     heatmap_one: { fr: "{n} extraction" },
     heatmap_many: { fr: "{n} extractions" },
-    heatmap_score: { fr: "note moyenne {x}" },
     // Cards that can stay empty with perfectly valid data.
     // Each message gives the REAL cause and the action that unblocks it.
     empty_nothing: { fr: "Aucune extraction notée pour l'instant. Note tes tasses et ce graphique se remplira." },
@@ -236,11 +225,7 @@ const I18N_FR = {
     empty_duel: { fr: "Aucun café n'est encore passé dans les deux machines avec une note." },
 
     // Stock of the current bag.
-    stock_left: { fr: "reste {g} g, environ {n} tasses" },
     stock_empty: { fr: "sachet fini" },
-    stock_title: { fr: "Sachet de {f} g. {c} g consommés, {r} g restants. Estimation à {d} g par tasse, {src}." },
-    stock_dose_average: { fr: "ta dose moyenne sur ce café" },
-    stock_dose_fallback: { fr: "la dose de repli, ce café n'a pas encore d'extraction" },
     not_rated_yet: { fr: "pas encore notée" },
     btn_new_bag: { fr: "Nouveau sachet" },
     bag_title: { fr: "Nouveau sachet : {n}" },
@@ -249,19 +234,13 @@ const I18N_FR = {
 
     // Expandable detail and comparator of the history.
     detail_coffee: { fr: "Café" },
-    detail_method: { fr: "Méthode" },
     detail_recipe: { fr: "Recette" },
-    detail_dose: { fr: "Dose" },
-    detail_water: { fr: "Eau" },
     detail_ratio: { fr: "Ratio" },
     detail_grind: { fr: "Mouture" },
     detail_temp: { fr: "Température" },
-    detail_heat_power: { fr: "Puissance de feu" },
     detail_preheated: { fr: "Eau préchauffée" },
-    detail_total: { fr: "Temps total" },
     detail_drawdown: { fr: "Écoulement" },
     detail_kettle: { fr: "Bouilloire sur le feu" },
-    temp_no_kettle: { fr: "Pour estimer le degré depuis le temps de chauffe : chronomètre une fois ta bouilloire, de l'eau du robinet au gros bouillon, et pose ce temps dans Paramètres, Ma bouilloire." },
     detail_volume: { fr: "Volume extrait" },
     detail_water_added: { fr: "Eau ajoutée" },
     detail_milk: { fr: "Lait" },
@@ -270,8 +249,6 @@ const I18N_FR = {
     detail_drink: { fr: "Volume boisson" },
     detail_cost: { fr: "Coût" },
     detail_score: { fr: "Note" },
-    detail_diagnosis: { fr: "Diagnostic" },
-    detail_descriptors: { fr: "Descripteurs" },
     detail_comment: { fr: "Commentaire" },
     detail_nothing: { fr: "Rien de plus à montrer sur cette extraction." },
     history_edit: { fr: "Ouvrir en édition" },
@@ -280,10 +257,7 @@ const I18N_FR = {
     history_compare: { fr: "Comparer avec une autre" },
     compare_one: { fr: "1 extraction sélectionnée, choisis en une seconde." },
     compare_two: { fr: "2 extractions sélectionnées." },
-    compare_gap: { fr: "{x} point d écart entre les deux. Les lignes surlignées sont les seules différences." },
-    compare_no_score: { fr: "Une des deux tasses n a pas de note. Les lignes surlignées sont les différences." },
     yes: { fr: "oui" },
-    no: { fr: "non" },
 
     // My best settings screen.
     setting_average: { fr: "{m} de moyenne sur {n} tasses" },
@@ -327,7 +301,6 @@ const I18N_FR = {
     toast_dial_applied: { fr: "Réglage par défaut : {m}. La saisie le prérempli maintenant." },
 
     bag_open_days: { fr: "Paquet ouvert depuis {n} jour(s)." },
-    detail_days_open: { fr: "Jours d'ouverture" },
 
     cost_per_cup: { fr: "{v} la tasse de {d} g" },
     cost_real: { fr: "({v} en café réel)" },
@@ -375,9 +348,6 @@ const I18N_FR = {
     months_short: { fr: "janv.|févr.|mars|avr.|mai|juin|juil.|août|sept.|oct.|nov.|déc." },
 
     range_aria: { fr: "Plages de mouture par méthode" },
-    range_microns: { fr: "microns" },
-    range_tip: { fr: "{name} : {min} à {max} µm, molette {dial}" },
-    range_ref_tip: { fr: "{dial} : {usage}, {clicks} crans, environ {u} µm" },
 
     conv_clicks: { fr: "crans" },
     conv_about: { fr: "environ" },
@@ -429,8 +399,6 @@ const I18N_FR = {
     entry_edit: { fr: "Modifier l'extraction" },
     entry_save: { fr: "Enregistrer l'extraction" },
     entry_save_changes: { fr: "Enregistrer la modification" },
-    chrono_start: { fr: "Démarrer le chrono" },
-    chrono_stop: { fr: "Arrêter et reporter" },
     live_ratio: { fr: "Ratio :" },
     live_grind: { fr: "Mouture :" },
     live_cost: { fr: "Coût :" },
@@ -455,9 +423,7 @@ const I18N_FR = {
     pick_coffee: { fr: "Choisir un café" },
     inactive_suffix: { fr: "(inactif)" },
     all: { fr: "Tous" },
-    list_machine: { fr: "machine : {m}" },
     list_inactive: { fr: "inactif" },
-    list_added: { fr: "ajouté le {d}" },
     list_hidden: { fr: "masquée" },
     list_custom: { fr: "recette personnelle" },
     btn_edit: { fr: "Modifier" },
@@ -485,7 +451,6 @@ const I18N_FR = {
     walkthrough_drain: { fr: "Laisser s'écouler entièrement." },
 
     history_count: { fr: "{n} extraction{s} sur {t}" },
-    range_less_than: { fr: "moins de {x}" },
 
     status_linked: { fr: "Dossier lié : \"{n}\". Chaque ajout ou modification est écrit dans les CSV, avec copie de travail dans le navigateur." },
     status_demo: { fr: "Jeu de démonstration actif, stocké dans le navigateur. Lie un dossier ou importe tes CSV pour passer à tes vraies données." },
@@ -628,7 +593,6 @@ const I18N_FR = {
     correction_ready: { fr: "La prochaine tasse t'attend dans la saisie, correction appliquée" },
     sheet_view: { fr: "Fiche du café" },
     sheet_highlight: { fr: "Fiche café" },
-    sheet_average: { fr: "moyenne, {n} tasses notées" },
     sheet_not_rated: { fr: "pas encore de tasse notée" },
     sheet_mostly: { fr: "{m} surtout" },
     sheet_bag: { fr: "Sachet en cours" },
@@ -670,7 +634,6 @@ const I18N_FR = {
     toast_import: { fr: "{n} lignes importées dans la table {t}" },
     toast_copied: { fr: "Message copié" },
     toast_times: { fr: "Temps reportés dans le formulaire" },
-    toast_marked: { fr: "Début de l'écoulement marqué" },
     toast_pick_coffee: { fr: "Choisis un café d'abord" },
     toast_dose: { fr: "Renseigne au moins la dose" },
     toast_fs_unavailable: { fr: "Liaison de fichiers non disponible dans ce navigateur (Chrome ou Edge requis, Brave : activer l'API dans brave://flags)" },
@@ -689,8 +652,6 @@ const I18N_FR = {
     milk_pick_cup: { fr: "Choisis une tasse pour calculer le lait." },
     toast_cup_invalid: { fr: "Donne un nom et une contenance à la tasse" },
     btn_delete: { fr: "Supprimer" },
-    family_chronicler: { fr: "Même famille : Chronicler" },
-    family_costaud: { fr: "Les deux Costaud" },
     timer_start: { fr: "Démarrer" },
     timer_pause: { fr: "Pause" },
     timer_resume: { fr: "Reprendre" },
@@ -713,7 +674,6 @@ const I18N_FR = {
     table_settings: { fr: "réglages" },
     table_all: { fr: "toutes les tables" },
 
-    confirm_delete: { fr: "Supprimer cette extraction ?" },
     confirm_demo: { fr: "Remplacer les données actuelles par la démonstration ? (Exporte les d'abord si tu veux les garder.)" },
     confirm_reset: { fr: "Repartir de zéro ? Les extractions sont effacées et les 5 cafés de départ restaurés. (Exporte d'abord si besoin.)" },
     confirm_restore: { fr: "Rétablir la version d'origine de cette recette ? Tes modifications seront perdues." },
@@ -791,9 +751,6 @@ const I18N_FR = {
     panel_position: { fr: "{i} sur {n}" },
     panel_hint_cup: { fr: "↑ ↓ ou J K : tasse suivante · ← → : la note · Échap : fermer" },
     panel_hint: { fr: "↑ ↓ ou J K : suivante · Échap : fermer" },
-    panel_dose: { fr: "café" },
-    panel_water: { fr: "eau" },
-    panel_dial: { fr: "molette" },
     panel_compare: { fr: "Comparer" },
     panel_compare_added: { fr: "Ajoutée au comparateur : choisis-en une seconde" },
     panel_compare_removed: { fr: "Retirée du comparateur" },
@@ -827,7 +784,6 @@ const I18N_FR = {
     palette_hint_sheet: { fr: "fiche" },
     palette_hint_cup: { fr: "tasse" },
     palette_hint_recipe: { fr: "recette" },
-    palette_hint_guide: { fr: "guide" },
     palette_journal: { fr: "Journal, par sachet" },
     palette_go: { fr: "Aller à : {s}" },
     palette_help: { fr: "Raccourcis clavier" },

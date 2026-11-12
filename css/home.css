@@ -329,23 +329,25 @@
 .hbd-name .dot-method { flex: none; }
 .hbd-score { flex: none; font-family: var(--serif); font-size: 2.2rem; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; transform-origin: 0 0; }
 
-/* The blocks arrive one after the other when the home opens. */
+/* The blocks arrive one after the other when the home opens. v9.42: the
+   whole cascade lands in about half a second (0,85 s before): the home is
+   the screen you come back to ten times a day, it must not make you wait. */
 .home-enter .home-head, .home-enter .ho-head, .home-enter .ho-item, .home-enter .ho-end, .home-enter .card-last,
 .home-enter .home-week-line, .home-enter .home-latest, .home-enter .home-finding, .home-enter .home-week {
-  animation: home-rise 560ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: home-rise 400ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
-.home-enter .ho-item, .home-enter .ho-end { animation-delay: calc(40ms + var(--i, 0) * 60ms); }
-.home-enter .card-last { animation-delay: 140ms; }
-.home-enter .home-week { animation-delay: 170ms; }
-.home-enter .home-week-line { animation-delay: 190ms; }
-.home-enter .home-latest { animation-delay: 220ms; }
-.home-enter .home-finding { animation-delay: 240ms; }
-@keyframes home-rise { from { opacity: 0; transform: translateY(16px); } }
+.home-enter .ho-item, .home-enter .ho-end { animation-delay: calc(20ms + var(--i, 0) * 40ms); }
+.home-enter .card-last { animation-delay: 80ms; }
+.home-enter .home-week { animation-delay: 100ms; }
+.home-enter .home-week-line { animation-delay: 110ms; }
+.home-enter .home-latest { animation-delay: 130ms; }
+.home-enter .home-finding { animation-delay: 150ms; }
+@keyframes home-rise { from { opacity: 0; transform: translateY(12px); } }
 /* The scores arrive after their card: the dots pop one after the other, the
    rolling line follows them. */
-.home-enter .ho-pt { animation: ho-pop 420ms cubic-bezier(0.3, 1.5, 0.5, 1) both; animation-delay: calc(260ms + var(--i, 0) * 28ms); }
-.home-enter .ho-roll { animation: ho-fade 380ms ease-out both; animation-delay: calc(300ms + var(--i, 0) * 28ms); }
-.home-enter .ho-avg { animation: ho-fade 500ms ease-out 200ms both; }
+.home-enter .ho-pt { animation: ho-pop 320ms cubic-bezier(0.3, 1.5, 0.5, 1) both; animation-delay: calc(150ms + var(--i, 0) * 16ms); }
+.home-enter .ho-roll { animation: ho-fade 260ms ease-out both; animation-delay: calc(180ms + var(--i, 0) * 16ms); }
+.home-enter .ho-avg { animation: ho-fade 360ms ease-out 110ms both; }
 @keyframes ho-pop { from { opacity: 0; transform: scale(0.2); } }
 @keyframes ho-fade { from { opacity: 0; } }
 
@@ -526,7 +528,8 @@
 .an-rank-row:hover:not(:disabled) { background: var(--panel-2); }
 .an-rank-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .an-rank-row:disabled { cursor: default; }
-.an-rank-name { grid-area: name; font-size: 0.88rem; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* v9.42: a long name takes a second line instead of losing its end (« Trung Nguyên Sáng Tạo 4 » was cut at 143 px). */
+.an-rank-name { grid-area: name; font-size: 0.88rem; font-weight: 600; line-height: 1.25; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .an-rank-bar { grid-area: bar; height: 8px; border-radius: 99px; background: var(--panel-3); overflow: hidden; }
 .an-rank-bar i {
   display: block; height: 100%; width: var(--w, 0%); border-radius: inherit; background: var(--accent); transform-origin: 0 50%;

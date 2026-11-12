@@ -312,7 +312,8 @@
     root.classList.remove("home-enter");
     void root.offsetWidth;
     root.classList.add("home-enter");
-    setTimeout(() => root.classList.remove("home-enter"), 1100);
+    // Until the last dot of the open coffees has landed (css/home.css).
+    setTimeout(() => root.classList.remove("home-enter"), 900);
   }
 
   // ---------- Render and wiring ----------
