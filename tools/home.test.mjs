@@ -5,7 +5,7 @@
  *
  * The pure parts of js/ui-home.js, js/ui-analytics.js and js/ui-story.js run
  * here on the real tools, i18n and tuning code, with a stub of the interface
- * core: the week, the « À brasser » suggestion, the period and its bars, the
+ * core: the week, the open coffees (trend, scale, which cup to brew again), the period and its bars, the
  * ranking, the tastes, the figures, the story of the month. Then the page,
  * the styles and the dictionaries are read for what the work promised: the
  * navigation, the draft dot, the lazy Analyses page, the calm path of every
@@ -40,7 +40,7 @@ const UI = {
   animateCounter() {}, fallbacks: { dose: 15 }, caffeineOf: e => (Number(e.dose_g) || 0) * 10,
 };
 const fakeDocument = { visibilityState: "visible", querySelector: () => null, addEventListener() {} };
-for (const f of ["js/ui-home.js", "js/ui-analytics.js", "js/ui-story.js"]) {
+for (const f of ["js/ui-home.js", "js/ui-home-open.js", "js/ui-analytics.js", "js/ui-story.js"]) {
   new Function("UI", "DATA", "TOOLS", "I18N", "TUNING", "CHARTS", "document", "window", "localStorage", read(f))(
     UI, DATA, TOOLS, I18N, TUNING, {}, fakeDocument, { addEventListener() {} }, fakeStorage);
 }
@@ -75,29 +75,55 @@ const before = (from, k) => { const d = new Date(from); d.setDate(d.getDate() - 
   check("an empty week has no average and no best", empty.cups === 0 && empty.mean === null && empty.best === null);
 }
 
-/* ---------- L1: « À brasser, si tu veux » ---------- */
+/* ---------- v9.41: the open coffees ---------- */
 {
   const now = new Date(2026, 9, 4, 10, 0);
-  const coffee = (id, name) => ({ id, name });
-  const bag = (id, leftover, cups) => ({ coffee: coffee(id, "Café " + id), leftover, cups, bag: 250 });
+  let t = UI.coffeeTrend([]);
+  check("a coffee never rated has no average and no trend", t.n === 0 && t.avg === null && t.dir === null && t.last === null);
+  t = UI.coffeeTrend([7, 8, 8]);
+  check("under four scores, the average, the last and the best, but no trend", t.n === 3 && Math.abs(t.avg - 23 / 3) < 1e-9 && t.last === 8 && t.best === 8 && t.dir === null && t.delta === null);
+  t = UI.coffeeTrend([6, 6, 8, 8]);
+  check("four scores: the last two against the two before", t.window === 2 && t.delta === 2 && t.dir === "up");
+  t = UI.coffeeTrend([8, 8, 8, 7, 6.5, 6.5]);
+  check("from six scores on, the last three against all the ones before", t.window === 3 && Math.abs(t.delta - (20 / 3 - 8)) < 1e-9 && t.dir === "down", JSON.stringify(t));
+  t = UI.coffeeTrend([7, 7.5, 7, 7.5, 7, 7.5]);
+  check("within a quarter of a point, it is stable", t.dir === "flat" && Math.abs(t.delta) < 0.25);
+  check("what is not a number is not a score", UI.coffeeTrend([7, "", undefined, "x", 8]).n === 3 && UI.coffeeTrend([7, "x", 8]).n === 2);
+
+  const roll = UI.rollingMean([6, 8, 7, 9]);
+  check("the rolling line is each score with the two before it", roll.length === 4 && roll[0] === 6 && roll[1] === 7 && roll[2] === 7 && roll[3] === 8);
+  let s = UI.sparkScale([8, 8, 8]);
+  check("a coffee that never moves sits in the middle of its chart", s.high - s.low >= 3 && Math.abs((s.high + s.low) / 2 - 8) < 1e-9, JSON.stringify(s));
+  s = UI.sparkScale([5.5, 9]);
+  check("half a point of air around the scores", s.low === 4.5 && s.high === 9.5);
+  s = UI.sparkScale([10, 10, 9.5]);
+  check("never past 10,5, and still three points tall", s.high === 10.5 && s.high - s.low >= 3);
+  check("and never under zero", UI.sparkScale([0, 1]).low === 0);
+
+  const rated = [cup("2026-10-01", { score_10: 8, method: "Brikka" }), cup("2026-10-02", { score_10: 6, method: "Switch" }),
+    cup("2026-10-03", { score_10: 7, method: "Switch" })];
+  const per = UI.methodAverages(rated);
+  check("the average per brewer, the most used first", per.length === 2 && per[0].method === "Switch" && per[0].avg === 6.5 && per[0].n === 2 && per[1].method === "Brikka" && per[1].avg === 8);
+
   const cupsOf = (id, n, from, o) => Array.from({ length: n }, (_, i) => cup(before(now, from + i), { coffee_id: id, score_10: 8, recipe: "Chronicler", grind_dial: "1.5.0", ...o }));
-  const recent = [...cupsOf("a", 3, 0), ...cupsOf("b", 3, 0, { score_10: 7 }), ...cupsOf("c", 2, 5)];
-  let s = UI.brewSuggestion({ bags: [bag("a", 120, 8), bag("b", 38, 2), bag("c", 0, 0)], exts: recent, analyzable: recent, now });
-  check("a bag down to three cups comes first, to finish it while it is good", s && s.coffeeId === "b" && s.reason.key === "brew_reason_low" && s.reason.vars.g === 38,
-    JSON.stringify(s && s.reason));
-  check("an empty bag is never suggested", UI.brewSuggestion({ bags: [bag("c", 0, 0)], exts: recent, analyzable: recent, now }) === null);
-  check("without a bag, nothing", UI.brewSuggestion({ bags: [], exts: [], analyzable: [], now }) === null);
-  s = UI.brewSuggestion({ bags: [bag("a", 120, 8), bag("c", 150, 10)], exts: recent, analyzable: recent, now });
-  check("then the bag left alone for three days or more", s.coffeeId === "c" && s.reason.key === "brew_reason_idle" && s.reason.vars.n === 5, JSON.stringify(s.reason));
-  s = UI.brewSuggestion({ bags: [bag("a", 120, 8), bag("n", 250, 16)], exts: recent, analyzable: recent, now });
-  check("a bag never brewed counts as left alone", s.coffeeId === "n" && s.reason.key === "brew_reason_new" && s.refId === null);
-  s = UI.brewSuggestion({ bags: [bag("a", 120, 8), bag("b", 160, 10)], exts: recent, analyzable: recent, now });
-  check("otherwise the best average", s.coffeeId === "a" && s.reason.key === "brew_reason_best", JSON.stringify(s.reason));
-  check("with its winning setting: three cups of the same signature", s.kind === "best" && s.recipe === "Chronicler" && s.grind === "1.5.0" &&
-    recent.some(e => e.id === s.refId && e.coffee_id === "a"));
-  const scattered = [cup(before(now, 0), { coffee_id: "d", score_10: 8, recipe: "Tetsu 4:6", grind_dial: "1.6.0", method: "Switch", temperature_c: 92 })];
-  s = UI.brewSuggestion({ bags: [bag("d", 30, 1)], exts: scattered, analyzable: scattered, now });
-  check("without a winning setting, the setting of its latest cup", s.kind === "last" && s.refId === scattered[0].id && s.temperature === 92);
+  const recent = [...cupsOf("a", 3, 0), ...cupsOf("b", 3, 0, { score_10: 7 })];
+  let b = UI.brewTarget("a", recent, recent);
+  check("« Brasser » takes the winning setting: three cups of the same signature", b && b.kind === "best" && recent.some(e => e.id === b.refId && e.coffee_id === "a"), JSON.stringify(b));
+  const scattered = [cup(before(now, 3), { coffee_id: "d", score_10: 8, recipe: "Tetsu 4:6", grind_dial: "1.6.0" }),
+    cup(before(now, 0), { coffee_id: "d", recipe: "One and Done", grind_dial: "1.4.0" })];
+  b = UI.brewTarget("d", scattered, scattered.filter(e => e.score_10 !== ""));
+  check("without a winning setting, the setting of its latest cup, rated or not", b && b.kind === "last" && b.refId === scattered[1].id, JSON.stringify(b));
+  check("a coffee never brewed has no cup to take a setting from", UI.brewTarget("n", recent, recent) === null);
+
+  const row = { coffee: { id: "a", name: "Café a" }, leftover: 120, cups: 8, bag: 250, pc: 48 };
+  const botched = cup(before(now, 1), { coffee_id: "a", score_10: 2 });
+  const o = UI.openCoffee(row, [...recent, botched], recent);
+  check("a card reads the coffee's analysable rated cups, oldest first", o.id === "a" && o.cups.length === 3 && o.total === 4 && o.trend.avg === 8 &&
+    String(o.cups[0].date_time) < String(o.cups[2].date_time));
+  check("and knows when the coffee was drunk last", o.latest.slice(0, 10) === before(now, 0));
+  const many = cupsOf("m", 30, 0);
+  check("the chart keeps the last 24 scores, the average all of them", UI.openCoffee({ ...row, coffee: { id: "m", name: "m" } }, many, many).cups.length === 24 &&
+    UI.openCoffee({ ...row, coffee: { id: "m", name: "m" } }, many, many).trend.n === 30);
 }
 
 /* ---------- L1: which finding first ---------- */
@@ -221,7 +247,14 @@ const before = (from, k) => { const d = new Date(from); d.setDate(d.getDate() - 
   const html = read("index.html");
   const home = html.slice(html.indexOf('<section id="screen-dashboard"'), html.indexOf('<section id="screen-analytics"'));
   const analytics = html.slice(html.indexOf('<section id="screen-analytics"'), html.indexOf("<!-- ================= SCREEN 2: ENTRY"));
-  check("the home keeps the last cup, the corner and the latest cups", ['id="card-last"', 'id="stock-corner"', 'id="latest-list"', 'id="home-band"', 'id="home-finding"', 'id="home-brew"'].every(s => home.includes(s)));
+  check("the home keeps the open coffees, the last cup and the latest cups", ['id="home-open"', 'id="card-last"', 'id="latest-list"', 'id="home-band"', 'id="home-finding"'].every(s => home.includes(s)));
+  check("the open coffees come right under the title, before the last cup", home.indexOf('class="title-page"') < home.indexOf('id="home-open"') && home.indexOf('id="home-open"') < home.indexOf('id="card-last"'));
+  check("what v9.41 took out of the home is gone: the corner, the bags column, the month, the suggestion",
+    ['id="stock-corner"', 'id="home-bags"', 'id="home-month"', 'id="home-brew"'].every(s => !home.includes(s)));
+  const openSrc = read("js/ui-home-open.js");
+  check("a card states the grams, opens the coffee sheet and brews", openSrc.includes('Math.round(s.leftover) + " g"') && openSrc.includes('class="ho-main" data-sheet="') && openSrc.includes("data-open-brew"));
+  check("a dot of its chart opens its cup", openSrc.includes('data-spot-cup="') && read("js/ui-last-cup.js").includes('closest("[data-spot-cup]")'));
+  check("the home shows five latest cups", /const LATEST_SHOWN = 5;/.test(read("js/ui-last-cup.js")));
   check("the analyses, the calendar, the chart and the drawings moved to Analyses",
     ['id="kpis"', 'id="g-heatmap"', 'id="g-30days"', 'id="insights"', 'id="card-drawings"', 'class="tabs-analyses"', 'id="card-recap"'].every(s => analytics.includes(s) && !home.includes(s)));
   check("the band lives outside the container box (fixed to the window)", home.indexOf('id="home-band"') < home.indexOf('id="dashboard-content"'));
@@ -267,12 +300,12 @@ const before = (from, k) => { const d = new Date(from); d.setDate(d.getDate() - 
 {
   const fr = read("js/i18n.fr.js") + read("js/i18n.fr2.js"), en = read("js/i18n.en.js");
   const used = new Set();
-  for (const f of ["js/ui-home.js", "js/ui-analytics.js", "js/ui-story.js", "js/ui-nav.js"]) {
+  for (const f of ["js/ui-home.js", "js/ui-home-open.js", "js/ui-analytics.js", "js/ui-story.js", "js/ui-nav.js"]) {
     for (const m of read(f).matchAll(/I18N\.t\("([a-z0-9_]+)"/g)) if (!m[1].endsWith("_")) used.add(m[1]);
   }
   ["an_month_title_7", "an_month_title_30", "an_month_title_90", "an_month_title_all", "an_bar", "an_bar_rated", "an_month_meta_unrated",
     "an_month_best_day", "an_month_best_week", "an_month_best_month", "an_period_7", "an_period_30", "an_period_90",
-    "brew_reason_low", "brew_reason_idle", "brew_reason_new", "brew_reason_best", "story_all_switch", "story_all_brikka", "story_discovery_over"].forEach(k => used.add(k));
+    "ho_trend_up", "ho_trend_down", "ho_title", "ho_title_ends", "ho_all", "ho_more", "story_all_switch", "story_all_brikka", "story_discovery_over"].forEach(k => used.add(k));
   const missing = [...used].filter(k => !new RegExp("^\\s*" + k + ": \\{ fr:", "m").test(fr) || !new RegExp("^\\s*" + k + ": ", "m").test(en));
   check("every text of the new screens exists in French and in English", missing.length === 0, missing.join(", "));
   const enObj = new Function(en + "\nreturn I18N_EN;")();
@@ -284,7 +317,7 @@ const before = (from, k) => { const d = new Date(from); d.setDate(d.getDate() - 
   check("the static words of the page have their English", untranslated.length === 0, untranslated.join(" | "));
   check("the screens keep their names in English: Home, Journal, Analytics, Winning settings",
     enObj.UI["Accueil"] === "Home" && enObj.UI["Analyses"] === "Analytics" && enObj.UI["Réglages gagnants"] === "Winning settings");
-  check("and the zones drawn in JS are left to the code that draws them", read("js/i18n.js").includes("#home-week,#home-week-line,#home-bags"));
+  check("and the zones drawn in JS are left to the code that draws them", read("js/i18n.js").includes("#home-week,#home-week-line,#home-open"));
 }
 
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);

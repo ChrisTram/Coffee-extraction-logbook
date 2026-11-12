@@ -134,23 +134,6 @@ const P = load("js/ui-panel-edit.js", stubUI()).panelEditMath;
   check("a botched cup's 10 is no milestone", MILESTONES.forEdit(failedTen, "e3", before[2], seen).celebrate.length === 0);
 }
 
-/* ---------- The average next to the grams ---------- */
-{
-  const H = load("js/ui-home-widgets.js", stubUI());
-  const m = H.coffeeAverages([
-    { coffee_id: "a", score_10: 8 }, { coffee_id: "a", score_10: "7" }, { coffee_id: "a", score_10: "" },
-    { coffee_id: "b", score_10: "" }, { coffee_id: "c", score_10: 6.5 },
-  ]);
-  check("the average of each coffee is over its rated cups only", m.get("a") === 7.5 && m.get("c") === 6.5);
-  check("a coffee without a rated cup has no average", !m.has("b"));
-  const stub = stubUI();
-  stub.analyzableExts = () => [{ coffee_id: "a", score_10: 8 }, { coffee_id: "a", score_10: 7.5 }];
-  const H2 = load("js/ui-home-widgets.js", stub, { DATA: { state: { extractions: [{ updated_at: 1 }] } } });
-  const html = H2.bagAverageHtml("a", "hb-avg");
-  check("the grams get « · 7,8 » in the serif of the scores", html.includes("<b>7,8</b>") && html.includes("hb-avg") && html.includes("bag-avg-sep"), html);
-  check("nothing for a coffee never rated", H2.bagAverageHtml("z", "sc-avg") === "");
-}
-
 /* ---------- The keys ---------- */
 {
   const S = load("js/ui-shortcuts.js", stubUI());
@@ -176,13 +159,11 @@ const P = load("js/ui-panel-edit.js", stubUI()).panelEditMath;
     read("js/ui-history.js").split("UI.rateMark(e)").length === 3 && read("js/ui-table.js").includes("UI.rateMark(e)") &&
     read("js/ui-dashboard.js").includes("UI.rateMark(e)") && read("js/ui-last-cup.js").includes("UI.rateAction(e)"));
   check("a figure given late rolls in from a dot", read("js/ui-scenes.js").includes('h.from === "" ? "·" : h.from'));
-  check("the rows and the chips carry the average", read("js/ui-home.js").includes('UI.bagAverageHtml(s.coffee.id, "hb-avg")') &&
-    read("js/ui-dashboard.js").includes('UI.bagAverageHtml(s.coffee.id, "sc-avg")'));
-  check("the small cards tilt with the others", read("js/ui-feel.js").includes(".home-widget"));
+  check("the average sits in each open coffee's card (v9.41)", read("js/ui-home-open.js").includes('class="ho-score"') && !read("js/ui-home-widgets.js").includes("bagAverageHtml"));
+  check("the wheel's card tilts with the others", read("js/ui-feel.js").includes(".home-widget"));
   const css = read("css/panel.css");
   check("every movement has its calm path", /prefers-reduced-motion: reduce\)[\s\S]*\.pe-rate\.pe-call[\s\S]*\.home-enter \.home-widget/.test(css));
   check("no green, only tokens for colours", !/#[0-9a-f]{3,6}\b|green|rgb\(/i.test(css));
-  check("a phone keeps its chips without the average", /@media \(max-width: 700px\) \{ \.sc-avg \{ display: none; \} \}/.test(css));
   const html = read("index.html"), sw = read("sw.js");
   ["js/ui-home-widgets.js", "js/ui-panel-edit.js", "js/ui-rate-sheet.js", "css/panel.css"].forEach(f =>
     check(f + " is in the page and precached", html.includes(f + "?v=") && sw.includes('"./' + f + '"')));
@@ -190,7 +171,7 @@ const P = load("js/ui-panel-edit.js", stubUI()).panelEditMath;
   const keys = [...fr.slice(fr.indexOf("// panel (v9.27)")).matchAll(/^\s+(\w+): \{ fr:/gm)].map(m => m[1]);
   const missing = keys.filter(k => !new RegExp("^\\s+" + k + ": \"", "m").test(en));
   check("every new French text has its English half (" + keys.length + " keys)", keys.length > 40 && missing.length === 0, missing.join(", "));
-  const used = new Set([...(edit + sheet + read("js/ui-home-widgets.js")).matchAll(/I18N\.t\("((?:pe|rate|hwg|bag_avg)_\w+)"/g)].map(m => m[1]));
+  const used = new Set([...(edit + sheet + read("js/ui-home-widgets.js")).matchAll(/I18N\.t\("((?:pe|rate|hwg)_\w+)"/g)].map(m => m[1]));
   const unknown = [...used].filter(k => !k.endsWith("_") && !keys.includes(k));
   check("every text the new files ask for exists", unknown.length === 0, unknown.join(", "));
 }

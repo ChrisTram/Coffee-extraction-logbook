@@ -268,7 +268,7 @@
      the room and said nothing about what the cup tasted like, even though
      that is the point of the logbook. Stored values are French, display
      goes through I18N.tag. */
-  const LATEST_SHOWN = 8;
+  const LATEST_SHOWN = 5;
   const MAX_LAST_TASTES = 4;
   /* `lead` goes first in the row, before the tastes: the pill of a cup that
      came in from the other device (Q13, v9.17). */

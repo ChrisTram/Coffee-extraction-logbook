@@ -571,6 +571,20 @@ h1, h2, h3, h4, .ref-title, .card h3 {
   .table-latest tr.last-comment { display: block; }
   .table-latest tr.last-comment td { display: block; padding: 0 2px 10px; max-width: none; }
 }
+/* v9.41: between a phone and a wide table, the tastes sit on the name's line,
+   on the right: a cup takes two lines instead of three, five cups fit a
+   short card. */
+@container dernieres (min-width: 480px) and (max-width: 760px) {
+  .table-latest tr.last-clickable {
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-areas: "cafe cafe gouts note" "quand mesures mesures note";
+    padding: 8px 2px;
+  }
+  .table-latest .d-coffee { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .table-latest .d-tastes { justify-self: end; align-self: center; max-width: 52cqi; overflow: hidden; }
+  .table-latest .d-tastes .last-tastes { flex-wrap: nowrap; margin: 0; }
+  .table-latest tr.last-comment td { padding-bottom: 8px; }
+}
 
 /* ---------- A3 (v8.82): the history under the thumb ---------- */
 .h-filter, .h-actives { display: none; }
@@ -711,33 +725,6 @@ h1, h2, h3, h4, .ref-title, .card h3 {
      .nav-btn and stayed at 12 px when the other three went to 14.7. */
   .bottom-bar .bar-entry { font-size: 0.8rem; }
 }
-
-/* ---------- The stock in the corner (v8.89) ---------- */
-.stock-corner { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
-.stock-corner[hidden] { display: none; }
-.sc-bag {
-  display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 0.78rem; cursor: pointer;
-  padding: 4px 10px 4px 6px; min-height: 30px; border-radius: 99px; border: 1px solid var(--lines);
-  background: var(--panel); color: var(--text); max-width: 15rem;
-}
-.sc-bag:hover { border-color: var(--accent); }
-.sc-bag:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.sc-bag b { color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.sc-name { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-/* The small jar: its filled height shows the bag's level. */
-.sc-glass { flex: none; width: 12px; height: 16px; border-radius: 3px 3px 4px 4px; border: 1px solid var(--muted);
-  background: linear-gradient(to top, var(--accent) var(--pc), transparent var(--pc)); }
-.sc-bag.low { border-color: color-mix(in srgb, var(--danger) 55%, transparent); }
-.sc-bag.low b { color: var(--danger); }
-.sc-bag.low .sc-glass { background: linear-gradient(to top, var(--danger) var(--pc), transparent var(--pc)); border-color: var(--danger); }
-.sc-plus { align-self: center; font-size: 0.75rem; color: var(--muted); }
-@media (max-width: 699px) {
-  /* A single scrolling row, so as not to push the rest down. */
-  .stock-corner { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -2px; padding: 2px; }
-  .stock-corner::-webkit-scrollbar { display: none; }
-  .sc-bag { flex: none; }
-}
-@media (pointer: coarse) { .sc-bag { min-height: 36px; } }
 
 /* ---------- L7 (v8.90): the Brew mode, readable from a metre away ---------- */
 .br-center { gap: 2px; }
@@ -912,7 +899,6 @@ button.sh-to-count { white-space: nowrap; font: inherit; font-size: 0.78rem; fon
    onto two rows if needed. */
 @media (min-width: 700px) {
   #dashboard-content > .head-page > .head-titles { flex: 1 1 260px; max-width: 400px; }
-  #dashboard-content .sc-bag { max-width: 12rem; }
 }
 
 /* ---------- Ta semaine: figures aligned at the top (v8.97) ----------
@@ -1182,8 +1168,6 @@ html[data-theme="light"] .skeleton { --sk-shine: var(--panel); }
 .sk-titles { flex: 1 1 260px; }
 .sk-overline { width: 9rem; height: 0.75rem; margin: 3px 0 9px; }
 .sk-title { width: 15rem; max-width: 80%; height: clamp(1.8rem, 3.6vw, 2.5rem); }
-.sk-chips { display: flex; gap: 6px; margin-top: 8px; }
-.sk-chip { width: 7.5rem; height: 30px; border-radius: 99px; }
 .sk-card { gap: 12px; }
 .sk-last { min-height: 260px; }
 .sk-list { min-height: 320px; }
@@ -1469,9 +1453,6 @@ g.jar-shake { transform-box: fill-box; }
 @keyframes jar-shake { 25% { transform: rotate(-4deg); } 60% { transform: rotate(3deg); } }
 @media (max-width: 560px) { .sh-jar .jar-label { display: none; } }
 
-/* The pills hold their tiny beans; on a finger, they are a full target. */
-.stock-corner .sc-bag { position: relative; }
-@media (pointer: coarse) { .stock-corner .sc-bag { min-height: 44px; } }
 
 /* The shelf: the jars nest in the drawing, the beans fly above it. */
 .drawing[data-drawing="shelf"] { position: relative; }
@@ -1956,7 +1937,7 @@ html[data-theme="dark"] .grid-dashboard > .card-dark { box-shadow: var(--shadow-
 .away-add input[type="date"] { min-height: 44px; }
 /* A trip, without a cup, on the calendar and the day bars: drawn apart, dashed. */
 .hm-cell.hm-away { fill: transparent; stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 2; }
-.an-bar.away i, .hm-bars i.away, .home-month i.away {
+.an-bar.away i {
   background: repeating-linear-gradient(135deg, var(--muted) 0 2px, transparent 2px 5px); opacity: 0.45;
 }
 #ps-away .away-add > label { display: inline; width: auto; margin: 0; }

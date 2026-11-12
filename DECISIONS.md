@@ -2288,6 +2288,44 @@ dernière tasse d'un sachet se note souvent après qu'il a été vidé). Le menu
 remplissait qu'au changement d'un café ; une tasse qui vide un sachet n'en change
 aucun, d'où `refreshCoffeeSelect`, qui compare les groupes avant de reconstruire.
 
+### v9.41 : l'accueil part des cafés ouverts, et se sépare de ce qu'il répétait
+
+Demande de Chris (12 novembre 2026) : un audit complet, « surtout le dashboard
+principal, plein de trucs useless affichés », et « sur le dashboard, direct,
+pour les cafés ouverts en cours, une moyenne des notes pour chacun, leurs
+évolutions ». Mesuré avant de toucher : l'accueil faisait 1 927 px de haut à
+1440 par 900, disait le stock DEUX fois sur le même écran (les pastilles sous
+le titre et la colonne « Tes sachets, en grammes »), et trois de ses cartes
+(« Ton mois », le podium, la carte du moulin) redessinaient des tuiles
+d'Analyses pour remplir une colonne que huit dernières tasses rendaient longue.
+
+Ce qui a été tranché :
+
+- UNE carte par café ouvert, en tête, porte tout ce qui se demandait à
+  plusieurs endroits : grammes, moyenne, tendance, notes, « Brasser ». Les
+  pastilles, la colonne des sachets et « À brasser, si tu veux » disparaissent ;
+  la règle « le stock se lit sans défiler » (v8.89) tient toujours.
+- La tendance compare les dernières tasses (2, puis 3 dès 6 notes) à toutes les
+  précédentes, et se tait sous 4 notes : deux tasses contre une ne disent rien,
+  et une flèche qui change à chaque tasse serait du bruit. Sous un quart de
+  point, « stable ».
+- La moyenne reste celle du CAFÉ (toutes ses tasses notées analysables), pas
+  celle du sachet en cours : c'est « une seule moyenne partagée » (H1, v9.19),
+  la même que dans Mes cafés et la fiche.
+- Les points prennent la couleur de la cafetière (les couleurs de données
+  figées), pas celle de la recette comme sur la carte de la dernière tasse :
+  sur un petit dessin sans légende, deux couleurs se lisent, huit non.
+- Le dessin est en pourcentages, sans viewBox : un viewBox étiré déforme les
+  points en ovales, un viewBox proportionnel rend le dessin minuscule sur une
+  carte de téléphone.
+- La cellule est le conteneur, pas la carte : une requête de conteneur ne
+  s'applique jamais à l'élément qui porte `container`, seulement à ses
+  descendants (piège rencontré : la carte large restait empilée).
+- Le graphique de la dernière tasse (v9.39, v9.40) reste : Chris l'a demandé il
+  y a un mois, et il parle d'UNE tasse parmi les autres, pas du café.
+- La roue des goûts reste sur l'accueil (son dessin préféré) ; « Ton mois », le
+  podium et le moulin partent, Analyses s'ouvre sur 30 jours par défaut.
+
 ## Historique
 
 ### Tableau de l'historique, largeurs figées

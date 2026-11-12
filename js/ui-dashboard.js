@@ -330,9 +330,9 @@
     return caffeineMg(e.dose_g || 0, coffee ? coffee.species : "", coffee ? coffee.real_coffee_pct : 100);
   };
 
-  /* THE HOME (L1, v9.21). Three questions: what did I drink (the last cup),
-     where are my bags (the corner, and the bags column of js/ui-home.js), how
-     is my week (js/ui-home.js); then the latest cups. The key figures, the
+  /* THE HOME (L1, v9.21). Three questions: where are my open coffees
+     (js/ui-home-open.js), what did I drink (the last cup), how is my week
+     (js/ui-home.js); then the latest cups. The key figures, the
      calendar, the chart and the analyses moved to the Analyses page. */
   function renderDashboard() {
     /* TWO data sets, and knowing which one to take is the only question that
@@ -346,7 +346,6 @@
     if (empty) { UI.renderHome(null); return; }
     // Q7 (v9.13): the first opening of the day, the home screen sets itself up.
     const morning = UI.morningArrival();
-    renderStockCorner(morning);
 
     /* The page header subline: today's date, as in the mockup. */
     $("#dashboard-highlight").textContent = new Date().toLocaleDateString(I18N.locale(),
@@ -535,8 +534,8 @@
 
   /* THE LATEST CUPS (moved out of renderDashboard in v9.21, unchanged). */
   function renderLatest(exts) {
-    /* EIGHT and not five: the card stretches to the height of its row, and
-       five lines left a big blank there. Lines are better than emptiness. */
+    /* FIVE since v9.41 (eight before): the journal is one tap away, and the
+       card no longer has a tall column to keep up with. */
     const latestCups = [...exts].sort((a, b) => b.date_time.localeCompare(a.date_time))
       .slice(0, LATEST_SHOWN);
     // Each line opens the editing of its extraction. role and tabindex rather
@@ -589,13 +588,12 @@
     };
   }
 
-  /* STOCK IN THE CORNER (v8.89). How many grams are left in each open bag,
-     lowest first, under the dashboard title: it is the question you ask
-     before brewing, and it should not require scrolling down to the shelf.
-     A small jar shows the level, the colour turns red under three cups. A
-     bag emptied in the last ten days stays shown as "empty", after the
-     others, as a reminder to buy more; beyond that, it disappears. */
-  const STOCK_MAX = 4;
+  /* THE STOCK (v8.89). How many grams are left in each open bag, lowest
+     first: it is the question you ask before brewing. Since v9.41 the home
+     reads it in the cards of the open coffees (js/ui-home-open.js), under the
+     title, without scrolling. A bag emptied in the last ten days stays in the
+     list as "empty", after the others, as a reminder to buy more; beyond
+     that, it disappears. */
   function stockData() {
     const tenDaysAgo = new Date(); tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
     const cutoff = localDateKey(tenDaysAgo);
@@ -612,45 +610,6 @@
       // What is left first, lowest to highest; empty bags after.
     }).filter(Boolean).sort((a, b) => (a.leftover <= 0) - (b.leftover <= 0) || a.leftover - b.leftover);
   }
-  /* Q8 (v9.13): the small glass of each pill is a jar like the others
-     (js/ui-jar.js): when the grams change, its level moves and the grams roll
-     from what this device showed last; the morning arrival (Q7) fills it from
-     empty. Rewritten only when it changed, so a movement is not cut. */
-  let cornerHtml = "";
-  function renderStockCorner(morning) {
-    const zone = $("#stock-corner");
-    if (!zone) return;
-    /* Q9 (v9.18, wired by the home in v9.21): a bag at its end leaves the
-       pills. On a wide screen its scene stands in the jars column
-       (js/ui-home.js); a narrow one keeps a single pill, first, that opens
-       « Mes cafés » and its « À racheter » shelf: the corner stays one row. */
-    const ends = typeof UI.bagEndCoffees === "function" ? UI.bagEndCoffees() : [];
-    const all = stockData().filter(s => !ends.includes(s.coffee.id));
-    zone.hidden = !all.length && !ends.length;
-    const shown = all.slice(0, STOCK_MAX);
-    const endNames = ends.map(id => (DATA.state.coffees.find(c => c.id === id) || {}).name).filter(Boolean).map(n => I18N.tr(n));
-    const endPill = ends.length
-      ? '<button type="button" class="sc-bag sc-ends low" data-home-coffees title="' + titleAttr(I18N.t("home_bag_end_title")) + '">' +
-        '<span class="sc-glass" style="--pc:0%" aria-hidden="true"></span><b>' + I18N.t("home_bag_end") + "</b>" +
-        '<span class="sc-name">' + titleAttr(ends.length === 1 ? endNames[0] : I18N.t("home_bag_end_many", { n: ends.length })) + "</span></button>"
-      : "";
-    const html = endPill + shown.map(s => {
-      const low = s.cups < 3;
-      const tooltip = I18N.t(s.leftover <= 0 ? "stock_chip_empty_title" : "stock_chip_title", { c: I18N.tr(s.coffee.name), g: Math.round(s.leftover), n: s.cups, s: s.cups > 1 ? "s" : "" });
-      return '<button type="button" class="sc-bag' + (low ? " low" : "") + '" data-sheet="' + s.coffee.id + '" title="' + titleAttr(tooltip) + '" aria-label="' + titleAttr(tooltip) + '">' +
-        '<span class="sc-glass" style="--pc:' + s.pc.toFixed(0) + '%" aria-hidden="true" data-jar-kind="glass"' +
-          UI.jarData({ coffeeId: s.coffee.id, grams: s.leftover, bag: s.bag, low: low }) + "></span>" +
-        '<b data-jar-grams="' + titleAttr(s.coffee.id) + '">' + (s.leftover <= 0 ? I18N.t("stock_chip_empty") : Math.round(s.leftover) + " g") + "</b>" +
-        '<span class="sc-name">' + titleAttr(I18N.tr(s.coffee.name)) + "</span>" +
-        // v9.27: the coffee's average, after its name (hidden on a phone, css/panel.css).
-        UI.bagAverageHtml(s.coffee.id, "sc-avg") + "</button>";
-    }).join("") + (all.length > STOCK_MAX ? '<span class="sc-plus">+' + (all.length - STOCK_MAX) + "</span>" : "");
-    if (html !== cornerHtml) { zone.innerHTML = html; cornerHtml = html; }
-    // The arrival fills them once; a render during it joins the movement under way.
-    UI.playJars(zone, morning && !morning.jarsFilled ? { from: 0, quiet: true } : undefined);
-    if (morning) morning.jarsFilled = true;
-  }
-
   /* Wiring of the home controls, and of the analyses in tabs. Called once by
      app.js; the home's new pieces, the Analyses page and the month story wire
      their own from here (v9.21), so app.js did not have to change. */
@@ -704,7 +663,7 @@
 
   // Made available to the other screens.
   Object.assign(UI, {
-    renderHeatmapLegend, renderStockCorner, visibleWeeks, stockData, caffeineOf,
+    renderHeatmapLegend, visibleWeeks, stockData, caffeineOf,
     MIN_TASTE_CUPS, WORST_TASTES, HEATMAP_WEEKS, TOP_TASTES,
     wireDashboard, emptyDuelCause, emptyTastesCause, emptyGrindCause,
     updateEmptyCard, renderTastes, renderHeatmapStats, renderDashboard,

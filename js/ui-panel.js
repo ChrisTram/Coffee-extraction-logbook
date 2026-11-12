@@ -115,7 +115,7 @@
         "tr.row-hist[data-id" + q + " > td:first-child, tr.last-clickable[data-ext" + q + " > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }" +
         ".h-card[data-id" + q + " { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }"
       : panel.kind === "coffee"
-        ? ".sc-bag[data-sheet" + q + ", .lc-coffee[data-sheet" + q + " { outline: 2px solid var(--accent); outline-offset: 2px; }"
+        ? ".ho-main[data-sheet" + q + ", .lc-coffee[data-sheet" + q + " { outline: 2px solid var(--accent); outline-offset: 2px; }"
         : "";
   }
 

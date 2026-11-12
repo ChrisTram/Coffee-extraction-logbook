@@ -162,11 +162,9 @@ const I18N = (() => {
     "#card-recap,#legend-30d,#aside-video,#matrix-recipes,#sheet-comparison,#sheet-duo,#sheet-footprint,#sheet-trajectory,#sheet-grinder," +
     "#drawings-panel,#bubble-cup,#drawing-frise,#drawing-podium,#drawing-progression,#drawing-frise-reading,#drawing-podium-reading,#drawing-progression-reading," +
     // home (v9.21): the home's and the Analyses page's zones drawn in JS.
-    "#home-week,#home-week-line,#home-bags,#home-finding,#home-brew,#home-band,#kpis-secondary,#an-highlight,#an-story," +
+    "#home-week,#home-week-line,#home-open,#home-finding,#home-band,#kpis-secondary,#an-highlight,#an-story," +
     "#tile-month-title,#tile-month-meta,#tile-month,#tile-coffees,#tile-podium,#tile-podium-reading,#tile-recipes-list," +
     "#tile-tastes,#tile-wheel,#tile-wheel-detail,#tile-grinder,#tile-grinder-reading,#heatmap-title,#story-stage,#story-bars," +
-    // polish (v9.25): the home's month card.
-    "#home-month," +
     // moments (v9.23): the milestones tile of Analyses.
     "#tile-milestones";
 

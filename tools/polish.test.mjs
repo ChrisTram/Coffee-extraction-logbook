@@ -4,7 +4,7 @@
  *   node tools/polish.test.mjs
  *
  *   1. the home's two columns run on their own (the week at the top of the
- *      side column, a « Ton mois » card at its foot, the column sticky);
+ *      side column, the column sticky; its « Ton mois » card left in v9.41);
  *   2. the entry no longer offers a coffee whose bag is spent first;
  *   3. « Mes cafés » in columns on a wide screen, the finished ones folded;
  *   4. the Analyses tiles each at their own height (a masonry of the grid);
@@ -59,42 +59,23 @@ const homeCss = read("css/home.css"), stockCss = read("css/stock.css"), journalC
 
 /* ---------- 1. The home: two columns that run on their own ---------- */
 {
-  const now = new Date(2026, 9, 5, 10, 0);
-  const cups = [
-    cup(before(now, 0), { score_10: 8 }), cup(before(now, 0), { score_10: 6, time: "15:00" }),
-    cup(before(now, 3), { score_10: 9 }), cup(before(now, 29), {}),
-    cup(before(now, 30), { score_10: 2 }), // the day before the 30: outside
-  ];
-  const m = UI.monthSummary(cups, cups, now);
-  check("the month: a bar per day over the last 30 days", m.bars.length === 30 && m.bars[29].from === TOOLS.localDateKey(now));
-  check("it counts every cup of the 30 days, the unrated one too", m.cups === 4, String(m.cups));
-  check("and averages the rated ones of the 30 days only", Math.abs(m.mean - 23 / 3) < 1e-9, String(m.mean));
-  check("the next milestone: the 10th cup, 5 to go (5 cups in the logbook)", m.next && m.next.n === 10 && m.next.left === 5,
-    JSON.stringify(m.next));
-  check("its ring: half the way from zero", Math.abs(m.progress - 0.5) < 1e-9, String(m.progress));
-  const many = Array.from({ length: 66 }, (_, i) => cup(before(now, i % 40), { score_10: 7 }));
-  const m2 = UI.monthSummary(many, many, now);
-  check("past the 50th, the ring counts from 50 towards 100", m2.next.n === 100 && Math.abs(m2.progress - 16 / 50) < 1e-9,
-    m2.next.n + " " + m2.progress);
-  check("an empty month has no average", UI.monthSummary([], [], now).mean === null && UI.monthSummary([], [], now).cups === 0);
-
   check("the side column sticks under the band when it fits the window", UI.sideTop(600, 900) === 84);
   check("taller than the window, its top goes negative: it scrolls to its foot, then stays", UI.sideTop(1140, 800) === 800 - 1140 - 18);
   check("an unmeasured column keeps the plain top", UI.sideTop(0, 800) === 84);
 
   const side = html.slice(html.indexOf('<aside class="home-side"'), html.indexOf("</aside>"));
   check("the week is the first card of the side column, no longer in the head", side.includes('id="home-week"') &&
-    side.indexOf('id="home-week"') < side.indexOf('id="home-bags"') && !html.slice(html.indexOf('class="head-page home-head"'), html.indexOf('class="grid-dashboard home-main"')).includes('id="home-week"'));
-  check("the month card closes the side column", side.includes('id="home-month"') && side.indexOf('id="home-month"') > side.indexOf('id="home-finding"'));
-  const layout = html.slice(html.indexOf('<div class="home-layout">'), html.indexOf("</section>", html.indexOf('<div class="home-layout">')));
-  check("the head, the two columns and the suggestion share one grid", ['class="head-page home-head"', 'class="grid-dashboard home-main"',
-    'class="home-side"', 'id="home-brew"'].every(s => layout.includes(s)));
-  check("the side column spans every row, the last one flexible, and is sticky",
-    /grid-template-rows: auto auto auto 1fr/.test(homeCss) && /\.home-layout > \.home-side \{[^}]*grid-row: 1 \/ span 4;[^}]*position: sticky;[^}]*top: var\(--home-side-top/.test(homeCss));
-  check("the month and the week of the column wait for a wide screen", /\.home-side \.home-week, \.home-month \{ display: none; \}/.test(homeCss));
-  check("the month's movements have their calm path", /prefers-reduced-motion[\s\S]*\.home-enter \.hm-bars i, \.home-enter \.hm-ring-on \{ animation: none; \}/.test(homeCss));
-  check("the month card is left to the code that draws it", read("js/i18n.js").includes('"#home-month,"'));
-  check("and it tilts like the week", read("js/ui-feel.js").includes("#home-month"));
+    side.indexOf('id="home-week"') < side.indexOf('id="home-finding"') && !html.slice(html.indexOf('class="head-page home-head"'), html.indexOf('class="grid-dashboard home-main"')).includes('id="home-week"'));
+  check("v9.41: the month card left the home, Analyses keeps the month", !html.includes('id="home-month"') && !/home-month|hm-bars|hm-ring/.test(homeCss) && html.includes('id="tile-month"'));
+  const layout = html.slice(html.indexOf('<div class="home-layout">'), html.indexOf("</aside>", html.indexOf('<div class="home-layout">')));
+  check("the head, the open coffees and the two columns share one grid", ['class="head-page home-head"', 'id="home-open"', 'class="grid-dashboard home-main"',
+    'class="home-side" id="home-side"'].every(s => layout.includes(s)));
+  check("the open coffees span the page, the side column starts beside the last cup and is sticky",
+    /\.home-layout > \.home-open \{ grid-column: 1 \/ -1; grid-row: 2; \}/.test(homeCss) &&
+    /\.home-layout > \.home-side \{[^}]*grid-row: 3 \/ span 2;[^}]*position: sticky;[^}]*top: var\(--home-side-top/.test(homeCss));
+  check("the week of the column waits for a wide screen", /\.home-side \.home-week \{ display: none; \}/.test(homeCss));
+  check("the open coffees' movements have their calm path", /prefers-reduced-motion[\s\S]*\.home-enter \.ho-pt, \.home-enter \.ho-roll, \.home-enter \.ho-avg \{ animation: none; \}/.test(homeCss));
+  check("their cards tilt like the week", read("js/ui-feel.js").includes(".ho-card"));
 }
 
 /* ---------- 2. The entry: no spent bag first ---------- */
@@ -151,10 +132,10 @@ const homeCss = read("css/home.css"), stockCss = read("css/stock.css"), journalC
 /* ---------- The two languages ---------- */
 {
   const fr = read("js/i18n.fr2.js"), en = read("js/i18n.en.js");
-  const keys = ["home_month_title", "home_month_aria", "entry_spent_group", "entry_spent_suffix", "cf_done_more", "cf_done_less"];
+  const keys = ["entry_spent_group", "entry_spent_suffix", "cf_done_more", "cf_done_less"];
   const missing = keys.filter(k => !new RegExp("^\\s*" + k + ": \\{ fr:", "m").test(fr) || !new RegExp("^\\s*" + k + ": \"", "m").test(en));
   check("every new text exists in French and in English", missing.length === 0, missing.join(", "));
-  check("« Ton mois », « Sachets finis », « (sachet fini) »", I18N.t("home_month_title") === "Ton mois" &&
+  check("« Sachets finis », « (sachet fini) »",
     I18N.t("entry_spent_group") === "Sachets finis" && I18N.t("entry_spent_suffix") === "(sachet fini)");
 }
 

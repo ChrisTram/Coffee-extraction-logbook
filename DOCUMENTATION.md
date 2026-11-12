@@ -250,13 +250,11 @@ cadran `#rs-rating`), « Enregistrer la note » écrit par le même chemin et le
 offre « Annuler ». Une valeur donnée après coup roule depuis un point dans les
 listes (Q3, `js/ui-scenes.js`).
 
-LA COLONNE DE L'ACCUEIL (v9.27, `js/ui-home-widgets.js`). La moyenne du café à côté
-de ses grammes, dans les lignes des sachets et les pastilles du coin (pas les
-pastilles d'un téléphone) : `UI.bagAverageHtml`, sur les tasses analysables notées.
-Sous « Ton mois », sur ordinateur, trois petites cartes (`#home-widgets`) : la roue des
-arômes, le podium et la carte du moulin du mois, dessinés par leurs fonctions ; une
-carte ouvre sa tuile d'Analyses en grand. `fitWidgets` cache les dernières tant que
-la colonne dépasse la colonne principale.
+LA COLONNE DE L'ACCUEIL (v9.27, `js/ui-home-widgets.js`). Sous le constat, sur ordinateur,
+la roue des arômes du mois (`#home-widgets`), dessinée par `CHARTS.aromaWheel` ; un
+toucher ouvre sa tuile d'Analyses en grand. Depuis la v9.41 elle est seule : le podium
+et la carte du moulin sont partis (Analyses les montre), et la moyenne à côté des
+grammes est dans la carte de chaque café ouvert (`js/ui-home-open.js`, section 6 bis).
 
 LA FEUILLE DE STYLE ne définit chaque sélecteur de premier niveau qu'UNE fois
 (v8.31). Les blocs « refonte, étape n » qui redéfinissaient ce qui précédait ont
@@ -295,8 +293,9 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/ui-pull.js` | tirer pour synchroniser au téléphone (v9.22, R6) : le geste, le disque et ses deux grains, la synchro ; `pullTravel`, `pullPose`, `pullOutcome` purs |
 | `js/ui-findings.js` | les phrases calculées et leur carrousel |
 | `js/ui-last-cup.js` | la carte de la dernière tasse, et ses briques partagées avec la table |
-| `js/ui-dashboard.js` | l'accueil (`renderDashboard` : coin du stock, dernière tasse, dernières tasses), et les graphes qu'il portait, dessinés depuis la v9.21 sur la page Analyses (`renderAnalysesCharts`, `renderCalendar`, `renderChart30`) |
-| `js/ui-home.js` | l'accueil en trois questions (v9.21, L1) : la semaine, la colonne des sachets, le constat qui tourne, « À brasser », le bandeau de la dernière tasse, l'arrivée des blocs |
+| `js/ui-dashboard.js` | l'accueil (`renderDashboard` : dernière tasse, dernières tasses, et `stockData`, le stock de chaque sachet ouvert), et les graphes qu'il portait, dessinés depuis la v9.21 sur la page Analyses (`renderAnalysesCharts`, `renderCalendar`, `renderChart30`) |
+| `js/ui-home.js` | l'accueil en trois questions (v9.21, L1, resserré en v9.41) : la semaine, le constat qui tourne, le bandeau de la dernière tasse, l'arrivée des blocs |
+| `js/ui-home-open.js` | tes cafés ouverts, en tête de l'accueil (v9.41) : une carte par sachet ouvert, grammes, moyenne, tendance, notes tasse par tasse, « Brasser » ; parties pures `coffeeTrend`, `rollingMean`, `sparkScale`, `methodAverages`, `brewTarget`, `openCoffee` |
 | `js/ui-analytics.js` | la page Analyses (v9.21, O1) : la période, les tuiles qui s'ouvrent sur place, le mois en barres, cafés, recettes, goûts, chiffres clés ; construite à la première ouverture |
 | `js/ui-story.js` | ton mois en café (v9.21, O6) : le bandeau de la page Analyses et les quatre histoires (`#modal-story`) |
 | `js/ui-cup.js` | la tasse dessinée (v9.13) : carte après l'enregistrement, tasse du mode Brassage |
@@ -339,7 +338,7 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/ui-welcome.js` | la première ouverture (v9.19, O4) : trois questions, puis la première tasse |
 | `js/ui-panel-edit.js` | la tasse du panneau de côté qu'on écrit (v9.27) : la note d'abord, les modifications rapides, le contexte ; parties pures dans `UI.panelEditMath` |
 | `js/ui-rate-sheet.js` | noter plus tard (v9.27) : « à noter » des listes, « Noter » de l'accueil, la feuille de note du téléphone |
-| `js/ui-home-widgets.js` | la moyenne à côté des grammes et les petites cartes sous « Ton mois » (v9.27) |
+| `js/ui-home-widgets.js` | la roue des goûts du mois, sous le constat, sur écran large (v9.27 ; seule depuis la v9.41) |
 | `js/ui-shortcuts.js` | les raccourcis clavier : la table SHORTCUTS, la décision, l'aide générée, l'astuce (v9.13, v9.19) |
 | `js/app.js` | démarrage, navigation, thème, langue, modale de données, abonnement aux données |
 | `css/extras.css` | les styles de la v9.19 (O4, raccourcis, F2, O3), chargés après finishing.css |
@@ -348,7 +347,7 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `css/gestures.css` | tirer pour synchroniser et la dictée (v9.22), chargée après `home.css` |
 | `css/moments.css` | la vapeur, la série, la phrase du palier et sa gerbe, la tuile des paliers (v9.23), chargée après `gestures.css` |
 | `css/feel.css` | l'accent qui glisse (R3) et les petits ressorts (R8) (v9.24), chargée après `moments.css` |
-| `css/panel.css` | le panneau qu'on écrit, « à noter », la feuille de note, la moyenne des sachets, les petites cartes de l'accueil (v9.27), chargée avant `feel.css` |
+| `css/panel.css` | le panneau qu'on écrit, « à noter », la feuille de note, la roue de l'accueil (v9.27), chargée avant `feel.css` |
 | `css/aside.css` | le tableau recette et source de la saisie, la ligne « Source » (v9.29), après `panel.css`, avant `feel.css` |
 | `css/morph.css` | le fantôme et le détail transparent des morphings (v9.26, R15), chargée en dernier, après `feel.css` |
 | `css/fonts/` | les deux polices de la DA, embarquées en woff2, sous OFL (section 10) |
@@ -976,23 +975,54 @@ même source que l'écran Paramètres). Raisons et pièges : `DECISIONS.md`.
 
 ## 6 bis. Accueil (js/ui-dashboard.js, js/ui-home.js) et Analyses (js/ui-analytics.js)
 
-L'ACCUEIL (L1, v9.21) répond à trois questions, dans l'ordre : ce que tu as bu,
-où en sont tes sachets, comment va ta semaine. `#dashboard-content.home` est une
-boîte de requêtes de conteneur (`container: home`) : sous 860 px de contenu, une
-colonne (la semaine en une ligne `#home-week-line`, pas de colonne des sachets) ;
-au dessus, deux colonnes (`.home-main`, qui garde la classe `.grid-dashboard`
-pour les règles de la carte, et `.home-side` : la semaine en carte avec ses
-barres `#home-week`, `#home-bags`, `#home-finding` puis `#home-month`).
-Depuis la v9.25, l'en-tête, les deux colonnes et `#home-brew` sont les enfants
-d'une même grille `.home-layout` : la colonne de droite couvre toutes les
-rangées, la dernière flexible (`auto auto auto 1fr`), donc les deux colonnes
-courent chacune de leur côté et la dernière tasse vient juste sous le titre. La
-colonne de droite est collante (`position: sticky`) ; `placeSide` (js/ui-home.js,
-au rendu, au redimensionnement, ResizeObserver) lui donne `--home-side-top` :
-84 px sous le bandeau quand elle tient dans la fenêtre, sinon un haut négatif
-(`UI.sideTop`) pour qu'elle défile jusqu'à son pied puis reste. Le bandeau `#home-band` est HORS
-de `.home` : une boîte de conteneur devient le cadre des `position: fixed`.
+L'ACCUEIL (L1, v9.21, resserré en v9.41) répond à trois questions, dans l'ordre :
+où en sont tes cafés ouverts, ce que tu as bu, comment va ta semaine.
+`#dashboard-content.home` est une boîte de requêtes de conteneur
+(`container: home`) : sous 860 px de contenu, une colonne (les cafés ouverts, la
+dernière tasse, la semaine en une ligne `#home-week-line`, les dernières tasses,
+le constat) ; au dessus, les cafés ouverts sur toute la largeur sous le titre,
+puis deux colonnes (`.home-main`, qui garde la classe `.grid-dashboard` pour les
+règles de la carte, et `.home-side` : la semaine en carte avec ses barres
+`#home-week`, `#home-finding`, puis la roue des goûts du mois `#home-widgets`).
+L'en-tête, `#home-open` et les deux colonnes sont les enfants d'une même grille
+`.home-layout`. La colonne de droite est collante (`position: sticky`) ;
+`placeSide` (js/ui-home.js, au rendu, au redimensionnement, ResizeObserver) lui
+donne `--home-side-top` : 84 px sous le bandeau quand elle tient dans la fenêtre,
+sinon un haut négatif (`UI.sideTop`) pour qu'elle défile jusqu'à son pied puis
+reste. Le bandeau `#home-band` est HORS de `.home` : une boîte de conteneur
+devient le cadre des `position: fixed`.
 
+- **Tes cafés ouverts** (v9.41, `#home-open`, js/ui-home-open.js) : une carte par
+  ligne de `UI.stockData()` (les sachets ouverts ; le café bu en dernier d'abord,
+  quatre au plus, puis « et N de plus, dans Mes cafés »), hors sachets en fin de
+  vie (`UI.bagEndCoffees()`), qui gardent leur scène `UI.bagEndScene(…, "corner")`
+  dans une rangée `.ho-ends` dessous (une pastille `.ho-ends-pill` au téléphone,
+  qui ouvre « Mes cafés »). `UI.openCoffee(row, exts, analyzable)` lit les tasses
+  notées analysables du café, la plus ancienne d'abord : la moyenne (la même que
+  partout), `UI.coffeeTrend` (les 2 dernières contre les précédentes de 4 à 5
+  notes, les 3 dernières à partir de 6 ; « stable » sous un quart de point ; rien
+  sous 4 notes), la moyenne par cafetière (`UI.methodAverages`) et les 24
+  dernières notes pour le dessin. Le dessin est un SVG en POURCENTAGES (pas de
+  viewBox : il prend la largeur de la carte et les points restent ronds) : un
+  point par tasse à la couleur de sa cafetière, `data-spot-cup` (le clic ouvre la
+  tasse, par le gestionnaire du document de js/ui-last-cup.js), la moyenne en
+  pointillés, la moyenne glissante sur 3 (`UI.rollingMean`) en segments,
+  l'échelle de `UI.sparkScale` (un demi-point d'air, 3 points de haut au moins).
+  « Brasser » (`data-open-brew`) passe par `UI.brewTarget` : la tasse de référence
+  du réglage gagnant (`TUNING.forCoffee`), sinon la dernière tasse du café, puis
+  `UI.redoCup` (toast `setting_prefilled`) ; un café jamais brassé ouvre la saisie
+  sur lui. Le bocal est celui de js/ui-jar.js (`UI.playJars`, les grammes
+  défilent, l'arrivée du matin le remplit une fois). La cellule `.ho-item` est le
+  conteneur (`hocard`) : dès 640 px (un seul café ouvert), la carte passe sur une
+  ligne ; sous 560 px de page, trois rangées courtes (qui et combien, la tendance
+  avec « Brasser », les notes). Le stock en grammes (v8.89) se lit donc toujours
+  dès l'ouverture, sans défiler.
+- **La roue des goûts du mois** (`#home-widgets`, js/ui-home-widgets.js, écran
+  large) : `CHARTS.aromaWheel` sur les tasses notées des 30 derniers jours ; un
+  toucher ouvre sa tuile d'Analyses en grand. Rien si le mois n'a aucun goût.
+- **Les dernières tasses** : cinq (`LATEST_SHOWN`, huit avant la v9.41), groupées
+  par jour ; entre 480 et 760 px de carte, chaque tasse tient en deux lignes (les
+  goûts à droite du nom).
 - **La dernière tasse** : une rangée de tête (`.lc-head` : nom, contexte, note en
   grand à droite) puis le corps (record, goûts, commentaire, rang, pied). Sur
   téléphone, le rang, le pied et le commentaire attendent un écran plus large.
@@ -1006,22 +1036,9 @@ de `.home` : une boîte de conteneur devient le cadre des `position: fixed`.
   notées, meilleure, jours à venir) ; ses barres poussent à l'arrivée du matin
   (Q7) et ses chiffres roulent à l'arrivée d'une tasse de l'autre appareil (Q13).
   Le toucher ouvre Analyses sur 7 jours.
-- **Ton mois** (v9.25, `#home-month`, écran large seulement) : `UI.monthSummary`
-  reprend les 30 derniers jours d'Analyses (`UI.timeBars`), une barre fine par jour
-  teintée par la note, les tasses, la moyenne des notées, et le prochain palier
-  (`MILESTONES.nextCups`) avec un anneau qui dit le chemin fait depuis le palier
-  d'avant. Le toucher ouvre Analyses sur 30 jours.
-- **Les sachets** : la liste du coin (`UI.stockData`), cinq bocaux de js/ui-jar.js
-  au plus, avec grammes, tasses et niveau ; ils bougent avec les pastilles du coin
-  (le même vol par café).
 - **Un constat** : `UI.computeInsights`, les seuls qui ont une preuve ; le premier
   change chaque jour (`findingStart`), « › » ou douze secondes passent au suivant
   (jamais sous le pointeur, le focus, la page cachée ou moins d'animations).
-- **À brasser, si tu veux** : `UI.brewSuggestion` choisit parmi les sachets
-  ouverts celui à trois tasses ou moins, sinon délaissé depuis trois jours, sinon
-  la meilleure moyenne, avec son réglage gagnant (`TUNING.forCoffee`) ou celui
-  de sa dernière tasse ; « Brasser » passe par `UI.redoCup` (toast
-  `setting_prefilled`). Masqué pour le jour : localStorage `brew-hint-hidden`.
 - **L'arrivée** : quand `#screen-dashboard` reprend `on` (un MutationObserver),
   `.home-enter` fait monter les blocs l'un après l'autre.
 - **La vapeur** (R4, v9.23, js/ui-celebrate.js) : pendant 15 minutes après le
@@ -1096,7 +1113,7 @@ graphe 30 jours, constats, calendrier, dessins, récap, analyses).
   couper le compteur, la vapeur ou le décompte.
 - **L'arrivée du matin** (v9.13, Q7, js/ui-moments.js) : la première ouverture du jour
   de l'accueil sur un appareil (localStorage `morning-arrival` = la date locale),
-  les pastilles du stock et les bocaux de la colonne se remplissent depuis vide, la note
+  les bocaux des cafés ouverts se remplissent depuis vide, la note
   de la dernière tasse compte jusqu'à sa valeur, les barres de la semaine poussent, un
   filet de vapeur monte de la note.
   Moins d'une seconde, une fois par jour. Chaque mouvement est fonction du temps écoulé
@@ -1111,10 +1128,11 @@ graphe 30 jours, constats, calendrier, dessins, récap, analyses).
   écran, elle attend) ; un rendu au milieu la reprend où elle en est (`--arrival-shift`).
   Tant qu'une arrivée n'a pas glissé, les quatre chiffres clés ROULENT depuis ce qu'ils
   montraient (`UI.rollText`) au lieu de recompter depuis zéro ; le grain de synchro saute
-  et les pastilles du stock bougent comme d'habitude. Moins d'animations : la pastille seule.
-- **Le stock dans le coin** (v8.89) : ses petits bocaux sont des bocaux de
-  js/ui-jar.js depuis la v9.13 (`data-jar-kind="glass"`) : le niveau bouge et les
-  grammes défilent quand ils changent, rouge et une secousse sous trois tasses.
+  et les bocaux des cafés ouverts bougent comme d'habitude. Moins d'animations : la pastille seule.
+- **Le stock** (v8.89) : dans les cartes des cafés ouverts depuis la v9.41 (les
+  pastilles du coin et leur petit verre `data-jar-kind="glass"` sont partis) ; le
+  bocal de js/ui-jar.js bouge et les grammes défilent quand ils changent, rouge
+  et une secousse sous trois tasses.
 - **Les écrans vides** (v9.13, M6, js/ui-empty.js) : `UI.emptyHint()` rend un petit
   dessin, une phrase et un bouton `data-empty-go` (un écran, ou une action de la page qui
   l'a dessiné). Les quatre cartes d'analyse qui peuvent rester vides

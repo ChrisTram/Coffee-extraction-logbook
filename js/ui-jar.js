@@ -152,11 +152,6 @@
 
   function paint(el, grams) {
     const bag = Number(el.dataset.jarBag) || 0;
-    if (el.dataset.jarKind === "glass") {
-      const pc = bag > 0 ? Math.min(100, Math.max(0, grams) / bag * 100) : 0;
-      el.style.setProperty("--pc", pc.toFixed(1) + "%");
-      return;
-    }
     const pile = el.querySelector(".jar-pile");
     if (pile && !pile.classList.contains("jar-pile-unknown")) pile.setAttribute("d", jarPile(grams, bag));
     const crumbs = el.querySelector(".jar-crumbs");
@@ -169,20 +164,18 @@
      it: inside an open <dialog> the page body would sit under the top layer. */
   function flyBeans(el, out, grams) {
     if (calm() || typeof document.createElement !== "function") return;
-    // The small glass of a pill does the same in miniature: three tiny beans.
-    const glass = el.dataset.jarKind === "glass";
-    const art = glass ? el : el.querySelector("svg.jar-svg") || el;
-    const host = glass ? el.closest && el.closest(".sc-bag") : el.ownerSVGElement ? el.ownerSVGElement.parentElement : el;
+    const art = el.querySelector("svg.jar-svg") || el;
+    const host = el.ownerSVGElement ? el.ownerSVGElement.parentElement : el;
     if (!host || typeof art.getBoundingClientRect !== "function") return;
     const r = art.getBoundingClientRect(), h = host.getBoundingClientRect();
     if (!r.width || !r.height) return;
     const bag = Number(el.dataset.jarBag) || 0;
     const k = r.height / H;
-    const size = glass ? 4 : Math.max(5, Math.round(9 * k * 1.25));
-    const level = glass ? r.height * (1 - (bag > 0 ? Math.min(1, Math.max(0, grams) / bag) : 0)) : jarLevelY(grams, bag) * k;
+    const size = Math.max(5, Math.round(9 * k * 1.25));
+    const level = jarLevelY(grams, bag) * k;
     const surface = r.top - h.top + level;
-    const lift = glass ? 16 : r.height * 0.32, spread = glass ? 26 : r.width * 0.9;
-    for (let i = 0; i < (glass ? 3 : 5); i++) {
+    const lift = r.height * 0.32, spread = r.width * 0.9;
+    for (let i = 0; i < 5; i++) {
       const b = document.createElement("span");
       b.className = "jar-bean";
       b.style.width = size + "px";
@@ -205,10 +198,10 @@
     }
   }
 
-  /* One shake, when a jar lands low. The pill shakes as a whole. */
+  // One shake, when a jar lands low.
   function shake(el) {
     if (calm() || !el.dataset.jarLow) return;
-    const target = el.dataset.jarKind === "glass" && el.closest ? (el.closest(".sc-bag") || el) : el;
+    const target = el;
     target.classList.remove("jar-shake");
     void (target.getBoundingClientRect && target.getBoundingClientRect());
     target.classList.add("jar-shake");
