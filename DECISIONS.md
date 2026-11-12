@@ -2636,6 +2636,37 @@ projet) ; charger les écrans à la demande (10 pour cent du chemin critique pou
 une contrainte d'ordre fragile) ; remplacer Chart.js par du SVG (70 Ko gzip déjà
 chargés à part et mis en cache).
 
+### v9.43 : Analyses au téléphone, replier sans cacher ce qu'on vient chercher
+
+Mesuré : 7 843 px, dont 2 067 pour sept dessins empilés, 888 pour les constats,
+873 pour « En détail » (148 d'onglets sur trois rangées, et une pile haute de
+636 px pour un graphique de 240), 1 237 pour les trois tuiles hors période.
+
+- Les tuiles qui SUIVENT la période (mois, chiffres, cafés, recettes, goûts,
+  moulin) restent ouvertes : c'est ce qu'on vient lire, et les replier toutes
+  aurait fait de la page une liste de titres. Seules celles qui gardent leur
+  propre fenêtre se replient ; elles sont déjà étiquetées comme telles.
+- Pas de troisième état : une tuile avait « fermée » et « ouverte en grand ».
+  Sur une page étroite, « fermée » se dessine repliée pour ces trois là, et
+  l'ouverture existante (une seule à la fois, Échap, le FLIP) fait le reste.
+  Zéro ligne de JS pour ce repli.
+- Le corps replié garde sa largeur (`max-height: 0`, pas `display: none`) :
+  Chart.js donne un canevas de 0 par 0 à un parent sans boîte, et le calendrier
+  compte ses semaines sur sa largeur.
+- Les dessins en rangée qui glisse plutôt qu'en onglets ou en liste repliée :
+  ils se regardent l'un après l'autre, pas l'un à côté de l'autre, et le bord du
+  suivant dit qu'il y en a d'autres. Les flèches doublent le geste parce que
+  les courbes lues au doigt capturent le glissé horizontal.
+- La hauteur de la carte « En détail » suit l'onglet au téléphone seulement :
+  sur ordinateur une carte qui change de hauteur à chaque onglet ferait sauter
+  ce qui est dessous, au téléphone 300 px de vide coûtent plus qu'un saut.
+- Rien n'est mémorisé (ni tuile ouverte ni « tous les constats ») : la page
+  rouvre courte, c'est le but.
+- Piège de l'outillage : dans `String.replace(a, b)`, un « $$ » dans la chaîne
+  de remplacement vaut UN « $ ». Un script de modification a ainsi changé
+  `$$(` en `$(` ; `tools/boot.test.mjs` et le test « no single-element
+  lookup is used as a list » l'ont attrapé. Remplacer par `split(a).join(b)`.
+
 ### v9.42 : Chart.js en prefetch, pas en preload
 
 Le `<link rel="preload">` de la v8.75 datait du temps où le tableau de bord

@@ -455,6 +455,74 @@
     }
   }
 
+  // ---------- v9.43: a shorter page on a phone ----------
+
+  /* On a narrow page (css/home.css, the analytics container under 600 px)
+     Analyses ran over nine screens. Four things shorten it, none changes a
+     wide page: the tiles that keep their own window (30 days chart,
+     milestones, calendar) show their title alone until touched, the open
+     state every tile already has; « Ce que tes données disent » shows three
+     findings, the others on request; the drawings slide side by side, one at
+     a time; the tabs of « En détail » stay on one line and its card takes the
+     height of the tab shown. The first two are CSS over classes this file
+     sets; the pager and the « more » button are written here. */
+  const FINDINGS_SHOWN = 3;
+  function renderFindingsMore() {
+    const card = $(".an-findings"), b = $("#insights-more");
+    if (!card || !b) return;
+    const n = $$("#insights > li").length - FINDINGS_SHOWN;
+    const all = card.classList.contains("all");
+    b.hidden = !(n > 0);
+    b.textContent = n > 0 ? I18N.t(all ? "an_findings_less" : "an_findings_more", { n: n, s: plural(n) }) : "";
+    b.setAttribute("aria-expanded", String(all));
+  }
+
+  // The drawings shown (« Arranger » hides some), in their order.
+  const drawingsGrid = () => $("#card-drawings .drawings-grid");
+  const drawingCards = () => $$("#card-drawings .drawings-grid > [data-drawing]").filter(el => !el.hidden);
+  // Which card sits nearest the middle of the row (pure: the lefts and widths are given).
+  function nearestCard(boxes, scrollLeft, width) {
+    const mid = scrollLeft + width / 2;
+    let best = 0, gap = Infinity;
+    boxes.forEach((b, i) => { const d = Math.abs(b.left + b.width / 2 - mid); if (d < gap) { gap = d; best = i; } });
+    return best;
+  }
+  function drawingAt() {
+    const grid = drawingsGrid(), cards = drawingCards();
+    if (!grid || !cards.length) return 0;
+    return nearestCard(cards.map(c => ({ left: c.offsetLeft, width: c.offsetWidth })), grid.scrollLeft, grid.clientWidth);
+  }
+  /* The pager: built once per count and language, then only its position
+     and its two ends change (a button rewritten under a finger loses it). */
+  let pagerKey = "";
+  function renderDrawingsPager() {
+    const pager = $("#drawings-pager");
+    if (!pager) return;
+    const n = drawingCards().length;
+    pager.hidden = n < 2;
+    if (pager.hidden) { pager.innerHTML = ""; pagerKey = ""; return; }
+    const key = n + ":" + I18N.t("an_draw_prev");
+    if (key !== pagerKey) {
+      pagerKey = key;
+      pager.innerHTML = '<button type="button" class="btn-square-small draw-step" data-draw-step="-1" aria-label="' + titleAttr(I18N.t("an_draw_prev")) + '">' + UI.icon("gauche") + "</button>" +
+        '<span class="drawings-pos" aria-live="polite"></span>' +
+        '<button type="button" class="btn-square-small draw-step" data-draw-step="1" aria-label="' + titleAttr(I18N.t("an_draw_next")) + '">' + UI.icon("chevron") + "</button>";
+    }
+    const at = drawingAt();
+    const pos = pager.querySelector(".drawings-pos");
+    const text = I18N.t("an_draw_pos", { i: at + 1, n: n });
+    if (pos && pos.textContent !== text) pos.textContent = text;
+    const [prev, next] = pager.querySelectorAll("[data-draw-step]");
+    if (prev) prev.disabled = at === 0;
+    if (next) next.disabled = at === n - 1;
+  }
+  function stepDrawing(dir) {
+    const grid = drawingsGrid(), cards = drawingCards();
+    const to = cards[Math.max(0, Math.min(cards.length - 1, drawingAt() + dir))];
+    if (!grid || !to || typeof grid.scrollTo !== "function") return;
+    grid.scrollTo({ left: to.offsetLeft - (grid.clientWidth - to.offsetWidth) / 2, behavior: calm() ? "auto" : "smooth" });
+  }
+
   // ---------- Render ----------
 
   /* What follows the period: the bars, the coffees, the recipes, the
@@ -487,6 +555,9 @@
     // R9 (v9.23): the streaks and the milestones, over the whole logbook (js/ui-celebrate.js).
     UI.renderMilestoneTile();
     UI.renderDrawings();
+    // v9.43: what a narrow page folds (the count of findings, the drawings' pager).
+    renderFindingsMore();
+    renderDrawingsPager();
     UI.renderStoryBanner();
     UI.maybeOpenStory();
     packTiles();
@@ -543,6 +614,29 @@
         if (step && step.tagName !== "BUTTON") { ev.preventDefault(); UI.openRecipe(step.getAttribute("data-guide-recipe"), step); }
       });
     }
+    // v9.43: three findings, then all of them, on a narrow page.
+    const more = $("#insights-more");
+    if (more) more.addEventListener("click", () => {
+      const card = $(".an-findings");
+      if (!card) return;
+      card.classList.toggle("all");
+      renderFindingsMore();
+    });
+    // v9.43: the drawings' pager steps, and follows the finger.
+    const pager = $("#drawings-pager");
+    if (pager) pager.addEventListener("click", ev => {
+      const b = ev.target.closest("[data-draw-step]");
+      if (b) stepDrawing(Number(b.getAttribute("data-draw-step")));
+    });
+    const row = drawingsGrid();
+    if (row) {
+      let ticking = false;
+      row.addEventListener("scroll", () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => { ticking = false; renderDrawingsPager(); });
+      }, { passive: true });
+    }
     // v9.25: the tiles are packed again whenever one changes size (content, width, the page showing).
     if (grid && typeof ResizeObserver === "function") {
       const ro = new ResizeObserver(() => packTiles());
@@ -560,11 +654,11 @@
       UI.renderCalendar(extsWithCalcs(), analyzableExts());
       placePeriodMark(true);
     }, 200));
-    I18N.subscribe(() => placePeriodMark(true));
+    I18N.subscribe(() => { placePeriodMark(true); if (state.built) { renderFindingsMore(); renderDrawingsPager(); } });
   }
 
   Object.assign(UI, {
     periodStart, inPeriod, timeBars, rankCoffees, tasteCounts, keyFigures, tileSpan, packTiles,
-    renderAnalytics, wireAnalytics, showAnalyticsPeriod, setAnalyticsPeriod: setPeriod, toggleTile,
+    nearestCard, renderAnalytics, wireAnalytics, showAnalyticsPeriod, setAnalyticsPeriod: setPeriod, toggleTile,
   });
 })();

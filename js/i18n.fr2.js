@@ -338,6 +338,12 @@ Object.assign(I18N_FR, {
     home_finding_pos: { fr: "{i} sur {n}" },
     home_finding_all: { fr: "toutes les analyses" },
     home_brew_go: { fr: "Brasser" },
+    // v9.43: Analyses on a narrow page (js/ui-analytics.js).
+    an_findings_more: { fr: "Voir {n} constat{s} de plus" },
+    an_findings_less: { fr: "Réduire" },
+    an_draw_prev: { fr: "Dessin précédent" },
+    an_draw_next: { fr: "Dessin suivant" },
+    an_draw_pos: { fr: "{i} sur {n}" },
     // v9.41: the open coffees, at the top of the home (js/ui-home-open.js).
     ho_title: { fr: "Tes cafés ouverts" },
     home_bag_end: { fr: "Fin de sachet" },

@@ -589,6 +589,47 @@
 .an-findings .an-fixed { background: var(--panel-2); }
 .card-analyses .card-head > div { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 
+/* v9.43: A SHORTER PAGE ON A PHONE. Under 600 px of content, Analyses ran
+   over nine screens (7 843 px at 390 by 844). Nothing here touches a wide
+   page. */
+.an-findings-more, .drawings-pager { display: none; }
+.an-findings-more { margin: 10px 0 0; }
+.drawings-pager { align-items: center; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+.drawings-pos { min-width: 4.2em; text-align: center; font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.draw-step { position: relative; }
+.draw-step::after { content: ""; position: absolute; inset: -6px; }
+.draw-step:disabled { opacity: 0.35; cursor: default; }
+@container analytics (max-width: 600px) {
+  /* 1. The tiles that keep their own window wait under their title: the
+     « open » state every tile has shows them whole. The body keeps its width
+     (no display: none): the chart and the calendar are born at their size. */
+  .an-tile:is([data-tile="chart30"], [data-tile="milestones"], [data-tile="calendar"]):not(.open) { gap: 0; }
+  .an-tile:is([data-tile="chart30"], [data-tile="milestones"], [data-tile="calendar"]):not(.open) .an-tile-body {
+    max-height: 0; overflow: hidden; visibility: hidden;
+  }
+  /* 2. Three findings, the others behind « Voir N constats de plus ». */
+  .an-findings:not(.all) .insights > li:nth-child(n+4) { display: none; }
+  .an-findings-more:not([hidden]) { display: inline-flex; align-items: center; min-height: 44px; }
+  /* 3. The drawings side by side, one at a time: the next one shows its edge. */
+  #card-drawings .drawings-grid {
+    position: relative; display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain; scrollbar-width: none; margin-inline: -2px; padding: 2px;
+  }
+  #card-drawings .drawings-grid::-webkit-scrollbar { display: none; }
+  #card-drawings .drawings-grid > .drawing { flex: 0 0 88%; min-width: 0; scroll-snap-align: center; }
+  #card-drawings .drawings-grid > .drawing[hidden] { display: none; }
+  .drawings-pager:not([hidden]) { display: flex; }
+  /* 4. « En détail »: its seven tabs on one line that slides, and the card as
+     tall as the tab shown (the hidden ones leave the flow, still at their width). */
+  .card-analyses .card-head { flex-wrap: wrap; }
+  /* « > .tabs-analyses »: the rule above (.card-head > div) also catches the tabs, and wraps them. */
+  .card-analyses .card-head > .tabs-analyses { position: relative; flex: 1 1 100%; flex-wrap: nowrap; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  .card-analyses .tabs-analyses::-webkit-scrollbar { display: none; }
+  .card-analyses .tabs-analyses [role="tab"] { flex: none; }
+  .analyses-stack { position: relative; }
+  .analyses-stack > .analysis:not(.current) { position: absolute; top: 0; left: 0; right: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .an-period-mark.ready, .an-tile-toggle, .an-bars, .an-tile .canvas-30d { transition: none; }
   .an-bar i, .an-rank-bar i, .an-chip, .an-findings .insights > li, .an-refresh .an-tile-body, .an-refresh .an-tile-meta,

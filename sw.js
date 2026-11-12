@@ -25,7 +25,7 @@
  *    logout stop working.
  */
 
-const VERSION = "9.42";
+const VERSION = "9.43";
 const CACHE_NAME = "carnet-extraction";
 
 const versioned = url => url + "?v=" + VERSION;

@@ -8,8 +8,8 @@ leurs évolutions ». Remplace l'audit du 6 septembre (v7.80), soldé : son text
 reste dans l'historique git (`git show 251a555:AUDIT.md`).
 
 Tout ce qui pouvait se corriger sans changer un chemin d'utilisation est parti
-directement dans le code : **v9.41** (l'accueil) et **v9.42** (ménage, perfs,
-retouches). Ce fichier dit ce qui a été mesuré, ce qui a été fait, et ce qui
+directement dans le code : **v9.41** (l'accueil), **v9.42** (ménage, perfs,
+retouches) et, sur ton « oui », **v9.43** (Analyses au téléphone). Ce fichier dit ce qui a été mesuré, ce qui a été fait, et ce qui
 reste, chiffré.
 
 ## Comment c'est mesuré
@@ -125,7 +125,7 @@ Coûts en tokens de conversation, doc et tests compris : XS 5 à 15 k, S 25 à
 
 | # | Quoi | Mesure | Coût | Pourquoi ce n'est pas fait |
 |---|---|---|---|---|
-| 1 | **Analyses au téléphone** | 7 880 px de haut, 9 écrans à faire défiler | S | replier les tuiles change ce que tu vois en arrivant : à valider sur maquette |
+| 1 | ~~Analyses au téléphone~~ | 7 843 px avant, **4 684 px** après | fait | **v9.43** : trois tuiles repliées, trois constats puis « voir plus », les dessins en rangée qui glisse, les onglets sur une ligne |
 | 2 | **La saisie au téléphone** | 4 631 px ; 83 cibles sous 36 px (pilules de goûts à 31 px, curseurs) | M | c'est ton écran de tous les jours, on ne le retouche pas à l'aveugle |
 | 3 | **Mesurer le site déployé sur ton téléphone** | jamais fait | XS | il me faut l'adresse et une session ; c'est ce qui dira si le point 5 vaut le coup |
 | 4 | **La doc à lire par session** | 164 Ko, environ 43 000 tokens | M | un index court par zone à la place de la lecture entière ; gain d'environ 30 k tokens par session |

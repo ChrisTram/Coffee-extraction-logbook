@@ -315,6 +315,10 @@
       panel.setAttribute("aria-hidden", String(!active));
     });
     try { localStorage.setItem(TAB_KEY, name); } catch (e) { /* without storage, back to Cafés */ }
+    /* v9.43: on a narrow page the tabs are one line that slides: the chosen
+       one comes to the middle. Sideways only, the page itself never moves. */
+    const chosen = buttons.find(b => b.dataset.analysis === name), bar = chosen && chosen.parentElement;
+    if (bar && bar.scrollWidth > bar.clientWidth + 1) bar.scrollLeft = chosen.offsetLeft - (bar.clientWidth - chosen.offsetWidth) / 2;
   }
 
   function emptyDuelCause(rated) {

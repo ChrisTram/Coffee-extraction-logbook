@@ -1084,6 +1084,27 @@ quatre derniers fermée, tous ouverte, chacun ouvre sa tasse (`data-cup`, la bul
 dessins), et le prochain palier de tasses (`UI.renderMilestoneTile`, appelé par
 `renderAnalytics`).
 
+SUR UNE PAGE ÉTROITE (v9.43, requête `@container analytics (max-width: 600px)`
+de css/home.css, la même qui met les tuiles sur une colonne). La page faisait
+7 843 px à 390 par 844 ; quatre replis, aucun sur une page large. (1) Les tuiles
+`chart30`, `milestones` et `calendar` sans la classe `open` cachent leur corps
+(`max-height: 0; overflow: hidden; visibility: hidden`, JAMAIS `display: none` :
+le canevas et le calendrier doivent naître à leur largeur) ; `toggleTile` ne
+change pas, « ouverte » les montre en entier. (2) `.an-findings:not(.all)` ne
+montre que trois constats ; `#insights-more` (`renderFindingsMore`) bascule la
+classe `all`. (3) `.drawings-grid` devient une rangée qui glisse
+(`scroll-snap-type: x mandatory`, un dessin à 88 pour cent de large) ;
+`#drawings-pager` (`renderDrawingsPager`, `stepDrawing`, `UI.nearestCard` pur)
+dit « 2 sur 7 » et avance d'un dessin, suit le défilement du doigt, et n'est
+réécrit que si le nombre de dessins ou la langue change. Les flèches existent
+aussi parce que deux dessins se lisent au doigt (`svg[data-scrub]`) : glisser
+sur eux ne fait pas défiler la rangée. (4) Les onglets d'« En détail » sur une
+ligne (`.card-head > .tabs-analyses`, il faut ce `>` : la règle
+`.card-analyses .card-head > div` attrape aussi les onglets), l'onglet choisi
+ramené au milieu par `showAnalysis` (`scrollLeft`, jamais `scrollIntoView`,
+qui ferait bouger la page), et les panneaux non affichés en `position:
+absolute` pour que la pile prenne la hauteur du seul panneau affiché.
+
 TON MOIS EN CAFÉ (O6, v9.21, js/ui-story.js). `UI.monthStory(exts, analyzable,
 "AAAA-MM")` : tasses, par machine, jours, moyenne, café du mois (le plus bu),
 découverte (un goût coché pour la première fois ce mois-là, sinon le plus

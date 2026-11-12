@@ -242,6 +242,30 @@ const before = (from, k) => { const d = new Date(from); d.setDate(d.getDate() - 
   check("Ctrl K can go to Analyses", palette.includes('["analytics", "G N"'));
 }
 
+/* ---------- v9.43: Analyses on a narrow page ---------- */
+{
+  const boxes = [{ left: 0, width: 275 }, { left: 285, width: 275 }, { left: 570, width: 275 }];
+  check("the pager names the drawing nearest the middle of the row", UI.nearestCard(boxes, 0, 312) === 0 && UI.nearestCard(boxes, 270, 312) === 1 &&
+    UI.nearestCard(boxes, 560, 312) === 2);
+  check("half way between two, the first one keeps the name", UI.nearestCard([{ left: 0, width: 100 }, { left: 100, width: 100 }], 50, 100) === 0);
+  const html = read("index.html"), css = read("css/home.css"), an = read("js/ui-analytics.js");
+  const narrow = css.slice(css.indexOf("@container analytics (max-width: 600px) {\n  /* 1."));
+  check("the page has the findings' « more » button and the drawings' pager, hidden until needed",
+    /id="insights-more"[^>]* hidden>/.test(html) && /id="drawings-pager" hidden>/.test(html) && /\.an-findings-more, \.drawings-pager \{ display: none; \}/.test(css));
+  check("a narrow page folds the three tiles that keep their own window, without display: none (the chart is born at its size)",
+    /\.an-tile:is\(\[data-tile="chart30"\], \[data-tile="milestones"\], \[data-tile="calendar"\]\):not\(\.open\) \.an-tile-body \{\s*max-height: 0; overflow: hidden; visibility: hidden;/.test(narrow) &&
+    !/an-tile-body \{[^}]*display: none/.test(narrow));
+  check("it shows three findings until asked for all", narrow.includes(".an-findings:not(.all) .insights > li:nth-child(n+4) { display: none; }") && /const FINDINGS_SHOWN = 3;/.test(an));
+  check("the drawings slide one at a time, the hidden ones stay hidden", /#card-drawings \.drawings-grid \{[^}]*overflow-x: auto; scroll-snap-type: x mandatory;/.test(narrow) &&
+    narrow.includes("#card-drawings .drawings-grid > .drawing[hidden] { display: none; }"));
+  check("the tabs of « En détail » stay on one line and the card takes the height of the tab shown",
+    /\.card-analyses \.card-head > \.tabs-analyses \{[^}]*flex-wrap: nowrap;[^}]*overflow-x: auto;/.test(narrow) &&
+    narrow.includes(".analyses-stack > .analysis:not(.current) { position: absolute; top: 0; left: 0; right: 0; }"));
+  check("a wide page is left alone: every rule of the fold lives in the container query",
+    !/^\.analyses-stack > \.analysis:not\(\.current\)|^#card-drawings \.drawings-grid \{/m.test(css));
+  check("the pager's buttons are rewritten only when their count or the language changes", an.includes("if (key !== pagerKey)"));
+}
+
 /* ---------- L1 and O1: the page, the laziness, the hooks ---------- */
 {
   const html = read("index.html");
