@@ -211,7 +211,8 @@
       const row = currentRow();
       if (row && row.scrollIntoView) row.scrollIntoView({ block: "nearest" });
     };
-    if (touched) UI.morphOpen(touched, show, "#side-panel", { id: e.id, find: currentRow }); else show();
+    // keep: the row stays in its list, the panel opens beside it (v9.44).
+    if (touched) UI.morphOpen(touched, show, "#side-panel", { id: e.id, find: currentRow, keep: true }); else show();
   }
 
   // ---------- A recipe ----------

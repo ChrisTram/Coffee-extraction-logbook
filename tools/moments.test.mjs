@@ -237,7 +237,7 @@ const ids = list => list.map(m => m.id);
     .flatMap(m => m[1].split(",").map(s => s.trim().split(/\s+/).pop()).filter(s => !s.includes("::")));
   const unpositioned = hosts.filter(h => { const first = (h.match(/^[.#][\w-]+/) || [h])[0]; return !positioned.some(p => p === h || p === first || p.startsWith(first + ".") || p.startsWith(first + ":")); });
   check("every hit area wider than its button has a positioned host", hosts.length >= 3 && unpositioned.length === 0, unpositioned.join(", "));
-  check("the finding's next button is one of them", hosts.includes(".hf-next") && /\.hf-next \{[^}]*position: relative/.test(homeCss));
+  check("the drawings' pager step is one of them", hosts.includes(".draw-step") && /\.draw-step \{[^}]*position: relative/.test(homeCss));
   check("a screen switch never waits forever for a frame (it used to keep the old screen, in its old language)",
     /let done = false;[\s\S]{0,200}startViewTransition\(run\)[\s\S]{0,200}skipTransition\(\)[\s\S]{0,40}run\(\);[\s\S]{0,20}\}, 500\)/.test(core));
 }

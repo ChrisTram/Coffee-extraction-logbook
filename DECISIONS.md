@@ -2636,6 +2636,39 @@ projet) ; charger les écrans à la demande (10 pour cent du chemin critique pou
 une contrainte d'ordre fragile) ; remplacer Chart.js par du SVG (70 Ko gzip déjà
 chargés à part et mis en cache).
 
+### v9.44 : des graphiques sur l'accueil, pas des phrases
+
+Retour de Chris le 14 novembre 2026, deux jours après la v9.41 : « le dashboard
+est toujours autant moisi », « tes goûts du mois, m'en fous », « à retenir,
+pareil, je veux du chart visuel pertinent », « le dashboard fait quand même
+vide, on peut le charger plus ». Et une demande précise : un graphique des 15
+derniers jours, un point par saisie, la note en vertical, une couleur par café,
+un indicateur de recette.
+
+Ce que la v9.41 avait mal lu : « plein de trucs useless » ne voulait pas dire
+« moins de choses », mais « moins de choses qui ne me disent rien ». L'accueil
+vidé de ses doublons s'est retrouvé avec deux cartes de texte et de dessin
+abstrait à côté d'une colonne à moitié vide. Il veut un écran dense, fait de
+graphiques qui répondent à une question.
+
+- Un seul code pour les quatre graphiques (couleur = café, forme = recette) :
+  quatre graphiques à quatre légendes seraient quatre choses à apprendre.
+- Les couleurs des cafés évitent le bleu et l'orange (les cafetières, sur les
+  courbes des cafés ouverts juste au dessus) et le vert.
+- La matrice recette par café plutôt qu'un classement de recettes : sa question
+  de tous les jours est « quelle recette pour CE café », et un classement toutes
+  origines confondues la noie (Analyses le garde).
+- La température plutôt que la mouture : sa molette ne bouge pas de 1.5.0, la
+  température est le levier qu'il fait varier au Switch depuis le thermomètre.
+- Sans Chart.js : la roue de l'accueil arrivait en retard au premier chargement
+  (il l'a vu), et un graphique d'accueil doit être là avec le reste.
+- Les 15 jours en tête de la colonne principale et pas sur toute la largeur : à
+  1440 px, cela met quatre blocs au dessus du pli au lieu de deux.
+- La ligne qui clignotait : le morphing R15 cachait sa source pendant le trajet
+  (juste quand le détail PREND sa place, un bocal qui devient sa fiche). Pour
+  une tasse qui s'ouvre dans le panneau de côté, la ligne reste dans la page :
+  la cacher une seconde se lisait comme un bug. Option `keep` de `morphOpen`.
+
 ### v9.43 : Analyses au téléphone, replier sans cacher ce qu'on vient chercher
 
 Mesuré : 7 843 px, dont 2 067 pour sept dessins empilés, 888 pour les constats,

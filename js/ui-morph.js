@@ -353,8 +353,12 @@
     if (!end) { dest.classList.remove("morph-dest"); return false; }
     const duration = o.back ? MOTION.back : MOTION.duration;
 
-    // The source lifts out of its list for the trip.
-    if (from.isConnected !== false) setStyle(t, from, "visibility", "hidden");
+    /* The source lifts out of its list for the trip, when the detail takes
+       its place (a jar becoming its sheet, a card becoming the Brew mode).
+       `keep` (v9.44) leaves it where it is: a cup's row stays in its list
+       while the side panel opens beside it. Hidden, the row vanished for a
+       second and came back, which read as a glitch, not as a movement. */
+    if (from.isConnected !== false && !o.keep) setStyle(t, from, "visibility", "hidden");
 
     // The layers: the ghost under the detail's content, above the rest of the page.
     const over = o.over === true || (fromTop && start.width * start.height > 0.5 * vw() * vh());

@@ -6,7 +6,7 @@
  * The pure parts of js/ui-panel-edit.js (reading and writing the inline
  * fields, which fields changed, what a rating writes, his usual tastes, the
  * search), MILESTONES.forEdit (what a late rating may celebrate), the
- * average next to the grams (js/ui-home-widgets.js) and the ← → keys of the
+ * average next to the grams (in the open coffees' cards since v9.41) and the ← → keys of the
  * shortcuts run here with a stub of the interface core. Then the hooks the
  * screens carry are read in their files. boot.test.mjs runs the site for real. */
 
@@ -159,19 +159,18 @@ const P = load("js/ui-panel-edit.js", stubUI()).panelEditMath;
     read("js/ui-history.js").split("UI.rateMark(e)").length === 3 && read("js/ui-table.js").includes("UI.rateMark(e)") &&
     read("js/ui-dashboard.js").includes("UI.rateMark(e)") && read("js/ui-last-cup.js").includes("UI.rateAction(e)"));
   check("a figure given late rolls in from a dot", read("js/ui-scenes.js").includes('h.from === "" ? "·" : h.from'));
-  check("the average sits in each open coffee's card (v9.41)", read("js/ui-home-open.js").includes('class="ho-score"') && !read("js/ui-home-widgets.js").includes("bagAverageHtml"));
-  check("the wheel's card tilts with the others", read("js/ui-feel.js").includes(".home-widget"));
+  check("the average sits in each open coffee's card (v9.41)", read("js/ui-home-open.js").includes('class="ho-score"'));
   const css = read("css/panel.css");
-  check("every movement has its calm path", /prefers-reduced-motion: reduce\)[\s\S]*\.pe-rate\.pe-call[\s\S]*\.home-enter \.home-widget/.test(css));
+  check("every movement has its calm path", /prefers-reduced-motion: reduce\)[\s\S]*\.pe-rate\.pe-call, \.pe-status\.pe-in \{ animation: none; \}/.test(css));
   check("no green, only tokens for colours", !/#[0-9a-f]{3,6}\b|green|rgb\(/i.test(css));
   const html = read("index.html"), sw = read("sw.js");
-  ["js/ui-home-widgets.js", "js/ui-panel-edit.js", "js/ui-rate-sheet.js", "css/panel.css"].forEach(f =>
+  ["js/ui-panel-edit.js", "js/ui-rate-sheet.js", "css/panel.css"].forEach(f =>
     check(f + " is in the page and precached", html.includes(f + "?v=") && sw.includes('"./' + f + '"')));
   const fr = read("js/i18n.fr2.js"), en = read("js/i18n.en.js");
   const keys = [...fr.slice(fr.indexOf("// panel (v9.27)")).matchAll(/^\s+(\w+): \{ fr:/gm)].map(m => m[1]);
   const missing = keys.filter(k => !new RegExp("^\\s+" + k + ": \"", "m").test(en));
   check("every new French text has its English half (" + keys.length + " keys)", keys.length > 40 && missing.length === 0, missing.join(", "));
-  const used = new Set([...(edit + sheet + read("js/ui-home-widgets.js")).matchAll(/I18N\.t\("((?:pe|rate|hwg)_\w+)"/g)].map(m => m[1]));
+  const used = new Set([...(edit + sheet).matchAll(/I18N\.t\("((?:pe|rate)_\w+)"/g)].map(m => m[1]));
   const unknown = [...used].filter(k => !k.endsWith("_") && !keys.includes(k));
   check("every text the new files ask for exists", unknown.length === 0, unknown.join(", "));
 }

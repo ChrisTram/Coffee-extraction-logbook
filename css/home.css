@@ -276,7 +276,7 @@
 .home-latest .card-head { margin-bottom: 8px; }
 .home-latest .card-head .link-card { margin-top: 0; }
 @container home (max-width: 559px) {
-  .home-latest, .home-finding { padding: 16px 18px; }
+  .home-latest, .home-days, .home-chart { padding: 16px 18px; }
   .home .table-latest .d-tastes:not(:has(.arrival-from)) { display: none; }
   .home .table-latest .d-tastes .last-tag { display: none; }
   .home .table-latest tr.last-comment { display: none; }
@@ -284,25 +284,100 @@
   .home .table-latest tr.d-day th { padding-top: 10px; }
 }
 
-/* ONE FINDING, that turns: the next one slides in from the right. */
-.home-finding .card-head { margin-bottom: 8px; }
-/* Positioned (v9.23): its wider hit area (::after, below) is absolute, and
-   without this it took the whole window as its box, swallowed every tap on
-   the home and pushed the page 8 px sideways. */
-.hf-next { flex: none; position: relative; }
-.hf-next::after { content: ""; position: absolute; inset: -8px; }
-.hf-stage { position: relative; overflow: hidden; }
-.hf-text { margin: 0; font-size: 0.95rem; line-height: 1.5; color: var(--ink); }
-.hf-proof { margin: 6px 0 0; font-size: 0.75rem; letter-spacing: 0.03em; color: var(--muted); }
-.hf-slide.hf-out { position: absolute; left: 0; right: 0; top: 0; animation: hf-out 380ms ease-in forwards; }
-.hf-slide.hf-in { animation: hf-in 480ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-@keyframes hf-out { to { transform: translateX(-22%); opacity: 0; } }
-@keyframes hf-in { from { transform: translateX(26%); opacity: 0; } }
-.hf-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 12px 0 0; font-size: 0.78rem; color: var(--muted); }
-.hf-foot .link-card { margin: 0; font-size: 0.82rem; }
-@media (pointer: coarse) { .hf-next { width: 40px; height: 40px; } .hf-foot .link-card { min-height: 44px; } }
+/* v9.44: THE HOME'S CHARTS (js/ui-home-charts.js). One colour per coffee, one
+   shape per recipe, on the four of them. The colours stay clear of the two
+   brewers' (blue, orange) and of green: amber, violet, rose, cyan, brick; a
+   coffee past the fifth is grey. */
+.home {
+  --coffee-0: var(--muted); --coffee-1: #e3b341; --coffee-2: #a98bea; --coffee-3: #e884ae; --coffee-4: #56c4d8; --coffee-5: #db6a55;
+}
+:root[data-theme="light"] .home {
+  --coffee-1: #a8780a; --coffee-2: #6d4fc4; --coffee-3: #c2477a; --coffee-4: #17879c; --coffee-5: #b5432f;
+}
+.c0 { --c: var(--coffee-0); } .c1 { --c: var(--coffee-1); } .c2 { --c: var(--coffee-2); }
+.c3 { --c: var(--coffee-3); } .c4 { --c: var(--coffee-4); } .c5 { --c: var(--coffee-5); }
+.home-days[hidden], .home-chart[hidden] { display: none; }
+.home-days .card-head, .home-chart .card-head { margin-bottom: 10px; }
+.hc-figures { font-size: 0.86rem; color: var(--text); }
+.hc-figures b { color: var(--ink); }
+.hc-meankey { display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
+.hc-meankey i { display: block; width: 16px; height: 0; border-top: 2px solid color-mix(in srgb, var(--ink) 45%, transparent); border-radius: 2px; }
+.hc-sub { margin: -4px 0 10px; font-size: 0.78rem; line-height: 1.4; color: var(--muted); }
+.hc-none { margin: 0; font-size: 0.88rem; color: var(--muted); }
+/* A plot: the scale's figures in a gutter on the left, the drawing beside. */
+.hc-plot { position: relative; margin-left: 22px; height: 150px; }
+.hc-plot-days { height: 210px; }
+.hc-svg { display: block; overflow: visible; }
+.hc-yaxis { position: absolute; top: 0; bottom: 0; left: -22px; width: 16px; }
+.hc-yaxis span { position: absolute; right: 0; transform: translateY(-50%); font-size: 0.75rem; line-height: 1; color: var(--muted); font-variant-numeric: tabular-nums; }
+.hc-grid { stroke: var(--lines-soft, var(--lines)); stroke-width: 1; }
+.hc-split { stroke: var(--lines); stroke-width: 1; stroke-dasharray: 2 4; }
+.hc-today { fill: var(--accent); opacity: 0.07; }
+.hc-band { fill: var(--accent); opacity: 0.12; }
+.hc-mean { stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; opacity: 0.38; }
+.hc-wait { position: absolute; left: 4px; bottom: 1px; font-size: 0.75rem; line-height: 1; color: var(--muted); pointer-events: none; }
+.hc-pt { cursor: pointer; fill: var(--c); stroke: var(--panel); stroke-width: 1.5; }
+.hc-pt.open { fill: var(--panel); stroke: var(--c); stroke-width: 2; }
+.hc-pt .hc-hit { fill: transparent; stroke: none; }
+.hc-pt > :not(title, .hc-hit) { transform-box: fill-box; transform-origin: center; transform: scale(1.15); transition: transform 160ms cubic-bezier(0.3, 1.5, 0.5, 1); }
+.hc-pt:hover > :not(title, .hc-hit) { transform: scale(1.6); }
+/* The days under their columns: the day of the month, and its weekday. */
+.hc-xaxis { display: grid; grid-template-columns: repeat(var(--n, 15), minmax(0, 1fr)); margin: 6px 0 0 22px; text-align: center; }
+.hc-xaxis span { display: grid; gap: 1px; padding: 2px 0; border-radius: 6px; }
+.hc-xaxis b { font-size: 0.78rem; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+.hc-xaxis small { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; }
+.hc-xaxis .today b { color: var(--accent); }
+.hc-taxis { position: relative; height: 18px; margin: 4px 0 0 22px; }
+.hc-taxis span { position: absolute; top: 0; transform: translateX(-50%); font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.hc-taxis .best { color: var(--accent); font-weight: 700; }
+.hc-reading { margin: 8px 0 0; font-size: 0.84rem; line-height: 1.45; color: var(--text); }
+/* The legend: what the colours and the shapes are, with how many cups each. */
+.hc-legend { display: grid; gap: 4px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--lines-soft, var(--lines)); }
+.hc-legend p { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin: 0; font-size: 0.8rem; color: var(--text); }
+.hc-legend-label { flex: none; min-width: 4.4em; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.hc-key { display: inline-flex; align-items: center; gap: 6px; min-width: 0; padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; }
+button.hc-key { cursor: pointer; }
+button.hc-key:hover { color: var(--accent); }
+button.hc-key:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.hc-key small { font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.hc-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+.hc-glyph { flex: none; fill: var(--text); overflow: visible; }
+/* WHICH RECIPE FOR WHICH COFFEE: a recipe per row, a coffee per column. */
+.hm-grid { display: grid; grid-template-columns: minmax(96px, 2fr) repeat(var(--cols, 3), minmax(0, 1fr)); gap: 4px; align-items: stretch; }
+.hm-col { display: grid; justify-items: center; align-content: end; gap: 4px; padding: 0 2px 4px; min-width: 0; text-align: center; }
+.hm-col span { font-size: 0.75rem; line-height: 1.2; color: var(--text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.hm-row { display: flex; align-items: center; gap: 7px; min-width: 0; padding-right: 4px; font-size: 0.8rem; color: var(--text); }
+.hm-row span { min-width: 0; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.hm-cell {
+  display: grid; place-items: center; align-content: center; gap: 0; min-height: 40px; padding: 3px 2px; border: 1px solid transparent; border-radius: 9px;
+  background: color-mix(in srgb, var(--accent) var(--t, 0%), var(--panel-2)); font: inherit; color: var(--ink); cursor: pointer;
+  transition: transform 160ms cubic-bezier(0.3, 1.5, 0.5, 1), border-color var(--transition);
+}
+.hm-cell b { font-family: var(--serif); font-weight: 400; font-size: 1.2rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.hm-cell small { font-size: 0.75rem; line-height: 1.1; color: color-mix(in srgb, var(--ink) 62%, transparent); font-variant-numeric: tabular-nums; }
+.hm-cell.best { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.hm-cell.none { background: none; border: 1px dashed var(--lines); color: var(--muted); cursor: default; }
+button.hm-cell:hover { transform: scale(1.05); border-color: var(--accent); }
+button.hm-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* THE SPREAD: one block per cup, stacked on its score. */
+.hs-plot { display: flex; align-items: flex-end; gap: 4px; }
+.hs-col { flex: 1 1 0; min-width: 0; display: grid; justify-items: center; gap: 2px; }
+.hs-stack { display: flex; flex-direction: column-reverse; align-items: stretch; gap: 2px; width: 100%; max-width: 30px; min-height: 2px; border-bottom: 2px solid var(--lines); padding-bottom: 2px; }
+.hs-cup { display: block; height: clamp(5px, calc(96px / var(--max, 6)), 14px); border-radius: 3px; background: var(--c); cursor: pointer; }
+.hs-cup:hover { outline: 2px solid var(--ink); outline-offset: 1px; }
+.hs-col small { min-height: 1em; font-size: 0.75rem; line-height: 1; color: var(--muted); font-variant-numeric: tabular-nums; }
+.hs-col b { font-family: var(--serif); font-weight: 400; font-size: 0.95rem; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
+.hs-col.half b { font-size: 0.75rem; color: var(--muted); }
+@container home (max-width: 559px) {
+  .hc-plot-days { height: 170px; }
+  .hc-xaxis small { display: none; }
+  .hc-xaxis b { font-size: 0.75rem; }
+  .hc-legend-label { min-width: 100%; }
+  .hc-legend p { gap: 0 12px; }
+}
+@media (pointer: coarse) { button.hc-key { min-height: 30px; } }
 
-/* J4: THE BAND. The last cup, folded, stuck at the top of the screen's
+/* J4: THE BAND./* J4: THE BAND. The last cup, folded, stuck at the top of the screen's
    column once its card has scrolled away; its name and its score fly in
    from the card (js/ui-home.js). */
 .home-band {
@@ -333,7 +408,7 @@
    whole cascade lands in about half a second (0,85 s before): the home is
    the screen you come back to ten times a day, it must not make you wait. */
 .home-enter .home-head, .home-enter .ho-head, .home-enter .ho-item, .home-enter .ho-end, .home-enter .card-last,
-.home-enter .home-week-line, .home-enter .home-latest, .home-enter .home-finding, .home-enter .home-week {
+.home-enter .home-week-line, .home-enter .home-latest, .home-enter .home-days, .home-enter .home-chart, .home-enter .home-week {
   animation: home-rise 400ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .home-enter .ho-item, .home-enter .ho-end { animation-delay: calc(20ms + var(--i, 0) * 40ms); }
@@ -341,7 +416,9 @@
 .home-enter .home-week { animation-delay: 100ms; }
 .home-enter .home-week-line { animation-delay: 110ms; }
 .home-enter .home-latest { animation-delay: 130ms; }
-.home-enter .home-finding { animation-delay: 150ms; }
+.home-enter .home-days { animation-delay: 60ms; }
+.home-enter .home-chart { animation-delay: 150ms; }
+.home-enter .home-chart ~ .home-chart { animation-delay: 180ms; }
 @keyframes home-rise { from { opacity: 0; transform: translateY(12px); } }
 /* The scores arrive after their card: the dots pop one after the other, the
    rolling line follows them. */
@@ -349,12 +426,17 @@
 .home-enter .ho-roll { animation: ho-fade 260ms ease-out both; animation-delay: calc(180ms + var(--i, 0) * 16ms); }
 .home-enter .ho-avg { animation: ho-fade 360ms ease-out 110ms both; }
 @keyframes ho-pop { from { opacity: 0; transform: scale(0.2); } }
+@keyframes hc-pop { from { opacity: 0; transform: scale(0.2); } to { opacity: 1; transform: scale(1.15); } }
 @keyframes ho-fade { from { opacity: 0; } }
+/* The marks of the charts arrive the same way, after their card. */
+.home-enter .hc-pt > :not(title, .hc-hit) { animation: hc-pop 300ms cubic-bezier(0.3, 1.5, 0.5, 1) both; animation-delay: calc(170ms + var(--i, 0) * 12ms); }
+.home-enter .hc-mean { animation: ho-fade 300ms ease-out both; animation-delay: calc(220ms + var(--i, 0) * 14ms); }
 
 /* THE LAYOUT BY WIDTH, after the blocks it switches: one column on a phone
-   (the open coffees, the last cup, the week in one line, the latest cups, the
-   finding); from 860 px of content, the open coffees span the page under the
-   title, then a column on the right with the week, the finding and the wheel.
+   (the open coffees, the 15 days, the last cup, the week in one line, the
+   latest cups, the three charts); from 860 px of content, the open coffees
+   span the page under the title, then the 15 days lead the main column and a
+   column on the right holds the week and the three charts.
    v9.25: the two columns run on their own. The side column spans every row
    of the grid, the last of which is flexible: a spanning item that crosses
    a flexible row grows that row only, so the head keeps its own height and
@@ -393,9 +475,10 @@
 
 @media (prefers-reduced-motion: reduce) {
   .rail-entries.has-mark .rail-mark.ready, .hbd-inner, .ho-level i, .ho-pt, .ho-card, .home-band { transition: none; }
-  .has-draft .draft-dot, .morning-grow .hw-day i, .hf-slide.hf-in, .hf-slide.hf-out,
+  .hc-pt > *, .hm-cell { transition: none; }
+  .has-draft .draft-dot, .morning-grow .hw-day i, .home-enter .hc-pt > *, .home-enter .hc-mean,
   .home-enter .home-head, .home-enter .ho-head, .home-enter .ho-item, .home-enter .ho-end, .home-enter .card-last,
-  .home-enter .home-week-line, .home-enter .home-latest, .home-enter .home-finding, .home-enter .home-week,
+  .home-enter .home-week-line, .home-enter .home-latest, .home-enter .home-days, .home-enter .home-chart, .home-enter .home-week,
   .home-enter .ho-pt, .home-enter .ho-roll, .home-enter .ho-avg { animation: none; }
 }
 

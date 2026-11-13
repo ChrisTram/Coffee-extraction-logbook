@@ -6,7 +6,6 @@
  *
  *   - the WEEK in one line (cups, average, best), and on a wide screen as a
  *     card with a bar per day, tinted by the score (the recap's bars);
- *   - ONE finding « À retenir », that turns (1 sur 5), the others in Analyses;
  *   - THE BAND (J4): scrolling down, the last cup folds into a band stuck at
  *     the top, its name and its score flying from the card into it;
  *   - the blocks arrive one after the other when the screen opens.
@@ -15,7 +14,10 @@
  * the month's card, the podium and the grinder map, the bags' column and the
  * suggestion line (each open coffee now has its own « Brasser »).
  *
- * The pure parts (the week, which finding first) take their data as
+ * v9.44 took out the sentence « À retenir » and the wheel of the month's
+ * tastes: Chris wants charts on the home, not sentences (js/ui-home-charts.js).
+ *
+ * The pure parts (the week) take their data as
  * arguments: tools/home.test.mjs runs them without a page. */
 "use strict";
 
@@ -68,14 +70,6 @@
     if (gap === 0) return I18N.t("date_today").toLowerCase();
     if (gap === 1) return I18N.t("date_yesterday").toLowerCase();
     return d.toLocaleDateString(I18N.locale(), { weekday: "long" });
-  }
-
-  /* Which finding opens the card: a different one each day, so the card does
-     not say the same thing every morning. */
-  function findingStart(count, key) {
-    if (!(count > 0)) return 0;
-    const n = String(key || "").split("").reduce((s, ch) => (s * 31 + ch.charCodeAt(0)) % 9973, 7);
-    return n % count;
   }
 
   // ---------- The week, drawn ----------
@@ -162,73 +156,6 @@
     const side = $("#home-side");
     if (!side || !side.style || typeof window.innerHeight !== "number") return;
     side.style.setProperty("--home-side-top", sideTop(side.offsetHeight, window.innerHeight) + "px");
-  }
-
-  // ---------- One finding, that turns ----------
-
-  const finding = { list: [], index: null, day: "", timer: null, paused: false };
-  const ROTATE_MS = 12000;
-  function findingMarkup(c) {
-    return '<p class="hf-text">' + c.text + "</p>" +
-      (c.confidence ? '<p class="hf-proof">' + escapeHtml(I18N.t("finding_" + c.confidence)) + " · " +
-        escapeHtml(I18N.t("finding_counts", { h: c.high.n, b: c.low.n })) + "</p>" : "");
-  }
-  function renderFinding(analyzable) {
-    const card = $("#home-finding");
-    if (!card) return;
-    const list = UI.computeInsights(analyzable).filter(c => c.high);
-    card.hidden = !list.length;
-    finding.list = list;
-    if (!list.length) { put(card, ""); return; }
-    const today = localDateKey(new Date());
-    if (finding.index === null || finding.day !== today) { finding.index = findingStart(list.length, today); finding.day = today; }
-    finding.index %= list.length;
-    const html = '<div class="card-head"><h3>' + escapeHtml(I18N.t("home_finding_title")) + "</h3>" +
-      (list.length > 1 ? '<button type="button" class="btn-square-small hf-next" data-finding-next aria-label="' +
-        titleAttr(I18N.t("home_finding_next")) + '">' + UI.icon("chevron") + "</button>" : "") + "</div>" +
-      '<div class="hf-stage" aria-live="polite">' + findingMarkup(list[finding.index]) + "</div>" +
-      '<p class="hf-foot"><span class="hf-pos">' + (list.length > 1 ? escapeHtml(I18N.t("home_finding_pos", { i: finding.index + 1, n: list.length })) : "") + "</span>" +
-      '<button type="button" class="link-card hf-all" data-home-go="analytics">' + escapeHtml(I18N.t("home_finding_all")) + " ›</button></p>";
-    put(card, html);
-  }
-
-  /* The next finding slides in from the right while the shown one leaves to
-     the left. Calm: it is simply replaced. */
-  function nextFinding(step) {
-    const card = $("#home-finding");
-    const list = finding.list;
-    if (!card || list.length < 2) return;
-    finding.index = (finding.index + (step || 1) + list.length) % list.length;
-    const stage = card.querySelector(".hf-stage"), pos = card.querySelector(".hf-pos");
-    if (pos) pos.textContent = I18N.t("home_finding_pos", { i: finding.index + 1, n: list.length });
-    if (!stage) return;
-    if (calm() || hidden() || typeof stage.insertAdjacentHTML !== "function") { stage.innerHTML = findingMarkup(list[finding.index]); return; }
-    [...stage.children].forEach(el => { if (el.classList.contains("hf-out")) el.remove(); });
-    const old = document.createElement("div");
-    old.className = "hf-slide hf-out";
-    old.setAttribute("aria-hidden", "true");
-    while (stage.firstChild) old.appendChild(stage.firstChild);
-    stage.appendChild(old);
-    const fresh = document.createElement("div");
-    fresh.className = "hf-slide hf-in";
-    fresh.innerHTML = findingMarkup(list[finding.index]);
-    stage.appendChild(fresh);
-    setTimeout(() => { old.remove(); while (fresh.firstChild) stage.insertBefore(fresh.firstChild, fresh); fresh.remove(); }, 520);
-  }
-
-  /* It turns by itself every twelve seconds, but only seen: the home on
-     screen, the page visible, the card in view, nobody reading it (pointer
-     over it or focus inside), and never with reduced motion. */
-  function startRotation() {
-    if (finding.timer || typeof setInterval !== "function") return;
-    finding.timer = setInterval(() => {
-      const card = $("#home-finding");
-      if (!card || card.hidden || finding.paused || calm() || hidden() || nav.screenName !== "dashboard") return;
-      if (typeof card.getBoundingClientRect !== "function" || typeof window.innerHeight !== "number") return;
-      const r = card.getBoundingClientRect();
-      if (r.bottom < 0 || r.top > window.innerHeight || !r.height) return;
-      nextFinding(1);
-    }, ROTATE_MS);
   }
 
   // ---------- The band (J4) ----------
@@ -325,35 +252,21 @@
     // v9.41: the open coffees first, under the title (js/ui-home-open.js).
     UI.renderOpenCoffees(o);
     renderWeek(weekSummary(o.exts, o.analyzable, new Date()), o.morning);
-    renderFinding(o.analyzable);
+    // v9.44: the 15 days, the matrix, the temperature, the spread (js/ui-home-charts.js).
+    UI.renderHomeCharts(o);
     renderBand(o.last);
     // R4 and R9 (v9.23): the steam of a cup still hot, the streak on the week (js/ui-celebrate.js).
     UI.renderMoments(o);
     if (nav.screenName === "dashboard") onScroll();
-    // The aroma wheel of the month, under the finding on a wide screen (js/ui-home-widgets.js).
-    UI.renderHomeWidgets();
     placeSide();
   }
 
   function wireHome() {
     const go = screen => { if (UI.showAnalyticsPeriod && screen === "analytics") UI.showAnalyticsPeriod("7"); UI.activateScreen(screen); };
     [$("#home-week"), $("#home-week-line")].forEach(b => { if (b) b.addEventListener("click", () => go("analytics")); });
-    // The side column's sticky top follows its height (a finding turning).
+    // The side column's sticky top follows its height (a chart appearing).
     const side = $("#home-side");
     if (side && typeof ResizeObserver === "function") new ResizeObserver(() => placeSide()).observe(side);
-    const findingCard = $("#home-finding");
-    if (findingCard) {
-      findingCard.addEventListener("click", ev => {
-        if (ev.target.closest("[data-finding-next]")) { nextFinding(1); return; }
-        const link = ev.target.closest("[data-home-go]");
-        if (link) UI.activateScreen(link.dataset.homeGo);
-      });
-      // Nobody reads a sentence that moves: the rotation waits under the pointer and the focus.
-      findingCard.addEventListener("pointerenter", () => { finding.paused = true; });
-      findingCard.addEventListener("pointerleave", () => { finding.paused = false; });
-      findingCard.addEventListener("focusin", () => { finding.paused = true; });
-      findingCard.addEventListener("focusout", () => { finding.paused = false; });
-    }
     const bandEl = $("#home-band");
     if (bandEl) bandEl.addEventListener("click", ev => {
       if (!ev.target.closest("[data-band-top]")) return;
@@ -374,12 +287,11 @@
         }
       }).observe(screen, { attributes: true, attributeFilter: ["class"], attributeOldValue: true });
     }
-    startRotation();
     UI.wireOpenCoffees();
-    UI.wireHomeWidgets();
+    UI.wireHomeCharts();
   }
 
   Object.assign(UI, {
-    weekSummary, findingStart, weekDayWord, renderHome, wireHome, nextFinding, sideTop,
+    weekSummary, weekDayWord, renderHome, wireHome, sideTop,
   });
 })();

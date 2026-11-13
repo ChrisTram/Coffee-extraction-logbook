@@ -201,7 +201,7 @@ part de la ligne touchée (cachée le temps du trajet) et va prendre la place, l
 les coins et la couleur du détail ; le détail, transparent pendant le trajet
 (`.morph-dest`), fait glisser ses textes partagés (FLIP) depuis leur place dans la
 ligne, puis ses autres morceaux arrivent un par un. Une seule aide :
-`UI.morphOpen(source, update, cible, { id, find })`, où `update` ouvre le détail
+`UI.morphOpen(source, update, cible, { id, find, keep })`, où `update` ouvre le détail
 (toujours exécutée, une fois) et `cible` est lue APRÈS ; `UI.morphBack(détail, update,
 { id, find, fade })` referme dans la source si elle est encore à l'écran, sinon en
 fondu (`fade`) ou d'un coup. Les textes partagés : `data-morph-key` ou les
@@ -250,12 +250,6 @@ cadran `#rs-rating`), « Enregistrer la note » écrit par le même chemin et le
 offre « Annuler ». Une valeur donnée après coup roule depuis un point dans les
 listes (Q3, `js/ui-scenes.js`).
 
-LA COLONNE DE L'ACCUEIL (v9.27, `js/ui-home-widgets.js`). Sous le constat, sur ordinateur,
-la roue des arômes du mois (`#home-widgets`), dessinée par `CHARTS.aromaWheel` ; un
-toucher ouvre sa tuile d'Analyses en grand. Depuis la v9.41 elle est seule : le podium
-et la carte du moulin sont partis (Analyses les montre), et la moyenne à côté des
-grammes est dans la carte de chaque café ouvert (`js/ui-home-open.js`, section 6 bis).
-
 LA FEUILLE DE STYLE ne définit chaque sélecteur de premier niveau qu'UNE fois
 (v8.31). Les blocs « refonte, étape n » qui redéfinissaient ce qui précédait ont
 été fusionnés dans la première définition. La vérification s'est faite par
@@ -294,7 +288,7 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/ui-findings.js` | les phrases calculées et leur carrousel |
 | `js/ui-last-cup.js` | la carte de la dernière tasse, et ses briques partagées avec la table |
 | `js/ui-dashboard.js` | l'accueil (`renderDashboard` : dernière tasse, dernières tasses, et `stockData`, le stock de chaque sachet ouvert), et les graphes qu'il portait, dessinés depuis la v9.21 sur la page Analyses (`renderAnalysesCharts`, `renderCalendar`, `renderChart30`) |
-| `js/ui-home.js` | l'accueil en trois questions (v9.21, L1, resserré en v9.41) : la semaine, le constat qui tourne, le bandeau de la dernière tasse, l'arrivée des blocs |
+| `js/ui-home.js` | l'accueil (v9.21, L1, resserré en v9.41 et v9.44) : la semaine, le bandeau de la dernière tasse, l'arrivée des blocs |
 | `js/ui-home-open.js` | tes cafés ouverts, en tête de l'accueil (v9.41) : une carte par sachet ouvert, grammes, moyenne, tendance, notes tasse par tasse, « Brasser » ; parties pures `coffeeTrend`, `rollingMean`, `sparkScale`, `methodAverages`, `brewTarget`, `openCoffee` |
 | `js/ui-analytics.js` | la page Analyses (v9.21, O1) : la période, les tuiles qui s'ouvrent sur place, le mois en barres, cafés, recettes, goûts, chiffres clés ; construite à la première ouverture |
 | `js/ui-story.js` | ton mois en café (v9.21, O6) : le bandeau de la page Analyses et les quatre histoires (`#modal-story`) |
@@ -338,7 +332,7 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/ui-welcome.js` | la première ouverture (v9.19, O4) : trois questions, puis la première tasse |
 | `js/ui-panel-edit.js` | la tasse du panneau de côté qu'on écrit (v9.27) : la note d'abord, les modifications rapides, le contexte ; parties pures dans `UI.panelEditMath` |
 | `js/ui-rate-sheet.js` | noter plus tard (v9.27) : « à noter » des listes, « Noter » de l'accueil, la feuille de note du téléphone |
-| `js/ui-home-widgets.js` | la roue des goûts du mois, sous le constat, sur écran large (v9.27 ; seule depuis la v9.41) |
+| `js/ui-home-charts.js` | les graphiques de l'accueil (v9.44) : les 15 derniers jours, quelle recette pour quel café, la température au Switch, tes notes sur 30 jours ; SVG et HTML maison, parties pures `homeCodes`, `lastDays`, `cupX`, `scoreScale`, `recipeMatrix`, `bestDegree`, `scoreSpread` |
 | `js/ui-shortcuts.js` | les raccourcis clavier : la table SHORTCUTS, la décision, l'aide générée, l'astuce (v9.13, v9.19) |
 | `js/app.js` | démarrage, navigation, thème, langue, modale de données, abonnement aux données |
 | `css/extras.css` | les styles de la v9.19 (O4, raccourcis, F2, O3), chargés après finishing.css |
@@ -978,12 +972,13 @@ même source que l'écran Paramètres). Raisons et pièges : `DECISIONS.md`.
 L'ACCUEIL (L1, v9.21, resserré en v9.41) répond à trois questions, dans l'ordre :
 où en sont tes cafés ouverts, ce que tu as bu, comment va ta semaine.
 `#dashboard-content.home` est une boîte de requêtes de conteneur
-(`container: home`) : sous 860 px de contenu, une colonne (les cafés ouverts, la
-dernière tasse, la semaine en une ligne `#home-week-line`, les dernières tasses,
-le constat) ; au dessus, les cafés ouverts sur toute la largeur sous le titre,
-puis deux colonnes (`.home-main`, qui garde la classe `.grid-dashboard` pour les
-règles de la carte, et `.home-side` : la semaine en carte avec ses barres
-`#home-week`, `#home-finding`, puis la roue des goûts du mois `#home-widgets`).
+(`container: home`) : sous 860 px de contenu, une colonne (les cafés ouverts, les
+15 derniers jours, la dernière tasse, la semaine en une ligne `#home-week-line`,
+les dernières tasses, puis les trois graphiques) ; au dessus, les cafés ouverts
+sur toute la largeur sous le titre, puis deux colonnes (`.home-main`, qui garde
+la classe `.grid-dashboard` pour les règles de la carte et commence par
+`#home-days`, et `.home-side` : la semaine en carte avec ses barres
+`#home-week`, puis `#home-matrix`, `#home-temp`, `#home-spread`).
 L'en-tête, `#home-open` et les deux colonnes sont les enfants d'une même grille
 `.home-layout`. La colonne de droite est collante (`position: sticky`) ;
 `placeSide` (js/ui-home.js, au rendu, au redimensionnement, ResizeObserver) lui
@@ -1017,9 +1012,40 @@ devient le cadre des `position: fixed`.
   ligne ; sous 560 px de page, trois rangées courtes (qui et combien, la tendance
   avec « Brasser », les notes). Le stock en grammes (v8.89) se lit donc toujours
   dès l'ouverture, sans défiler.
-- **La roue des goûts du mois** (`#home-widgets`, js/ui-home-widgets.js, écran
-  large) : `CHARTS.aromaWheel` sur les tasses notées des 30 derniers jours ; un
-  toucher ouvre sa tuile d'Analyses en grand. Rien si le mois n'a aucun goût.
+- **Les graphiques** (v9.44, js/ui-home-charts.js, à la place de la phrase « À
+  retenir » et de la roue des goûts, que Chris ne lisait pas). SVG et HTML
+  maison, jamais Chart.js : ils sont là dès le premier rendu. UN SEUL CODE pour
+  les quatre, décidé une fois par rendu par `UI.homeCodes(exts, ouverts, now)`
+  sur les 60 derniers jours : UNE COULEUR EST UN CAFÉ (le dernier bu d'abord,
+  puis les ouverts pas encore brassés ; cinq couleurs `--coffee-1` à
+  `--coffee-5` définies sur `.home`, ambre, violet, rose, cyan, brique, jamais
+  le bleu ni l'orange des cafetières ni du vert ; le sixième café est gris),
+  UNE FORME EST UNE RECETTE (la plus brassée d'abord : rond, carré, triangle,
+  losange, triangle inversé, croix, hexagone, étoile ; au delà, un petit point).
+  Une marque est un `<svg>` imbriqué (`.hc-pt`, le seul élément SVG qui prend
+  un pourcentage pour sa place) ; toutes les coordonnées sont des pourcentages,
+  comme les courbes des cafés ouverts.
+  - `#home-days`, « Tes 15 derniers jours » (`UI.lastDays`) : une marque par
+    tasse, son jour en largeur (`UI.cupX` range côte à côte les tasses d'un même
+    jour), sa note en hauteur (`UI.scoreScale` : jusqu'à 10, un point sous la
+    plus basse, quatre de haut au moins), la moyenne du jour en ligne ; une tasse
+    pas encore notée attend sur une rangée « à noter » au pied, en creux ; la
+    colonne d'aujourd'hui est teintée ; la légende dit les cafés (un toucher
+    ouvre la fiche) et les recettes avec leur nombre de tasses. Une marque porte
+    `data-spot-cup` : elle ouvre sa tasse.
+  - `#home-matrix`, « Quelle recette pour quel café » (`UI.recipeMatrix`) : une
+    recette par ligne (cinq au plus), un café par colonne (les quatre premiers du
+    code), la moyenne et le nombre de tasses dans chaque case, teintée par la
+    note, la meilleure de chaque café cerclée (dès deux recettes à comparer). Une
+    case ouvre ces tasses dans le journal (`UI.openHistoryOn`, filtres café et
+    recherche).
+  - `#home-temp`, « Au Switch, la température » : les tasses notées au Switch
+    qui ont une température, dès quatre ; les degrés en largeur, la note en
+    hauteur ; `UI.bestDegree` (au degré près, deux tasses au moins) teinte sa
+    colonne et écrit « Tes meilleures tasses : à 88 °C, 7,9 de moyenne sur 4 ».
+  - `#home-spread`, « Tes notes sur 30 jours » (`UI.scoreSpread`) : une colonne
+    par demi-point de la plus basse note à 10, un pavé par tasse à la couleur de
+    son café ; un pavé ouvre sa tasse. Rien sous trois tasses notées.
 - **Les dernières tasses** : cinq (`LATEST_SHOWN`, huit avant la v9.41), groupées
   par jour ; entre 480 et 760 px de carte, chaque tasse tient en deux lignes (les
   goûts à droite du nom).
@@ -1036,9 +1062,6 @@ devient le cadre des `position: fixed`.
   notées, meilleure, jours à venir) ; ses barres poussent à l'arrivée du matin
   (Q7) et ses chiffres roulent à l'arrivée d'une tasse de l'autre appareil (Q13).
   Le toucher ouvre Analyses sur 7 jours.
-- **Un constat** : `UI.computeInsights`, les seuls qui ont une preuve ; le premier
-  change chaque jour (`findingStart`), « › » ou douze secondes passent au suivant
-  (jamais sous le pointeur, le focus, la page cachée ou moins d'animations).
 - **L'arrivée** : quand `#screen-dashboard` reprend `on` (un MutationObserver),
   `.home-enter` fait monter les blocs l'un après l'autre.
 - **La vapeur** (R4, v9.23, js/ui-celebrate.js) : pendant 15 minutes après le

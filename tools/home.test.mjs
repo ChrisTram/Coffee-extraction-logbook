@@ -40,7 +40,7 @@ const UI = {
   animateCounter() {}, fallbacks: { dose: 15 }, caffeineOf: e => (Number(e.dose_g) || 0) * 10,
 };
 const fakeDocument = { visibilityState: "visible", querySelector: () => null, addEventListener() {} };
-for (const f of ["js/ui-home.js", "js/ui-home-open.js", "js/ui-analytics.js", "js/ui-story.js"]) {
+for (const f of ["js/ui-home.js", "js/ui-home-open.js", "js/ui-home-charts.js", "js/ui-analytics.js", "js/ui-story.js"]) {
   new Function("UI", "DATA", "TOOLS", "I18N", "TUNING", "CHARTS", "document", "window", "localStorage", read(f))(
     UI, DATA, TOOLS, I18N, TUNING, {}, fakeDocument, { addEventListener() {} }, fakeStorage);
 }
@@ -126,13 +126,52 @@ const before = (from, k) => { const d = new Date(from); d.setDate(d.getDate() - 
     UI.openCoffee({ ...row, coffee: { id: "m", name: "m" } }, many, many).trend.n === 30);
 }
 
-/* ---------- L1: which finding first ---------- */
+/* ---------- v9.44: the home's charts ---------- */
 {
-  const a = UI.findingStart(5, "2026-10-04"), b = UI.findingStart(5, "2026-10-04");
-  const week = ["2026-10-01", "2026-10-02", "2026-10-03", "2026-10-04", "2026-10-05", "2026-10-06", "2026-10-07"].map(k => UI.findingStart(5, k));
-  check("the first finding is the same all day", a === b && a >= 0 && a < 5);
-  check("and changes from one day to the next", new Set(week).size > 1, week.join());
-  check("no finding, no index", UI.findingStart(0, "2026-10-04") === 0);
+  const now = new Date(2026, 10, 14, 10, 0); // Saturday 14 November 2026
+  const mk = (k, o) => cup(before(now, k), { score_10: 8, recipe: "Brikka classique", method: "Brikka", ...o });
+  const exts = [
+    mk(0, { coffee_id: "a" }), mk(1, { coffee_id: "a", recipe: "Tetsu 4:6", method: "Switch", temperature_c: 88, score_10: 7.5 }),
+    mk(1, { coffee_id: "b", time: "15:00", score_10: "" }), mk(3, { coffee_id: "b", recipe: "Tetsu 4:6", method: "Switch", temperature_c: 88, score_10: 8.5 }),
+    mk(20, { coffee_id: "c", recipe: "Tetsu 4:6", method: "Switch", temperature_c: 93, score_10: 6 }),
+    mk(70, { coffee_id: "old", recipe: "Ancienne", score_10: 5 }),
+  ];
+  const codes = UI.homeCodes(exts, ["a", "new"], now);
+  check("a colour per coffee: the one drunk last first, then the open ones not brewed yet", codes.coffees.join() === "a,b,c,new", codes.coffees.join());
+  check("a coffee not seen for 60 days has no colour of its own", codes.colour("old") === 0 && codes.colour("a") === 1 && codes.colour("new") === 4);
+  check("a shape per recipe, the most brewed first", codes.recipes.join() === "Tetsu 4:6,Brikka classique" && codes.shape("Tetsu 4:6") === 0 && codes.shape("Brikka classique") === 1);
+  check("a recipe not brewed for 60 days has no shape of its own", codes.shape("Ancienne") === -1);
+  const six = UI.homeCodes(["a", "b", "c", "d", "e", "f"].map((id, i) => mk(i, { coffee_id: id })), [], now);
+  check("five colours, a sixth coffee is grey", six.colour("e") === 5 && six.colour("f") === 0);
+
+  const days = UI.lastDays(exts, exts, now);
+  check("15 days, today last", days.length === 15 && days[14].key === TOOLS.localDateKey(now) && days[0].key === before(now, 14));
+  check("each day holds its cups in the order they were drunk", days[13].cups.length === 2 && days[13].cups[0].coffee_id === "a" && days[13].cups[1].coffee_id === "b");
+  check("the day's average is over its rated cups only", days[13].mean === 7.5 && days[13].rated === 1 && days[14].mean === 8 && days[12].mean === null);
+  check("a cup outside the 15 days is not in them", days.every(d => d.cups.every(e => e.coffee_id !== "c")));
+  const failedOut = UI.lastDays(exts, exts.filter(e => e.coffee_id !== "a"), now);
+  check("a cup that is not analysable shows, but leaves the average", failedOut[14].cups.length === 1 && failedOut[14].mean === null);
+
+  check("a cup alone stands in the middle of its day", Math.abs(UI.cupX(0, 0, 1, 15) - 0.5 / 15) < 1e-9);
+  const xs = [0, 1, 2].map(j => UI.cupX(4, j, 3, 15));
+  check("several cups of a day stand side by side, inside the day's column", xs[0] < xs[1] && xs[1] < xs[2] && xs[0] > 4 / 15 && xs[2] < 5 / 15 &&
+    Math.abs(xs[1] - 4.5 / 15) < 1e-9);
+  check("the score scale runs to 10, from a point under the lowest score, four points tall at least", UI.scoreScale([8, 9]).low === 6 && UI.scoreScale([8, 9]).high === 10 &&
+    UI.scoreScale([4.5, 9]).low === 3 && UI.scoreScale([]).low === 5);
+
+  const m = UI.recipeMatrix(exts.filter(e => e.score_10 !== ""), ["a", "b"], ["Tetsu 4:6", "Brikka classique", "Jamais"]);
+  check("the matrix: a row per recipe that has a cup, a column per coffee", m.length === 2 && m[0].recipe === "Tetsu 4:6" && m[0].cells.length === 2);
+  check("a cell is the average and the count, or nothing", m[0].cells[0].avg === 7.5 && m[0].cells[0].n === 1 && m[1].cells[1] === null);
+  check("the best recipe of a coffee is flagged, when it has two to compare", m[1].cells[0].best === true && m[0].cells[0].best === false && m[0].cells[1].best === false);
+
+  const best = UI.bestDegree([{ t: 88, score: 8 }, { t: 88.4, score: 8.5 }, { t: 93, score: 9.5 }, { t: 92, score: 6 }, { t: 92, score: 7 }]);
+  check("the best degree needs two cups: one great cup at 93 does not win", best && best.t === 88 && best.avg === 8.25 && best.n === 2, JSON.stringify(best));
+  check("no degree brewed twice, no best degree", UI.bestDegree([{ t: 88, score: 8 }, { t: 93, score: 9 }]) === null);
+
+  const spread = UI.scoreSpread([mk(0, { score_10: 8 }), mk(1, { score_10: 8 }), mk(2, { score_10: 9.5 }), mk(3, { score_10: "" })]);
+  check("the spread: a column per half point from the lowest score to 10, empty ones too", spread.length === 5 && spread[0].score === 8 && spread[0].cups.length === 2 &&
+    spread[1].cups.length === 0 && spread[3].score === 9.5 && spread[3].cups.length === 1 && spread[4].score === 10);
+  check("a cup not rated is not in the spread", UI.scoreSpread([mk(0, { score_10: "" })]).length === 0);
 }
 
 /* ---------- O1: the period ---------- */
@@ -271,7 +310,18 @@ const before = (from, k) => { const d = new Date(from); d.setDate(d.getDate() - 
   const html = read("index.html");
   const home = html.slice(html.indexOf('<section id="screen-dashboard"'), html.indexOf('<section id="screen-analytics"'));
   const analytics = html.slice(html.indexOf('<section id="screen-analytics"'), html.indexOf("<!-- ================= SCREEN 2: ENTRY"));
-  check("the home keeps the open coffees, the last cup and the latest cups", ['id="home-open"', 'id="card-last"', 'id="latest-list"', 'id="home-band"', 'id="home-finding"'].every(s => home.includes(s)));
+  check("the home keeps the open coffees, the last cup and the latest cups", ['id="home-open"', 'id="card-last"', 'id="latest-list"', 'id="home-band"'].every(s => home.includes(s)));
+  check("v9.44: four charts on the home, the 15 days first of the main column", ['id="home-days"', 'id="home-matrix"', 'id="home-temp"', 'id="home-spread"'].every(s => home.includes(s)) &&
+    home.indexOf('class="grid-dashboard home-main"') < home.indexOf('id="home-days"') && home.indexOf('id="home-days"') < home.indexOf('id="card-last"'));
+  check("the sentence « À retenir » and the wheel of the month left the home", !home.includes('id="home-finding"') && !html.includes("ui-home-widgets.js") &&
+    !/home-finding|home-widget|hwg-|\.hf-/.test(read("css/home.css") + read("css/panel.css")));
+  const charts = read("js/ui-home-charts.js");
+  check("the charts are home-made (no Chart.js, there with the first paint), their marks open their cup", !/CHARTS\.\w|new Chart/.test(charts) && charts.includes('data-spot-cup="'));
+  check("a mark is placed by percentages, in a nested svg", /class="hc-pt c' \+ codes\.colour\(e\.coffee_id\)/.test(charts) && charts.includes('width="1" height="1" overflow="visible"'));
+  check("five coffee colours, none of them the brewers' blue or orange, and a light theme of their own",
+    /--coffee-1: #e3b341; --coffee-2: #a98bea; --coffee-3: #e884ae; --coffee-4: #56c4d8; --coffee-5: #db6a55;/.test(read("css/home.css")) &&
+    /:root\[data-theme="light"\] \.home \{\s*--coffee-1:/.test(read("css/home.css")));
+  check("the charts' marks have their calm path", /prefers-reduced-motion[\s\S]*\.home-enter \.hc-pt > \*, \.home-enter \.hc-mean/.test(read("css/home.css")));
   check("the open coffees come right under the title, before the last cup", home.indexOf('class="title-page"') < home.indexOf('id="home-open"') && home.indexOf('id="home-open"') < home.indexOf('id="card-last"'));
   check("what v9.41 took out of the home is gone: the corner, the bags column, the month, the suggestion",
     ['id="stock-corner"', 'id="home-bags"', 'id="home-month"', 'id="home-brew"'].every(s => !home.includes(s)));
@@ -324,7 +374,7 @@ const before = (from, k) => { const d = new Date(from); d.setDate(d.getDate() - 
 {
   const fr = read("js/i18n.fr.js") + read("js/i18n.fr2.js"), en = read("js/i18n.en.js");
   const used = new Set();
-  for (const f of ["js/ui-home.js", "js/ui-home-open.js", "js/ui-analytics.js", "js/ui-story.js", "js/ui-nav.js"]) {
+  for (const f of ["js/ui-home.js", "js/ui-home-open.js", "js/ui-home-charts.js", "js/ui-analytics.js", "js/ui-story.js", "js/ui-nav.js"]) {
     for (const m of read(f).matchAll(/I18N\.t\("([a-z0-9_]+)"/g)) if (!m[1].endsWith("_")) used.add(m[1]);
   }
   ["an_month_title_7", "an_month_title_30", "an_month_title_90", "an_month_title_all", "an_bar", "an_bar_rated", "an_month_meta_unrated",
@@ -341,7 +391,7 @@ const before = (from, k) => { const d = new Date(from); d.setDate(d.getDate() - 
   check("the static words of the page have their English", untranslated.length === 0, untranslated.join(" | "));
   check("the screens keep their names in English: Home, Journal, Analytics, Winning settings",
     enObj.UI["Accueil"] === "Home" && enObj.UI["Analyses"] === "Analytics" && enObj.UI["Réglages gagnants"] === "Winning settings");
-  check("and the zones drawn in JS are left to the code that draws them", read("js/i18n.js").includes("#home-week,#home-week-line,#home-open"));
+  check("and the zones drawn in JS are left to the code that draws them", read("js/i18n.js").includes("#home-week,#home-week-line,#home-open,#home-days,#home-matrix,#home-temp,#home-spread"));
 }
 
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);

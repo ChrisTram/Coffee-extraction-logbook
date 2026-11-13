@@ -13,7 +13,7 @@ que Chris ouvre dans Chrome en double-cliquant `index.html`, et qui tourne aussi
 en PWA privée sur Cloudflare Workers avec synchronisation entre appareils. Il y
 suit ses extractions de café sur deux machines, une Bialetti Brikka 2 tasses et un
 Hario Switch 02, avec un moulin Timemore C5 ESP. Les écrans : Accueil (tes cafés
-ouverts d'abord, v9.41), la saisie (« Nouvelle tasse »), Journal, Analyses, Mes
+ouverts d'abord, puis des graphiques, v9.41 et v9.44), la saisie (« Nouvelle tasse »), Journal, Analyses, Mes
 cafés, Réglages gagnants, Guide (recettes, moulin, diagnostic, boutiques),
 Paramètres.
 
