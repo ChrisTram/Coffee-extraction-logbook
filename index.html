@@ -7,21 +7,21 @@
 <!-- Site version, single source of truth: the footer reads it, and files
      loaded on demand put it in their URL. Set it with
      node tools/bump_version.mjs X, never by hand. -->
-<meta name="app-version" content="9.44">
-<link rel="stylesheet" href="css/base.css?v=9.44">
-<link rel="stylesheet" href="css/screens.css?v=9.44">
-<link rel="stylesheet" href="css/dialogs.css?v=9.44">
-<link rel="stylesheet" href="css/finishing.css?v=9.44">
-<link rel="stylesheet" href="css/stock.css?v=9.44">
-<link rel="stylesheet" href="css/extras.css?v=9.44">
-<link rel="stylesheet" href="css/journal.css?v=9.44">
-<link rel="stylesheet" href="css/home.css?v=9.44">
-<link rel="stylesheet" href="css/gestures.css?v=9.44">
-<link rel="stylesheet" href="css/moments.css?v=9.44">
-<link rel="stylesheet" href="css/panel.css?v=9.44">
-<link rel="stylesheet" href="css/aside.css?v=9.44">
-<link rel="stylesheet" href="css/feel.css?v=9.44">
-<link rel="stylesheet" href="css/morph.css?v=9.44">
+<meta name="app-version" content="9.45">
+<link rel="stylesheet" href="css/base.css?v=9.45">
+<link rel="stylesheet" href="css/screens.css?v=9.45">
+<link rel="stylesheet" href="css/dialogs.css?v=9.45">
+<link rel="stylesheet" href="css/finishing.css?v=9.45">
+<link rel="stylesheet" href="css/stock.css?v=9.45">
+<link rel="stylesheet" href="css/extras.css?v=9.45">
+<link rel="stylesheet" href="css/journal.css?v=9.45">
+<link rel="stylesheet" href="css/home.css?v=9.45">
+<link rel="stylesheet" href="css/gestures.css?v=9.45">
+<link rel="stylesheet" href="css/moments.css?v=9.45">
+<link rel="stylesheet" href="css/panel.css?v=9.45">
+<link rel="stylesheet" href="css/aside.css?v=9.45">
+<link rel="stylesheet" href="css/feel.css?v=9.45">
+<link rel="stylesheet" href="css/morph.css?v=9.45">
 <!-- crossorigin use-credentials: without it the browser fetches the manifest
      WITHOUT cookies, the front door redirects it to /login, and it tries to
      parse HTML as JSON. Result: "Manifest: Syntax error" and a PWA that
@@ -65,7 +65,7 @@
      charts link. -->
 <link rel="preload" href="css/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="css/fonts/instrument-serif-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="prefetch" href="js/vendor/chart.umd.js?v=9.44" as="script">
+<link rel="prefetch" href="js/vendor/chart.umd.js?v=9.45" as="script">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%98%95%3C/text%3E%3C/svg%3E">
 </head>
 <body>
@@ -228,15 +228,10 @@
       <section class="home-open" id="home-open" aria-labelledby="ho-title" hidden></section>
 
       <div class="grid-dashboard home-main">
-        <!-- v9.44: the last 15 days, one mark per cup, first of the column
-             (js/ui-home-charts.js). A colour is a coffee, a shape is a recipe. -->
-        <article class="card home-days" id="home-days" hidden></article>
         <article class="card card-last" id="card-last" hidden></article>
-        <button type="button" class="home-week-line" id="home-week-line" hidden></button>
 
-        <!-- The latest cups, grouped by day (v8.82), a real table that turns into
-             small cards on a narrow card (finishing.css, A1). The first three
-             are visible without scrolling on a phone. -->
+        <!-- The latest cups, right under the last one (v9.45): one line per
+             cup, when, which coffee, how, the score (css/home.css). -->
         <article class="card home-latest">
           <div class="card-head">
             <h3>Tes dernières tasses</h3>
@@ -246,12 +241,12 @@
             <table class="table-latest">
               <!-- Widths set per column: the table must fit in its
                    card, a card does not scroll horizontally. -->
-              <colgroup><col class="c-when"><col class="c-coffee"><col class="c-measures"><col class="c-tastes"><col class="c-rating"></colgroup>
+              <colgroup><col class="c-when"><col class="c-coffee"><col class="c-measures"><col class="c-rating"></colgroup>
               <!-- Headers hidden from the eye, read by screen readers: a
                    table without headers is a grid of unknowns to the ear. -->
               <thead class="offscreen">
                 <tr><th scope="col">Heure</th><th scope="col">Café</th>
-                  <th scope="col">Recette et mesures</th><th scope="col">Goûts</th><th scope="col">Note</th></tr>
+                  <th scope="col">Recette et mesures</th><th scope="col">Note</th></tr>
               </thead>
               <tbody id="latest-list"></tbody>
             </table>
@@ -259,19 +254,17 @@
         </article>
       </div>
 
-      <aside class="home-side" id="home-side" aria-label="Ta semaine et tes graphiques">
-        <!-- The week (L1), with its bars, on a wide screen: at the top of this
-             column since v9.25. A narrow screen reads it in one line under the
-             last cup. -->
-        <button type="button" class="card home-week" id="home-week" hidden></button>
-        <!-- v9.44: three charts in place of the sentence « À retenir » and the
-             wheel of the month's tastes (js/ui-home-charts.js): which recipe
-             for which coffee, the temperature on the Switch, the spread of
-             the scores. Shown on every width. -->
+      <aside class="home-side" id="home-side" aria-label="Tes recettes et tes sachets">
+        <!-- The charts of the side (js/ui-home-charts.js), on every width:
+             which recipe for which coffee (v9.44), and each open bag's grams
+             down to the day it will be empty (v9.45). -->
         <article class="card home-chart home-matrix" id="home-matrix" hidden></article>
-        <article class="card home-chart home-temp" id="home-temp" hidden></article>
-        <article class="card home-chart home-spread" id="home-spread" hidden></article>
+        <article class="card home-chart home-stock" id="home-stock" hidden></article>
       </aside>
+
+      <!-- v9.45: the last 30 days, one mark per cup, last and across the page
+           (js/ui-home-charts.js). A colour is a coffee, a shape is a recipe. -->
+      <article class="card home-days" id="home-days" hidden></article>
     </div>
   </div>
 </section>
@@ -2202,86 +2195,86 @@ Cảm ơn shop.</pre>
 <!-- ALL defer, and definitely not async: defer preserves order, async does not,
      and data.js would blow up looking for SYNC or GRIND. The download now
      runs in parallel with HTML parsing instead of blocking it. -->
-<script defer src="js/legacy-names.js?v=9.44"></script>
-<script defer src="js/tools.js?v=9.44"></script>
-<script defer src="js/i18n.fr.js?v=9.44"></script>
-<script defer src="js/i18n.fr2.js?v=9.44"></script>
-<script defer src="js/i18n.js?v=9.44"></script>
-<script defer src="js/grind.js?v=9.44"></script>
-<script defer src="js/recipes.js?v=9.44"></script>
+<script defer src="js/legacy-names.js?v=9.45"></script>
+<script defer src="js/tools.js?v=9.45"></script>
+<script defer src="js/i18n.fr.js?v=9.45"></script>
+<script defer src="js/i18n.fr2.js?v=9.45"></script>
+<script defer src="js/i18n.js?v=9.45"></script>
+<script defer src="js/grind.js?v=9.45"></script>
+<script defer src="js/recipes.js?v=9.45"></script>
 <!-- sync.js BEFORE data.js: data.js uses it at load time. -->
-<script defer src="js/sync.js?v=9.44"></script>
-<script defer src="js/data-csv.js?v=9.44"></script>
-<script defer src="js/data-schema.js?v=9.44"></script>
-<script defer src="js/data-store.js?v=9.44"></script>
-<script defer src="js/data-calcs.js?v=9.44"></script>
-<script defer src="js/data-migrations.js?v=9.44"></script>
-<script defer src="js/data.js?v=9.44"></script>
-<script defer src="js/tuning.js?v=9.44"></script>
+<script defer src="js/sync.js?v=9.45"></script>
+<script defer src="js/data-csv.js?v=9.45"></script>
+<script defer src="js/data-schema.js?v=9.45"></script>
+<script defer src="js/data-store.js?v=9.45"></script>
+<script defer src="js/data-calcs.js?v=9.45"></script>
+<script defer src="js/data-migrations.js?v=9.45"></script>
+<script defer src="js/data.js?v=9.45"></script>
+<script defer src="js/tuning.js?v=9.45"></script>
 <!-- v9.18: the bags without the DOM (shelf rows, the next cup), read by the screens below. -->
-<script defer src="js/bags.js?v=9.44"></script>
-<script defer src="js/search.js?v=9.44"></script>
-<script defer src="js/compare.js?v=9.44"></script>
-<script defer src="js/milestones.js?v=9.44"></script>
-<script defer src="js/charts.js?v=9.44"></script>
-<script defer src="js/ui-core.js?v=9.44"></script>
-<script defer src="js/ui-accent.js?v=9.44"></script>
-<script defer src="js/ui-feel.js?v=9.44"></script>
-<script defer src="js/ui-morph.js?v=9.44"></script>
-<script defer src="js/ui-sync-bean.js?v=9.44"></script>
-<script defer src="js/ui-nav.js?v=9.44"></script>
-<script defer src="js/ui-scrub.js?v=9.44"></script>
-<script defer src="js/ui-pull.js?v=9.44"></script>
-<script defer src="js/ui-findings.js?v=9.44"></script>
-<script defer src="js/ui-last-cup.js?v=9.44"></script>
-<script defer src="js/ui-dashboard.js?v=9.44"></script>
-<script defer src="js/ui-home.js?v=9.44"></script>
-<script defer src="js/ui-home-open.js?v=9.44"></script>
-<script defer src="js/ui-home-charts.js?v=9.44"></script>
-<script defer src="js/ui-cup.js?v=9.44"></script>
-<script defer src="js/ui-dial.js?v=9.44"></script>
-<script defer src="js/ui-rating-dial.js?v=9.44"></script>
-<script defer src="js/ui-dictate.js?v=9.44"></script>
-<script defer src="js/ui-wheel.js?v=9.44"></script>
-<script defer src="js/ui-entry.js?v=9.44"></script>
-<script defer src="js/ui-entry-aside.js?v=9.44"></script>
-<script defer src="js/ui-recipe-source.js?v=9.44"></script>
-<script defer src="js/ui-pills.js?v=9.44"></script>
-<script defer src="js/ui-chrono.js?v=9.44"></script>
-<script defer src="js/ui-draft.js?v=9.44"></script>
-<script defer src="js/ui-quick.js?v=9.44"></script>
-<script defer src="js/ui-history.js?v=9.44"></script>
-<script defer src="js/ui-journal.js?v=9.44"></script>
-<script defer src="js/ui-table.js?v=9.44"></script>
-<script defer src="js/ui-compare.js?v=9.44"></script>
-<script defer src="js/ui-guide.js?v=9.44"></script>
-<script defer src="js/ui-catalog.js?v=9.44"></script>
-<script defer src="js/ui-coffee-sheet.js?v=9.44"></script>
-<script defer src="js/ui-brew.js?v=9.44"></script>
-<script defer src="js/ui-drawings.js?v=9.44"></script>
-<script defer src="js/ui-analytics.js?v=9.44"></script>
-<script defer src="js/ui-story.js?v=9.44"></script>
+<script defer src="js/bags.js?v=9.45"></script>
+<script defer src="js/search.js?v=9.45"></script>
+<script defer src="js/compare.js?v=9.45"></script>
+<script defer src="js/milestones.js?v=9.45"></script>
+<script defer src="js/charts.js?v=9.45"></script>
+<script defer src="js/ui-core.js?v=9.45"></script>
+<script defer src="js/ui-accent.js?v=9.45"></script>
+<script defer src="js/ui-feel.js?v=9.45"></script>
+<script defer src="js/ui-morph.js?v=9.45"></script>
+<script defer src="js/ui-sync-bean.js?v=9.45"></script>
+<script defer src="js/ui-nav.js?v=9.45"></script>
+<script defer src="js/ui-scrub.js?v=9.45"></script>
+<script defer src="js/ui-pull.js?v=9.45"></script>
+<script defer src="js/ui-findings.js?v=9.45"></script>
+<script defer src="js/ui-last-cup.js?v=9.45"></script>
+<script defer src="js/ui-dashboard.js?v=9.45"></script>
+<script defer src="js/ui-home.js?v=9.45"></script>
+<script defer src="js/ui-home-open.js?v=9.45"></script>
+<script defer src="js/ui-home-charts.js?v=9.45"></script>
+<script defer src="js/ui-cup.js?v=9.45"></script>
+<script defer src="js/ui-dial.js?v=9.45"></script>
+<script defer src="js/ui-rating-dial.js?v=9.45"></script>
+<script defer src="js/ui-dictate.js?v=9.45"></script>
+<script defer src="js/ui-wheel.js?v=9.45"></script>
+<script defer src="js/ui-entry.js?v=9.45"></script>
+<script defer src="js/ui-entry-aside.js?v=9.45"></script>
+<script defer src="js/ui-recipe-source.js?v=9.45"></script>
+<script defer src="js/ui-pills.js?v=9.45"></script>
+<script defer src="js/ui-chrono.js?v=9.45"></script>
+<script defer src="js/ui-draft.js?v=9.45"></script>
+<script defer src="js/ui-quick.js?v=9.45"></script>
+<script defer src="js/ui-history.js?v=9.45"></script>
+<script defer src="js/ui-journal.js?v=9.45"></script>
+<script defer src="js/ui-table.js?v=9.45"></script>
+<script defer src="js/ui-compare.js?v=9.45"></script>
+<script defer src="js/ui-guide.js?v=9.45"></script>
+<script defer src="js/ui-catalog.js?v=9.45"></script>
+<script defer src="js/ui-coffee-sheet.js?v=9.45"></script>
+<script defer src="js/ui-brew.js?v=9.45"></script>
+<script defer src="js/ui-drawings.js?v=9.45"></script>
+<script defer src="js/ui-analytics.js?v=9.45"></script>
+<script defer src="js/ui-story.js?v=9.45"></script>
 <!-- v9.13: the jar to the gram, the moments that move, the empty places. -->
-<script defer src="js/ui-jar.js?v=9.44"></script>
-<script defer src="js/ui-moments.js?v=9.44"></script>
-<script defer src="js/ui-celebrate.js?v=9.44"></script>
-<script defer src="js/ui-roll.js?v=9.44"></script>
-<script defer src="js/ui-brewer.js?v=9.44"></script>
-<script defer src="js/ui-arrivals.js?v=9.44"></script>
-<script defer src="js/ui-scenes.js?v=9.44"></script>
-<script defer src="js/ui-empty.js?v=9.44"></script>
+<script defer src="js/ui-jar.js?v=9.45"></script>
+<script defer src="js/ui-moments.js?v=9.45"></script>
+<script defer src="js/ui-celebrate.js?v=9.45"></script>
+<script defer src="js/ui-roll.js?v=9.45"></script>
+<script defer src="js/ui-brewer.js?v=9.45"></script>
+<script defer src="js/ui-arrivals.js?v=9.45"></script>
+<script defer src="js/ui-scenes.js?v=9.45"></script>
+<script defer src="js/ui-empty.js?v=9.45"></script>
 <!-- v9.18: Mes cafés as a page with its shelf and the entry jars (O2), the end of a bag (Q9). -->
-<script defer src="js/ui-coffees.js?v=9.44"></script>
-<script defer src="js/ui-shelf.js?v=9.44"></script>
-<script defer src="js/ui-bag-end.js?v=9.44"></script>
-<script defer src="js/ui-panel.js?v=9.44"></script>
-<script defer src="js/ui-panel-edit.js?v=9.44"></script>
-<script defer src="js/ui-rate-sheet.js?v=9.44"></script>
-<script defer src="js/ui-palette.js?v=9.44"></script>
-<script defer src="js/ui-shortcuts.js?v=9.44"></script>
-<script defer src="js/ui-tuning.js?v=9.44"></script>
-<script defer src="js/ui-share.js?v=9.44"></script>
-<script defer src="js/ui-welcome.js?v=9.44"></script>
-<script defer src="js/app.js?v=9.44"></script>
+<script defer src="js/ui-coffees.js?v=9.45"></script>
+<script defer src="js/ui-shelf.js?v=9.45"></script>
+<script defer src="js/ui-bag-end.js?v=9.45"></script>
+<script defer src="js/ui-panel.js?v=9.45"></script>
+<script defer src="js/ui-panel-edit.js?v=9.45"></script>
+<script defer src="js/ui-rate-sheet.js?v=9.45"></script>
+<script defer src="js/ui-palette.js?v=9.45"></script>
+<script defer src="js/ui-shortcuts.js?v=9.45"></script>
+<script defer src="js/ui-tuning.js?v=9.45"></script>
+<script defer src="js/ui-share.js?v=9.45"></script>
+<script defer src="js/ui-welcome.js?v=9.45"></script>
+<script defer src="js/app.js?v=9.45"></script>
 </body>
 </html>

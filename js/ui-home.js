@@ -1,78 +1,28 @@
-/* L1 (v9.21, tightened in v9.41): THE HOME, IN THREE QUESTIONS.
+/* THE HOME'S FRAME (L1, v9.21; what is left of it after v9.41, v9.44, v9.45).
  *
- * Where are my open coffees, what did I drink, how is my week. The open
- * coffees are js/ui-home-open.js; ui-dashboard.js draws the last cup and the
- * latest cups; this file draws the rest:
+ * The open coffees are js/ui-home-open.js, the charts js/ui-home-charts.js,
+ * the last cup and the latest cups js/ui-dashboard.js. This file holds what
+ * ties the page together:
  *
- *   - the WEEK in one line (cups, average, best), and on a wide screen as a
- *     card with a bar per day, tinted by the score (the recap's bars);
  *   - THE BAND (J4): scrolling down, the last cup folds into a band stuck at
  *     the top, its name and its score flying from the card into it;
- *   - the blocks arrive one after the other when the screen opens.
+ *   - the blocks arriving one after the other when the screen opens.
  *
- * v9.41 took out of the home what Analyses and « Mes cafés » already say:
- * the month's card, the podium and the grinder map, the bags' column and the
- * suggestion line (each open coffee now has its own « Brasser »).
- *
- * v9.44 took out the sentence « À retenir » and the wheel of the month's
- * tastes: Chris wants charts on the home, not sentences (js/ui-home-charts.js).
- *
- * The pure parts (the week) take their data as
- * arguments: tools/home.test.mjs runs them without a page. */
+ * What left, and why: v9.41 the month's card, the podium, the grinder map,
+ * the bags' column and the suggestion line (Analyses and the open coffees say
+ * them); v9.44 the sentence « À retenir » and the wheel of the month's
+ * tastes; v9.45 the week (its card and its line: Chris did not read its bars,
+ * the 30 days chart shows the same days, and the streak moved beside the
+ * date). */
 "use strict";
 
 (() => {
 
-  const { $, titleAttr, localDateKey, fmtDecimal, average, nav } = UI;
+  const { $, titleAttr, fmtDecimal, nav } = UI;
   const escapeHtml = TOOLS.escapeHtml;
   const fmtRating = n => fmtDecimal(n, 1);
   const calm = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
   const hidden = () => typeof document.visibilityState === "string" && document.visibilityState === "hidden";
-  const dayOf = dt => String(dt).slice(0, 10);
-
-  // ---------- The week (pure) ----------
-
-  /* The CURRENT week, Monday to Sunday, as the mockup's « 28 sept. au 4 oct. »:
-     a bar per day (cups, and their average for the tint), the cups, the
-     rated average and the best cup. Days still to come are marked as such. */
-  function weekSummary(exts, analyzable, now) {
-    const start = new Date(now || new Date());
-    start.setHours(0, 0, 0, 0);
-    start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
-    const today = localDateKey(now || new Date());
-    const days = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(start); d.setDate(d.getDate() + i);
-      return { date: d, key: localDateKey(d) };
-    });
-    const keys = new Set(days.map(d => d.key));
-    const cups = exts.filter(e => keys.has(dayOf(e.date_time)));
-    const rated = analyzable.filter(e => e.score_10 !== "" && e.score_10 !== undefined && keys.has(dayOf(e.date_time)));
-    days.forEach(d => {
-      d.n = cups.filter(e => dayOf(e.date_time) === d.key).length;
-      const notes = rated.filter(e => dayOf(e.date_time) === d.key).map(e => Number(e.score_10));
-      d.mean = notes.length ? average(notes) : null;
-      d.future = d.key > today;
-    });
-    const best = rated.slice().sort((a, b) => Number(b.score_10) - Number(a.score_10) ||
-      String(b.date_time).localeCompare(String(a.date_time)))[0];
-    return {
-      start: start, end: days[6].date, days: days, cups: cups.length, rated: rated.length,
-      mean: rated.length ? average(rated.map(e => Number(e.score_10))) : null,
-      best: best ? { id: best.id, score: Number(best.score_10), date_time: best.date_time, coffee_id: best.coffee_id } : null,
-    };
-  }
-
-  // « aujourd'hui », « hier », or the weekday: the best cup of the week is in it.
-  function weekDayWord(dt, now) {
-    const d = new Date(String(dt).slice(0, 10) + "T12:00"), t = new Date(now || new Date());
-    t.setHours(12, 0, 0, 0);
-    const gap = Math.round((t - d) / 86400000);
-    if (gap === 0) return I18N.t("date_today").toLowerCase();
-    if (gap === 1) return I18N.t("date_yesterday").toLowerCase();
-    return d.toLocaleDateString(I18N.locale(), { weekday: "long" });
-  }
-
-  // ---------- The week, drawn ----------
 
   /* Rewritten only when what it says changed (compared with what was
      written, not with innerHTML, which the browser serializes its own way):
@@ -83,79 +33,6 @@
     written.set(el, html);
     el.innerHTML = html;
     return true;
-  }
-
-  /* A bar per day: the height counts the cups, the tint says their average
-     (the recap's rule, v8.87: pale at 4 and below, full at 9). */
-  const tint = m => (m === null ? 0.45 : Math.max(0.28, Math.min(1, (m - 4) / 5)));
-  let weekShown = null;
-  function renderWeek(w, morning) {
-    const card = $("#home-week"), line = $("#home-week-line");
-    if (!card || !line) return;
-    if (!w) { card.hidden = true; line.hidden = true; return; }
-    const fmtDay = d => d.toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" });
-    const cupsText = I18N.t("home_week_cups", { n: w.cups, s: w.cups > 1 ? "s" : "" });
-    const avgText = w.mean !== null ? I18N.t("home_week_avg", { m: fmtRating(w.mean) }) : I18N.t("home_week_unrated");
-    const bestText = w.best ? I18N.t("home_week_best", { b: fmtRating(w.best.score), d: weekDayWord(w.best.date_time) }) : "";
-    /* The line of a phone says the average as a bare figure, as the mockup's
-       « 9 tasses · 7,8 · la meilleure, 9 hier »: one line, not two. */
-    const shortAvg = w.mean !== null ? fmtRating(w.mean) : avgText;
-    const figuresWith = avg => w.cups
-      ? '<b class="hw-cups">' + escapeHtml(cupsText) + '</b><span class="hw-sep" aria-hidden="true">·</span><span class="hw-avg">' + escapeHtml(avg) + "</span>" +
-        (bestText ? '<span class="hw-sep" aria-hidden="true">·</span><span class="hw-best">' + escapeHtml(bestText) + "</span>" : "")
-      : '<span class="hw-none">' + escapeHtml(I18N.t("home_week_none")) + "</span>";
-    const figures = figuresWith(avgText);
-    const max = Math.max(1, ...w.days.map(d => d.n));
-    const bars = w.days.map(d => '<span class="hw-day' + (d.future ? " future" : "") + '"><i style="--h:' +
-      (d.n ? Math.max(0.14, d.n / max) : 0.06).toFixed(2) + ";--o:" + tint(d.mean).toFixed(2) + '"></i><small>' +
-      escapeHtml(d.date.toLocaleDateString(I18N.locale(), { weekday: "narrow" })) + "</small></span>").join("");
-    const title = I18N.t("recap_title", { a: w.start.getMonth() === w.end.getMonth() ? String(w.start.getDate()) : fmtDay(w.start), b: fmtDay(w.end) });
-    card.hidden = false;
-    card.setAttribute("aria-label", title + ". " + (w.cups ? [cupsText, avgText, bestText].filter(Boolean).join(", ") : I18N.t("home_week_none")) + ". " + I18N.t("home_week_aria"));
-    card.innerHTML = '<span class="hw-head"><span class="hw-title">' + escapeHtml(title) + '</span><span class="hw-figures">' + figures + "</span></span>" +
-      '<span class="hw-bars" aria-hidden="true">' + bars + "</span>";
-    line.hidden = false;
-    line.title = I18N.t("home_week_aria");
-    line.setAttribute("aria-label", card.getAttribute("aria-label"));
-    line.innerHTML = '<span class="hw-label">' + escapeHtml(I18N.t("home_week_label")) + '</span><span class="hw-figures">' + figuresWith(shortAvg) + "</span>" +
-      '<span class="hw-bars hw-mini" aria-hidden="true">' + bars + "</span>" + UI.icon("chevron");
-    /* Q13: a cup that came in from the other device, the counts roll from
-       what they showed; Q7: the first opening of the day, the bars grow. */
-    if (weekShown && UI.arrivalsPlaying()) {
-      [[card, avgText, weekShown.avg], [line, shortAvg, weekShown.shortAvg]].forEach(([el, avg, was]) => {
-        const c = el.querySelector(".hw-cups"), a = el.querySelector(".hw-avg");
-        if (c && weekShown.cups !== cupsText) UI.rollText(c, cupsText, weekShown.cups);
-        if (a && was !== avg) UI.rollText(a, avg, was);
-      });
-    }
-    weekShown = { cups: cupsText, avg: avgText, shortAvg: shortAvg };
-    if (morning) [card, line].forEach(el => growBars(el, morning));
-  }
-
-  // The bars of the week grow from the ground, one after the other (Q7).
-  function growBars(el, a) {
-    if (!a || !el || !el.classList) return;
-    const elapsed = performance.now() - a.t0;
-    if (elapsed > 950) return;
-    el.style.setProperty("--morning-shift", (-elapsed).toFixed(0) + "ms");
-    [...el.querySelectorAll(".hw-day i")].forEach((bar, i) => bar.style.setProperty("--d", String(i)));
-    el.classList.add("morning-grow");
-    setTimeout(() => el.classList.remove("morning-grow"), Math.max(0, 1150 - elapsed));
-  }
-
-  /* v9.25: the side column follows the scroll on a wide screen (sticky,
-     css/home.css). Under the band of the last cup when it fits the window;
-     taller than the window, a negative top: it scrolls down to its foot
-     first, then stays. Only a value: the phone's single column ignores it. */
-  const SIDE_TOP = 84, SIDE_FOOT = 18;
-  function sideTop(height, view) {
-    if (!(height > 0) || !(view > 0)) return SIDE_TOP;
-    return height + SIDE_TOP + SIDE_FOOT <= view ? SIDE_TOP : Math.round(view - height - SIDE_FOOT);
-  }
-  function placeSide() {
-    const side = $("#home-side");
-    if (!side || !side.style || typeof window.innerHeight !== "number") return;
-    side.style.setProperty("--home-side-top", sideTop(side.offsetHeight, window.innerHeight) + "px");
   }
 
   // ---------- The band (J4) ----------
@@ -248,32 +125,25 @@
   /* Called by renderDashboard with what it already computed, or with null
      when the logbook is empty. */
   function renderHome(o) {
-    if (!o) { renderWeek(null); renderBand(null); UI.renderMoments(null); return; }
+    if (!o) { renderBand(null); UI.renderMoments(null); return; }
     // v9.41: the open coffees first, under the title (js/ui-home-open.js).
     UI.renderOpenCoffees(o);
-    renderWeek(weekSummary(o.exts, o.analyzable, new Date()), o.morning);
-    // v9.44: the 15 days, the matrix, the temperature, the spread (js/ui-home-charts.js).
+    // v9.44, v9.45: the matrix, the bags' end, the 30 days (js/ui-home-charts.js).
     UI.renderHomeCharts(o);
     renderBand(o.last);
-    // R4 and R9 (v9.23): the steam of a cup still hot, the streak on the week (js/ui-celebrate.js).
+    // R4 and R9 (v9.23): the steam of a cup still hot, the streak beside the date (js/ui-celebrate.js).
     UI.renderMoments(o);
     if (nav.screenName === "dashboard") onScroll();
-    placeSide();
   }
 
   function wireHome() {
-    const go = screen => { if (UI.showAnalyticsPeriod && screen === "analytics") UI.showAnalyticsPeriod("7"); UI.activateScreen(screen); };
-    [$("#home-week"), $("#home-week-line")].forEach(b => { if (b) b.addEventListener("click", () => go("analytics")); });
-    // The side column's sticky top follows its height (a chart appearing).
-    const side = $("#home-side");
-    if (side && typeof ResizeObserver === "function") new ResizeObserver(() => placeSide()).observe(side);
     const bandEl = $("#home-band");
     if (bandEl) bandEl.addEventListener("click", ev => {
       if (!ev.target.closest("[data-band-top]")) return;
       window.scrollTo({ top: 0, behavior: calm() ? "auto" : "smooth" });
     });
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", () => { placeBand(); placeSide(); onScroll(); });
+    window.addEventListener("resize", () => { placeBand(); onScroll(); });
     /* The entrance plays when the home screen gets its "on" class, which
        activateScreen gives it (at boot too, behind the loading silhouette). */
     const screen = $("#screen-dashboard");
@@ -292,6 +162,6 @@
   }
 
   Object.assign(UI, {
-    weekSummary, weekDayWord, renderHome, wireHome, sideTop,
+    renderHome, wireHome,
   });
 })();

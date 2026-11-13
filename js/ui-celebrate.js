@@ -151,25 +151,18 @@
       FLAME_CUP + "<span>" + escapeHtml(text) + "</span></span>";
   }
 
-  /* After the week is drawn (js/ui-home.js rewrites it at every render), the
-     streak joins it: a line of its own under the figures on the card of a
-     wide screen, next to « Ta semaine » on the line of a narrow one; and its
-     words join the button's label. */
+  /* The streak sits beside the date, in the page's head (v9.45; on the
+     week's card before, which left the home). renderDashboard rewrites the
+     date at every render, so the streak is put back after it each time. */
   function placeStreak(exts) {
     const s = MILESTONES.streaks(exts, new Date(), UI.awayPeriods());
-    const html = streakHtml(s);
-    const words = html ? I18N.t("streak_days", { n: s.current }) : "";
-    [["#home-week", ".hw-head"], ["#home-week-line", ".hw-label"]].forEach(([id, sel]) => {
-      const host = $(id);
-      if (!host || typeof host.querySelector !== "function") return;
-      const slot = host.querySelector(sel);
-      if (!slot) return;
-      const old = slot.querySelector(".hw-streak");
+    const host = $("#dashboard-highlight");
+    if (host && typeof host.querySelector === "function") {
+      const old = host.querySelector(".hw-streak");
       if (old) old.remove();
-      if (html) slot.insertAdjacentHTML("beforeend", html);
-      const label = host.getAttribute("aria-label") || "";
-      if (words && label && !label.includes(words)) host.setAttribute("aria-label", label + (/[.!?]$/.test(label) ? " " : ". ") + words + ".");
-    });
+      const html = streakHtml(s);
+      if (html) host.insertAdjacentHTML("beforeend", html);
+    }
     return s;
   }
 

@@ -257,7 +257,10 @@
           '<p class="pe-status" aria-live="polite" hidden><span class="pe-status-text"></span><button type="button" class="pe-undo"></button></p>' +
         "</div>" +
       "</section>" +
-      '<section class="pe-block pe-figs"><div class="pe-fig-grid"></div>' +
+      '<section class="pe-block pe-figs">' +
+        // v9.45: the day and the hour of the cup, first of the quick edits: a cup logged late, or on the wrong day.
+        '<label class="pe-fig pe-when"><span class="pe-fig-label"></span><input type="datetime-local" class="pe-when-input"></label>' +
+        '<div class="pe-fig-grid"></div>' +
         // v9.32: the cup it was drunk from, a menu of Chris's cups (Paramètres), saved on change.
         '<label class="pe-fig pe-cupsel"><span class="pe-fig-label"></span><select class="pe-cup-select"></select></label>' +
         '<p class="pe-msg" aria-live="polite" hidden></p></section>' +
@@ -274,7 +277,7 @@
     ed = {
       root, slider: q("#pe-rating"), host: q("#pe-rating-dial"), score: q(".pe-score"), word: q(".pe-word"),
       failed: q("#pe-failed"), clear: q(".pe-clear"), status: q(".pe-status"), statusText: q(".pe-status-text"), undoBtn: q(".pe-undo"),
-      figs: q(".pe-fig-grid"), cup: q(".pe-cup-select"), msg: q(".pe-msg"), chips: q(".pe-tastes .pe-chips"), search: q(".pe-search"), found: q(".pe-found"),
+      figs: q(".pe-fig-grid"), cup: q(".pe-cup-select"), when: q(".pe-when-input"), msg: q(".pe-msg"), chips: q(".pe-tastes .pe-chips"), search: q(".pe-search"), found: q(".pe-found"),
       diags: q(".pe-diag-groups"), comment: q("#pe-comment"), ratingDirty: false, undo: null, statusTimer: 0,
     };
     UI.mountRatingDial(ed.slider, ed.host);
@@ -298,6 +301,7 @@
     set(".pe-tastes .pe-h-note", I18N.t("pe_tastes_usual"));
     set(".pe-diag h3", I18N.t("pe_diag"));
     set(".pe-cupsel .pe-fig-label", I18N.t("pe_fig_cup"));
+    set(".pe-when .pe-fig-label", I18N.t("pe_fig_when"));
     set(".pe-comment label", I18N.t("detail_comment"));
     ed.search.placeholder = I18N.t("pe_tastes_search");
     ed.search.setAttribute("aria-label", I18N.t("pe_tastes_search"));
@@ -372,6 +376,17 @@
     if (!row) return;
     await DATA.editExtraction(u.id, editedRow(row, { score_10: u.score_10, failed: u.failed }));
     showStatus(I18N.t("pe_undone"), false, false);
+  }
+
+  /* A cup's day and hour as the field and the logbook write them:
+     "YYYY-MM-DDTHH:MM", a real date, or "" (pure). */
+  function whenValue(text) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(String(text === undefined || text === null ? "" : text).trim());
+    if (!m) return "";
+    const [y, mo, d, h, mi] = m.slice(1).map(Number);
+    const t = new Date(y, mo - 1, d, h, mi);
+    const real = t.getFullYear() === y && t.getMonth() === mo - 1 && t.getDate() === d && h < 24 && mi < 60 && y >= 2000;
+    return real ? m[0] : "";
   }
 
   // ---------- The figures ----------
@@ -544,6 +559,16 @@
       const i = ev.target.closest("[data-fig-input]");
       if (i && i.dataset.dirty === "1") commitFigure(i);
     });
+    /* The day and the hour: saved a moment after the last change (the field
+       changes at each segment typed), never an incomplete or impossible
+       date: the field then goes back to the cup's own. */
+    ed.when.addEventListener("change", () => {
+      if (!shown) return;
+      const row = rowOf(shown), v = whenValue(ed.when.value);
+      if (!v) { if (row) ed.when.value = whenValue(row.date_time); return; }
+      queue(shown, { date_time: v }, 700);
+    });
+    ed.when.addEventListener("blur", () => { if (pending.id && "date_time" in pending.changes) flush(); });
     // The cup: saved as soon as it is picked.
     ed.cup.addEventListener("change", () => { if (shown) queue(shown, { cup: ed.cup.value }, 0); });
     // The tastes and the diagnostic: one tap toggles, saved together a moment later.
@@ -606,6 +631,8 @@
     paintRating();
     renderFigures(e);
     renderCup(e);
+    // The day and the hour follow the cup shown, except while the field has the focus.
+    if (ed.when && document.activeElement !== ed.when) ed.when.value = whenValue(e.date_time);
     renderTastes(e);
     renderDiags(e);
     if (fresh || (document.activeElement !== ed.comment && ed.comment.dataset.dirty !== "1")) ed.comment.value = e.comment || "";
@@ -839,7 +866,7 @@
 
   // Under the names the other files read; the pure parts for js/ui-rate-sheet.js and the tests.
   const flushPanelEdits = flush, onPanelMoreClick = onMoreClick;
-  const panelEditMath = { parseNumber, parseTime, parseField, formatField, changedFields, ratingPayload, editedRow, usualTastes, findTastes, toggled, same };
+  const panelEditMath = { parseNumber, parseTime, parseField, formatField, changedFields, ratingPayload, editedRow, usualTastes, findTastes, toggled, same, whenValue };
   Object.assign(UI, {
     panelCupHtml, mountPanelCup, refreshPanelCup, releasePanelCup, panelRate, flushPanelEdits, onPanelMoreClick, panelEditMath,
   });

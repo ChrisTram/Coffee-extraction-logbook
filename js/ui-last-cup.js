@@ -268,7 +268,7 @@
      the room and said nothing about what the cup tasted like, even though
      that is the point of the logbook. Stored values are French, display
      goes through I18N.tag. */
-  const LATEST_SHOWN = 5;
+  const LATEST_SHOWN = 6;
   const MAX_LAST_TASTES = 4;
   /* `lead` goes first in the row, before the tastes: the pill of a cup that
      came in from the other device (Q13, v9.17). */
@@ -279,19 +279,6 @@
     const rest = tags.length - shown.length;
     return '<div class="last-tastes">' + (lead || "") + shown.join("") +
       (rest > 0 ? '<span class="last-tag last-tag-plus">+' + rest + "</span>" : "") + "</div>";
-  }
-
-  /* The comment, in plain view and truncated, instead of waiting for hover:
-     it is the only field that says WHY a cup was good, and you had to put
-     the mouse on it to read it. Hover keeps the full text. */
-  /* THE COMMENT ON ITS OWN LINE, truncated to ONE line by CSS and not by a
-     character count: the available width depends on the window, a hard
-     threshold cuts too early on a big screen and too late on a small one.
-     The full text only comes on hover if the line is cut, see above. */
-  function lastComment(e) {
-    const c = String(e.comment || "").trim();
-    if (!c) return "";
-    return '<tr class="last-comment" data-ext="' + e.id + '"><td colspan="5">' + titleAttr(c) + "</td></tr>";
   }
 
   /* THE CARD MEASUREMENTS, short version: dose, water and time. Dial,
@@ -307,6 +294,6 @@
   }
 
   Object.assign(UI, {
-    LATEST_SHOWN, lastComment, lastTastes, shortMeasures, renderLastCup, timeSince, rankAmongSiblings,
+    LATEST_SHOWN, lastTastes, shortMeasures, renderLastCup, timeSince, rankAmongSiblings,
   });
 })();

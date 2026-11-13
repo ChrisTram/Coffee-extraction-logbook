@@ -951,14 +951,15 @@ function combinationWarnings(coffee, method, recipeName, recipes) {
       msgs.push(I18N.t("warn_wet_hulled"));
     } else if ((coffee.roast || "").toLowerCase().includes("fonc")) {
       msgs.push(I18N.t("warn_dark_roast"));
-    } else if ((coffee.recommended_method || "") === "Brikka") {
-      msgs.push(I18N.t("warn_brikka_recommended"));
     }
   }
 
-  if (method === "Brikka" && (coffee.recommended_method || "") === "Switch") {
-    msgs.push(I18N.t("warn_switch_recommended"));
-  }
+  /* NO warning either when the brewer is not the coffee's recommended one
+     (v9.45). « Ce café est noté pour la Brikka » came up at every Switch cup
+     of a coffee filed under the Brikka: the recommended method is a default
+     for the form, not a rule, and Chris brews most coffees both ways to
+     compare. The warnings left are about the coffee itself (flavoured,
+     rang bơ, wet hulled, dark roast). */
 
   // NO warning when the chosen recipe differs from `recommended_recipe`.
   // That recommendation comes from a value set when the coffee was created, never

@@ -94,7 +94,8 @@ html.steam-still .lc-w, html.steam-still .lc-w svg { animation-play-state: pause
   display: inline-flex; align-items: center; gap: 5px; margin-left: 10px; vertical-align: -2px;
   color: var(--accent-strong); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.02em; text-transform: none; white-space: nowrap;
 }
-.hw-head .hw-streak { margin: 4px 0 0; align-self: flex-start; }
+/* Beside the date, in the page's head (v9.45). */
+.highlight .hw-streak { margin-left: 12px; vertical-align: -2px; letter-spacing: 0; text-transform: none; }
 .hw-flame { flex: none; width: 15px; height: 15px; overflow: visible; }
 .hw-flame-cup { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .hw-flame-fire {

@@ -377,16 +377,7 @@ html[data-theme="dark"] .card-dark {
 .table-latest col.c-when { width: 62px; }
 .table-latest col.c-coffee { width: 27%; }
 .table-latest col.c-measures { width: 38%; }
-.table-latest col.c-tastes { width: 25%; }
 .table-latest col.c-rating { width: 52px; }
-/* The day subheading (v8.82): the date is no longer repeated on every row. */
-.table-latest tr.d-day { cursor: default; }
-.table-latest tr.d-day th {
-  text-align: left; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--muted); padding: 14px 10px 4px; border-top: 1px solid var(--lines);
-}
-.table-latest tr.d-day:first-child th { padding-top: 2px; border-top: none; }
-.table-latest tr.d-day + tr td { border-top: none; }
 .d-coffee .dot-method { display: inline-block; margin-right: 7px; vertical-align: 1px; }
 /* ONE LINE PER CUP. Everything here fits on one line and truncates
    cleanly: a table where each row is six lines tall is no longer a table. */
@@ -406,10 +397,6 @@ html[data-theme="dark"] .card-dark {
 .d-coffee b { color: var(--ink); }
 .d-recipe { color: var(--muted); }
 .d-figures { color: var(--text); margin-left: 8px; }
-.d-diag { color: var(--accent-strong); margin-left: 8px; }
-/* Tastes no longer stack: they scroll out of view if space runs out,
-   and the row keeps its height. */
-.d-tastes .last-tastes { display: flex; flex-wrap: nowrap; gap: 4px; overflow: hidden; }
 
 /* The comment row: a single line, truncated, full text on hover if cut. */
 .last-comment td {

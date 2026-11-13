@@ -541,50 +541,6 @@ h1, h2, h3, h4, .ref-title, .card h3 {
   line-height: 1.2;
 }
 
-/* ---------- A1 (v8.82): the latest brews on the phone ----------
-   Five columns in 313 px cut everything to three letters. Each cup
-   becomes a small card: the coffee in bold and the rating on the right, then the time,
-   the recipe and the measurements, then the tastes. Tuned to the width of the CARD
-   and not the screen: at 1280 px, the card is only 640 px and still cut
-   the names; on a large screen it becomes a table with one row per cup again. */
-.table-wrapper { container: dernieres / inline-size; }
-@container dernieres (max-width: 760px) {
-  .table-latest, .table-latest tbody { display: block; }
-  .table-latest colgroup { display: none; }
-  .table-latest tr.d-day { display: block; }
-  .table-latest tr.d-day th { display: block; padding-left: 2px; }
-  .table-latest tr.last-clickable {
-    display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: "cafe cafe note" "quand mesures note" "gouts gouts note";
-    column-gap: 8px; row-gap: 3px; padding: 10px 2px; border-top: 1px solid var(--lines-soft);
-  }
-  .table-latest tr.d-day + tr.last-clickable { border-top: none; }
-  .table-latest tr.last-clickable td { display: block; padding: 0; border: 0; }
-  .table-latest .d-coffee { grid-area: cafe; font-size: 0.95rem; }
-  .table-latest .d-when { grid-area: quand; font-size: 0.8rem; }
-  .table-latest .d-measures { grid-area: mesures; font-size: 0.8rem; }
-  .table-latest .d-measures .d-figures, .table-latest .d-measures .d-diag { margin-left: 0; }
-  .table-latest .d-measures > span + span::before { content: " · "; color: var(--muted); }
-  .table-latest .d-tastes { grid-area: gouts; max-width: none; }
-  .table-latest .d-tastes:empty { display: none; }
-  .table-latest .d-rating { grid-area: note; align-self: center; font-size: 1.7rem; padding-left: 6px; }
-  .table-latest tr.last-comment { display: block; }
-  .table-latest tr.last-comment td { display: block; padding: 0 2px 10px; max-width: none; }
-}
-/* v9.41: between a phone and a wide table, the tastes sit on the name's line,
-   on the right: a cup takes two lines instead of three, five cups fit a
-   short card. */
-@container dernieres (min-width: 480px) and (max-width: 760px) {
-  .table-latest tr.last-clickable {
-    grid-template-columns: auto minmax(0, 1fr) auto auto;
-    grid-template-areas: "cafe cafe gouts note" "quand mesures mesures note";
-    padding: 8px 2px;
-  }
-  .table-latest .d-coffee { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .table-latest .d-tastes { justify-self: end; align-self: center; max-width: 52cqi; overflow: hidden; }
-  .table-latest .d-tastes .last-tastes { flex-wrap: nowrap; margin: 0; }
-  .table-latest tr.last-comment td { padding-bottom: 8px; }
-}
 
 /* ---------- A3 (v8.82): the history under the thumb ---------- */
 .h-filter, .h-actives { display: none; }

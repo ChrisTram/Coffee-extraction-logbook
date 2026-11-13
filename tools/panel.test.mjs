@@ -134,6 +134,18 @@ const P = load("js/ui-panel-edit.js", stubUI()).panelEditMath;
   check("a botched cup's 10 is no milestone", MILESTONES.forEdit(failedTen, "e3", before[2], seen).celebrate.length === 0);
 }
 
+/* ---------- v9.45: the cup's day and hour ---------- */
+{
+  const M = load("js/ui-panel-edit.js", stubUI()).panelEditMath;
+  check("a day and an hour are kept as the logbook writes them", M.whenValue("2026-11-12T12:24") === "2026-11-12T12:24" && M.whenValue("2026-11-12T12:24:30") === "2026-11-12T12:24");
+  check("an incomplete or impossible date is refused", M.whenValue("2026-11-12") === "" && M.whenValue("") === "" && M.whenValue(undefined) === "" &&
+    M.whenValue("2026-02-30T10:00") === "" && M.whenValue("2026-11-12T25:00") === "" && M.whenValue("1026-11-12T10:00") === "");
+  const src = read("js/ui-panel-edit.js");
+  check("the panel has a date and time field, first of the quick edits, saved through the same queue", src.includes('<input type="datetime-local" class="pe-when-input">') &&
+    src.indexOf("pe-when-input") < src.indexOf('<div class="pe-fig-grid">') && src.includes("queue(shown, { date_time: v }, 700)"));
+  check("it never overwrites what is being typed", src.includes("document.activeElement !== ed.when"));
+}
+
 /* ---------- The keys ---------- */
 {
   const S = load("js/ui-shortcuts.js", stubUI());

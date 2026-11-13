@@ -2884,14 +2884,15 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
   check("an empty jar says «sachet vide», not «0 tasses»", SOURCE_UI.includes('b.cups === 0 ? I18N.t("drawing_bag_empty")'));
 }
 
-/* A1 (v8.82): THE LATEST EXTRACTIONS ARE READABLE, grouped by day. */
+/* THE LATEST EXTRACTIONS ARE READABLE (A1, v8.82; one line per cup since v9.45). */
 {
   const html = readFileSync(join(ROOT, "index.html"), "utf8");
   const cols = (html.match(/<table class="table-latest">[\s\S]*?<\/colgroup>/) || [""])[0].match(/<col /g) || [];
-  check("the latest table has five columns, the machine no longer has one", cols.length === 5 && !html.includes('class="c-machine"'));
-  check("and each day has its subheading", SOURCE_UI.includes('<tr class="d-day"><th colspan="5"'));
-  check("the comment spans the five columns", SOURCE_UI.includes('"last-comment" data-ext="\' + e.id + \'"><td colspan="5">'));
-  check("in a narrow card each cup becomes a grid card", readCss().includes("@container dernieres (max-width: 760px)") && readCss().includes('grid-template-areas: "cafe cafe note" "quand mesures note" "gouts gouts note"'));
+  check("the latest table has four columns: when, coffee, how, score", cols.length === 4 && !html.includes('class="c-machine"') && !html.includes('class="c-tastes"><col class="c-rating"'));
+  check("the day is on each line, no subheading, no comment line", SOURCE_UI.includes('<td class="d-when"><b>') && !SOURCE_UI.includes('<tr class="d-day">') &&
+    !SOURCE_UI.includes('"last-comment" data-ext='));
+  check("each cup is one grid line, two on a phone", readCss().includes('grid-template-areas: "when coffee how score"') &&
+    readCss().includes('grid-template-areas: "coffee coffee score" "when how score"'));
 }
 
 /* A3 (v8.82): THE HISTORY BY THUMB. */

@@ -2636,6 +2636,46 @@ projet) ; charger les écrans à la demande (10 pour cent du chemin critique pou
 une contrainte d'ordre fragile) ; remplacer Chart.js par du SVG (70 Ko gzip déjà
 chargés à part et mis en cache).
 
+### v9.45 : l'ordre de Chris, et trois choses retirées
+
+Retour du 14 novembre 2026, le soir même de la v9.44, point par point :
+« tes dernières tasses, compacte la vue et monte-la juste après dernière
+tasse, puis les 15 derniers jours en dernier » ; « ta semaine, osef, je
+comprends pas le graph non plus » ; « les notes sur 30 jours, osef un peu,
+remplace plutôt les 15 jours par 30 jours » ; « au Switch la température, pas
+assez précis, mets autre chose » ; « le panneau d'édition rapide ne me laisse
+pas changer l'heure » ; et le message « ce café est noté pour la Brikka » à
+virer.
+
+- À la place de la température : le stock dans le temps. C'est la question
+  qu'il pose le plus (« très très important »), et c'est un graphique qui donne
+  des chiffres exacts : grammes, grammes par jour, une date. La température
+  reposait sur quatre tasses par degré, d'où « pas assez précis ».
+- La ligne d'un sachet se reconstruit À REBOURS depuis ce qui reste (le stock
+  fait foi, compte à la main compris) en rajoutant chaque tasse : elle ne peut
+  pas contredire les grammes affichés juste au dessus.
+- Les 30 jours en pleine largeur au pied : 30 colonnes demandent de la place, et
+  il les voulait en dernier. Au téléphone, un défileur en `direction: rtl`
+  s'ouvre de lui-même sur les derniers jours : le régler par script échouait
+  quand l'accueil se dessine caché (au démarrage), la largeur vaut alors zéro.
+- La colonne collante est partie : confinée à sa rangée de grille, elle
+  glissait quand même sur la carte pleine largeur du dessous (vu à l'écran).
+  Les deux colonnes ont maintenant la même hauteur à 20 px près, le collage
+  n'apportait plus rien.
+- Le message de cafetière recommandée : `recommended_method` est une valeur par
+  défaut pour la saisie, pas un avis sur la tasse en cours ; il sortait à chaque
+  tasse au Switch d'un café rangé « Brikka ». Son pendant (« noté pour le
+  Switch ») part avec lui. Restent les avertissements qui parlent du café
+  lui-même (aromatisé, rang bơ, wet hulled, torréfaction foncée).
+- Saisies « perdues » (question de Chris ce jour-là) : rien de perdu. Lecture du
+  document par le client MCP, pierres tombales comprises : une seule
+  suppression en six semaines (le 13 novembre, la tasse du 12 rangée par erreur
+  sous un autre café), deux tasses au Switch sur le café en question dont une
+  « ratée », donc exclue des moyennes et de la matrice. C'est cette exclusion
+  qui donnait l'impression d'un trou. Pour refaire ce contrôle : un script qui
+  passe `fetch` à `createLogbookServer`, appelle `recent_cups` et lit
+  `tombstones.extractions` dans la réponse.
+
 ### v9.44 : des graphiques sur l'accueil, pas des phrases
 
 Retour de Chris le 14 novembre 2026, deux jours après la v9.41 : « le dashboard

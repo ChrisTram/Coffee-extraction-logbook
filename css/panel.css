@@ -75,6 +75,11 @@
   font-variant-numeric: tabular-nums; transition: border-color var(--transition);
 }
 .pe-fig input:hover { border-bottom-color: var(--muted); }
+/* v9.45: the cup's day and hour, above the figures. The browser's own date
+   field, in the same underline; its picker follows the theme. */
+.pe-when { margin-bottom: 12px; max-width: 320px; }
+.pe-when input { font-family: var(--sans); font-size: 1rem; min-height: 34px; cursor: text; }
+html[data-theme="dark"] .pe-when input { color-scheme: dark; }
 /* v9.32: the cup menu, under the figures, in the same quiet underline style. */
 .pe-cupsel { margin-top: 10px; max-width: 320px; }
 .pe-cupsel select {

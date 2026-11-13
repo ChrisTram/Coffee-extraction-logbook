@@ -1,32 +1,33 @@
-/* v9.44: THE HOME'S CHARTS.
+/* THE HOME'S CHARTS (v9.44, reworked in v9.45).
  *
- * Chris, two days after v9.41: the wheel of the month's tastes and the
- * sentence « À retenir » mean nothing to him on the home, and the page looks
- * empty. He wants charts that say something at a glance. Four of them, all
- * home-made SVG and HTML (no Chart.js: they are there with the first paint),
- * all with the same two codes, so one legend reads them all:
+ * Chris wants charts on the home, not sentences, and a page that is full.
+ * Three of them, all home-made SVG and HTML (no Chart.js: they are there with
+ * the first paint), with one code, so one legend reads them all:
  *
  *   A COLOUR IS A COFFEE, A SHAPE IS A RECIPE.
  *
- *   - TES 15 DERNIERS JOURS (#home-days, across the page): one mark per cup,
- *     its day along, its score up, the day's average as a line through the
- *     days. A cup not rated yet waits on a row of its own at the foot.
  *   - QUELLE RECETTE POUR QUEL CAFÉ (#home-matrix): a recipe per row, a
  *     coffee per column, the average in each cell, tinted by the score, the
  *     best of each coffee ringed. A cell opens its cups in the journal.
- *   - AU SWITCH, LA TEMPÉRATURE (#home-temp): the degrees along, the score
- *     up, and the degree that gave the best cups.
- *   - TES NOTES SUR 30 JOURS (#home-spread): one block per cup, stacked on
- *     its score.
+ *   - TES SACHETS, JUSQU'À QUAND (#home-stock, v9.45): the grams of each open
+ *     bag, cup after cup since it was opened, then the dashed line of its
+ *     pace down to the day it will be empty.
+ *   - TES 30 DERNIERS JOURS (#home-days, last, across the page; 15 days in
+ *     v9.44): one mark per cup, its day along, its score up, the day's
+ *     average as a line. A cup not rated yet waits on a row at the foot.
  *
- * A mark of the first and the third opens its cup (data-spot-cup, the
- * document handler of js/ui-last-cup.js). Every coordinate is a percentage,
- * as in js/ui-home-open.js: the drawings take the card's width and the marks
- * keep their shape; a mark is a nested <svg>, the one SVG element that takes
- * a percentage for its place.
+ * v9.45 took out two charts of v9.44 Chris did not want: the temperature on
+ * the Switch (« pas assez précis »: four cups per degree say little) and the
+ * scores of 30 days (the 30 days chart shows the same cups).
  *
- * The pure parts (the codes, the days, the matrix, the best degree, the
- * spread) take their data as arguments: tools/home.test.mjs runs them. */
+ * A mark opens its cup (data-spot-cup, the document handler of
+ * js/ui-last-cup.js). Every coordinate is a percentage, as in
+ * js/ui-home-open.js: the drawings take the card's width and the marks keep
+ * their shape; a mark is a nested <svg>, the one SVG element that takes a
+ * percentage for its place.
+ *
+ * The pure parts (the codes, the days, the matrix, a bag's line) take their
+ * data as arguments: tools/home.test.mjs runs them. */
 "use strict";
 
 (() => {
@@ -79,9 +80,9 @@
     };
   }
 
-  // ---------- The 15 days (pure) ----------
+  // ---------- The 30 days (pure) ----------
 
-  const DAYS = 15;
+  const DAYS = 30;
   /* The last `n` days, today last: for each, its cups in the order they were
      drunk and the average of the rated analysable ones. */
   function lastDays(exts, analyzable, now, n) {
@@ -136,32 +137,26 @@
     return rows;
   }
 
-  // ---------- The temperature (pure) ----------
+  // ---------- A bag's line (pure) ----------
 
-  /* The degree that gave the best cups: by whole degree, two cups at least,
-     the best average (the more cups on a tie). Null without such a degree. */
-  function bestDegree(points) {
-    const by = {};
-    points.forEach(p => { const t = Math.round(p.t); (by[t] = by[t] || []).push(p.score); });
-    const list = Object.keys(by).map(t => ({ t: Number(t), avg: average(by[t]), n: by[t].length })).filter(x => x.n >= 2)
-      .sort((a, b) => b.avg - a.avg || b.n - a.n || a.t - b.t);
-    return list[0] || null;
-  }
-
-  // ---------- The spread (pure) ----------
-
-  /* The rated cups by score, half point by half point, from the lowest
-     score to 10: one column per step, even empty, its cups oldest first. */
-  function scoreSpread(cups) {
-    const list = cups.filter(rated);
-    if (!list.length) return [];
-    const half = v => Math.round(Number(v) * 2) / 2;
-    const low = Math.min(...list.map(e => half(e.score_10)));
-    const out = [];
-    for (let s = low; s <= 10; s += 0.5) {
-      out.push({ score: s, cups: list.filter(e => half(e.score_10) === s).sort((a, b) => String(a.date_time).localeCompare(String(b.date_time))) });
-    }
-    return out;
+  const DAY_MS = 86400000;
+  /* The grams of a bag over time, from what is left now back to its opening.
+     `cups`: { date_time, grams } of this bag; `since`: the day it was opened
+     (or counted by hand); `left`: the grams left now. Times are days from
+     `since`, as numbers. Returns the steps (a point before and after each
+     cup, the bag never above its own start), today's time, and where the
+     dashed line ends when the bag has a pace (`perDay` grams). */
+  function bagLine(left, cups, since, now, perDay) {
+    const t0 = new Date(String(since).slice(0, 10) + "T00:00").getTime();
+    const at = dt => (new Date(String(dt).slice(0, 16)).getTime() - t0) / DAY_MS;
+    const list = (cups || []).filter(c => Number(c.grams) > 0).map(c => ({ t: Math.max(0, at(c.date_time)), g: Number(c.grams) })).sort((a, b) => a.t - b.t);
+    const today = Math.max(0, (new Date(now).getTime() - t0) / DAY_MS);
+    let g = Math.max(0, Number(left) || 0) + list.reduce((s, c) => s + c.g, 0);
+    const steps = [{ t: 0, g: g }];
+    list.forEach(c => { steps.push({ t: c.t, g: g }); g = Math.max(0, g - c.g); steps.push({ t: c.t, g: g }); });
+    steps.push({ t: Math.max(today, list.length ? list[list.length - 1].t : 0), g: g });
+    const end = perDay > 0 && g > 0 ? today + g / perDay : null;
+    return { steps: steps, start: steps[0].g, left: g, today: today, end: end };
   }
 
   // ---------- Drawing ----------
@@ -174,7 +169,7 @@
   function mark(codes, e, x, y, extra) {
     const s = codes.shape(recipeOf(e));
     const tip = [shortDay(e.date_time) + " " + String(e.date_time).slice(11, 16), coffeeName(e.coffee_id), I18N.tr(recipeOf(e)),
-      rated(e) ? fmtRating(Number(e.score_10)) : I18N.t("not_rated_yet")].filter(Boolean).join(" · ");
+      rated(e) ? fmtRating(Number(e.score_10)) : I18N.t("not_rated_yet"), Number(e.failed) ? I18N.t("botched_badge") : ""].filter(Boolean).join(" · ");
     return '<svg class="hc-pt c' + codes.colour(e.coffee_id) + (rated(e) ? "" : " open") + '" x="' + pc(x) + '" y="' + pc(y) + '" width="1" height="1" overflow="visible" data-spot-cup="' +
       titleAttr(e.id) + '"' + (extra || "") + "><title>" + escapeHtml(tip) + '</title><circle class="hc-hit" r="11"></circle>' +
       (s >= 0 ? SHAPES[s] : '<circle r="3"></circle>') + "</svg>";
@@ -205,7 +200,7 @@
       recipes.map(r => '<span class="hc-key">' + glyph(codes.shape(r)) + escapeHtml(I18N.tr(r)) + " <small>" + n(e => recipeOf(e) === r) + "</small></span>").join("") + "</p></div>";
   }
 
-  // ---------- 1. The 15 days ----------
+  // ---------- The 30 days ----------
 
   function daysHtml(o, codes) {
     const days = lastDays(o.exts, o.analyzable, o.now);
@@ -237,15 +232,20 @@
     const figures = '<span class="hc-figures"><b>' + escapeHtml(I18N.t("home_week_cups", { n: cups.length, s: plural(cups.length) })) + "</b>" +
       (mean !== null ? '<span class="hw-sep" aria-hidden="true">·</span>' + escapeHtml(I18N.t("home_week_avg", { m: fmtRating(mean) })) : "") +
       (scores.length > 1 ? '<span class="hc-meankey"><i aria-hidden="true"></i>' + escapeHtml(I18N.t("hc_days_mean")) + "</span>" : "") + "</span>";
-    const axis = '<div class="hc-xaxis" aria-hidden="true" style="--n:' + DAYS + '">' + days.map(d => '<span' + (d.key === todayKey ? ' class="today"' : "") + "><b>" +
-      d.date.getDate() + "</b><small>" + escapeHtml(d.date.toLocaleDateString(I18N.locale(), { weekday: "narrow" })) + "</small></span>").join("") + "</div>";
+    // Under each column its day; the first of a month says the month, the others their weekday.
+    const axis = '<div class="hc-xaxis" aria-hidden="true" style="--n:' + DAYS + '">' + days.map(d => '<span class="' + (d.key === todayKey ? "today" : "") +
+      (d.date.getDate() === 1 ? " first" : "") + '"><b>' + d.date.getDate() + "</b><small>" +
+      escapeHtml(d.date.toLocaleDateString(I18N.locale(), d.date.getDate() === 1 ? { month: "short" } : { weekday: "narrow" })) + "</small></span>").join("") + "</div>";
     const label = I18N.t("hc_days_aria", { n: cups.length, s: plural(cups.length), m: mean === null ? "·" : fmtRating(mean) });
+    /* The plot and its days slide together on a narrow card (css/home.css gives
+       them a floor width and opens them on the last days): 30 columns do not fit a phone. */
     return head + figures + "</div>" +
-      '<div class="hc-plot hc-plot-days">' + g.labels + (waiting ? '<span class="hc-wait" aria-hidden="true">' + escapeHtml(I18N.t("hc_days_wait")) + "</span>" : "") +
-      '<svg class="hc-svg" role="img" aria-label="' + titleAttr(label) + '" width="100%" height="100%">' + svg + "</svg></div>" + axis + legend(codes, cups);
+      '<div class="hc-scroll"><div class="hc-wide"><div class="hc-plot hc-plot-days">' + g.labels +
+      (waiting ? '<span class="hc-wait" aria-hidden="true">' + escapeHtml(I18N.t("hc_days_wait")) + "</span>" : "") +
+      '<svg class="hc-svg" role="img" aria-label="' + titleAttr(label) + '" width="100%" height="100%">' + svg + "</svg></div>" + axis + "</div></div>" + legend(codes, cups);
   }
 
-  // ---------- 2. The matrix ----------
+  // ---------- The matrix ----------
 
   const MATRIX_COFFEES = 4, MATRIX_RECIPES = 5;
   // The accent, stronger with the score: pale at 5 and under, full from 9.
@@ -269,54 +269,68 @@
       '<span class="hm-corner" aria-hidden="true"></span>' + cols + body + "</div>";
   }
 
-  // ---------- 3. The temperature ----------
+  // ---------- The bags, until when ----------
 
-  const TEMP_MIN = 4;
-  function tempHtml(o, codes) {
-    const cups = o.analyzable.filter(e => e.method === "Switch" && rated(e) && Number(e.temperature_c) > 0);
-    if (cups.length < TEMP_MIN) return "";
-    const pts = cups.map(e => ({ e: e, t: Number(e.temperature_c), score: Number(e.score_10) }));
-    const lo = Math.floor(Math.min(...pts.map(p => p.t))) - 1, hi = Math.ceil(Math.max(...pts.map(p => p.t))) + 1;
-    const scale = scoreScale(pts.map(p => p.score));
-    const y = v => 0.07 + (1 - (v - scale.low) / (scale.high - scale.low)) * 0.86;
-    const x = t => (t - lo) / (hi - lo);
-    const g = scoreLines(scale, y);
-    // Cups at the same degree and the same score stand side by side.
-    const seen = {};
-    let svg = g.lines;
-    pts.sort((a, b) => String(a.e.date_time).localeCompare(String(b.e.date_time))).forEach((p, i) => {
-      const k = p.t + ":" + p.score, n = seen[k] = (seen[k] || 0) + 1;
-      const shift = (n - 1) * 0.018 * (n % 2 ? 1 : -1) * Math.ceil((n - 1) / 2 + 0.5);
-      svg += mark(codes, p.e, Math.max(0.02, Math.min(0.98, x(p.t) + shift)), y(p.score), ' style="--i:' + i + '"');
+  const STOCK_BACK = 45, STOCK_AHEAD = 60;
+  const dayMonth = d => d.toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" });
+  /* One line per open bag whose size is known. The days run from the oldest
+     opening (45 days back at most) to the latest end (60 days ahead at
+     most); the grams go up to the fullest bag. */
+  function stockHtml(o, codes) {
+    const rows = (typeof UI.stockData === "function" ? UI.stockData() : []).filter(s => s.leftover > 0);
+    const todayKey = localDateKey(o.now);
+    const bags = rows.map(s => {
+      const id = s.coffee.id, stock = DATA.bagStock(id, UI.fallbacks.dose);
+      if (!stock) return null;
+      // Counted by hand: the line starts from the count (the cups before it belong to another story).
+      const since = stock.corrected ? String(stock.corrected).slice(0, 10) : (stock.since || todayKey);
+      const cups = o.exts.filter(e => e.coffee_id === id && (stock.corrected ? String(e.date_time) > String(stock.corrected) : dayOf(e.date_time) >= since))
+        .map(e => ({ date_time: e.date_time, grams: Number(e.dose_g) || UI.fallbacks.dose }));
+      const pace = BAGS.pace(cups, since, todayKey, undefined, UI.awayPeriods());
+      return { id: id, since: since, pace: pace, line: bagLine(s.leftover, cups, since, o.now, pace ? pace.perDay : 0) };
+    }).filter(Boolean);
+    if (!bags.length) return "";
+    // One clock for all the bags: days from today (negative before).
+    const t0 = b => new Date(b.since + "T00:00").getTime();
+    const day0 = new Date(o.now).getTime();
+    const rel = (b, t) => (t0(b) + t * DAY_MS - day0) / DAY_MS;
+    const from = Math.max(-STOCK_BACK, Math.min(...bags.map(b => rel(b, 0)), -1));
+    const to = Math.min(STOCK_AHEAD, Math.max(...bags.map(b => (b.line.end === null ? 3 : rel(b, b.line.end))), 3) + 1);
+    const top = Math.max(...bags.map(b => b.line.start), 1);
+    const x = d => Math.max(0, Math.min(1, (d - from) / (to - from)));
+    const y = g => 0.06 + (1 - g / top) * 0.88;
+    let svg = "", labels = "";
+    const step = top > 300 ? 100 : 50;
+    for (let g = 0; g <= top; g += step) {
+      svg += '<line class="hc-grid" x1="0" x2="100%" y1="' + pc(y(g)) + '" y2="' + pc(y(g)) + '"></line>';
+      labels += '<span style="top:' + pc(y(g)) + '">' + g + "</span>";
+    }
+    svg += '<line class="hc-now" x1="' + pc(x(0)) + '" x2="' + pc(x(0)) + '" y1="0" y2="100%"></line>';
+    bags.forEach(b => {
+      const cls = "c" + codes.colour(b.id);
+      const s = b.line.steps;
+      for (let i = 1; i < s.length; i++) {
+        svg += '<line class="hk-line ' + cls + '" x1="' + pc(x(rel(b, s[i - 1].t))) + '" y1="' + pc(y(s[i - 1].g)) + '" x2="' + pc(x(rel(b, s[i].t))) + '" y2="' + pc(y(s[i].g)) + '"></line>';
+      }
+      if (b.line.end !== null) {
+        svg += '<line class="hk-ahead ' + cls + '" x1="' + pc(x(0)) + '" y1="' + pc(y(b.line.left)) + '" x2="' + pc(x(rel(b, b.line.end))) + '" y2="' + pc(y(0)) + '"></line>' +
+          '<circle class="hk-end ' + cls + '" cx="' + pc(x(rel(b, b.line.end))) + '" cy="' + pc(y(0)) + '" r="4"></circle>';
+      }
+      svg += '<circle class="hk-now ' + cls + '" cx="' + pc(x(0)) + '" cy="' + pc(y(b.line.left)) + '" r="4.5"></circle>';
     });
-    const best = bestDegree(pts);
-    if (best) svg = '<rect class="hc-band" x="' + pc(x(best.t - 0.5)) + '" y="0" width="' + pc(1 / (hi - lo)) + '" height="100%"></rect>' + svg;
-    const step = hi - lo > 8 ? 2 : 1;
-    let axis = "";
-    for (let t = lo + 1; t < hi; t += step) axis += '<span style="left:' + pc(x(t)) + '"' + (best && best.t === t ? ' class="best"' : "") + ">" + t + "°</span>";
-    return '<div class="card-head"><h3>' + escapeHtml(I18N.t("hc_temp_title")) + "</h3></div>" +
-      '<div class="hc-plot hc-plot-small">' + g.labels + '<svg class="hc-svg" role="img" aria-label="' + titleAttr(I18N.t("hc_temp_aria", { n: pts.length })) +
-      '" width="100%" height="100%">' + svg + '</svg></div><div class="hc-taxis" aria-hidden="true">' + axis + "</div>" +
-      (best ? '<p class="hc-reading">' + escapeHtml(I18N.t("hc_temp_best", { t: best.t, m: fmtRating(best.avg), n: best.n })) + "</p>" : "");
-  }
-
-  // ---------- 4. The spread ----------
-
-  const SPREAD_DAYS = 30;
-  function spreadHtml(o, codes) {
-    const from = new Date(o.now); from.setDate(from.getDate() - SPREAD_DAYS + 1);
-    const since = localDateKey(from);
-    const cols = scoreSpread(o.analyzable.filter(e => dayOf(e.date_time) >= since));
-    const total = cols.reduce((s, c) => s + c.cups.length, 0);
-    if (total < 3) return "";
-    const max = Math.max(...cols.map(c => c.cups.length));
-    return '<div class="card-head"><h3>' + escapeHtml(I18N.t("hc_spread_title")) + '</h3><span class="hc-figures">' +
-      escapeHtml(I18N.t("hc_spread_sub", { n: total })) + "</span></div>" +
-      '<div class="hs-plot" role="img" aria-label="' + titleAttr(I18N.t("hc_spread_aria", { n: total })) + '" style="--max:' + max + '">' + cols.map(c =>
-        '<span class="hs-col' + (Number.isInteger(c.score) ? "" : " half") + '"><span class="hs-stack">' + c.cups.map(e =>
-          '<i class="hs-cup c' + codes.colour(e.coffee_id) + '" data-spot-cup="' + titleAttr(e.id) + '" title="' +
-          titleAttr([shortDay(e.date_time), coffeeName(e.coffee_id), I18N.tr(recipeOf(e))].filter(Boolean).join(" · ")) + '"></i>').join("") +
-        "</span><small>" + (c.cups.length || "") + "</small><b>" + fmtRating(c.score) + "</b></span>").join("") + "</div>";
+    const date = d => { const t = new Date(o.now); t.setDate(t.getDate() + Math.round(d)); return t; };
+    const axis = '<div class="hc-taxis" aria-hidden="true"><span class="start" style="left:0">' + escapeHtml(dayMonth(date(from))) + '</span><span class="now" style="left:' + pc(x(0)) + '">' +
+      escapeHtml(I18N.t("date_today").toLowerCase()) + '</span><span class="end" style="left:100%">' + escapeHtml(dayMonth(date(to))) + "</span></div>";
+    const list = '<ul class="hk-list">' + bags.map(b => {
+      const end = b.line.end === null ? null : date(rel(b, b.line.end));
+      return '<li><button type="button" class="hk-bag" data-sheet="' + titleAttr(b.id) + '"><i class="hc-dot c' + codes.colour(b.id) + '" aria-hidden="true"></i>' +
+        '<span class="hk-name">' + escapeHtml(coffeeName(b.id)) + "</span><b>" + Math.round(b.line.left) + " g</b>" +
+        '<span class="hk-pace">' + escapeHtml(b.pace ? I18N.t("cf_fact_pace_v", { g: fmtDecimal(b.pace.perDay, 1) }) : I18N.t("hc_stock_no_pace")) + "</span>" +
+        '<span class="hk-until">' + escapeHtml(end ? I18N.t("hc_stock_until", { d: dayMonth(end) }) : "") + "</span></button></li>";
+    }).join("") + "</ul>";
+    return '<div class="card-head"><h3>' + escapeHtml(I18N.t("hc_stock_title")) + '</h3></div><p class="hc-sub">' + escapeHtml(I18N.t("hc_stock_sub")) + "</p>" +
+      '<div class="hc-plot hc-plot-small"><div class="hc-yaxis" aria-hidden="true">' + labels + '</div><svg class="hc-svg" role="img" aria-label="' +
+      titleAttr(I18N.t("hc_stock_aria", { n: bags.length, s: plural(bags.length) })) + '" width="100%" height="100%">' + svg + "</svg></div>" + axis + list;
   }
 
   // ---------- Render and wiring ----------
@@ -325,11 +339,12 @@
      must not restart the marks arriving. */
   const written = new WeakMap();
   function put(el, html) {
-    if (!el) return;
+    if (!el) return false;
     el.hidden = !html;
-    if (written.get(el) === html) return;
+    if (written.get(el) === html) return false;
     written.set(el, html);
     el.innerHTML = html;
+    return true;
   }
 
   // Called by renderHome with what the dashboard already computed.
@@ -338,10 +353,9 @@
     const open = typeof UI.stockData === "function" ? UI.stockData().filter(s => s.leftover > 0).map(s => s.coffee.id) : [];
     const codes = homeCodes(o.exts, open, now);
     const ctx = { exts: o.exts, analyzable: o.analyzable, now: now };
-    put($("#home-days"), daysHtml(ctx, codes));
     put($("#home-matrix"), matrixHtml(ctx, codes));
-    put($("#home-temp"), tempHtml(ctx, codes));
-    put($("#home-spread"), spreadHtml(ctx, codes));
+    put($("#home-stock"), stockHtml(ctx, codes));
+    put($("#home-days"), daysHtml(ctx, codes));
   }
 
   function wireHomeCharts() {
@@ -354,5 +368,5 @@
     });
   }
 
-  Object.assign(UI, { homeCodes, lastDays, cupX, scoreScale, recipeMatrix, bestDegree, scoreSpread, renderHomeCharts, wireHomeCharts });
+  Object.assign(UI, { homeCodes, lastDays, cupX, scoreScale, recipeMatrix, bagLine, renderHomeCharts, wireHomeCharts });
 })();

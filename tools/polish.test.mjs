@@ -59,23 +59,18 @@ const homeCss = read("css/home.css"), stockCss = read("css/stock.css"), journalC
 
 /* ---------- 1. The home: two columns that run on their own ---------- */
 {
-  check("the side column sticks under the band when it fits the window", UI.sideTop(600, 900) === 84);
-  check("taller than the window, its top goes negative: it scrolls to its foot, then stays", UI.sideTop(1140, 800) === 800 - 1140 - 18);
-  check("an unmeasured column keeps the plain top", UI.sideTop(0, 800) === 84);
-
   const side = html.slice(html.indexOf('<aside class="home-side"'), html.indexOf("</aside>"));
-  check("the week is the first card of the side column, no longer in the head", side.includes('id="home-week"') &&
-    side.indexOf('id="home-week"') < side.indexOf('id="home-matrix"') && !html.slice(html.indexOf('class="head-page home-head"'), html.indexOf('class="grid-dashboard home-main"')).includes('id="home-week"'));
+  check("the side column holds the matrix, then the bags; the week left the home (v9.45)", side.includes('id="home-matrix"') &&
+    side.indexOf('id="home-matrix"') < side.indexOf('id="home-stock"') && !html.includes('id="home-week"'));
   check("v9.41: the month card left the home, Analyses keeps the month", !html.includes('id="home-month"') && !/home-month|hm-bars|hm-ring/.test(homeCss) && html.includes('id="tile-month"'));
   const layout = html.slice(html.indexOf('<div class="home-layout">'), html.indexOf("</aside>", html.indexOf('<div class="home-layout">')));
   check("the head, the open coffees and the two columns share one grid", ['class="head-page home-head"', 'id="home-open"', 'class="grid-dashboard home-main"',
     'class="home-side" id="home-side"'].every(s => layout.includes(s)));
-  check("the open coffees span the page, the side column starts beside the last cup and is sticky",
+  check("the open coffees span the page, the side column sits beside the last cup",
     /\.home-layout > \.home-open \{ grid-column: 1 \/ -1; grid-row: 2; \}/.test(homeCss) &&
-    /\.home-layout > \.home-side \{[^}]*grid-row: 3 \/ span 2;[^}]*position: sticky;[^}]*top: var\(--home-side-top/.test(homeCss));
-  check("the week of the column waits for a wide screen", /\.home-side \.home-week \{ display: none; \}/.test(homeCss));
+    /\.home-layout > \.home-side \{ grid-column: 2; grid-row: 3; \}/.test(homeCss));
   check("the open coffees' movements have their calm path", /prefers-reduced-motion[\s\S]*\.home-enter \.ho-pt, \.home-enter \.ho-roll, \.home-enter \.ho-avg \{ animation: none; \}/.test(homeCss));
-  check("their cards tilt like the week", read("js/ui-feel.js").includes(".ho-card"));
+  check("their cards tilt under the mouse", read("js/ui-feel.js").includes(".ho-card"));
 }
 
 /* ---------- 2. The entry: no spent bag first ---------- */

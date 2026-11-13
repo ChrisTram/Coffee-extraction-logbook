@@ -221,67 +221,42 @@
   .home .card-last .last-spot, .home .card-last .last-big-footer, .home .card-last .last-big-comment { display: none; }
 }
 
-/* THE WEEK, at the top of the side column on a wide screen (in the head
-   until v9.25): a bar per day, the height counts the cups, the tint says
-   their score. */
-.home-week {
-  width: 100%; min-width: 0; gap: 10px; padding: 14px 18px;
-  font: inherit; color: var(--text); text-align: left; cursor: pointer;
-  transition: border-color var(--transition), transform var(--transition);
-}
-.home-week:hover { border-color: var(--accent); }
-.home-week:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.hw-head { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.hw-title { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-.hw-figures { font-size: 0.88rem; color: var(--text); line-height: 1.4; }
-.hw-figures b { color: var(--ink); font-weight: 700; }
+/* A separator between two figures of a line (the charts' heads, the month's story). */
 .hw-sep { margin: 0 6px; color: var(--muted); }
-.hw-none { color: var(--muted); }
-.hw-bars { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; align-items: end; height: 54px; }
-.hw-day { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 3px; height: 100%; }
-.hw-day i {
-  display: block; width: 100%; max-width: 26px; height: calc((100% - 17px) * var(--h, 0)); min-height: 3px;
-  border-radius: 4px 4px 1px 1px; background: var(--accent); opacity: var(--o, 1); transform-origin: 50% 100%;
-}
-.hw-day.future i { background: none; border: 1px dashed var(--lines); opacity: 1; }
-.hw-day small { font-size: 0.75rem; line-height: 14px; color: var(--muted); text-transform: uppercase; }
-/* Q7: the first opening of the day, the bars grow from the ground. */
-.morning-grow .hw-day i {
-  animation: morning-bar 650ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  animation-delay: calc(var(--d, 0) * 45ms + var(--morning-shift, 0ms));
-}
 
-/* THE WEEK, under the last cup on a narrow screen: its name as an
-   overline, its figures on one line, a few bars on the right when there is room. */
-.home-week-line {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: "label bars chev" "fig bars chev";
-  align-items: center; column-gap: 12px; row-gap: 0; width: 100%; min-height: 48px; padding: 6px 14px;
-  border-radius: var(--radius-small); border: 1px solid var(--card-border, var(--lines)); background: var(--panel);
-  box-shadow: var(--shadow-card); font: inherit; font-size: 0.88rem; color: var(--text); text-align: left; cursor: pointer;
-}
-.home-week-line:hover { border-color: var(--accent); }
-.home-week-line:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.home-week-line .hw-label { grid-area: label; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-.home-week-line .hw-figures { grid-area: fig; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.home-week-line .hw-mini { grid-area: bars; }
-.home-week-line .ico { grid-area: chev; color: var(--muted); }
-.hw-mini { width: 70px; height: 26px; gap: 3px; }
-.hw-mini .hw-day small { display: none; }
-.hw-mini .hw-day i { height: calc(100% * var(--h, 0)); max-width: 8px; border-radius: 2px; }
-@container home (max-width: 420px) { .hw-mini { display: none; } }
-
-/* THE LATEST CUPS: the title and the link to the journal on one line. On a
-   narrow card the rows go compact (the tastes and the comment wait for the
-   journal; the pill of a cup that came in from the other device stays). */
-.home-latest .card-head { margin-bottom: 8px; }
+/* THE LATEST CUPS (v9.45): right under the last cup, one line per cup. When
+   (the day, then the hour), the coffee behind its brewer's dot, the recipe
+   and its measures, the score. No day subheading, no taste, no comment: the
+   cup itself is a tap away. The rules of css/finishing.css (A1) made each
+   cup a small card of three lines; these come after and say one line, at
+   every width of the card. */
+.home-latest { padding-bottom: 10px; }
+.home-latest .card-head { margin-bottom: 4px; }
 .home-latest .card-head .link-card { margin-top: 0; }
+.home .table-latest, .home .table-latest tbody { display: block; }
+.home .table-latest colgroup { display: none; }
+.home .table-latest tr.last-clickable {
+  display: grid; grid-template-columns: 96px minmax(0, 1.15fr) minmax(0, 1fr) auto; grid-template-areas: "when coffee how score";
+  align-items: center; column-gap: 12px; row-gap: 0; min-height: 40px; padding: 4px 4px; border-top: 1px solid var(--lines-soft, var(--lines)); border-radius: 8px;
+}
+.home .table-latest tr.last-clickable:first-child { border-top: 0; }
+.home .table-latest tr.last-clickable:hover { background: var(--panel-2); }
+.home .table-latest tr.last-clickable td { display: block; min-width: 0; padding: 0; border: 0; background: none; }
+.home .table-latest .d-when { grid-area: when; font-size: 0.8rem; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.home .table-latest .d-when b { font-weight: 600; color: var(--text); }
+.home .table-latest .d-coffee { grid-area: coffee; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.home .table-latest .d-measures { grid-area: how; font-size: 0.8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.home .table-latest .d-measures .d-figures { margin-left: 0; }
+.home .table-latest .d-measures > span + span::before { content: " · "; color: var(--muted); }
+.home .table-latest .d-rating { grid-area: score; justify-self: end; align-self: center; padding: 0 2px 0 6px; font-size: 1.35rem; line-height: 1; }
 @container home (max-width: 559px) {
   .home-latest, .home-days, .home-chart { padding: 16px 18px; }
-  .home .table-latest .d-tastes:not(:has(.arrival-from)) { display: none; }
-  .home .table-latest .d-tastes .last-tag { display: none; }
-  .home .table-latest tr.last-comment { display: none; }
-  .home .table-latest tr.last-clickable { padding: 8px 2px; }
-  .home .table-latest tr.d-day th { padding-top: 10px; }
+  .home-latest { padding-bottom: 8px; }
+  /* A phone: the coffee and the score on a line, when and how under it. */
+  .home .table-latest tr.last-clickable {
+    grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "coffee coffee score" "when how score"; column-gap: 8px; row-gap: 1px; padding: 7px 2px;
+  }
+  .home .table-latest .d-measures .d-figures { display: none; }
 }
 
 /* v9.44: THE HOME'S CHARTS (js/ui-home-charts.js). One colour per coffee, one
@@ -306,14 +281,19 @@
 .hc-none { margin: 0; font-size: 0.88rem; color: var(--muted); }
 /* A plot: the scale's figures in a gutter on the left, the drawing beside. */
 .hc-plot { position: relative; margin-left: 22px; height: 150px; }
-.hc-plot-days { height: 210px; }
+.hc-plot-days { height: 220px; }
+/* The 30 days and their days slide together when the card is too narrow
+   for 30 columns: a floor width, and the last days first. A right-to-left
+   scroller starts at its right end by itself, laid out or not: no script. */
+.hc-scroll { overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; overscroll-behavior-x: contain; direction: rtl; }
+.hc-wide { min-width: 660px; padding-bottom: 2px; direction: ltr; }
 .hc-svg { display: block; overflow: visible; }
 .hc-yaxis { position: absolute; top: 0; bottom: 0; left: -22px; width: 16px; }
 .hc-yaxis span { position: absolute; right: 0; transform: translateY(-50%); font-size: 0.75rem; line-height: 1; color: var(--muted); font-variant-numeric: tabular-nums; }
 .hc-grid { stroke: var(--lines-soft, var(--lines)); stroke-width: 1; }
 .hc-split { stroke: var(--lines); stroke-width: 1; stroke-dasharray: 2 4; }
 .hc-today { fill: var(--accent); opacity: 0.07; }
-.hc-band { fill: var(--accent); opacity: 0.12; }
+.hc-now { stroke: var(--accent); stroke-width: 1.2; stroke-dasharray: 3 4; opacity: 0.8; }
 .hc-mean { stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; opacity: 0.38; }
 .hc-wait { position: absolute; left: 4px; bottom: 1px; font-size: 0.75rem; line-height: 1; color: var(--muted); pointer-events: none; }
 .hc-pt { cursor: pointer; fill: var(--c); stroke: var(--panel); stroke-width: 1.5; }
@@ -322,15 +302,17 @@
 .hc-pt > :not(title, .hc-hit) { transform-box: fill-box; transform-origin: center; transform: scale(1.15); transition: transform 160ms cubic-bezier(0.3, 1.5, 0.5, 1); }
 .hc-pt:hover > :not(title, .hc-hit) { transform: scale(1.6); }
 /* The days under their columns: the day of the month, and its weekday. */
-.hc-xaxis { display: grid; grid-template-columns: repeat(var(--n, 15), minmax(0, 1fr)); margin: 6px 0 0 22px; text-align: center; }
+.hc-xaxis { display: grid; grid-template-columns: repeat(var(--n, 30), minmax(0, 1fr)); margin: 6px 0 0 22px; text-align: center; }
 .hc-xaxis span { display: grid; gap: 1px; padding: 2px 0; border-radius: 6px; }
 .hc-xaxis b { font-size: 0.78rem; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
 .hc-xaxis small { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; }
 .hc-xaxis .today b { color: var(--accent); }
+.hc-xaxis .first small { color: var(--text); font-weight: 700; text-transform: none; }
 .hc-taxis { position: relative; height: 18px; margin: 4px 0 0 22px; }
-.hc-taxis span { position: absolute; top: 0; transform: translateX(-50%); font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-.hc-taxis .best { color: var(--accent); font-weight: 700; }
-.hc-reading { margin: 8px 0 0; font-size: 0.84rem; line-height: 1.45; color: var(--text); }
+.hc-taxis span { position: absolute; top: 0; transform: translateX(-50%); font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hc-taxis .start { transform: none; }
+.hc-taxis .end { transform: translateX(-100%); }
+.hc-taxis .now { color: var(--accent); font-weight: 700; }
 /* The legend: what the colours and the shapes are, with how many cups each. */
 .hc-legend { display: grid; gap: 4px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--lines-soft, var(--lines)); }
 .hc-legend p { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin: 0; font-size: 0.8rem; color: var(--text); }
@@ -359,21 +341,37 @@ button.hc-key:focus-visible { outline: 2px solid var(--accent); outline-offset: 
 .hm-cell.none { background: none; border: 1px dashed var(--lines); color: var(--muted); cursor: default; }
 button.hm-cell:hover { transform: scale(1.05); border-color: var(--accent); }
 button.hm-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-/* THE SPREAD: one block per cup, stacked on its score. */
-.hs-plot { display: flex; align-items: flex-end; gap: 4px; }
-.hs-col { flex: 1 1 0; min-width: 0; display: grid; justify-items: center; gap: 2px; }
-.hs-stack { display: flex; flex-direction: column-reverse; align-items: stretch; gap: 2px; width: 100%; max-width: 30px; min-height: 2px; border-bottom: 2px solid var(--lines); padding-bottom: 2px; }
-.hs-cup { display: block; height: clamp(5px, calc(96px / var(--max, 6)), 14px); border-radius: 3px; background: var(--c); cursor: pointer; }
-.hs-cup:hover { outline: 2px solid var(--ink); outline-offset: 1px; }
-.hs-col small { min-height: 1em; font-size: 0.75rem; line-height: 1; color: var(--muted); font-variant-numeric: tabular-nums; }
-.hs-col b { font-family: var(--serif); font-weight: 400; font-size: 0.95rem; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
-.hs-col.half b { font-size: 0.75rem; color: var(--muted); }
+/* THE BAGS, UNTIL WHEN (v9.45): the grams of each open bag in steps, a cup
+   a step, then the dashed line of its pace down to the day it is empty. */
+.hk-line { stroke: var(--c); stroke-width: 2.2; stroke-linecap: round; }
+.hk-ahead { stroke: var(--c); stroke-width: 1.8; stroke-dasharray: 2 5; stroke-linecap: round; opacity: 0.85; }
+.hk-now { fill: var(--c); stroke: var(--panel); stroke-width: 2; }
+.hk-end { fill: var(--panel); stroke: var(--c); stroke-width: 2; }
+.hk-list { list-style: none; margin: 10px 0 0; padding: 8px 0 0; border-top: 1px solid var(--lines-soft, var(--lines)); display: grid; gap: 2px; }
+.hk-bag {
+  display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; grid-template-areas: "dot name grams" "dot pace until"; align-items: baseline; column-gap: 8px; row-gap: 0;
+  width: 100%; padding: 5px 4px; border: 0; border-radius: 8px; background: none; font: inherit; color: var(--text); text-align: left; cursor: pointer;
+}
+.hk-bag:hover { background: var(--panel-2); }
+.hk-bag:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.hk-bag .hc-dot { grid-area: dot; align-self: center; }
+.hk-name { grid-area: name; min-width: 0; font-size: 0.86rem; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hk-bag b { grid-area: grams; justify-self: end; font-size: 0.9rem; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hk-pace { grid-area: pace; font-size: 0.75rem; color: var(--muted); }
+.hk-until { grid-area: until; font-size: 0.78rem; color: var(--text); white-space: nowrap; text-align: right; }
 @container home (max-width: 559px) {
-  .hc-plot-days { height: 170px; }
-  .hc-xaxis small { display: none; }
+  .hc-plot-days { height: 180px; }
   .hc-xaxis b { font-size: 0.75rem; }
   .hc-legend-label { min-width: 100%; }
   .hc-legend p { gap: 0 12px; }
+}
+/* When the 30 days slide (a card under about 700 px), the scale's figures
+   move to the right, where the last days are: on the left they slid away. */
+@container home (max-width: 720px) {
+  .hc-wide .hc-plot { margin-left: 0; margin-right: 22px; }
+  .hc-wide .hc-yaxis { left: auto; right: -22px; }
+  .hc-wide .hc-yaxis span { right: auto; left: 0; }
+  .hc-wide .hc-xaxis { margin-left: 0; margin-right: 22px; }
 }
 @media (pointer: coarse) { button.hc-key { min-height: 30px; } }
 
@@ -408,15 +406,13 @@ button.hm-cell:focus-visible { outline: 2px solid var(--accent); outline-offset:
    whole cascade lands in about half a second (0,85 s before): the home is
    the screen you come back to ten times a day, it must not make you wait. */
 .home-enter .home-head, .home-enter .ho-head, .home-enter .ho-item, .home-enter .ho-end, .home-enter .card-last,
-.home-enter .home-week-line, .home-enter .home-latest, .home-enter .home-days, .home-enter .home-chart, .home-enter .home-week {
+.home-enter .home-latest, .home-enter .home-days, .home-enter .home-chart {
   animation: home-rise 400ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .home-enter .ho-item, .home-enter .ho-end { animation-delay: calc(20ms + var(--i, 0) * 40ms); }
 .home-enter .card-last { animation-delay: 80ms; }
-.home-enter .home-week { animation-delay: 100ms; }
-.home-enter .home-week-line { animation-delay: 110ms; }
-.home-enter .home-latest { animation-delay: 130ms; }
-.home-enter .home-days { animation-delay: 60ms; }
+.home-enter .home-latest { animation-delay: 110ms; }
+.home-enter .home-days { animation-delay: 190ms; }
 .home-enter .home-chart { animation-delay: 150ms; }
 .home-enter .home-chart ~ .home-chart { animation-delay: 180ms; }
 @keyframes home-rise { from { opacity: 0; transform: translateY(12px); } }
@@ -433,18 +429,12 @@ button.hm-cell:focus-visible { outline: 2px solid var(--accent); outline-offset:
 .home-enter .hc-mean { animation: ho-fade 300ms ease-out both; animation-delay: calc(220ms + var(--i, 0) * 14ms); }
 
 /* THE LAYOUT BY WIDTH, after the blocks it switches: one column on a phone
-   (the open coffees, the 15 days, the last cup, the week in one line, the
-   latest cups, the three charts); from 860 px of content, the open coffees
-   span the page under the title, then the 15 days lead the main column and a
-   column on the right holds the week and the three charts.
-   v9.25: the two columns run on their own. The side column spans every row
-   of the grid, the last of which is flexible: a spanning item that crosses
-   a flexible row grows that row only, so the head keeps its own height and
-   the last cup comes right under it (before, the week sat in the head and
-   pushed it down by its whole height). The column follows the scroll
-   (sticky); when it is taller than the window, js/ui-home.js gives it a
-   negative top so it scrolls to its foot first, then stays. */
-.home-side .home-week { display: none; }
+   (the open coffees, the last cup, the latest cups, the matrix, the bags, the
+   30 days); from 860 px of content, the open coffees span the page under the
+   title, then the last cup and the latest cups on the left, the matrix and
+   the bags on the right, and the 30 days across the page at the foot.
+   The side column no longer follows the scroll (v9.45): it is about as tall
+   as the main one now, and stuck, it slid over the 30 days under it. */
 @container home (min-width: 860px) {
   .home-layout {
     grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); grid-template-rows: auto auto auto 1fr;
@@ -453,9 +443,8 @@ button.hm-cell:focus-visible { outline: 2px solid var(--accent); outline-offset:
   .home-layout > .home-head { grid-column: 1 / -1; grid-row: 1; }
   .home-layout > .home-open { grid-column: 1 / -1; grid-row: 2; }
   .home-layout > .home-main { grid-column: 1; grid-row: 3; }
-  .home-layout > .home-side { grid-column: 2; grid-row: 3 / span 2; position: sticky; top: var(--home-side-top, 16px); }
-  .home-side .home-week { display: grid; }
-  .home-week-line { display: none; }
+  .home-layout > .home-side { grid-column: 2; grid-row: 3; }
+  .home-layout > .home-days { grid-column: 1 / -1; grid-row: 4; }
 }
 
 /* M8: the loading silhouette follows the home's new shape. */
@@ -476,9 +465,9 @@ button.hm-cell:focus-visible { outline: 2px solid var(--accent); outline-offset:
 @media (prefers-reduced-motion: reduce) {
   .rail-entries.has-mark .rail-mark.ready, .hbd-inner, .ho-level i, .ho-pt, .ho-card, .home-band { transition: none; }
   .hc-pt > *, .hm-cell { transition: none; }
-  .has-draft .draft-dot, .morning-grow .hw-day i, .home-enter .hc-pt > *, .home-enter .hc-mean,
+  .has-draft .draft-dot, .home-enter .hc-pt > *, .home-enter .hc-mean,
   .home-enter .home-head, .home-enter .ho-head, .home-enter .ho-item, .home-enter .ho-end, .home-enter .card-last,
-  .home-enter .home-week-line, .home-enter .home-latest, .home-enter .home-days, .home-enter .home-chart, .home-enter .home-week,
+  .home-enter .home-latest, .home-enter .home-days, .home-enter .home-chart,
   .home-enter .ho-pt, .home-enter .ho-roll, .home-enter .ho-avg { animation: none; }
 }
 

@@ -14,10 +14,10 @@
 
   // Borrowed from the core, loaded before us.
   const { $, $$, titleAttr, localDateKey, displayedDiags,
-    dayKey, isFailed, analyzableExts, extsWithCalcs, fmtDecimal, fmtHour, dayLabelOf, average, nav, fallbacks, findRecipe } = UI;
+    isFailed, analyzableExts, extsWithCalcs, fmtDecimal, fmtHour, average, nav, fallbacks, findRecipe } = UI;
   // And from the two pieces moved out of here in v8.78, loaded just before.
   const { MIN_GAP, MIN_SAMPLE, fmtRating, wireFindings, renderInsights,
-    LATEST_SHOWN, lastComment, lastTastes, shortMeasures, renderLastCup } = UI;
+    LATEST_SHOWN, shortMeasures, renderLastCup } = UI;
 
   // ---------- Activity calendar ----------
   // 18 weeks and not 26: at one or two cups a day, six months of grid are
@@ -538,58 +538,35 @@
 
   /* THE LATEST CUPS (moved out of renderDashboard in v9.21, unchanged). */
   function renderLatest(exts) {
-    /* FIVE since v9.41 (eight before): the journal is one tap away, and the
-       card no longer has a tall column to keep up with. */
+    /* ONE LINE PER CUP (v9.45): when, which coffee, how, the score. Chris
+       asked for the list compact and right under the last cup. The day's
+       subheadings of v8.82 are gone: the date is on each line (« 13 nov. »),
+       as in the journal. The tastes, the diagnosis and the comment wait in
+       the cup itself, a tap away (and in the hover sheet on a computer). Six
+       cups (five in v9.41, eight before). */
     const latestCups = [...exts].sort((a, b) => b.date_time.localeCompare(a.date_time))
       .slice(0, LATEST_SHOWN);
-    // Each line opens the editing of its extraction. role and tabindex rather
-    // than a real button: the content is structured (div, span) and a button is
-    // not allowed to contain it.
-    /* A REAL TABLE, and no longer a list of blocks: the columns align the
-       same quantities from one line to the next, which a list does not do.
-
-       NO MORE COMMENT TOOLTIP ON HOVER (v8.33): it is already written on the
-       line just below, the tooltip repeated it word for word. Chris found it
-       absurd. The title only says what the click does. */
-    /* GROUPED BY DAY (v8.82): the date becomes a subheading and the column
-       only keeps the time. As a column, « 26 sept. 14:43 » fit neither on the
-       phone (44 px, « 2… ») nor on a 1,280 laptop. The brewer no longer has
-       its column: its colour dot moves in front of the coffee name. */
-    let currentDay = "";
-    /* Q13 (v9.17): a cup that came in from the other device wears a pill in
-       its tastes cell (the widest that can give room without cutting the
-       coffee's name), and slides in once (js/ui-arrivals.js). */
+    const dayShort = dt => new Date(String(dt).slice(0, 10) + "T12:00").toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" });
+    /* Q13 (v9.17): a cup that came in from the other device wears a pill
+       after its coffee's name, and slides in once (js/ui-arrivals.js). */
     const arrived = UI.recentArrivals();
+    /* Each line opens its extraction. role and tabindex rather than a real
+       button: a table row cannot be one. Delegated in wireDashboard. */
     $("#latest-list").innerHTML = latestCups.map(e => {
-      const day = dayKey(e.date_time);
-      const header = day !== currentDay
-        ? '<tr class="d-day"><th colspan="5" scope="colgroup">' + dayLabelOf(e.date_time) + "</th></tr>" : "";
-      currentDay = day;
       const came = arrived.has(e.id);
-      return header +
-      '<tr class="last-clickable' + (isFailed(e) ? " row-failed" : "") + (came ? " arrived" : "") +
+      return '<tr class="last-clickable' + (isFailed(e) ? " row-failed" : "") + (came ? " arrived" : "") +
       '" data-ext="' + e.id + '" tabindex="0" role="button" title="' + titleAttr(I18N.t("history_edit")) + '">' +
-      '<td class="d-when">' + fmtHour(e.date_time) + "</td>" +
+      '<td class="d-when"><b>' + dayShort(e.date_time) + "</b> " + fmtHour(e.date_time) + "</td>" +
       '<td class="d-coffee"><span class="dot-method ' + e.method.toLowerCase() +
         '" title="' + titleAttr(e.method) + '"></span><b>' + I18N.tr(e._c.coffee_name) + "</b>" +
-        (isFailed(e) ? '<span class="mention-failed">' + I18N.t("botched_badge") + "</span>" : "") + "</td>" +
+        (isFailed(e) ? '<span class="mention-failed">' + I18N.t("botched_badge") + "</span>" : "") + (came ? UI.arrivalPill() : "") + "</td>" +
       '<td class="d-measures">' +
         (e.recipe ? '<span class="d-recipe">' + I18N.tr(e.recipe) + "</span>" : "") +
         shortMeasures(e) +
-        (e.diagnostic ? '<span class="d-diag">' + displayedDiags(e.diagnostic) + "</span>" : "") +
       "</td>" +
-      '<td class="d-tastes">' + lastTastes(e, came ? UI.arrivalPill() : "") + "</td>" +
-      '<td class="d-rating">' + (e.score_10 !== "" ? fmtDecimal(Number(e.score_10), 1) : UI.rateMark(e)) + "</td></tr>" +
-      lastComment(e);
+      '<td class="d-rating">' + (e.score_10 !== "" ? fmtDecimal(Number(e.score_10), 1) : UI.rateMark(e)) + "</td></tr>";
     }).join("");
     UI.playArrivals($("#latest-list"));
-    /* The full text on hover, but ONLY if the line truncated it: a comment
-       readable in full does not need repeating. Measured on hover and not at
-       render: the screen may render hidden, and everything measures 0. */
-    $("#latest-list").onmouseover = ev => {
-      const td = ev.target.closest(".last-comment td");
-      if (td) td.title = td.scrollWidth > td.clientWidth + 1 ? td.textContent : "";
-    };
   }
 
   /* THE STOCK (v8.89). How many grams are left in each open bag, lowest

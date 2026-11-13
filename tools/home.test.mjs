@@ -5,7 +5,7 @@
  *
  * The pure parts of js/ui-home.js, js/ui-analytics.js and js/ui-story.js run
  * here on the real tools, i18n and tuning code, with a stub of the interface
- * core: the week, the open coffees (trend, scale, which cup to brew again), the period and its bars, the
+ * core: the open coffees (trend, scale, which cup to brew again), the home's charts, the period and its bars, the
  * ranking, the tastes, the figures, the story of the month. Then the page,
  * the styles and the dictionaries are read for what the work promised: the
  * navigation, the draft dot, the lazy Analyses page, the calm path of every
@@ -52,28 +52,6 @@ const cup = (day, o) => ({ id: "x" + (++seq), date_time: day + "T" + ((o && o.ti
   score_10: "", descriptors: "", diagnostic: "", ...o });
 // A local date key, k days before `from`.
 const before = (from, k) => { const d = new Date(from); d.setDate(d.getDate() - k); return TOOLS.localDateKey(d); };
-
-/* ---------- L1: the week ---------- */
-{
-  const now = new Date(2026, 9, 4, 10, 0); // Sunday 4 October 2026
-  const cups = [
-    cup("2026-09-28", { score_10: 7 }), cup("2026-09-28", { score_10: 8, time: "15:00" }),
-    cup("2026-10-01", { score_10: 9 }), cup("2026-10-03", { score_10: 9, time: "16:00" }), cup("2026-10-03", {}),
-    cup("2026-09-27", { score_10: 10 }), // the Sunday before: not this week
-  ];
-  const w = UI.weekSummary(cups, cups, now);
-  check("the week runs Monday to Sunday", TOOLS.localDateKey(w.start) === "2026-09-28" && TOOLS.localDateKey(w.end) === "2026-10-04");
-  check("it counts every cup of the week, the unrated one too", w.cups === 5, String(w.cups));
-  check("and averages the rated ones only", w.rated === 4 && Math.abs(w.mean - 8.25) < 1e-9, w.rated + " " + w.mean);
-  check("a bar per day, with its cups", w.days.map(d => d.n).join() === "2,0,0,1,0,2,0", w.days.map(d => d.n).join());
-  check("the best cup is the latest of the best score", w.best && w.best.score === 9 && w.best.date_time === "2026-10-03T16:00");
-  const midweek = UI.weekSummary(cups, cups, new Date(2026, 9, 1, 9));
-  check("the days still to come are marked (a Thursday: three)", midweek.days.filter(d => d.future).length === 3);
-  check("« hier » and « aujourd'hui » for the best cup", UI.weekDayWord("2026-10-03T16:00", now) === "hier" &&
-    UI.weekDayWord("2026-10-04T08:00", now) === "aujourd'hui" && UI.weekDayWord("2026-10-01T08:00", now) === "jeudi");
-  const empty = UI.weekSummary([], [], now);
-  check("an empty week has no average and no best", empty.cups === 0 && empty.mean === null && empty.best === null);
-}
 
 /* ---------- v9.41: the open coffees ---------- */
 {
@@ -126,7 +104,7 @@ const before = (from, k) => { const d = new Date(from); d.setDate(d.getDate() - 
     UI.openCoffee({ ...row, coffee: { id: "m", name: "m" } }, many, many).trend.n === 30);
 }
 
-/* ---------- v9.44: the home's charts ---------- */
+/* ---------- v9.44, v9.45: the home's charts ---------- */
 {
   const now = new Date(2026, 10, 14, 10, 0); // Saturday 14 November 2026
   const mk = (k, o) => cup(before(now, k), { score_10: 8, recipe: "Brikka classique", method: "Brikka", ...o });
@@ -145,12 +123,13 @@ const before = (from, k) => { const d = new Date(from); d.setDate(d.getDate() - 
   check("five colours, a sixth coffee is grey", six.colour("e") === 5 && six.colour("f") === 0);
 
   const days = UI.lastDays(exts, exts, now);
-  check("15 days, today last", days.length === 15 && days[14].key === TOOLS.localDateKey(now) && days[0].key === before(now, 14));
-  check("each day holds its cups in the order they were drunk", days[13].cups.length === 2 && days[13].cups[0].coffee_id === "a" && days[13].cups[1].coffee_id === "b");
-  check("the day's average is over its rated cups only", days[13].mean === 7.5 && days[13].rated === 1 && days[14].mean === 8 && days[12].mean === null);
-  check("a cup outside the 15 days is not in them", days.every(d => d.cups.every(e => e.coffee_id !== "c")));
+  check("30 days, today last", days.length === 30 && days[29].key === TOOLS.localDateKey(now) && days[0].key === before(now, 29));
+  check("each day holds its cups in the order they were drunk", days[28].cups.length === 2 && days[28].cups[0].coffee_id === "a" && days[28].cups[1].coffee_id === "b");
+  check("the day's average is over its rated cups only", days[28].mean === 7.5 && days[28].rated === 1 && days[29].mean === 8 && days[27].mean === null);
+  check("a cup of 20 days ago is in them, one of 70 days ago is not", days[9].cups.length === 1 && days[9].cups[0].coffee_id === "c" &&
+    days.every(d => d.cups.every(e => e.coffee_id !== "old")));
   const failedOut = UI.lastDays(exts, exts.filter(e => e.coffee_id !== "a"), now);
-  check("a cup that is not analysable shows, but leaves the average", failedOut[14].cups.length === 1 && failedOut[14].mean === null);
+  check("a cup that is not analysable shows, but leaves the average", failedOut[29].cups.length === 1 && failedOut[29].mean === null);
 
   check("a cup alone stands in the middle of its day", Math.abs(UI.cupX(0, 0, 1, 15) - 0.5 / 15) < 1e-9);
   const xs = [0, 1, 2].map(j => UI.cupX(4, j, 3, 15));
@@ -164,14 +143,19 @@ const before = (from, k) => { const d = new Date(from); d.setDate(d.getDate() - 
   check("a cell is the average and the count, or nothing", m[0].cells[0].avg === 7.5 && m[0].cells[0].n === 1 && m[1].cells[1] === null);
   check("the best recipe of a coffee is flagged, when it has two to compare", m[1].cells[0].best === true && m[0].cells[0].best === false && m[0].cells[1].best === false);
 
-  const best = UI.bestDegree([{ t: 88, score: 8 }, { t: 88.4, score: 8.5 }, { t: 93, score: 9.5 }, { t: 92, score: 6 }, { t: 92, score: 7 }]);
-  check("the best degree needs two cups: one great cup at 93 does not win", best && best.t === 88 && best.avg === 8.25 && best.n === 2, JSON.stringify(best));
-  check("no degree brewed twice, no best degree", UI.bestDegree([{ t: 88, score: 8 }, { t: 93, score: 9 }]) === null);
-
-  const spread = UI.scoreSpread([mk(0, { score_10: 8 }), mk(1, { score_10: 8 }), mk(2, { score_10: 9.5 }), mk(3, { score_10: "" })]);
-  check("the spread: a column per half point from the lowest score to 10, empty ones too", spread.length === 5 && spread[0].score === 8 && spread[0].cups.length === 2 &&
-    spread[1].cups.length === 0 && spread[3].score === 9.5 && spread[3].cups.length === 1 && spread[4].score === 10);
-  check("a cup not rated is not in the spread", UI.scoreSpread([mk(0, { score_10: "" })]).length === 0);
+  // A bag of 250 g opened ten days ago: three cups of 15 g, 205 g left, 5 g a day.
+  const opened = before(now, 10);
+  const bagCups = [3, 5, 9].map(k => ({ date_time: before(now, 10 - k) + "T08:00", grams: 15 }));
+  const line = UI.bagLine(205, bagCups, opened, now, 5);
+  check("a bag's line starts from what it held: what is left plus what was drunk", line.start === 250 && line.steps[0].t === 0 && line.steps[0].g === 250);
+  check("each cup is a step: the same time, 15 g lower", line.steps.length === 8 && line.steps[1].g === 250 && line.steps[2].g === 235 && line.steps[1].t === line.steps[2].t &&
+    Math.abs(line.steps[1].t - (3 + 8 / 24)) < 1e-6);
+  check("it ends today, at what is left", line.left === 205 && Math.abs(line.steps[7].t - line.today) < 1e-9 && line.steps[7].g === 205 && line.today > 10 && line.today < 11);
+  check("at 5 g a day, 205 g last 41 more days", Math.abs(line.end - (line.today + 41)) < 1e-9);
+  check("without a pace, no end", UI.bagLine(205, bagCups, opened, now, 0).end === null);
+  const fresh = UI.bagLine(250, [], TOOLS.localDateKey(now), now, 0);
+  check("a bag opened today and not brewed yet is a flat line", fresh.start === 250 && fresh.left === 250 && fresh.steps.length === 2 && fresh.end === null);
+  check("a count that went under zero stays at zero", UI.bagLine(0, bagCups, opened, now, 5).left === 0 && UI.bagLine(0, bagCups, opened, now, 5).end === null);
 }
 
 /* ---------- O1: the period ---------- */
@@ -311,8 +295,19 @@ const before = (from, k) => { const d = new Date(from); d.setDate(d.getDate() - 
   const home = html.slice(html.indexOf('<section id="screen-dashboard"'), html.indexOf('<section id="screen-analytics"'));
   const analytics = html.slice(html.indexOf('<section id="screen-analytics"'), html.indexOf("<!-- ================= SCREEN 2: ENTRY"));
   check("the home keeps the open coffees, the last cup and the latest cups", ['id="home-open"', 'id="card-last"', 'id="latest-list"', 'id="home-band"'].every(s => home.includes(s)));
-  check("v9.44: four charts on the home, the 15 days first of the main column", ['id="home-days"', 'id="home-matrix"', 'id="home-temp"', 'id="home-spread"'].every(s => home.includes(s)) &&
-    home.indexOf('class="grid-dashboard home-main"') < home.indexOf('id="home-days"') && home.indexOf('id="home-days"') < home.indexOf('id="card-last"'));
+  check("v9.45: the last cup, the latest cups, then the matrix and the bags, the 30 days last", ['id="home-days"', 'id="home-matrix"', 'id="home-stock"'].every(s => home.includes(s)) &&
+    home.indexOf('id="card-last"') < home.indexOf('id="latest-list"') && home.indexOf('id="latest-list"') < home.indexOf('id="home-matrix"') &&
+    home.indexOf('id="home-matrix"') < home.indexOf('id="home-stock"') && home.indexOf('id="home-stock"') < home.indexOf('id="home-days"'));
+  check("v9.45: the week, the temperature and the spread of the scores left the home", ['id="home-week"', 'id="home-week-line"', 'id="home-temp"', 'id="home-spread"'].every(s => !home.includes(s)) &&
+    !/home-week|\.hw-bars|\.hs-|hc-band/.test(read("css/home.css")) && !/weekSummary|bestDegree|scoreSpread/.test(read("js/ui-home.js") + read("js/ui-home-charts.js")));
+  check("the 30 days span the page at the foot, and slide on a narrow card from their last days", /\.home-layout > \.home-days \{ grid-column: 1 \/ -1; grid-row: 4; \}/.test(read("css/home.css")) &&
+    /\.hc-scroll \{[^}]*overflow-x: auto;[^}]*direction: rtl; \}/.test(read("css/home.css")) && /\.hc-wide \{[^}]*min-width: 660px;[^}]*direction: ltr; \}/.test(read("css/home.css")));
+  check("the side column no longer sticks (it slid over the 30 days)", !/\.home-side \{[^}]*position: sticky/.test(read("css/home.css")) && !read("js/ui-home.js").includes("placeSide"));
+  const dashSrc = read("js/ui-dashboard.js");
+  check("the latest cups: one line per cup, its day on the line, no day subheading, six of them", dashSrc.includes('<td class="d-when"><b>\' + dayShort(e.date_time)') &&
+    !dashSrc.includes('class="d-day"') && !dashSrc.includes("lastComment") && /const LATEST_SHOWN = 6;/.test(read("js/ui-last-cup.js")) &&
+    read("css/home.css").includes('grid-template-areas: "when coffee how score"'));
+  check("the streak sits beside the date", read("js/ui-celebrate.js").includes('const host = $("#dashboard-highlight");') && read("css/moments.css").includes(".highlight .hw-streak"));
   check("the sentence « À retenir » and the wheel of the month left the home", !home.includes('id="home-finding"') && !html.includes("ui-home-widgets.js") &&
     !/home-finding|home-widget|hwg-|\.hf-/.test(read("css/home.css") + read("css/panel.css")));
   const charts = read("js/ui-home-charts.js");
@@ -328,7 +323,6 @@ const before = (from, k) => { const d = new Date(from); d.setDate(d.getDate() - 
   const openSrc = read("js/ui-home-open.js");
   check("a card states the grams, opens the coffee sheet and brews", openSrc.includes('Math.round(s.leftover) + " g"') && openSrc.includes('class="ho-main" data-sheet="') && openSrc.includes("data-open-brew"));
   check("a dot of its chart opens its cup", openSrc.includes('data-spot-cup="') && read("js/ui-last-cup.js").includes('closest("[data-spot-cup]")'));
-  check("the home shows five latest cups", /const LATEST_SHOWN = 5;/.test(read("js/ui-last-cup.js")));
   check("the analyses, the calendar, the chart and the drawings moved to Analyses",
     ['id="kpis"', 'id="g-heatmap"', 'id="g-30days"', 'id="insights"', 'id="card-drawings"', 'class="tabs-analyses"', 'id="card-recap"'].every(s => analytics.includes(s) && !home.includes(s)));
   check("the band lives outside the container box (fixed to the window)", home.indexOf('id="home-band"') < home.indexOf('id="dashboard-content"'));
@@ -391,7 +385,7 @@ const before = (from, k) => { const d = new Date(from); d.setDate(d.getDate() - 
   check("the static words of the page have their English", untranslated.length === 0, untranslated.join(" | "));
   check("the screens keep their names in English: Home, Journal, Analytics, Winning settings",
     enObj.UI["Accueil"] === "Home" && enObj.UI["Analyses"] === "Analytics" && enObj.UI["Réglages gagnants"] === "Winning settings");
-  check("and the zones drawn in JS are left to the code that draws them", read("js/i18n.js").includes("#home-week,#home-week-line,#home-open,#home-days,#home-matrix,#home-temp,#home-spread"));
+  check("and the zones drawn in JS are left to the code that draws them", read("js/i18n.js").includes("#home-open,#home-days,#home-matrix,#home-stock,#home-band"));
 }
 
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);

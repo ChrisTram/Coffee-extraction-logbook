@@ -391,8 +391,6 @@ const I18N_FR = {
     warn_brikka_profile: { fr: "Café noté pour la Brikka : son corps et son chocolat, le papier du Switch les aplatit. À tenter quand même pour comparer, et à noter." },
     warn_wet_hulled: { fr: "Wet hulled dans le Switch : déconseillé, le papier écrase ce profil. La Brikka lui va mieux." },
     warn_dark_roast: { fr: "Torréfaction foncée dans le Switch : déconseillé, le papier accentue l'amertume sèche. La Brikka lui va mieux." },
-    warn_brikka_recommended: { fr: "Ce café est noté pour la Brikka. Le Switch marchera mais ce n'est pas là qu'il donne le meilleur." },
-    warn_switch_recommended: { fr: "Ce café est noté pour le Switch. La pression de la Brikka peut amplifier son acidité." },
 
     entry_new: { fr: "Nouvelle extraction" },
     entry_duplicated: { fr: "Nouvelle extraction (dupliquée)" },
