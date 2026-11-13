@@ -9,12 +9,13 @@
  *   - QUELLE RECETTE POUR QUEL CAFÉ (#home-matrix): a recipe per row, a
  *     coffee per column, the average in each cell, tinted by the score, the
  *     best of each coffee ringed. A cell opens its cups in the journal.
- *   - TES SACHETS, JUSQU'À QUAND (#home-stock, v9.45): the grams of each open
- *     bag, cup after cup since it was opened, then the dashed line of its
- *     pace down to the day it will be empty.
- *   - TES 30 DERNIERS JOURS (#home-days, last, across the page; 15 days in
- *     v9.44): one mark per cup, its day along, its score up, the day's
- *     average as a line. A cup not rated yet waits on a row at the foot.
+ *   - TES 30 DERNIERS JOURS (#home-days, right under the open coffees and
+ *     across the page since v9.46; 15 days in v9.44): one mark per cup, its
+ *     day along, its score up, the day's average as a line. A cup not rated
+ *     yet waits on a row at the foot.
+ *   - TES SACHETS, JUSQU'À QUAND (#home-stock, v9.45, across the page at the
+ *     foot): the grams of each open bag, cup after cup since it was opened,
+ *     then the dashed line of its pace down to the day it will be empty.
  *
  * v9.45 took out two charts of v9.44 Chris did not want: the temperature on
  * the Switch (« pas assez précis »: four cups per degree say little) and the
@@ -247,7 +248,7 @@
 
   // ---------- The matrix ----------
 
-  const MATRIX_COFFEES = 4, MATRIX_RECIPES = 5;
+  const MATRIX_COFFEES = 4, MATRIX_RECIPES = 6;
   // The accent, stronger with the score: pale at 5 and under, full from 9.
   const tint = m => Math.round(Math.max(0.1, Math.min(1, (m - 5) / 4)) * 62);
   function matrixHtml(o, codes) {
@@ -328,9 +329,10 @@
         '<span class="hk-pace">' + escapeHtml(b.pace ? I18N.t("cf_fact_pace_v", { g: fmtDecimal(b.pace.perDay, 1) }) : I18N.t("hc_stock_no_pace")) + "</span>" +
         '<span class="hk-until">' + escapeHtml(end ? I18N.t("hc_stock_until", { d: dayMonth(end) }) : "") + "</span></button></li>";
     }).join("") + "</ul>";
+    // Two parts: the drawing, and the figures of each bag (side by side on a wide card).
     return '<div class="card-head"><h3>' + escapeHtml(I18N.t("hc_stock_title")) + '</h3></div><p class="hc-sub">' + escapeHtml(I18N.t("hc_stock_sub")) + "</p>" +
-      '<div class="hc-plot hc-plot-small"><div class="hc-yaxis" aria-hidden="true">' + labels + '</div><svg class="hc-svg" role="img" aria-label="' +
-      titleAttr(I18N.t("hc_stock_aria", { n: bags.length, s: plural(bags.length) })) + '" width="100%" height="100%">' + svg + "</svg></div>" + axis + list;
+      '<div class="hk-parts"><div class="hk-draw"><div class="hc-plot hc-plot-small"><div class="hc-yaxis" aria-hidden="true">' + labels + '</div><svg class="hc-svg" role="img" aria-label="' +
+      titleAttr(I18N.t("hc_stock_aria", { n: bags.length, s: plural(bags.length) })) + '" width="100%" height="100%">' + svg + "</svg></div>" + axis + "</div>" + list + "</div>";
   }
 
   // ---------- Render and wiring ----------
@@ -353,9 +355,9 @@
     const open = typeof UI.stockData === "function" ? UI.stockData().filter(s => s.leftover > 0).map(s => s.coffee.id) : [];
     const codes = homeCodes(o.exts, open, now);
     const ctx = { exts: o.exts, analyzable: o.analyzable, now: now };
+    put($("#home-days"), daysHtml(ctx, codes));
     put($("#home-matrix"), matrixHtml(ctx, codes));
     put($("#home-stock"), stockHtml(ctx, codes));
-    put($("#home-days"), daysHtml(ctx, codes));
   }
 
   function wireHomeCharts() {

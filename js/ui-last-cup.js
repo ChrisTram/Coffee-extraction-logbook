@@ -1,14 +1,16 @@
-/* Home: the latest cup, shown large, and the building blocks it shares
- * with the table of recent brews (moved out of ui-dashboard.js in v8.78). */
+/* Home: the latest cup, a small card since v9.46 (its history chart left for
+ * the 30 days chart above it, and stays in the cup's side panel), and the
+ * building blocks it shares with the table of recent brews (moved out of
+ * ui-dashboard.js in v8.78). */
 "use strict";
 
 (() => {
 
   // Borrowed from the core and from ui-findings.js, loaded before us.
-  const { $, titleAttr, displayedDiags, isFailed, analyzableExts, fmtDuration, fmtVND,
-    average, fmtRating, findRecipe } = UI;
+  const { $, titleAttr, displayedDiags, isFailed, analyzableExts, fmtDuration,
+    average, fmtRating } = UI;
 
-  /* THE LATEST CUP, shown large.
+  /* THE LATEST CUP.
 
      This is the card Chris looks at when opening the site: what he just
      drank, and what he thought of it. It reuses the same blocks as the last
@@ -32,7 +34,8 @@
     const context = [];
     if (e.recipe) context.push(I18N.tr(e.recipe));
     if (e.dose_g > 0 && e.water_g) context.push(e.dose_g + " → " + e.water_g + " g");
-    // Total time sits in the FOOTER (v8.39), next to the recipe target.
+    const total = fmtDuration(e.total_time_s);
+    if (total) context.push(total);
     if (e.temperature_c !== "" && e.temperature_c !== undefined) context.push(e.temperature_c + " °C");
     if (e.method === "Brikka" && e.heat_level !== "" && e.heat_level !== undefined) {
       context.push(I18N.t("setting_heat", { f: e.heat_level }));
@@ -45,8 +48,11 @@
     /* L1 (v9.21): THE SCORE NEXT TO THE NAME. A head row carries the name, its
        context line and the score, big, on the right, on every width: on a
        phone the score used to fall under the card body, below the fold. The
-       rest (record, tastes, comment, rank, footer) follows underneath. The
-       head is also what js/ui-home.js watches to fold the card into its band. */
+       rest follows underneath, short (v9.46): the record, the tastes, the
+       comment, and ONE line that places the cup among those of its coffee.
+       The chart of those cups and the footer of figures are gone from here:
+       the 30 days chart above shows the cups, the cup's panel has the rest.
+       The head is also what js/ui-home.js watches to fold the card into its band. */
     const html =
       '<div class="lc-head">' +
         '<div class="lc-title">' +
@@ -75,8 +81,7 @@
           x: fmtRating(record.gap), d: dayMonth(record.previousDate) })) + "</p>" : "") +
         lastTastes(e) +
         (e.comment ? '<p class="last-big-comment">' + titleAttr(e.comment) + "</p>" : "") +
-        rankAmongSiblings(e) +
-        lastCupFooter(e) +
+        rankLine(e) +
       "</div>";
     /* Rewritten only when it changed (v9.13): a render in the middle of the
        odometer, the steam or the count, a sync arriving, would cut them. */
@@ -123,11 +128,13 @@
      Each rated cup of the coffee is a dot on the score scale, this one large,
      the coffee average as a line. Under three rated cups, nothing: a rank
      among two says nothing. */
-  function rankAmongSiblings(e) {
-    if (e.score_10 === "" || e.score_10 === undefined) return "";
+  /* The facts of a cup's rank among the rated cups of its coffee, or null
+     (no score, or under three rated cups). */
+  function rankFacts(e) {
+    if (e.score_10 === "" || e.score_10 === undefined) return null;
     const siblings = analyzableExts().filter(x => x.coffee_id === e.coffee_id && x.score_10 !== "");
     if (!siblings.some(x => x.id === e.id)) siblings.push(e);
-    if (siblings.length < 3) return "";
+    if (siblings.length < 3) return null;
     const rating = Number(e.score_10);
     const notes = siblings.map(x => Number(x.score_10));
     const avg = average(notes);
@@ -139,6 +146,23 @@
     const gap = rating - avg;
     const position = Math.abs(gap) < 0.2 ? I18N.t("rank_on_average")
       : I18N.t(gap > 0 ? "rank_above" : "rank_below", { x: fmtRating(Math.abs(gap)) });
+    return { siblings, rating, notes, avg, rankText, position };
+  }
+
+  /* ONE LINE on the home's card (v9.46): « Parmi tes 23 tasses notées de Là
+     Việt Balanced : la meilleure, 2,7 au-dessus de ta moyenne ». */
+  function rankLine(e) {
+    const f = rankFacts(e);
+    if (!f) return "";
+    return '<p class="last-rank"><span>' + I18N.t("rank_among", { n: f.notes.length, coffee: I18N.tr(e._c.coffee_name) }) + '</span><span class="sep" aria-hidden="true"> · </span>' +
+      "<b>" + f.rankText + "</b>, " + f.position + "</p>";
+  }
+
+  /* The same, with the chart: in the cup's side panel (js/ui-panel-edit.js). */
+  function rankAmongSiblings(e) {
+    const f = rankFacts(e);
+    if (!f) return "";
+    const { siblings, rating, notes, avg, rankText, position } = f;
 
     /* v9.40: ONE DOT PER CUP, OVER TIME. The dates run along, the score goes
        up, each cup is its own dot in the colour of its recipe (legend under the
@@ -197,60 +221,6 @@
       '<p class="last-spot-head"><span>' + I18N.t("rank_among", { n: notes.length, coffee: I18N.tr(e._c.coffee_name) }) + "</span>" +
       "<span><b>" + rankText + "</b>, " + position + "</span></p>" +
       '<svg class="ls-time" viewBox="0 0 600 ' + (B + 26) + '">' + svg + "</svg>" + legend + "</div>";
-  }
-
-  /* The TARGET of a footer figure: what the recipe aimed for, otherwise your
-     average on this coffee and this recipe. A value with no reference does
-     not say whether it is good. */
-  function recipeTimeTarget(r) {
-    const m = /^total\s+(.+)$/.exec(String((r && r.totalText) || "").trim());
-    if (!m) return "";
-    return m[1].replace(/^environ\s+/, "≈ ").replace(/,.*$/, "");
-  }
-
-  /* THE FOOTER of the card: ratio, time, drawdown, grind, cost, each with its
-     target underneath (v8.39). Each cell only appears if the value exists:
-     an empty cell is a hole. */
-  function lastCupFooter(e) {
-    const r = findRecipe(e.recipe);
-    const same = analyzableExts().filter(x => x.id !== e.id && x.coffee_id === e.coffee_id && x.recipe === e.recipe);
-    const avgTime = field => {
-      const v = same.map(x => Number(x[field])).filter(n => n > 0);
-      return v.length >= 2 ? fmtDuration(Math.round(average(v))) : "";
-    };
-    const cells = [];
-    const cell = (label, value, target, ok) => cells.push("<div><span>" + label + "</span><b>" + value + "</b>" +
-      (target ? '<small class="' + (ok ? "target-held" : "") + '">' + target + "</small>" : "") + "</div>");
-
-    if (e._c.ratioText) {
-      let target = "", ok = false;
-      /* On the SWITCH only: the recipe water is the poured water, the same
-         quantity as the cup's. On the Brikka, it is the boiler water
-         (150 g) for a ratio of about 1:7 in the cup: comparing them would
-         announce a gap that does not exist. */
-      if (e.method === "Switch" && r && r.dose > 0 && r.water > 0) {
-        const aimed = r.water / r.dose;
-        target = I18N.t("rank_recipe", { v: "1:" + aimed.toFixed(1) });
-        ok = Math.abs(Number(e.water_g) / Number(e.dose_g) - aimed) <= 0.3;
-      }
-      cell(I18N.t("detail_ratio"), e._c.ratioText, target, ok);
-    }
-    const total = fmtDuration(e.total_time_s);
-    if (total) {
-      const aimed = recipeTimeTarget(r);
-      const avg = avgTime("total_time_s");
-      cell(I18N.t("detail_time"), total,
-        aimed ? I18N.t("rank_recipe", { v: aimed }) : avg ? I18N.t("rank_your_average", { v: avg }) : "", false);
-    }
-    const drawdown = fmtDuration(e.flow_time_s);
-    if (drawdown) {
-      const avg = avgTime("flow_time_s");
-      cell(I18N.t("detail_drawdown"), drawdown, avg ? I18N.t("rank_your_average", { v: avg }) : "", false);
-    }
-    if (e.grind_dial) cell(I18N.t("detail_grind"), e.grind_dial, e._c.microns ? e._c.microns + " µm" : "", false);
-    else if (e._c.ground) cell(I18N.t("detail_grind"), I18N.t("bag_default"), "", false);
-    if (e._c.cup_cost_vnd !== "") cell(I18N.t("detail_cost"), fmtVND(e._c.cup_cost_vnd), I18N.t("rank_per_cup"), false);
-    return cells.length ? '<div class="last-big-footer">' + cells.join("") + "</div>" : "";
   }
 
   /* "2 h ago". Precise enough to place the cup, never to the minute: we want

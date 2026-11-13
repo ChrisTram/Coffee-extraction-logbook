@@ -295,12 +295,20 @@ const before = (from, k) => { const d = new Date(from); d.setDate(d.getDate() - 
   const home = html.slice(html.indexOf('<section id="screen-dashboard"'), html.indexOf('<section id="screen-analytics"'));
   const analytics = html.slice(html.indexOf('<section id="screen-analytics"'), html.indexOf("<!-- ================= SCREEN 2: ENTRY"));
   check("the home keeps the open coffees, the last cup and the latest cups", ['id="home-open"', 'id="card-last"', 'id="latest-list"', 'id="home-band"'].every(s => home.includes(s)));
-  check("v9.45: the last cup, the latest cups, then the matrix and the bags, the 30 days last", ['id="home-days"', 'id="home-matrix"', 'id="home-stock"'].every(s => home.includes(s)) &&
+  check("v9.46: the 30 days right under the open coffees, then the last cup, the latest cups, the matrix, the bags", ['id="home-days"', 'id="home-matrix"', 'id="home-stock"'].every(s => home.includes(s)) &&
+    home.indexOf('id="home-open"') < home.indexOf('id="home-days"') && home.indexOf('id="home-days"') < home.indexOf('id="card-last"') &&
     home.indexOf('id="card-last"') < home.indexOf('id="latest-list"') && home.indexOf('id="latest-list"') < home.indexOf('id="home-matrix"') &&
-    home.indexOf('id="home-matrix"') < home.indexOf('id="home-stock"') && home.indexOf('id="home-stock"') < home.indexOf('id="home-days"'));
+    home.indexOf('id="home-matrix"') < home.indexOf('id="home-stock"'));
+  const lastSrc = read("js/ui-last-cup.js");
+  const cardSrc = lastSrc.slice(lastSrc.indexOf("function renderLastCup"), lastSrc.indexOf("// « 12 septembre »"));
+  check("v9.46: the last cup is a small card: one line for its rank, no chart, no footer of figures", cardSrc.includes("rankLine(e) +") &&
+    !cardSrc.includes("rankAmongSiblings(e)") && !lastSrc.includes("lastCupFooter") && lastSrc.includes('<p class="last-rank">'));
+  check("the chart of the coffee's cups stays in the cup's side panel", lastSrc.includes("function rankAmongSiblings(e)") &&
+    read("js/ui-panel-edit.js").includes("UI.rankAmongSiblings(e)"));
   check("v9.45: the week, the temperature and the spread of the scores left the home", ['id="home-week"', 'id="home-week-line"', 'id="home-temp"', 'id="home-spread"'].every(s => !home.includes(s)) &&
     !/home-week|\.hw-bars|\.hs-|hc-band/.test(read("css/home.css")) && !/weekSummary|bestDegree|scoreSpread/.test(read("js/ui-home.js") + read("js/ui-home-charts.js")));
-  check("the 30 days span the page at the foot, and slide on a narrow card from their last days", /\.home-layout > \.home-days \{ grid-column: 1 \/ -1; grid-row: 4; \}/.test(read("css/home.css")) &&
+  check("the 30 days span the page under the open coffees, the bags at the foot, and the days slide on a narrow card from their last ones",
+    /\.home-layout > \.home-days \{ grid-column: 1 \/ -1; grid-row: 3; \}/.test(read("css/home.css")) && /\.home-layout > \.home-stock \{ grid-column: 1 \/ -1; grid-row: 5; \}/.test(read("css/home.css")) &&
     /\.hc-scroll \{[^}]*overflow-x: auto;[^}]*direction: rtl; \}/.test(read("css/home.css")) && /\.hc-wide \{[^}]*min-width: 660px;[^}]*direction: ltr; \}/.test(read("css/home.css")));
   check("the side column no longer sticks (it slid over the 30 days)", !/\.home-side \{[^}]*position: sticky/.test(read("css/home.css")) && !read("js/ui-home.js").includes("placeSide"));
   const dashSrc = read("js/ui-dashboard.js");

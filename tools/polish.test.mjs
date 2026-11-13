@@ -60,15 +60,16 @@ const homeCss = read("css/home.css"), stockCss = read("css/stock.css"), journalC
 /* ---------- 1. The home: two columns that run on their own ---------- */
 {
   const side = html.slice(html.indexOf('<aside class="home-side"'), html.indexOf("</aside>"));
-  check("the side column holds the matrix, then the bags; the week left the home (v9.45)", side.includes('id="home-matrix"') &&
-    side.indexOf('id="home-matrix"') < side.indexOf('id="home-stock"') && !html.includes('id="home-week"'));
+  check("the side column holds the matrix; the week left the home (v9.45), the bags went across the page (v9.46)", side.includes('id="home-matrix"') &&
+    !side.includes('id="home-stock"') && html.includes('id="home-stock"') && !html.includes('id="home-week"'));
   check("v9.41: the month card left the home, Analyses keeps the month", !html.includes('id="home-month"') && !/home-month|hm-bars|hm-ring/.test(homeCss) && html.includes('id="tile-month"'));
   const layout = html.slice(html.indexOf('<div class="home-layout">'), html.indexOf("</aside>", html.indexOf('<div class="home-layout">')));
   check("the head, the open coffees and the two columns share one grid", ['class="head-page home-head"', 'id="home-open"', 'class="grid-dashboard home-main"',
     'class="home-side" id="home-side"'].every(s => layout.includes(s)));
   check("the open coffees span the page, the side column sits beside the last cup",
     /\.home-layout > \.home-open \{ grid-column: 1 \/ -1; grid-row: 2; \}/.test(homeCss) &&
-    /\.home-layout > \.home-side \{ grid-column: 2; grid-row: 3; \}/.test(homeCss));
+    /\.home-layout > \.home-side \{ grid-column: 2; grid-row: 4; align-self: stretch; \}/.test(homeCss) &&
+    /\.home-layout > \.home-main \{ grid-column: 1; grid-row: 4; \}/.test(homeCss));
   check("the open coffees' movements have their calm path", /prefers-reduced-motion[\s\S]*\.home-enter \.ho-pt, \.home-enter \.ho-roll, \.home-enter \.ho-avg \{ animation: none; \}/.test(homeCss));
   check("their cards tilt under the mouse", read("js/ui-feel.js").includes(".ho-card"));
 }

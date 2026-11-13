@@ -140,9 +140,6 @@ const I18N_FR = {
     rank_on_average: { fr: "dans ta moyenne" },
     rank_average: { fr: "ta moyenne {m}" },
     rank_aria: { fr: "{n} tasses notées de {coffee}, moyenne {m}, celle-ci à {score}" },
-    rank_recipe: { fr: "recette {v}" },
-    rank_your_average: { fr: "ta moyenne {v}" },
-    rank_per_cup: { fr: "la tasse" },
     /* The readings of the analyses (v8.39). */
     reading_coffees: { fr: "{a} tient la tête avec {ma} de moyenne ; {b} ferme la marche à {mb}." },
     reading_coffees_two: { fr: "{a} passe devant {b}, {ma} contre {mb}." },
@@ -235,8 +232,6 @@ const I18N_FR = {
     // Expandable detail and comparator of the history.
     detail_coffee: { fr: "Café" },
     detail_recipe: { fr: "Recette" },
-    detail_ratio: { fr: "Ratio" },
-    detail_grind: { fr: "Mouture" },
     detail_temp: { fr: "Température" },
     detail_preheated: { fr: "Eau préchauffée" },
     detail_drawdown: { fr: "Écoulement" },

@@ -12,9 +12,9 @@ directement dans le code : **v9.41** (l'accueil), **v9.42** (ménage, perfs,
 retouches) et, sur ton « oui », **v9.43** (Analyses au téléphone). Deux jours plus
 tard, ton retour (« toujours autant moisi », « fait vide ») a donné la **v9.44** :
 des graphiques sur l'accueil à la place de la phrase « À retenir » et de la roue
-des goûts, puis la **v9.45** dans ton ordre (dernière tasse, dernières tasses en
-une ligne, recette par café, sachets jusqu'à quand, 30 derniers jours ; sans la
-semaine). La section 1 ci-dessous décrit la v9.41 : pour l'accueil d'aujourd'hui,
+des goûts, puis les **v9.45** et **v9.46** dans ton ordre (cafés ouverts, 30 derniers jours,
+dernière tasse en petit, dernières tasses en une ligne, recette par café,
+sachets jusqu'à quand ; sans la semaine). La section 1 ci-dessous décrit la v9.41 : pour l'accueil d'aujourd'hui,
 lire `DOCUMENTATION.md`, section 6 bis. Ce fichier dit ce qui a été mesuré, ce qui a été fait, et ce qui
 reste, chiffré.
 

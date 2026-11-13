@@ -969,22 +969,20 @@ même source que l'écran Paramètres). Raisons et pièges : `DECISIONS.md`.
 
 ## 6 bis. Accueil (js/ui-dashboard.js, js/ui-home.js) et Analyses (js/ui-analytics.js)
 
-L'ACCUEIL (L1, v9.21 ; refait en v9.41, v9.44 et v9.45), dans l'ordre : tes
-cafés ouverts, ta dernière tasse, tes dernières tasses, puis des graphiques.
-`#dashboard-content.home` est une boîte de requêtes de conteneur
-(`container: home`) : sous 860 px de contenu, une colonne (les cafés ouverts, la
-dernière tasse, les dernières tasses, `#home-matrix`, `#home-stock`, puis
-`#home-days`) ; au dessus, les cafés ouverts sur toute la largeur sous le
-titre, puis deux colonnes (`.home-main`, qui garde la classe `.grid-dashboard`
-pour les règles de la carte : la dernière tasse puis les dernières tasses ; et
-`.home-side` : `#home-matrix` puis `#home-stock`), et `#home-days` sur toute la
-largeur au pied. L'en-tête, `#home-open`, les deux colonnes et `#home-days` sont
-les enfants d'une même grille `.home-layout`. La colonne de droite n'est PLUS
-collante (v9.45) : à peu près aussi haute que l'autre, collée elle glissait sur
-les 30 jours ; `placeSide` et `UI.sideTop` sont partis. Le bandeau `#home-band`
-est HORS de `.home` : une boîte de conteneur devient le cadre des
-`position: fixed`. La semaine (`#home-week`, `#home-week-line`,
-`UI.weekSummary`) a quitté l'accueil en v9.45.
+L'ACCUEIL (L1, v9.21 ; refait de la v9.41 à la v9.46), dans l'ordre : tes cafés
+ouverts, tes 30 derniers jours, ta dernière tasse (petite), tes dernières
+tasses, la recette par café, tes sachets. `#dashboard-content.home` est une
+boîte de requêtes de conteneur (`container: home`) : sous 860 px de contenu,
+une colonne dans cet ordre ; au dessus, `#home-open` puis `#home-days` sur
+toute la largeur sous le titre, puis deux colonnes (`.home-main`, qui garde la
+classe `.grid-dashboard` pour les règles de la carte : la dernière tasse puis
+les dernières tasses ; et `.home-side` : `#home-matrix`, étirée pour finir où
+finissent les dernières tasses), et `#home-stock` sur toute la largeur au pied
+(son dessin à gauche, ses chiffres à droite). Tous sont les enfants d'une même
+grille `.home-layout`. La colonne de droite n'est PLUS collante (v9.45) ;
+`placeSide` et `UI.sideTop` sont partis. Le bandeau `#home-band` est HORS de
+`.home` : une boîte de conteneur devient le cadre des `position: fixed`. La
+semaine (`#home-week`, `UI.weekSummary`) a quitté l'accueil en v9.45.
 
 - **Tes cafés ouverts** (v9.41, `#home-open`, js/ui-home-open.js) : une carte par
   ligne de `UI.stockData()` (les sachets ouverts ; le café bu en dernier d'abord,
@@ -1027,7 +1025,8 @@ est HORS de `.home` : une boîte de conteneur devient le cadre des
     code), la moyenne et le nombre de tasses dans chaque case, teintée par la
     note, la meilleure de chaque café cerclée (dès deux recettes à comparer). Une
     case ouvre ces tasses dans le journal (`UI.openHistoryOn`).
-  - `#home-stock`, « Tes sachets, jusqu'à quand » (v9.45, `UI.bagLine`) : pour
+  - `#home-stock`, « Tes sachets, jusqu'à quand » (v9.45, `UI.bagLine`, sur toute
+    la largeur au pied depuis la v9.46) : pour
     chaque sachet ouvert dont la taille est connue, ses grammes en marches (une
     tasse, une marche) depuis l'ouverture, ou depuis le compte à la main s'il y
     en a un, jusqu'à aujourd'hui ; puis en pointillés la droite de son rythme
@@ -1037,7 +1036,8 @@ est HORS de `.home` : une boîte de conteneur devient le cadre des
     ouverture (45 jours en arrière au plus) à la fin la plus lointaine (60 jours
     en avant au plus).
   - `#home-days`, « Tes 30 derniers jours » (`UI.lastDays`, 15 jours en v9.44),
-    en dernier et sur toute la largeur : une marque par tasse, son jour en
+    juste sous les cafés ouverts et sur toute la largeur (v9.46 ; au pied en
+    v9.45) : une marque par tasse, son jour en
     largeur (`UI.cupX` range côte à côte les tasses d'un même jour), sa note en
     hauteur (`UI.scoreScale`), la moyenne du jour en ligne ; une tasse pas
     encore notée attend en creux sur une rangée « à noter » au pied ; aujourd'hui
@@ -1056,6 +1056,14 @@ est HORS de `.home` : une boîte de conteneur devient le cadre des
   Les règles sont dans css/home.css (`.home .table-latest`), deux lignes au
   téléphone ; les petites cartes de la v8.82 (`@container dernieres`) sont
   parties.
+- **La dernière tasse, en petit** (v9.46) : la rangée de tête, le record, les
+  goûts, le commentaire sur deux lignes au plus, et UNE ligne `.last-rank`
+  (`rankLine`, js/ui-last-cup.js) qui place la tasse parmi celles de son café
+  (« Parmi tes 23 tasses notées de … · la meilleure, 2,7 au-dessus de ta
+  moyenne »). Son graphique des tasses du café (v9.39, v9.40) et son pied de
+  chiffres (ratio, temps, mouture, coût) ont quitté l'accueil : les 30 jours
+  montrent les tasses, et le graphique reste dans le panneau de la tasse
+  (`UI.rankAmongSiblings`, js/ui-panel-edit.js). Ce qui suit décrit sa tête.
 - **La dernière tasse** : une rangée de tête (`.lc-head` : nom, contexte, note en
   grand à droite) puis le corps (record, goûts, commentaire, rang, pied). Sur
   téléphone, le rang, le pied et le commentaire attendent un écran plus large.

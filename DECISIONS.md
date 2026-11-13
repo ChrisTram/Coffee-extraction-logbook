@@ -2636,6 +2636,24 @@ projet) ; charger les écrans à la demande (10 pour cent du chemin critique pou
 une contrainte d'ordre fragile) ; remplacer Chart.js par du SVG (70 Ko gzip déjà
 chargés à part et mis en cache).
 
+### v9.46 : un seul graphique des tasses sur l'accueil
+
+Chris, le 14 novembre 2026 : « laisse que le 30 derniers jours en haut sous tes
+cafés ouverts, et dernière tasse on le simplifie en petit widget en enlevant
+son graph historique, vu qu'il y aura déjà l'info dans le graph 30 jours ».
+
+- Deux graphiques qui montraient les mêmes tasses (celles du café de la dernière
+  tasse, et celles des 30 jours) : un seul reste, le plus large. Celui du café
+  ne disparaît pas du site, il est dans le panneau de la tasse.
+- La carte garde UNE phrase de rang : c'est ce que le graphique disait de plus
+  utile (« chance ou niveau ? »), et elle tient sur une ligne.
+- Le pied de chiffres part avec le graphique : ratio, mouture et coût sont
+  quasi constants chez lui (molette à 1.5.0), et le temps total remonte dans la
+  ligne de contexte.
+- Les sachets passent en pleine largeur au pied : à côté de la matrice ils
+  faisaient une colonne de 800 px face à 550 px à gauche. En large, le dessin
+  et les chiffres de chaque sachet se lisent côte à côte.
+
 ### v9.45 : l'ordre de Chris, et trois choses retirées
 
 Retour du 14 novembre 2026, le soir même de la v9.44, point par point :

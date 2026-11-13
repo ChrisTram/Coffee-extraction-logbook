@@ -294,32 +294,8 @@ html[data-theme="dark"] .card-dark {
    the key figures card and left 200 px of blank under the tastes; these
    four values are already computed and are what we compare from one cup to
    the next. margin-top: auto pushes it down, whatever the height. */
-.last-big-footer {
-  margin-top: auto;
-  padding-top: 8px;
-  /* As a GRID (v8.39): five cells and their target below fit on one
-     line; in flex they wrapped and the card grew. */
-  display: grid;
-  /* 70 px (v8.67): at 84 px the five cells wrapped onto two lines in the
-     card, and the card took 70 px of height for four figures. */
-  grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
-  gap: 6px 12px;
-  font-size: 0.75rem;
-  color: var(--muted);
-}
 /* Label and value on ONE line, the marker below (v8.67): three lines per
    cell made 56 px of height for four figures. */
-.last-big-footer > div { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 5px; line-height: 1.25; }
-.last-big-footer > div > small { flex-basis: 100%; }
-.last-big-footer b {
-  font-family: var(--serif);
-  font-weight: 400;
-  font-size: 1.05rem;
-  line-height: 1.05;
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
-}
-.last-big-footer small { font-size: 0.75rem; color: var(--muted); }
 /* The rating, separated by a vertical hairline: it is the answer to "was it good?". */
 .last-big-rating {
   flex: none;
@@ -411,7 +387,6 @@ html[data-theme="dark"] .card-dark {
   max-width: 0;
 }
 .last-comment:hover td { background: var(--panel-2); }
-.d-tastes { max-width: 210px; }
 .d-rating {
   text-align: right;
   font-family: var(--serif);
@@ -598,7 +573,6 @@ div.analysis-reading p + p { margin-top: 8px; }
 .last-spot-head b { color: var(--accent-strong); font-weight: 700; }
 .last-spot svg { display: block; width: 100%; height: auto; overflow: visible; }
 .last-spot text { font-family: var(--sans); font-size: 11px; fill: var(--muted); }
-.last-big-footer small.target-held { color: var(--accent-strong); }
 
 /* Brikka versus Switch duel */
 .duel { display: flex; gap: 12px; margin-bottom: 12px; }
