@@ -2636,6 +2636,33 @@ projet) ; charger les écrans à la demande (10 pour cent du chemin critique pou
 une contrainte d'ordre fragile) ; remplacer Chart.js par du SVG (70 Ko gzip déjà
 chargés à part et mis en cache).
 
+### v9.48 : la cafetière décide de la tasse
+
+Chris, le 14 novembre 2026 : « une entrée switch doit automatiquement passer
+en classic mug, là ça m'a remis sur nutty tasting cup ça a aucun sens ». Et la
+règle qu'il donne : Espresso Egg Loveramics pour la Brikka, Classic Mug pour
+le Switch.
+
+- L'ancienne règle ne remplaçait la tasse que si le champ était vide ou tenait
+  l'un des deux défauts. Elle voulait respecter un choix manuel, mais ne savait
+  pas le distinguer d'une tasse héritée : « Refaire » recopie la tasse de la
+  tasse d'avant, et le formulaire la gardait d'une saisie à l'autre. Quatre
+  tasses réelles ont été classées sur le Nutty Tasting Cup de cette façon.
+- La distinction est maintenant dite : `entry.cupTouched` n'est vrai que si le
+  champ a été changé à la main dans cette saisie (ou une tasse ajoutée par le
+  bouton ✚), ou si l'on modifie une tasse déjà enregistrée. Dans tous les autres
+  cas la cafetière gagne.
+- Une copie (« Refaire », « Brasser ») prend la tasse de sa cafetière et non
+  celle de l'original : c'est justement par là que la mauvaise tasse revenait.
+  Modifier une tasse enregistrée garde la sienne : la corriger en silence
+  fausserait l'historique.
+- Le couple cafetière et tasse n'est écrit qu'à un endroit (`UI.DEFAULT_CUPS`).
+  Il l'était trois fois (saisie, saisie rapide, tasse dessinée), avec le Flat
+  White Egg pour la Brikka.
+- Les tasses déjà enregistrées ne sont pas réécrites : rien ne dit lesquelles
+  ont vraiment été bues dans le Nutty Tasting Cup. Chris les corrige dans le
+  panneau de chaque tasse s'il le veut.
+
 ### v9.47 : une suppression dans le catalogue MCP, pour un sachet seulement
 
 La règle « aucune suppression » du catalogue (v9.12) protégeait les données

@@ -54,6 +54,11 @@
        Without it, refreshing the date on arriving at the screen would overwrite
        the cup from last night that he is in the middle of logging. */
     dateTouched: false,
+    /* True once the cup was picked by hand in this entry, or belongs to the
+       saved cup being edited (v9.48). Otherwise the brewer decides the cup:
+       until then a cup left by the cup before (a Nutty Tasting Cup carried by
+       « Refaire ») stayed on a Switch entry, which makes no sense. */
+    cupTouched: false,
   };
 
   /* v9.25: the active coffees, those whose bag is spent (less than one dose
@@ -135,13 +140,11 @@
        the boiler, there is nothing to measure beforehand: the only question is
        the "preheated water" box, and it has its own field. */
     $("#field-temp").hidden = m !== "Switch";
-    // Default cup: Flat White Egg for the Brikka, Classic Mug for the Switch.
-    const defaultCups = { "Brikka": "Loveramics Flat White Egg", "Switch": "Classic Mug" };
-    const currentCup = $("#f-cup").value;
-    if ((currentCup === "" || Object.values(defaultCups).includes(currentCup)) &&
-        DATA.state.cups.some(t => t.name === defaultCups[m])) {
-      $("#f-cup").value = defaultCups[m];
-    }
+    /* The brewer decides the cup (UI.DEFAULT_CUPS: Espresso Egg for the Brikka,
+       Classic Mug for the Switch), whatever the field held, unless Chris picked
+       the cup himself in this entry. */
+    const cup = UI.defaultCup(m);
+    if (cup && !entry.cupTouched) $("#f-cup").value = cup;
     if (!keepRecipe) fillRecipeSelect();
     updatePreheatField();
     updateWarnings();
@@ -662,6 +665,7 @@
   function resetEntry(keepCoffee) {
     entry.editId = null;
     entry.dateTouched = false;
+    entry.cupTouched = false;
     entry.diagnostics.clear();
     entry.descriptors.clear();
     $("#entry-title").textContent = I18N.t("entry_new");
@@ -711,6 +715,9 @@
        recipe again by hand. Placed higher up, it would be overwritten by the
        reset of the preheating.
        prefillFromRecipe ends with updateWarnings and updateLive. */
+    // A blank form takes its brewer's cup again (v9.48), whatever the last cup left there.
+    const cup = UI.defaultCup(entry.method);
+    if (cup) $("#f-cup").value = cup;
     prefillFromRecipe($("#f-recipe").value);
   }
 
@@ -723,6 +730,8 @@
     // It comes from the opened extraction, not from a default: leave it alone.
     entry.dateTouched = !isDuplicate;
     $("#f-coffee").value = ext.coffee_id;
+    // A saved cup keeps its own cup; a copy (« Refaire », « Brasser ») takes its brewer's.
+    entry.cupTouched = !isDuplicate;
     chooseMethod(ext.method || "Brikka", true);
     fillRecipeSelect();
     if (ext.recipe) $("#f-recipe").value = ext.recipe;
@@ -743,7 +752,7 @@
     $("#f-agitation-yes").checked = ext.stir_count !== "" && ext.stir_count !== undefined;
     $("#row-agitation").hidden = !$("#f-agitation-yes").checked;
     $("#f-agitation").value = ext.stir_count !== undefined && ext.stir_count !== "" ? ext.stir_count : 1;
-    $("#f-cup").value = ext.cup || "";
+    $("#f-cup").value = isDuplicate ? (UI.defaultCup(ext.method || "Brikka") || ext.cup || "") : (ext.cup || "");
     $("#f-milk").value = ext.milk_ml !== undefined ? ext.milk_ml : "";
     $("#field-milk").hidden = !(findRecipe(ext.recipe) || {}).milk;
     writeDuration("f-total", ext.total_time_s);
@@ -963,7 +972,8 @@
       if ($("#f-agitation-yes").checked && !$("#f-agitation").value) $("#f-agitation").value = 1;
     });
     $("#f-milk").addEventListener("input", updateLive);
-    $("#f-cup").addEventListener("change", () => { updateMilk(); updateLive(); });
+    // Picked by hand: the brewer no longer decides for this entry.
+    $("#f-cup").addEventListener("change", () => { entry.cupTouched = true; updateMilk(); updateLive(); });
     $("#btn-cups").addEventListener("click", () => {
       const editor = $("#cups-editor");
       editor.hidden = !editor.hidden;
@@ -979,6 +989,7 @@
       renderCupEditor();
       fillCupSelect();
       $("#f-cup").value = name;
+      entry.cupTouched = true;
       updateMilk();
       updateLive();
     });

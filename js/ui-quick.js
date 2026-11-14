@@ -146,7 +146,7 @@
       total_time_s: "",
       flow_time_s: "",
       yield_ml: "",
-      cup: (DATA.state.cups.find(t => t.name === (r.method === "Brikka" ? "Loveramics Flat White Egg" : "Classic Mug")) || { name: "" }).name,
+      cup: UI.defaultCup(r.method),
       score_10: quickRating(),
       diagnostic: "",
       descriptors: "",

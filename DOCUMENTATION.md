@@ -540,8 +540,18 @@ viennent après : `migrerDonnees` le rétablit à chaque chargement.
 ### cups.csv (tasses.csv avant la v9.06)
 `id, name, capacity_ml`. Quatre par défaut (TASSES_DEPART) : Flat White Egg
 150, Espresso Egg 80, Nutty Tasting Cup 150, Classic Mug 330. Éditeur inline
-dans la saisie (bouton ✚). Défauts par méthode : Flat White Egg en Brikka,
-Classic Mug en Switch (non écrasés si l'utilisateur a choisi autre chose).
+dans la saisie (bouton ✚). **La cafetière décide de la tasse** (v9.48) :
+Espresso Egg en Brikka, Classic Mug en Switch, dit une seule fois dans
+`UI.DEFAULT_CUPS` (`js/ui-core.js`) et lu par la saisie, la saisie rapide et
+la tasse dessinée. Choisir ou changer de cafetière pose cette tasse, quoi que
+le champ contienne, y compris sur « Refaire » et « Brasser » qui recopient
+une tasse passée. Deux exceptions : une tasse choisie à la main dans la saisie
+en cours (`entry.cupTouched`, remis à zéro par `resetEntry`), et la
+modification d'une tasse déjà enregistrée, qui garde la sienne. Si la tasse
+par défaut n'est plus dans la liste, `UI.defaultCup` rend une chaîne vide et
+le champ n'est pas touché. Jusqu'à la v9.47 le défaut Brikka était le Flat
+White Egg, et seul un champ vide ou tenant l'un des deux défauts était
+remplacé : une autre tasse héritée de la tasse précédente restait.
 La contenance sert au calcul du lait. Elle ne déclenche PLUS aucun avertissement
 de débordement (retiré en v7.28) : celui-ci supposait un service en une seule
 fois, alors qu on peut verser en deux, ce qui le rendait faux dans un usage

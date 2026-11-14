@@ -670,6 +670,16 @@ const UI = (() => {
      belongs to the call, it lives as long as the call. */
   /* The away periods (v9.37), parsed from the settings each time: cheap, and
      never stale after a sync. */
+  /* THE CUP OF EACH BREWER (v9.48), said once for the entry, the quick entry
+     and the drawn cup: the Espresso Egg for the Brikka, the Classic Mug for
+     the Switch (Chris's own pairing; the Flat White Egg until v9.47).
+     defaultCup gives the name only when that cup is still in his list. */
+  const DEFAULT_CUPS = { Brikka: "Loveramics Espresso Egg", Switch: "Classic Mug" };
+  function defaultCup(method) {
+    const name = DEFAULT_CUPS[method] || "";
+    return name && (DATA.state.cups || []).some(t => t.name === name) ? name : "";
+  }
+
   function awayPeriods() {
     try { return TOOLS.awayParse(DATA.currentSettings().away); } catch (e) { return []; }
   }
@@ -728,6 +738,7 @@ const UI = (() => {
   return {
     $, $$, $f, LONG_PRESS_MS, FALLBACKS_KEY, FACTORY_DOSE, FACTORY_BOIL_S, SCREEN_NAMES, RENAMED_SCREENS,
     FACTORY_FIRE, FACTORY_DIAL, enableLongPress, activateScreen, awayPeriods, animateCounter,
+    DEFAULT_CUPS, defaultCup,
     debounce, applyTheme, titleAttr, withTransition, setPressed, fieldCache,
     toggleFailed, loadFallbacks, localDateKey, askConfirm, detailRatio, displayedDiags,
     saveFallbacks, isFailed, analyzableExts, includeFailed,

@@ -25,8 +25,8 @@
   const { $, analyzableExts, average, fmtDecimal, fallbacks, findRecipe, icon } = UI;
   const escapeHtml = TOOLS.escapeHtml;
 
-  // The same default cups as the entry form (chooseMethod) and the quick entry.
-  const DEFAULT_CUP = { Brikka: "Loveramics Flat White Egg", Switch: "Classic Mug" };
+  // The same default cups as the entry form (chooseMethod) and the quick entry (js/ui-core.js).
+  const DEFAULT_CUP = UI.DEFAULT_CUPS;
   // Width, height and capacity of the reference cup of each family, in viewBox units.
   const FAMILY_BASE = { egg: [124, 92, 150], low: [150, 64, 150], mug: [104, 124, 330] };
   const DRINKS = {

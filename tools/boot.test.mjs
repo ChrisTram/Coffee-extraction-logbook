@@ -1596,5 +1596,70 @@ check("the temperature field no longer has a misleading placeholder", !tempField
   check("off screen, a value is written at once", ui.rollText(probe, "14", "13") === false && probe.textContent === "14");
 }
 
+/* v9.48: THE BREWER DECIDES THE CUP. Chris, 14 November 2026: a Switch entry
+   came back on the Nutty Tasting Cup, left there by the cup before. The old rule
+   only replaced an empty field or one of the two default cups, so any other cup
+   stayed whatever the brewer. This replays the gestures. */
+{
+  const ui = api.UI, D = api.DATA;
+  const field = document.querySelector("#f-cup");
+  const ESPRESSO = "Loveramics Espresso Egg", MUG = "Classic Mug", NUTTY = "Loveramics Nutty Tasting Cup";
+  check("one place says which cup goes with which brewer",
+    ui.DEFAULT_CUPS.Brikka === ESPRESSO && ui.DEFAULT_CUPS.Switch === MUG);
+  check("the starting cups hold both of them", ui.defaultCup("Brikka") === ESPRESSO && ui.defaultCup("Switch") === MUG);
+
+  ui.resetEntry();
+  ui.chooseMethod("Brikka");
+  check("a Brikka entry takes the Espresso Egg", field.value === ESPRESSO, field.value);
+  ui.chooseMethod("Switch");
+  check("a Switch entry takes the Classic Mug", field.value === MUG, field.value);
+
+  // The bug itself: a cup inherited from the cup before, neither empty nor a default.
+  field.value = NUTTY;
+  ui.chooseMethod("Switch");
+  check("a cup left by the cup before does not stay on a Switch entry", field.value === MUG, field.value);
+  field.value = NUTTY;
+  ui.chooseMethod("Brikka");
+  check("nor on a Brikka entry", field.value === ESPRESSO, field.value);
+
+  // Picked by hand (the change listener sets the flag; the test DOM has no events).
+  field.value = NUTTY;
+  ui.entry.cupTouched = true;
+  ui.chooseMethod("Switch");
+  check("a cup picked by hand stays when the brewer changes", field.value === NUTTY, field.value);
+  ui.resetEntry();
+  check("a blank form forgets the hand pick", ui.entry.cupTouched === false);
+  check("and takes its brewer's cup again", field.value === ui.defaultCup(ui.entry.method), field.value);
+
+  // A saved Switch cup filed on the Nutty cup: editing keeps it, « Refaire » does not.
+  const saved = Object.assign({}, D.state.extractions.find(e => e.method === "Switch") || D.state.extractions[0], { method: "Switch", cup: NUTTY });
+  ui.loadExtractionIntoEntry(saved);
+  check("editing a saved cup keeps its own cup", field.value === NUTTY && ui.entry.cupTouched === true, field.value);
+  ui.resetEntry();
+  ui.loadExtractionIntoEntry(saved, true);
+  check("a copy takes its brewer's cup", field.value === MUG && ui.entry.cupTouched === false, field.value);
+  ui.resetEntry();
+
+  // A cup he deleted from his list is never written back.
+  const keepCups = D.state.cups;
+  D.state.cups = keepCups.filter(t => t.name !== MUG);
+  check("a default cup no longer in the list is not proposed", ui.defaultCup("Switch") === "");
+  field.value = NUTTY;
+  ui.chooseMethod("Switch");
+  check("and the field is then left alone", field.value === NUTTY, field.value);
+  D.state.cups = keepCups;
+  ui.chooseMethod("Brikka");
+  ui.resetEntry();
+
+  const entrySrc = readFileSync(join(ROOT, "js/ui-entry.js"), "utf8");
+  const others = readFileSync(join(ROOT, "js/ui-quick.js"), "utf8") + readFileSync(join(ROOT, "js/ui-cup.js"), "utf8");
+  check("picking the cup by hand sets the flag",
+    /\$\("#f-cup"\)\.addEventListener\("change", \(\) => \{ entry\.cupTouched = true;/.test(entrySrc));
+  check("the quick entry and the drawn cup read the same pairing",
+    others.includes("cup: UI.defaultCup(r.method)") && others.includes("const DEFAULT_CUP = UI.DEFAULT_CUPS;"));
+  check("no file names the old Brikka default any more",
+    !/Flat White Egg/.test(entrySrc + others));
+}
+
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);
 process.exit(failures === 0 ? 0 : 1);
