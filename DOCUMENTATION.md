@@ -1015,9 +1015,16 @@ semaine (`#home-week`, `UI.weekSummary`) a quitté l'accueil en v9.45.
   `UI.redoCup` (toast `setting_prefilled`) ; un café jamais brassé ouvre la saisie
   sur lui. Le bocal est celui de js/ui-jar.js (`UI.playJars`, les grammes
   défilent, l'arrivée du matin le remplit une fois). La cellule `.ho-item` est le
-  conteneur (`hocard`) : dès 640 px (un seul café ouvert), la carte passe sur une
-  ligne ; sous 560 px de page, trois rangées courtes (qui et combien, la tendance
-  avec « Brasser », les notes). Le stock en grammes (v8.89) se lit donc toujours
+  conteneur (`hocard`), et la carte a quatre formes (v9.49) : empilée sous
+  620 px ; de 620 à 919 px, deux colonnes (qui, combien et les faits à gauche,
+  la courbe à droite) ; dès 920 px (un seul café ouvert, ou deux sur un très
+  grand écran), une ligne : qui, la courbe, les faits ; sous 560 px de page,
+  trois rangées courtes (qui et combien, la tendance avec « Brasser », les
+  notes). Dès 620 px les faits sont une petite table de deux colonnes (dernière
+  et meilleure, puis une moyenne par cafetière). Aucune piste de la grille ne
+  dépend de la longueur d'un texte : pas de colonne `auto`, la courbe a sa
+  piste `minmax(0, 1fr)`, et la ligne du stock passe à la ligne au lieu
+  d'être coupée (le point devant « ouvert » sort alors de la boîte). Le stock en grammes (v8.89) se lit donc toujours
   dès l'ouverture, sans défiler.
 - **Les graphiques** (v9.44, repris en v9.45, js/ui-home-charts.js). SVG et HTML
   maison, jamais Chart.js : ils sont là dès le premier rendu. UN SEUL CODE pour

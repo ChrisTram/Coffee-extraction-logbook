@@ -2636,6 +2636,32 @@ projet) ; charger les écrans à la demande (10 pour cent du chemin critique pou
 une contrainte d'ordre fragile) ; remplacer Chart.js par du SVG (70 Ko gzip déjà
 chargés à part et mis en cache).
 
+### v9.49 : la carte large d'un café ouvert ne dépend plus de ses textes
+
+Chris, le 14 novembre 2026, capture à l'appui (« layout cata là revois ça ») :
+sur une carte de 1 155 px, la tendance et « 8 notes » passaient sous les
+faits, le filet de séparation coupait la courbe, le nom et le stock étaient
+tronqués. Avec deux cafés ouverts sur un grand écran, chaque carte prend la
+moitié de la page : une largeur que la v9.41 n'avait mesurée qu'avec un café
+sans moyenne par cafetière.
+
+- La cause : la troisième colonne était `auto`. Elle prenait la largeur des
+  faits sur une seule ligne (quatre faits dès que le café a été brassé avec
+  les deux cafetières), et la courbe, dont la piste suivait la largeur de son
+  titre, débordait dessous. Mesuré sur la démonstration avec les textes de
+  Chris : chevauchement de 640 à 900 px, textes coupés jusqu'à 1 155 px.
+- Plus aucune piste ne dépend d'un texte. Les faits sont une table de deux
+  colonnes, de largeur bornée ; la courbe a une piste `minmax(0, 1fr)` ; le
+  nom a 300 puis 340 px au moins.
+- Une forme intermédiaire (620 à 919 px) plutôt qu'une ligne trop tôt : en
+  dessous de 920 px, le nom, la moyenne, la courbe et les faits ne tiennent pas
+  côte à côte sans que l'un écrase l'autre.
+- Le stock passe à la ligne au lieu d'être coupé : « ≈ 8 t… » ne disait rien,
+  et c'est l'information que Chris veut lire sans effort (grammes et tasses
+  restantes).
+- Vérifié par mesure de 300 à 1 400 px par pas de 20 px (aucun chevauchement,
+  aucun texte coupé), puis à l'œil sur les trois formes et au téléphone.
+
 ### v9.48 : la cafetière décide de la tasse
 
 Chris, le 14 novembre 2026 : « une entrée switch doit automatiquement passer

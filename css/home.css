@@ -98,12 +98,15 @@
 .ho-id { display: grid; gap: 4px; min-width: 0; }
 .ho-name { font-size: 0.98rem; font-weight: 700; line-height: 1.25; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .ho-main:hover .ho-name { color: var(--accent); }
-.ho-stock { display: flex; align-items: baseline; gap: 6px; min-width: 0; font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+/* The line wraps rather than cuts (v9.49): « ≈ 8 t… · ouver… » said nothing.
+   The dot before « ouvert » hangs in the margin of what comes before it; at
+   the start of a wrapped line it falls outside the box and is clipped. */
+.ho-stock { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 6px; min-width: 0; overflow: hidden; font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
 .ho-stock b { font-size: 0.9rem; color: var(--ink); font-variant-numeric: tabular-nums; }
 .ho-stock b:empty { display: none; }
-.ho-stock span { overflow: hidden; text-overflow: ellipsis; }
-.ho-opened { display: none; }
-.ho-opened::before { content: "·"; margin-right: 6px; }
+.ho-stock > span:not(.ho-opened) { overflow: hidden; text-overflow: ellipsis; margin-right: 6px; }
+.ho-opened { display: none; position: relative; }
+.ho-opened::before { content: "·"; position: absolute; left: -8px; }
 .ho-card.low .ho-stock b { color: var(--danger); }
 .ho-level { height: 4px; border-radius: 99px; background: var(--panel-3); overflow: hidden; }
 .ho-level i { display: block; height: 100%; width: var(--pc, 0%); border-radius: inherit; background: var(--accent); transition: width 900ms cubic-bezier(0.2, 0.8, 0.2, 1); }
@@ -112,8 +115,8 @@
 .ho-score > b { font-family: var(--serif); font-weight: 400; font-size: 2.5rem; line-height: 0.95; color: var(--ink); font-variant-numeric: tabular-nums; }
 .ho-score > b.none { color: var(--muted); }
 .ho-score > small { font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
-.ho-evo { display: grid; gap: 4px; min-width: 0; align-self: end; }
-.ho-evo-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 0; font-size: 0.78rem; color: var(--muted); }
+.ho-evo { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; min-width: 0; align-self: end; }
+.ho-evo-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 10px; margin: 0; font-size: 0.78rem; color: var(--muted); }
 .ho-count { flex: none; font-variant-numeric: tabular-nums; }
 .ho-trend { display: inline-flex; align-items: center; gap: 5px; min-width: 0; font-size: 0.8rem; font-weight: 600; white-space: nowrap; color: var(--text); }
 .ho-trend.wait { font-weight: 400; color: var(--muted); }
@@ -141,22 +144,39 @@
 .ho-facts { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; min-width: 0; font-size: 0.82rem; color: var(--text); }
 .ho-facts small { font-size: 0.75rem; color: var(--muted); }
 .ho-facts b { font-family: var(--serif); font-weight: 400; font-size: 1.05rem; color: var(--ink); font-variant-numeric: tabular-nums; }
+.ho-facts:empty { display: none; }
 .ho-method { display: inline-flex; align-items: baseline; gap: 5px; }
 .ho-method .dot-method { align-self: center; }
-.ho-brew { flex: none; }
+.ho-brew { flex: none; margin-left: auto; }
 /* A bag at its end (js/ui-bag-end.js, css/stock.css draws .be-corner) takes a cell of the row. */
 .ho-end { min-width: 0; display: grid; }
 @container hocard (min-width: 400px) { .ho-opened { display: inline; } }
 .ho-end .be-actions { flex-wrap: wrap; }
-/* One open coffee, or two on a very wide page: the card in one line, the
-   scores in the middle, taller. */
-@container hocard (min-width: 640px) {
-  .ho-card { grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.6fr) auto; grid-template-rows: auto; align-items: center; column-gap: 28px; padding: 16px 20px; }
+/* A card with room, in two shapes (v9.49). Until v9.48 the single line began
+   at 640px with an « auto » column for the facts: it took their whole line,
+   slid over the scores between 640 and 900px, and beyond squeezed the name and
+   the grams into 145px while the chart had 480. Every track is now bounded,
+   and the facts sit in a small table (last and best, then one per brewer).
+   From 620px: who and the facts on the left, the scores on the right. */
+@container hocard (min-width: 620px) {
+  .ho-card {
+    grid-template-columns: minmax(300px, 1fr) minmax(0, 1.15fr); grid-template-rows: auto auto; grid-template-areas: "main evo" "foot evo";
+    align-items: center; gap: 12px 24px; padding: 16px 20px;
+  }
+  .ho-main { grid-area: main; }
+  .ho-evo { grid-area: evo; align-self: center; }
+  .ho-chart { height: 96px; }
+  .ho-foot { grid-area: foot; }
   .ho-score > b { font-size: 3rem; }
-  .ho-evo { align-self: center; }
+  .ho-facts { display: grid; grid-template-columns: repeat(2, max-content); gap: 2px 20px; }
+  .ho-facts > span { display: flex; align-items: baseline; gap: 5px; }
+  .ho-facts small { flex: 1; }
+}
+/* From 920px (one open coffee, or two on a very wide page): one line. */
+@container hocard (min-width: 920px) {
+  .ho-card { grid-template-columns: minmax(340px, 1fr) minmax(220px, 1fr) max-content; grid-template-rows: auto; grid-template-areas: "main evo foot"; column-gap: 28px; }
   .ho-chart { height: 84px; }
-  .ho-foot { flex-direction: column; align-items: flex-end; gap: 10px; padding: 0 0 0 20px; border-top: 0; border-left: 1px solid var(--lines-soft, var(--lines)); align-self: stretch; justify-content: center; }
-  .ho-facts { justify-content: flex-end; }
+  .ho-foot { flex-direction: column; align-items: flex-end; justify-content: center; gap: 10px; padding: 0 0 0 20px; border-top: 0; border-left: 1px solid var(--lines-soft, var(--lines)); align-self: stretch; }
 }
 /* A phone: the card in three short rows (who and how much, the trend with
    « Brasser », the scores), so two open coffees leave the last cup in sight.
@@ -175,7 +195,7 @@
   .ho-card { grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto; grid-template-areas: "main main" "trend brew" "chart chart"; padding: 12px 14px; gap: 8px 10px; align-items: center; }
   .ho-main { grid-area: main; }
   .ho-evo { display: contents; }
-  .ho-evo-head { grid-area: trend; min-width: 0; justify-content: flex-start; }
+  .ho-evo-head { grid-area: trend; min-width: 0; flex-wrap: nowrap; gap: 10px; justify-content: flex-start; }
   .ho-trend { overflow: hidden; text-overflow: ellipsis; }
   .ho-count::before { content: "·"; margin-right: 8px; }
   .ho-nochart { grid-area: trend; }

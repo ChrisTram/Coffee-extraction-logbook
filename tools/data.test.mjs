@@ -3742,5 +3742,19 @@ for (const sheet of CSS_SHEETS) {
   check("no v9.17 text under 0.75rem", tooSmall.length === 0, tooSmall.map(m => m[0]).join(", "));
 }
 
+/* v9.49: THE WIDE OPEN-COFFEE CARD DOES NOT DEPEND ON ITS TEXTS. Chris's
+   capture, 14 November 2026: on a 1155px card the facts slid over the scores.
+   The third column was « auto » and took the facts' whole line. */
+{
+  const css = readCss();
+  const blocks = [...css.matchAll(/@container hocard \(min-width: (\d+)px\) \{\n([\s\S]*?)\n\}/g)].map(m => ({ at: Number(m[1]), body: m[2] }));
+  const tracks = blocks.map(b => (b.body.match(/\.ho-card \{[^}]*?grid-template-columns: ([^;]+);/) || [])[1]).filter(Boolean);
+  check("the wide card has two shapes, two columns then one line", tracks.length === 2 && blocks.some(b => b.at === 620) && blocks.some(b => b.at === 920), JSON.stringify(blocks.map(b => b.at)));
+  check("none of its tracks is « auto »", tracks.length > 0 && tracks.every(t => !/(^|\s)auto(\s|$)/.test(t)), tracks.join(" | "));
+  check("the scores' track cannot be pushed by its title", /\.ho-evo \{[^}]*grid-template-columns: minmax\(0, 1fr\)/.test(css));
+  check("the facts sit in a bounded table", /\.ho-facts \{ display: grid; grid-template-columns: repeat\(2, max-content\)/.test(css));
+  check("the stock line wraps instead of being cut", /\.ho-stock \{[^}]*flex-wrap: wrap/.test(css) && /\.ho-opened::before \{[^}]*position: absolute/.test(css));
+}
+
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);
 process.exit(failures === 0 ? 0 : 1);
