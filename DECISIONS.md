@@ -2636,6 +2636,27 @@ projet) ; charger les écrans à la demande (10 pour cent du chemin critique pou
 une contrainte d'ordre fragile) ; remplacer Chart.js par du SVG (70 Ko gzip déjà
 chargés à part et mis en cache).
 
+### v9.47 : une suppression dans le catalogue MCP, pour un sachet seulement
+
+La règle « aucune suppression » du catalogue (v9.12) protégeait les données
+de Chris d'un outil qui écrit à sa place. Le 14 novembre 2026 elle a bloqué
+une correction banale : un sachet créé à 250 g au lieu de 200 g. Aucun outil
+ne modifie un sachet, l'appli ne liste pas les sachets d'un café (seulement
+le « Sachet en cours », donc Chris ne trouvait pas le doublon), et deux
+sachets ouverts le même jour laissent le premier « en cours ». Chris, à qui
+la règle a été rappelée avant d'y toucher : « Oui, fais-le ».
+
+- La règle est levée au plus étroit : UN sachet, par son identifiant, jamais le
+  dernier d'un café. Pas de café, pas de tasse : ce sont elles que la règle
+  protège, et un sachet se recrée en une ligne.
+- Une tombe seule dans l'envoi, aucune ligne : l'outil ne peut rien écrire
+  d'autre par accident, et le test compare les tables avant et après.
+- Pas d'outil `edit_bag` à la place : il aurait corrigé la taille mais laissé
+  le doublon, et Chris a demandé « supprime-le et crée-en un nouveau ».
+- À retenir pour une prochaine fois : créer un second sachet le même jour ne
+  remplace pas le premier (égalité de date, l'ordre du document décide). Pour
+  corriger un sachet, d'abord `add_bag` le bon, puis `delete_bag` le mauvais.
+
 ### v9.46 : un seul graphique des tasses sur l'accueil
 
 Chris, le 14 novembre 2026 : « laisse que le 30 derniers jours en haut sous tes

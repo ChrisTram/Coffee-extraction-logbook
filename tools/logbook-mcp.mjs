@@ -11,7 +11,9 @@
  * (coffees, bags, stock) and read the last cups, through the site's tools API
  * (POST /api/tools/sync, worker/index.js). That endpoint is the device sync
  * itself: what this server sends merges row by row by updated_at, exactly
- * like a phone. There is no delete tool, on purpose.
+ * like a phone. ONE tool deletes, and only a bag (v9.47, delete_bag: a bag
+ * entered by mistake, never the last one of a coffee). No tool deletes a
+ * coffee or a cup, on purpose.
  *
  * THE APP'S OWN CODE: the rows are built by the browser scripts themselves
  * (normalizeCoffee, stampRow, newId, bagStock...), loaded in a Node vm like
@@ -197,6 +199,17 @@ export const TOOLS = [
     },
   },
   {
+    name: "delete_bag",
+    description: "Supprime UN sachet saisi par erreur, comme le bouton « Supprimer ce sachet » de l'app : ses tasses restent, seul le sachet part. " +
+      "Refuse de supprimer le dernier sachet d'un café. C'est la seule suppression possible : ni café ni tasse.",
+    inputSchema: {
+      type: "object",
+      properties: { coffee: coffeeRef, bag: { type: "string", description: "Identifiant du sachet, tel que get_coffee le donne (ex. amwfci05n5r4y)." } },
+      required: ["coffee", "bag"],
+      additionalProperties: false,
+    },
+  },
+  {
     name: "correct_stock",
     description: "Corrige le stock d'un café : les grammes réellement restants dans le sachet en cours, pesés ou estimés. Seules les tasses suivantes seront décomptées.",
     inputSchema: {
@@ -329,6 +342,18 @@ export function createLogbookServer(options = {}) {
       }
     }
     return after;
+  }
+
+  /* THE ONE DELETION (v9.47): a tombstone for one bag, and nothing else in
+     the payload. The tombstone is stamped after the row, so the merge drops
+     it; the answer must no longer hold the bag. */
+  async function eraseBag(token, bag) {
+    const mark = Math.max(S.clockNow(), (Number(bag.updated_at) || 0) + 1);
+    const doc = await exchange(token, { schema: app.CURRENT_SCHEMA, tables: {}, tombstones: { purchases: { [bag.id]: mark } } });
+    if (((doc.tables && doc.tables.purchases) || []).some(r => r.id === bag.id)) {
+      throw new ToolError("Suppression envoyée mais le sachet " + bag.id + " est encore là à la relecture. Vérifie dans l'app avant de recommencer.");
+    }
+    return snapshot(doc);
   }
 
   /* ---------- Lookups and checks ---------- */
@@ -648,6 +673,27 @@ export function createLogbookServer(options = {}) {
         (bag.roast_date ? ", torréfié le " + bag.roast_date : "") + ". Stock : " + stockText(after, stored) + ".";
     },
 
+    async delete_bag(token, args) {
+      const snap = await read(token);
+      const found = findCoffee(snap, args.coffee);
+      if (found.candidates) return candidatesText(args.coffee, found.candidates, true);
+      const current = found.coffee;
+      const id = String(args.bag === undefined || args.bag === null ? "" : args.bag).trim();
+      if (!id) throw new ToolError("Indique l'identifiant du sachet à supprimer (get_coffee liste les sachets d'un café).");
+      const bags = snap.state.purchases.filter(p => p.coffee_id === current.id);
+      const bag = bags.find(p => p.id === id);
+      if (!bag) throw new ToolError("Aucun sachet " + id + " pour " + coffeeTitle(current) + ". Rien n'a été supprimé.");
+      // Never the last bag: the stock of a coffee must keep something to read.
+      if (bags.length < 2) {
+        throw new ToolError("C'est le seul sachet de " + coffeeTitle(current) + " : il n'est pas supprimé. " +
+          "Corrige son stock avec correct_stock, ou ajoute d'abord le bon sachet avec add_bag.");
+      }
+      const after = await eraseBag(token, bag);
+      const stored = after.state.coffees.find(c => c.id === current.id) || current;
+      return "Sachet supprimé pour " + coffeeTitle(stored) + " : " + (bag.bag_size_g !== "" ? grams(bag.bag_size_g) : "taille inconnue") +
+        ", acheté le " + (bag.purchase_date || "?") + " [id " + bag.id + "]. Ses tasses restent. Stock : " + stockText(after, stored) + ".";
+    },
+
     async correct_stock(token, args) {
       const snap = await read(token);
       const found = findCoffee(snap, args.coffee);
@@ -742,7 +788,8 @@ export function createLogbookServer(options = {}) {
           capabilities: { tools: { listChanged: false } },
           serverInfo: { name: "coffee-logbook", version },
           instructions: "Catalogue des cafés du carnet d'extraction de Chris : lire, ajouter et modifier des cafés, des sachets et le stock, " +
-            "et lire les dernières tasses. Aucune suppression possible ; archive_coffee archive. Réponses en français.",
+            "et lire les dernières tasses. Une seule suppression possible : delete_bag, pour un sachet saisi par erreur (jamais un café ni une tasse, " +
+            "jamais le dernier sachet d'un café) ; archive_coffee archive. Réponses en français.",
         });
       case "notifications/initialized":
       case "notifications/cancelled":

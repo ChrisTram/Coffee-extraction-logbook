@@ -6,7 +6,9 @@
  * the bearer check and handleSync) backed by a fake one-row D1. The token is
  * a fake value passed in memory. What is checked: the protocol, every tool,
  * that a write sends only its own rows and leaves the others and the
- * tombstones alone, and that the token never shows in any output. */
+ * tombstones alone, that the one deletion (delete_bag, v9.47) lays one
+ * tombstone for one bag and nothing else, and that the token never shows in
+ * any output. */
 
 import { readFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -121,10 +123,11 @@ const server = makeServer({ db, token: TOKEN });
 
   const list = await server.handleMessage({ jsonrpc: "2.0", id: 6, method: "tools/list" });
   const names = list.result.tools.map(t => t.name);
-  check("tools/list gives the eight tools",
-    JSON.stringify(names) === JSON.stringify(["list_coffees", "get_coffee", "add_coffee", "edit_coffee", "archive_coffee", "add_bag", "correct_stock", "recent_cups"]),
+  check("tools/list gives the nine tools",
+    JSON.stringify(names) === JSON.stringify(["list_coffees", "get_coffee", "add_coffee", "edit_coffee", "archive_coffee", "add_bag", "delete_bag", "correct_stock", "recent_cups"]),
     names.join());
-  check("no delete tool", !names.some(n => /delete|remove/.test(n)));
+  check("one tool deletes, and only a bag: none deletes a coffee or a cup", JSON.stringify(names.filter(n => /delete|remove/.test(n))) === '["delete_bag"]');
+  check("delete_bag requires the coffee and the bag", JSON.stringify(TOOLS.find(t => t.name === "delete_bag").inputSchema.required) === '["coffee","bag"]');
   check("every tool has a description and an object schema",
     list.result.tools.every(t => t.description && t.inputSchema && t.inputSchema.type === "object"));
   check("add_coffee requires the name", JSON.stringify(TOOLS.find(t => t.name === "add_coffee").inputSchema.required) === '["name"]');
@@ -278,6 +281,42 @@ let newId = "";
   check("edit_coffee active true brings it back", !back.isError && rowOf(db, "coffees", newId).active === 1);
 }
 
+// 7 bis. delete_bag (v9.47): one bag entered by mistake, never the last one
+{
+  const before = stored(db);
+  const mine = () => stored(db).tables.purchases.filter(p => p.coffee_id === newId);
+  const only = mine()[0];
+  const last = await call(server, "delete_bag", { coffee: newId, bag: only.id });
+  check("the last bag of a coffee is never deleted", last.isError && last.text.includes("seul sachet") && mine().length === 1, last.text);
+  const second = await call(server, "add_bag", { coffee: newId, bag_size_g: 200 });
+  check("a second bag is added", !second.isError && mine().length === 2, second.text);
+  const added = mine().find(p => p.id !== only.id);
+  const unknown = await call(server, "delete_bag", { coffee: newId, bag: "nope" });
+  check("an unknown bag is refused, nothing deleted", unknown.isError && unknown.text.includes("Aucun sachet") && mine().length === 2);
+  const foreign = await call(server, "delete_bag", { coffee: "c2", bag: only.id });
+  check("a bag of another coffee is refused", foreign.isError && mine().length === 2, foreign.text);
+  const empty = await call(server, "delete_bag", { coffee: newId, bag: "" });
+  check("no bag given: a clear message", empty.isError && empty.text.includes("identifiant du sachet"));
+  const start = requests.length;
+  const del = await call(server, "delete_bag", { coffee: newId, bag: only.id });
+  check("delete_bag succeeds and says what went", !del.isError && del.text.includes("Sachet supprimé") && del.text.includes(only.id) && del.text.includes("250 g"), del.text);
+  check("the bag is gone, the other one stays", mine().length === 1 && mine()[0].id === added.id);
+  const sent = requests.slice(start).filter(r => Object.keys(r.body.tombstones || {}).length)[0];
+  check("it sends one tombstone, for that bag, and no row", sent && Object.keys(sent.body.tables).length === 0 &&
+    JSON.stringify(Object.keys(sent.body.tombstones)) === '["purchases"]' && JSON.stringify(Object.keys(sent.body.tombstones.purchases)) === JSON.stringify([only.id]),
+    JSON.stringify(sent && sent.body));
+  const after = stored(db);
+  check("the tombstone is stored, stamped after the bag", after.tombstones.purchases[only.id] > only.updated_at);
+  check("no coffee and no cup is touched, their tombstones neither", JSON.stringify(after.tables.coffees) === JSON.stringify(before.tables.coffees.map(c =>
+    after.tables.coffees.find(x => x.id === c.id))) && after.tables.coffees.length === stored(db).tables.coffees.length &&
+    JSON.stringify(after.tables.extractions) === JSON.stringify(before.tables.extractions) &&
+    JSON.stringify(after.tombstones.coffees) === JSON.stringify(before.tombstones.coffees) &&
+    JSON.stringify(after.tombstones.extractions) === JSON.stringify(before.tombstones.extractions));
+  const list = await call(server, "list_coffees", {});
+  const line = list.text.split("\n").find(l => l.includes("Colombia Huila")) || "";
+  check("the stock now reads from the bag that is left", line.includes("sur 200 g"), line);
+}
+
 // 8. No token: a clear message, no call
 {
   let calls = 0;
@@ -289,7 +328,7 @@ let newId = "";
   check("for every tool, writes included", w.isError && w.text.includes("pas encore configuré"));
   check("and no network call at all", calls === 0);
   const list = await bare.handleMessage({ jsonrpc: "2.0", id: 1, method: "tools/list" });
-  check("tools/list still works without a token", list.result.tools.length === 8);
+  check("tools/list still works without a token", list.result.tools.length === 9);
 }
 
 // 9. Server side refusals

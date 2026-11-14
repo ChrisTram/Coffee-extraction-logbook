@@ -2419,6 +2419,7 @@ le stock, relire les dernières tasses. Deux pièces :
 | `edit_coffee` | change seulement les champs fournis ; `active: true` réactive un café archivé |
 | `archive_coffee` | passe le café en archivé, ne supprime rien |
 | `add_bag` | nouveau sachet, avec les mêmes effets que le bouton de l'app (la fiche du café suit le sachet) ; ouvert aujourd'hui par défaut |
+| `delete_bag` | (v9.47) supprime UN sachet saisi par erreur, désigné par son identifiant (`get_coffee` les liste), comme « Supprimer ce sachet » de l'app ; ses tasses restent ; refuse le dernier sachet d'un café, un sachet inconnu ou d'un autre café |
 | `correct_stock` | grammes restants du sachet en cours, mêmes règles que la correction de stock de l'app |
 | `recent_cups` | les dernières tasses (10 par défaut), éventuellement pour un seul café |
 
@@ -2440,8 +2441,14 @@ suivent la convention de l'app : la date locale de l'ordinateur.
   de `/login` : un appel au mauvais jeton répond 401 après 700 ms, et au delà
   de la limite tout répond 429, même le bon jeton. Une écriture coûte deux
   appels, une lecture un seul.
-- **Aucune suppression.** Aucun outil ne supprime ni n'envoie de tombe ;
-  archiver est réversible.
+- **Une seule suppression, et seulement un sachet** (v9.47, décidé par Chris le
+  14 novembre 2026). `delete_bag` envoie UNE tombe, pour UN sachet, et aucune
+  ligne ; il refuse le dernier sachet d'un café, pour que le stock garde de quoi
+  se lire. Aucun outil ne supprime un café ni une tasse, ni n'envoie d'autre
+  tombe ; archiver un café reste réversible. Un test le vérifie
+  (`tools/logbook-mcp.test.mjs`). L'appli ne montre que le « Sachet en cours »
+  d'un café, pas la liste de ses sachets : un sachet en double ne s'y voit pas,
+  `get_coffee` les liste tous.
 - **La même fusion que la synchro.** Les lignes envoyées gagnent seulement si
   elles sont plus récentes, le document n'est jamais remplacé en bloc, et la
   porte de version s'applique : si le carnet est passé à un schéma plus récent
