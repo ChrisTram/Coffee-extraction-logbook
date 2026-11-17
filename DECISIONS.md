@@ -857,6 +857,17 @@ trois courbes tirent leur couleur de trois jetons différents.
 
 ## Saisie, chrono et recettes
 
+### Un seul temps à saisir : le total (v9.51)
+
+Chris ne regarde qu'un temps : celui qui part quand il lance le chrono et
+commence à verser. L'écoulement (du palier « ouvrir » à l'arrêt) n'est donc plus
+un champ visible. Il n'est pas supprimé pour autant : ses entrées restent dans le
+formulaire, masquées (`#field-flow[hidden]`), parce que le chrono et le mode
+Brassage l'y écrivent tout seuls et que `compare.js` en a besoin pour juger une
+tasse à la Brikka contre la fenêtre de sa recette. Masquer plutôt que retirer
+garde aussi la valeur d'une ancienne tasse quand on la modifie. La colonne
+`flow_time_s` reste dans les données.
+
 ### Des curseurs, et le champ qui reste maître
 
 Chris règle la dose, l'eau, la mouture, le feu et l'agitation par petits pas
