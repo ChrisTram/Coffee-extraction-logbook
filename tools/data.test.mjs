@@ -3516,6 +3516,9 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
   check("M7: quick buttons, and « Reprendre le chrono » for the total and the drawdown",
     wheelSrc.includes("const QUICK = [-5, 5, 15];") && SOURCE_UI.includes('UI.mountTimeWheel("f-total", $("#f-total-wheel"), $("#f-total-quick"), "total");') &&
     SOURCE_UI.includes('UI.mountTimeWheel("f-flow", $("#f-flow-wheel"), $("#f-flow-quick"), "flow");') && bilingual("wheel_chrono"));
+  // v9.51: one time to enter. The drawdown stays in the form, hidden, for the stopwatch.
+  check("v9.51: the entry shows the total time only, the drawdown field is hidden",
+    /<div class="field field-time" id="field-flow" hidden>/.test(readFileSync(join(ROOT, "index.html"), "utf8")));
 }
 
 /* ---------- Stock and jars (v9.13) ---------- */
