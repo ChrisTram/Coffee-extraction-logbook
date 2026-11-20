@@ -2504,6 +2504,23 @@ précédente) : la scène habille le geste, elle ne le retarde pas.
 
 ## Données et synchronisation
 
+### Une page cachée n'attend pas sa synchro (v9.52)
+
+LE SYMPTÔME. Une tasse Tetsu notée 8 puis passée à 8,5 dans le panneau restait à
+8 sur l'ordinateur et dans le document du serveur. Tous les chemins locaux
+(formulaire, panneau, panneau fermé aussitôt) enregistraient bien 8,5, et la
+fusion de la réponse avec l'état local (v8.71) gardait déjà une saisie faite
+pendant l'échange. Le trou était ailleurs : `scheduleSync` attend 1,5 s, et un
+téléphone gèle une page cachée avant. La modification restait sur le téléphone
+jusqu'à sa réouverture.
+
+LA RÈGLE. Pendant que la page est cachée, `scheduleSync` synchronise tout de
+suite ; et le passage en arrière-plan envoie la synchro qui attendait
+(`syncWaitingNow`). Le flush du panneau (lui aussi sur visibilitychange) écrit
+de façon asynchrone : son `persist` arrive donc après l'événement, page déjà
+cachée, et part sans attendre grâce à la première moitié de la règle.
+Pas de `keepalive` : le document entier dépasse vite les 64 Ko qu'il autorise.
+
 ### Pourquoi D1, pourquoi un document, pourquoi des pierres tombales
 
 Suggestion 1 du backlog. Le site étant en ligne, il est utilisé depuis le

@@ -3699,6 +3699,14 @@ for (const sheet of CSS_SHEETS) {
   const noted = sync.indexOf("noteArrivals(arrivedIds(cupsBefore, state.extractions), Date.now());");
   check("the arrivals are measured around the merge of the answer, the local cups taken on return",
     before > sync.indexOf("await SYNC.exchange(") && before < merge && merge < noted, [before, merge, noted].join(" "));
+  // v9.52: a hidden page (a phone locked) syncs at once, and hiding sends what waited.
+  const sched = SOURCE_DATA.slice(SOURCE_DATA.indexOf("function scheduleSync("), SOURCE_DATA.indexOf("async function persist()"));
+  check("v9.52: while hidden, a change syncs without the debounce",
+    sched.indexOf("if (pageHidden()) { syncTimer = null; synchronize(false); return; }") > 0 &&
+    sched.indexOf("if (pageHidden())") < sched.indexOf("SYNC_DEBOUNCE_MS"));
+  check("v9.52: hiding the page sends the sync still waiting for its debounce",
+    sched.includes('document.addEventListener("visibilitychange", () => { if (pageHidden()) syncWaitingNow(); });') &&
+    typeof DATA.syncWaitingNow === "function" && DATA.syncWaitingNow() === false);
   // Memory only: never stored, never sent.
   const saveLocalSrc = SOURCE_DATA.slice(SOURCE_DATA.indexOf("async function saveLocal()"), SOURCE_DATA.indexOf("// ---------- File System Access"));
   const payloadSrc = SOURCE_DATA.slice(SOURCE_DATA.indexOf("function localPayload()"), SOURCE_DATA.indexOf("function adoptTables("));

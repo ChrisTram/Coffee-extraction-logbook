@@ -607,10 +607,28 @@ const DATA = (() => {
     return state.syncState;
   }
 
+  /* A HIDDEN PAGE DOES NOT WAIT (v9.52). A phone freezes a hidden tab within
+     a second: a rating changed in the panel, then the phone locked, was saved
+     on the device but its sync, 1.5 s later, never left. The other devices
+     kept the old rating until the phone reopened the app. So while the page
+     is hidden, a change syncs at once, and hiding the page sends whatever was
+     still waiting for its debounce. */
+  const pageHidden = () => typeof document !== "undefined" && document.visibilityState === "hidden";
   function scheduleSync() {
     if (!syncPossible()) return;
     clearTimeout(syncTimer);
-    syncTimer = setTimeout(() => { synchronize(false); }, SYNC_DEBOUNCE_MS);
+    if (pageHidden()) { syncTimer = null; synchronize(false); return; }
+    syncTimer = setTimeout(() => { syncTimer = null; synchronize(false); }, SYNC_DEBOUNCE_MS);
+  }
+  function syncWaitingNow() {
+    if (!syncTimer) return false;
+    clearTimeout(syncTimer);
+    syncTimer = null;
+    synchronize(false);
+    return true;
+  }
+  if (typeof document !== "undefined" && typeof document.addEventListener === "function") {
+    document.addEventListener("visibilitychange", () => { if (pageHidden()) syncWaitingNow(); });
   }
 
   /* Every persist bumps the generation: a sync that comes back knows whether
@@ -841,7 +859,7 @@ const DATA = (() => {
 
   return {
     state, subscribe, notify, init, dataRevision,
-    synchronize, syncPossible, carryTimestamps,
+    synchronize, syncPossible, carryTimestamps, syncWaitingNow,
     // Q13 (v9.17): the cups that came in through the sync, this session only.
     arrivedIds, lastArrivals,
     /* csvRecipes is exposed so the CSV round trip is testable on the REAL
