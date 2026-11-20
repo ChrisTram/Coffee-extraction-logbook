@@ -2882,6 +2882,50 @@ fois : six clés de `js/compare.js` sont construites en deux morceaux
 littéral du code n'en est un préfixe complété par un autre littéral ; et on
 relance les suites avant de croire un balayage.
 
+### v9.53 : les options de la 4:6 sont une colonne de la tasse, pas neuf recettes
+
+LA DEMANDE. Chris veut choisir à chaque tasse comment couper le « 4 » (plus
+sucré, équilibré, plus vif) et le « 6 » (un, deux ou trois versements), d'après
+la vidéo d'Alternative Brewing (youtube.com/watch?v=3YYOWBCd4zo, 20 g pour
+300 g), et que ses tasses d'avant portent ce qu'il brassait alors. Jusque là ces
+options n'existaient que dans le Guide : rien n'était écrit sur la tasse.
+
+POURQUOI UNE COLONNE. Neuf recettes (trois fois trois) auraient rempli le menu
+des recettes et coupé en neuf les moyennes de « Tetsu 4:6 » dans l'accueil, les
+réglages gagnants et la matrice café par recette. Une colonne `recipe_variant`
+sur la tasse (`sweet-heavy`) garde une seule recette et laisse comparer les
+options quand on le veut. Schéma 26 : un onglet resté en 25 effacerait la colonne
+en modifiant une tasse, la synchro le refuse.
+
+LES ANCIENNES TASSES. Le pas 26 leur donne `sweet-heavy` : un tiers puis deux
+tiers, trois versements. C'était le réglage par défaut du Guide et Chris
+confirme que c'est ce qu'il faisait. Une tasse qui a déjà ses options n'est pas
+touchée.
+
+L'EAU RESTE À 225 G. Chris demandait des versements ronds, quitte à passer à
+240 ou 250 g, en gardant 15 g de café. Le calcul dit l'inverse : 225 g est les
+trois quarts exacts des 300 g de la source, donc tout tombe juste (30, 45, 60,
+90, 135, 180, 225), sauf deux versements de 67,5 g. 240 g donne 32, 64 et 48 ;
+250 g donne 33 et 67. Seul 300 g, donc 20 g de café, fait mieux. On garde donc
+225 g et le ratio 1:15 de l'auteur, et on arrondit à 5 g ce que la balance
+AFFICHE (le cumul), le dernier repère étant le total : « corps moyen » se lit
+160 puis 225. Le même arrondi rend ronds les repères d'une eau tapée à la main
+(250 g : 35, 100, 150, 200, 250), au prix d'un ou deux grammes sur la coupe.
+
+QUELLE VARIANTE, EN UNE LIGNE. `TETSU.suggest` lit les tasses 4:6 du café : la
+dernière sortait acide, un cran plus sucré ; trop forte, un versement de moins ;
+trop légère, un de plus ; sinon la mieux notée quand plusieurs ont été essayées ;
+sinon celle de la dernière tasse ; sinon le départ. L'amer et l'astringent ne
+bougent rien : c'est l'affaire de la mouture, pas de la coupe. Une saisie neuve
+prend ce conseil une fois par café ; une tasse modifiée, « Refaire », un
+brouillon et un choix fait à la main gardent les leurs. La saisie rapide écrit
+la variante de la dernière tasse du café, pas le conseil : elle note ce qui a
+été bu, sans rien supposer de neuf.
+
+LA PASTILLE. Partout où la recette est nommée (bandeau et carte de la saisie,
+mode Brassage, panneau et détail d'une tasse), une pastille dit la variante en
+deux mots, « sucré · corps plein », devant ses versements dessinés à l'échelle.
+
 ## Tests
 
 ### Ce que chaque suite couvre, et le bug qui l'a motivée

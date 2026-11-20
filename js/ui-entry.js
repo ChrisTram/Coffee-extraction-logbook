@@ -376,6 +376,31 @@
     zone.textContent = I18N.t("bag_open_days", { n: c.days_open });
   }
 
+  /* THE OPTIONS OF THE RECIPE (v9.53). The Tetsu 4:6 is two choices: the
+     field shows them with the pours of THIS cup's water and, in one line,
+     which ones this coffee calls for (UI.variantAdvice). A blank form takes
+     that advice, once per coffee; a cup being edited, a copy, a draft and
+     a choice made by hand keep theirs. */
+  let variantHtml = "";
+  function updateVariantField() {
+    const zone = $("#field-variant");
+    if (!zone || !UI.variantPickerHtml) return;
+    const r = findRecipe($("#f-recipe").value);
+    const shown = !!r && r.has_variants && r.method === entry.method;
+    zone.hidden = !shown;
+    if (!shown) { if (variantHtml) { zone.innerHTML = ""; variantHtml = ""; } return; }
+    const coffeeId = $("#f-coffee").value;
+    const advice = UI.variantAdvice(coffeeId, entry.editId);
+    if (!entry.editId && !entry.variantTouched && entry.variantFor !== coffeeId) {
+      entry.variantFor = coffeeId;
+      UI.setVariant(advice.code, true);
+    }
+    if ($("#f-variant").value !== UI.variantCode()) $("#f-variant").value = UI.variantCode();
+    const html = '<span class="label">' + I18N.t("tetsu_field") + "</span>" + UI.variantAdviceHtml(advice) +
+      UI.variantPickerHtml(parseFloat($("#f-water").value) || r.water, false);
+    if (html !== variantHtml) { zone.innerHTML = html; variantHtml = html; }
+  }
+
   function updateWarnings() {
     const zone = $("#warnings");
     const coffee = DATA.state.coffees.find(c => c.id === $("#f-coffee").value);
@@ -388,6 +413,7 @@
     }
     zone.innerHTML = msgs.map(m => '<div class="warning">' + m + "</div>").join("");
     updateBagAge();
+    updateVariantField();
     UI.updateEntryAside();
   }
 
@@ -666,6 +692,9 @@
     entry.editId = null;
     entry.dateTouched = false;
     entry.cupTouched = false;
+    // A blank form takes the advised 4:6 options again (updateVariantField).
+    entry.variantTouched = false;
+    entry.variantFor = null;
     entry.diagnostics.clear();
     entry.descriptors.clear();
     $("#entry-title").textContent = I18N.t("entry_new");
@@ -732,9 +761,12 @@
     $("#f-coffee").value = ext.coffee_id;
     // A saved cup keeps its own cup; a copy (« Refaire », « Brasser ») takes its brewer's.
     entry.cupTouched = !isDuplicate;
+    // The cup's own 4:6 options, for an edit as for a copy (« Refaire » means the same settings).
+    entry.variantTouched = true;
     chooseMethod(ext.method || "Brikka", true);
     fillRecipeSelect();
     if (ext.recipe) $("#f-recipe").value = ext.recipe;
+    if ((findRecipe(ext.recipe) || {}).has_variants) UI.setVariant(ext.recipe_variant || TETSU.DEFAULT, true);
     $("#f-dose").value = ext.dose_g;
     $("#f-water").value = ext.water_g;
     $("#f-temp").value = ext.temperature_c;
@@ -824,6 +856,8 @@
       temperature_c: entry.method === "Switch" ? $("#f-temp").value : "",
       // No kettle time any more (v9.35); an edited old cup keeps its own.
       heating_s: entry.method === "Switch" && entry.editId ? (entry.keptHeating ?? "") : "",
+      // The options of a recipe that has some (the 4:6), empty otherwise.
+      recipe_variant: (findRecipe($("#f-recipe").value) || {}).has_variants ? UI.variantCode() : "",
       total_time_s: readDuration("f-total"),
       flow_time_s: readDuration("f-flow"),
       yield_ml: $("#f-volume").value,

@@ -425,7 +425,7 @@ active`
 `id, date_time, coffee_id, method, recipe, dose_g, water_g, grind_dial,
 temperature_c, total_time_s, flow_time_s, yield_ml,
 added_water_ml, milk_ml, stir_count, cup, preheated_water, score_10,
-diagnostic, descriptors, comment, heat_level, failed, heating_s`
+diagnostic, descriptors, comment, heat_level, failed, heating_s, recipe_variant`
 
 - Seule la dose est obligatoire en saisie (étoile rouge). Date auto si vide.
 - `yield_ml` : `volume_extrait_ml` jusqu'à la v9.05 et `volume_tasse_ml` avant
@@ -435,6 +435,14 @@ diagnostic, descriptors, comment, heat_level, failed, heating_s`
   `drink_ml` = extrait + eau ajoutée + lait.
 - `stir_count` : Switch, vide si pas d'agitation, défaut 1 quand coché.
 - `preheated_water` : Brikka, 1 ou vide. Décoché par défaut.
+- `recipe_variant` (v9.53, schéma 26) : les options d'une recette qui en a, aujourd'hui
+  la seule Tetsu 4:6. Deux mots collés par un tiret, `sweet-heavy` : la coupe des
+  40 premiers % de l'eau (`sweet` 1/3 puis 2/3, `balanced` moitié moitié, `bright`
+  2/3 puis 1/3) et le nombre de versements des 60 derniers (`light` 1, `medium` 2,
+  `heavy` 3). Vide pour toute autre recette ; une valeur inconnue se relit vide
+  (`TETSU.clean`, js/recipes.js). Le pas de schéma 26 a donné `sweet-heavy` aux
+  tasses 4:6 d'avant, ce que Chris brassait. Les grammes ne sont pas stockés : ils
+  se recalculent de l'eau de la tasse, chaque repère arrondi à 5 g (`TETSU.targets`).
 - `heating_s` : Switch seulement, secondes passées par la bouilloire sur le feu.
   La température stockée en est l'estimation (section 8), corrigeable. Vide pour
   la Brikka et pour tout l'historique antérieur à la v7.93, sans migration.

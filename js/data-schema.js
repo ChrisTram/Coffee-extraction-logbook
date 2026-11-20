@@ -16,7 +16,7 @@ const DATA_SCHEMA = (() => {
   const EXT_COLS = ["id", "date_time", "coffee_id", "method", "recipe", "dose_g", "water_g",
     "grind_dial", "temperature_c", "total_time_s", "flow_time_s",
     "yield_ml", "added_water_ml", "milk_ml", "stir_count", "cup", "preheated_water",
-    "score_10", "diagnostic", "descriptors", "comment", "heat_level", "failed", "heating_s"];
+    "score_10", "diagnostic", "descriptors", "comment", "heat_level", "failed", "heating_s", "recipe_variant"];
 
   /* Settings for Chris's equipment. ONE single row, with a fixed id, because
      there is a single user: see normalizeSettings for why it is a table.
@@ -180,6 +180,11 @@ const DATA_SCHEMA = (() => {
          history: a missing column reads back empty, no migration. */
       heating_s: r.heating_s === "" || r.heating_s === undefined || r.heating_s === null
         ? "" : Math.max(0, Math.round(Number(r.heating_s)) || 0),
+      /* The options of a recipe that has some (v9.53): for the Tetsu 4:6,
+         "sweet-heavy", how the first 40 percent were split and in how many
+         pours the last 60 went (TETSU, recipes.js). Empty for every other
+         recipe, and an unknown value reads back empty. */
+      recipe_variant: TETSU.clean(r.recipe_variant),
     };
   }
 

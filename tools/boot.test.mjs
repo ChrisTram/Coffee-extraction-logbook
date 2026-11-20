@@ -990,6 +990,20 @@ check("the temperature field no longer has a misleading placeholder", !tempField
   // The sheet does not repeat the comment, written in full under the row.
   check("the hover sheet does not repeat the comment",
     !api.UI.detailContent({ ...withCalcs, comment: "un mot" }, true).includes("detail-comment"));
+  /* v9.53: the 4:6 options of a cup, as their chip. Its title gives the
+     pours at the cup's own water; a cup without options has no chip. */
+  const chip = api.UI.cupVariantChip({ recipe_variant: "sweet-heavy", water_g: 225 });
+  check("a 4:6 cup carries the chip of its options", chip.includes("vchip") && chip.includes("30·60 + 3×45 g") &&
+    chip.includes("sucré · corps plein") && (chip.match(/<i class="[ab]"/g) || []).length === 5, chip);
+  check("a cup without options has no chip", api.UI.cupVariantChip({ recipe_variant: "", water_g: 225 }) === "" && api.UI.cupVariantChip({}) === "");
+  check("the detail of a 4:6 cup names its options, another cup does not",
+    api.UI.detailContent({ ...withCalcs, recipe_variant: "bright-light", water_g: 225 }).includes("vif · corps léger") &&
+    !api.UI.detailContent({ ...withCalcs, recipe_variant: "" }).includes("vchip"));
+  check("the picker offers the six options with their grams, the chosen ones marked",
+    (() => { api.UI.setVariant("balanced-medium", true); const h = api.UI.variantPickerHtml(225, false);
+      return (h.match(/class="vp-opt[ "]/g) || []).length === 6 && (h.match(/vp-opt on/g) || []).length === 2 &&
+        h.includes("45 · 45 g") && h.includes("70 · 65 g") && h.includes("3 × 45 g") && api.UI.variantCode() === "balanced-medium"; })(), api.UI.variantCode() + " " + api.UI.variantPickerHtml(225, false).replace(/<[^>]+>/g, "|").slice(0, 400));
+  api.UI.setVariant("sweet-heavy", true);
 }
 
 /* REDOING A CUP TAKES ITS SETTINGS, NOT ITS RESULT (v8.41).

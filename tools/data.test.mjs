@@ -48,10 +48,10 @@ const loader = new Function(
   "location",
   "indexedDB",
   "console",
-  source + "\nreturn { DATA, SYNC, GRIND, STARTER_RECIPES, DIAGNOSTICS, DIAGNOSTIC_GROUPS, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_WHEN, DIAGNOSTIC_LEVERS, TUNING, scalePours, POUR_THRESHOLD_G, temperatureFromHeating, heatTimeForTemperature, COFFEE_RECIPE_MATRIX, coffeeProfile, DESCRIPTOR_GROUPS, temperatureForCoffee };"
+  source + "\nreturn { DATA, SYNC, GRIND, STARTER_RECIPES, DIAGNOSTICS, DIAGNOSTIC_GROUPS, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_WHEN, DIAGNOSTIC_LEVERS, TUNING, scalePours, POUR_THRESHOLD_G, temperatureFromHeating, heatTimeForTemperature, COFFEE_RECIPE_MATRIX, coffeeProfile, DESCRIPTOR_GROUPS, temperatureForCoffee, TETSU };"
 );
 const { DATA, SYNC, GRIND, STARTER_RECIPES, DIAGNOSTICS, DIAGNOSTIC_GROUPS, DIAGNOSTIC_CORRECTIONS, DIAGNOSTIC_WHEN, DIAGNOSTIC_LEVERS, TUNING,
-  scalePours, POUR_THRESHOLD_G, temperatureFromHeating, heatTimeForTemperature, COFFEE_RECIPE_MATRIX, coffeeProfile, DESCRIPTOR_GROUPS, temperatureForCoffee } =
+  scalePours, POUR_THRESHOLD_G, temperatureFromHeating, heatTimeForTemperature, COFFEE_RECIPE_MATRIX, coffeeProfile, DESCRIPTOR_GROUPS, temperatureForCoffee, TETSU } =
   loader(undefined, { protocol: "file:" }, undefined, console);
 
 let failures = 0;
@@ -732,6 +732,81 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
     DATA.state.recipes.find(r => r.id === "tetsu-devil").name === "Tetsu 4:6");
   check("and its cups follow, stamped", x46.recipe === "Tetsu 4:6" && Number(x46.updated_at) > 5, x46.recipe + " " + x46.updated_at);
 
+  /* THE 4:6 OPTIONS (v9.53). The targets read on the scale are round, the
+     options are written on the cup, and step 26 gives the cups from before
+     the options Chris brewed then: one third then two thirds, three pours. */
+  {
+    const opt = (a, b) => [TETSU.first40.find(v => v.id === a), TETSU.last60.find(v => v.id === b)];
+    const targets = (w, a, b) => TETSU.targets(w, ...opt(a, b)).join();
+    check("4:6 at 225 g, his default: 30, 90, 135, 180, 225", targets(225, "sweet", "heavy") === "30,90,135,180,225");
+    check("4:6 at 225 g, balanced and bright: 45 or 60, then 90", targets(225, "balanced", "light") === "45,90,225" && targets(225, "bright", "light") === "60,90,225");
+    check("two pours of 67.5 g read 160 then 225", targets(225, "sweet", "medium") === "30,90,160,225" &&
+      TETSU.pours(225, ...opt("sweet", "medium")).join() === "30,60,70,65");
+    check("the source's 300 g gives the video's grid", targets(300, "sweet", "heavy") === "40,120,180,240,300" &&
+      targets(300, "balanced", "medium") === "60,120,210,300" && targets(300, "bright", "light") === "80,120,300");
+    const everyCombo = [225, 240, 250, 270, 300].every(w => TETSU.first40.every(a => TETSU.last60.every(b => {
+      const t = TETSU.targets(w, a, b);
+      return t[t.length - 1] === w && t.every((x, i) => x % 5 === 0 && (i === 0 || x > t[i - 1])) &&
+        TETSU.pours(w, a, b).reduce((s, x) => s + x, 0) === w;
+    })));
+    check("whatever the water, every target is a multiple of 5, rising, and ends on the total", everyCombo);
+    check("under 100 g the targets stay to the gram", targets(60, "sweet", "heavy") === "8,24,36,48,60");
+    check("the signature folds equal pours", TETSU.signature(225, "sweet-heavy") === "30·60 + 3×45" &&
+      TETSU.signature(225, "bright-medium") === "60·30 + 70·65" && TETSU.signature(225, "balanced-light") === "45·45 + 135");
+    check("a known code is kept, anything else reads back empty",
+      TETSU.clean(" Sweet-Heavy ") === "sweet-heavy" && TETSU.clean("sucre-plein") === "" && TETSU.clean("") === "" && TETSU.clean(undefined) === "");
+    check("the default is one of the grid, and each half has one default", TETSU.clean(TETSU.DEFAULT) === TETSU.DEFAULT &&
+      TETSU.first40.filter(v => v.isDefault).length === 1 && TETSU.last60.filter(v => v.isDefault).length === 1 &&
+      TETSU.parse(TETSU.DEFAULT).v40.isDefault && TETSU.parse(TETSU.DEFAULT).v60.isDefault);
+    check("every option says when to pick it", TETSU.first40.concat(TETSU.last60).every(v => v.name && v.short && v.when.length > 30 && v.when.length < 70));
+    check("the cup keeps its options", DATA.normalizeExtraction({ recipe_variant: "bright-light" }).recipe_variant === "bright-light" &&
+      DATA.normalizeExtraction({ recipe_variant: "<b>" }).recipe_variant === "" && DATA.normalizeExtraction({}).recipe_variant === "");
+
+    // Which options for this coffee.
+    const cup = (date, variant, score, diagnostic, failed) =>
+      ({ date_time: date, recipe_variant: variant, score_10: score, diagnostic: diagnostic || "", failed: failed || "" });
+    check("never brewed on this coffee: the default", TETSU.suggest([]).code === "sweet-heavy" && TETSU.suggest([]).why === "default");
+    const acid = TETSU.suggest([cup("2026-11-02", "bright-heavy", 6, "Un peu acide"), cup("2026-11-01", "sweet-heavy", 9)]);
+    check("the last one was acid: one notch sweeter, the body untouched", acid.code === "balanced-heavy" && acid.why === "acid");
+    check("already the sweetest: acid is not the split's business any more",
+      TETSU.suggest([cup("2026-11-02", "sweet-heavy", 6, "Sous-extrait (acide)")]).why === "last");
+    const strong = TETSU.suggest([cup("2026-11-02", "sweet-heavy", 6, "Trop fort (concentré)")]);
+    const light = TETSU.suggest([cup("2026-11-02", "sweet-light", 6, "Un peu léger|Un peu amer")]);
+    check("too strong: one pour less; too light: one pour more", strong.code === "sweet-medium" && strong.why === "strong" &&
+      light.code === "sweet-medium" && light.why === "light");
+    check("bitter is the grind's business: the options stay", TETSU.suggest([cup("2026-11-02", "balanced-medium", 6, "Sur-extrait (amer)")]).code === "balanced-medium");
+    const best = TETSU.suggest([cup("2026-11-03", "sweet-heavy", 7), cup("2026-11-02", "balanced-heavy", 9), cup("2026-11-01", "balanced-heavy", 8)]);
+    check("several options tried: the best rated one, with its average", best.code === "balanced-heavy" && best.why === "best" && best.mean === 8.5 && best.n === 2);
+    check("a failed cup does not count", TETSU.suggest([cup("2026-11-03", "bright-light", 2, "Un peu acide", 1), cup("2026-11-02", "sweet-heavy", 8)]).code === "sweet-heavy");
+    check("one option only: like the last cup", TETSU.suggest([cup("2026-11-02", "balanced-medium", 8), cup("2026-11-01", "balanced-medium", "")]).why === "last");
+
+    // Step 26: the cups from before the options.
+    before();
+    DATA.state.settings = [DATA.normalizeSettings({ schema_version: 25 })];
+    DATA.state.recipes = STARTER_RECIPES.map(d => DATA.normalizeRecipe(d));
+    DATA.state.extractions = [
+      DATA.normalizeExtraction({ id: "v-old", date_time: "2026-11-01T09:00", method: "Switch", recipe: "Tetsu 4:6", water_g: 225, updated_at: 5 }),
+      DATA.normalizeExtraction({ id: "v-set", date_time: "2026-11-02T09:00", method: "Switch", recipe: "Tetsu 4:6", recipe_variant: "bright-light", updated_at: 6 }),
+      DATA.normalizeExtraction({ id: "v-other", date_time: "2026-11-03T09:00", method: "Switch", recipe: "La Sherrycipe", updated_at: 7 }),
+    ];
+    DATA.migrateData();
+    const by = id => DATA.state.extractions.find(e => e.id === id);
+    check("step 26: an old 4:6 cup gets the options brewed then, stamped", by("v-old").recipe_variant === "sweet-heavy" && Number(by("v-old").updated_at) > 5);
+    check("a cup that already has options keeps them, unstamped", by("v-set").recipe_variant === "bright-light" && by("v-set").updated_at === 6);
+    check("a cup of another recipe has none", by("v-other").recipe_variant === "" && by("v-other").updated_at === 7);
+    check("the logbook is at schema 26", DATA.state.settings[0].schema_version === 26, String(DATA.state.settings[0].schema_version));
+    DATA.migrateData();
+    check("played twice, step 26 changes nothing more", by("v-old").recipe_variant === "sweet-heavy");
+    // A renamed 4:6 is still found, by its id.
+    before();
+    DATA.state.settings = [DATA.normalizeSettings({ schema_version: 25 })];
+    DATA.state.recipes = STARTER_RECIPES.map(d => DATA.normalizeRecipe(d.id === "tetsu-devil" ? { ...d, name: "Ma 4:6" } : d));
+    DATA.state.extractions = [DATA.normalizeExtraction({ id: "v-ren", method: "Switch", recipe: "Ma 4:6", updated_at: 5 })];
+    DATA.migrateData();
+    check("step 26 follows a renamed 4:6", DATA.state.extractions[0].recipe_variant === "sweet-heavy");
+    check("the options are the last column of the cups CSV", DATA.EXT_COLS[DATA.EXT_COLS.length - 1] === "recipe_variant");
+  }
+
   /* A NEW logbook plays every step, including v5 (single dial): the Neo Brew,
      seeded afterwards with its extra coarse grind, must keep it. */
   before();
@@ -1247,8 +1322,10 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
   check("no more kettle time in the entry", !html.includes('id="f-heat-min"') && !html.includes('id="row-heat"'));
   check("the temperature stays a plain field", html.includes('id="f-temp"'));
   check("no more kettle section in Paramètres", !html.includes('id="ps-kettle"'));
-  check("heating_s is a column, at the end of the row, after failed",
-    DATA.EXT_COLS.indexOf("heating_s") === DATA.EXT_COLS.length - 1 && DATA.EXT_COLS.includes("temperature_c"));
+  // v9.53: recipe_variant came after it, at the end of the row.
+  check("heating_s is a column, after failed, before the 4:6 options",
+    DATA.EXT_COLS.indexOf("heating_s") === DATA.EXT_COLS.indexOf("failed") + 1 &&
+    DATA.EXT_COLS.indexOf("recipe_variant") === DATA.EXT_COLS.length - 1 && DATA.EXT_COLS.includes("temperature_c"));
   check("the kettle boiling time is a synced setting",
     DATA.SETTINGS_COLS.includes("boil_s"));
   /* 120 s by default since Chris measured his kettle. Zero left the function
@@ -3078,7 +3155,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
         recipe: "Tetsu 4:6", dose_g: 15, water_g: 240, grind_dial: "2.0.0", temperature_c: 93, total_time_s: 200,
         flow_time_s: 40, yield_ml: 210, added_water_ml: 20, milk_ml: "", stir_count: 2, cup: "Classic Mug",
         preheated_water: "", score_10: 8.5, diagnostic: "Équilibré", descriptors: "noisette|caramel", comment: "rond",
-        heat_level: "", failed: "", heating_s: 110 }),
+        heat_level: "", failed: "", heating_s: 110, recipe_variant: "sweet-heavy" }),
       DATA.normalizeExtraction({ id: "e2", updated_at: 2002, date_time: "2026-09-02T07:30", coffee_id: "cB", method: "Brikka",
         recipe: "Brikka classique", dose_g: 14, water_g: 150, grind_dial: "1.5.0", total_time_s: 240, flow_time_s: 30,
         yield_ml: 95, milk_ml: 60, cup: "Loveramics Flat White Egg", score_10: 4, diagnostic: "Sur-extrait (amer)",
@@ -3160,7 +3237,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
     check("tombstones preserved under the new table names", JSON.stringify(st.tombstones) === JSON.stringify(NEW_TOMBS),
       JSON.stringify(st.tombstones));
     check("the drawing names follow", st.settings[0].drawings === "shelf,!clock,podium", st.settings[0].drawings);
-    check("the logbook moves to the current schema (25)", st.settings[0].schema_version === 25, String(st.settings[0].schema_version));
+    check("the logbook moves to the current schema (26)", st.settings[0].schema_version === 26, String(st.settings[0].schema_version));
     const keys = [...idb.store.keys()].sort();
     check("the French keys are removed from IndexedDB", Object.keys(LEGACY.TABLES).concat("tombes").every(k => !idb.store.has(k)), keys.join());
     check("and the English ones written", TABLE_NAMES.concat("tombstones").every(k => idb.store.has(k)), keys.join());
@@ -3292,7 +3369,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
       !("note_sur_10" in app.DATA.state.extractions[0]), JSON.stringify(app.DATA.state.extractions[0]).slice(0, 80));
     check("and raw old tombstones", app.DATA.state.tombstones.coffees && app.DATA.state.tombstones.coffees.z === 1);
     check("without restamping the row", app.DATA.state.extractions[0].updated_at === 2001);
-    check("the schema is at 25, step 21 still there", SOURCE_DATA.includes("const CURRENT_SCHEMA = 25;") &&
+    check("the schema is at 26, step 21 still there", SOURCE_DATA.includes("const CURRENT_SCHEMA = 26;") &&
       SOURCE_DATA.includes('{ v: 21, name: "English names", apply: convertLegacyNames }'));
     /* Tetsu 4:6 at 250 g by default (v9.08): the seed says so, and step 22
        moves a stored recipe still at the seeded 225 g, never a retouched one. */

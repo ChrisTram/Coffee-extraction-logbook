@@ -77,6 +77,7 @@
     return (c.accumulated + (c.state === "running" ? Date.now() - c.startTs : 0)) / 1000;
   }
 
+  let shownDose = null;
   function paint() {
     const r = findRecipe($("#f-recipe").value);
     const all = r ? UI.stepsFor(r) : [];
@@ -87,8 +88,11 @@
 
     $("#br-machine").textContent = [I18N.machine(UI.entry.method), coffee ? coffee.name : ""].filter(Boolean).join(" · ");
     $("#br-title").textContent = r ? I18N.tr(r.name) : I18N.t("brew_no_recipe");
-    $("#br-dose").textContent = [$("#f-dose").value ? $("#f-dose").value + " g" : "",
-      $("#f-water").value ? $("#f-water").value + " " + unit() : ""].filter(Boolean).join(" · ");
+    const doseLine = UI.titleAttr([$("#f-dose").value ? $("#f-dose").value + " g" : "",
+      $("#f-water").value ? $("#f-water").value + " " + unit() : ""].filter(Boolean).join(" · ")) +
+      // v9.53: the 4:6 options of this cup, as their chip.
+      (r && r.has_variants ? UI.variantChipHtml(UI.variantCode(), $("#f-water").value) : "");
+    if (doseLine !== shownDose) { $("#br-dose").innerHTML = doseLine; shownDose = doseLine; }
     $("#br-time").textContent = fmtDuration(Math.floor(s));
     $("#br-over").textContent = I18N.t("brew_of", { t: fmtDuration(duration) });
 
@@ -321,5 +325,8 @@
     UI.paintRatingDial(c);
   }
 
-  Object.assign(UI, { wireBrew, pourTarget: targetOf, closeBrew, openBrew });
+  // The 4:6 options changed while the mode is open: its steps follow.
+  function repaintBrew() { if ($("#modal-brew").open) paint(); }
+
+  Object.assign(UI, { wireBrew, pourTarget: targetOf, closeBrew, openBrew, repaintBrew });
 })();

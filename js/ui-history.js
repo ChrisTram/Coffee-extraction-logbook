@@ -355,6 +355,7 @@
       item("detail_milk", e.milk_ml !== "" ? e.milk_ml + " ml" : ""),
       item("detail_stirring", e.stir_count !== "" ? e.stir_count : ""),
       item("detail_cup", e.cup ? titleAttr(e.cup) : ""),
+      item("detail_variant", UI.cupVariantChip ? UI.cupVariantChip(e) : ""),
       item("detail_preheated", Number(e.preheated_water) === 1 ? I18N.t("yes") : ""),
       item("detail_drink", e._c.drink_ml !== "" ? e._c.drink_ml + " ml" : ""),
       item("detail_cost", e._c.cup_cost_vnd !== "" ? fmtVND(e._c.cup_cost_vnd) : ""),

@@ -1911,18 +1911,71 @@ svg [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset:
   font-weight: 600;
 }
 
-/* Tetsu variants */
+/* The 4:6 options (v9.53): the picker (Guide card and entry field), the pour
+   strip and the chip that names the options next to a recipe or a cup. */
 .tetsu-variants { border-top: 1px dashed var(--lines); padding-top: 12px; margin-bottom: 12px; }
-.tetsu-group { margin-bottom: 10px; }
-.tetsu-group .label { display: block; margin-bottom: 6px; }
-.tetsu-options { display: flex; gap: 6px; flex-wrap: wrap; }
-.tetsu-pours { margin: 10px 0 0; padding: 0; list-style: none; }
-.tetsu-pours li {
-  display: flex; gap: 10px; align-items: baseline;
-  padding: 4px 0; font-size: 0.88rem;
-  font-variant-numeric: tabular-nums;
+.tetsu-detail { font-size: 0.8rem; color: var(--muted); margin: 10px 0 0; }
+.vp-intro { margin: 0 0 12px; font-size: 0.86rem; color: var(--text); }
+.vp-group { margin-bottom: 12px; }
+.vp-group .label { display: block; margin-bottom: 6px; }
+.vp-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.vp-opt {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  min-width: 0; padding: 9px 11px; text-align: left;
+  font: inherit; color: var(--text); cursor: pointer;
+  background: var(--panel); border: 1px solid var(--lines); border-radius: var(--radius-small);
+  transition: border-color var(--transition), background var(--transition);
 }
-.tetsu-detail { font-size: 0.8rem; color: var(--muted); margin: 6px 0 0; }
+.vp-opt:hover { border-color: var(--accent); }
+.vp-opt b { font-size: 0.86rem; color: var(--ink); }
+.vp-opt .vp-g { font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.vp-opt .vp-when { margin-top: 4px; font-size: 0.76rem; line-height: 1.4; color: var(--muted); }
+.vp-opt.on { background: var(--accent-bg); border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.vp-opt.on .vp-g { color: var(--text); }
+p.vp-when { margin: 6px 0 0; font-size: 0.8rem; color: var(--muted); }
+/* In the Guide each option carries its comment: a row per option in a narrow
+   card (name and grams on one line, the comment under), side by side when
+   the card is wide. */
+.tetsu-variants .vp-options { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.tetsu-variants .vp-opt { display: grid; grid-template-columns: 1fr auto; align-items: baseline; column-gap: 10px; align-content: start; }
+.tetsu-variants .vp-opt .vp-when { grid-column: 1 / -1; }
+.vp-strip { display: flex; gap: 3px; margin-top: 4px; padding-bottom: 18px; }
+.vp-seg {
+  position: relative; min-width: 0; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 6px; font-variant-numeric: tabular-nums;
+}
+.vp-seg.a { background: var(--accent); color: var(--on-accent); }
+.vp-seg.b { background: var(--accent-bg); color: var(--ink); box-shadow: inset 0 0 0 1px var(--accent); }
+.vp-seg.a + .vp-seg.b { margin-left: 5px; }
+.vp-seg b { font-size: 0.8rem; font-weight: 700; }
+.vp-seg small { position: absolute; right: 0; top: 100%; margin-top: 3px; font-size: 0.75rem; color: var(--muted); line-height: 1; }
+.vp-legend { margin: 4px 0 0; font-size: 0.75rem; color: var(--muted); }
+.vp-advice { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 0 0 12px; font-size: 0.82rem; color: var(--muted); }
+.vp-advice-h { color: var(--text); font-weight: 600; }
+.vp-take { padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; border-radius: 999px; }
+.vp-take:hover .vchip, .vp-take.on .vchip { border-color: var(--accent); }
+.vp-take.on .vchip { background: var(--accent-bg); }
+.vchip {
+  display: inline-flex; align-items: center; gap: 6px; max-width: 100%;
+  padding: 2px 9px 2px 7px; border: 1px solid var(--lines); border-radius: 999px;
+  background: var(--panel-2); color: var(--text);
+  font-size: 0.76rem; font-weight: 600; line-height: 1.5; white-space: nowrap; vertical-align: middle;
+}
+.vchip-bars { display: inline-flex; gap: 1px; width: 34px; height: 9px; flex: none; }
+.vchip-bars i { display: block; min-width: 2px; border-radius: 1.5px; }
+.vchip-bars i.a { background: var(--accent); }
+.vchip-bars i.b { background: var(--muted); }
+.vchip-bars i.a + i.b { margin-left: 2px; }
+.field-variant { margin-top: 14px; padding: 14px 16px; border: 1px solid var(--lines); border-radius: var(--radius-small); background: var(--panel-2); }
+.field-variant > .label { display: block; margin-bottom: 8px; }
+.field-variant .vp-group:last-of-type { margin-bottom: 10px; }
+.pe-variant { margin: 10px 0 6px; }
+.aside-title .vchip, .br-dose .vchip { margin-left: 8px; }
+@media (max-width: 520px) {
+  .vp-opt { padding: 8px 9px; }
+  .field-variant { padding: 12px; }
+}
 
 /* Converter */
 .converter { margin: 18px 0 8px; }

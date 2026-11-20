@@ -139,6 +139,8 @@
       coffee_id: coffeeId,
       method: r.method,
       recipe: r.name,
+      // The 4:6 options he usually brews on this coffee (v9.53); empty for any other recipe.
+      recipe_variant: r.has_variants && UI.usualVariant ? UI.usualVariant(coffeeId) : "",
       dose_g: r.dose || fallbacks.dose,
       water_g: r.water,
       grind_dial: quickCoffee && Number(quickCoffee.pre_ground) === 1 ? "" : r.dial,

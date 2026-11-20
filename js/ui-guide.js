@@ -14,7 +14,7 @@
 
   // ---------- Reference: recipes ----------
 
-  const tetsuChoice = { p40: "sucre", p60: "plein" };
+  const tetsuChoice = { p40: "sweet", p60: "heavy" };
   const familySelection = {}; // family -> id of the displayed variant
 
   /* THE GUIDE AS A LIBRARY (v8.52). Two new things on each recipe, both
@@ -262,11 +262,14 @@
   function brewRecipe(id, card) {
     const r = DATA.state.recipes.find(x => x.id === id);
     if (!r) return;
+    // The options picked on the card are the ones to brew (v9.53).
+    const picked = r.has_variants ? variantCode() : "";
     UI.resetEntry(true);
     UI.chooseMethod(r.method);
     const sel = $("#f-recipe");
     sel.value = r.name;
     sel.dispatchEvent(new Event("change", { bubbles: true }));
+    if (picked) { setVariant(picked); UI.entry.variantTouched = true; }
     if (!card || !UI.openBrew) { UI.activateScreen("entry"); return; }
     const find = () => $(".screen.on .recipe-card[data-recipe=\"" + id + "\"], #side-panel:not([hidden]) .recipe-card[data-recipe=\"" + id + "\"]");
     if (UI.morphOpen) UI.morphOpen(card, UI.openBrew, "#modal-brew", { id, find });
@@ -409,38 +412,134 @@
     }));
   }
 
-  function tetsuPours() {
-    const v40 = TETSU.first40.find(v => v.id === tetsuChoice.p40);
-    const v60 = TETSU.last60.find(v => v.id === tetsuChoice.p60);
+  /* THE 4:6 OPTIONS (v9.53). ONE choice for the whole page, tetsuChoice: the
+     Guide's card, the entry's field, the steps, the Brew mode and the saved
+     cup (hidden field #f-variant, column recipe_variant) all read it. The
+     figures follow the water: the recipe's in the Guide, the cup's in the
+     entry. */
+  const variantCode = () => tetsuChoice.p40 + "-" + tetsuChoice.p60;
+  function tetsuPours(water) {
+    const { v40, v60 } = TETSU.parse(variantCode());
     const r = recipeWithVariants();
-    const water = r ? r.water : 300;
-    return { pours: TETSU.pours(water, v40, v60), v40, v60, water: water };
+    const w = Number(water) > 0 ? Number(water) : r ? r.water : 300;
+    return { pours: TETSU.pours(w, v40, v60), v40, v60, water: w };
+  }
+  // "sucré · corps plein": the options in two words, for a line of text.
+  function variantLabel(code) {
+    const { v40, v60 } = TETSU.parse(code);
+    return I18N.tr(v40.short) + " · " + I18N.tr(v60.short);
+  }
+  /* THE CHIP: the options at a glance wherever a recipe or a cup is named.
+     Its small bars ARE the pours, to scale, the two of the first 40 percent
+     apart from the others; the title gives the grams. Empty for a cup
+     without options. */
+  function variantChipHtml(code, water) {
+    const clean = TETSU.clean(code);
+    if (!clean) return "";
+    const { v40, v60 } = TETSU.parse(clean);
+    const w = Number(water) > 0 ? Number(water) : (recipeWithVariants() || {}).water || 225;
+    const bars = TETSU.pours(w, v40, v60).map((p, i) =>
+      '<i class="' + (i < 2 ? "a" : "b") + '" style="flex:' + p + ' 1 0"></i>').join("");
+    return '<span class="vchip" title="' + titleAttr(TETSU.signature(w, clean) + " g") + '">' +
+      '<span class="vchip-bars" aria-hidden="true">' + bars + "</span>" + titleAttr(variantLabel(clean)) + "</span>";
+  }
+  // What Chris usually brews on this coffee: its last 4:6 cup's options, else the default.
+  function usualVariant(coffeeId) {
+    const r = recipeWithVariants();
+    const last = r ? DATA.state.extractions.filter(e => e.recipe === r.name && e.coffee_id === coffeeId && TETSU.clean(e.recipe_variant))
+      .sort((a, b) => String(b.date_time).localeCompare(String(a.date_time)))[0] : null;
+    return last ? TETSU.clean(last.recipe_variant) : TETSU.DEFAULT;
+  }
+  // The chip of a saved cup, "" when it has no options.
+  const cupVariantChip = e => (e && e.recipe_variant ? variantChipHtml(e.recipe_variant, e.water_g) : "");
+  /* THE STRIP: the whole water as one bar, a segment per pour, to scale. In
+     each segment the grams to pour; under its end, what the scale shows. */
+  function pourStripHtml(pours) {
+    let total = 0;
+    const targets = [];
+    const segments = pours.map((p, i) => {
+      total += p;
+      targets.push(total);
+      return '<span class="vp-seg ' + (i < 2 ? "a" : "b") + '" style="flex:' + p + ' 1 0"><b>' + p + "</b><small>" + total + "</small></span>";
+    }).join("");
+    return '<div class="vp-strip" role="img" aria-label="' + titleAttr(I18N.t("tetsu_strip_label", { v: targets.join(", ") })) + '">' + segments + "</div>" +
+      '<p class="vp-legend">' + I18N.t("tetsu_strip_legend") + "</p>";
+  }
+  /* THE PICKER. full (the Guide): each option carries its comment, which
+     coffee or which last cup calls for it. Compact (the entry): only the
+     chosen option's comment, under its row. */
+  function variantPickerHtml(water, full) {
+    const { pours, v40, v60, water: w } = tetsuPours(water);
+    const grams40 = v => TETSU.pours(w, v, v60).slice(0, 2).join(" · ") + " g";
+    const grams60 = v => {
+      const p = TETSU.pours(w, v40, v).slice(2);
+      return (p.length > 1 && p.every(x => x === p[0]) ? p.length + " × " + p[0] : p.join(" · ")) + " g";
+    };
+    const option = (v, key, on, grams) =>
+      '<button type="button" class="vp-opt' + (on ? " on" : "") + '" role="radio" aria-checked="' + on + '" data-' + key + '="' + v.id + '">' +
+      "<b>" + I18N.tr(v.name) + '</b><span class="vp-g">' + grams + "</span>" +
+      (full ? '<span class="vp-when">' + I18N.tr(v.when) + "</span>" : "") + "</button>";
+    const group = (label, list, key, chosen, grams) =>
+      '<div class="vp-group"><span class="label">' + I18N.t(label) + "</span>" +
+      '<div class="vp-options" role="radiogroup" aria-label="' + titleAttr(I18N.t(label)) + '">' +
+      list.map(v => option(v, key, v.id === chosen.id, grams(v))).join("") + "</div>" +
+      (full ? "" : '<p class="vp-when">' + I18N.tr(chosen.when) + "</p>") + "</div>";
+    return group("tetsu_40", TETSU.first40, "t40", v40, grams40) + group("tetsu_60", TETSU.last60, "t60", v60, grams60) + pourStripHtml(pours);
+  }
+  /* WHICH OPTIONS FOR THIS COFFEE (TETSU.suggest, recipes.js): its 4:6 cups,
+     the one being edited left out. */
+  function variantAdvice(coffeeId, exceptId) {
+    const r = recipeWithVariants();
+    const cups = r && coffeeId ? DATA.state.extractions.filter(e => e.recipe === r.name && e.coffee_id === coffeeId && e.id !== exceptId) : [];
+    return TETSU.suggest(cups);
+  }
+  // The advice as one line: the chip, a button that takes it, and why.
+  function variantAdviceHtml(advice, coffeeName) {
+    const taken = advice.code === variantCode();
+    return '<p class="vp-advice"><span class="vp-advice-h">' +
+      (coffeeName ? titleAttr(I18N.t("tetsu_advice_for", { c: coffeeName })) : I18N.t("tetsu_advice")) + "</span>" +
+      '<button type="button" class="vp-take' + (taken ? " on" : "") + '" data-variant="' + advice.code + '" aria-pressed="' + taken + '">' +
+      variantChipHtml(advice.code, parseFloat($("#f-water").value)) + "</button>" +
+      '<span class="vp-why">' + I18N.t("tetsu_why_" + advice.why, { m: advice.mean !== undefined ? fmtDecimal(advice.mean, 1) : "", n: advice.n || "" }) + "</span></p>";
   }
 
+  // The Guide's card: the full picker, at the recipe's water.
   function renderTetsu() {
     const block = $("#tetsu-block");
     if (!block) return;
-    const { pours, v40, v60, water: water } = tetsuPours();
-    let total = 0;
-    const lines = pours.map((p, i) => {
-      total += p;
-      const phase = i < 2 ? "40 %" : "60 %";
-      return "<li><span class=\"step-time\">" + (i + 1) + "</span><span>" +
-        I18N.t("tetsu_line", { p, c: total }) + " <small>(" + phase + ")</small></span></li>";
-    }).join("");
-    block.innerHTML =
-      '<div class="tetsu-group"><span class="label">' + I18N.t("tetsu_40") + "</span>" +
-      '<div class="tetsu-options">' + TETSU.first40.map(v =>
-        '<button type="button" class="pill' + (v.id === tetsuChoice.p40 ? " on" : "") + '" data-t40="' + v.id + '">' + I18N.tr(v.name) + "</button>").join("") +
-      "</div></div>" +
-      '<div class="tetsu-group"><span class="label">' + I18N.t("tetsu_60") + "</span>" +
-      '<div class="tetsu-options">' + TETSU.last60.map(v =>
-        '<button type="button" class="pill' + (v.id === tetsuChoice.p60 ? " on" : "") + '" data-t60="' + v.id + '">' + I18N.tr(v.name) + "</button>").join("") +
-      "</div></div>" +
-      '<ul class="tetsu-pours">' + lines + "</ul>" +
-      '<p class="tetsu-detail">' + I18N.tr(v40.detail) + " " + I18N.tr(v60.detail) + " " + I18N.t("tetsu_end") + "</p>";
-    $$("[data-t40]").forEach(b => b.addEventListener("click", () => { tetsuChoice.p40 = b.dataset.t40; renderTetsu(); }));
-    $$("[data-t60]").forEach(b => b.addEventListener("click", () => { tetsuChoice.p60 = b.dataset.t60; renderTetsu(); }));
+    const r = recipeWithVariants();
+    // The coffee of the entry: the one about to be brewed.
+    const coffee = DATA.state.coffees.find(c => c.id === ($("#f-coffee") || {}).value);
+    block.innerHTML = '<p class="vp-intro">' + I18N.t("tetsu_intro") + "</p>" +
+      (coffee ? variantAdviceHtml(variantAdvice(coffee.id, UI.entry.editId), I18N.tr(coffee.name)) : "") +
+      variantPickerHtml(r ? r.water : 0, true) +
+      '<p class="tetsu-detail">' + I18N.t("tetsu_end") + "</p>";
+  }
+  /* The choice changes: the hidden field of the entry follows (the draft
+     saves it like any field), then everything that shows the pours. */
+  function setVariant(code, quiet) {
+    const { v40, v60 } = TETSU.parse(code);
+    const changed = tetsuChoice.p40 !== v40.id || tetsuChoice.p60 !== v60.id;
+    tetsuChoice.p40 = v40.id;
+    tetsuChoice.p60 = v60.id;
+    const field = $("#f-variant");
+    if (field && field.value !== variantCode()) field.value = variantCode();
+    renderTetsu();
+    if (quiet || !changed) return;
+    if (field) field.dispatchEvent(new Event("input", { bubbles: true }));
+    if (UI.updateWarnings) UI.updateWarnings();
+    if (UI.updateStopwatchSteps) UI.updateStopwatchSteps(false);
+    if (UI.repaintBrew) UI.repaintBrew();
+  }
+  // One listener for every picker and every « take this one » chip of the page.
+  function wireVariants() {
+    document.addEventListener("click", ev => {
+      const b = ev.target.closest && ev.target.closest("[data-t40], [data-t60], [data-variant]");
+      if (!b) return;
+      if (b.dataset.variant) setVariant(b.dataset.variant);
+      else setVariant((b.dataset.t40 || tetsuChoice.p40) + "-" + (b.dataset.t60 || tetsuChoice.p60));
+      UI.entry.variantTouched = true;
+    });
   }
 
   // ---------- Step-by-step mode ----------
@@ -465,7 +564,9 @@
     // Translated BEFORE scaling (v8.77): the original sentence is the key.
     const translate = list => list.map(e => ({ ...e, text: I18N.tr(e.text) }));
     if (recipe.has_variants) {
-      const { pours } = tetsuPours();
+      /* From the cup's water directly (v9.53): the targets are rounded to 5 g
+         for THAT water, scaling round figures afterwards would unround them. */
+      const { pours } = tetsuPours(Math.round(recipe.water * f));
       let total = 0;
       /* The TOTAL first, like every other recipe (« jusqu'à 90 g »): the pour
          alone (30, 60, then 45) could not be read on the scale, and the Brew
@@ -474,12 +575,12 @@
          drained, and his 45 seconds hold for 20 g and 60 g pours. At 15 g
          the bed is thinner, it empties sooner, and the timer made you wait
          over a dry bed. The Brew mode advances with a tap. */
-      return rescale(pours.map((p, i) => {
+      return pours.map((p, i) => {
         total += p;
         return { t: null, text: i === 0
           ? I18N.t("walkthrough_first", { c: total, b: I18N.t("walkthrough_bloom") })
           : I18N.t("walkthrough_pour", { p, c: total, b: I18N.t("walkthrough_bed") }) };
-      }).concat([{ t: null, text: I18N.t("walkthrough_drain") }]));
+      }).concat([{ t: null, text: I18N.t("walkthrough_drain") }]);
     }
     return rescale(translate(recipe.steps));
   }
@@ -492,7 +593,7 @@
     walkthrough.index = -1;
     clearInterval(walkthrough.interval);
     walkthrough.startedAt = null;
-    $("#wt-title").textContent = r.name;
+    $("#wt-title").textContent = r.name + (r.has_variants ? " · " + variantLabel(variantCode()) : "");
     $("#wt-chrono").textContent = "0:00";
     $("#wt-params").textContent = r.dose + " g / " + r.water + " g, " + I18N.tr(r.tempText) + ", " + I18N.t("dial") + " " + r.dial + ", " + I18N.tr(r.totalText);
     $("#wt-start").textContent = I18N.t("walkthrough_start");
@@ -631,6 +732,7 @@
   /* Wiring of the Guide controls: grinder, step by step, copy buttons.
      Called once by app.js. */
   function wireGuide() {
+    wireVariants();
     $("#conv-dial").addEventListener("input", renderConverterDeferred);
     $("#conv-slider").addEventListener("input", () => {
       $("#conv-dial").value = GRIND.dialFromClicks(Number($("#conv-slider").value));
@@ -709,6 +811,7 @@
     wireGuide, recipeCard, atHome, grindAdvice, showGuide, showRecipe, recipeProfiles, stepsFor, waterFactor, familySelection, openWalkthrough,
     walkthrough, startWalkthrough, nextWalkthroughStep, walkthroughTick, renderConverter, renderConverterDeferred,
     renderWalkthroughSteps, renderRecipes, renderGrindMarkers, renderRangeTable, renderTetsu,
-    tetsuChoice, tetsuPours,
+    tetsuChoice, tetsuPours, variantCode, variantLabel, variantChipHtml, cupVariantChip, variantPickerHtml,
+    variantAdvice, variantAdviceHtml, setVariant, wireVariants, usualVariant, pourStripHtml,
   });
 })();

@@ -24,6 +24,7 @@
     band.hidden = false;
     UI.patchHtml(band,
       '<span class="br-name">' + (r ? '<span class="dot-method ' + r.method.toLowerCase() + '"></span>' + titleAttr(r.name) : I18N.t("aside_pick_recipe")) + "</span>" +
+      (r && r.has_variants ? UI.variantChipHtml(UI.variantCode(), water) : "") +
       (params ? '<span class="br-params">' + params + "</span>" : "") +
       (coffee ? '<span class="br-coffee">' + titleAttr(I18N.tr(coffee.name)) + "</span>" : "") +
       '<span class="br-show">' + I18N.t("brew_view_recipe") + "</span>");
@@ -72,7 +73,8 @@
     const stepText = text => titleAttr(text).replace(/(\d+(?:[.,]\d+)?)(\s*g\b)/g, (whole, num) =>
       Number(String(num).replace(",", ".")) > POUR_THRESHOLD_G ? '<b data-live="g" class="step-g">' + whole + "</b>" : whole);
     const html =
-      '<div class="aside-title"><span class="dot-method ' + r.method.toLowerCase() + '"></span><h4>' + titleAttr(I18N.tr(r.name)) + "</h4></div>" +
+      '<div class="aside-title"><span class="dot-method ' + r.method.toLowerCase() + '"></span><h4>' + titleAttr(I18N.tr(r.name)) + "</h4>" +
+        (r.has_variants ? UI.variantChipHtml(UI.variantCode(), $("#f-water").value) : "") + "</div>" +
       (r.subtitle ? '<p class="aside-sub">' + titleAttr(I18N.tr(r.subtitle)) + "</p>" : "") +
       UI.compareHtml(r) +
       '<div class="recipe-params">' +

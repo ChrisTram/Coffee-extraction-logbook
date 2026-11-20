@@ -58,7 +58,7 @@ export function loadApp(log) {
   const quietConsole = { log: say, info: say, warn: say, error: say, debug: say };
   const source = APP_SCRIPTS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n;\n");
   const context = vm.createContext({ console: quietConsole });
-  const app = vm.runInContext(source + "\n;({ LEGACY, TOOLS, DATA_SCHEMA, DATA_CALCS, DATA_MIGRATIONS });",
+  const app = vm.runInContext(source + "\n;({ LEGACY, TOOLS, DATA_SCHEMA, DATA_CALCS, DATA_MIGRATIONS, TETSU });",
     context, { filename: "logbook-app.js" });
   const emptyState = { coffees: [], extractions: [], recipes: [], cups: [], purchases: [], settings: [], tombstones: {} };
   const { CURRENT_SCHEMA } = app.DATA_MIGRATIONS.forState(emptyState, {
@@ -523,6 +523,8 @@ export function createLogbookServer(options = {}) {
       String(e.date_time || "").replace("T", " "),
       coffee ? coffee.name : (e.coffee_id ? "café supprimé" : "sans café"),
       e.method, e.recipe ? "recette « " + e.recipe + " »" : "",
+      // v9.53: the 4:6 options of the cup, in words ("sucré, corps plein").
+      e.recipe_variant ? "variante " + [app.TETSU.parse(e.recipe_variant).v40.short, app.TETSU.parse(e.recipe_variant).v60.short].join(", ") : "",
       e.dose_g !== "" ? "dose " + e.dose_g + " g" : "",
       e.water_g !== "" ? "eau " + e.water_g + " g" : "",
       e.grind_dial ? "mouture " + e.grind_dial : "",

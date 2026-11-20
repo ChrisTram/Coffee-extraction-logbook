@@ -654,6 +654,7 @@
         titleAttr(I18N.machine(e.method || "")) +
         (e.recipe ? '<span class="sp-dot" aria-hidden="true">·</span>' +
           (recipe ? link("recipe", recipe.id, I18N.tr(e.recipe), "") : titleAttr(I18N.tr(e.recipe))) : "") +
+        (UI.cupVariantChip ? UI.cupVariantChip(e) : "") +
         (e._c && e._c.ratioText ? '<span class="sp-dot" aria-hidden="true">·</span><span class="pe-ratio">' + titleAttr(e._c.ratioText) + "</span>" : "") +
       "</p></div>";
   }
@@ -735,7 +736,12 @@
       (chips ? '<div class="recipe-params">' + chips + "</div>" : "") +
       (typeof UI.sourceLineHtml === "function" ? UI.sourceLineHtml(r, DATA.coffeeOf(e)) : "") +
       (steps.length ? '<ol class="recipe-steps">' + steps.map(s => '<li><span class="step-time">' + (s.t === null || s.t === undefined ? "·" : fmtDuration(s.t)) +
-        "</span><span>" + escapeHtml(s.text) + "</span></li>").join("") + "</ol>" : "") + "</section>";
+        "</span><span>" + escapeHtml(s.text) + "</span></li>").join("") + "</ol>" : "") +
+      // v9.53: a 4:6 cup shows the pours of its own options, at its own water.
+      (r.has_variants && e.recipe_variant && UI.pourStripHtml ? (() => {
+        const { v40, v60 } = TETSU.parse(e.recipe_variant);
+        return '<p class="pe-variant">' + UI.cupVariantChip(e) + "</p>" + UI.pourStripHtml(TETSU.pours(Number(e.water_g) || r.water, v40, v60));
+      })() : "") + "</section>";
   }
 
   // B1, the next cup of this coffee, when its cups say something.

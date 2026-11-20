@@ -37,7 +37,7 @@ const DATA_MIGRATIONS = (() => {
 
        Each step touches ONLY the previously seeded value. A step that
        overwrote a deliberately chosen setting would be a bug, not a migration. */
-    const CURRENT_SCHEMA = 25;
+    const CURRENT_SCHEMA = 26;
 
     /* THE ENGLISH NAMES (v9.06). Every row is translated on its way in
        (normalize*, see js/legacy-names.js), so a state that went through the
@@ -479,6 +479,24 @@ const DATA_MIGRATIONS = (() => {
           rec.ratioText = "ratio 1:" + frRatio(water / 15) + ", environ " + (water - 30) + " ml en tasse";
         }
         stampRow(rec);
+        changed = true;
+      });
+      return changed;
+    } },
+    /* THE 4:6 OPTIONS ON THE CUP (v9.53, Chris's request): a new cup column,
+       recipe_variant. Until then the options only lived in the Guide, and
+       Chris brewed the default ones: the first 40 percent as one third then
+       two thirds, the last 60 in three pours. Every 4:6 cup without options
+       gets that one, "sweet-heavy", stamped so the other devices follow. The
+       recipe is found by its id: it may have been renamed. */
+    { v: 26, name: "4:6 options on the cup", apply: () => {
+      if (typeof TETSU !== "object" || !TETSU) return false;
+      const names = new Set(state.recipes.filter(r => r.id === "tetsu-devil" || r.has_variants).map(r => r.name).concat(["Tetsu 4:6"]));
+      let changed = false;
+      state.extractions.forEach(e => {
+        if (!names.has(e.recipe) || TETSU.clean(e.recipe_variant)) return;
+        e.recipe_variant = TETSU.DEFAULT;
+        stampRow(e);
         changed = true;
       });
       return changed;

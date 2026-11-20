@@ -382,35 +382,118 @@ const RECIPE_RENAMES = {
 };
 const OLD_SEED_IDS = ["brikka-ref", "brikka-rangbo", "fruite", "costaud", "adoucisseur", "complet", "tetsu"];
 
-// Tetsu 4:6 variants. Pours are recomputed from the total water.
-// For 225 g: bloom 30, then 60 (40 percent at 90 g), then 3 x 45.
+/* THE 4:6 OPTIONS (v9.53). Two choices, written on the CUP since v9.53
+   (column recipe_variant, "sweet-heavy"): how the first 40 percent of the
+   water is split in two pours (sweetness against acidity), and in how many
+   pours the last 60 percent goes (the body). Source of the grid: Tetsu
+   Kasuya's method as laid out by Alternative Brewing for 20 g and 300 g
+   (youtube.com/watch?v=3YYOWBCd4zo): 60/60 balanced, 40/80 sweeter, 80/40
+   brighter, then 180 in one, two or three pours.
+
+   WHAT THE SCALE SHOWS IS ROUND. Each target, the running total read on the
+   scale, is rounded to 5 g, the last one being the total itself. At 15 g and
+   225 g, the 3/4 of the source, every target is exact (30, 45, 60, 90, 135,
+   180, 225) but one: two pours of 67.5 g, shown as 160 then 225. 240 g
+   (32, 64, 48) and 250 g (33, 67) split worse; only 300 g, 20 g of coffee,
+   splits better.
+
+   No fixed schedule since v8.99: pour when the bed reappears, Tetsu's rule.
+   `name` is the pill, `short` the word used in a one-line label, `when` the
+   comment that says which coffee or which last cup calls for it. */
 const TETSU = {
-  /* No more fixed schedule (v8.99): pour when the bed reappears, Tetsu's
-     rule. The 45 seconds of v8.69 were right for 20 g, not for 15 g. */
+  DEFAULT: "sweet-heavy",
   first40: [
-    { id: "sucre",     name: "Plus de sucre",  detail: "30 puis 60 g : plus de sucre, moins d'acidité. Mon profil, le réglage par défaut.", parts: [1, 2], isDefault: true },
-    { id: "equilibre", name: "Équilibre",      detail: "45 puis 45 g : équilibré.", parts: [1, 1] },
-    { id: "vivacite",  name: "Plus de vivacité", detail: "60 puis 30 g : plus de vivacité.", parts: [2, 1] },
+    { id: "sweet", name: "Plus sucré", short: "sucré", parts: [1, 2], isDefault: true,
+      when: "Pour arrondir un café qui pique, ou après une tasse acide." },
+    { id: "balanced", name: "Équilibré", short: "équilibré", parts: [1, 1],
+      when: "Le départ neutre, pour découvrir un café." },
+    { id: "bright", name: "Plus vif", short: "vif", parts: [2, 1],
+      when: "Pour réveiller un café rond ou plat, qui manque de relief." },
   ],
   last60: [
-    { id: "leger",  name: "Corps léger",  detail: "Un seul versement.", n: 1 },
-    { id: "moyen",  name: "Corps moyen",  detail: "Deux versements.", n: 2 },
-    { id: "plein",  name: "Corps plein",  detail: "Trois versements. Mon choix.", n: 3, isDefault: true },
+    { id: "light", name: "Corps léger", short: "corps léger", n: 1,
+      when: "Tasse fine, façon thé. Après une tasse trop forte." },
+    { id: "medium", name: "Corps moyen", short: "corps moyen", n: 2,
+      when: "Le juste milieu, de la matière sans lourdeur." },
+    { id: "heavy", name: "Corps plein", short: "corps plein", n: 3, isDefault: true,
+      when: "Tasse dense et longue. Après une tasse légère ou aqueuse." },
   ],
-  pours(totalWater, variant40, variant60) {
-    const p40 = totalWater * 0.4;
-    const p60 = totalWater * 0.6;
+  // "sweet-heavy" to its two options; anything unknown falls back on the default of its half.
+  parse(code) {
+    const [a, b] = String(code || "").split("-");
+    return {
+      v40: TETSU.first40.find(v => v.id === a) || TETSU.first40.find(v => v.isDefault),
+      v60: TETSU.last60.find(v => v.id === b) || TETSU.last60.find(v => v.isDefault),
+    };
+  },
+  // The stored value: a known code, or "" (a cup of another recipe, or a value from elsewhere).
+  clean(code) {
+    const [a, b] = String(code === undefined || code === null ? "" : code).trim().toLowerCase().split("-");
+    return TETSU.first40.some(v => v.id === a) && TETSU.last60.some(v => v.id === b) ? a + "-" + b : "";
+  },
+  /* What the scale shows after each pour, rounded to 5 g (1 g under 100 g of
+     water, where 5 g would bend the split); the last target is the total. */
+  targets(totalWater, variant40, variant60) {
+    const total = Math.round(Number(totalWater) || 0);
+    const step = total >= 100 ? 5 : 1;
+    const round = x => Math.round(x / step) * step;
+    const p40 = total * 0.4, p60 = total * 0.6;
     const sum = variant40.parts[0] + variant40.parts[1];
-    const pours = [
-      Math.round(p40 * variant40.parts[0] / sum),
-      Math.round(p40 * variant40.parts[1] / sum),
-    ];
-    for (let i = 0; i < variant60.n; i++) {
-      pours.push(Math.round(p60 / variant60.n));
+    const out = [round(p40 * variant40.parts[0] / sum), round(p40)];
+    for (let i = 1; i <= variant60.n; i++) out.push(i === variant60.n ? total : round(p40 + p60 * i / variant60.n));
+    return out;
+  },
+  // Each pour in grams: the gaps between the targets.
+  pours(totalWater, variant40, variant60) {
+    return TETSU.targets(totalWater, variant40, variant60).map((t, i, all) => t - (i ? all[i - 1] : 0));
+  },
+  /* The options in a few characters, the same in every language: the pours
+     of each half, "30·60 + 3×45". Equal pours fold into "3×45". */
+  signature(totalWater, code) {
+    const { v40, v60 } = TETSU.parse(code);
+    const p = TETSU.pours(totalWater, v40, v60);
+    const rest = p.slice(2);
+    const same = rest.every(x => x === rest[0]);
+    return p[0] + "·" + p[1] + " + " + (rest.length > 1 && same ? rest.length + "×" + rest[0] : rest.join("·"));
+  },
+  /* WHICH OPTIONS FOR THIS COFFEE, in one line. `cups` are the 4:6 cups of
+     ONE coffee. In order:
+     1. the last cup asked for a move the method answers: acid, one notch
+        sweeter; too strong, one pour less; too light, one pour more. Bitter
+        and astringent are the grind's business, not the split's.
+     2. several options tried on this coffee: the best rated one.
+     3. the options of the last cup of this coffee.
+     4. nothing known: the default.
+     Returns { code, why, n, mean }: `why` is "acid", "strong", "light",
+     "best", "last" or "default". */
+  suggest(cups) {
+    const list = (cups || []).filter(e => Number(e.failed) !== 1)
+      .slice().sort((a, b) => String(b.date_time).localeCompare(String(a.date_time)));
+    if (!list.length) return { code: TETSU.DEFAULT, why: "default" };
+    const codeOf = e => TETSU.clean(e.recipe_variant) || TETSU.DEFAULT;
+    const last = list[0], lastCode = codeOf(last);
+    const { v40, v60 } = TETSU.parse(lastCode);
+    const diags = String(last.diagnostic || "").split("|");
+    const has = names => names.some(d => diags.includes(d));
+    const i40 = TETSU.first40.indexOf(v40), i60 = TETSU.last60.indexOf(v60);
+    const move = (a, b, why) => ({ code: TETSU.first40[a].id + "-" + TETSU.last60[b].id, why });
+    if (has(["Un peu acide", "Sous-extrait (acide)"]) && i40 > 0) return move(i40 - 1, i60, "acid");
+    if (has(["Un peu concentré", "Trop fort (concentré)"]) && i60 > 0) return move(i40, i60 - 1, "strong");
+    if (has(["Un peu léger", "Trop léger (aqueux)"]) && i60 < TETSU.last60.length - 1) return move(i40, i60 + 1, "light");
+    const groups = {};
+    list.forEach(e => {
+      const s = Number(e.score_10);
+      if (e.score_10 === "" || e.score_10 === undefined || e.score_10 === null || !Number.isFinite(s)) return;
+      const g = groups[codeOf(e)] || (groups[codeOf(e)] = { sum: 0, n: 0 });
+      g.sum += s; g.n++;
+    });
+    const tried = Object.keys(groups);
+    if (tried.length > 1) {
+      const best = tried.map(code => ({ code, n: groups[code].n, mean: groups[code].sum / groups[code].n }))
+        .sort((a, b) => b.mean - a.mean || b.n - a.n)[0];
+      return { code: best.code, why: "best", n: best.n, mean: best.mean };
     }
-    const allocated = pours.reduce((a, b) => a + b, 0);
-    pours[pours.length - 1] += Math.round(totalWater) - allocated;
-    return pours;
+    return { code: lastCode, why: "last" };
   },
 };
 
