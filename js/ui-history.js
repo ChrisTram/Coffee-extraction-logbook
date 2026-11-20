@@ -460,7 +460,8 @@
     const expanded = openDetails.has(e.id);
     const menu = expanded || openMenus.has(e.id);
     const meta = [];
-    if (e.recipe) meta.push('<span class="h-card-recipe">' + I18N.tr(e.recipe) + "</span>");
+    // v9.54: the 4:6 options of the cup, as their bars, right after the recipe (the words are in the detail).
+    if (e.recipe) meta.push('<span class="h-card-recipe">' + I18N.tr(e.recipe) + "</span>" + (UI.cupVariantChip ? UI.cupVariantChip(e, true) : ""));
     if (e.dose_g !== "" && e.water_g !== "") meta.push(e.dose_g + " → " + e.water_g + " g");
     if (e._c.ratioText) meta.push(e._c.ratioText);
     if (e.grind_dial) meta.push(I18N.t("dial") + " " + e.grind_dial);

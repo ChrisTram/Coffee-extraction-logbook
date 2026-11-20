@@ -995,6 +995,9 @@ check("the temperature field no longer has a misleading placeholder", !tempField
   const chip = api.UI.cupVariantChip({ recipe_variant: "sweet-heavy", water_g: 225 });
   check("a 4:6 cup carries the chip of its options", chip.includes("vchip") && chip.includes("30·60 + 3×45 g") &&
     chip.includes("sucré · corps plein") && (chip.match(/<i class="[ab]"/g) || []).length === 5, chip);
+  const mini = api.UI.cupVariantChip({ recipe_variant: "sweet-heavy", water_g: 225 }, true);
+  check("the mini chip keeps the bars and says the words in its title", mini.includes("vchip-mini") && !mini.includes("</span>sucré") &&
+    mini.includes('aria-label="sucré · corps plein"') && (mini.match(/<i class="[ab]"/g) || []).length === 5, mini);
   check("a cup without options has no chip", api.UI.cupVariantChip({ recipe_variant: "", water_g: 225 }) === "" && api.UI.cupVariantChip({}) === "");
   check("the detail of a 4:6 cup names its options, another cup does not",
     api.UI.detailContent({ ...withCalcs, recipe_variant: "bright-light", water_g: 225 }).includes("vif · corps léger") &&

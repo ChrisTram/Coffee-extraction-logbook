@@ -223,7 +223,7 @@
     const isOpen = openRecipes.has(r.id);
     const rating = homeRating(r);
     const summary = [r.method, r.dose + " g / " + r.water + " g", r.temp ? r.temp + " °C" : ""].filter(Boolean).join(" · ");
-    return '<article class="card recipe-card ' + r.method.toLowerCase() + (isOpen ? "" : " collapsed") + '" data-recipe="' + r.id + '" data-profiles="' +
+    return '<article class="card recipe-card ' + r.method.toLowerCase() + (r.has_variants ? " has-options" : "") + (isOpen ? "" : " collapsed") + '" data-recipe="' + r.id + '" data-profiles="' +
       recipeProfiles(r).join(" ") + '">' +
       '<div class="recipe-header">' +
       (r.number ? '<span class="recipe-num">' + r.number + "</span>" : '<span class="recipe-num">' + r.method + "</span>") +
@@ -432,14 +432,19 @@
   /* THE CHIP: the options at a glance wherever a recipe or a cup is named.
      Its small bars ARE the pours, to scale, the two of the first 40 percent
      apart from the others; the title gives the grams. Empty for a cup
-     without options. */
-  function variantChipHtml(code, water) {
+     without options. `mini` (v9.54): the bars alone, for a one-line row where
+     the words would push the measures out; the words go to the title. */
+  function variantChipHtml(code, water, mini) {
     const clean = TETSU.clean(code);
     if (!clean) return "";
     const { v40, v60 } = TETSU.parse(clean);
     const w = Number(water) > 0 ? Number(water) : (recipeWithVariants() || {}).water || 225;
     const bars = TETSU.pours(w, v40, v60).map((p, i) =>
       '<i class="' + (i < 2 ? "a" : "b") + '" style="flex:' + p + ' 1 0"></i>').join("");
+    if (mini) {
+      return '<span class="vchip vchip-mini" role="img" title="' + titleAttr(variantLabel(clean) + " (" + TETSU.signature(w, clean) + " g)") +
+        '" aria-label="' + titleAttr(variantLabel(clean)) + '"><span class="vchip-bars" aria-hidden="true">' + bars + "</span></span>";
+    }
     return '<span class="vchip" title="' + titleAttr(TETSU.signature(w, clean) + " g") + '">' +
       '<span class="vchip-bars" aria-hidden="true">' + bars + "</span>" + titleAttr(variantLabel(clean)) + "</span>";
   }
@@ -451,7 +456,7 @@
     return last ? TETSU.clean(last.recipe_variant) : TETSU.DEFAULT;
   }
   // The chip of a saved cup, "" when it has no options.
-  const cupVariantChip = e => (e && e.recipe_variant ? variantChipHtml(e.recipe_variant, e.water_g) : "");
+  const cupVariantChip = (e, mini) => (e && e.recipe_variant ? variantChipHtml(e.recipe_variant, e.water_g, mini) : "");
   /* THE STRIP: the whole water as one bar, a segment per pour, to scale. In
      each segment the grams to pour; under its end, what the scale shows. */
   function pourStripHtml(pours) {
@@ -514,6 +519,9 @@
       (coffee ? variantAdviceHtml(variantAdvice(coffee.id, UI.entry.editId), I18N.tr(coffee.name)) : "") +
       variantPickerHtml(r ? r.water : 0, true) +
       '<p class="tetsu-detail">' + I18N.t("tetsu_end") + "</p>";
+    /* On a wide card the block sits beside the rest of the recipe (screens.css):
+       it spans the rows of everything else in the body. */
+    if (block.parentElement) block.style.setProperty("--vp-rows", String(Math.max(1, block.parentElement.children.length - 1)));
   }
   /* The choice changes: the hidden field of the entry follows (the draft
      saves it like any field), then everything that shows the pours. */

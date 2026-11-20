@@ -805,6 +805,19 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
     DATA.migrateData();
     check("step 26 follows a renamed 4:6", DATA.state.extractions[0].recipe_variant === "sweet-heavy");
     check("the options are the last column of the cups CSV", DATA.EXT_COLS[DATA.EXT_COLS.length - 1] === "recipe_variant");
+    /* v9.54: a 4:6 cup that arrives later without options (an older CSV, the
+       demonstration) gets them too, the schema being already at 26. */
+    before();
+    DATA.state.settings = [DATA.normalizeSettings({ schema_version: 26 })];
+    DATA.state.recipes = STARTER_RECIPES.map(d => DATA.normalizeRecipe(d));
+    DATA.state.extractions = [DATA.normalizeExtraction({ id: "v-late", method: "Switch", recipe: "Tetsu 4:6", updated_at: 5 })];
+    DATA.migrateData();
+    check("a 4:6 cup arriving after step 26 still gets its options", DATA.state.extractions[0].recipe_variant === "sweet-heavy");
+    await DATA.loadDemo().catch(() => {}); // no IndexedDB here: the state is filled before the save fails
+    const demo46 = DATA.state.extractions.filter(e => e.recipe === "Tetsu 4:6");
+    check("the demonstration's 4:6 cups carry options", demo46.length > 0 && demo46.every(e => e.recipe_variant === "sweet-heavy"),
+      demo46.map(e => e.recipe_variant).join());
+    check("and no other cup of the demonstration does", DATA.state.extractions.every(e => e.recipe === "Tetsu 4:6" || e.recipe_variant === ""));
   }
 
   /* A NEW logbook plays every step, including v5 (single dial): the Neo Brew,

@@ -381,7 +381,7 @@ const I18N_EN = {
     tetsu_why_light: "your last one came out light, one pour more",
     tetsu_why_best: "your best rated on this coffee, {m} on average",
     tetsu_why_last: "like your last cup of this coffee",
-    tetsu_why_default: "the starting setting, not tried on this coffee yet",
+    tetsu_why_default: "the starting setting, the 4:6 has not been brewed on this coffee yet",
     tetsu_strip_label: "What the scale shows after each pour: {v} g",
     tetsu_strip_legend: "In each box, the grams to pour. Below, what the scale shows.",
     tetsu_end: "The first pour is timed by the clock: 30 s, or 45 s for a fresh coffee that swells a lot. The grounds soak up almost all of that water, so there is no pool to watch disappear. Then pour as soon as the surface turns matte: no more shine of water, just wet coffee (about 30 to 40 s at 15 g). No puddle, and no dry bed left waiting.",

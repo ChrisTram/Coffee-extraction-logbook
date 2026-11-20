@@ -92,7 +92,9 @@
     date: dateCell,
     coffee: e => '<span class="dot-method ' + String(e.method || "").toLowerCase() + '"></span>' + titleAttr(I18N.tr(e._c.coffee_name)),
     method: e => '<span class="chip-method ' + String(e.method || "").toLowerCase() + '">' + escapeHtml(e.method || "") + "</span>",
-    recipe: e => titleAttr(I18N.tr(e.recipe || "")),
+    // v9.54: the 4:6 options under the recipe, like the microns under the dial.
+    recipe: e => titleAttr(I18N.tr(e.recipe || "")) +
+      (e.recipe_variant && UI.variantLabel ? '<small class="sub">' + titleAttr(UI.variantLabel(e.recipe_variant)) + "</small>" : ""),
     grind: e => e.grind_dial ? escapeHtml(e.grind_dial) + (e._c.microns ? '<small class="sub">' + e._c.microns + " µm</small>" : "")
       : e._c.ground ? "<small>" + I18N.t("bag_default") + "</small>" : "",
     dose: e => e.dose_g !== "" && e.water_g !== "" ? e.dose_g + " → " + e.water_g + " <small>g</small>" : e.dose_g !== "" ? e.dose_g + " <small>g</small>" : "",

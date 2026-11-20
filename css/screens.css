@@ -1814,6 +1814,23 @@ input[type="range"]::-moz-range-thumb {
   grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
   gap: 16px;
   margin-bottom: 10px;
+  /* v9.54: a closed card keeps its own height next to an open one (it used
+     to stretch into a tall empty box), and the cards after a full-width
+     open card fill the cells left before it. */
+  align-items: start;
+  grid-auto-flow: dense;
+}
+/* The open Tetsu 4:6 (v9.54) takes the whole row: in one narrow column its
+   options made a card of nearly 2,000 px. Wide enough, the options sit
+   beside the rest of the recipe. */
+.grid-recipes > .recipe-card.has-options:not(.collapsed) { grid-column: 1 / -1; container: recipe-open / inline-size; }
+@container recipe-open (min-width: 860px) {
+  .recipe-card.has-options .recipe-body { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); column-gap: 32px; }
+  .recipe-card.has-options .recipe-body > * { grid-column: 1; }
+  .recipe-card.has-options .recipe-body > .tetsu-variants {
+    grid-column: 2; grid-row: 1 / span var(--vp-rows, 10); align-self: start;
+    margin: 0; padding: 0 0 0 32px; border-top: 0; border-left: 1px dashed var(--lines);
+  }
 }
 .recipe-card {
   border-top: 4px solid var(--bar-neutral);
@@ -1913,7 +1930,7 @@ svg [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset:
 
 /* The 4:6 options (v9.53): the picker (Guide card and entry field), the pour
    strip and the chip that names the options next to a recipe or a cup. */
-.tetsu-variants { border-top: 1px dashed var(--lines); padding-top: 12px; margin-bottom: 12px; }
+.tetsu-variants { border-top: 1px dashed var(--lines); padding-top: 12px; margin-bottom: 12px; container: variants / inline-size; }
 .tetsu-detail { font-size: 0.8rem; color: var(--muted); margin: 10px 0 0; }
 .vp-intro { margin: 0 0 12px; font-size: 0.86rem; color: var(--text); }
 .vp-group { margin-bottom: 12px; }
@@ -1934,9 +1951,12 @@ svg [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset:
 .vp-opt.on .vp-g { color: var(--text); }
 p.vp-when { margin: 6px 0 0; font-size: 0.8rem; color: var(--muted); }
 /* In the Guide each option carries its comment: a row per option in a narrow
-   card (name and grams on one line, the comment under), side by side when
-   the card is wide. */
-.tetsu-variants .vp-options { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+   card (name and grams on one line, the comment under), the three side by
+   side when the block is wide. Never two and one. */
+.tetsu-variants .vp-options { grid-template-columns: 1fr; }
+@container variants (min-width: 540px) {
+  .tetsu-variants .vp-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 .tetsu-variants .vp-opt { display: grid; grid-template-columns: 1fr auto; align-items: baseline; column-gap: 10px; align-content: start; }
 .tetsu-variants .vp-opt .vp-when { grid-column: 1 / -1; }
 .vp-strip { display: flex; gap: 3px; margin-top: 4px; padding-bottom: 18px; }
@@ -1971,6 +1991,8 @@ p.vp-when { margin: 6px 0 0; font-size: 0.8rem; color: var(--muted); }
 .field-variant > .label { display: block; margin-bottom: 8px; }
 .field-variant .vp-group:last-of-type { margin-bottom: 10px; }
 .pe-variant { margin: 10px 0 6px; }
+.vchip-mini { padding: 3px 6px; }
+.h-card-recipe + .vchip { margin-left: 6px; }
 .aside-title .vchip, .br-dose .vchip { margin-left: 8px; }
 @media (max-width: 520px) {
   .vp-opt { padding: 8px 9px; }

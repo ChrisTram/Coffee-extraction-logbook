@@ -396,7 +396,8 @@
       UI.setVariant(advice.code, true);
     }
     if ($("#f-variant").value !== UI.variantCode()) $("#f-variant").value = UI.variantCode();
-    const html = '<span class="label">' + I18N.t("tetsu_field") + "</span>" + UI.variantAdviceHtml(advice) +
+    // No coffee chosen yet: nothing to advise.
+    const html = '<span class="label">' + I18N.t("tetsu_field") + "</span>" + (coffeeId ? UI.variantAdviceHtml(advice) : "") +
       UI.variantPickerHtml(parseFloat($("#f-water").value) || r.water, false);
     if (html !== variantHtml) { zone.innerHTML = html; variantHtml = html; }
   }

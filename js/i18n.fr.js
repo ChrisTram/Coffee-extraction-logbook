@@ -441,7 +441,7 @@ const I18N_FR = {
     tetsu_why_light: { fr: "ta dernière sortait légère, un versement de plus" },
     tetsu_why_best: { fr: "ta mieux notée sur ce café, {m} de moyenne" },
     tetsu_why_last: { fr: "comme ta dernière tasse de ce café" },
-    tetsu_why_default: { fr: "le réglage de départ, pas encore essayée sur ce café" },
+    tetsu_why_default: { fr: "le réglage de départ, la 4:6 n'a pas encore été faite sur ce café" },
     tetsu_strip_label: { fr: "Ce que la balance affiche après chaque versement : {v} g" },
     tetsu_strip_legend: { fr: "Dans chaque case, les grammes à verser. Dessous, ce que la balance affiche." },
     tetsu_end: { fr: "Le premier versement se compte au chrono : 30 s, ou 45 s pour un café frais qui gonfle beaucoup. La mouture boit presque toute cette eau, il n'y a donc pas de flaque à voir disparaître. Ensuite, verser dès que la surface devient mate : plus de reflet d'eau, juste le café mouillé (environ 30 à 40 s à 15 g). Ni flaque, ni lit sec qui attend." },

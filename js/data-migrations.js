@@ -484,23 +484,12 @@ const DATA_MIGRATIONS = (() => {
       return changed;
     } },
     /* THE 4:6 OPTIONS ON THE CUP (v9.53, Chris's request): a new cup column,
-       recipe_variant. Until then the options only lived in the Guide, and
-       Chris brewed the default ones: the first 40 percent as one third then
-       two thirds, the last 60 in three pours. Every 4:6 cup without options
-       gets that one, "sweet-heavy", stamped so the other devices follow. The
-       recipe is found by its id: it may have been renamed. */
-    { v: 26, name: "4:6 options on the cup", apply: () => {
-      if (typeof TETSU !== "object" || !TETSU) return false;
-      const names = new Set(state.recipes.filter(r => r.id === "tetsu-devil" || r.has_variants).map(r => r.name).concat(["Tetsu 4:6"]));
-      let changed = false;
-      state.extractions.forEach(e => {
-        if (!names.has(e.recipe) || TETSU.clean(e.recipe_variant)) return;
-        e.recipe_variant = TETSU.DEFAULT;
-        stampRow(e);
-        changed = true;
-      });
-      return changed;
-    } },
+       recipe_variant. The step bumps the version, so that a tab still on the
+       old one is refused by the sync instead of erasing the column. The cups
+       from before get their options in migrateData (6 quater): a pass played
+       on every load, because a cup can also arrive later without options (an
+       older CSV or export reimported, the demonstration). */
+    { v: 26, name: "4:6 options on the cup", apply: () => false },
     ];
 
     /* Applies the missing steps and writes the new version. Returns true if
@@ -611,6 +600,22 @@ const DATA_MIGRATIONS = (() => {
           stampRow(e);
         }
       });
+
+      // 6 quater. The 4:6 options (v9.53): every cup of a recipe that has
+      //    options carries some. Until v9.53 they only lived in the Guide, and
+      //    Chris brewed the default ones: the first 40 percent as one third
+      //    then two thirds, the last 60 in three pours, "sweet-heavy".
+      //    IDEMPOTENT: only a cup without options is touched, and stamped so
+      //    the other devices follow. The recipe is found by its id too: it
+      //    may have been renamed.
+      if (typeof TETSU === "object" && TETSU) {
+        const withOptions = new Set(state.recipes.filter(r => r.id === "tetsu-devil" || r.has_variants).map(r => r.name));
+        state.extractions.forEach(e => {
+          if (!withOptions.has(e.recipe) || TETSU.clean(e.recipe_variant)) return;
+          e.recipe_variant = TETSU.DEFAULT;
+          stampRow(e);
+        });
+      }
 
       // The fixes of seeded values live in SCHEMA_STEPS, above:
       // they depend on a version number stored WITH the data.

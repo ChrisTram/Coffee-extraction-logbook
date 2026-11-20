@@ -2926,6 +2926,32 @@ LA PASTILLE. Partout où la recette est nommée (bandeau et carte de la saisie,
 mode Brassage, panneau et détail d'une tasse), une pastille dit la variante en
 deux mots, « sucré · corps plein », devant ses versements dessinés à l'échelle.
 
+### v9.54 : la carte 4:6 du Guide en pleine largeur, et la variante par défaut à chaque chargement
+
+LA CARTE. Relue sur le site en ligne à 2 560 px : la grille du Guide a quatre
+colonnes de 378 px, la carte 4:6 ouverte y faisait 1 946 px de haut, et ses
+trois voisines fermées s'étiraient à la même hauteur, vides. Deux règles. La
+grille n'étire plus ses cartes (`align-items: start`), ce qui vaut pour toute
+recette ouverte. Et la carte qui a des options prend toute la rangée une fois
+ouverte ; dès 860 px de large (requête de conteneur, pas de fenêtre), son corps
+passe sur deux colonnes, les options à droite sur toute la hauteur. `dense`
+laisse les cartes suivantes combler les cases laissées avant elle : l'ordre à
+l'écran peut donc devancer la carte ouverte, c'est voulu, un trou de deux cases
+se voyait plus. Les trois options passent côte à côte dès 540 px de bloc, jamais
+deux et une.
+
+LA VARIANTE PAR DÉFAUT. Le pas 26 ne jouait qu'une fois : la démonstration
+rechargée, ou un ancien CSV réimporté, ramenaient des tasses 4:6 sans variante,
+le schéma étant déjà à 26. La règle devient un passage de `migrateData` joué à
+chaque chargement, comme la puissance du feu des anciennes Brikka (6 ter) : il
+ne touche qu'une tasse sans variante. Le pas 26 ne fait plus que monter la
+version.
+
+DANS LES LISTES. La pastille complète poussait les mesures hors de la carte du
+Journal, qui tient sur une ligne : elle y devient ses seules barres, les mots
+au survol. L'accueil et la carte « Dernière tasse » restent sans variante : une
+ligne, déjà pleine.
+
 ## Tests
 
 ### Ce que chaque suite couvre, et le bug qui l'a motivée
