@@ -155,9 +155,10 @@ const ids = list => list.map(m => m.id);
 {
   const now = new Date(2026, 9, 4, 10, 0);
   const st = UI.steamState("2026-10-04T09:55", now);
-  check("five minutes old: it steams ten more minutes", st && st.age === 5 * 60000 && st.left === 10 * 60000, JSON.stringify(st));
-  check("a cup logged two hours back gets none", UI.steamState("2026-10-04T08:00", now) === null);
-  check("fifteen minutes is the end of it", UI.steamState("2026-10-04T09:45", now) === null && UI.steamState("2026-10-04T09:46", now) !== null);
+  check("five minutes old: hot for fifteen more minutes", st && st.age === 5 * 60000 && st.hot === true && st.left === 15 * 60000, JSON.stringify(st));
+  const old = UI.steamState("2026-10-04T08:00", now);
+  check("a cup two hours old still has its steam, but is no longer hot (v9.55)", old && old.age === 2 * 3600000 && old.hot === false && old.left === 0);
+  check("twenty minutes is the end of hot", UI.steamState("2026-10-04T09:40", now).hot === false && UI.steamState("2026-10-04T09:41", now).hot === true);
   check("half a minute ahead (the other device's clock) still steams", UI.steamState("2026-10-04T10:00:30", now) && UI.steamState("2026-10-04T10:00:30", now).age === 0);
   check("a cup dated later today does not", UI.steamState("2026-10-04T10:05", now) === null && UI.steamState("", now) === null);
 }
@@ -215,7 +216,7 @@ const ids = list => list.map(m => m.id);
   const src = read("js/ui-celebrate.js");
   check("the burst never plays with reduced motion nor hidden, and never sounds", /function burst[\s\S]{0,120}calm\(\) \|\| hidden\(\)/.test(src) &&
     !/Audio|vibrate|youtube/i.test(src + read("js/milestones.js")));
-  check("the steam goes by one timer, never by polling", src.includes("setTimeout(removeSteam") && !/setInterval/.test(src));
+  check("the words « encore chaude » go by one timer, never by polling", src.includes("setTimeout(coolDown") && !/setInterval/.test(src));
   check("a celebration never stands in the way of the save", /try \{ moment = saveMoment\(saved\); \} catch/.test(src));
 }
 

@@ -355,7 +355,18 @@ button.hc-key:focus-visible { outline: 2px solid var(--accent); outline-offset: 
 .hm-col { display: grid; justify-items: center; align-content: end; gap: 4px; padding: 0 2px 4px; min-width: 0; text-align: center; }
 .hm-col span { font-size: 0.75rem; line-height: 1.2; color: var(--text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
 .hm-row { display: flex; align-items: center; gap: 7px; min-width: 0; padding-right: 4px; font-size: 0.8rem; color: var(--text); }
-.hm-row span { min-width: 0; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.hm-row > span:not(.vchip-bars), .hm-name > span { min-width: 0; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* v9.55: the Tetsu 4:6's options, discreet. One option used: its bars and
+   its words under the recipe's name. Several: a thin row each, indented. */
+.hm-name { display: grid; gap: 3px; min-width: 0; }
+.hm-var { display: flex; align-items: center; gap: 5px; min-width: 0; font-size: 0.75rem; line-height: 1.2; color: var(--muted); }
+.hm-var > span { min-width: 0; overflow-wrap: anywhere; }
+.hm-grid .vchip-bars { width: 22px; height: 6px; opacity: 0.85; }
+.hm-sub { gap: 6px; padding-left: 18px; font-size: 0.75rem; color: var(--muted); }
+.hm-cell.hm-mini { min-height: 26px; grid-auto-flow: column; gap: 4px; padding: 2px; border-radius: 7px; }
+.hm-cell.hm-mini b { font-size: 0.9rem; }
+.hm-cell.hm-mini small { font-size: 0.75rem; }
+.hm-cell.hm-mini.none { border-style: dotted; opacity: 0.6; }
 .hm-cell {
   display: grid; place-items: center; align-content: center; gap: 0; min-height: 44px; padding: 3px 2px; border: 1px solid transparent; border-radius: 9px;
   background: color-mix(in srgb, var(--accent) var(--t, 0%), var(--panel-2)); font: inherit; color: var(--ink); cursor: pointer;

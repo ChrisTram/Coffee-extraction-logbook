@@ -138,6 +138,32 @@
     return rows;
   }
 
+  /* THE OPTIONS OF A RECIPE THAT HAS SOME (v9.55): the Tetsu 4:6 split by
+     the options its cups were brewed with ("sweet-heavy", recipe_variant),
+     only those already used, the most brewed first. Same cells as the matrix,
+     the best option of each coffee flagged when it has two to compare. A cup
+     saved without options counts as the default, as the entry would have
+     brewed it. */
+  function variantRows(cups, coffees, recipe) {
+    const codeOf = e => TETSU.clean(e.recipe_variant) || TETSU.DEFAULT;
+    const mine = cups.filter(e => rated(e) && recipeOf(e) === recipe && coffees.includes(e.coffee_id));
+    const count = {};
+    mine.forEach(e => { const k = codeOf(e); count[k] = (count[k] || 0) + 1; });
+    const codes = Object.keys(count).sort((p, q) => count[q] - count[p] || p.localeCompare(q));
+    const rows = codes.map(code => ({ code, n: count[code], water: (mine.find(e => codeOf(e) === code && Number(e.water_g) > 0) || {}).water_g || 0,
+      cells: coffees.map(c => {
+        const list = mine.filter(e => codeOf(e) === code && e.coffee_id === c).map(e => Number(e.score_10));
+        return list.length ? { avg: average(list), n: list.length, best: false } : null;
+      }) }));
+    coffees.forEach((c, i) => {
+      const col = rows.map(row => row.cells[i]).filter(Boolean);
+      if (col.length < 2) return;
+      const top = Math.max(...col.map(x => x.avg));
+      col.filter(x => x.avg === top).forEach(x => { x.best = true; });
+    });
+    return rows;
+  }
+
   // ---------- A bag's line (pure) ----------
 
   const DAY_MS = 86400000;
@@ -251,6 +277,13 @@
   const MATRIX_COFFEES = 4, MATRIX_RECIPES = 6;
   // The accent, stronger with the score: pale at 5 and under, full from 9.
   const tint = m => Math.round(Math.max(0.1, Math.min(1, (m - 5) / 4)) * 62);
+  // "sucré · corps plein", and the pours as small bars, to scale (as the chip of js/ui-guide.js).
+  const variantWords = code => (UI.variantLabel ? UI.variantLabel(code) : code);
+  function variantBars(v) {
+    const { v40, v60 } = TETSU.parse(v.code);
+    return '<span class="vchip-bars" aria-hidden="true">' + TETSU.pours(Number(v.water) > 0 ? Number(v.water) : 225, v40, v60)
+      .map((p, i) => '<i class="' + (i < 2 ? "a" : "b") + '" style="flex:' + p + ' 1 0"></i>').join("") + "</span>";
+  }
   function matrixHtml(o, codes) {
     const coffees = codes.coffees.slice(0, MATRIX_COFFEES);
     const rows = recipeMatrix(o.analyzable.filter(e => coffees.includes(e.coffee_id)), coffees, codes.recipes).slice(0, MATRIX_RECIPES);
@@ -258,14 +291,28 @@
     const head = '<div class="card-head"><h3>' + escapeHtml(I18N.t("hc_matrix_title")) + '</h3></div><p class="hc-sub">' + escapeHtml(I18N.t("hc_matrix_sub")) + "</p>";
     const cols = coffees.map(id => '<span class="hm-col" role="columnheader" title="' + titleAttr(coffeeName(id)) + '"><i class="hc-dot c' + codes.colour(id) +
       '" aria-hidden="true"></i><span>' + escapeHtml(coffeeName(id)) + "</span></span>").join("");
-    const body = rows.map(row => '<span class="hm-row" role="rowheader" title="' + titleAttr(I18N.tr(row.recipe)) + '">' + glyph(codes.shape(row.recipe)) +
-      "<span>" + escapeHtml(I18N.tr(row.recipe)) + "</span></span>" + row.cells.map((c, i) => {
-        const name = coffeeName(coffees[i]), recipe = I18N.tr(row.recipe);
-        if (!c) return '<span class="hm-cell none" role="cell" title="' + titleAttr(I18N.t("hc_cell_none", { c: name, r: recipe })) + '">·</span>';
-        const tip = I18N.t("hc_cell_title", { c: name, r: recipe, m: fmtRating(c.avg), n: c.n, s: plural(c.n) });
-        return '<button type="button" class="hm-cell' + (c.best ? " best" : "") + '" role="cell" style="--t:' + tint(c.avg) + '%" data-matrix-coffee="' + titleAttr(coffees[i]) +
+    const cups = o.analyzable.filter(e => coffees.includes(e.coffee_id));
+    const body = rows.map(row => {
+      const recipe = I18N.tr(row.recipe);
+      /* v9.55: the Tetsu 4:6 says its options, discreetly. One option used:
+         its bars and its words under the recipe's name. Several: a thin row
+         for each, under the recipe's own, its cells smaller. */
+      const variants = (UI.findRecipe(row.recipe) || {}).has_variants ? variantRows(cups, coffees, row.recipe) : [];
+      const only = variants.length === 1 ? variants[0] : null;
+      const head = '<span class="hm-row" role="rowheader" title="' + titleAttr(recipe + (only ? " · " + variantWords(only.code) : "")) + '">' + glyph(codes.shape(row.recipe)) +
+        (only ? '<span class="hm-name"><span>' + escapeHtml(recipe) + '</span><small class="hm-var">' + variantBars(only) +
+          "<span>" + escapeHtml(variantWords(only.code)) + "</span></small></span>" : "<span>" + escapeHtml(recipe) + "</span>") + "</span>";
+      const cells = (list, extra) => list.map((c, i) => {
+        const name = coffeeName(coffees[i]), r = recipe + (extra ? ", " + variantWords(extra.code) : "");
+        if (!c) return '<span class="hm-cell none' + (extra ? " hm-mini" : "") + '" role="cell" title="' + titleAttr(I18N.t("hc_cell_none", { c: name, r })) + '">·</span>';
+        const tip = I18N.t("hc_cell_title", { c: name, r, m: fmtRating(c.avg), n: c.n, s: plural(c.n) });
+        return '<button type="button" class="hm-cell' + (c.best ? " best" : "") + (extra ? " hm-mini" : "") + '" role="cell" style="--t:' + tint(c.avg) + '%" data-matrix-coffee="' + titleAttr(coffees[i]) +
           '" data-matrix-recipe="' + titleAttr(row.recipe) + '" title="' + titleAttr(tip) + '" aria-label="' + titleAttr(tip) + '"><b>' + fmtRating(c.avg) + "</b><small>" + c.n + "</small></button>";
-      }).join("")).join("");
+      }).join("");
+      const subs = variants.length > 1 ? variants.map(v => '<span class="hm-row hm-sub" role="rowheader" title="' + titleAttr(recipe + " · " + variantWords(v.code) + " (" + TETSU.signature(v.water || 225, v.code) + " g)") + '">' +
+        variantBars(v) + "<span>" + escapeHtml(variantWords(v.code)) + "</span></span>" + cells(v.cells, v)).join("") : "";
+      return head + cells(row.cells, null) + subs;
+    }).join("");
     return head + '<div class="hm-grid" role="table" aria-label="' + titleAttr(I18N.t("hc_matrix_title")) + '" style="--cols:' + coffees.length + '">' +
       '<span class="hm-corner" aria-hidden="true"></span>' + cols + body + "</div>";
   }
@@ -370,5 +417,5 @@
     });
   }
 
-  Object.assign(UI, { homeCodes, lastDays, cupX, scoreScale, recipeMatrix, bagLine, renderHomeCharts, wireHomeCharts });
+  Object.assign(UI, { homeCodes, lastDays, cupX, scoreScale, recipeMatrix, variantRows, bagLine, renderHomeCharts, wireHomeCharts });
 })();

@@ -32,31 +32,38 @@
 
   // ---------- R4: the steam of a cup still hot ----------
 
-  const STEAM_MS = 15 * 60 * 1000;
+  /* v9.55: THE CUP STAYS AND KEEPS STEAMING (Chris: « remets la p'tite
+     animation de tasse qui fume », looking at a cup an hour old). Until then
+     the cup and its steam left after fifteen minutes, so he hardly ever saw
+     them. Now the cup is drawn on the card of the last cup whatever its age,
+     its plume thins over three hours down to two faint wisps that keep
+     rising, and only the words « encore chaude » keep the short window. */
+  const HOT_MS = 20 * 60 * 1000;
   // A cup a minute ahead of this clock (the other device's) is still hot.
   const STEAM_AHEAD_MS = 60 * 1000;
 
-  /* Pure: how old the cup is and how long its steam has left, or null when
-     it has none (older than fifteen minutes, or dated in the future). */
+  /* Pure: how old the cup is, whether it is still hot and for how long, or
+     null when it has no date or is dated in the future. */
   function steamState(dateTime, now) {
     const t = new Date(String(dateTime || "")).getTime();
     const n = now instanceof Date ? now.getTime() : Number(now);
     if (!Number.isFinite(t) || !Number.isFinite(n)) return null;
     const age = n - t;
-    if (age < -STEAM_AHEAD_MS || age >= STEAM_MS) return null;
-    return { age: Math.max(0, age), left: STEAM_MS - Math.max(0, age) };
+    if (age < -STEAM_AHEAD_MS) return null;
+    const a = Math.max(0, age);
+    return { age: a, hot: a < HOT_MS, left: Math.max(0, HOT_MS - a) };
   }
 
   /* The wisps: each one drifts up on its own loop (the svg), and thins out
-     on its own clock over the fifteen minutes (its span), so the fourth goes
-     first, then the third, and the last two are faint at the end. The clock
-     starts in the past by the cup's age (a negative delay): a render ten
-     minutes later shows ten minutes of thinning, not a fresh plume. */
+     on its own clock (its span), so the fourth goes first, then the third,
+     and the last two stay, faint, for as long as the card shows this cup.
+     The clock starts in the past by the cup's age (a negative delay): a
+     render an hour later shows an hour of thinning, not a fresh plume. */
   const WISPS = [
-    { x: -17, sway: -5, t: 3.6, d: 0, life: 900, end: 0.22 },
-    { x: 1, sway: 6, t: 4.1, d: -1.3, life: 900, end: 0.3 },
-    { x: 17, sway: -4, t: 3.3, d: -2.4, life: 620, end: 0 },
-    { x: -7, sway: 5, t: 4.5, d: -3.2, life: 340, end: 0 },
+    { x: -17, sway: -5, t: 3.6, d: 0, life: 10800, end: 0.4 },
+    { x: 1, sway: 6, t: 4.1, d: -1.3, life: 10800, end: 0.5 },
+    { x: 17, sway: -4, t: 3.3, d: -2.4, life: 5400, end: 0 },
+    { x: -7, sway: 5, t: 4.5, d: -3.2, life: 1800, end: 0 },
   ];
   const WISP_PATH = "M10 43 C3 34 17 27 10 18 C5 12 14 7 10 1";
   function steamHtml(age, mini) {
@@ -84,6 +91,16 @@
      away. Called after every home render: the card and the band are only
      rewritten when what they say changed, so the wisps already there keep
      their loop; a rewritten card gets them again. */
+  // When the cup is no longer hot: only the words go, the cup keeps its steam.
+  function coolDown() {
+    clearTimeout(steam.timer);
+    steam.timer = null;
+    [$("#card-last"), $("#home-band")].forEach(root => {
+      if (!root || typeof root.querySelectorAll !== "function") return;
+      [...root.querySelectorAll(".lc-warm, .hbd-warm")].forEach(el => el.remove());
+    });
+  }
+
   function placeSteam(e) {
     const st = e ? steamState(e.date_time, Date.now()) : null;
     if (!st) { if (steam.cupId) removeSteam(); return; }
@@ -92,8 +109,9 @@
     if (steam.cupId !== e.id) removeSteam();
     steam.cupId = e.id;
     clearTimeout(steam.timer);
-    // One timer, when the fifteen minutes are up: no polling.
-    steam.timer = setTimeout(removeSteam, st.left + 50);
+    steam.timer = null;
+    // One timer, when the cup stops being hot: no polling.
+    if (st.hot) steam.timer = setTimeout(coolDown, st.left + 50);
     card.classList.add("is-steaming");
     /* v9.30: the steam rises from the cup itself, the one this cup was drunk
        from, drawn between the name and the score (Chris: « plutôt que faire
@@ -113,15 +131,17 @@
        shows one of the two). */
     const warm = cls => '<span class="lc-warm ' + cls + '">' + escapeHtml(I18N.t("steam_label")) + "</span>";
     const over = card.querySelector(".lc-title .highlight");
-    if (over && !over.querySelector(".lc-warm")) over.insertAdjacentHTML("beforeend", warm("lc-warm-wide"));
     const scale = score ? score.querySelector(".big-rating-scale, .big-rating-none") : null;
-    if (scale && !score.querySelector(".lc-warm")) scale.insertAdjacentHTML("afterend", warm("lc-warm-narrow"));
+    if (st.hot) {
+      if (over && !over.querySelector(".lc-warm")) over.insertAdjacentHTML("beforeend", warm("lc-warm-wide"));
+      if (scale && !score.querySelector(".lc-warm")) scale.insertAdjacentHTML("afterend", warm("lc-warm-narrow"));
+    }
     // The band, smaller: three short wisps beside its score, the label after « Dernière tasse ».
     const band = $("#home-band");
     if (!band || typeof band.querySelector !== "function") return;
     const bandScore = band.querySelector(".hbd-score"), bandLabel = band.querySelector(".hbd-who small");
     if (bandScore && !bandScore.querySelector(".lc-steam")) bandScore.insertAdjacentHTML("beforeend", steamHtml(st.age, true));
-    if (bandLabel && !bandLabel.querySelector(".hbd-warm")) bandLabel.insertAdjacentHTML("beforeend", '<span class="hbd-warm">' + escapeHtml(I18N.t("steam_label")) + "</span>");
+    if (st.hot && bandLabel && !bandLabel.querySelector(".hbd-warm")) bandLabel.insertAdjacentHTML("beforeend", '<span class="hbd-warm">' + escapeHtml(I18N.t("steam_label")) + "</span>");
   }
 
   /* Hidden, the wisps stop; back on screen, they start again from the cup's

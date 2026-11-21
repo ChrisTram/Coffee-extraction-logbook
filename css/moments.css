@@ -15,7 +15,7 @@
 }
 .lc-w {
   position: absolute; bottom: 0; left: calc(50% + var(--x, 0px) - 11px); width: 22px; height: 50px;
-  /* Its own clock over the fifteen minutes, started in the past by the cup's age. */
+  /* Its own clock (up to three hours since v9.55), started in the past by the cup's age. */
   animation: lc-thin var(--life, 900s) linear calc(var(--age, 0s) * -1) 1 forwards;
 }
 .lc-w svg {

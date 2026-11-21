@@ -29,8 +29,8 @@ function check(label, condition, detail) {
 const layers = ["js/legacy-names.js", "js/tools.js", "js/grind.js", "js/recipes.js", "js/tuning.js", "js/i18n.fr.js", "js/i18n.fr2.js", "js/i18n.js"]
   .map(read).join("\n");
 const fakeStorage = { getItem: () => null, setItem() {}, removeItem() {} };
-const { TOOLS, TUNING, I18N } = new Function("localStorage", "document",
-  layers + "\nreturn { TOOLS, TUNING, I18N };")(fakeStorage, { createElement: () => ({}) });
+const { TOOLS, TUNING, I18N, TETSU } = new Function("localStorage", "document",
+  layers + "\nreturn { TOOLS, TUNING, I18N, TETSU };")(fakeStorage, { createElement: () => ({}) });
 
 const DATA = { state: { coffees: [], extractions: [], purchases: [] } };
 const UI = {
@@ -41,8 +41,8 @@ const UI = {
 };
 const fakeDocument = { visibilityState: "visible", querySelector: () => null, addEventListener() {} };
 for (const f of ["js/ui-home.js", "js/ui-home-open.js", "js/ui-home-charts.js", "js/ui-analytics.js", "js/ui-story.js"]) {
-  new Function("UI", "DATA", "TOOLS", "I18N", "TUNING", "CHARTS", "document", "window", "localStorage", read(f))(
-    UI, DATA, TOOLS, I18N, TUNING, {}, fakeDocument, { addEventListener() {} }, fakeStorage);
+  new Function("UI", "DATA", "TOOLS", "I18N", "TUNING", "CHARTS", "document", "window", "localStorage", "TETSU", read(f))(
+    UI, DATA, TOOLS, I18N, TUNING, {}, fakeDocument, { addEventListener() {} }, fakeStorage, TETSU);
 }
 
 // A cup, with what the pure parts read.
@@ -142,6 +142,23 @@ const before = (from, k) => { const d = new Date(from); d.setDate(d.getDate() - 
   check("the matrix: a row per recipe that has a cup, a column per coffee", m.length === 2 && m[0].recipe === "Tetsu 4:6" && m[0].cells.length === 2);
   check("a cell is the average and the count, or nothing", m[0].cells[0].avg === 7.5 && m[0].cells[0].n === 1 && m[1].cells[1] === null);
   check("the best recipe of a coffee is flagged, when it has two to compare", m[1].cells[0].best === true && m[0].cells[0].best === false && m[0].cells[1].best === false);
+
+  // v9.55: the Tetsu 4:6 split by its options, only those used.
+  const vc = [
+    { coffee_id: "a", recipe: "Tetsu 4:6", recipe_variant: "sweet-heavy", score_10: 8, water_g: 225 },
+    { coffee_id: "a", recipe: "Tetsu 4:6", recipe_variant: "sweet-heavy", score_10: 7, water_g: 225 },
+    { coffee_id: "a", recipe: "Tetsu 4:6", recipe_variant: "bright-light", score_10: 9, water_g: 225 },
+    { coffee_id: "b", recipe: "Tetsu 4:6", recipe_variant: "", score_10: 6, water_g: 225 },
+    { coffee_id: "b", recipe: "Tetsu 4:6", recipe_variant: "bright-light", score_10: "" },
+    { coffee_id: "b", recipe: "Brikka classique", score_10: 9 },
+    { coffee_id: "z", recipe: "Tetsu 4:6", recipe_variant: "balanced-medium", score_10: 9 },
+  ];
+  const vr = UI.variantRows(vc, ["a", "b"], "Tetsu 4:6");
+  check("the options used, the most brewed first; no options counts as the default; other coffees, other recipes, unrated cups out",
+    vr.map(r => r.code + ":" + r.n).join() === "sweet-heavy:3,bright-light:1", JSON.stringify(vr.map(r => [r.code, r.n])));
+  check("an option's cells are its average and count per coffee, the best of a coffee flagged",
+    vr[0].cells[0].avg === 7.5 && vr[0].cells[0].n === 2 && vr[0].cells[1].avg === 6 && vr[1].cells[1] === null &&
+    vr[1].cells[0].best === true && vr[0].cells[0].best === false && vr[0].cells[1].best === false);
 
   // A bag of 250 g opened ten days ago: three cups of 15 g, 205 g left, 5 g a day.
   const opened = before(now, 10);
