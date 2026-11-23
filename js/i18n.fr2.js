@@ -582,4 +582,18 @@ Object.assign(I18N_FR, {
     cf_rebuy_bag_noprice: { fr: "{g} g, acheté le {d}" },
     cf_done_avg: { fr: "{m} de moyenne, {n} tasse{s}" },
     cf_done_span: { fr: "du {a} au {b}" },
+    // blend (v9.56)
+    blend_pick: { fr: "Choisir le deuxième café" },
+    blend_hint_empty: { fr: "Choisis le café et ses grammes. La dose reste le total de la tasse." },
+    blend_hint: { fr: "{d} g en tout : {a} g de {n}, {b} g de {m}. Chaque sachet perd ses grammes, et la note ne compte dans la moyenne d'aucun des deux." },
+    blend_hint_left: { fr: "Il restera {r} g de {m}." },
+    blend_hint_over: { fr: "Le deuxième café doit peser moins que la dose, qui est le total de la tasse." },
+    toast_blend_incomplete: { fr: "Mélange : choisis le deuxième café et ses grammes, ou retire-le" },
+    toast_blend_over: { fr: "Le deuxième café doit peser moins que la dose totale" },
+    toast_saved_blend: { fr: "Mélange enregistré : {q}" },
+    blend_words: { fr: "{a} g {n} + {b} g {m}" },
+    blend_badge: { fr: "mélange" },
+    blend_badge_title: { fr: "Deux cafés dans la tasse : hors des moyennes et des conseils, comptée dans le stock de chaque sachet." },
+    blend_meta: { fr: "Mélange : {q} · hors moyennes" },
+    blend_panel: { fr: "Mélange : {q}. Cette tasse ne compte dans la moyenne d'aucun des deux cafés ; chaque sachet a perdu ses grammes." },
 });

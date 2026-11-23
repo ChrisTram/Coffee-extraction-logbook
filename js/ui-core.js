@@ -453,8 +453,31 @@ const UI = (() => {
      sentence: what describes WHAT HAPPENED counts everything, what advises
      WHAT TO DO leaves the failed ones out. */
   function analyzableExts() {
-    const all = extsWithCalcs();
+    /* A BLEND (v9.56) is out too, and whatever the preference: its score
+       describes two coffees at once, so it says nothing about either. It
+       stays in the counts like a failed one, each bag giving its grams. */
+    const all = extsWithCalcs().filter(e => !TOOLS.isBlend(e));
     return includeFailed() ? all : all.filter(e => !isFailed(e));
+  }
+
+  /* The blend said in a few words: « 11 g Café A + 4 g Café B », for a
+     tooltip, a line of the panel or a toast. Empty when the cup is no blend. */
+  function blendWords(e) {
+    const c = e && (e._c || DATA.calcs(e));
+    if (!c || !(c.blend_g > 0)) return "";
+    const g = v => fmtDecimal(Number(v), 1);
+    return I18N.t("blend_words", { a: c.main_g === "" ? "" : g(c.main_g), n: I18N.tr(c.coffee_name), b: g(c.blend_g), m: I18N.tr(c.blend_name) }).trim();
+  }
+  /* The mark of a blend next to a cup: `kind` is "badge" (the pill, next to a
+     score) or "mention" (plain small text after a coffee name, which then
+     also names the second coffee). */
+  function blendMark(e, kind) {
+    if (!TOOLS.isBlend(e)) return "";
+    const c = e._c || DATA.calcs(e);
+    const title = titleAttr(blendWords(e) + ". " + I18N.t("blend_badge_title"));
+    return kind === "mention"
+      ? '<span class="mention-blend" title="' + title + '">+ ' + TOOLS.escapeHtml(I18N.tr(c.blend_name)) + "</span>"
+      : '<span class="badge-blend" title="' + title + '">' + I18N.t("blend_badge") + "</span>";
   }
 
   /* KEPT IN MEMORY (v8.75). Every render, and every keystroke in the entry
@@ -741,7 +764,7 @@ const UI = (() => {
     DEFAULT_CUPS, defaultCup,
     debounce, applyTheme, titleAttr, withTransition, setPressed, fieldCache,
     toggleFailed, loadFallbacks, localDateKey, askConfirm, detailRatio, displayedDiags,
-    saveFallbacks, isFailed, analyzableExts, includeFailed,
+    saveFallbacks, isFailed, analyzableExts, includeFailed, blendWords, blendMark,
     dayKey, extsWithCalcs, fmtShortDate, fmtDateTime, fmtDecimal, fmtHour, dayLabelOf, fmtDuration, fmtVND, icon,
     localNow, markRating, wireRating, isRatingEmpty, paintSlider, average, nav, normalizeScreen, forgetSignatures, setHtml, setText,
     recipeWithVariants, recipesForMethod, liveRecipes, renderCurrentScreen, fallbacks,

@@ -50,7 +50,8 @@
     return exts.filter(e =>
       (!fFailed || (fFailed === "failed" ? isFailed(e) : !isFailed(e))) &&
       (!q || searchableText(e).includes(q)) &&
-      (!fCoffee || e.coffee_id === fCoffee) &&
+      // A blend (v9.56) answers to both its coffees.
+      (!fCoffee || TOOLS.drawsFrom(e, fCoffee)) &&
       (!fMethod || e.method === fMethod) &&
       (!fDiag || (e.diagnostic || "").split("|").includes(fDiag)) &&
       (isNaN(fScore) || (e.score_10 !== "" && e.score_10 >= fScore)) &&
@@ -384,7 +385,7 @@
     const compare = comparison.has(e.id);
     return '<tr data-id="' + e.id + '" class="row-hist' + (compare ? " compared" : "") + '">' +
       '<td><span class="td-date">' + twoToneDate(e.date_time) + "</span></td>" +
-      '<td class="td-text">' + I18N.tr(e._c.coffee_name) + "</td>" +
+      '<td class="td-text">' + I18N.tr(e._c.coffee_name) + UI.blendMark(e, "mention") + "</td>" +
       '<td><span class="chip-method ' + e.method.toLowerCase() + '">' + e.method + "</span></td>" +
       '<td class="td-recipe">' + (e.recipe || "") + "</td>" +
       /* Dose and water together, as on the card of the last five: they are
@@ -402,7 +403,7 @@
       (e._c.drinkRatio ? '<small class="sub">' + I18N.t("ratio_drink_short") + " " + e._c.drinkRatio + "</small>" : "") + "</td>" +
       '<td class="rating-cell">' + (isFailed(e)
         ? '<span class="badge-failed" title="' + titleAttr(I18N.t("botched_badge_title")) + '">' + I18N.t("botched_badge") + "</span>"
-        : "") + (e.score_10 !== "" ? fmtDecimal(Number(e.score_10), 1) : UI.rateMark(e)) + "</td>" +
+        : "") + UI.blendMark(e, "badge") + (e.score_10 !== "" ? fmtDecimal(Number(e.score_10), 1) : UI.rateMark(e)) + "</td>" +
       /* TASTES AND DIAGNOSIS in the same cell, not in two columns: one more
          column asks for four coordinated edits (see DECISIONS, "The trap of
          frozen widths") and shifts silently if one of them is
@@ -476,9 +477,11 @@
         '<button type="button" class="btn-menu-card" data-action="menu" aria-expanded="' + menu + '" aria-label="' +
           titleAttr(I18N.t("history_actions")) + '">⋯</button>' +
       "</div>" +
-      '<p class="h-card-coffee">' + I18N.tr(e._c.coffee_name) +
+      '<p class="h-card-coffee">' + I18N.tr(e._c.coffee_name) + UI.blendMark(e, "mention") +
         (isFailed(e) ? '<span class="mention-failed">' + I18N.t("botched_badge") + "</span>" : "") + "</p>" +
       (meta.length ? '<p class="h-card-meta">' + meta.join(" · ") + "</p>" : "") +
+      // v9.56: a blend says its grams, and that it stays out of the averages.
+      (TOOLS.isBlend(e) ? '<p class="h-card-blend">' + TOOLS.escapeHtml(I18N.t("blend_meta", { q: UI.blendWords(e) })) + "</p>" : "") +
       ((e.diagnostic || e.descriptors)
         ? '<p class="h-card-tastes">' +
           (e.diagnostic ? '<span class="h-diag">' + displayedDiags(e.diagnostic) + "</span>" : "") +

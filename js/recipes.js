@@ -467,7 +467,7 @@ const TETSU = {
      Returns { code, why, n, mean }: `why` is "acid", "strong", "light",
      "best", "last" or "default". */
   suggest(cups) {
-    const list = (cups || []).filter(e => Number(e.failed) !== 1)
+    const list = (cups || []).filter(e => Number(e.failed) !== 1 && !(typeof TOOLS === "object" && TOOLS.isBlend && TOOLS.isBlend(e)))
       .slice().sort((a, b) => String(b.date_time).localeCompare(String(a.date_time)));
     if (!list.length) return { code: TETSU.DEFAULT, why: "default" };
     const codeOf = e => TETSU.clean(e.recipe_variant) || TETSU.DEFAULT;

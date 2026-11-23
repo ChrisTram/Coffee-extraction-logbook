@@ -558,7 +558,7 @@
       '" data-ext="' + e.id + '" tabindex="0" role="button" title="' + titleAttr(I18N.t("history_edit")) + '">' +
       '<td class="d-when"><b>' + dayShort(e.date_time) + "</b> " + fmtHour(e.date_time) + "</td>" +
       '<td class="d-coffee"><span class="dot-method ' + e.method.toLowerCase() +
-        '" title="' + titleAttr(e.method) + '"></span><b>' + I18N.tr(e._c.coffee_name) + "</b>" +
+        '" title="' + titleAttr(e.method) + '"></span><b>' + I18N.tr(e._c.coffee_name) + "</b>" + UI.blendMark(e, "mention") +
         (isFailed(e) ? '<span class="mention-failed">' + I18N.t("botched_badge") + "</span>" : "") + (came ? UI.arrivalPill() : "") + "</td>" +
       '<td class="d-measures">' +
         (e.recipe ? '<span class="d-recipe">' + I18N.tr(e.recipe) + "</span>" : "") +

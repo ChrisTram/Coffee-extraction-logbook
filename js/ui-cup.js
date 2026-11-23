@@ -148,7 +148,8 @@
     // On the Brikka the water is the boiler's: the in-cup ratio says more, when measured.
     const inCup = ext.method === "Brikka" && !!c.cupRatioText;
     return {
-      coffee: c.coffee_name, recipe: ext.recipe || "", method: ext.method || "", dose: ext.dose_g,
+      // A blend (v9.56) names its two coffees.
+      coffee: c.coffee_name + (c.blend_name ? " + " + c.blend_name : ""), recipe: ext.recipe || "", method: ext.method || "", dose: ext.dose_g,
       cup: cupOf(ext.cup, ext.method),
       milk: Number(ext.milk_ml) > 0 || !!(r && r.milk),
       ratio: inCup ? c.cupRatioText : c.ratioText, ratioInCup: inCup,

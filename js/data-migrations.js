@@ -37,7 +37,7 @@ const DATA_MIGRATIONS = (() => {
 
        Each step touches ONLY the previously seeded value. A step that
        overwrote a deliberately chosen setting would be a bug, not a migration. */
-    const CURRENT_SCHEMA = 26;
+    const CURRENT_SCHEMA = 27;
 
     /* THE ENGLISH NAMES (v9.06). Every row is translated on its way in
        (normalize*, see js/legacy-names.js), so a state that went through the
@@ -490,6 +490,11 @@ const DATA_MIGRATIONS = (() => {
        on every load, because a cup can also arrive later without options (an
        older CSV or export reimported, the demonstration). */
     { v: 26, name: "4:6 options on the cup", apply: () => false },
+    /* THE BLEND (v9.56, Chris's request): two new cup columns, blend_coffee_id
+       and blend_g. Nothing to rewrite, every cup before has none; the step
+       only bumps the version, so that a tab still on the old one is refused by
+       the sync instead of erasing the columns. */
+    { v: 27, name: "a second coffee in the cup", apply: () => false },
     ];
 
     /* Applies the missing steps and writes the new version. Returns true if

@@ -682,6 +682,10 @@
      rank among the rated cups of the coffee), or the average alone while
      this cup has no score. */
   function averageHtml(e) {
+    // A blend (v9.56) has no place against one coffee's average: it says what it is made of.
+    if (TOOLS.isBlend(e)) {
+      return '<section class="pe-block pe-avg"><p class="pe-avg-line pe-blend">' + escapeHtml(I18N.t("blend_panel", { q: UI.blendWords(e) })) + "</p></section>";
+    }
     const strip = UI.rankAmongSiblings ? UI.rankAmongSiblings(e) : "";
     if (strip) return '<section class="pe-block pe-avg">' + strip + "</section>";
     const notes = UI.analyzableExts().filter(x => x.coffee_id === e.coffee_id && x.score_10 !== "" && x.id !== e.id).map(x => Number(x.score_10));

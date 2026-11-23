@@ -57,7 +57,7 @@
       '<div class="lc-head">' +
         '<div class="lc-title">' +
           '<p class="highlight">' + I18N.t("dash_last_cup", { q: timeSince(e.date_time) }) + "</p>" +
-          '<p class="last-big-coffee">' + I18N.tr(e._c.coffee_name) + "</p>" +
+          '<p class="last-big-coffee">' + I18N.tr(e._c.coffee_name) + UI.blendMark(e, "mention") + "</p>" +
           '<p class="last-big-context">' +
             '<span class="dot-method ' + e.method.toLowerCase() + '"></span>' +
             '<span class="last-big-machine">' + e.method + "</span>" +
@@ -66,6 +66,7 @@
         "</div>" +
         '<div class="last-big-rating">' +
           (isFailed(e) ? '<span class="badge-failed">' + I18N.t("botched_badge") + "</span>" : "") +
+          UI.blendMark(e, "badge") +
           /* Without a score, we write "not rated yet" instead of a dash: a dash
              in a big number reads as a minus, and the project rules forbid
              the em dash anyway. */
@@ -132,6 +133,8 @@
      (no score, or under three rated cups). */
   function rankFacts(e) {
     if (e.score_10 === "" || e.score_10 === undefined) return null;
+    // A blend has no rank among the cups of a coffee (v9.56): it is two coffees.
+    if (TOOLS.isBlend(e)) return null;
     const siblings = analyzableExts().filter(x => x.coffee_id === e.coffee_id && x.score_10 !== "");
     if (!siblings.some(x => x.id === e.id)) siblings.push(e);
     if (siblings.length < 3) return null;

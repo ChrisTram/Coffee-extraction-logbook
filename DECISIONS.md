@@ -2952,6 +2952,43 @@ Journal, qui tient sur une ligne : elle y devient ses seules barres, les mots
 au survol. L'accueil et la carte « Dernière tasse » restent sans variante : une
 ligne, déjà pleine.
 
+### v9.56 : un mélange est une tasse à deux cafés, pas une case « ne pas compter »
+
+Demande de Chris : finir un sachet (il reste 4 g) en complétant avec un autre
+café, « soit un switch pour ne pas compter la note, soit un blend, le plus
+simple sans tout casser ».
+
+LE SWITCH SEUL NE SUFFISAIT PAS. Une case « ne pas compter la note » existe
+déjà, c'est « ratée » : hors analyses, gardée dans les comptages. Mais elle
+laisse toute la dose sur UN café : 15 g retirés au nouveau sachet, 0 à celui
+qu'on finit, donc deux stocks faux, alors que les grammes par sachet sont la
+chose que Chris regarde le plus. Et « ratée » dit un geste manqué, pas un
+mélange. D'où deux colonnes sur la tasse, `blend_coffee_id` et `blend_g`.
+
+LA DOSE RESTE LE TOTAL. `blend_g` est une part de `dose_g`, pas un ajout : le
+ratio, l'eau, la dose habituelle et tout ce qui lit `dose_g` ne bougent pas, et
+une tasse sans mélange est exactement ce qu'elle était. C'est ce qui permet de
+« ne rien casser » : la règle tient dans quatre fonctions pures de `TOOLS`, et
+les seuls endroits qui changent sont ceux qui répartissent des grammes entre
+cafés (stock, rythme d'un sachet, coût) ou qui conseillent.
+
+HORS ANALYSES, TOUJOURS. La note d'un mélange ne décrit aucun des deux cafés.
+Elle sort de `analyzableExts()` avant même le réglage « Inclure les ratées » :
+ce réglage dit « je veux voir mes gestes manqués dans les chiffres », il n'a
+rien à dire d'une tasse à deux cafés. Même sortie pour ce qui ne passe pas par
+`analyzableExts()` : `BAGS` (reprise d'un sachet, prochaine tasse), les paliers,
+le record du sachet, le conseil de variante 4:6. Les comptages gardent tout.
+
+PAS UNE NORME. Le champ est fermé derrière un lien discret et ne se rouvre
+jamais tout seul ; « Refaire » ne reprend pas le deuxième café. À l'ouverture il
+propose ce que les sachets disent (le sachet qui tient moins qu'une dose est
+celui qu'on finit), parce que c'est le seul cas d'usage connu. Le deuxième café
+n'est deviné que s'il n'y a aucun doute : un café présélectionné à tort passe
+inaperçu, un menu vide non.
+
+LE PAS 27 ne réécrit rien : il monte la version pour qu'un onglet resté sur
+l'ancien code soit refusé par la synchro au lieu d'effacer les deux colonnes.
+
 ## Tests
 
 ### Ce que chaque suite couvre, et le bug qui l'a motivée

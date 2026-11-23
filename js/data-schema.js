@@ -16,7 +16,8 @@ const DATA_SCHEMA = (() => {
   const EXT_COLS = ["id", "date_time", "coffee_id", "method", "recipe", "dose_g", "water_g",
     "grind_dial", "temperature_c", "total_time_s", "flow_time_s",
     "yield_ml", "added_water_ml", "milk_ml", "stir_count", "cup", "preheated_water",
-    "score_10", "diagnostic", "descriptors", "comment", "heat_level", "failed", "heating_s", "recipe_variant"];
+    "score_10", "diagnostic", "descriptors", "comment", "heat_level", "failed", "heating_s", "recipe_variant",
+    "blend_coffee_id", "blend_g"];
 
   /* Settings for Chris's equipment. ONE single row, with a fixed id, because
      there is a single user: see normalizeSettings for why it is a table.
@@ -135,8 +136,19 @@ const DATA_SCHEMA = (() => {
     return TOOLS.localDateKey(new Date());
   }
 
+  /* THE BLEND (v9.56): the second coffee of a cup and its grams, a share of
+     dose_g (TOOLS.blendGrams). The two go together: without a coffee, without
+     grams, or with the cup's own coffee again, both read back empty. Empty
+     for every cup before: a missing column needs no migration. */
+  function blendOf(r) {
+    const id = safeId(r.blend_coffee_id);
+    const g = Math.round(Number(String(r.blend_g === undefined || r.blend_g === null ? "" : r.blend_g).replace(",", ".")) * 10) / 10;
+    return id && id !== String(r.coffee_id || "") && Number.isFinite(g) && g > 0 ? { id: id, g: g } : { id: "", g: "" };
+  }
+
   function normalizeExtraction(r) {
     r = fromLegacy("extractions", r);
+    const blend = blendOf(r);
     return {
       id: safeId(r.id),
       // Sync timestamp. KEPT as is here: normalising runs on load as well
@@ -185,6 +197,8 @@ const DATA_SCHEMA = (() => {
          pours the last 60 went (TETSU, recipes.js). Empty for every other
          recipe, and an unknown value reads back empty. */
       recipe_variant: TETSU.clean(r.recipe_variant),
+      blend_coffee_id: blend.id,
+      blend_g: blend.g,
     };
   }
 

@@ -196,7 +196,7 @@
   function mark(codes, e, x, y, extra) {
     const s = codes.shape(recipeOf(e));
     const tip = [shortDay(e.date_time) + " " + String(e.date_time).slice(11, 16), coffeeName(e.coffee_id), I18N.tr(recipeOf(e)),
-      rated(e) ? fmtRating(Number(e.score_10)) : I18N.t("not_rated_yet"), Number(e.failed) ? I18N.t("botched_badge") : ""].filter(Boolean).join(" · ");
+      rated(e) ? fmtRating(Number(e.score_10)) : I18N.t("not_rated_yet"), Number(e.failed) ? I18N.t("botched_badge") : "", UI.blendWords(e)].filter(Boolean).join(" · ");
     return '<svg class="hc-pt c' + codes.colour(e.coffee_id) + (rated(e) ? "" : " open") + '" x="' + pc(x) + '" y="' + pc(y) + '" width="1" height="1" overflow="visible" data-spot-cup="' +
       titleAttr(e.id) + '"' + (extra || "") + "><title>" + escapeHtml(tip) + '</title><circle class="hc-hit" r="11"></circle>' +
       (s >= 0 ? SHAPES[s] : '<circle r="3"></circle>') + "</svg>";
@@ -332,8 +332,9 @@
       if (!stock) return null;
       // Counted by hand: the line starts from the count (the cups before it belong to another story).
       const since = stock.corrected ? String(stock.corrected).slice(0, 10) : (stock.since || todayKey);
-      const cups = o.exts.filter(e => e.coffee_id === id && (stock.corrected ? String(e.date_time) > String(stock.corrected) : dayOf(e.date_time) >= since))
-        .map(e => ({ date_time: e.date_time, grams: Number(e.dose_g) || UI.fallbacks.dose }));
+      // A blend (v9.56) counts on both its bags, each for its own grams.
+      const cups = o.exts.filter(e => TOOLS.drawsFrom(e, id) && (stock.corrected ? String(e.date_time) > String(stock.corrected) : dayOf(e.date_time) >= since))
+        .map(e => ({ date_time: e.date_time, grams: TOOLS.gramsFrom(e, id, UI.fallbacks.dose) }));
       const pace = BAGS.pace(cups, since, todayKey, undefined, UI.awayPeriods());
       return { id: id, since: since, pace: pace, line: bagLine(s.leftover, cups, since, o.now, pace ? pace.perDay : 0) };
     }).filter(Boolean);

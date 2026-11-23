@@ -60,12 +60,15 @@ const DATA_CALCS = (() => {
          entered, cups from another bag, forgotten dose), without having to
          understand why. */
       const manualCount = bag && bag.remaining_g !== "" && bag.remaining_at ? bag : null;
+      /* A BLEND (v9.56) empties two bags: each coffee gives its own grams
+         (TOOLS.gramsFrom), whether it is the cup's first coffee or its
+         second. */
       const used = state.extractions
-        .filter(e => e.coffee_id === coffeeId)
+        .filter(e => TOOLS.drawsFrom(e, coffeeId))
         .filter(e => manualCount
           ? String(e.date_time) > String(manualCount.remaining_at)
           : !since || String(e.date_time).slice(0, 10) >= since)
-        .reduce((total, e) => total + (Number(e.dose_g) || defaultDose || 0), 0);
+        .reduce((total, e) => total + TOOLS.gramsFrom(e, coffeeId, defaultDose), 0);
 
       const remaining = (manualCount ? Number(manualCount.remaining_g) : Number(format)) - used;
       return {
@@ -120,13 +123,15 @@ const DATA_CALCS = (() => {
        and the day it was brewed (the latest cup holding it), or null. */
     function bagRecord(ext) {
       if (!ext || ext.score_10 === "" || ext.score_10 === undefined || ext.score_10 === null) return null;
+      // A blend's score belongs to neither coffee (v9.56): no record, and none to beat.
+      if (TOOLS.isBlend(ext)) return null;
       const score = Number(ext.score_10);
       if (!Number.isFinite(score)) return null;
       const bag = currentBag(ext.coffee_id);
       const own = bag ? bagAtDate(ext.coffee_id, ext.date_time) : null;
       if (!own || own.id !== bag.id) return null;
       const when = String(ext.date_time);
-      const earlier = state.extractions.filter(e => e.id !== ext.id && e.coffee_id === ext.coffee_id &&
+      const earlier = state.extractions.filter(e => e.id !== ext.id && e.coffee_id === ext.coffee_id && !TOOLS.isBlend(e) &&
         e.score_10 !== "" && e.score_10 !== undefined && e.score_10 !== null && Number.isFinite(Number(e.score_10)) &&
         String(e.date_time) < when && (bagAtDate(e.coffee_id, e.date_time) || {}).id === bag.id);
       if (earlier.length < 2) return null;
@@ -205,12 +210,23 @@ const DATA_CALCS = (() => {
       if (ext.yield_ml !== "") {
         drink = ext.yield_ml + (ext.added_water_ml || 0) + (ext.milk_ml || 0);
       }
+      /* A BLEND (v9.56): each coffee at its own price per gram. A second
+         coffee without a price leaves the cost unknown, never counted free. */
+      const blendG = TOOLS.blendGrams(ext);
+      const second = blendG > 0 ? state.coffees.find(c => c.id === ext.blend_coffee_id) || null : null;
       let cost = "", realCost = "";
       if (coffee && coffee.price_vnd && coffee.bag_size_g && ext.dose_g) {
-        cost = Math.round(coffee.price_vnd / coffee.bag_size_g * ext.dose_g);
-        const pct = coffee.real_coffee_pct === "" || coffee.real_coffee_pct === undefined ? 100 : Number(coffee.real_coffee_pct);
-        if (pct < 100 && pct > 0) {
-          realCost = Math.round(coffee.price_vnd / (coffee.bag_size_g * pct / 100) * ext.dose_g);
+        if (blendG > 0) {
+          if (second && second.price_vnd && second.bag_size_g) {
+            cost = Math.round(coffee.price_vnd / coffee.bag_size_g * (ext.dose_g - blendG) +
+              second.price_vnd / second.bag_size_g * blendG);
+          }
+        } else {
+          cost = Math.round(coffee.price_vnd / coffee.bag_size_g * ext.dose_g);
+          const pct = coffee.real_coffee_pct === "" || coffee.real_coffee_pct === undefined ? 100 : Number(coffee.real_coffee_pct);
+          if (pct < 100 && pct > 0) {
+            realCost = Math.round(coffee.price_vnd / (coffee.bag_size_g * pct / 100) * ext.dose_g);
+          }
         }
       }
       return {
@@ -237,6 +253,11 @@ const DATA_CALCS = (() => {
         cup_cost_vnd: cost,
         real_cost_vnd: realCost,
         coffee_name: coffee ? coffee.name : (ext.coffee_id ? "Café supprimé" : "Sans café"),
+        /* The blend (v9.56): the grams of the second coffee (0 without one),
+           those left to the first, and the second one's name. */
+        blend_g: blendG,
+        main_g: blendG > 0 && Number(ext.dose_g) > 0 ? Math.round((Number(ext.dose_g) - blendG) * 10) / 10 : "",
+        blend_name: blendG > 0 ? (second ? second.name : "Café supprimé") : "",
         ground: coffee ? Number(coffee.pre_ground) === 1 : false,
       };
     }

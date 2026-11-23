@@ -26,7 +26,9 @@ const BAGS = (() => {
 
   const num = v => (v === "" || v === undefined || v === null || !Number.isFinite(Number(v)) ? null : Number(v));
   const rated = e => !!e && e.score_10 !== "" && e.score_10 !== undefined && e.score_10 !== null && num(e.score_10) !== null;
-  const failed = e => Number(e && e.failed) === 1;
+  /* Out of what advises: a botched cup, and a blend (v9.56), whose setting
+     and score belong to two coffees at once. */
+  const failed = e => Number(e && e.failed) === 1 || (typeof TOOLS === "object" && !!TOOLS.isBlend && TOOLS.isBlend(e));
   const newestFirst = (a, b) => String(b.date_time || "").localeCompare(String(a.date_time || ""));
 
   /* NOT EVEN A SHORT CUP LEFT: the bag is over. A last cup a little short

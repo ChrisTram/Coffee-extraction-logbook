@@ -101,8 +101,99 @@
     sel.innerHTML = '<option value="">' + I18N.t("pick_coffee") + "</option>" + coffeeOptions(choices) +
       (keptInactive ? '<option value="' + titleAttr(keptInactive.id) + '">' + titleAttr(keptInactive.name) + " " + I18N.t("inactive_suffix") + "</option>" : "");
     if (value) sel.value = value;
+    fillBlendSelect();
     // O2 (v9.18): the open bags as jars above the menu, which they drive and follow (js/ui-coffees.js).
     UI.renderCoffeeJars();
+  }
+
+  /* ---------- A second coffee in the cup (v9.56) ----------
+     THE BLEND: the end of a bag topped up with another coffee. Not the norm,
+     so the field is closed behind « + Un deuxième café dans la tasse ». The
+     dose stays the cup's total; the field holds the grams of the second
+     coffee. Saved as blend_coffee_id and blend_g: each bag gives its own
+     grams, and the cup stays out of both averages (TOOLS.blendGrams). */
+  const blendOpen = () => !$("#blend-body").hidden;
+  const round1 = n => Math.round(n * 10) / 10;
+
+  /* The second coffee's menu: the same coffees as the first one's, the cup's
+     own coffee greyed. `keepId` puts back a coffee archived since, when an old
+     blend is edited. */
+  function fillBlendSelect(keepId) {
+    const sel = $("#f-blend-coffee");
+    if (!sel) return;
+    const value = keepId !== undefined ? keepId : sel.value;
+    const list = selectableCoffees();
+    const kept = value && !list.some(c => c.id === value) ? DATA.state.coffees.find(c => c.id === value) : null;
+    sel.innerHTML = '<option value="">' + I18N.t("blend_pick") + "</option>" +
+      list.concat(kept ? [kept] : []).map(c => '<option value="' + titleAttr(c.id) + '">' + titleAttr(c.name) + "</option>").join("");
+    sel.value = value || "";
+    updateBlend();
+  }
+
+  /* What opening the field proposes. Another bag holds less than this dose:
+     it is the one being finished, all its grams go in. Otherwise, the cup's
+     own bag holds less than the dose: the second coffee makes up the rest. The
+     second coffee is only guessed when there is no doubt about it. */
+  function blendDefault() {
+    const main = $("#f-coffee").value, dose = parseFloat($("#f-dose").value) || fallbacks.dose;
+    const others = selectableCoffees().filter(c => c.id !== main).map(c => ({ coffee: c, gauge: DATA.bagGauge(c.id, fallbacks.dose) }));
+    const tail = others.filter(o => o.gauge && o.gauge.grams > 0 && o.gauge.grams < dose).sort((a, b) => a.gauge.grams - b.gauge.grams)[0];
+    if (tail) return { id: tail.coffee.id, g: round1(tail.gauge.grams) };
+    const only = others.length === 1 ? others[0].coffee.id : "";
+    const own = main ? DATA.bagGauge(main, fallbacks.dose) : null;
+    if (own && own.grams > 0 && own.grams < dose) return { id: only, g: round1(dose - own.grams) };
+    return { id: only, g: "" };
+  }
+
+  function setBlend(open, id, grams) {
+    $("#blend-body").hidden = !open;
+    $("#blend-toggle").hidden = !!open;
+    $("#blend-toggle").setAttribute("aria-expanded", open ? "true" : "false");
+    $("#f-blend-g").value = open && grams !== undefined && grams !== null ? grams : "";
+    fillBlendSelect(open ? (id || "") : "");
+  }
+
+  /* What saving reads: null without a blend (the field closed, or opened and
+     left empty), { id, g } for a blend, { error } when it is half filled or
+     heavier than the dose, which is the cup's total. */
+  function readBlend() {
+    if (!blendOpen()) return null;
+    const id = $("#f-blend-coffee").value, raw = String($("#f-blend-g").value || "").trim();
+    if (!id && !raw) return null;
+    const g = parseFloat(raw.replace(",", "."));
+    if (!id || !(g > 0) || id === $("#f-coffee").value) return { error: "toast_blend_incomplete" };
+    if (!(g < parseFloat($("#f-dose").value))) return { error: "toast_blend_over" };
+    return { id: id, g: round1(g) };
+  }
+
+  // The line under the field: what each coffee gives, and what the second bag keeps.
+  function updateBlend() {
+    const hint = $("#blend-hint"), sel = $("#f-blend-coffee");
+    if (!hint || !sel) return;
+    if (!blendOpen()) { hint.textContent = ""; return; }
+    const main = $("#f-coffee").value;
+    // The cup's own coffee cannot be its second one.
+    Array.from(sel.options).forEach(o => { o.disabled = !!o.value && o.value === main; });
+    if (sel.value && sel.value === main) sel.value = "";
+    const dose = parseFloat($("#f-dose").value), g = parseFloat(String($("#f-blend-g").value || "").replace(",", "."));
+    const nameOf = id => { const c = DATA.state.coffees.find(x => x.id === id); return c ? I18N.tr(c.name) : I18N.t("pick_coffee"); };
+    let text, alert = false;
+    if (!sel.value || !(g > 0)) text = I18N.t("blend_hint_empty");
+    else if (!(dose > 0) || !(g < dose)) { text = I18N.t("blend_hint_over"); alert = true; }
+    else {
+      text = I18N.t("blend_hint", { d: fmtDecimal(dose, 1), a: fmtDecimal(dose - g, 1), n: nameOf(main), b: fmtDecimal(g, 1), m: nameOf(sel.value) });
+      // What the second bag keeps: on a new cup only, a saved one is already counted.
+      const gauge = entry.editId ? null : DATA.bagGauge(sel.value, fallbacks.dose);
+      if (gauge) text += " " + I18N.t("blend_hint_left", { r: fmtDecimal(Math.max(0, round1(gauge.grams - g)), 1), m: nameOf(sel.value) });
+    }
+    hint.textContent = text;
+    hint.classList.toggle("hint-alert", alert);
+  }
+
+  /* After a draft was put back in the fields: the field opens on what it holds. */
+  function restoreBlend() {
+    const id = $("#f-blend-coffee").value, g = $("#f-blend-g").value;
+    setBlend(!!(id || g), id, g);
   }
   /* A cup that empties a bag changes no coffee, so app.js does not refill
      the menu: this does, only when a bag went to the end of it or came back. */
@@ -443,6 +534,7 @@
 
   function updateLive() {
     updateSliders();
+    updateBlend();
     const dose = parseFloat($f("#f-dose").value);
     const water = parseFloat($f("#f-water").value);
     /* Same logic as DATA.calcs: the main ratio is WATER over DOSE on both
@@ -728,6 +820,7 @@
     $("#f-power").value = fallbacks.fire;
     $("#f-preheat").checked = false;
     $("#f-failed").checked = false;
+    setBlend(false);
     $("#f-add-water-yes").checked = false;
     $("#f-water-added").hidden = true;
     $("#f-water-added").value = "";
@@ -780,6 +873,8 @@
     $("#f-water-added").value = ext.added_water_ml !== undefined ? ext.added_water_ml : "";
     $("#f-preheat").checked = Number(ext.preheated_water) === 1;
     $("#f-failed").checked = Number(ext.failed) === 1;
+    // The blend of the cup being edited; a copy never carries one (settingsOnly).
+    setBlend(TOOLS.isBlend(ext), ext.blend_coffee_id, ext.blend_g);
     updatePreheatField();
     $("#f-power").value = ext.heat_level || "";
     $("#f-agitation-yes").checked = ext.stir_count !== "" && ext.stir_count !== undefined;
@@ -827,6 +922,8 @@
     return {
       ...ext, score_10: "", comment: "", diagnostic: "", descriptors: "", failed: "",
       total_time_s: "", flow_time_s: "", yield_ml: "",
+      // A blend is the story of one cup (the end of a bag), not a setting to brew again.
+      blend_coffee_id: "", blend_g: "",
     };
   }
   function redoCup(ext) {
@@ -845,6 +942,8 @@
   async function saveEntry(ev) {
     ev.preventDefault();
     if (!$("#f-dose").value) { toast(I18N.t("toast_dose")); return; }
+    const blend = readBlend();
+    if (blend && blend.error) { toast(I18N.t(blend.error)); return; }
     const ext = {
       date_time: $("#f-date").value || localNow(),
       coffee_id: $("#f-coffee").value,
@@ -873,6 +972,8 @@
       diagnostic: DIAGNOSTICS.filter(d => entry.diagnostics.has(d)).join("|"),
       descriptors: Array.from(entry.descriptors).join("|"),
       comment: $("#f-comment").value.trim(),
+      blend_coffee_id: blend ? blend.id : "",
+      blend_g: blend ? blend.g : "",
     };
     if (entry.editId) {
       await DATA.editExtraction(entry.editId, ext);
@@ -894,7 +995,8 @@
           toast(I18N.t("correction_ready"));
         });
       } else {
-        toast(I18N.t("toast_saved"));
+        // A blend says what each bag gave: the stock just moved on two coffees.
+        toast(blend ? I18N.t("toast_saved_blend", { q: UI.blendWords(saved) }) : I18N.t("toast_saved"));
       }
       resetEntry(true);
       activateScreen("dashboard");
@@ -923,6 +1025,16 @@
       UI.playMethodChange(before);
     }));
     $("#f-coffee").addEventListener("change", onCoffeeChoice);
+    // v9.56: a second coffee in the cup, opened on what the bags suggest.
+    $("#blend-toggle").addEventListener("click", () => {
+      const d = blendDefault();
+      setBlend(true, d.id, d.g);
+      UI.scheduleDraft();
+      (d.id ? $("#f-blend-g") : $("#f-blend-coffee")).focus();
+    });
+    $("#blend-remove").addEventListener("click", () => { setBlend(false); UI.scheduleDraft(); $("#blend-toggle").focus(); });
+    $("#f-blend-coffee").addEventListener("change", updateBlend);
+    $("#f-blend-g").addEventListener("input", updateBlend);
     /* As soon as Chris touches the date, it is HIS: arriving on the screen will
        no longer replace it. He sometimes logs a cup from last night. "input" as
        well as "change": on a datetime-local field, each edited part emits
@@ -1039,6 +1151,6 @@
     updateSliders, updateMilk, updateLive, markDateTouched,
     entryRating, prefillFromRecipe, refreshEntryDate, resetEntry,
     fillCoffeeSelect, refreshCoffeeSelect, coffeeOptions, fillRecipeSelect, fillCupSelect, renderCupEditor,
-    entry, onCoffeeChoice, onPreheat, estimatedVolume,
+    entry, onCoffeeChoice, onPreheat, estimatedVolume, restoreBlend, readBlend,
   });
 })();

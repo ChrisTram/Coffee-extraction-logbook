@@ -337,7 +337,8 @@
   /* The toggle for including failed cups, and the count of what it leaves
      out today. A reading preference, local like the beeps. */
   function updateFailed() {
-    const excluded = extsWithCalcs().length - analyzableExts().length;
+    // The blends are out whatever the box says (v9.56): only the failed ones are counted here.
+    const excluded = extsWithCalcs().filter(e => !TOOLS.isBlend(e)).length - analyzableExts().length;
     $("#param-failed").checked = includeFailed();
     $("#count-failed").textContent = I18N.t("botched_excluded", { n: excluded });
   }

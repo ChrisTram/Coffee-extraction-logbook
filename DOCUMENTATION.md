@@ -425,7 +425,8 @@ active`
 `id, date_time, coffee_id, method, recipe, dose_g, water_g, grind_dial,
 temperature_c, total_time_s, flow_time_s, yield_ml,
 added_water_ml, milk_ml, stir_count, cup, preheated_water, score_10,
-diagnostic, descriptors, comment, heat_level, failed, heating_s, recipe_variant`
+diagnostic, descriptors, comment, heat_level, failed, heating_s, recipe_variant,
+blend_coffee_id, blend_g`
 
 - Seule la dose est obligatoire en saisie (étoile rouge). Date auto si vide.
 - `yield_ml` : `volume_extrait_ml` jusqu'à la v9.05 et `volume_tasse_ml` avant
@@ -435,6 +436,14 @@ diagnostic, descriptors, comment, heat_level, failed, heating_s, recipe_variant`
   `drink_ml` = extrait + eau ajoutée + lait.
 - `stir_count` : Switch, vide si pas d'agitation, défaut 1 quand coché.
 - `preheated_water` : Brikka, 1 ou vide. Décoché par défaut.
+- `blend_coffee_id`, `blend_g` (v9.56, schéma 27) : le deuxième café d'une tasse
+  mélangée (la fin d'un sachet complétée par un autre) et ses grammes, qui sont
+  une PART de `dose_g` : la dose reste le total de la tasse. Les deux vont
+  ensemble : sans café, sans grammes, ou avec le café de la tasse lui-même, les
+  deux se relisent vides. Toute la règle est dans `TOOLS` (js/tools.js) :
+  `blendGrams`, `isBlend`, `drawsFrom`, `gramsFrom`. Le stock retire à chaque
+  sachet ses propres grammes ; une tasse mélangée sort de `analyzableExts()`, des
+  records et des paliers, pour ses deux cafés.
 - `recipe_variant` (v9.53, schéma 26) : les options d'une recette qui en a, aujourd'hui
   la seule Tetsu 4:6. Deux mots collés par un tiret, `sweet-heavy` : la coupe des
   40 premiers % de l'eau (`sweet` 1/3 puis 2/3, `balanced` moitié moitié, `bright`

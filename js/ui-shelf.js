@@ -143,8 +143,9 @@
     const stock = DATA.bagStock(c.id, fallbacks.dose);
     const since = stock ? stock.since : "";
     const own = DATA.state.extractions.filter(e => e.coffee_id === c.id);
-    const bagCups = own.filter(e => !since || String(e.date_time).slice(0, 10) >= since);
-    const pace = g ? BAGS.pace(bagCups.map(e => ({ date_time: e.date_time, grams: grams(e) })), since, t, undefined, UI.awayPeriods()) : null;
+    // The pace: a blend (v9.56) counts on both its bags, each for its own grams.
+    const bagCups = DATA.state.extractions.filter(e => TOOLS.drawsFrom(e, c.id) && (!since || String(e.date_time).slice(0, 10) >= since));
+    const pace = g ? BAGS.pace(bagCups.map(e => ({ date_time: e.date_time, grams: TOOLS.gramsFrom(e, c.id, fallbacks.dose) })), since, t, undefined, UI.awayPeriods()) : null;
     const report = TUNING.forCoffee(c.id, analyzableExts());
     let best = null;
     if (report.best) best = { label: "cf_best", ref: report.best.referenceId, recipe: report.best.recipe, grind: report.best.grind, score: report.best.average };

@@ -794,7 +794,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
     check("step 26: an old 4:6 cup gets the options brewed then, stamped", by("v-old").recipe_variant === "sweet-heavy" && Number(by("v-old").updated_at) > 5);
     check("a cup that already has options keeps them, unstamped", by("v-set").recipe_variant === "bright-light" && by("v-set").updated_at === 6);
     check("a cup of another recipe has none", by("v-other").recipe_variant === "" && by("v-other").updated_at === 7);
-    check("the logbook is at schema 26", DATA.state.settings[0].schema_version === 26, String(DATA.state.settings[0].schema_version));
+    check("the logbook is at schema 27", DATA.state.settings[0].schema_version === 27, String(DATA.state.settings[0].schema_version));
     DATA.migrateData();
     check("played twice, step 26 changes nothing more", by("v-old").recipe_variant === "sweet-heavy");
     // A renamed 4:6 is still found, by its id.
@@ -804,7 +804,9 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
     DATA.state.extractions = [DATA.normalizeExtraction({ id: "v-ren", method: "Switch", recipe: "Ma 4:6", updated_at: 5 })];
     DATA.migrateData();
     check("step 26 follows a renamed 4:6", DATA.state.extractions[0].recipe_variant === "sweet-heavy");
-    check("the options are the last column of the cups CSV", DATA.EXT_COLS[DATA.EXT_COLS.length - 1] === "recipe_variant");
+    // v9.56: the blend's two columns came after them, at the end of the row.
+    check("the options are a column of the cups CSV, the blend after them",
+      DATA.EXT_COLS.slice(DATA.EXT_COLS.indexOf("recipe_variant")).join() === "recipe_variant,blend_coffee_id,blend_g");
     /* v9.54: a 4:6 cup that arrives later without options (an older CSV, the
        demonstration) gets them too, the schema being already at 26. */
     before();
@@ -1338,7 +1340,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
   // v9.53: recipe_variant came after it, at the end of the row.
   check("heating_s is a column, after failed, before the 4:6 options",
     DATA.EXT_COLS.indexOf("heating_s") === DATA.EXT_COLS.indexOf("failed") + 1 &&
-    DATA.EXT_COLS.indexOf("recipe_variant") === DATA.EXT_COLS.length - 1 && DATA.EXT_COLS.includes("temperature_c"));
+    DATA.EXT_COLS.indexOf("recipe_variant") === DATA.EXT_COLS.indexOf("heating_s") + 1 && DATA.EXT_COLS.includes("temperature_c"));
   check("the kettle boiling time is a synced setting",
     DATA.SETTINGS_COLS.includes("boil_s"));
   /* 120 s by default since Chris measured his kettle. Zero left the function
@@ -3250,7 +3252,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
     check("tombstones preserved under the new table names", JSON.stringify(st.tombstones) === JSON.stringify(NEW_TOMBS),
       JSON.stringify(st.tombstones));
     check("the drawing names follow", st.settings[0].drawings === "shelf,!clock,podium", st.settings[0].drawings);
-    check("the logbook moves to the current schema (26)", st.settings[0].schema_version === 26, String(st.settings[0].schema_version));
+    check("the logbook moves to the current schema (27)", st.settings[0].schema_version === 27, String(st.settings[0].schema_version));
     const keys = [...idb.store.keys()].sort();
     check("the French keys are removed from IndexedDB", Object.keys(LEGACY.TABLES).concat("tombes").every(k => !idb.store.has(k)), keys.join());
     check("and the English ones written", TABLE_NAMES.concat("tombstones").every(k => idb.store.has(k)), keys.join());
@@ -3382,7 +3384,7 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
       !("note_sur_10" in app.DATA.state.extractions[0]), JSON.stringify(app.DATA.state.extractions[0]).slice(0, 80));
     check("and raw old tombstones", app.DATA.state.tombstones.coffees && app.DATA.state.tombstones.coffees.z === 1);
     check("without restamping the row", app.DATA.state.extractions[0].updated_at === 2001);
-    check("the schema is at 26, step 21 still there", SOURCE_DATA.includes("const CURRENT_SCHEMA = 26;") &&
+    check("the schema is at 27, step 21 still there", SOURCE_DATA.includes("const CURRENT_SCHEMA = 27;") &&
       SOURCE_DATA.includes('{ v: 21, name: "English names", apply: convertLegacyNames }'));
     /* Tetsu 4:6 at 250 g by default (v9.08): the seed says so, and step 22
        moves a stored recipe still at the seeded 225 g, never a retouched one. */
@@ -3855,6 +3857,56 @@ for (const sheet of CSS_SHEETS) {
   check("the scores' track cannot be pushed by its title", /\.ho-evo \{[^}]*grid-template-columns: minmax\(0, 1fr\)/.test(css));
   check("the facts sit in a bounded table", /\.ho-facts \{ display: grid; grid-template-columns: repeat\(2, max-content\)/.test(css));
   check("the stock line wraps instead of being cut", /\.ho-stock \{[^}]*flex-wrap: wrap/.test(css) && /\.ho-opened::before \{[^}]*position: absolute/.test(css));
+}
+
+/* ---------- v9.56: a second coffee in the cup (the blend) ---------- */
+{
+  const keep = { coffees: DATA.state.coffees, extractions: DATA.state.extractions, purchases: DATA.state.purchases };
+  const N = DATA.normalizeExtraction;
+  DATA.state.coffees = [
+    { id: "ba", name: "Fin de sachet", bag_size_g: 200, price_vnd: 200000, added_date: "2026-11-01", real_coffee_pct: 100, active: 1 },
+    { id: "bb", name: "Nouveau", bag_size_g: 250, price_vnd: 500000, added_date: "2026-11-01", real_coffee_pct: 100, active: 1 },
+    { id: "bc", name: "Sans prix", bag_size_g: 250, price_vnd: "", added_date: "2026-11-01", real_coffee_pct: 100, active: 1 },
+  ];
+  // One bag entered for the first coffee: a record is read on a bag.
+  DATA.state.purchases = [{ id: "pa", coffee_id: "ba", purchase_date: "2026-11-01", opened_date: "2026-11-01", bag_size_g: 200, price_vnd: 200000, roast_date: "", remaining_g: "", remaining_at: "" }];
+  const plain = id => ({ id: id, coffee_id: "ba", date_time: "2026-11-10T08:00", method: "Switch", dose_g: 15, water_g: 225, score_10: 7 });
+  const blend = N({ id: "bl", coffee_id: "bb", date_time: "2026-11-20T08:00", method: "Switch", dose_g: 15, water_g: 225, score_10: 9.5,
+    blend_coffee_id: "ba", blend_g: 4 });
+  DATA.state.extractions = [N(plain("p1")), N({ ...plain("p2"), date_time: "2026-11-11T08:00" }), N({ ...plain("p3"), date_time: "2026-11-12T08:00", score_10: 8 }), blend];
+
+  check("a blend keeps its second coffee and its grams", blend.blend_coffee_id === "ba" && blend.blend_g === 4);
+  check("the two columns go to the CSV", DATA.csvSerialize([blend], DATA.EXT_COLS).split("\n")[1].endsWith(",ba,4"));
+  check("the second bag gives its own grams", DATA.bagStock("ba", 15).remaining === 200 - 45 - 4, String(DATA.bagStock("ba", 15).remaining));
+  check("the first bag gives the rest of the dose", DATA.bagStock("bb", 15).remaining === 250 - 11, String(DATA.bagStock("bb", 15).remaining));
+  const c = DATA.calcs(blend);
+  check("the cup says what it is made of", c.blend_g === 4 && c.main_g === 11 && c.blend_name === "Fin de sachet" && c.coffee_name === "Nouveau");
+  check("each coffee at its own price per gram", c.cup_cost_vnd === 11 * 2000 + 4 * 1000, String(c.cup_cost_vnd));
+  check("the ratio still reads the whole dose", c.ratioText === "1:15.0", c.ratioText);
+  check("a second coffee without a price leaves the cost unknown",
+    DATA.calcs(N({ ...blend, blend_coffee_id: "bc" })).cup_cost_vnd === "");
+  check("a plain cup has no blend", DATA.calcs(DATA.state.extractions[0]).blend_g === 0 && DATA.calcs(DATA.state.extractions[0]).blend_name === "");
+  const best = N({ id: "bl2", coffee_id: "ba", date_time: "2026-11-13T08:00", method: "Switch", dose_g: 15, score_10: 10, blend_coffee_id: "bb", blend_g: 5 });
+  DATA.state.extractions.push(best);
+  check("a blend is no record of its bag, even above every cup of it", DATA.bagRecord(best) === null &&
+    DATA.bagRecord({ ...best, blend_coffee_id: "", blend_g: "" }) !== null);
+  const record = DATA.bagRecord(N({ ...plain("p4"), date_time: "2026-11-21T08:00", score_10: 8.5 }));
+  check("and no score to beat either", !!record && record.previous === 8, JSON.stringify(record));
+  // What is no blend: the same coffee twice, no grams, grams without a coffee.
+  const same = N({ id: "x1", coffee_id: "ba", dose_g: 15, blend_coffee_id: "ba", blend_g: 4 });
+  const noGrams = N({ id: "x2", coffee_id: "ba", dose_g: 15, blend_coffee_id: "bb", blend_g: "" });
+  const noCoffee = N({ id: "x3", coffee_id: "ba", dose_g: 15, blend_g: 4 });
+  check("the cup's own coffee again, no grams or no coffee: no blend",
+    [same, noGrams, noCoffee].every(e => e.blend_coffee_id === "" && e.blend_g === ""));
+  check("a comma in the grams is read", N({ id: "x4", coffee_id: "ba", dose_g: 15, blend_coffee_id: "bb", blend_g: "4,5" }).blend_g === 4.5);
+  check("a cup from before has neither column filled", N({ id: "x5", coffee_id: "ba", dose_g: 15 }).blend_coffee_id === "" && N({ id: "x5" }).blend_g === "");
+  check("the schema moved for the two columns", SOURCE_DATA.includes('{ v: 27, name: "a second coffee in the cup"'));
+  check("the analyses leave every blend out, whatever the preference",
+    /const all = extsWithCalcs\(\)\.filter\(e => !TOOLS\.isBlend\(e\)\);\s*return includeFailed\(\)/.test(SOURCE_UI));
+  check("the entry saves the blend and a copy drops it", SOURCE_UI.includes("blend_coffee_id: blend ? blend.id : \"\"") &&
+    SOURCE_UI.includes('blend_coffee_id: "", blend_g: "",'));
+  check("the draft keeps the second coffee", SOURCE_UI.includes('"f-blend-coffee", "f-blend-g"'));
+  DATA.state.coffees = keep.coffees; DATA.state.extractions = keep.extractions; DATA.state.purchases = keep.purchases;
 }
 
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);

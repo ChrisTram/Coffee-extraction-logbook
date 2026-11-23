@@ -34,6 +34,8 @@
     "f-volume", "f-water-added", "f-milk", "f-agitation", "f-cup", "f-rating",
     "f-comment", "f-total-min", "f-total-sec", "f-flow-min", "f-flow-sec",
     "f-power", "f-variant",
+    // v9.56: the second coffee of a blend and its grams.
+    "f-blend-coffee", "f-blend-g",
   ];
   // "ratée" and agitation were forgotten on restore (v8.72).
   const DRAFT_CHECKBOXES = ["f-preheat", "f-add-water-yes", "f-failed", "f-agitation-yes"];
@@ -129,6 +131,8 @@
       UI.setVariant($("#f-variant").value, true);
       entry.variantTouched = true;
     }
+    // The blend's field opens on what the draft put back in it (v9.56).
+    if (UI.restoreBlend) UI.restoreBlend();
     // Without prefillFromRecipe: it would overwrite the draft's dose and water.
     if (!$("#f-recipe").value) UI.fillRecipeSelect();
 

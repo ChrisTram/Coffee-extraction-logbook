@@ -93,5 +93,37 @@ const TOOLS = (() => {
     return n;
   }
 
-  return { average, localDateKey, versionSite, versionedUrl, escapeHtml, awayParse, awaySerialize, isAway, awayDaysBetween };
+  /* THE BLEND (v9.56): a cup made of two coffees, the end of a bag topped up
+     with another one. The cup keeps ONE dose (dose_g, the total, the one the
+     ratio reads) and says how many of those grams came from a second coffee:
+     blend_coffee_id and blend_g. Two rules follow, and every layer reads them
+     here:
+       - the stock: each bag gives its own grams (gramsFrom);
+       - the analyses: the score describes neither coffee, so a blend is left
+         out of everything that advises, like a botched cup, and it is no
+         record either (isBlend).
+     A second coffee equal to the first, or without grams, is no blend. */
+  function blendGrams(e) {
+    if (!e || !e.blend_coffee_id || e.blend_coffee_id === e.coffee_id) return 0;
+    const g = Number(e.blend_g);
+    if (!Number.isFinite(g) || !(g > 0)) return 0;
+    const dose = Number(e.dose_g);
+    return dose > 0 ? Math.min(g, dose) : g;
+  }
+  function isBlend(e) { return blendGrams(e) > 0; }
+  // Whether the cup took grams from this coffee, as its first or its second one.
+  function drawsFrom(e, coffeeId) {
+    return !!e && !!coffeeId && (e.coffee_id === coffeeId || (isBlend(e) && e.blend_coffee_id === coffeeId));
+  }
+  /* The grams the cup took from this coffee. A cup without a dose counts the
+     default one, as the stock always did. */
+  function gramsFrom(e, coffeeId, defaultDose) {
+    if (!e || !coffeeId) return 0;
+    const total = Number(e.dose_g) || Number(defaultDose) || 0;
+    const second = Math.min(blendGrams(e), total);
+    return (e.coffee_id === coffeeId ? total - second : 0) + (second > 0 && e.blend_coffee_id === coffeeId ? second : 0);
+  }
+
+  return { average, localDateKey, versionSite, versionedUrl, escapeHtml, awayParse, awaySerialize, isAway, awayDaysBetween,
+    blendGrams, isBlend, drawsFrom, gramsFrom };
 })();

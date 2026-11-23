@@ -42,7 +42,8 @@ const MILESTONES = (() => {
     return keyOf(d);
   }
   const isRated = e => e.score_10 !== "" && e.score_10 !== undefined && e.score_10 !== null && Number.isFinite(Number(e.score_10));
-  const isFailed = e => Number(e.failed) === 1;
+  // A botched cup, or a blend (v9.56): its score is no milestone of a coffee.
+  const isFailed = e => Number(e.failed) === 1 || (typeof TOOLS === "object" && !!TOOLS.isBlend && TOOLS.isBlend(e));
 
   // The dated cups, oldest first; two cups of the same minute keep their id order.
   function chronological(exts) {

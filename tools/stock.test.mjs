@@ -222,5 +222,15 @@ const { BAGS, GRIND } = new Function(SCRIPTS.map(read).join("\n") + "\nreturn { 
   check("the visible words say « tu », never « vous »", !/\bvous\b|\bvotre\b|\bvos\b/i.test(block));
 }
 
+// ---------- v9.56: a blend advises nothing ----------
+{
+  const cup = (id, day, score, more) => ({ id: id, coffee_id: "c1", date_time: "2026-11-" + day + "T08:00", method: "Switch", recipe: "R",
+    grind_dial: "1.5.0", dose_g: 15, score_10: score, ...more });
+  const cups = [cup("a", "10", 7), cup("b", "11", 7.5), cup("m", "12", 9.5, { blend_coffee_id: "c2", blend_g: 4 })];
+  check("a new bag does not pick up from a blend", BAGS.resumeCup(cups, "c1").id === "b");
+  const next = BAGS.nextCup(cups, {});
+  check("the next cup does not read a blend", !!next && next.n === 2 && next.base.id !== "m", JSON.stringify(next && { n: next.n, base: next.base.id }));
+}
+
 console.log(failures === 0 ? "\nALL PASS" : `\n${failures} FAILURE(S)`);
 process.exit(failures === 0 ? 0 : 1);
