@@ -93,35 +93,54 @@ const TOOLS = (() => {
     return n;
   }
 
-  /* THE BLEND (v9.56): a cup made of two coffees, the end of a bag topped up
-     with another one. The cup keeps ONE dose (dose_g, the total, the one the
-     ratio reads) and says how many of those grams came from a second coffee:
-     blend_coffee_id and blend_g. Two rules follow, and every layer reads them
-     here:
+  /* THE BLEND (v9.56, a third coffee in v9.60): a cup made of two or three
+     coffees, the end of a bag topped up with another one, or the ends of two
+     bags with a third. The cup keeps ONE dose (dose_g, the total, the one the
+     ratio reads) and says how many of those grams came from each other
+     coffee: blend_coffee_id and blend_g, then blend2_coffee_id and blend2_g.
+     Two rules follow, and every layer reads them here:
        - the stock: each bag gives its own grams (gramsFrom);
-       - the analyses: the score describes neither coffee, so a blend is left
-         out of everything that advises, like a botched cup, and it is no
+       - the analyses: the score describes none of the coffees, so a blend is
+         left out of everything that advises, like a botched cup, and it is no
          record either (isBlend).
-     A second coffee equal to the first, or without grams, is no blend. */
-  function blendGrams(e) {
-    if (!e || !e.blend_coffee_id || e.blend_coffee_id === e.coffee_id) return 0;
-    const g = Number(e.blend_g);
-    if (!Number.isFinite(g) || !(g > 0)) return 0;
+     A coffee is in the cup once: an added coffee equal to the cup's own or to
+     the one before, or without grams, is no part of the blend. The added
+     grams never pass the dose: the first added coffee is served first. */
+  const BLEND_COLS = [["blend_coffee_id", "blend_g"], ["blend2_coffee_id", "blend2_g"]];
+  const tenth = n => Math.round(n * 10) / 10;
+  // The coffees added to the cup's own: [{ id, g }], none for a plain cup.
+  function blendParts(e) {
+    if (!e) return [];
     const dose = Number(e.dose_g);
-    return dose > 0 ? Math.min(g, dose) : g;
+    let room = dose > 0 ? dose : Infinity;
+    const seen = [String(e.coffee_id || "")], parts = [];
+    BLEND_COLS.forEach(cols => {
+      const id = e[cols[0]], g = Number(e[cols[1]]);
+      if (!id || seen.includes(String(id)) || !Number.isFinite(g) || !(g > 0)) return;
+      const take = tenth(Math.min(g, room));
+      if (!(take > 0)) return;
+      seen.push(String(id));
+      room = tenth(room - take);
+      parts.push({ id: id, g: take });
+    });
+    return parts;
   }
-  function isBlend(e) { return blendGrams(e) > 0; }
-  // Whether the cup took grams from this coffee, as its first or its second one.
+  // The grams that did not come from the cup's own coffee.
+  function blendGrams(e) { return tenth(blendParts(e).reduce((s, p) => s + p.g, 0)); }
+  function isBlend(e) { return blendParts(e).length > 0; }
+  // Whether the cup took grams from this coffee, as its own or as an added one.
   function drawsFrom(e, coffeeId) {
-    return !!e && !!coffeeId && (e.coffee_id === coffeeId || (isBlend(e) && e.blend_coffee_id === coffeeId));
+    return !!e && !!coffeeId && (e.coffee_id === coffeeId || blendParts(e).some(p => p.id === coffeeId));
   }
   /* The grams the cup took from this coffee. A cup without a dose counts the
      default one, as the stock always did. */
   function gramsFrom(e, coffeeId, defaultDose) {
     if (!e || !coffeeId) return 0;
     const total = Number(e.dose_g) || Number(defaultDose) || 0;
-    const second = Math.min(blendGrams(e), total);
-    return (e.coffee_id === coffeeId ? total - second : 0) + (second > 0 && e.blend_coffee_id === coffeeId ? second : 0);
+    const parts = blendParts(e);
+    const added = Math.min(tenth(parts.reduce((s, p) => s + p.g, 0)), total);
+    const part = parts.find(p => p.id === coffeeId);
+    return (e.coffee_id === coffeeId ? tenth(total - added) : 0) + (part ? Math.min(part.g, total) : 0);
   }
 
   /* A DURATION AS TYPED: « 3:45 », « 3'45 », « 3 45 », « 3.45 », « 3m45 »; a
@@ -145,5 +164,5 @@ const TOOLS = (() => {
   }
 
   return { average, localDateKey, versionSite, versionedUrl, escapeHtml, awayParse, awaySerialize, isAway, awayDaysBetween,
-    blendGrams, isBlend, drawsFrom, gramsFrom, parseDuration };
+    blendParts, blendGrams, isBlend, drawsFrom, gramsFrom, parseDuration };
 })();

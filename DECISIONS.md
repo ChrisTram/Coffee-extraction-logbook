@@ -3043,6 +3043,35 @@ ferme le clavier, il ne doit pas enregistrer une tasse à moitié saisie.
 Les boutons rapides restent (−5 s, +5 s, +15 s, « Reprendre le chrono ») : ils
 servent à corriger un temps du chrono sans rien retaper.
 
+### v9.60 : un troisième café, par une deuxième paire de colonnes
+
+Chris : « ta méthode blend marche si je mets 3 cafés ? » Non : la v9.56 nommait
+UN deuxième café (`blend_coffee_id`, `blend_g`).
+
+DEUX COLONNES DE PLUS, PAS UNE LISTE. `blend2_coffee_id` et `blend2_g`, la
+même paire une seconde fois. Une liste libre (« id:g|id:g » dans une colonne)
+aurait permis quatre ou cinq cafés, mais elle changeait le sens d'une colonne
+déjà écrite chez Chris et rendait le CSV illisible à la main, pour un cas que
+lui-même décrit comme rare. Trois cafés couvrent « deux fins de sachet et un
+sachet neuf » ; un quatrième se rajoutera de la même façon s'il le demande.
+
+UNE SEULE LECTURE. `TOOLS.blendParts(e)` rend les cafés ajoutés, `[{ id, g }]` ;
+`blendGrams`, `isBlend`, `drawsFrom` et `gramsFrom` s'écrivent dessus. Tout
+ce qui lisait le mélange passait déjà par eux, donc le stock, les moyennes,
+les records, les paliers et le filtre du journal suivent sans être touchés.
+Un café n'est dans la tasse qu'une fois (une paire qui renomme un café déjà là
+se relit vide), un troisième café seul remonte à la deuxième place, et les
+grammes ajoutés ne dépassent jamais la dose : le premier ajouté est servi
+d'abord.
+
+LE FORMULAIRE SORT DE ui-entry.js. La deuxième ligne faisait passer le fichier
+au-dessus de ses 1 200 lignes : le mélange vit dans js/ui-blend.js, que la
+saisie appelle (`UI.fillBlendSelect`, `UI.updateBlend`, `UI.setBlend`,
+`UI.readBlend`).
+
+Schéma 28, pas vide comme le 27 : un onglet resté sur l'ancien code est refusé
+par la synchro au lieu d'effacer les deux nouvelles colonnes.
+
 ## Tests
 
 ### Ce que chaque suite couvre, et le bug qui l'a motivée

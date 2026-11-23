@@ -298,6 +298,7 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/ui-time-field.js` | le temps tapé « 3:50 » (v9.59, à la place des roues de la v9.13) : temps total, écoulement, boutons rapides |
 | `js/ui-dictate.js` | dicter le commentaire, mot à mot (v8.43, R13 en v9.22) : `wireDictation`, et `mergeDictation`, `revealStep` purs. Chargé AVANT ui-entry.js, qui l'emprunte |
 | `js/ui-entry.js` | formulaire, chronomètre |
+| `js/ui-blend.js` | les autres cafés d'une tasse mélangée (v9.56, un troisième en v9.60) : les deux lignes du formulaire, ce qu'elles proposent, ce que l'enregistrement lit |
 | `js/ui-entry-aside.js` | panneau latéral de la saisie, tasses jumelles |
 | `js/ui-recipe-source.js` | la fiche recette face à sa source (v9.29) : tableau tasse, recette, source, « Essayer la source », « Garder pour cette recette », ligne « Source » du Guide et du panneau, et `UI.patchHtml` (les chiffres `data-live` roulent au lieu de redessiner) |
 | `js/ui-pills.js` | pilules des diagnostics et des goûts, repli des familles |
@@ -426,7 +427,7 @@ active`
 temperature_c, total_time_s, flow_time_s, yield_ml,
 added_water_ml, milk_ml, stir_count, cup, preheated_water, score_10,
 diagnostic, descriptors, comment, heat_level, failed, heating_s, recipe_variant,
-blend_coffee_id, blend_g`
+blend_coffee_id, blend_g, blend2_coffee_id, blend2_g`
 
 - Seule la dose est obligatoire en saisie (étoile rouge). Date auto si vide.
 - `yield_ml` : `volume_extrait_ml` jusqu'à la v9.05 et `volume_tasse_ml` avant
@@ -441,9 +442,14 @@ blend_coffee_id, blend_g`
   une PART de `dose_g` : la dose reste le total de la tasse. Les deux vont
   ensemble : sans café, sans grammes, ou avec le café de la tasse lui-même, les
   deux se relisent vides. Toute la règle est dans `TOOLS` (js/tools.js) :
-  `blendGrams`, `isBlend`, `drawsFrom`, `gramsFrom`. Le stock retire à chaque
+  `blendParts`, `blendGrams`, `isBlend`, `drawsFrom`, `gramsFrom`. Le stock retire à chaque
   sachet ses propres grammes ; une tasse mélangée sort de `analyzableExts()`, des
-  records et des paliers, pour ses deux cafés.
+  records et des paliers, pour tous ses cafés.
+- `blend2_coffee_id`, `blend2_g` (v9.60, schéma 28) : le troisième café, la même
+  paire une seconde fois. Un café n'est dans la tasse qu'une fois, un troisième
+  seul remonte à la deuxième place, et les grammes ajoutés ne dépassent jamais
+  la dose. `DATA.calcs` donne `blend_g` (les grammes ajoutés en tout), `main_g`,
+  `blend_name` (« B + C ») et `blend_parts` (`[{ id, g, name }]`).
 - `recipe_variant` (v9.53, schéma 26) : les options d'une recette qui en a, aujourd'hui
   la seule Tetsu 4:6. Deux mots collés par un tiret, `sweet-heavy` : la coupe des
   40 premiers % de l'eau (`sweet` 1/3 puis 2/3, `balanced` moitié moitié, `bright`

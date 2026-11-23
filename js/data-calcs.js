@@ -210,16 +210,17 @@ const DATA_CALCS = (() => {
       if (ext.yield_ml !== "") {
         drink = ext.yield_ml + (ext.added_water_ml || 0) + (ext.milk_ml || 0);
       }
-      /* A BLEND (v9.56): each coffee at its own price per gram. A second
-         coffee without a price leaves the cost unknown, never counted free. */
+      /* A BLEND (v9.56, up to three coffees in v9.60): each coffee at its own
+         price per gram. An added coffee without a price leaves the cost
+         unknown, never counted free. */
       const blendG = TOOLS.blendGrams(ext);
-      const second = blendG > 0 ? state.coffees.find(c => c.id === ext.blend_coffee_id) || null : null;
+      const added = TOOLS.blendParts(ext).map(p => ({ id: p.id, g: p.g, coffee: state.coffees.find(c => c.id === p.id) || null }));
       let cost = "", realCost = "";
       if (coffee && coffee.price_vnd && coffee.bag_size_g && ext.dose_g) {
         if (blendG > 0) {
-          if (second && second.price_vnd && second.bag_size_g) {
+          if (added.every(p => p.coffee && p.coffee.price_vnd && p.coffee.bag_size_g)) {
             cost = Math.round(coffee.price_vnd / coffee.bag_size_g * (ext.dose_g - blendG) +
-              second.price_vnd / second.bag_size_g * blendG);
+              added.reduce((sum, p) => sum + p.coffee.price_vnd / p.coffee.bag_size_g * p.g, 0));
           }
         } else {
           cost = Math.round(coffee.price_vnd / coffee.bag_size_g * ext.dose_g);
@@ -253,11 +254,13 @@ const DATA_CALCS = (() => {
         cup_cost_vnd: cost,
         real_cost_vnd: realCost,
         coffee_name: coffee ? coffee.name : (ext.coffee_id ? "Café supprimé" : "Sans café"),
-        /* The blend (v9.56): the grams of the second coffee (0 without one),
-           those left to the first, and the second one's name. */
+        /* The blend (v9.56): the grams of the added coffees together (0
+           without one), those left to the cup's own, the added names in one
+           line (« B + C ») and each added coffee apart (v9.60). */
         blend_g: blendG,
         main_g: blendG > 0 && Number(ext.dose_g) > 0 ? Math.round((Number(ext.dose_g) - blendG) * 10) / 10 : "",
-        blend_name: blendG > 0 ? (second ? second.name : "Café supprimé") : "",
+        blend_name: added.map(p => (p.coffee ? p.coffee.name : "Café supprimé")).join(" + "),
+        blend_parts: added.map(p => ({ id: p.id, g: p.g, name: p.coffee ? p.coffee.name : "Café supprimé" })),
         ground: coffee ? Number(coffee.pre_ground) === 1 : false,
       };
     }

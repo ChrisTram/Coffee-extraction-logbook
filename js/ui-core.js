@@ -465,18 +465,19 @@ const UI = (() => {
   function blendWords(e) {
     const c = e && (e._c || DATA.calcs(e));
     if (!c || !(c.blend_g > 0)) return "";
-    const g = v => fmtDecimal(Number(v), 1);
-    return I18N.t("blend_words", { a: c.main_g === "" ? "" : g(c.main_g), n: I18N.tr(c.coffee_name), b: g(c.blend_g), m: I18N.tr(c.blend_name) }).trim();
+    // Two coffees or three (v9.60): the cup's own first, then each added one.
+    const part = (g, name) => (g === "" ? I18N.tr(name) : I18N.t("blend_part", { g: fmtDecimal(Number(g), 1), n: I18N.tr(name) }));
+    return [part(c.main_g, c.coffee_name)].concat(c.blend_parts.map(p => part(p.g, p.name))).join(" + ");
   }
   /* The mark of a blend next to a cup: `kind` is "badge" (the pill, next to a
      score) or "mention" (plain small text after a coffee name, which then
-     also names the second coffee). */
+     also names the added coffees). */
   function blendMark(e, kind) {
     if (!TOOLS.isBlend(e)) return "";
     const c = e._c || DATA.calcs(e);
     const title = titleAttr(blendWords(e) + ". " + I18N.t("blend_badge_title"));
     return kind === "mention"
-      ? '<span class="mention-blend" title="' + title + '">+ ' + TOOLS.escapeHtml(I18N.tr(c.blend_name)) + "</span>"
+      ? '<span class="mention-blend" title="' + title + '">+ ' + TOOLS.escapeHtml(c.blend_parts.map(p => I18N.tr(p.name)).join(" + ")) + "</span>"
       : '<span class="badge-blend" title="' + title + '">' + I18N.t("blend_badge") + "</span>";
   }
 

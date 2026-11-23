@@ -34,8 +34,8 @@
     "f-volume", "f-water-added", "f-milk", "f-agitation", "f-cup", "f-rating",
     "f-comment", "f-total-time", "f-flow-time",
     "f-power", "f-variant",
-    // v9.56: the second coffee of a blend and its grams.
-    "f-blend-coffee", "f-blend-g",
+    // v9.56: the second coffee of a blend and its grams; v9.60: the third.
+    "f-blend-coffee", "f-blend-g", "f-blend2-coffee", "f-blend2-g",
   ];
   // "ratée" and agitation were forgotten on restore (v8.72).
   const DRAFT_CHECKBOXES = ["f-preheat", "f-add-water-yes", "f-failed", "f-agitation-yes"];

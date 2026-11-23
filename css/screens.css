@@ -1620,6 +1620,9 @@ input[type="range"]::-moz-range-thumb {
 .blend-row input[type="number"] { flex: none; width: 5.2em; text-align: right; }
 .blend-of, .blend-unit { flex: none; color: var(--muted); font-size: 0.9rem; }
 .blend-body .field-hint { display: block; margin-top: 6px; }
+/* v9.60: the third coffee's row under the second's, and its small button. */
+.blend-row + .blend-row { margin-top: 8px; }
+.blend-body .blend-toggle { display: inline-block; }
 /* On a phone the menu takes its own row: beside the grams it showed four letters of the coffee. */
 @media (max-width: 560px) {
   .blend-row { flex-wrap: wrap; }

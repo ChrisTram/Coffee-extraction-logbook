@@ -25,7 +25,7 @@
  *    logout stop working.
  */
 
-const VERSION = "9.59";
+const VERSION = "9.60";
 const CACHE_NAME = "carnet-extraction";
 
 const versioned = url => url + "?v=" + VERSION;
@@ -122,6 +122,7 @@ const PRECACHE_URLS = [
   "./js/ui-dictate.js",
   "./js/ui-time-field.js",
   "./js/ui-entry.js",
+  "./js/ui-blend.js",
   "./js/ui-entry-aside.js",
   "./js/ui-recipe-source.js",
   "./js/ui-pills.js",

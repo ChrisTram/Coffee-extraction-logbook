@@ -526,9 +526,9 @@ export function createLogbookServer(options = {}) {
       // v9.53: the 4:6 options of the cup, in words ("sucré, corps plein").
       e.recipe_variant ? "variante " + [app.TETSU.parse(e.recipe_variant).v40.short, app.TETSU.parse(e.recipe_variant).v60.short].join(", ") : "",
       e.dose_g !== "" ? "dose " + e.dose_g + " g" : "",
-      // v9.56: a blend names its second coffee and its grams, a share of the dose.
-      app.TOOLS.isBlend(e) ? "mélange, dont " + e.blend_g + " g de " +
-        ((snap.state.coffees.find(c => c.id === e.blend_coffee_id) || {}).name || "café supprimé") + " (hors moyennes)" : "",
+      // v9.56: a blend names its added coffees (one or two) and their grams, a share of the dose.
+      app.TOOLS.isBlend(e) ? "mélange, dont " + app.TOOLS.blendParts(e).map(p => p.g + " g de " +
+        ((snap.state.coffees.find(c => c.id === p.id) || {}).name || "café supprimé")).join(" et ") + " (hors moyennes)" : "",
       e.water_g !== "" ? "eau " + e.water_g + " g" : "",
       e.grind_dial ? "mouture " + e.grind_dial : "",
       e.temperature_c !== "" ? e.temperature_c + " °C" : "",
