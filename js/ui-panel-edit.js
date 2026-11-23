@@ -10,7 +10,7 @@
  *     next cup, the focus staying on the dial, so a row of cups is rated in a
  *     row. A small line says « Note enregistrée » with « Annuler » for a few
  *     seconds, and a first 9 or a first 10 reached late gets its moment there.
- *   - THE QUICK EDITS: the tastes (his usual ones first, and a search), the
+ *   - THE QUICK EDITS: the tastes (this coffee's first, and a search), the
  *     diagnostic, the comment with its microphone (R13), the main figures
  *     (grind, water or heat, total time, dose and water), each saved on
  *     blur or Enter, read and written the way the entry form does.
@@ -148,17 +148,22 @@
     return next;
   }
 
-  /* HIS USUAL TASTES: the tastes he ticks most, those of this coffee
-     counting three times, the most frequent first, then the order of the
-     wheel. Pure. */
+  /* THE USUAL TASTES OF THIS COFFEE (v9.58): the tastes ticked on the cups
+     of this coffee come first, the most ticked on it first. Until v9.57 they
+     only counted three times among all his tastes: a taste ticked often on
+     other coffees went ahead of one this coffee really has. His other tastes
+     follow, the most ticked first, only to fill the list (a new coffee has
+     none of its own yet). A tie goes to the taste he ticks most overall, then
+     to the order of the wheel. Pure. */
   function usualTastes(exts, coffeeId, limit, all) {
-    const count = new Map();
+    const own = new Map(), count = new Map();
     (exts || []).forEach(e => String(e.descriptors || "").split("|").filter(Boolean).forEach(t => {
-      count.set(t, (count.get(t) || 0) + (coffeeId && e.coffee_id === coffeeId ? 3 : 1));
+      count.set(t, (count.get(t) || 0) + 1);
+      if (coffeeId && e.coffee_id === coffeeId) own.set(t, (own.get(t) || 0) + 1);
     }));
     const order = all || [];
-    return [...count.keys()].sort((a, b) => count.get(b) - count.get(a) ||
-      (order.indexOf(a) < 0 ? 999 : order.indexOf(a)) - (order.indexOf(b) < 0 ? 999 : order.indexOf(b)))
+    const place = t => (order.indexOf(t) < 0 ? 999 : order.indexOf(t));
+    return [...count.keys()].sort((a, b) => (own.get(b) || 0) - (own.get(a) || 0) || count.get(b) - count.get(a) || place(a) - place(b))
       .slice(0, limit || USUAL_TASTES);
   }
 

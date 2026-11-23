@@ -500,7 +500,7 @@ Object.assign(I18N_FR, {
     pe_err_number: { fr: "Un nombre, avec une virgule si besoin" },
     pe_err_range: { fr: "Entre {a} et {b}" },
     pe_tastes: { fr: "Goûts" },
-    pe_tastes_usual: { fr: "tes habituels d'abord" },
+    pe_tastes_usual: { fr: "ceux de ce café d'abord" },
     pe_tastes_search: { fr: "Chercher un goût" },
     pe_tastes_none: { fr: "Aucun goût de ce nom" },
     pe_diag: { fr: "Diagnostic" },

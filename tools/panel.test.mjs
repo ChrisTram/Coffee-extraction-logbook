@@ -107,7 +107,12 @@ const P = load("js/ui-panel-edit.js", stubUI()).panelEditMath;
   ];
   const all = ["rond", "caramel", "miel", "fruits rouges", "cacao"];
   const usual = P.usualTastes(exts, "a", 10, all);
-  check("the tastes of this coffee count three times, then the most ticked", usual.slice(0, 2).join() === "rond,caramel" && usual.includes("fruits rouges"), usual.join());
+  check("the tastes of this coffee first, his other tastes only after them", usual.join() === "rond,caramel,miel,fruits rouges", usual.join());
+  // v9.58: a taste ticked five times elsewhere does not go ahead of one this coffee has once.
+  const loud = exts.concat(Array.from({ length: 5 }, () => ({ coffee_id: "b", descriptors: "cacao" })));
+  check("however often a taste is ticked on other coffees", P.usualTastes(loud, "a", 10, all).join() === "rond,caramel,miel,cacao,fruits rouges", P.usualTastes(loud, "a", 10, all).join());
+  check("on this coffee, the most ticked first", P.usualTastes(exts.concat([{ coffee_id: "a", descriptors: "miel" }]), "a", 10, all)[0] === "miel");
+  check("a coffee without a taste yet gets his usual ones", P.usualTastes(exts, "new", 10, all).slice(0, 2).join() === "rond,fruits rouges");
   check("the list is cut to its limit", P.usualTastes(exts, "a", 2, all).length === 2);
   check("the search ignores case and accents, the names starting with it first",
     P.findTastes("RO", ["fruits rouges", "rond"]).join() === "rond,fruits rouges" &&

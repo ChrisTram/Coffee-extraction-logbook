@@ -223,7 +223,7 @@ LA TASSE QU'ON ÉCRIT DANS LE PANNEAU (v9.27, `js/ui-panel-edit.js`). Sur ordina
 tasse ouverte à côté (`js/ui-panel.js`) se modifie sur place : la note d'abord (le
 cadran J1 sur son propre curseur `#pe-rating`, demi-points, « Tasse ratée », Effacer),
 puis la mouture, l'eau ou le feu, le temps total, la dose et l'eau (lus et écrits
-comme la saisie : `GRIND.parseDial`, m:ss, virgule), les goûts (ses habituels d'abord,
+comme la saisie : `GRIND.parseDial`, m:ss, virgule), les goûts (ceux de ce café d'abord,
 ceux du café comptant triple, et une recherche), le diagnostic, le commentaire et son
 micro (R13). Sous eux, en lecture : les autres mesures, la place face à la moyenne du
 café (la réglette de la dernière tasse, `UI.rankAmongSiblings`), les tasses jumelles

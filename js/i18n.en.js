@@ -1237,7 +1237,7 @@ const I18N_EN = {
     pe_err_number: "A number, with a decimal point if needed",
     pe_err_range: "Between {a} and {b}",
     pe_tastes: "Tastes",
-    pe_tastes_usual: "your usual ones first",
+    pe_tastes_usual: "this coffee's first",
     pe_tastes_search: "Find a taste",
     pe_tastes_none: "No taste by that name",
     pe_diag: "Diagnosis",
