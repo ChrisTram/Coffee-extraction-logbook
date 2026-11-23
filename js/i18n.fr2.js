@@ -343,7 +343,7 @@ Object.assign(I18N_FR, {
     hc_legend_coffees: { fr: "Cafés" },
     hc_legend_recipes: { fr: "Recettes" },
     hc_matrix_title: { fr: "Quelle recette pour quel café" },
-    hc_matrix_sub: { fr: "Ta moyenne et le nombre de tasses ; la meilleure de chaque café est cerclée." },
+    hc_matrix_sub: { fr: "Tout ton carnet : ta moyenne et le nombre de tasses. La meilleure recette de chaque café est cerclée ; un point gris, un café que tu ne bois plus." },
     hc_cell_title: { fr: "{c}, {r} : {m} de moyenne sur {n} tasse{s}. Voir ces tasses." },
     hc_cell_none: { fr: "{c}, {r} : pas encore essayé" },
     // v9.43: Analyses on a narrow page (js/ui-analytics.js).
@@ -596,4 +596,9 @@ Object.assign(I18N_FR, {
     blend_badge_title: { fr: "Deux cafés dans la tasse : hors des moyennes et des conseils, comptée dans le stock de chaque sachet." },
     blend_meta: { fr: "Mélange : {q} · hors moyennes" },
     blend_panel: { fr: "Mélange : {q}. Cette tasse ne compte dans la moyenne d'aucun des deux cafés ; chaque sachet a perdu ses grammes." },
+    // matrix (v9.57)
+    hc_matrix_all_coffees: { fr: "Tous les cafés" },
+    hc_matrix_all_recipes: { fr: "Toutes les recettes" },
+    hc_matrix_everything: { fr: "Tout ton carnet" },
+    hc_total_title: { fr: "{w} : {m} de moyenne sur {n} tasse{s}. Voir ces tasses." },
 });

@@ -242,6 +242,10 @@
      that is the point of the logbook. Stored values are French, display
      goes through I18N.tag. */
   const LATEST_SHOWN = 6;
+  /* v9.57: a few more wait hidden behind the six. Beside a matrix grown taller
+     than them (the whole logbook), as many as fill the gap show
+     (UI.fitLatest, js/ui-home-charts.js); on one column, the six stay six. */
+  const LATEST_MORE = 8;
   const MAX_LAST_TASTES = 4;
   /* `lead` goes first in the row, before the tastes: the pill of a cup that
      came in from the other device (Q13, v9.17). */
@@ -267,6 +271,6 @@
   }
 
   Object.assign(UI, {
-    LATEST_SHOWN, lastTastes, shortMeasures, renderLastCup, timeSince, rankAmongSiblings,
+    LATEST_SHOWN, LATEST_MORE, lastTastes, shortMeasures, renderLastCup, timeSince, rankAmongSiblings,
   });
 })();

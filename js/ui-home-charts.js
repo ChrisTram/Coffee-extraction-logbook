@@ -9,6 +9,8 @@
  *   - QUELLE RECETTE POUR QUEL CAFÉ (#home-matrix): a recipe per row, a
  *     coffee per column, the average in each cell, tinted by the score, the
  *     best of each coffee ringed. A cell opens its cups in the journal.
+ *     Since v9.57 it reads the whole logbook (every coffee, every recipe),
+ *     with the average of each recipe and of each coffee in its margins.
  *   - TES 30 DERNIERS JOURS (#home-days, right under the open coffees and
  *     across the page since v9.46; 15 days in v9.44): one mark per cup, its
  *     day along, its score up, the day's average as a line. A cup not rated
@@ -136,6 +138,42 @@
       col.filter(x => x.avg === top).forEach(x => { x.best = true; });
     });
     return rows;
+  }
+
+  /* THE WHOLE LOGBOOK (v9.57): which coffees and which recipes the matrix
+     shows, and in which order. The coffees and recipes of the last 60 days
+     come first, in the order of the home's codes (so the colours and the
+     shapes stay at the head); then every other coffee that has a rated cup,
+     the one drunk last first, and every other recipe, the most brewed first.
+     `cups`: the analysable cups. */
+  function matrixAxes(cups, codes) {
+    const last = {}, count = {};
+    cups.filter(rated).forEach(e => {
+      if (e.coffee_id && (!last[e.coffee_id] || String(e.date_time) > last[e.coffee_id])) last[e.coffee_id] = String(e.date_time);
+      const r = recipeOf(e);
+      if (r) count[r] = (count[r] || 0) + 1;
+    });
+    const coffees = codes.coffees.slice();
+    Object.keys(last).filter(id => !coffees.includes(id))
+      .sort((a, b) => last[b].localeCompare(last[a]) || a.localeCompare(b)).forEach(id => coffees.push(id));
+    const recipes = codes.recipes.slice();
+    Object.keys(count).filter(r => !recipes.includes(r))
+      .sort((a, b) => count[b] - count[a] || a.localeCompare(b)).forEach(r => recipes.push(r));
+    return { coffees: coffees, recipes: recipes, recent: codes.coffees.length };
+  }
+
+  /* THE MARGINS (v9.57): the average of each recipe over the coffees shown,
+     of each coffee over the recipes shown, and of them all. { avg, n } or
+     null, like a cell. `rows` is what recipeMatrix returned. */
+  function matrixTotals(cups, coffees, rows) {
+    const shown = new Set(rows.map(r => r.recipe));
+    const list = cups.filter(e => rated(e) && coffees.includes(e.coffee_id) && shown.has(recipeOf(e)));
+    const mean = l => (l.length ? { avg: average(l.map(e => Number(e.score_10))), n: l.length } : null);
+    return {
+      rows: rows.map(r => mean(list.filter(e => recipeOf(e) === r.recipe))),
+      cols: coffees.map(c => mean(list.filter(e => e.coffee_id === c))),
+      all: mean(list),
+    };
   }
 
   /* THE OPTIONS OF A RECIPE THAT HAS SOME (v9.55): the Tetsu 4:6 split by
@@ -274,7 +312,13 @@
 
   // ---------- The matrix ----------
 
-  const MATRIX_COFFEES = 4, MATRIX_RECIPES = 6;
+  /* v9.57: the whole logbook, not the four coffees and six recipes of the
+     last 60 days. The bounds are only there against a logbook gone wild; a
+     card too narrow for its columns slides sideways (css/home.css). */
+  const MATRIX_COFFEES = 14, MATRIX_RECIPES = 16;
+  // From this many coffees on, the matrix takes half of a wide home instead of its third.
+  const MATRIX_WIDE_FROM = 6;
+  let matrixCols = 0;
   // The accent, stronger with the score: pale at 5 and under, full from 9.
   const tint = m => Math.round(Math.max(0.1, Math.min(1, (m - 5) / 4)) * 62);
   // "sucré · corps plein", and the pours as small bars, to scale (as the chip of js/ui-guide.js).
@@ -285,14 +329,27 @@
       .map((p, i) => '<i class="' + (i < 2 ? "a" : "b") + '" style="flex:' + p + ' 1 0"></i>').join("") + "</span>";
   }
   function matrixHtml(o, codes) {
-    const coffees = codes.coffees.slice(0, MATRIX_COFFEES);
-    const rows = recipeMatrix(o.analyzable.filter(e => coffees.includes(e.coffee_id)), coffees, codes.recipes).slice(0, MATRIX_RECIPES);
+    matrixCols = 0;
+    const axes = matrixAxes(o.analyzable, codes);
+    // A coffee deleted since has no name: no column for it.
+    const coffees = axes.coffees.filter(id => coffeeName(id)).slice(0, MATRIX_COFFEES);
+    const rows = recipeMatrix(o.analyzable.filter(e => coffees.includes(e.coffee_id)), coffees, axes.recipes).slice(0, MATRIX_RECIPES);
     if (!rows.length || !coffees.length) return "";
+    matrixCols = coffees.length;
+    const totals = matrixTotals(o.analyzable, coffees, rows);
+    const old = id => codes.colour(id) === 0;
     const head = '<div class="card-head"><h3>' + escapeHtml(I18N.t("hc_matrix_title")) + '</h3></div><p class="hc-sub">' + escapeHtml(I18N.t("hc_matrix_sub")) + "</p>";
-    const cols = coffees.map(id => '<span class="hm-col" role="columnheader" title="' + titleAttr(coffeeName(id)) + '"><i class="hc-dot c' + codes.colour(id) +
-      '" aria-hidden="true"></i><span>' + escapeHtml(coffeeName(id)) + "</span></span>").join("");
+    const cols = coffees.map(id => '<span class="hm-col' + (old(id) ? " old" : "") + '" role="columnheader" title="' + titleAttr(coffeeName(id)) + '"><i class="hc-dot c' + codes.colour(id) +
+      '" aria-hidden="true"></i><span>' + escapeHtml(coffeeName(id)) + "</span></span>").join("") +
+      '<span class="hm-col hm-total-head" role="columnheader"><span>' + escapeHtml(I18N.t("hc_matrix_all_coffees")) + "</span></span>";
+    // A margin's cell: the average of a whole row or column, which opens its cups too.
+    const total = (t, attrs, tip) => (t
+      ? '<button type="button" class="hm-cell hm-total" role="cell" style="--t:' + tint(t.avg) + '%"' + attrs + ' title="' + titleAttr(tip) + '" aria-label="' + titleAttr(tip) +
+        '"><b>' + fmtRating(t.avg) + "</b><small>" + t.n + "</small></button>"
+      : '<span class="hm-cell hm-total none" role="cell">·</span>');
+    const totalTip = (what, t) => (t ? I18N.t("hc_total_title", { w: what, m: fmtRating(t.avg), n: t.n, s: plural(t.n) }) : "");
     const cups = o.analyzable.filter(e => coffees.includes(e.coffee_id));
-    const body = rows.map(row => {
+    const body = rows.map((row, ri) => {
       const recipe = I18N.tr(row.recipe);
       /* v9.55: the Tetsu 4:6 says its options, discreetly. One option used:
          its bars and its words under the recipe's name. Several: a thin row
@@ -310,11 +367,19 @@
           '" data-matrix-recipe="' + titleAttr(row.recipe) + '" title="' + titleAttr(tip) + '" aria-label="' + titleAttr(tip) + '"><b>' + fmtRating(c.avg) + "</b><small>" + c.n + "</small></button>";
       }).join("");
       const subs = variants.length > 1 ? variants.map(v => '<span class="hm-row hm-sub" role="rowheader" title="' + titleAttr(recipe + " · " + variantWords(v.code) + " (" + TETSU.signature(v.water || 225, v.code) + " g)") + '">' +
-        variantBars(v) + "<span>" + escapeHtml(variantWords(v.code)) + "</span></span>" + cells(v.cells, v)).join("") : "";
-      return head + cells(row.cells, null) + subs;
+        variantBars(v) + "<span>" + escapeHtml(variantWords(v.code)) + "</span></span>" + cells(v.cells, v) + '<span class="hm-gap" aria-hidden="true"></span>').join("") : "";
+      const t = totals.rows[ri];
+      return head + cells(row.cells, null) + total(t, ' data-matrix-recipe="' + titleAttr(row.recipe) + '"', totalTip(recipe, t)) + subs;
     }).join("");
-    return head + '<div class="hm-grid" role="table" aria-label="' + titleAttr(I18N.t("hc_matrix_title")) + '" style="--cols:' + coffees.length + '">' +
-      '<span class="hm-corner" aria-hidden="true"></span>' + cols + body + "</div>";
+    // The foot: each coffee over all its recipes, and the whole in the corner.
+    const foot = '<span class="hm-row hm-total-row" role="rowheader"><span>' + escapeHtml(I18N.t("hc_matrix_all_recipes")) + "</span></span>" +
+      coffees.map((id, i) => total(totals.cols[i], ' data-matrix-coffee="' + titleAttr(id) + '"', totalTip(coffeeName(id), totals.cols[i]))).join("") +
+      (totals.all ? '<span class="hm-cell hm-total hm-all" role="cell" style="--t:' + tint(totals.all.avg) + '%" title="' + titleAttr(totalTip(I18N.t("hc_matrix_everything"), totals.all)) +
+        '"><b>' + fmtRating(totals.all.avg) + "</b><small>" + totals.all.n + "</small></span>" : '<span class="hm-cell hm-total none" role="cell">·</span>');
+    /* The grid slides sideways when the card is too narrow for its columns,
+       the recipes' names staying in place (css/home.css). */
+    return head + '<div class="hm-scroll"><div class="hm-grid" role="table" aria-label="' + titleAttr(I18N.t("hc_matrix_title")) + '" style="--cols:' + coffees.length + '">' +
+      '<span class="hm-corner" aria-hidden="true"></span>' + cols + body + foot + "</div></div>";
   }
 
   // ---------- The bags, until when ----------
@@ -397,6 +462,26 @@
     return true;
   }
 
+  /* THE LATEST CUPS FILL THE GAP (v9.57). On two columns the matrix, now the
+     whole logbook, is often taller than the last cup and the six latest cups
+     beside it. The rows waiting behind the six (LATEST_MORE, js/ui-last-cup.js)
+     show, as many as the gap holds; on one column, or with a short matrix,
+     none does. Measured, so called after every render and when the home
+     changes width. */
+  function fitLatest() {
+    const main = $(".home-main"), side = $("#home-side");
+    const more = Array.from(document.querySelectorAll("#latest-list tr.more"));
+    if (!main || !side || !more.length) return;
+    more.forEach(tr => { tr.hidden = true; });
+    const a = main.getBoundingClientRect(), b = side.getBoundingClientRect();
+    const row = document.querySelector("#latest-list tr:not(.more)");
+    const rowH = row ? row.getBoundingClientRect().height : 0;
+    // Side by side only: stacked, the side starts under the main column.
+    if (!(rowH > 0) || !(b.left > a.left + 40) || $("#home-matrix").hidden) return;
+    const n = Math.floor((b.height - a.height) / rowH);
+    more.slice(0, Math.max(0, n)).forEach(tr => { tr.hidden = false; });
+  }
+
   // Called by renderHome with what the dashboard already computed.
   function renderHomeCharts(o) {
     const now = new Date();
@@ -405,18 +490,37 @@
     const ctx = { exts: o.exts, analyzable: o.analyzable, now: now };
     put($("#home-days"), daysHtml(ctx, codes));
     put($("#home-matrix"), matrixHtml(ctx, codes));
+    // Many coffees: the matrix takes half of a wide home (css/home.css).
+    const layout = $(".home-layout");
+    if (layout) layout.classList.toggle("matrix-wide", matrixCols >= MATRIX_WIDE_FROM);
+    fitLatest();
     put($("#home-stock"), stockHtml(ctx, codes));
   }
 
   function wireHomeCharts() {
+    // The gap beside the matrix changes with the home's width.
+    const layout = $(".home-layout");
+    if (layout && typeof ResizeObserver === "function") {
+      let frame = 0, width = 0;
+      new ResizeObserver(entries => {
+        const w = Math.round(entries[0].contentRect.width);
+        if (w === width) return;
+        width = w;
+        cancelAnimationFrame(frame);
+        frame = requestAnimationFrame(fitLatest);
+      }).observe(layout);
+    }
     const matrix = $("#home-matrix");
     if (matrix) matrix.addEventListener("click", ev => {
-      const b = ev.target.closest && ev.target.closest("[data-matrix-coffee]");
+      const b = ev.target.closest && ev.target.closest("[data-matrix-coffee], [data-matrix-recipe]");
       if (!b) return;
-      // The cups of that recipe on that coffee, in the journal.
-      UI.openHistoryOn({ "h-coffee": b.getAttribute("data-matrix-coffee"), "h-search": b.getAttribute("data-matrix-recipe") });
+      // The cups of that recipe on that coffee, in the journal; a margin's cell has only one of the two.
+      const filters = {};
+      if (b.getAttribute("data-matrix-coffee")) filters["h-coffee"] = b.getAttribute("data-matrix-coffee");
+      if (b.getAttribute("data-matrix-recipe")) filters["h-search"] = b.getAttribute("data-matrix-recipe");
+      UI.openHistoryOn(filters);
     });
   }
 
-  Object.assign(UI, { homeCodes, lastDays, cupX, scoreScale, recipeMatrix, variantRows, bagLine, renderHomeCharts, wireHomeCharts });
+  Object.assign(UI, { homeCodes, lastDays, cupX, scoreScale, recipeMatrix, matrixAxes, matrixTotals, variantRows, bagLine, fitLatest, renderHomeCharts, wireHomeCharts });
 })();

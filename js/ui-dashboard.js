@@ -17,7 +17,7 @@
     isFailed, analyzableExts, extsWithCalcs, fmtDecimal, fmtHour, average, nav, fallbacks, findRecipe } = UI;
   // And from the two pieces moved out of here in v8.78, loaded just before.
   const { MIN_GAP, MIN_SAMPLE, fmtRating, wireFindings, renderInsights,
-    LATEST_SHOWN, shortMeasures, renderLastCup } = UI;
+    LATEST_SHOWN, LATEST_MORE, shortMeasures, renderLastCup } = UI;
 
   // ---------- Activity calendar ----------
   // 18 weeks and not 26: at one or two cups a day, six months of grid are
@@ -545,17 +545,18 @@
        the cup itself, a tap away (and in the hover sheet on a computer). Six
        cups (five in v9.41, eight before). */
     const latestCups = [...exts].sort((a, b) => b.date_time.localeCompare(a.date_time))
-      .slice(0, LATEST_SHOWN);
+      .slice(0, LATEST_SHOWN + LATEST_MORE);
     const dayShort = dt => new Date(String(dt).slice(0, 10) + "T12:00").toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" });
     /* Q13 (v9.17): a cup that came in from the other device wears a pill
        after its coffee's name, and slides in once (js/ui-arrivals.js). */
     const arrived = UI.recentArrivals();
     /* Each line opens its extraction. role and tabindex rather than a real
        button: a table row cannot be one. Delegated in wireDashboard. */
-    $("#latest-list").innerHTML = latestCups.map(e => {
+    $("#latest-list").innerHTML = latestCups.map((e, i) => {
       const came = arrived.has(e.id);
-      return '<tr class="last-clickable' + (isFailed(e) ? " row-failed" : "") + (came ? " arrived" : "") +
-      '" data-ext="' + e.id + '" tabindex="0" role="button" title="' + titleAttr(I18N.t("history_edit")) + '">' +
+      // Past the six, a row waits hidden until the home has room for it (v9.57).
+      return '<tr class="last-clickable' + (isFailed(e) ? " row-failed" : "") + (came ? " arrived" : "") + (i >= LATEST_SHOWN ? " more" : "") +
+      '" data-ext="' + e.id + '" tabindex="0" role="button" title="' + titleAttr(I18N.t("history_edit")) + '"' + (i >= LATEST_SHOWN ? " hidden" : "") + ">" +
       '<td class="d-when"><b>' + dayShort(e.date_time) + "</b> " + fmtHour(e.date_time) + "</td>" +
       '<td class="d-coffee"><span class="dot-method ' + e.method.toLowerCase() +
         '" title="' + titleAttr(e.method) + '"></span><b>' + I18N.tr(e._c.coffee_name) + "</b>" + UI.blendMark(e, "mention") +

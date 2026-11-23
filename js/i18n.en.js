@@ -1083,7 +1083,7 @@ const I18N_EN = {
     hc_legend_coffees: "Coffees",
     hc_legend_recipes: "Recipes",
     hc_matrix_title: "Which recipe for which coffee",
-    hc_matrix_sub: "Your average and the number of cups; the best of each coffee is ringed.",
+    hc_matrix_sub: "Your whole logbook: your average and the number of cups. The best recipe of each coffee is ringed; a grey dot, a coffee you no longer drink.",
     hc_cell_title: "{c}, {r}: {m} on average over {n} cup{s}. See these cups.",
     hc_cell_none: "{c}, {r}: not tried yet",
     an_findings_more: "See {n} more finding{s}",
@@ -1333,6 +1333,11 @@ const I18N_EN = {
     blend_badge_title: "Two coffees in the cup: left out of the averages and the advice, counted in the stock of each bag.",
     blend_meta: "Blend: {q} · out of the averages",
     blend_panel: "Blend: {q}. This cup counts in neither coffee's average; each bag lost its own grams.",
+    // matrix (v9.57)
+    hc_matrix_all_coffees: "All coffees",
+    hc_matrix_all_recipes: "All recipes",
+    hc_matrix_everything: "Your whole logbook",
+    hc_total_title: "{w}: {m} on average over {n} cup{s}. See these cups.",
   },
 
   UI: {

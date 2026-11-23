@@ -143,6 +143,30 @@ const before = (from, k) => { const d = new Date(from); d.setDate(d.getDate() - 
   check("a cell is the average and the count, or nothing", m[0].cells[0].avg === 7.5 && m[0].cells[0].n === 1 && m[1].cells[1] === null);
   check("the best recipe of a coffee is flagged, when it has two to compare", m[1].cells[0].best === true && m[0].cells[0].best === false && m[0].cells[1].best === false);
 
+  // v9.57: the matrix reads the whole logbook, and has margins.
+  {
+    const codes = { coffees: ["new", "open"], recipes: ["R1"] };
+    const cup = (coffee, recipe, day, score) => ({ coffee_id: coffee, recipe: recipe, date_time: "2026-" + day + "T08:00", score_10: score });
+    const all = [cup("new", "R1", "11-20", 8), cup("new", "R1", "11-21", 7), cup("old1", "R2", "08-01", 6), cup("old2", "R3", "09-01", 9), cup("old2", "R2", "09-02", 7),
+      cup("old3", "R1", "07-01", ""), cup("", "R1", "06-01", 5)];
+    const axes = UI.matrixAxes(all, codes);
+    check("the coffees of the last 60 days and the open ones first, then every coffee with a rated cup, the one drunk last first",
+      axes.coffees.join() === "new,open,old2,old1" && axes.recent === 2, axes.coffees.join());
+    check("the recipes of the last 60 days first, then every other one, the most brewed first", axes.recipes.join() === "R1,R2,R3", axes.recipes.join());
+    const rows = UI.recipeMatrix(all.filter(e => axes.coffees.includes(e.coffee_id)), axes.coffees, axes.recipes);
+    check("an old coffee and an old recipe have their cells", rows.length === 3 && rows[1].recipe === "R2" && rows[1].cells[3].avg === 6 && rows[2].cells[2].avg === 9);
+    const t = UI.matrixTotals(all, axes.coffees, rows);
+    check("the margin of a recipe: its average over every coffee shown", t.rows[0].avg === 7.5 && t.rows[0].n === 2 && t.rows[1].avg === 6.5 && t.rows[1].n === 2);
+    check("the margin of a coffee: its average over every recipe; none without a rated cup", t.cols[2].avg === 8 && t.cols[2].n === 2 && t.cols[1] === null);
+    check("the corner: everything shown, a cup without a coffee left out", t.all.n === 5 && Math.abs(t.all.avg - 7.4) < 1e-9, JSON.stringify(t.all));
+    const src = read("js/ui-home-charts.js"), css = read("css/home.css");
+    check("no more four coffees and six recipes", /const MATRIX_COFFEES = 14, MATRIX_RECIPES = 16;/.test(src) && src.includes("matrixAxes(o.analyzable, codes)"));
+    check("a narrow card slides sideways, the recipes' names in place", css.includes(".hm-scroll { overflow-x: auto;") && /.hm-corner, .hm-row { position: sticky; left:/.test(css));
+    check("with many coffees the matrix takes half of a wide home", src.includes('classList.toggle("matrix-wide"') && css.includes(".home-layout.matrix-wide { grid-template-columns: minmax(0, 1fr) minmax(280px, 1fr); }"));
+    check("the latest cups keep six, more wait hidden for the gap beside the matrix", /const LATEST_MORE = 8;/.test(read("js/ui-last-cup.js")) &&
+      read("js/ui-dashboard.js").includes('(i >= LATEST_SHOWN ? " hidden" : "")') && css.includes("tr.last-clickable[hidden] { display: none; }") && src.includes("function fitLatest()"));
+  }
+
   // v9.55: the Tetsu 4:6 split by its options, only those used.
   const vc = [
     { coffee_id: "a", recipe: "Tetsu 4:6", recipe_variant: "sweet-heavy", score_10: 8, water_g: 225 },

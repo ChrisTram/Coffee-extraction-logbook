@@ -2989,6 +2989,33 @@ inaperçu, un menu vide non.
 LE PAS 27 ne réécrit rien : il monte la version pour qu'un onglet resté sur
 l'ancien code soit refusé par la synchro au lieu d'effacer les deux colonnes.
 
+### v9.57 : la matrice recette par café lit tout le carnet
+
+Chris : « moyen d'améliorer ce graph pour qu'on voie plus de cafés et de
+recettes ? C'est mon préféré avec celui des 30 derniers jours. » La carte
+montrait quatre cafés et six recettes des 60 derniers jours, avec du vide en
+dessous.
+
+TOUT, SANS RÉGLAGE. Pas de bascule « 60 jours / tout » : la question que la
+matrice pose (quelle recette pour quel café) n'a pas de fenêtre, et un café
+fini reste la meilleure référence pour le prochain du même genre. Les cafés
+récents gardent la tête et leurs couleurs, les anciens suivent en gris : le
+code de l'accueil (une couleur est un café, sur 60 jours) ne change pas.
+
+LES MARGES. Avec plus de lignes et de colonnes, l'œil cherche la synthèse :
+une colonne « Tous les cafés » et une ligne « Toutes les recettes », cerclées
+et non pleines pour ne pas se lire comme une recette ou un café de plus. Elles
+moyennent les tasses, pas les cases : une case à une tasse ne pèse pas autant
+qu'une case à neuf.
+
+LA PLACE. Une colonne ne descend pas sous 50 px (en dessous le chiffre et le
+nom ne se lisent plus) ; au lieu de rétrécir, la grille glisse, le nom des
+recettes collé à gauche. À partir de six cafés la carte prend la moitié d'un
+accueil large. Elle devient plus haute que la colonne de gauche : plutôt que de
+laisser un vide, « Tes dernières tasses » affiche les lignes qui tiennent dans
+l'écart, mesuré après chaque rendu (`UI.fitLatest`). Sur une colonne rien ne
+change, six tasses.
+
 ## Tests
 
 ### Ce que chaque suite couvre, et le bug qui l'a motivée
