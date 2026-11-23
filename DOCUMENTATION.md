@@ -295,7 +295,7 @@ figées, compatibilité des CSV par migration, base de conversion du moulin à
 | `js/ui-cup.js` | la tasse dessinée (v9.13) : carte après l'enregistrement, tasse du mode Brassage |
 | `js/ui-dial.js` | le cadran du moulin (v9.13) : saisie, formulaire de recette, Paramètres |
 | `js/ui-rating-dial.js` | le cadran de note (v9.13), interrupteur `RATING_DIAL_ON` |
-| `js/ui-wheel.js` | les roues des durées (v9.13) : temps total, écoulement, chauffe |
+| `js/ui-time-field.js` | le temps tapé « 3:50 » (v9.59, à la place des roues de la v9.13) : temps total, écoulement, boutons rapides |
 | `js/ui-dictate.js` | dicter le commentaire, mot à mot (v8.43, R13 en v9.22) : `wireDictation`, et `mergeDictation`, `revealStep` purs. Chargé AVANT ui-entry.js, qui l'emprunte |
 | `js/ui-entry.js` | formulaire, chronomètre |
 | `js/ui-entry-aside.js` | panneau latéral de la saisie, tasses jumelles |
@@ -1592,12 +1592,14 @@ qu'avant.
   (Android). Il écrit le curseur caché (`#f-rating`, `#q-rating`, `#br-rating`) et
   déclenche son événement, donc « pas encore notée » marche comme avant.
   `RATING_DIAL_ON = false` remet les curseurs partout.
-- **La durée à la roue** (M7, js/ui-wheel.js) : temps total, écoulement et chauffe
-  sur deux roues à crans (scroll-snap), trois lignes de haut ; les champs nombre
-  sont posés sur la ligne du milieu, un toucher dessus fait taper. −5 s, +5 s,
-  +15 s, et « Reprendre le chrono » quand le chrono a un temps. Une roue n'écrit
-  son champ que si Chris l'a tournée ; `writeDuration` et le brouillon la
-  remettent sur son champ.
+- **La durée tapée** (v9.59, js/ui-time-field.js) : temps total et écoulement
+  sont chacun un champ texte « 3:50 », celui du panneau d'une tasse, lu par
+  `TOOLS.parseDuration` (« 3:50 », « 3 50 », « 3.50 », « 230 ») ; les deux roues
+  de la v9.13 ont disparu. En quittant le champ, la valeur comprise est réécrite
+  en m:ss ; l'illisible est marqué et refusé à l'enregistrement. −5 s, +5 s,
+  +15 s, et « Reprendre le chrono » quand le chrono a un temps ; flèches haut et
+  bas pour une seconde. `readDuration` et `writeDuration` restent l'unique
+  porte d'entrée du chrono et du brouillon.
 - **La cafetière qui change de forme** (Q12, v9.17, js/ui-brewer.js) : `#f-brewer`, à gauche des
   deux boutons de machine, dessine la Brikka ou le Switch (deux silhouettes au même nombre de
   points). Changer de machine la fait fondre en l'autre en 600 ms, l'alu devient verre, et les

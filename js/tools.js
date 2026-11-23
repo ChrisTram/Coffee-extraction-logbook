@@ -124,6 +124,26 @@ const TOOLS = (() => {
     return (e.coffee_id === coffeeId ? total - second : 0) + (second > 0 && e.blend_coffee_id === coffeeId ? second : 0);
   }
 
+  /* A DURATION AS TYPED: « 3:45 », « 3'45 », « 3 45 », « 3.45 », « 3m45 »; a
+     bare number under 10 is minutes (« 4 »), above it seconds (« 258 »). "" for
+     nothing, null when unreadable. One reading for the cup's panel (v9.31) and
+     for the entry's time field (v9.59). */
+  function parseDuration(text) {
+    const t = String(text === undefined || text === null ? "" : text).trim().toLowerCase();
+    if (t === "") return "";
+    let m = t.match(/^(\d{1,2})\s*(?::|'|m|min|\s|\.|,|h)\s*(\d{1,2})\s*(?:s|")?$/);
+    if (m) {
+      const sec = Number(m[2]);
+      return sec < 60 ? Number(m[1]) * 60 + sec : null;
+    }
+    m = t.match(/^(\d{1,4})\s*(s|min|m)?$/);
+    if (!m) return null;
+    const n = Number(m[1]);
+    if (m[2] === "s") return n;
+    if (m[2] === "min" || m[2] === "m") return n * 60;
+    return n < 10 ? n * 60 : n;
+  }
+
   return { average, localDateKey, versionSite, versionedUrl, escapeHtml, awayParse, awaySerialize, isAway, awayDaysBetween,
-    blendGrams, isBlend, drawsFrom, gramsFrom };
+    blendGrams, isBlend, drawsFrom, gramsFrom, parseDuration };
 })();

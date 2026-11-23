@@ -688,7 +688,7 @@ const I18N_FR = {
 
     // Navigation, sync bean, charts and loading (v9.13)
     scrub_rolling: { fr: "{d} · moyenne {n}" },
-    // Entry, rating dial, grinder dial, time wheels and the saved cup (v9.13).
+    // Entry, rating dial, grinder dial, time fields and the saved cup (v9.13).
     rating_word_low: { fr: "à revoir" },
     rating_word_ok: { fr: "correcte" },
     rating_word_good: { fr: "bonne tasse" },

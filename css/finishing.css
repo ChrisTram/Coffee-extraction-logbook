@@ -1233,44 +1233,19 @@ html[data-theme="light"] .skeleton { --sk-shine: var(--panel); }
 #q-rating-dial .rd-svg { width: 168px; }
 #br-rating-dial .rd-svg { width: min(250px, 62vw); }
 
-/* M7: the durations on two wheels, three rows high. */
+/* v9.59: a duration is one field typed as « 3:50 », drawn like the figures of
+   the cup's panel (a serif value on an underline); the quick buttons beside. */
 .tw-row { display: flex; align-items: center; gap: 10px 12px; flex-wrap: wrap; }
-.tw-sep { display: none; }
-.tw-scroll:empty { display: none; }
-.tw.tw-on {
-  --tw-row: 28px;
-  display: inline-flex; flex: none; align-items: center; gap: 0; padding: 0 6px;
-  border-radius: 14px; background: var(--panel-2); border: 1px solid var(--lines);
+.field-time input.time-text {
+  flex: none; width: 5.4rem; min-width: 0; min-height: 0; padding: 4px 2px 5px;
+  border: 0; border-bottom: 1px solid var(--lines); border-radius: 0; box-shadow: none;
+  background: transparent; color: var(--ink); font-family: var(--serif); font-size: 1.6rem; line-height: 1.15;
+  font-variant-numeric: tabular-nums; transition: border-color var(--transition);
 }
-.tw.tw-on .tw-sep { display: block; padding: 0 1px; font-family: var(--serif); font-size: 1.4rem; color: var(--muted); }
-.tw.tw-on .tw-unit { display: none; }
-.tw.tw-on .tw-col { position: relative; display: block; width: 2.9rem; height: calc(var(--tw-row) * 3); }
-.tw.tw-on .tw-col::before {
-  content: ""; position: absolute; left: 0; right: 0; top: var(--tw-row); height: var(--tw-row);
-  border-radius: 8px; background: var(--accent-bg);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--accent) 45%, transparent), inset 0 -1px 0 color-mix(in srgb, var(--accent) 45%, transparent);
-}
-.tw.tw-on .tw-scroll {
-  position: relative; z-index: 1; height: 100%; overflow-y: auto; overscroll-behavior: contain;
-  scroll-snap-type: y mandatory; scrollbar-width: none;
-  -webkit-mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
-  mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
-}
-.tw-scroll::-webkit-scrollbar { display: none; }
-.tw-pad, .tw-item { display: grid; place-items: center; height: var(--tw-row); }
-.tw-item {
-  scroll-snap-align: center; font-family: var(--serif); font-size: 1.3rem; line-height: 1; color: var(--ink);
-  font-variant-numeric: tabular-nums; opacity: 0.3; transform: scale(0.8); cursor: pointer; user-select: none;
-}
-.tw.tw-empty .tw-item { color: var(--muted); }
-/* The number field, over the middle row: hidden until it has the focus. */
-.tw.tw-on .tw-col input {
-  position: absolute; z-index: 2; left: 2px; right: 2px; top: var(--tw-row); width: auto; height: var(--tw-row);
-  min-height: 0; padding: 0; border: none; border-radius: 8px; text-align: center;
-  font-family: var(--serif); font-size: 1.3rem; background: var(--panel); color: var(--ink);
-  opacity: 0; pointer-events: none; box-shadow: 0 0 0 2px var(--accent);
-}
-.tw.tw-on .tw-col input:focus { opacity: 1; pointer-events: auto; }
+.field-time input.time-text:hover { border-bottom-color: var(--muted); }
+.field-time input.time-text:focus { outline: none; border-bottom-color: var(--accent); box-shadow: 0 1px 0 0 var(--accent); }
+.field-time input.time-text[aria-invalid="true"] { border-bottom-color: var(--danger); box-shadow: 0 1px 0 0 var(--danger); }
+.field-time input.time-text::placeholder { color: var(--muted); opacity: 0.6; }
 .tw-quick { display: flex; flex-wrap: wrap; gap: 6px; }
 .tw-quick:empty { display: none; }
 .tw-q {
@@ -1283,7 +1258,6 @@ html[data-theme="light"] .skeleton { --sk-shine: var(--panel); }
 .tw-q:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .tw-q.tw-chrono { color: var(--accent-strong); border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
 #field-temp .row-temp { flex-wrap: wrap; gap: 8px 14px; }
-.row-temp .duration.tw-on { flex: none; }
 
 /* Q2 and J2: the cup. Porcelain and coffee are drawn colours, the same in
    every theme; only the porcelain's edge darkens on the light paper. */
@@ -1369,7 +1343,7 @@ html[data-theme="light"] .cup-art { --porcelain-edge: #a8957d; --saucer: #e2d6c5
 @media (pointer: coarse) {
   .gd-step, .gd-compact .gd-step { width: 46px; height: 46px; }
   .tw-q { min-height: 44px; padding-inline: 14px; }
-  .tw.tw-on { --tw-row: 32px; }
+  .field-time input.time-text { min-height: 44px; }
   .cc-close { width: 44px; height: 44px; }
 }
 @media (prefers-reduced-motion: reduce) {

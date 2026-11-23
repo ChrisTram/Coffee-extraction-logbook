@@ -62,24 +62,9 @@
     return /^\d+(\.\d+)?$/.test(t) ? Number(t) : null;
   }
 
-  /* A duration as typed: « 3:45 », « 3'45 », « 3 45 », « 3m45 »; a bare
-     number under 10 is minutes (« 4 »), above it seconds (« 258 »), as the
-     entry's two fields would read them. "" for nothing, null when unreadable. */
-  function parseTime(text) {
-    const t = String(text === undefined || text === null ? "" : text).trim().toLowerCase();
-    if (t === "") return "";
-    let m = t.match(/^(\d{1,2})\s*(?::|'|m|min|\s|\.|,|h)\s*(\d{1,2})\s*(?:s|")?$/);
-    if (m) {
-      const sec = Number(m[2]);
-      return sec < 60 ? Number(m[1]) * 60 + sec : null;
-    }
-    m = t.match(/^(\d{1,4})\s*(s|min|m)?$/);
-    if (!m) return null;
-    const n = Number(m[1]);
-    if (m[2] === "s") return n;
-    if (m[2] === "min" || m[2] === "m") return n * 60;
-    return n < 10 ? n * 60 : n;
-  }
+  /* A duration as typed (« 3:45 », « 3 45 », « 258 »): the one reading the
+     entry's time field shares since v9.59, TOOLS.parseDuration. */
+  const parseTime = text => TOOLS.parseDuration(text);
 
   /* What a figure field holds, ready to store: { ok, value } or { ok: false,
      error, vars }. The grind is the entry's: the dial read by GRIND, written

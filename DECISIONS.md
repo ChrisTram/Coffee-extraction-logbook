@@ -3016,6 +3016,33 @@ laisser un vide, « Tes dernières tasses » affiche les lignes qui tiennent dan
 l'écart, mesuré après chaque rendu (`UI.fitLatest`). Sur une colonne rien ne
 change, six tasses.
 
+### v9.59 : le temps se tape, les roues s'en vont
+
+Chris, capture du panneau à l'appui (« Temps total 3:50 ») : « le champ temps
+de la saisie / modif rapide, mets-le aussi sur l'écran de saisie complète dans
+ce format-là, c'est très pratique ».
+
+UN CHAMP, PAS DEUX ÉCRITURES. Les roues de la v9.13 ne sont pas gardées à côté
+du champ : deux façons de régler le même temps, c'est deux fois plus de place
+et une source de vérité de moins claire. Le champ texte EST la valeur ; les
+deux champs nombre (minutes, secondes) disparaissent, `readDuration` et
+`writeDuration` gardent leur contrat (secondes, "" pour « pas de temps ») et
+le chrono, le brouillon et le mode Brassage n'en savent rien. La lecture est
+celle du panneau, déplacée dans `TOOLS.parseDuration` pour n'exister qu'une
+fois.
+
+L'ILLISIBLE SE DIT. Avec deux champs nombre, rien d'illisible ne pouvait être
+tapé. Avec du texte, si : `readDuration` rend alors `null`, le champ se
+souligne en rouge et l'enregistrement s'arrête avec le message du panneau. Le
+laisser passer en « pas de temps » aurait perdu une mesure sans le dire.
+
+ENTRÉE N'ENREGISTRE PAS. Le champ est hors du formulaire (dans le bloc du
+chrono) et la touche Entrée y est interceptée : « Terminé » sur le téléphone
+ferme le clavier, il ne doit pas enregistrer une tasse à moitié saisie.
+
+Les boutons rapides restent (−5 s, +5 s, +15 s, « Reprendre le chrono ») : ils
+servent à corriger un temps du chrono sans rien retaper.
+
 ## Tests
 
 ### Ce que chaque suite couvre, et le bug qui l'a motivée

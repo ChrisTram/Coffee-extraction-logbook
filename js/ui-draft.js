@@ -32,7 +32,7 @@
   const DRAFT_FIELDS = [
     "f-date", "f-coffee", "f-recipe", "f-dose", "f-water", "f-grind", "f-temp",
     "f-volume", "f-water-added", "f-milk", "f-agitation", "f-cup", "f-rating",
-    "f-comment", "f-total-min", "f-total-sec", "f-flow-min", "f-flow-sec",
+    "f-comment", "f-total-time", "f-flow-time",
     "f-power", "f-variant",
     // v9.56: the second coffee of a blend and its grams.
     "f-blend-coffee", "f-blend-g",
@@ -86,7 +86,7 @@
     // The coffee alone says nothing: a blank form always has one (v9.34).
     return Boolean((v["f-comment"] || "").trim() ||
       b.diagnostics.length || b.descriptors.length || b.ratingEmpty === false ||
-      v["f-total-min"] || v["f-total-sec"] || v["f-volume"] || v["f-water"]);
+      v["f-total-time"] || v["f-volume"] || v["f-water"]);
   }
 
   function restoreDraft() {
@@ -97,6 +97,13 @@
     b = LEGACY.renameDraft(b);
     if (!b || !b.values) return false;
     if (Date.now() - (b.savedAt || 0) > DRAFT_MAX_MS) { clearDraft(); return false; }
+    // A draft from before v9.59 holds each time as minutes and seconds: one field now.
+    ["f-total", "f-flow"].forEach(p => {
+      const m = b.values[p + "-min"], s = b.values[p + "-sec"];
+      if (b.values[p + "-time"] === undefined && (m || s)) {
+        b.values[p + "-time"] = UI.fmtDuration((parseInt(m, 10) || 0) * 60 + (parseInt(s, 10) || 0));
+      }
+    });
     if (!isDraftUseful(b)) return false;
 
     /* WITHOUT garderRecette (v8.37): with it, the draft's method applied but
@@ -150,8 +157,6 @@
     markRating($("#f-rating"), b.ratingEmpty !== false);
     UI.updateRatingDisplay();
     $("#f-water-added").hidden = !$("#f-add-water-yes").checked;
-    // The time wheels (v9.13) follow the fields the draft just wrote.
-    UI.syncTimeWheels();
     UI.updateDiagnosticCorrection();
     UI.updateWarnings();
     UI.updateLive();
@@ -166,7 +171,7 @@
      a running stopwatch, the times, the volume, the rating, the tastes, the
      diagnostic, the comment, « ratée ». The coffee, the recipe, the dose and
      the grind are prefilled, they say nothing. Never while editing a saved cup. */
-  const CUP_FIELDS = ["f-comment", "f-total-min", "f-total-sec", "f-flow-min", "f-flow-sec", "f-volume"];
+  const CUP_FIELDS = ["f-comment", "f-total-time", "f-flow-time", "f-volume"];
   function draftInForm() {
     if (entry.editId) return false;
     if (UI.stopwatch && UI.stopwatch.state !== "stopped") return true;

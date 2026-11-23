@@ -635,7 +635,7 @@ const I18N_EN = {
 
     // Navigation, sync bean, charts and loading (v9.13)
     scrub_rolling: "{d} · average {n}",
-    // Entry, rating dial, grinder dial, time wheels and the saved cup (v9.13).
+    // Entry, rating dial, grinder dial, time fields and the saved cup (v9.13).
     rating_word_low: "needs work",
     rating_word_ok: "decent",
     rating_word_good: "good cup",
@@ -1510,10 +1510,6 @@ const I18N_EN = {
     "Contenance de la tasse (ml)": "Cup capacity (ml)",
     "Eau ajoutée après extraction (ml)": "Water added after brewing (ml)",
     "Nombre d'agitations": "Number of stirs",
-    "Temps total, minutes": "Total time, minutes",
-    "Temps total, secondes": "Total time, seconds",
-    "Écoulement, minutes": "Drawdown, minutes",
-    "Écoulement, secondes": "Drawdown, seconds",
     "Recette 6": "Recipe 6",
     "Percolation puis immersion": "Percolation then immersion",
     "ratio 1:15": "ratio 1:15",
@@ -2211,7 +2207,7 @@ const I18N_EN = {
       // Navigation, sync bean, charts and loading (v9.13)
       "Tasse": "Cup",
       "Nouvelle tasse. Appui long : saisie rapide": "New cup. Long press: quick log",
-      // Entry: rating dial, grinder dial, time wheels (v9.13)
+      // Entry: rating dial, grinder dial, time fields (v9.13)
       "Tourne le cadran pour noter, ou reviens plus tard.": "Turn the dial to rate, or come back later.",
       "Un clic plus fin": "One click finer",
       "Un clic plus gros": "One click coarser",

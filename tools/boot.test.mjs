@@ -264,7 +264,7 @@ Chart.defaults = hollow();
 const SCRIPTS = ["js/legacy-names.js", "js/tools.js", "js/i18n.en.js", "js/i18n.fr.js", "js/i18n.fr2.js", "js/i18n.js", "js/grind.js", "js/recipes.js", "js/demo-data.js",
   "js/sync.js", "js/data-csv.js", "js/data-schema.js", "js/data-store.js", "js/data-calcs.js",
   "js/data-migrations.js", "js/data.js", "js/tuning.js", "js/bags.js", "js/charts.js",
-  "js/ui-core.js", "js/ui-accent.js", "js/ui-feel.js", "js/ui-morph.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-pull.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-home.js", "js/ui-home-open.js", "js/ui-home-charts.js", "js/ui-wheel.js", "js/ui-cup.js", "js/ui-dial.js", "js/ui-rating-dial.js", "js/ui-dictate.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-recipe-source.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js", "js/ui-history.js", "js/ui-journal.js", "js/ui-table.js", "js/ui-compare.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/ui-analytics.js", "js/ui-story.js", "js/ui-jar.js", "js/ui-moments.js", "js/ui-celebrate.js", "js/ui-roll.js", "js/ui-brewer.js", "js/ui-arrivals.js", "js/ui-scenes.js", "js/ui-empty.js", "js/ui-coffees.js", "js/ui-shelf.js", "js/ui-bag-end.js", "js/search.js", "js/compare.js", "js/milestones.js", "js/ui-panel.js", "js/ui-panel-edit.js", "js/ui-rate-sheet.js", "js/ui-palette.js", "js/ui-shortcuts.js", "js/ui-tuning.js", "js/ui-share.js", "js/ui-welcome.js", "js/app.js"];
+  "js/ui-core.js", "js/ui-accent.js", "js/ui-feel.js", "js/ui-morph.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-pull.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-home.js", "js/ui-home-open.js", "js/ui-home-charts.js", "js/ui-time-field.js", "js/ui-cup.js", "js/ui-dial.js", "js/ui-rating-dial.js", "js/ui-dictate.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-recipe-source.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js", "js/ui-history.js", "js/ui-journal.js", "js/ui-table.js", "js/ui-compare.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/ui-analytics.js", "js/ui-story.js", "js/ui-jar.js", "js/ui-moments.js", "js/ui-celebrate.js", "js/ui-roll.js", "js/ui-brewer.js", "js/ui-arrivals.js", "js/ui-scenes.js", "js/ui-empty.js", "js/ui-coffees.js", "js/ui-shelf.js", "js/ui-bag-end.js", "js/search.js", "js/compare.js", "js/milestones.js", "js/ui-panel.js", "js/ui-panel-edit.js", "js/ui-rate-sheet.js", "js/ui-palette.js", "js/ui-shortcuts.js", "js/ui-tuning.js", "js/ui-share.js", "js/ui-welcome.js", "js/app.js"];
 const source = SCRIPTS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 
 // Intercepted console.error: that is where render errors come out.
@@ -1188,9 +1188,9 @@ check("the temperature field no longer has a misleading placeholder", !tempField
 }
 
 /* v9.13: THE DRAWN CONTROLS OF THE ENTRY DRIVE FIELDS THAT STAY THE TRUTH.
-   The rating dial writes the slider, the grinder dial the dial field, the
-   wheels the minute and second fields; saving, the draft and the brew mode
-   read those fields exactly as before. */
+   The rating dial writes the slider, the grinder dial the dial field; saving,
+   the draft and the brew mode read those fields exactly as before. The times
+   are one typed field each since v9.59 (the wheels of v9.13 are gone). */
 {
   const UIx = api.UI;
   const f = document.querySelector("#f-rating");
@@ -1266,24 +1266,36 @@ check("the temperature field no longer has a misleading placeholder", !tempField
   check("J2: the cup is drawn once, then only the liquid rises", writes === 1 && first !== liquid.style.transform &&
     probe.innerHTML.includes("cup-mark"), writes + " / " + first + " -> " + liquid.style.transform);
 
-  // M7: the fields stay the source, the stopwatch offers its time.
+  // v9.59: a time is one field typed as « 3:50 »; the stopwatch offers its time.
+  const timeField = document.querySelector("#f-total-time");
   UIx.writeDuration("f-total", 245);
-  check("M7: writing a time still fills minutes and seconds",
-    String(document.querySelector("#f-total-min").value) === "4" && String(document.querySelector("#f-total-sec").value) === "5" &&
-    UIx.readDuration("f-total") === 245);
+  check("v9.59: writing a time shows it as m:ss, and it reads back in seconds",
+    String(timeField.value) === "4:05" && UIx.readDuration("f-total") === 245, String(timeField.value));
+  const typed = ["3:50", "3 50", "3.50", "230", "4"].map(t => { timeField.value = t; return UIx.readDuration("f-total"); });
+  check("v9.59: « 3:50 », « 3 50 », « 3.50 » and « 230 » are the same time, a bare « 4 » is four minutes",
+    typed.join() === "230,230,230,230,240", typed.join());
+  timeField.value = "trois";
+  check("v9.59: what cannot be read is null, never « no time »", UIx.readDuration("f-total") === null);
+  timeField.value = "3:50";
+  UIx.addSeconds("f-total", 15);
+  check("v9.59: the quick buttons add to the typed time", String(timeField.value) === "4:05", String(timeField.value));
+  UIx.addSeconds("f-total", -600);
+  check("v9.59: and never go under zero", String(timeField.value) === "0:00", String(timeField.value));
+  check("v9.59: the minute and second fields are gone from the page",
+    !document.querySelector("#f-total-min") && !document.querySelector("#f-total-sec") && !document.querySelector("#f-flow-min"));
   UIx.writeDuration("f-total", "");
-  check("M7: and « no time » stays empty, not zero", UIx.readDuration("f-total") === "");
+  check("M7: and « no time » stays empty, not zero", UIx.readDuration("f-total") === "" && String(timeField.value) === "");
   api.DATA.state.coffees = saved.coffees; api.DATA.state.extractions = saved.extractions; api.DATA.state.purchases = saved.purchases;
   api.DATA.notify();
   const chronicler = api.DATA.state.recipes.find(r => r.id === "chronicler");
   document.querySelector("#f-recipe").value = chronicler ? chronicler.name : "";
   UIx.resetStopwatch();
-  check("M7: no « Reprendre le chrono » while the stopwatch is at zero", UIx.wheelChronoSeconds("total") === null);
+  check("M7: no « Reprendre le chrono » while the stopwatch is at zero", UIx.timeFieldChrono("total") === null);
   UIx.stopwatch.accumulated = 125000;
   UIx.stopwatch.state = "pause";
   check("M7: the stopwatch's total, and the drawdown from the « open » step",
-    UIx.wheelChronoSeconds("total") === 125 && UIx.wheelChronoSeconds("flow") === 5,
-    UIx.wheelChronoSeconds("total") + " / " + UIx.wheelChronoSeconds("flow"));
+    UIx.timeFieldChrono("total") === 125 && UIx.timeFieldChrono("flow") === 5,
+    UIx.timeFieldChrono("total") + " / " + UIx.timeFieldChrono("flow"));
   UIx.resetStopwatch();
   UIx.resetEntry();
 }

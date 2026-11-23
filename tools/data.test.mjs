@@ -28,7 +28,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 // v9.18: the stock sheet (Mes cafés, the end of a bag, the next cup) after finishing.css; v9.21: the home's; v9.22: the gestures'; v9.23: the moments'; v9.24: the feel's, last.
 const CSS_SHEETS = ["css/base.css", "css/screens.css", "css/dialogs.css", "css/finishing.css", "css/stock.css", "css/extras.css", "css/journal.css", "css/home.css", "css/gestures.css", "css/moments.css", "css/panel.css", "css/aside.css", "css/feel.css", "css/morph.css"];
 const readCss = () => CSS_SHEETS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
-const SOURCE_UI = ["js/ui-core.js", "js/ui-accent.js", "js/ui-feel.js", "js/ui-morph.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-pull.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-home.js", "js/ui-home-open.js", "js/ui-home-charts.js", "js/ui-wheel.js", "js/ui-cup.js", "js/ui-dial.js", "js/ui-rating-dial.js", "js/ui-dictate.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-recipe-source.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js",
+const SOURCE_UI = ["js/ui-core.js", "js/ui-accent.js", "js/ui-feel.js", "js/ui-morph.js", "js/ui-sync-bean.js", "js/ui-nav.js", "js/ui-scrub.js", "js/ui-pull.js", "js/ui-findings.js", "js/ui-last-cup.js", "js/ui-dashboard.js", "js/ui-home.js", "js/ui-home-open.js", "js/ui-home-charts.js", "js/ui-time-field.js", "js/ui-cup.js", "js/ui-dial.js", "js/ui-rating-dial.js", "js/ui-dictate.js", "js/ui-entry.js", "js/ui-entry-aside.js", "js/ui-recipe-source.js", "js/ui-pills.js", "js/ui-chrono.js", "js/ui-draft.js", "js/ui-quick.js",
   "js/ui-history.js", "js/ui-journal.js", "js/ui-table.js", "js/ui-compare.js", "js/ui-guide.js", "js/ui-catalog.js", "js/ui-coffee-sheet.js", "js/ui-brew.js", "js/ui-drawings.js", "js/ui-analytics.js", "js/ui-story.js", "js/ui-jar.js", "js/ui-moments.js", "js/ui-celebrate.js", "js/ui-roll.js", "js/ui-brewer.js", "js/ui-arrivals.js", "js/ui-scenes.js", "js/ui-empty.js", "js/ui-coffees.js", "js/ui-shelf.js", "js/ui-bag-end.js", "js/ui-panel.js", "js/ui-panel-edit.js", "js/ui-rate-sheet.js", "js/ui-palette.js", "js/ui-shortcuts.js", "js/ui-tuning.js", "js/ui-share.js", "js/ui-welcome.js", "js/app.js"]
   .map(f => readFileSync(join(ROOT, f), "utf8")).join("\n");
 /* demo-data.js has not been a script tag since v7.56, but the harness still
@@ -2299,10 +2299,10 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
   check("every label points to a field that exists", lost.length === 0, lost.join(", "));
 
   /* A .field must not contain several LABELLABLE controls under a single label.
-     Legitimate pairs (minutes and seconds, value and preset) are listed: they
-     form a single control in the user's eyes, and so rightly share a label.
-     */
-  const PAIRS = ["f-total-sec", "f-flow-sec"];
+     Legitimate pairs (value and preset) are listed: they form a single
+     control in the user's eyes, and so rightly share a label. None since
+     v9.59: the minutes and seconds of a time became one typed field. */
+  const PAIRS = [];
   /* A slider named "X-curseur" drives the field "X": it is the SAME value shown
      twice, so a legitimate pair by construction. The rule is better than a list
      to extend with every added slider, since it is the naming that guarantees
@@ -3600,14 +3600,27 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
   check("on touch, the dial's buttons and the quick time buttons reach 44 px",
     /\.gd-step[^{]*\{ width: 46px; height: 46px; \}/.test(coarse) && coarse.includes(".tw-q { min-height: 44px;"));
 
-  // M7: the fields stay the truth; the wheels follow them and write only when turned.
-  const wheelSrc = readFileSync(join(ROOT, "js/ui-wheel.js"), "utf8");
-  check("M7: writeDuration and the draft bring the wheels back on their fields",
-    SOURCE_UI.includes("UI.syncTimeWheel(prefix);") && readFileSync(join(ROOT, "js/ui-draft.js"), "utf8").includes("UI.syncTimeWheels();"));
-  check("M7: a wheel writes its field only when Chris turned it", wheelSrc.includes("if (col.user) {"));
+  // v9.59: a time is one field typed as « 3:50 », the cup's panel's; the wheels of v9.13 are gone.
+  const timeSrc = readFileSync(join(ROOT, "js/ui-time-field.js"), "utf8");
+  const pageSrc = readFileSync(join(ROOT, "index.html"), "utf8");
+  const draftSrc = readFileSync(join(ROOT, "js/ui-draft.js"), "utf8");
+  check("v9.59: the entry's time is one text field, read like the panel's",
+    /<input type="text" class="time-text" id="f-total-time"[^>]*placeholder="3:30">/.test(pageSrc) &&
+    /<input type="text" class="time-text" id="f-flow-time"/.test(pageSrc) && !pageSrc.includes("tw-scroll") && !pageSrc.includes("f-total-min") &&
+    SOURCE_UI.includes("const s = TOOLS.parseDuration(el.value);") &&
+    readFileSync(join(ROOT, "js/ui-panel-edit.js"), "utf8").includes("const parseTime = text => TOOLS.parseDuration(text);"));
+  check("v9.59: the wheels are gone, file, styles and calls",
+    !existsSync(join(ROOT, "js/ui-wheel.js")) && !css.includes(".tw-scroll") && !css.includes(".tw-item") &&
+    !/TimeWheel/.test(SOURCE_UI) && !readFileSync(join(ROOT, "sw.js"), "utf8").includes("ui-wheel"));
+  check("v9.59: the draft keeps the typed time, and reads an older draft's minutes and seconds",
+    draftSrc.includes('"f-comment", "f-total-time", "f-flow-time",') && draftSrc.includes('b.values[p + "-time"] = UI.fmtDuration('));
+  check("v9.59: a time that cannot be read is refused at saving, never dropped",
+    SOURCE_UI.includes('const unread = ["f-total", "f-flow"].find(p => readDuration(p) === null);') && bilingual("pe_err_time"));
+  check("v9.59: « done » on the phone never submits the cup",
+    /if \(ev\.key === "Enter"\) \{[\s\S]{0,160}ev\.preventDefault\(\);/.test(timeSrc));
   check("M7: quick buttons, and « Reprendre le chrono » for the total and the drawdown",
-    wheelSrc.includes("const QUICK = [-5, 5, 15];") && SOURCE_UI.includes('UI.mountTimeWheel("f-total", $("#f-total-wheel"), $("#f-total-quick"), "total");') &&
-    SOURCE_UI.includes('UI.mountTimeWheel("f-flow", $("#f-flow-wheel"), $("#f-flow-quick"), "flow");') && bilingual("wheel_chrono"));
+    timeSrc.includes("const QUICK = [-5, 5, 15];") && SOURCE_UI.includes('UI.mountTimeField("f-total", $("#f-total-quick"), "total");') &&
+    SOURCE_UI.includes('UI.mountTimeField("f-flow", $("#f-flow-quick"), "flow");') && bilingual("wheel_chrono"));
   // v9.51: one time to enter. The drawdown stays in the form, hidden, for the stopwatch.
   check("v9.51: the entry shows the total time only, the drawdown field is hidden",
     /<div class="field field-time" id="field-flow" hidden>/.test(readFileSync(join(ROOT, "index.html"), "utf8")));

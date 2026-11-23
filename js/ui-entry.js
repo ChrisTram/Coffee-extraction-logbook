@@ -18,31 +18,29 @@
 
   // ---------- Entry ----------
 
-  /* Durations entered in minutes AND seconds, stored in seconds.
-     Typing "4 min 18" is faster and less error-prone than converting 258 in
-     your head, especially on a phone. Storage does not change: the CSVs keep
-     seconds, so the history stays readable and there is nothing to migrate. */
+  /* A DURATION IS ONE FIELD, TYPED AS « 3:50 » (v9.59), stored in seconds.
+     The same field and the same reading as the cup's panel
+     (TOOLS.parseDuration): « 3:50 », « 3 50 », « 3.50 » or « 230 ». Until v9.58
+     the entry had two wheels, minutes and seconds, over two number fields;
+     Chris found the panel's single field far quicker. Storage does not change:
+     the CSVs keep seconds, so there is nothing to migrate.
+     "" when the field is empty ("no time", not "zero seconds"), null when what
+     it holds cannot be read or passes an hour. */
+  const DURATION_MAX_S = 59 * 60 + 59;
   function readDuration(prefix) {
-    const min = parseInt($("#" + prefix + "-min").value, 10);
-    const sec = parseInt($("#" + prefix + "-sec").value, 10);
-    const m = Number.isFinite(min) ? min : 0;
-    const s = Number.isFinite(sec) ? sec : 0;
-    // Both fields empty means "no time", not "zero seconds".
-    if (!Number.isFinite(min) && !Number.isFinite(sec)) return "";
-    return m * 60 + s;
+    const el = $("#" + prefix + "-time");
+    if (!el) return "";
+    const s = TOOLS.parseDuration(el.value);
+    return s === null || s > DURATION_MAX_S ? null : s;
   }
 
   function writeDuration(prefix, seconds) {
+    const el = $("#" + prefix + "-time");
+    if (!el) return;
     const total = Number(seconds);
-    if (seconds === "" || seconds === null || seconds === undefined || !Number.isFinite(total)) {
-      $("#" + prefix + "-min").value = "";
-      $("#" + prefix + "-sec").value = "";
-    } else {
-      $("#" + prefix + "-min").value = Math.floor(total / 60);
-      $("#" + prefix + "-sec").value = total % 60;
-    }
-    // The wheels drawn over the fields (v9.13) follow what was just written.
-    UI.syncTimeWheel(prefix);
+    const none = seconds === "" || seconds === null || seconds === undefined || !Number.isFinite(total);
+    el.value = none ? "" : fmtDuration(Math.max(0, Math.min(DURATION_MAX_S, Math.round(total))));
+    el.removeAttribute("aria-invalid");
   }
 
   const entry = {
@@ -944,6 +942,16 @@
     if (!$("#f-dose").value) { toast(I18N.t("toast_dose")); return; }
     const blend = readBlend();
     if (blend && blend.error) { toast(I18N.t(blend.error)); return; }
+    // A time that cannot be read is said, never saved as « no time » (v9.59).
+    const unread = ["f-total", "f-flow"].find(p => readDuration(p) === null);
+    if (unread) {
+      const el = $("#" + unread + "-time");
+      el.setAttribute("aria-invalid", "true");
+      toast(I18N.t("pe_err_time"));
+      UI.toggleStopwatch(true);
+      el.focus();
+      return;
+    }
     const ext = {
       date_time: $("#f-date").value || localNow(),
       coffee_id: $("#f-coffee").value,
@@ -1075,12 +1083,12 @@
     wireSliders();
     wireSteppers();
     /* v9.13: the drawn controls, each driving the field it sits on: the
-       grinder dials (here, in the recipe form and in Settings), the rating
-       dial, and the time wheels. */
+       grinder dials (here, in the recipe form and in Settings) and the
+       rating dial; the times are typed (js/ui-time-field.js, v9.59). */
     UI.wireGrindDials();
     UI.mountRatingDial($("#f-rating"), $("#f-rating-dial"));
-    UI.mountTimeWheel("f-total", $("#f-total-wheel"), $("#f-total-quick"), "total");
-    UI.mountTimeWheel("f-flow", $("#f-flow-wheel"), $("#f-flow-quick"), "flow");
+    UI.mountTimeField("f-total", $("#f-total-quick"), "total");
+    UI.mountTimeField("f-flow", $("#f-flow-quick"), "flow");
     enableLongPress($("#f-diagnostic"));
     enableLongPress($("#f-descriptors"));
     $("#tastes-plus").addEventListener("click", () => UI.toggleFamilies());
