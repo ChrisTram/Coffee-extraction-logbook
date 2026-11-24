@@ -2435,7 +2435,8 @@ immutable` sur `/js/*` et `/css/*` quand l'URL porte `?v=`. Voir section 10.
 
 Claude peut lire et tenir à jour le catalogue des cafés sans ouvrir le site :
 ajouter le café qui vient d'arriver, enregistrer un nouveau sachet, corriger
-le stock, relire les dernières tasses. Deux pièces :
+le stock, relire les dernières tasses et, depuis la v9.61, enregistrer une
+tasse. Deux pièces :
 
 - **L'API des outils**, `POST /api/tools/sync` (worker/index.js,
   `toolsSync`). C'est la synchronisation des appareils elle-même : même corps
@@ -2463,6 +2464,7 @@ le stock, relire les dernières tasses. Deux pièces :
 | `add_bag` | nouveau sachet, avec les mêmes effets que le bouton de l'app (la fiche du café suit le sachet) ; ouvert aujourd'hui par défaut |
 | `delete_bag` | (v9.47) supprime UN sachet saisi par erreur, désigné par son identifiant (`get_coffee` les liste), comme « Supprimer ce sachet » de l'app ; ses tasses restent ; refuse le dernier sachet d'un café, un sachet inconnu ou d'un autre café |
 | `correct_stock` | grammes restants du sachet en cours, mêmes règles que la correction de stock de l'app |
+| `add_cup` | (v9.61) enregistre UNE tasse : café, dose totale, méthode, et au choix recette, eau, mouture, température (Switch) ou feu (Brikka), temps (« 3:50 »), note, « ratée », commentaire, date et heure. Mélange : `second_coffee` et `second_g`, puis `third_coffee` et `third_g`. Ce qui n'est pas donné reprend la dernière tasse de ce café sur cette machine (ni ratée ni mélange), citée dans la réponse ; l'eau seulement à un gramme de dose près ; `copy_last: false` laisse vide. Refuse une tasse identique à la même minute. N'en modifie et n'en supprime aucune |
 | `recent_cups` | les dernières tasses (10 par défaut), éventuellement pour un seul café |
 
 Un café se désigne par son identifiant ou par son nom, sans tenir compte des
@@ -2487,7 +2489,8 @@ suivent la convention de l'app : la date locale de l'ordinateur.
   14 novembre 2026). `delete_bag` envoie UNE tombe, pour UN sachet, et aucune
   ligne ; il refuse le dernier sachet d'un café, pour que le stock garde de quoi
   se lire. Aucun outil ne supprime un café ni une tasse, ni n'envoie d'autre
-  tombe ; archiver un café reste réversible. Un test le vérifie
+  tombe ; archiver un café reste réversible. `add_cup` (v9.61) ajoute une
+  tasse et n'en touche aucune autre. Un test le vérifie
   (`tools/logbook-mcp.test.mjs`). L'appli ne montre que le « Sachet en cours »
   d'un café, pas la liste de ses sachets : un sachet en double ne s'y voit pas,
   `get_coffee` les liste tous.

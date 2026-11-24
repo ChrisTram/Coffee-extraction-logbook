@@ -3072,6 +3072,32 @@ saisie appelle (`UI.fillBlendSelect`, `UI.updateBlend`, `UI.setBlend`,
 Schéma 28, pas vide comme le 27 : un onglet resté sur l'ancien code est refusé
 par la synchro au lieu d'effacer les deux nouvelles colonnes.
 
+### v9.61 : le connecteur écrit une tasse, et une seule chose de plus
+
+Chris, à Claude : « ajoute-moi une saisie 7 g Lacàph, je le termine, et 7 g de
+ce nouveau Là Việt pour terminer le Lacàph, Brikka ». Le connecteur (section 14
+de la documentation) ne tenait que le catalogue : cafés, sachets, stock.
+
+`add_cup` AJOUTE, RIEN D'AUTRE. Pas de `edit_cup`, pas de `delete_cup` : une
+tasse fausse se corrige dans l'app, où on la voit. La règle « une seule
+suppression, et seulement un sachet » tient toujours.
+
+RIEN D'INVENTÉ. Une saisie dictée en une phrase ne donne ni l'eau ni la
+mouture. Plutôt que d'écrire une tasse pauvre (sans ratio) ou de deviner,
+l'outil reprend les réglages de la dernière tasse du même café sur la même
+machine, comme « Refaire » dans l'app, et NOMME cette tasse dans sa réponse.
+Jamais une tasse ratée ni un mélange comme modèle ; l'eau seulement si la dose
+est à un gramme près, sinon le ratio copié serait faux. `copy_last: false`
+laisse tout vide.
+
+PAS DE DOUBLON. Un appel d'outil peut être rejoué ; même café, même minute,
+même dose, même machine : refusé, la tasse existante citée.
+
+LA LIGNE DE L'APP. `normalizeExtraction`, `stampRow`, `newId`, envoyée seule
+par la même fusion que les appareils : c'est la tasse que la saisie aurait
+écrite, mélange compris (`blend_coffee_id`, `blend_g`, et la paire du
+troisième café).
+
 ## Tests
 
 ### Ce que chaque suite couvre, et le bug qui l'a motivée

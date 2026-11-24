@@ -123,8 +123,8 @@ const server = makeServer({ db, token: TOKEN });
 
   const list = await server.handleMessage({ jsonrpc: "2.0", id: 6, method: "tools/list" });
   const names = list.result.tools.map(t => t.name);
-  check("tools/list gives the nine tools",
-    JSON.stringify(names) === JSON.stringify(["list_coffees", "get_coffee", "add_coffee", "edit_coffee", "archive_coffee", "add_bag", "delete_bag", "correct_stock", "recent_cups"]),
+  check("tools/list gives the ten tools",
+    JSON.stringify(names) === JSON.stringify(["list_coffees", "get_coffee", "add_coffee", "edit_coffee", "archive_coffee", "add_bag", "delete_bag", "correct_stock", "add_cup", "recent_cups"]),
     names.join());
   check("one tool deletes, and only a bag: none deletes a coffee or a cup", JSON.stringify(names.filter(n => /delete|remove/.test(n))) === '["delete_bag"]');
   check("delete_bag requires the coffee and the bag", JSON.stringify(TOOLS.find(t => t.name === "delete_bag").inputSchema.required) === '["coffee","bag"]');
@@ -317,6 +317,91 @@ let newId = "";
   check("the stock now reads from the bag that is left", line.includes("sur 200 g"), line);
 }
 
+// 7 bis. add_cup (v9.61): one cup, the app's own row, a blend included
+{
+  const cupDb = makeDb({
+    ...seed,
+    tables: {
+      ...seed.tables,
+      extractions: seed.tables.extractions.concat([
+        { id: "e3", updated_at: T, date_time: "2026-09-22T08:15", coffee_id: "c1", method: "Brikka", recipe: "Brikka classique",
+          dose_g: 14.5, water_g: 150, grind_dial: "1.5.0", heat_level: 6, cup: "Tasse œuf", score_10: 7 },
+        { id: "e4", updated_at: T, date_time: "2026-09-23T08:15", coffee_id: "c1", method: "Brikka", recipe: "Brikka classique",
+          dose_g: 14, water_g: 999, grind_dial: "2.0.0", score_10: 3, failed: 1 },
+      ]),
+      purchases: [
+        { id: "p1", updated_at: T, coffee_id: "c1", purchase_date: "2026-09-01", opened_date: "2026-09-01", bag_size_g: 200 },
+        { id: "p2", updated_at: T, coffee_id: "c2", purchase_date: "2026-09-01", opened_date: "2026-09-01", bag_size_g: 200 },
+      ],
+    },
+  });
+  const s = makeServer({ db: cupDb, token: TOKEN });
+  const cupsOf = () => stored(cupDb).tables.extractions;
+  const before = stored(cupDb);
+  const start = requests.length;
+  const r = await call(s, "add_cup", { coffee: "guji", dose_g: 14, method: "Brikka", second_coffee: "sidamo", second_g: 7, date_time: "2026-09-24T09:00" });
+  const row = cupsOf().find(e => !["e1", "e2", "e3", "e4"].includes(e.id));
+  check("add_cup saves one cup", !r.isError && r.text.includes("Tasse enregistrée") && cupsOf().length === 5 && !!row, r.text);
+  check("the row is the app's: its coffee, its machine, its total dose, its minute",
+    row.coffee_id === "c1" && row.method === "Brikka" && row.dose_g === 14 && row.date_time === "2026-09-24T09:00" && /^e/.test(row.id) && Number(row.updated_at) > T);
+  check("the blend goes in its two columns, the third pair empty",
+    row.blend_coffee_id === "c2" && row.blend_g === 7 && row.blend2_coffee_id === "" && row.blend2_g === "");
+  check("the settings not given come from the last plain cup on this machine, never from a botched one",
+    row.recipe === "Brikka classique" && row.water_g === 150 && row.grind_dial === "1.5.0" && row.heat_level === 6 && row.cup === "Tasse œuf",
+    JSON.stringify([row.recipe, row.water_g, row.grind_dial, row.heat_level, row.cup]));
+  check("and the answer says which cup they come from", r.text.includes("Repris de la tasse du 2026-09-22 à 08:15") && r.text.includes("recette, mouture, eau, feu"), r.text);
+  check("no score given: the cup stays to rate, and the answer says so", row.score_10 === "" && r.text.includes("reste à noter"));
+  check("each bag gives its own grams", r.text.includes("Ethiopia Guji, reste") && r.text.includes("Ethiopia Sidamo, reste") &&
+    /Ethiopia Sidamo, reste 177 g sur 200 g/.test(r.text), r.text);
+  const sent = requests.slice(start);
+  check("a read, then a write of that one row and nothing else", sent.length === 2 && Object.keys(sent[1].body.tables).join() === "extractions" &&
+    sent[1].body.tables.extractions.length === 1 && JSON.stringify(sent[1].body.tombstones) === "{}");
+  check("the other rows and the tombstones did not move",
+    JSON.stringify(stored(cupDb).tables.coffees) === JSON.stringify(before.tables.coffees) &&
+    ["e1", "e2", "e3", "e4"].every(id => JSON.stringify(rowOf(cupDb, "extractions", id)) === JSON.stringify(before.tables.extractions.find(e => e.id === id))) &&
+    JSON.stringify(stored(cupDb).tombstones) === JSON.stringify(before.tombstones));
+  const listed = await call(s, "recent_cups", { limit: 1 });
+  check("recent_cups reads it back as a blend", listed.text.includes("mélange, dont 7 g de Ethiopia Sidamo (hors moyennes)"), listed.text);
+
+  const again = await call(s, "add_cup", { coffee: "guji", dose_g: 14, method: "Brikka", second_coffee: "sidamo", second_g: 7, date_time: "2026-09-24T09:00" });
+  check("the same call sent twice does not write two cups", again.isError && again.text.includes("déjà dans le carnet") && cupsOf().length === 5, again.text);
+
+  const n = () => cupsOf().length;
+  const refused = async (label, args, word) => {
+    const count = n();
+    const out = await call(s, "add_cup", args);
+    check(label, out.isError && out.text.includes(word) && n() === count, out.text);
+  };
+  await refused("a blend heavier than the dose is refused", { coffee: "guji", dose_g: 14, method: "Brikka", second_coffee: "sidamo", second_g: 14 }, "moins que dose_g");
+  await refused("a second coffee without its grams is refused", { coffee: "guji", dose_g: 14, method: "Brikka", second_coffee: "sidamo" }, "vont ensemble");
+  await refused("the cup's own coffee as its second is refused", { coffee: "guji", dose_g: 14, method: "Brikka", second_coffee: "c1", second_g: 3 }, "déjà dans la tasse");
+  await refused("a third coffee without a second is refused", { coffee: "guji", dose_g: 14, method: "Brikka", third_coffee: "sidamo", third_g: 3 }, "demande un deuxième");
+  await refused("an unknown recipe is refused, the recipes listed", { coffee: "guji", dose_g: 14, method: "Brikka", recipe: "Espresso" }, "Recette inconnue");
+  await refused("a recipe of the other machine is refused", { coffee: "guji", dose_g: 14, method: "Brikka", recipe: "Switch 1:15" }, "recette Switch");
+  await refused("a temperature on the Brikka is refused", { coffee: "guji", dose_g: 14, method: "Brikka", temperature_c: 92 }, "ne vaut que pour Switch");
+  await refused("an unreadable time is refused", { coffee: "guji", dose_g: 14, method: "Brikka", total_time: "trois" }, "Temps illisible");
+  await refused("an unreadable grind is refused", { coffee: "guji", dose_g: 14, method: "Brikka", grind_dial: "fin" }, "Mouture illisible");
+  await refused("a wrong date is refused", { coffee: "guji", dose_g: 14, method: "Brikka", date_time: "2026-13-40T09:00" }, "Date invalide");
+  await refused("no dose: refused", { coffee: "guji", method: "Brikka" }, "dose_g");
+
+  const full = await call(s, "add_cup", { coffee: "guji", dose_g: 15, method: "Switch", recipe: "switch 1:15", water_g: 230, grind_dial: "1,4,0",
+    temperature_c: 91, total_time: "3 50", score_10: 7.7, comment: "  bien  ", date_time: "2026-09-25T10:00", copy_last: false });
+  const fullRow = cupsOf().find(e => e.date_time === "2026-09-25T10:00");
+  check("everything given is written as given", !full.isError && fullRow.recipe === "Switch 1:15" && fullRow.water_g === 230 && fullRow.grind_dial === "1.4.0" &&
+    fullRow.temperature_c === 91 && fullRow.total_time_s === 230 && fullRow.score_10 === 7.5 && fullRow.comment === "bien" && fullRow.blend_coffee_id === "",
+    full.text + " / " + JSON.stringify(fullRow));
+  const bare = await call(s, "add_cup", { coffee: "sidamo", dose_g: 30, date_time: "2026-09-25T11:00" });
+  const bareRow = cupsOf().find(e => e.date_time === "2026-09-25T11:00");
+  check("no machine given: the last cup's; a dose far from it leaves the water empty",
+    !bare.isError && bareRow.method === "Brikka" && bareRow.recipe === "Brikka classique" && bareRow.water_g === "", bare.text);
+  const three = await call(s, "add_cup", { coffee: "guji", dose_g: 17, method: "Brikka", second_coffee: "sidamo", second_g: 4, third_coffee: "c3", third_g: 3, date_time: "2026-09-26T09:00" });
+  const threeRow = cupsOf().find(e => e.date_time === "2026-09-26T09:00");
+  check("a blend of three fills the two pairs", !three.isError && threeRow.blend_coffee_id === "c2" && threeRow.blend_g === 4 &&
+    threeRow.blend2_coffee_id === "c3" && threeRow.blend2_g === 3 && three.text.includes("4 g de Ethiopia Sidamo et 3 g de Kenya AA"), three.text);
+  check("no tool edits or deletes a cup", !TOOLS.some(t => /edit_cup|delete_cup|remove_cup|update_cup/.test(t.name)) &&
+    TOOLS.find(t => t.name === "add_cup").inputSchema.required.join() === "coffee,dose_g");
+}
+
 // 8. No token: a clear message, no call
 {
   let calls = 0;
@@ -328,7 +413,7 @@ let newId = "";
   check("for every tool, writes included", w.isError && w.text.includes("pas encore configuré"));
   check("and no network call at all", calls === 0);
   const list = await bare.handleMessage({ jsonrpc: "2.0", id: 1, method: "tools/list" });
-  check("tools/list still works without a token", list.result.tools.length === 9);
+  check("tools/list still works without a token", list.result.tools.length === 10);
 }
 
 // 9. Server side refusals

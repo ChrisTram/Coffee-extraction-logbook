@@ -8,12 +8,13 @@
  * and nothing else: every log goes to stderr.
  *
  * WHAT IT DOES: lets Claude read and edit the coffee catalog of the logbook
- * (coffees, bags, stock) and read the last cups, through the site's tools API
+ * (coffees, bags, stock), read the last cups and, since v9.61, save a cup
+ * (add_cup, a blend included), through the site's tools API
  * (POST /api/tools/sync, worker/index.js). That endpoint is the device sync
  * itself: what this server sends merges row by row by updated_at, exactly
  * like a phone. ONE tool deletes, and only a bag (v9.47, delete_bag: a bag
  * entered by mistake, never the last one of a coffee). No tool deletes a
- * coffee or a cup, on purpose.
+ * coffee or a cup, on purpose, and no tool edits a cup: add_cup only adds.
  *
  * THE APP'S OWN CODE: the rows are built by the browser scripts themselves
  * (normalizeCoffee, stampRow, newId, bagStock...), loaded in a Node vm like
@@ -58,7 +59,7 @@ export function loadApp(log) {
   const quietConsole = { log: say, info: say, warn: say, error: say, debug: say };
   const source = APP_SCRIPTS.map(f => readFileSync(join(ROOT, f), "utf8")).join("\n;\n");
   const context = vm.createContext({ console: quietConsole });
-  const app = vm.runInContext(source + "\n;({ LEGACY, TOOLS, DATA_SCHEMA, DATA_CALCS, DATA_MIGRATIONS, TETSU });",
+  const app = vm.runInContext(source + "\n;({ LEGACY, TOOLS, GRIND, DATA_SCHEMA, DATA_CALCS, DATA_MIGRATIONS, TETSU });",
     context, { filename: "logbook-app.js" });
   const emptyState = { coffees: [], extractions: [], recipes: [], cups: [], purchases: [], settings: [], tombstones: {} };
   const { CURRENT_SCHEMA } = app.DATA_MIGRATIONS.forState(emptyState, {
@@ -107,6 +108,8 @@ const fold = s => String(s === undefined || s === null ? "" : s)
 
 const ROASTS = ["Claire", "Medium", "Foncée"];
 const METHODS = ["Brikka", "Switch", "Les deux"];
+// A cup is brewed on one machine.
+const CUP_METHODS = ["Brikka", "Switch"];
 const COFFEE_TEXT_FIELDS = { name: 120, roaster: 120, origin: 120, species: 120, process: 120, roaster_notes: 2000 };
 
 /* ---------- Tool definitions ---------- */
@@ -216,6 +219,39 @@ export const TOOLS = [
       type: "object",
       properties: { coffee: coffeeRef, grams: { type: "number", minimum: 0, description: "Grammes restants." } },
       required: ["coffee", "grams"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "add_cup",
+    description: "Enregistre UNE tasse, comme la saisie de l'app : un café, une dose, une méthode. Les réglages non fournis (recette, eau, mouture, " +
+      "température ou feu, tasse) reprennent ceux de la dernière tasse de ce café avec cette méthode ; copy_last false les laisse vides. " +
+      "Un mélange se dit avec second_coffee et second_g (puis third_coffee et third_g) : dose_g reste le TOTAL de la tasse, chaque sachet perd ses " +
+      "propres grammes et la tasse sort des moyennes de tous ses cafés. Refuse une tasse identique déjà enregistrée à la même minute. " +
+      "N'ajoute qu'une tasse : aucun outil ne modifie ni ne supprime une tasse.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        coffee: coffeeRef,
+        dose_g: { type: "number", exclusiveMinimum: 0, maximum: 60, description: "Dose totale de la tasse, en grammes (les cafés d'un mélange compris)." },
+        method: { type: "string", enum: CUP_METHODS, description: "Machine. Par défaut celle de la dernière tasse de ce café, sinon sa méthode recommandée." },
+        recipe: { type: "string", description: "Nom d'une recette du carnet pour cette méthode." },
+        water_g: { type: "number", minimum: 1, maximum: 1000, description: "Eau, en grammes." },
+        grind_dial: { type: "string", description: "Mouture au cadran, ex. 1.5.0." },
+        temperature_c: { type: "number", minimum: 40, maximum: 100, description: "Température de l'eau (Switch seulement)." },
+        heat_level: { type: "integer", minimum: 1, maximum: 10, description: "Feu de 1 à 10 (Brikka seulement)." },
+        total_time: { type: "string", description: "Temps total, ex. 3:50 (ou 230 pour des secondes)." },
+        score_10: { type: "number", minimum: 0, maximum: 10, description: "Note sur 10, au demi-point. Sans elle, la tasse reste à noter." },
+        failed: { type: "boolean", description: "Tasse ratée : hors des moyennes et des conseils." },
+        comment: { type: "string", description: "Commentaire." },
+        date_time: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$", description: "Date et heure locales, AAAA-MM-JJTHH:MM ; maintenant par défaut." },
+        second_coffee: { ...coffeeRef, description: "Mélange : le deuxième café (identifiant ou nom)." },
+        second_g: { type: "number", exclusiveMinimum: 0, maximum: 60, description: "Mélange : les grammes du deuxième café, une part de dose_g." },
+        third_coffee: { ...coffeeRef, description: "Mélange : le troisième café (identifiant ou nom)." },
+        third_g: { type: "number", exclusiveMinimum: 0, maximum: 60, description: "Mélange : les grammes du troisième café, une part de dose_g." },
+        copy_last: { type: "boolean", description: "false : ne rien reprendre de la dernière tasse, les réglages non fournis restent vides." },
+      },
+      required: ["coffee", "dose_g"],
       additionalProperties: false,
     },
   },
@@ -728,6 +764,131 @@ export function createLogbookServer(options = {}) {
         (bag ? "" : " (aucun sachet enregistré : un sachet a été créé pour porter le compte)") + ". Stock : " + stockText(after, stored) + ".";
     },
 
+    /* THE ONE CUP TOOL THAT WRITES (v9.61). Chris: « ajoute-moi une saisie 7 g
+       Lacàph, je le termine, et 7 g de Là Việt, Brikka ». The row is the one
+       the entry would save (normalizeExtraction, stampRow, newId), sent alone.
+       Nothing is invented: a setting comes from the arguments, or from the
+       last cup of this coffee on this machine, named in the answer; the water
+       only when the dose is within a gram of that cup's. */
+    async add_cup(token, args) {
+      const snap = await read(token);
+      const nothing = " Rien n'a été enregistré.";
+      const given = key => args[key] !== undefined && args[key] !== null && String(args[key]).trim() !== "";
+      const found = findCoffee(snap, args.coffee);
+      if (found.candidates) return candidatesText(args.coffee, found.candidates, true);
+      const coffee = found.coffee;
+      const tenth = n => Math.round(n * 10) / 10;
+      const dose = tenth(checkNumber("dose_g", args.dose_g, 0, 60, true));
+
+      // The other coffees of a blend, each with its grams.
+      const added = [];
+      for (const [who, grams] of [["second_coffee", "second_g"], ["third_coffee", "third_g"]]) {
+        if (!given(who) && !given(grams)) continue;
+        if (!given(who) || !given(grams)) throw new ToolError("Mélange : " + who + " et " + grams + " vont ensemble." + nothing);
+        if (who === "third_coffee" && !added.length) throw new ToolError("Mélange : un troisième café demande un deuxième (second_coffee, second_g)." + nothing);
+        const other = findCoffee(snap, args[who]);
+        if (other.candidates) return candidatesText(args[who], other.candidates, true);
+        if (other.coffee.id === coffee.id || added.some(p => p.coffee.id === other.coffee.id)) {
+          throw new ToolError("Mélange : " + coffeeTitle(other.coffee) + " est déjà dans la tasse." + nothing);
+        }
+        added.push({ coffee: other.coffee, g: tenth(checkNumber(grams, args[grams], 0, 60, true)) });
+      }
+      if (added.length && !(added.reduce((sum, p) => sum + p.g, 0) < dose)) {
+        throw new ToolError("Mélange : les cafés ajoutés doivent peser moins que dose_g, qui est le total de la tasse." + nothing);
+      }
+
+      const mine = snap.state.extractions.filter(e => e.coffee_id === coffee.id)
+        .sort((a, b) => String(b.date_time).localeCompare(String(a.date_time)));
+      let method = "";
+      if (given("method")) {
+        method = CUP_METHODS.find(m => fold(m) === fold(args.method)) || "";
+        if (!method) throw new ToolError("Méthode invalide : « " + args.method + " ». Valeurs possibles : " + CUP_METHODS.join(", ") + "." + nothing);
+      } else {
+        method = (mine[0] && CUP_METHODS.includes(mine[0].method) ? mine[0].method : "") ||
+          (CUP_METHODS.includes(coffee.recommended_method) ? coffee.recommended_method : "");
+        if (!method) throw new ToolError("Indique la méthode : Brikka ou Switch." + nothing);
+      }
+
+      const recipeOf = name => snap.state.recipes.find(r => r.active !== 0 && r.name === name) || null;
+      let recipe = "";
+      if (given("recipe")) {
+        recipe = checkRecipe(snap, args.recipe);
+        const r = recipeOf(recipe);
+        if (r && r.method && r.method !== method) {
+          throw new ToolError("La recette « " + recipe + " » est une recette " + r.method + ", pas " + method + "." + nothing);
+        }
+      }
+      // The cup the settings come from: a plain one, never a blend nor a botched cup.
+      const usable = e => e.method === method && e.failed !== 1 && !app.TOOLS.isBlend(e) && (!recipe || e.recipe === recipe);
+      const last = args.copy_last === false ? null : mine.find(usable) || null;
+      const copied = [];
+      const fromLast = (key, label) => {
+        if (!last || last[key] === "" || last[key] === undefined || last[key] === null) return "";
+        copied.push(label);
+        return last[key];
+      };
+      if (!recipe) {
+        recipe = last && recipeOf(last.recipe) ? fromLast("recipe", "recette") : "";
+        const advised = recipeOf(coffee.recommended_recipe);
+        if (!recipe && advised && (!advised.method || advised.method === method)) recipe = advised.name;
+      }
+
+      const wrongMachine = (key, machine) => {
+        if (given(key) && method !== machine) throw new ToolError(key + " ne vaut que pour " + machine + ", pas pour " + method + "." + nothing);
+      };
+      wrongMachine("temperature_c", "Switch");
+      wrongMachine("heat_level", "Brikka");
+      let grind = "";
+      if (given("grind_dial")) {
+        const p = app.GRIND.parseDial(String(args.grind_dial).trim().replace(/,/g, "."));
+        if (!p) throw new ToolError("Mouture illisible : « " + args.grind_dial + " » (attendu un cadran comme 1.5.0)." + nothing);
+        grind = app.GRIND.dialFromClicks(p.clicks);
+      } else grind = fromLast("grind_dial", "mouture");
+      const sameDose = last && Math.abs(Number(last.dose_g) - dose) <= 1;
+      const water = given("water_g") ? checkNumber("water_g", args.water_g, 1, 1000) : (sameDose ? fromLast("water_g", "eau") : "");
+      const temperature = method !== "Switch" ? "" : given("temperature_c") ? checkNumber("temperature_c", args.temperature_c, 40, 100) : fromLast("temperature_c", "température");
+      const heat = method !== "Brikka" ? "" : given("heat_level") ? Math.round(checkNumber("heat_level", args.heat_level, 1, 10)) : fromLast("heat_level", "feu");
+      let time = "";
+      if (given("total_time")) {
+        time = app.TOOLS.parseDuration(args.total_time);
+        if (time === null || time === "" || time > 3599) throw new ToolError("Temps illisible : « " + args.total_time + " » (attendu 3:50, ou 230 pour des secondes)." + nothing);
+      }
+      const score = given("score_10") ? Math.round(checkNumber("score_10", args.score_10, 0, 10) * 2) / 2 : "";
+      const comment = given("comment") ? String(args.comment).trim() : "";
+      if (comment.length > 2000) throw new ToolError("Commentaire trop long (2000 caractères au plus)." + nothing);
+      let when = localMinute();
+      if (given("date_time")) {
+        when = String(args.date_time).trim();
+        if (!/^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d$/.test(when) || !isDate(when.slice(0, 10))) {
+          throw new ToolError("Date invalide pour date_time : « " + when + " » (format attendu AAAA-MM-JJTHH:MM)." + nothing);
+        }
+      }
+      // A call sent twice must not write two cups.
+      const twin = mine.find(e => e.date_time === when && Number(e.dose_g) === dose && e.method === method);
+      if (twin) throw new ToolError("Cette tasse est déjà dans le carnet (même café, même minute, même dose) :\n" + cupLine(snap, twin) + "\n" + nothing.trim());
+
+      const cup = S.stampRow(S.normalizeExtraction({
+        date_time: when, coffee_id: coffee.id, method, recipe,
+        dose_g: dose, water_g: water, grind_dial: grind, temperature_c: temperature, heat_level: heat,
+        // The options of a recipe that has some (the 4:6) follow the cup they are copied from.
+        recipe_variant: last && last.recipe === recipe ? last.recipe_variant : "",
+        cup: last ? fromLast("cup", "tasse") : "",
+        preheated_water: last && method === "Brikka" ? last.preheated_water : "",
+        total_time_s: time, score_10: score, failed: args.failed === true ? 1 : "", comment,
+        blend_coffee_id: added[0] ? added[0].coffee.id : "", blend_g: added[0] ? added[0].g : "",
+        blend2_coffee_id: added[1] ? added[1].coffee.id : "", blend2_g: added[1] ? added[1].g : "",
+      }));
+      cup.id = S.newId("e", snap.state.extractions);
+      const after = await write(token, { extractions: [cup] });
+      const stored = after.state.extractions.find(e => e.id === cup.id) || cup;
+      const stocks = [coffee].concat(added.map(p => p.coffee))
+        .map(c => (after.state.coffees.find(x => x.id === c.id) || c)).map(c => c.name + ", " + stockText(after, c));
+      return "Tasse enregistrée [id " + stored.id + "] :\n" + cupLine(after, stored) +
+        (copied.length ? "\nRepris de la tasse du " + String(last.date_time).replace("T", " à ") + " : " + copied.join(", ") + "." : "") +
+        (stored.score_10 === "" ? "\nPas de note : elle reste à noter dans l'app." : "") +
+        "\nStock : " + stocks.join(" ; ") + ".";
+    },
+
     async recent_cups(token, args) {
       const snap = await read(token);
       const limit = args.limit === undefined ? 10 : Math.round(checkNumber("limit", args.limit, 1, 50));
@@ -793,7 +954,8 @@ export function createLogbookServer(options = {}) {
           capabilities: { tools: { listChanged: false } },
           serverInfo: { name: "coffee-logbook", version },
           instructions: "Catalogue des cafés du carnet d'extraction de Chris : lire, ajouter et modifier des cafés, des sachets et le stock, " +
-            "et lire les dernières tasses. Une seule suppression possible : delete_bag, pour un sachet saisi par erreur (jamais un café ni une tasse, " +
+            "lire les dernières tasses et enregistrer une tasse (add_cup, mélange compris ; il n'en modifie aucune). " +
+            "Une seule suppression possible : delete_bag, pour un sachet saisi par erreur (jamais un café ni une tasse, " +
             "jamais le dernier sachet d'un café) ; archive_coffee archive. Réponses en français.",
         });
       case "notifications/initialized":
