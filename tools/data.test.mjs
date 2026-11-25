@@ -3609,6 +3609,14 @@ check("inactive ones end up last", tuned[tuned.length - 1].coffee.active === 0);
     /<input type="text" class="time-text" id="f-flow-time"/.test(pageSrc) && !pageSrc.includes("tw-scroll") && !pageSrc.includes("f-total-min") &&
     SOURCE_UI.includes("const s = TOOLS.parseDuration(el.value);") &&
     readFileSync(join(ROOT, "js/ui-panel-edit.js"), "utf8").includes("const parseTime = text => TOOLS.parseDuration(text);"));
+  // v9.62: in the form, among the settings, not in the stopwatch's folded block.
+  const chronoBody = pageSrc.slice(pageSrc.indexOf('<div id="chrono-body" hidden>'), pageSrc.indexOf('<form id="form-entry"'));
+  const formSrc = pageSrc.slice(pageSrc.indexOf('<form id="form-entry"'), pageSrc.indexOf("</form>", pageSrc.indexOf('<form id="form-entry"')));
+  check("v9.62: the time field shows in the form without opening the stopwatch",
+    chronoBody.length > 0 && !chronoBody.includes("time-text") && !chronoBody.includes("tw-quick") &&
+    formSrc.includes('id="f-total-time"') && formSrc.includes('id="f-flow-time"') &&
+    formSrc.indexOf('id="f-total-time"') < formSrc.indexOf('id="f-volume"') && formSrc.indexOf('id="f-total-time"') > formSrc.indexOf('id="f-dose"') &&
+    !SOURCE_UI.includes('toast(I18N.t("pe_err_time"));\n      UI.toggleStopwatch(true);'));
   check("v9.59: the wheels are gone, file, styles and calls",
     !existsSync(join(ROOT, "js/ui-wheel.js")) && !css.includes(".tw-scroll") && !css.includes(".tw-item") &&
     !/TimeWheel/.test(SOURCE_UI) && !readFileSync(join(ROOT, "sw.js"), "utf8").includes("ui-wheel"));

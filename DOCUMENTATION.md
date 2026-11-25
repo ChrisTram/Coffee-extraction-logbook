@@ -1598,7 +1598,9 @@ qu'avant.
   (Android). Il écrit le curseur caché (`#f-rating`, `#q-rating`, `#br-rating`) et
   déclenche son événement, donc « pas encore notée » marche comme avant.
   `RATING_DIAL_ON = false` remet les curseurs partout.
-- **La durée tapée** (v9.59, js/ui-time-field.js) : temps total et écoulement
+- **La durée tapée** (v9.59, js/ui-time-field.js ; dans le formulaire, bloc
+  « Les réglages », depuis la v9.62, et non plus dans le bloc replié du chrono) :
+  temps total et écoulement
   sont chacun un champ texte « 3:50 », celui du panneau d'une tasse, lu par
   `TOOLS.parseDuration` (« 3:50 », « 3 50 », « 3.50 », « 230 ») ; les deux roues
   de la v9.13 ont disparu. En quittant le champ, la valeur comprise est réécrite

@@ -13,7 +13,11 @@
  * The quick buttons stay beside: five seconds less or more, fifteen more, and
  * « Reprendre le chrono » when the stopwatch has a time, for the total and the
  * drawdown (from the "open" step). The up and down arrows move one second. An
- * empty field still means "no time". */
+ * empty field still means "no time".
+ *
+ * v9.62: the fields sit in the form, among the settings. They were left in
+ * the stopwatch's folded block, where a time could not be typed without
+ * opening the stopwatch. */
 "use strict";
 
 (() => {

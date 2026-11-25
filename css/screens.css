@@ -1193,7 +1193,6 @@ input:focus, select:focus, textarea:focus {
 }
 .chrono-step-next { font-size: 0.83rem; color: var(--muted); margin: 0; }
 .chrono-buttons { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
-.chrono-manual { margin-top: 6px; }
 .chrono.in-progress .chrono-big {
   color: var(--accent-strong);
   text-shadow: 0 0 24px color-mix(in srgb, var(--accent) 45%, transparent);

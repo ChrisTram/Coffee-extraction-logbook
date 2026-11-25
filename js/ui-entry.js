@@ -859,7 +859,6 @@
       const el = $("#" + unread + "-time");
       el.setAttribute("aria-invalid", "true");
       toast(I18N.t("pe_err_time"));
-      UI.toggleStopwatch(true);
       el.focus();
       return;
     }

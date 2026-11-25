@@ -3043,6 +3043,14 @@ ferme le clavier, il ne doit pas enregistrer une tasse à moitié saisie.
 Les boutons rapides restent (−5 s, +5 s, +15 s, « Reprendre le chrono ») : ils
 servent à corriger un temps du chrono sans rien retaper.
 
+CORRIGÉ EN v9.62 : LE CHAMP ÉTAIT INVISIBLE. La v9.59 avait changé le champ
+sans le changer de place : il vivait dans `#chrono-body`, replié par défaut.
+Chris, le lendemain : « je vois toujours pas la case temps ici, faut pas la
+laisser que dans la fenêtre mode brassage ». Un temps se tape aussi sans avoir
+chronométré (noté sur le téléphone, lu sur la balance) : le champ est dans le
+formulaire, bloc « Les réglages », avant le volume. J'avais vérifié la v9.59
+chrono ouvert, donc sans voir le défaut.
+
 ### v9.60 : un troisième café, par une deuxième paire de colonnes
 
 Chris : « ta méthode blend marche si je mets 3 cafés ? » Non : la v9.56 nommait
